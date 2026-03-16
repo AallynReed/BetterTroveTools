@@ -1,0 +1,11 @@
+# Ignore the virtual environment
+.venv/
+venv/
+ENV/
+
+# Ignore the massive chrome binaries
+bin/
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]

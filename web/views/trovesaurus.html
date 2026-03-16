@@ -1,0 +1,69 @@
+<div class="trovesaurus-container">
+    <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        <div>
+            <h1><img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" style="width: 32px; vertical-align: middle; margin-right: 10px;"> Trovesaurus Mod Browser</h1>
+            <p style="color: var(--text-muted); margin-top: 5px;">Discover and install mods directly from the community.</p>
+        </div>
+        
+        <!-- Install Target Dropdown -->
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <label for="ts-game-select" style="font-size: 13px; color: var(--text-muted); font-weight: bold;">Install to:</label>
+            <select id="ts-game-select" style="padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border-color); background: #111; color: var(--text-main); outline: none; cursor: pointer;">
+                <option value="">Auto-detecting...</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="search-filter-bar" style="margin-top: 20px;">
+        <div class="search-wrapper">
+            <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+            <input type="text" id="ts-search-input" placeholder="Search Trovesaurus mods...">
+        </div>
+        
+        <select id="ts-category-select">
+            <option value="">All Categories</option>
+            <option value="ui">UI & HUD</option>
+            <option value="vfx">VFX</option>
+            <option value="mount">Mounts</option>
+            <option value="ally">Allies</option>
+            <option value="costume">Costumes</option>
+            <option value="dragon">Dragons</option>
+        </select>
+
+        <select id="ts-sort-select">
+            <option value="hot" selected>Hot Mods (Default)</option>
+            <option value="likes_desc">Most Liked</option>
+            <option value="downloads_desc">Most Downloaded</option>
+            <option value="date_desc">Newest First</option>
+            <option value="date_asc">Oldest First</option>
+        </select>
+        
+        <button id="btn-ts-search" class="primary-btn" style="background: var(--accent-blue);">
+            <i class="fa-solid fa-magnifying-glass"></i> Search
+        </button>
+    </div>
+
+    <div id="ts-mod-grid" class="mod-grid" style="margin-top: 20px;">
+        <div class="placeholder-box">
+            <i class="fa-solid fa-cloud-arrow-down" style="font-size: 32px; margin-bottom: 15px; display: block;"></i>
+            Ready to browse. Enter a search term or hit Search to load latest mods.
+        </div>
+    </div>
+
+    <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+        <button id="btn-ts-prev" class="primary-btn" disabled>
+            <i class="fa-solid fa-chevron-left"></i> Previous
+        </button>
+        <span id="ts-page-display" style="color: var(--text-main); font-weight: bold;">Page 1</span>
+        <button id="btn-ts-next" class="primary-btn" disabled>
+            Next <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="image-modal">
+        <span class="close-modal">&times;</span>
+        <img class="modal-content" id="expanded-img">
+        <div id="modal-caption"></div>
+    </div>
+</div>

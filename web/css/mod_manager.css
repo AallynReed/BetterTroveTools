@@ -1,0 +1,294 @@
+.mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    padding: 10px 0;
+    animation: fadeIn 0.3s ease;
+}
+
+.mod-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s;
+}
+
+.mod-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    border-color: var(--accent-blue);
+}
+
+.mod-image-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 400 / 230;
+    background: #151515; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mod-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.mod-preview-img:hover {
+    filter: brightness(1.15);
+}
+
+.placeholder-img {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    background: #222;
+}
+
+.mod-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: white;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    pointer-events: none;
+}
+
+.mod-card-content {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-grow: 1;
+}
+
+.mod-title {
+    font-size: 14px;
+    color: var(--text-main);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mod-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.mod-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: auto; 
+    padding-top: 10px;
+}
+
+.toggle-mod-btn {
+    background: rgba(40, 167, 69, 0.1); 
+    border: 1px solid #28a745;
+    color: #28a745;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.toggle-mod-btn:hover {
+    background: #28a745;
+    color: white;
+}
+
+.toggle-mod-btn.active {
+    background: rgba(255, 85, 85, 0.1); 
+    color: #ff5555;
+    border-color: #ff5555;
+}
+
+.toggle-mod-btn.active:hover {
+    background: #ff5555;
+    color: white;
+}
+
+.image-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); 
+    backdrop-filter: blur(5px);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.image-modal.active {
+    display: flex;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    max-width: 90%;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    object-fit: contain;
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-modal:hover {
+    color: var(--accent-blue);
+}
+
+#modal-caption {
+    margin-top: 15px;
+    color: #ccc;
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mod-conflict-inline {
+    font-size: 18px;
+    cursor: help;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.mod-conflict-inline.conflict-inactive {
+    filter: drop-shadow(0 0 2px rgba(255, 152, 0, 0.5));
+    opacity: 0.7;
+}
+
+/* RED: Both mods are enabled! Game will have issues */
+.mod-conflict-inline.conflict-active {
+    filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
+    animation: criticalPulse 1s infinite;
+    color: #ff4444;
+}
+
+@keyframes criticalPulse {
+    0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 0, 0, 1)); }
+    50% { transform: scale(1.3); filter: drop-shadow(0 0 12px rgba(255, 0, 0, 1)); }
+    100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 0, 0, 1)); }
+}
+
+.search-filter-bar {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    background: var(--bg-panel);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+}
+
+.search-wrapper {
+    position: relative;
+    flex-grow: 1;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+}
+
+#mod-search-input {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    background: #111;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    outline: none;
+}
+
+#mod-search-input:focus {
+    border-color: var(--accent-blue);
+}
+
+#mod-filter-status {
+    padding: 10px;
+    background: #111;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.mod-count-display {
+    font-size: 12px;
+    color: var(--text-muted);
+    min-width: 120px;
+    text-align: right;
+}
+
+.update-mod-btn {
+    background: rgba(255, 193, 7, 0.1); 
+    border: 1px solid #ffc107;
+    color: #ffc107;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    margin-right: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.update-mod-btn:hover {
+    background: #ffc107;
+    color: #111;
+}
+
+.update-mod-btn.hidden {
+    display: none;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

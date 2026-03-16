@@ -1,0 +1,253 @@
+/* --- CONTAINER & LAYOUT --- */
+.file-manager-container {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.file-manager-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+}
+
+.placeholder-box {
+    background-color: var(--bg-panel);
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-muted);
+}
+
+/* --- SEARCH BAR --- */
+.search-container {
+    padding: 15px 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#tree-search {
+    flex: 1;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 10px 12px;
+    border-radius: 4px;
+    outline: none;
+}
+
+#tree-search:focus {
+    border-color: var(--accent-blue);
+}
+
+#search-count {
+    font-size: 12px;
+    color: var(--accent-blue);
+    font-weight: bold;
+}
+
+/* --- THE FILE TREE (Optimized for 130k nodes) --- */
+.file-tree {
+    text-align: left;
+    font-size: 14px;
+    background: var(--bg-panel);
+    padding: 10px;
+    border-radius: 0 0 8px 8px;
+    border: 1px solid var(--border-color);
+    max-height: 70vh;
+    overflow-y: auto;
+    /* Performance: Prevents expensive re-layouts */
+    contain: content; 
+}
+
+/* Folders */
+details.folder {
+    margin: 2px 0;
+}
+
+details.folder > summary {
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 4px;
+    user-select: none;
+    color: var(--text-main);
+    font-weight: 500;
+    list-style: none;
+    display: flex;
+    align-items: center;
+}
+
+details.folder > summary::-webkit-details-marker {
+    display: none;
+}
+
+details.folder > summary:hover {
+    background: var(--bg-hover);
+}
+
+.folder-content {
+    margin-left: 18px;
+    padding-left: 12px;
+    border-left: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* --- FILE ITEM ALIGNMENT (The Fix) --- */
+.file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Vertical center the whole row */
+    padding: 6px 12px;
+    margin: 1px 0;
+    border-radius: 4px;
+    color: var(--text-muted);
+    min-height: 36px;
+    gap: 15px;
+}
+
+.file-item:hover {
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center; /* Center checkbox with icon/name */
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+
+.file-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1;
+    overflow: hidden;
+}
+
+.file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+input[type="checkbox"] {
+    margin: 0;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0; /* Prevents checkbox from squishing */
+    cursor: pointer;
+    accent-color: var(--accent-blue);
+}
+
+/* Right Side Actions */
+.file-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-shrink: 0;
+}
+
+.file-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    white-space: nowrap;
+}
+
+.save-btn {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.save-btn:hover {
+    filter: brightness(1.2);
+}
+
+/* --- SEARCH LOGIC --- */
+.searching .file-item,
+.searching details.folder {
+    display: none !important;
+}
+
+.searching .is-match {
+    display: flex !important;
+}
+
+.searching details.folder.has-match {
+    display: block !important;
+}
+
+/* --- EXTRACTION BAR --- */
+#extraction-bar {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    padding: 12px 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    z-index: 9999;
+    align-items: center;
+    gap: 20px;
+    backdrop-filter: blur(10px);
+}
+
+#extraction-bar.active {
+    display: flex;
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.progress-track {
+    width: 250px;
+    height: 6px;
+    background: var(--bg-dark);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-blue);
+    transition: width 0.2s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translate(-50%, 100px); opacity: 0; }
+    to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#btn-collapse-all {
+    background: #444; /* Darker, more neutral color */
+    color: #ccc;
+    border: 1px solid var(--border-color);
+}
+
+#btn-collapse-all:hover {
+    background: #555;
+    color: #fff;
+}

@@ -1,0 +1,199 @@
+/* --- TROVESAURUS MAIN CONTAINER --- */
+.trovesaurus-container {
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+/* --- SEARCH & FILTER INPUTS --- */
+#ts-category-select,
+#ts-sort-select {
+    padding: 10px;
+    background: #111;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: 4px;
+    cursor: pointer;
+    min-width: 150px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#ts-category-select:focus,
+#ts-sort-select:focus {
+    border-color: var(--accent-blue);
+}
+
+#ts-search-input {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    background: #111;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#ts-search-input:focus {
+    border-color: var(--accent-blue);
+}
+
+/* --- TROVESAURUS MOD GRID --- */
+#ts-mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+    padding: 15px 0;
+}
+
+/* --- STOREFRONT MOD CARDS --- */
+/* These will be injected by our JavaScript */
+.ts-mod-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.ts-mod-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    border-color: var(--accent-blue);
+}
+
+.ts-mod-card .mod-image-container {
+    max-height: 150px; /* Caps the image height so it doesn't take over the card */
+}
+
+.ts-mod-card .mod-preview-img {
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.ts-mod-card .mod-preview-img:hover {
+    filter: brightness(1.15);
+}
+
+/* --- STATS ROW (Downloads & Likes) --- */
+.ts-mod-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.2);
+    padding: 6px 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: auto;
+}
+
+.ts-stat-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.ts-stat-item i.fa-heart {
+    color: #ff4444; /* Give the heart a nice red tint */
+}
+
+.ts-stat-item i.fa-download {
+    color: #4CAF50; /* Give the download icon a green tint */
+}
+
+/* --- CLICKABLE TITLE --- */
+.ts-mod-title {
+    cursor: pointer;
+}
+
+.ts-mod-title:hover {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
+
+/* --- CLICKABLE AUTHOR --- */
+.ts-mod-author {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.ts-mod-author:hover {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
+
+/* --- INSTALL BUTTON --- */
+.ts-install-btn {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid #28a745;
+    color: #28a745;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.2s;
+    width: 100%;
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+}
+
+.ts-install-btn:hover {
+    background: #28a745;
+    color: white;
+}
+
+.ts-install-btn:disabled {
+    background: #333;
+    border-color: #444;
+    color: #888;
+    cursor: not-allowed;
+}
+
+/* Button state for when a mod is already installed */
+.ts-install-btn.installed {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: #555;
+    color: #aaa;
+    pointer-events: none; /* Make it unclickable */
+}
+
+/* Button state for when an update is available */
+.ts-install-btn.update {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+.ts-install-btn.update:hover {
+    background: #ffc107;
+    color: #111;
+}
+
+/* --- PAGINATION CONTROLS --- */
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: transparent;
+    border-color: #444;
+    color: #666;
+}
+
+.pagination-controls button {
+    min-width: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}

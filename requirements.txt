@@ -1,0 +1,7 @@
+aiofiles
+aiohttp
+binary-reader
+eel
+pydantic
+toml
+vdf

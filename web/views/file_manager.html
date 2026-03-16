@@ -1,0 +1,54 @@
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<div class="file-manager-container">
+    <div class="file-manager-header">
+        <h1>Game File Manager</h1>
+        
+        <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+    <select id="game-install-select" style="flex-grow: 1; padding: 10px;">
+        <option value="">Searching for Game Installs...</option>
+    </select>
+    
+    <button id="btn-refresh-installs" class="primary-btn" title="Refresh Detected Games">
+        <i class="fa-solid fa-rotate-right"></i>
+    </button>
+    
+    <button id="btn-browse-manual" class="primary-btn" title="Browse manually for Trove folder">
+        <i class="fa-solid fa-folder-open"></i> Browse...
+    </button>
+    
+    <button id="btn-load-tree" class="primary-btn">
+        <i class="fa-solid fa-box-archive"></i> Load Archives
+    </button>
+    
+    <button id="btn-collapse-all" class="primary-btn" title="Collapse All Folders">
+        <i class="fa-solid fa-folder-minus"></i> Collapse
+    </button>
+</div>
+    </div>
+    <div class="search-container">
+        <div style="position: relative; flex: 1; display: flex; align-items: center;">
+            <input type="text" id="tree-search" placeholder="Search files (e.g. .swf, dragon, ui_...)" />
+            <button id="clear-search" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+        </div>
+        <span id="search-count" class="file-meta"></span>
+    </div>
+    <div id="file-tree"></div>
+
+    <div id="file-tree-container" class="placeholder-box">
+        Select a game installation to view files.
+    </div>
+</div>
+<div id="extraction-bar">
+        <span id="extraction-summary">0 files selected (0 MB)</span>
+        
+        <div id="extraction-progress" class="progress-container">
+            <div class="progress-track">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <span id="progress-text" class="progress-text">Starting extraction...</span>
+        </div>
+
+        <button id="btn-mass-extract" class="primary-btn">Extract Selected</button>
+    </div>

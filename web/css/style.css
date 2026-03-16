@@ -1,0 +1,162 @@
+/* --- GLOBAL VARIABLES --- */
+:root {
+    --bg-dark: #121212;
+    --bg-panel: #1e1e1e;
+    --bg-hover: #2d2d30;
+    --text-main: #e0e0e0;
+    --text-muted: #888888;
+    --accent-blue: #007acc;
+    --accent-hover: #0098ff;
+    --border-color: #333333;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    display: flex;
+    height: 100vh;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    overflow: hidden; /* Prevents whole-page scrolling */
+}
+
+/* --- SIDEBAR --- */
+#sidebar {
+    width: 260px;
+    background-color: var(--bg-panel);
+    border-right: 1px solid var(--border-color);
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+}
+
+#sidebar.collapsed {
+    width: 65px;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    height: 70px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+#burger-btn {
+    background: none;
+    border: none;
+    color: var(--text-main);
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 25px;
+    transition: color 0.2s;
+}
+
+#burger-btn:hover {
+    color: var(--accent-blue);
+}
+
+#app-title {
+    margin-left: 20px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s;
+}
+
+#sidebar.collapsed #app-title {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* --- MENU NAVIGATION --- */
+.menu {
+    list-style: none;
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0 10px;
+}
+
+.nav-btn {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 12px 10px;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    overflow: hidden; /* This is the magic bullet for spilling text */
+}
+
+.nav-btn:hover {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.nav-btn.active {
+    background-color: var(--accent-blue);
+    color: #ffffff;
+}
+
+/* New Icon and Text Styling */
+.nav-icon {
+    min-width: 22px; /* Keeps the icon size fixed so it doesn't squish */
+    height: 22px;
+    margin-right: 15px;
+    margin-left: 5px; /* Perfectly centers the icon when collapsed */
+}
+
+.nav-text {
+    white-space: nowrap;
+    transition: opacity 0.2s ease; /* Smooth fade out */
+}
+
+/* Hide text when collapsed */
+#sidebar.collapsed .nav-text {
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+/* --- MAIN CONTAINER --- */
+#view-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    background-color: var(--bg-dark);
+    position: relative;
+}
+
+/* Standardized Button styling for inner pages */
+.primary-btn {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.primary-btn:hover {
+    background-color: var(--accent-hover);
+}
