@@ -26,7 +26,7 @@ jobs:
 
       - name: Move and Rename Files
         run: |
-          $env:NEW_FILE_NAME="TroveManager-${{ github.event.release.name }}-win64.msi"
+          $env:NEW_FILE_NAME="BetterTroveTools-${{ github.event.release.name }}-win64.msi"
           $msiFile = Get-ChildItem -Path dist -Filter *.msi | Select-Object -First 1
           Write-Host "Found MSI: $($msiFile.FullName)"
           Move-Item -Path $msiFile.FullName -Destination ".\$env:NEW_FILE_NAME"
@@ -35,8 +35,8 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: "TroveManager-${{ github.event.release.name }}-win64.msi"
-          asset_name: "TroveManager-${{ github.event.release.name }}-win64.msi"
+          asset_path: "BetterTroveTools-${{ github.event.release.name }}-win64.msi"
+          asset_name: "BetterTroveTools-${{ github.event.release.name }}-win64.msi"
           asset_content_type: application/x-msi
         env:
           GITHUB_TOKEN: ${{ secrets.COMPILER }}
