@@ -23,6 +23,8 @@ jobs:
 
       - name: Compile code into MSI package
         run: python compile.py bdist_msi
+        env:
+            PYTHONUTF8: 1
 
       - name: Move and Rename Files
         run: |
