@@ -2,12 +2,19 @@ import eel
 import sys
 import os
 
+# Suppress the "Google API Keys are missing" warning in Chromium
+os.environ["GOOGLE_API_KEY"] = "no"
+os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
+os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
+
 import backend.mod_manager
 import backend.file_manager
 import backend.trovesaurus
 
-if hasattr(sys, '_MEIPASS'):
-    base_dir = sys._MEIPASS
+if getattr(sys, 'frozen', False):
+    base_dir = os.path.dirname(sys.executable)
+    if not hasattr(sys, '_MEIPASS'):
+        sys._MEIPASS = base_dir
 else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -26,6 +33,10 @@ eel.browsers.set_path('chrome', chromium_path)
 eel.init(os.path.join(base_dir, 'web'))
 
 try:
-    eel.start('index.html', mode='chrome', size=(1600, 900), port=28924)
+    eel.start('index.html', mode='chrome', size=(1600, 900), port=28924, cmdline_args=[
+        '--disable-infobars',
+        '--no-default-browser-check',
+        '--no-first-run'
+    ])
 except (SystemExit, MemoryError, KeyboardInterrupt):
     sys.exit()

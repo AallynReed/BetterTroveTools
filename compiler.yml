@@ -1,0 +1,42 @@
+name: Compile code
+on:
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    name: Compile Code
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12.3'
+          architecture: 'x64'
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Compile code into MSI package
+        run: python compile.py bdist_msi
+
+      - name: Move and Rename Files
+        run: |
+          $env:NEW_FILE_NAME="TroveManager-${{ github.event.release.name }}-win64.msi"
+          $msiFile = Get-ChildItem -Path dist -Filter *.msi | Select-Object -First 1
+          Write-Host "Found MSI: $($msiFile.FullName)"
+          Move-Item -Path $msiFile.FullName -Destination ".\$env:NEW_FILE_NAME"
+
+      - name: Upload file to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: "TroveManager-${{ github.event.release.name }}-win64.msi"
+          asset_name: "TroveManager-${{ github.event.release.name }}-win64.msi"
+          asset_content_type: application/x-msi
+        env:
+          GITHUB_TOKEN: ${{ secrets.COMPILER }}
