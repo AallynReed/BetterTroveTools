@@ -174,8 +174,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const hasActiveConflict = isEnabled && mod.conflicts_with.some(c => c.enabled);
 
                 const imageHTML = mod.image 
-                    ? `<img src="data:image/png;base64,${mod.image}" alt="Preview" class="mod-preview-img" loading="lazy">`
-                    : `<div class="mod-preview-img placeholder-img">No Preview</div>`;
+                    ? `<img src="data:image/png;base64,${mod.image}" alt="Preview" class="mod-preview-img" loading="lazy" style="max-height: 200px; object-fit: cover; width: 100%;">`
+                    : `<div class="mod-preview-img placeholder-img" style="height: 200px; display: flex; align-items: center; justify-content: center;">No Preview</div>`;
                 
                 let conflictBadge = '';
                 if (mod.has_conflicts) {
@@ -210,16 +210,35 @@ document.addEventListener('mod_manager_loaded', async () => {
             
             modGrid.innerHTML = html;
             applyFilters();
+            getModUrls(gamePath);
             checkForUpdates(gamePath);
         } else {
             modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">Error loading mods: ${response.error}</div>`;
         }
     }
 
+    async function getModUrls(gamePath) {
+        const response = await eel.get_mod_urls(gamePath)();
+        if (response.success && response.urls) {
+            document.querySelectorAll('.toggle-mod-btn').forEach(btn => {
+                const path = btn.getAttribute('data-path');
+                if (response.urls[path]) {
+                    const card = btn.closest('.mod-card');
+                    const titleEl = card ? card.querySelector('.mod-title') : null;
+                    if (titleEl && !titleEl.classList.contains('ts-mod-title')) {
+                        titleEl.classList.add('ts-mod-title');
+                        titleEl.title = titleEl.innerText + " (Click to view on Trovesaurus)";
+                        titleEl.onclick = () => eel.open_url_in_browser(response.urls[path])();
+                    }
+                }
+            });
+        }
+    }
+
     async function checkForUpdates(gamePath) {
         const response = await eel.check_mod_updates(gamePath)();
-        if (response.success && response.updates) {
-            const updates = response.updates;
+        if (response.success) {
+            const updates = response.updates || {};
             
             // Find all update buttons and unhide the ones that need updates
             document.querySelectorAll('.update-mod-btn').forEach(btn => {

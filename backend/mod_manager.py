@@ -2,6 +2,7 @@ import eel
 from pathlib import Path
 from models.trove.mod import TroveModList, TroveGamePath
 import asyncio
+import aiohttp
 
 @eel.expose
 def get_installed_mods(game_path_str):
@@ -92,6 +93,46 @@ def fix_mod_configs(game_path_str):
         traceback.print_exc()
         return {"success": False, "error": str(e)}
     
+@eel.expose
+def get_mod_urls(game_path_str):
+    try:
+        trove_path = TroveGamePath(Path(game_path_str))
+        mod_list = TroveModList(path=trove_path, partial=True)
+        
+        async def fetch_urls():
+            # Grab hashes safely and map them back to their file paths
+            hash_to_path = {getattr(mod, 'hash').lower(): str(mod.mod_path) for mod in mod_list if getattr(mod, 'hash', None)}
+            if not hash_to_path:
+                return {}
+                
+            urls = {}
+            async with aiohttp.ClientSession() as session:
+                hashes_list = list(hash_to_path.keys())
+                # Split into batches of 200 just in case the user has a huge mod folder
+                hash_batches = [hashes_list[i:i + 200] for i in range(0, len(hashes_list), 200)]
+                
+                for batch in hash_batches:
+                    payload = {"hashes": ",".join(batch)}
+                    try:
+                        async with session.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10) as resp:
+                            if resp.status == 200:
+                                batch_results = await resp.json()
+                                for h, mod_id in batch_results.items():
+                                    path = hash_to_path.get(h.lower())
+                                    if path:
+                                        urls[path] = f"https://trovesaurus.com/mod={mod_id}"
+                    except Exception as e:
+                        print(f"Failed hash batch: {e}")
+            return urls
+            
+        urls = asyncio.run(fetch_urls())
+        return {"success": True, "urls": urls}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
 @eel.expose
 def check_mod_updates(game_path_str):
     try:

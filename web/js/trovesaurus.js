@@ -174,7 +174,7 @@ function renderTrovesaurusGrid(mods, container) {
                 </div>
                 <div class="mod-card-content">
                     <h3 class="mod-title ts-mod-title" title="${mod.name} (Click to view on Trovesaurus)" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
-                    <span class="mod-meta"><span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="View ${mod.author}'s profile" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
+                    <span class="mod-meta">mod<span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="View ${mod.author}'s profile" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
                     <div class="ts-mod-stats">
                         <span class="ts-stat-item"><i class="fa-solid fa-download"></i> ${mod.downloads}</span>
                         <span class="ts-stat-item"><i class="fa-solid fa-heart"></i> ${mod.likes}</span>
