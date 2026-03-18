@@ -15,6 +15,18 @@ document.addEventListener('settings_loaded', async () => {
         });
     }
 
+    const autoFixConfigsToggle = document.getElementById('setting-auto-fix-configs');
+    
+    if (autoFixConfigsToggle) {
+        autoFixConfigsToggle.checked = settings.auto_fix_configs === true;
+        
+        autoFixConfigsToggle.addEventListener('change', async (e) => {
+            const currentSettings = await eel.get_settings()();
+            currentSettings.auto_fix_configs = e.target.checked;
+            await eel.save_settings(currentSettings)();
+        });
+    }
+
     const openModalBtn = document.getElementById('btn-open-add-dir-modal');
     const closeModalBtn = document.getElementById('btn-close-add-dir-modal');
     const modal = document.getElementById('add-dir-modal');

@@ -132,13 +132,16 @@ document.addEventListener('mod_manager_loaded', async () => {
         modGrid.className = ""; 
         
         const settings = await eel.get_settings()();
-        if (settings.auto_fix_names) {
-            modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> Auto-fixing Mod Names...</div>`;
-            await eel.fix_mod_names(gamePath)();
-            modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> Scanning Mod Directory...</div>`;
+        let statusText = "Scanning Mod Directory...";
+        if (settings.auto_fix_names || settings.auto_fix_configs) {
+            let fixing = [];
+            if (settings.auto_fix_names) fixing.push("Names");
+            if (settings.auto_fix_configs) fixing.push("Configs");
+            statusText = `Auto-fixing Mod ${fixing.join(" & ")}...`;
         }
+        modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> ${statusText}</div>`;
         
-        const response = await eel.get_installed_mods(gamePath)();
+        const response = await eel.get_installed_mods(gamePath, settings.auto_fix_names === true, settings.auto_fix_configs === true)();
         
         if (response.success) {
             if (response.mods.length === 0) {

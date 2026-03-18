@@ -5,10 +5,10 @@ import asyncio
 import aiohttp
 
 @eel.expose
-def get_installed_mods(game_path_str):
+def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
-        mod_list = TroveModList(path=trove_path, partial=True)
+        mod_list = TroveModList(path=trove_path, partial=True, fix_names=fix_names, fix_configs=fix_configs)
         
         result_mods = []
         

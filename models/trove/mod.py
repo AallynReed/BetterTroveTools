@@ -871,7 +871,7 @@ class TroveModList:
             if mod.is_ui_mod:
                 mod.ensure_config()
 
-    def _populate(self, force=False, fix_names=True, fix_configs=True, partial=False):
+    def _populate(self, force=False, fix_names=False, fix_configs=False, partial=False):
         mod_file_cache.clear()
         self._mods.clear()
         self._ensure_correct_extensions()
@@ -898,7 +898,7 @@ class TroveModList:
             if not zipfile.is_zipfile(file):
                 file.rename(file.with_suffix("").with_suffix(".tmod.disabled"))
 
-    def _populate_tmod_enabled(self, fix_names=True, partial=False):
+    def _populate_tmod_enabled(self, fix_names=False, partial=False):
         for file in self.trove_path.enabled_tmods:
             with open(file, "rb") as f:
                 if partial:
@@ -913,7 +913,7 @@ class TroveModList:
                     mod.fix_name()
                 self._mods.append(mod)
 
-    def _populate_tmod_disabled(self, fix_names=True, partial=False):
+    def _populate_tmod_disabled(self, fix_names=False, partial=False):
         for file in self.trove_path.disabled_tmods:
             with open(file, "rb") as f:
                 if partial:
