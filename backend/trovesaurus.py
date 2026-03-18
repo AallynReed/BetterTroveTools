@@ -214,7 +214,7 @@ async def _async_install_ts_mod(game_path_str, mod_id):
 
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.head("https://trovesaurus.com", timeout=5) as test_resp:
+            async with session.head("https://trovesaurus.com/api/ping", timeout=5) as test_resp:
                 if test_resp.status >= 500:
                     return {"success": False, "error": "Trovesaurus is currently experiencing server issues."}
         except Exception:
