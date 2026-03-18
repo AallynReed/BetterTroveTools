@@ -62,7 +62,7 @@ build_exe_options = {
         "cx_Freeze",
     ],
     "include_files": [
-        ("assets/", "assets/")
+        ("assets/", "assets/"),
         ("web/", "web/"),       # Eel frontend
         ("bin/", "bin/"),       # Downloaded Chromium
         ("trove.dll", "trove.dll"), # Needed for utils hash calculation
