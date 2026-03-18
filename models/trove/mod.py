@@ -120,6 +120,7 @@ class PartialTroveModFile(TroveModFile):
     def __init__(self, trove_path: Path, archive_path: Path):
         super().__init__(trove_path, b"")
         self.trove_path = trove_path.as_posix().lower()
+        self.archive_path = archive_path
         self._content = None
         self._checksum = None
 
