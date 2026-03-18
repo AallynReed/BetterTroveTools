@@ -46,7 +46,8 @@ try:
     eel.start('index.html', mode='chrome', size=(1600, 900), port=28924, cmdline_args=[
         '--disable-infobars',
         '--no-default-browser-check',
-        '--no-first-run'
+        '--no-first-run',
+        '--disable-background-mode'
     ])
 except (SystemExit, MemoryError, KeyboardInterrupt):
     sys.exit()
