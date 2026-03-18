@@ -3,7 +3,6 @@ import sys
 import os
 import json
 
-# Suppress the "Google API Keys are missing" warning in Chromium
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
@@ -11,6 +10,7 @@ os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 import backend.mod_manager
 import backend.file_manager
 import backend.trovesaurus
+import backend.settings
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)

@@ -100,7 +100,6 @@ def get_mod_urls(game_path_str):
         mod_list = TroveModList(path=trove_path, partial=True)
         
         async def fetch_urls():
-            # Grab hashes safely and map them back to their file paths
             hash_to_path = {getattr(mod, 'hash').lower(): str(mod.mod_path) for mod in mod_list if getattr(mod, 'hash', None)}
             if not hash_to_path:
                 return {}
@@ -108,7 +107,6 @@ def get_mod_urls(game_path_str):
             urls = {}
             async with aiohttp.ClientSession() as session:
                 hashes_list = list(hash_to_path.keys())
-                # Split into batches of 200 just in case the user has a huge mod folder
                 hash_batches = [hashes_list[i:i + 200] for i in range(0, len(hashes_list), 200)]
                 
                 for batch in hash_batches:

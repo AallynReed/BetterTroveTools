@@ -1,8 +1,6 @@
-// Global State for Trovesaurus
 let ts_currentPage = 1;
 let ts_isLoading = false;
 
-// LISTEN for the event from main.js
 document.addEventListener('trovesaurus_loaded', () => {
     console.log("Trovesaurus Logic: Hooking into UI...");
 
@@ -13,7 +11,6 @@ document.addEventListener('trovesaurus_loaded', () => {
     const prevBtn = document.getElementById('btn-ts-prev');
     const nextBtn = document.getElementById('btn-ts-next');
 
-    // Attach Listeners
     if (searchBtn) searchBtn.addEventListener('click', () => fetchTrovesaurusMods(1));
     
     if (searchInput) {
@@ -33,7 +30,6 @@ document.addEventListener('trovesaurus_loaded', () => {
         fetchTrovesaurusMods(ts_currentPage + 1);
     });
 
-    // Delegate Install Clicks (Handle dynamically created cards)
     const modGrid = document.getElementById('ts-mod-grid');
     const imageModal = document.getElementById('image-modal');
     const modalImg = document.getElementById('expanded-img');
@@ -57,7 +53,6 @@ document.addEventListener('trovesaurus_loaded', () => {
         });
     }
 
-    // Modal Closing
     if (imageModal) {
         imageModal.addEventListener('click', (e) => {
             if (e.target === imageModal || e.target.classList.contains('close-modal')) {
@@ -67,16 +62,13 @@ document.addEventListener('trovesaurus_loaded', () => {
         });
     }
 
-    // Auto-load first page
     fetchTrovesaurusMods(1);
 });
 
-// --- CORE FUNCTIONS ---
 
 async function getActiveGamePath() {
     const tsSelect = document.getElementById('ts-game-select');
     
-    // If we've already populated the dropdown, just return the user's current selection
     if (tsSelect && tsSelect.getAttribute('data-loaded')) {
         return tsSelect.value;
     }
@@ -130,11 +122,11 @@ async function fetchTrovesaurusMods(page = 1) {
             if (prevBtn) prevBtn.disabled = ts_currentPage <= 1;
             if (nextBtn) nextBtn.disabled = ts_currentPage >= response.max_pages;
         } else {
-            grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">API Error: ${response.error}</div>`;
+            grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> ${response.error}</div>`;
         }
     } catch (err) {
         console.error("Trovesaurus fetch error:", err);
-        grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">Eel Error: ${err.message || err}</div>`;
+        grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> ${err.message || err}</div>`;
     }
 
     ts_isLoading = false;
@@ -158,7 +150,7 @@ function renderTrovesaurusGrid(mods, container) {
 
         if (needsUpdate) {
             btnClass = 'update';
-            btnIcon = '<i class="fa-solid fa-rotate"></i>'; // Update icon
+            btnIcon = '<i class="fa-solid fa-rotate"></i>';
             btnText = 'Update';
         } else if (isInstalled) {
             btnClass = 'installed';
@@ -174,7 +166,7 @@ function renderTrovesaurusGrid(mods, container) {
                 </div>
                 <div class="mod-card-content">
                     <h3 class="mod-title ts-mod-title" title="${mod.name} (Click to view on Trovesaurus)" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
-                    <span class="mod-meta">mod<span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="View ${mod.author}'s profile" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
+                    <span class="mod-meta"><span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="View ${mod.author}'s profile" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
                     <div class="ts-mod-stats">
                         <span class="ts-stat-item"><i class="fa-solid fa-download"></i> ${mod.downloads}</span>
                         <span class="ts-stat-item"><i class="fa-solid fa-heart"></i> ${mod.likes}</span>

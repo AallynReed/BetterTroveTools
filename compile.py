@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 from cx_Freeze import setup, Executable
 
-# --- APP METADATA ---
 with open("metadata.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
 
@@ -17,11 +16,9 @@ APP_DESCRIPTION = meta["APP_DESCRIPTION"]
 APP_GUID = meta["APP_GUID"]
 
 def download_chromium():
-    """Fetches the latest Chromium snapshot and extracts it for compilation."""
     bin_dir = Path("bin")
     chrome_win_dir = bin_dir / "chrome-win"
     
-    # Check if we already downloaded it to save time
     if chrome_win_dir.exists() and (chrome_win_dir / "chrome.exe").exists():
         print("✅ Chromium already exists in bin/chrome-win. Skipping download.")
         return
@@ -52,10 +49,8 @@ def download_chromium():
         print(f"❌ Failed to download Chromium: {e}")
         exit(1)
 
-# 1. Pre-compile step: ensure Chromium is present
 download_chromium()
 
-# 2. Configure cx_Freeze options
 build_exe_options = {
     "excludes": [
         "wheel",
@@ -63,9 +58,9 @@ build_exe_options = {
     ],
     "include_files": [
         ("assets/", "assets/"),
-        ("web/", "web/"),       # Eel frontend
-        ("bin/", "bin/"),       # Downloaded Chromium
-        ("trove.dll", "trove.dll"), # Needed for utils hash calculation
+        ("web/", "web/"),
+        ("bin/", "bin/"),
+        ("trove.dll", "trove.dll"),
         ("metadata.json", "metadata.json"),
     ],
     "optimize": 2,
@@ -77,7 +72,7 @@ bdist_msi_options = {
     "upgrade_code": APP_GUID,
     "add_to_path": False,
     "all_users": True,
-    "install_icon": "web/favicon.ico", # Uncomment if you add an icon!
+    "install_icon": "web/favicon.ico",
 }
 
 options = {"build_exe": build_exe_options, "bdist_msi": bdist_msi_options}
@@ -90,10 +85,10 @@ setup(
     options=options,
     executables=[
         Executable(
-            "main.py", # Your new main file
+            "main.py",
             icon="web/favicon.ico",
             target_name=f"{APP_TECH_NAME}.exe",
-            base="gui", # Hides the console window
+            base="gui",
             shortcut_name=APP_NAME,
             shortcut_dir="DesktopFolder",
         )

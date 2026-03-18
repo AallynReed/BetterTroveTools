@@ -2,9 +2,11 @@ import eel
 import asyncio
 from pathlib import Path
 import os
+import json
 from utils.archive_parser import TFIndex, TFArchive, TroveFile
 from utils.registry import get_trove_locations
 from collections import defaultdict
+from backend.settings import get_settings
 
 import tkinter as tk
 from tkinter import filedialog
@@ -17,11 +19,24 @@ def get_detected_game_paths():
     try:
         for game in get_trove_locations():
             paths.append({
-                "name": game.name,           # e.g., "(Steam) Live"
-                "path": str(game.path),      # e.g., "C:\Steam\steamapps\common\Trove..."
+                "name": game.name,
+                "path": str(game.path),
                 "is_steam": game.is_steam,
                 "is_glyph": game.is_glyph
             })
+            
+        settings = get_settings()
+        for custom_dir in settings.get("custom_directories", []):
+            name = custom_dir.get("name", "Unknown") if isinstance(custom_dir, dict) else Path(str(custom_dir)).name
+            path = custom_dir.get("path", "") if isinstance(custom_dir, dict) else str(custom_dir)
+            
+            paths.append({
+                "name": f"(Custom) {name}",
+                "path": path,
+                "is_steam": False,
+                "is_glyph": False
+            })
+            
         return {"success": True, "paths": paths}
     except Exception as e:
         import traceback

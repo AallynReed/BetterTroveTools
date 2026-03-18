@@ -55,8 +55,18 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
 
 async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str):
     async with aiohttp.ClientSession() as session:
+        try:
+            async with session.head("https://trovesaurus.com/api/ping", timeout=5) as test_resp:
+                if test_resp.status >= 500:
+                    return {"success": False, "error": "Trovesaurus is currently experiencing server issues."}
+        except Exception:
+            return {"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."}
+
         mods_all = await _get_cached_api(session, "https://trovesaurus.com/api/mods-all", "mods_all.json")
         mods_hot = await _get_cached_api(session, "https://trovesaurus.com/api/mods-hot", "mods_hot.json")
+
+        if not mods_all:
+            return {"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."}
 
         if isinstance(mods_all, dict):
             mods_all = list(mods_all.values())
@@ -197,19 +207,25 @@ async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str
 
 @eel.expose
 def install_trovesaurus_mod(game_path_str, mod_id):
-    """Downloads the latest file for a mod and extracts it to the game directory."""
     return asyncio.run(_async_install_ts_mod(game_path_str, mod_id))
 
 async def _async_install_ts_mod(game_path_str, mod_id):
     if not game_path_str: return {"success": False, "error": "No game path provided."}
 
     async with aiohttp.ClientSession() as session:
-        # Load the cache to get the download file ids
+        try:
+            async with session.head("https://trovesaurus.com", timeout=5) as test_resp:
+                if test_resp.status >= 500:
+                    return {"success": False, "error": "Trovesaurus is currently experiencing server issues."}
+        except Exception:
+            return {"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."}
+
         mods_all = await _get_cached_api(session, "https://trovesaurus.com/api/mods-all", "mods_all.json")
         
-        # Ensure it's a dict for lookup
         if isinstance(mods_all, list):
             mods_all = {str(m.get("id")): m for m in mods_all if isinstance(m, dict)}
+        elif not mods_all:
+            return {"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."}
 
         mod_data = mods_all.get(str(mod_id))
         if not mod_data: return {"success": False, "error": "Mod no longer exists."}
@@ -217,7 +233,6 @@ async def _async_install_ts_mod(game_path_str, mod_id):
         downloads = mod_data.get("downloads", [])
         if not downloads: return {"success": False, "error": "This mod has no files uploaded."}
 
-        # Grab the absolute newest file uploaded for this mod
         downloads.sort(key=lambda f: -int(f.get("fileid", 0)))
         latest_file = downloads[0]
         
@@ -226,23 +241,23 @@ async def _async_install_ts_mod(game_path_str, mod_id):
 
         url = f"https://trovesaurus.com/client/downloadfile.php?fileid={file_id}"
         
-        # Download and write
-        async with session.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"}) as resp:
-            if resp.status != 200:
-                return {"success": False, "error": f"Download failed. Status: {resp.status}"}
-            
-            data = await resp.read()
+        try:
+            async with session.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"}) as resp:
+                if resp.status != 200:
+                    return {"success": False, "error": f"Download failed. Status: {resp.status}"}
+                
+                data = await resp.read()
 
-            # Clean the mod name for Windows file paths
-            safe_name = "".join([c for c in mod_data.get("name", "mod") if c.isalpha() or c.isdigit() or c in " _-"]).strip()
-            
-            # Build the exact path to the user's /mods/ folder
-            out_path = Path(game_path_str) / "mods" / f"{safe_name}{ext}"
-            
-            out_path.parent.mkdir(parents=True, exist_ok=True)
-            out_path.write_bytes(data)
-            
-            return {"success": True}
+                safe_name = "".join([c for c in mod_data.get("name", "mod") if c.isalpha() or c.isdigit() or c in " _-"]).strip()
+                
+                out_path = Path(game_path_str) / "mods" / f"{safe_name}{ext}"
+                
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_bytes(data)
+                
+                return {"success": True}
+        except Exception as e:
+            return {"success": False, "error": "Failed to connect to Trovesaurus to download the mod file."}
 
 @eel.expose
 def open_url_in_browser(url):

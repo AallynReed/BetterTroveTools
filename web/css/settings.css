@@ -1,0 +1,172 @@
+.settings-container {
+    padding: 40px;
+    max-width: 900px;
+    margin: 0 auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.settings-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+}
+
+.settings-section {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.settings-help-text {
+    color: var(--text-muted);
+    margin-top: 5px;
+    margin-bottom: 15px;
+    font-size: 13px;
+}
+
+.custom-dirs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.custom-dir-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-panel);
+    padding: 10px 15px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+
+.custom-dir-item .dir-path {
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--text-main);
+    word-break: break-all;
+    margin-right: 15px;
+}
+
+.danger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.settings-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.settings-modal-overlay.active {
+    display: flex;
+}
+
+.settings-modal-content {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.settings-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-modal-header h2 {
+    font-size: 18px;
+    margin: 0;
+}
+
+.settings-close-modal {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.settings-close-modal:hover {
+    color: white;
+}
+
+.settings-modal-body {
+    padding: 20px;
+}
+
+#add-dir-name:focus,
+#edit-dir-name:focus {
+    border-color: var(--accent-blue) !important;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    transition: .2s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--text-muted);
+    transition: .2s;
+}
+
+input:checked + .slider {
+    background-color: rgba(0, 122, 204, 0.2);
+    border-color: var(--accent-blue);
+}
+
+input:checked + .slider:before {
+    background-color: var(--accent-blue);
+    transform: translateX(20px);
+}
+
+.slider.round {
+    border-radius: 24px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}

@@ -1,4 +1,3 @@
-// --- APP METADATA (Run Immediately on App Load) ---
 document.addEventListener('DOMContentLoaded', async () => {
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";
@@ -15,14 +14,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- APP UPDATE CHECK ---
     try {
         const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases/latest');
         if (ghResponse.ok) {
             const ghData = await ghResponse.json();
             let latestVersion = ghData.tag_name;
             
-            // Strip the 'v' prefix if GitHub tag includes it, so it matches your metadata.json
             if (latestVersion && latestVersion.startsWith('v')) {
                 latestVersion = latestVersion.substring(1);
             }
@@ -50,10 +47,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 document.addEventListener('mod_manager_loaded', async () => {
     console.log("Mod Manager view initialized!");
 
-    // --- UI ELEMENTS ---
     const modSelect = document.getElementById('mod-game-select');
     const refreshBtn = document.getElementById('btn-refresh-mods');
-    const browseBtn = document.getElementById('btn-browse-mods');
     const modGrid = document.getElementById('mod-grid-container');
     
     const fixNamesBtn = document.getElementById('btn-fix-names');
@@ -68,7 +63,6 @@ document.addEventListener('mod_manager_loaded', async () => {
     const visibleCountDisp = document.getElementById('visible-count');
     const totalCountDisp = document.getElementById('total-count');
 
-    // --- 1. FILTERING LOGIC ---
     function applyFilters() {
         const searchTerm = searchInput.value.toLowerCase();
         const statusLimit = filterStatus.value;
@@ -103,7 +97,6 @@ document.addEventListener('mod_manager_loaded', async () => {
     if (searchInput) searchInput.addEventListener('input', applyFilters);
     if (filterStatus) filterStatus.addEventListener('change', applyFilters);
 
-    // --- 2. GAME SCANNING ---
     async function scanForGames() {
         if (!modSelect) return;
         modSelect.innerHTML = `<option value="">Searching for Game Installs...</option>`;
@@ -127,31 +120,23 @@ document.addEventListener('mod_manager_loaded', async () => {
     
     if (refreshBtn) refreshBtn.addEventListener('click', scanForGames);
 
-    if (browseBtn) {
-        browseBtn.addEventListener('click', async () => {
-            const response = await eel.browse_for_game_dir()();
-            if (response.success) {
-                let option = document.createElement('option');
-                option.value = response.path;
-                option.textContent = `(Custom) - ${response.path}`;
-                modSelect.appendChild(option);
-                modSelect.value = response.path;
-                loadMods(response.path);
-            }
-        });
-    }
-
     if (modSelect) {
         modSelect.addEventListener('change', () => {
             if (modSelect.value) loadMods(modSelect.value);
         });
     }
 
-    // --- 3. MOD LOADING ---
     async function loadMods(gamePath) {
         if (!modGrid) return;
         modGrid.innerHTML = `<div class="placeholder-box">Scanning Mod Directory...</div>`;
         modGrid.className = ""; 
+        
+        const settings = await eel.get_settings()();
+        if (settings.auto_fix_names) {
+            modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> Auto-fixing Mod Names...</div>`;
+            await eel.fix_mod_names(gamePath)();
+            modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> Scanning Mod Directory...</div>`;
+        }
         
         const response = await eel.get_installed_mods(gamePath)();
         
@@ -240,7 +225,6 @@ document.addEventListener('mod_manager_loaded', async () => {
         if (response.success) {
             const updates = response.updates || {};
             
-            // Find all update buttons and unhide the ones that need updates
             document.querySelectorAll('.update-mod-btn').forEach(btn => {
                 const path = btn.getAttribute('data-path');
                 if (updates[path]) {
@@ -250,14 +234,12 @@ document.addEventListener('mod_manager_loaded', async () => {
         }
     }
 
-    // --- 4. GRID CLICKS (Toggle & Modal) ---
     if (modGrid) {
         modGrid.addEventListener('click', async (e) => {
             const toggleBtn = e.target.closest('.toggle-mod-btn');
             if (toggleBtn) {
                 const currentPath = toggleBtn.getAttribute('data-path');
                 const gamePath = modSelect.value;
-                // Changed from innerText to innerHTML for the FA icon
                 toggleBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
                 toggleBtn.disabled = true;
 
@@ -275,7 +257,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const currentPath = updateBtn.getAttribute('data-path');
                 const gamePath = modSelect.value;
                 
-                // Visual feedback: A cool spinning circle!
                 updateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
                 updateBtn.disabled = true;
                 updateBtn.style.animation = "pulse 1s infinite";
@@ -283,11 +264,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const response = await eel.perform_mod_update(gamePath, currentPath)();
                 
                 if (response.success) {
-                    // Reload the grid to show the new hash/version
                     loadMods(gamePath); 
                 } else {
                     alert("Failed to update mod: " + response.error);
-                    // Reset back to the download icon
                     updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>'; 
                     updateBtn.disabled = false;
                     updateBtn.style.animation = "none";
@@ -305,7 +284,6 @@ document.addEventListener('mod_manager_loaded', async () => {
         });
     }
 
-    // --- 5. MODAL CLOSING ---
     if (imageModal) {
         imageModal.addEventListener('click', (e) => {
             if (e.target === imageModal || e.target.classList.contains('close-modal')) {
@@ -315,13 +293,11 @@ document.addEventListener('mod_manager_loaded', async () => {
         });
     }
 
-    // --- 6. UTILITY BUTTONS ---
     const runUtility = async (btn, eelFunc, successMsg) => {
         const gamePath = modSelect.value;
         if (!gamePath) return alert("Select a game first.");
         
         const originalText = btn.innerHTML;
-        // Changed to FA spinning icon
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
         btn.disabled = true;
 
