@@ -1,16 +1,20 @@
 import urllib.request
 import zipfile
 import os
+import json
 from pathlib import Path
 from cx_Freeze import setup, Executable
 
 # --- APP METADATA ---
-APP_NAME = "Better Trove Tools"
-APP_TECH_NAME = "BetterTroveTools"
-APP_VERSION = "1.0.0"
-APP_AUTHOR = "Aallyn Reed"
-APP_DESCRIPTION = "Another one..."
-APP_GUID = "{d60960b6-3eea-423f-bf8b-bfb3158531f5}"
+with open("metadata.json", "r", encoding="utf-8") as f:
+    meta = json.load(f)
+
+APP_NAME = meta["APP_NAME"]
+APP_TECH_NAME = meta["APP_TECH_NAME"]
+APP_VERSION = meta["APP_VERSION"]
+APP_AUTHOR = meta["APP_AUTHOR"]
+APP_DESCRIPTION = meta["APP_DESCRIPTION"]
+APP_GUID = meta["APP_GUID"]
 
 def download_chromium():
     """Fetches the latest Chromium snapshot and extracts it for compilation."""
@@ -61,6 +65,7 @@ build_exe_options = {
         ("web/", "web/"),       # Eel frontend
         ("bin/", "bin/"),       # Downloaded Chromium
         ("trove.dll", "trove.dll"), # Needed for utils hash calculation
+        ("metadata.json", "metadata.json"),
     ],
     "optimize": 2,
     "include_msvcr": True,

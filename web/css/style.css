@@ -37,7 +37,7 @@ body {
 }
 
 #sidebar.collapsed {
-    width: 65px;
+    width: 75px;
 }
 
 .sidebar-header {
@@ -68,10 +68,23 @@ body {
 
 #app-title {
     margin-left: 20px;
+    transition: opacity 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.app-name-text {
     font-size: 18px;
     font-weight: 600;
     letter-spacing: 0.5px;
-    transition: opacity 0.2s;
+}
+
+.app-version-text {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-top: 2px;
 }
 
 #sidebar.collapsed #app-title {
@@ -133,6 +146,33 @@ body {
 #sidebar.collapsed .nav-text {
     opacity: 0;
     pointer-events: none;
+}
+
+/* --- APP UPDATE BUTTON --- */
+.app-update-container {
+    /* Pushes the container to the absolute bottom of the flex column sidebar */
+    margin-top: auto; 
+    padding: 15px 10px;
+}
+
+.update-app-btn {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+    color: #ffc107 !important;
+    border: 1px solid rgba(255, 193, 7, 0.3) !important;
+    animation: appUpdatePulse 2s infinite;
+}
+
+.update-app-btn:hover {
+    background-color: #ffc107 !important;
+    color: #121212 !important;
+    border-color: #ffc107 !important;
+    animation: none;
+}
+
+@keyframes appUpdatePulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
 }
 
 

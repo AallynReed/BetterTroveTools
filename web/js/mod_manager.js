@@ -1,4 +1,53 @@
-document.addEventListener('mod_manager_loaded', () => {
+// --- APP METADATA (Run Immediately on App Load) ---
+document.addEventListener('DOMContentLoaded', async () => {
+    const metaResponse = await eel.get_app_metadata()();
+    let currentVersion = metaResponse?.APP_VERSION || "Unknown";
+    
+    if (metaResponse && metaResponse.APP_VERSION) {
+        const appName = metaResponse.APP_NAME || "Better Trove Tools";
+        document.title = `${appName} v${currentVersion}`;
+        const titleEl = document.getElementById('app-title');
+        if (titleEl) {
+            titleEl.innerHTML = `
+                <div class="app-name-text">${appName}</div>
+                <div class="app-version-text">v${currentVersion}</div>
+            `;
+        }
+    }
+
+    // --- APP UPDATE CHECK ---
+    try {
+        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases/latest');
+        if (ghResponse.ok) {
+            const ghData = await ghResponse.json();
+            let latestVersion = ghData.tag_name;
+            
+            // Strip the 'v' prefix if GitHub tag includes it, so it matches your metadata.json
+            if (latestVersion && latestVersion.startsWith('v')) {
+                latestVersion = latestVersion.substring(1);
+            }
+            
+            if (latestVersion && currentVersion !== latestVersion) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) {
+                    const updateContainer = document.createElement('div');
+                    updateContainer.className = 'app-update-container';
+                    updateContainer.innerHTML = `
+                        <button class="nav-btn update-app-btn" title="A new version is available! Click to download." onclick="eel.open_url_in_browser('${ghData.html_url}')()">
+                            <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
+                            <span class="nav-text">Update v${latestVersion}</span>
+                        </button>
+                    `;
+                    sidebar.appendChild(updateContainer);
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Failed to check for app updates:", err);
+    }
+});
+
+document.addEventListener('mod_manager_loaded', async () => {
     console.log("Mod Manager view initialized!");
 
     // --- UI ELEMENTS ---

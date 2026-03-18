@@ -2,6 +2,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
 
+    // Sidebar toggle logic
+    const burgerBtn = document.getElementById('burger-btn');
+    const sidebar = document.getElementById('sidebar');
+    if (burgerBtn && sidebar) {
+        burgerBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+        });
+    }
+
     async function loadView(target) {
         try {
             const response = await fetch(`views/${target}.html`);

@@ -1,6 +1,7 @@
 import eel
 import sys
 import os
+import json
 
 # Suppress the "Google API Keys are missing" warning in Chromium
 os.environ["GOOGLE_API_KEY"] = "no"
@@ -17,6 +18,15 @@ if getattr(sys, 'frozen', False):
         sys._MEIPASS = base_dir
 else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
+
+@eel.expose
+def get_app_metadata():
+    meta_path = os.path.join(base_dir, "metadata.json")
+    try:
+        with open(meta_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
 
 chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
 
