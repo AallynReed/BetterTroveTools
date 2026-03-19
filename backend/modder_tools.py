@@ -5,6 +5,8 @@ from models.trove.mod import TMod, TroveModFile
 import tkinter as tk
 from tkinter import filedialog
 from datetime import datetime, UTC
+from hashlib import md5
+
 
 @eel.expose
 def ask_mod_source_directory():
@@ -140,7 +142,8 @@ def build_tmod(payload):
         if preview_b64 and "," in preview_b64:
             header, data_str = preview_b64.split(",", 1)
             img_bytes = base64.b64decode(data_str)
-            preview_path = Path("preview.png")
+            preview_hash = md5(img_bytes).hexdigest()
+            preview_path = Path(f"ui/{preview_hash}.png")
             mod.add_file(TroveModFile(preview_path, img_bytes))
             mod.preview_path = preview_path
             

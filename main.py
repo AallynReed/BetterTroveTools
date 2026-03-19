@@ -48,7 +48,8 @@ try:
         '--disable-infobars',
         '--no-default-browser-check',
         '--no-first-run',
-        '--disable-background-mode'
+        '--disable-background-mode',
+        '--disable-dev-tools'
     ])
 except (SystemExit, MemoryError, KeyboardInterrupt):
     sys.exit()

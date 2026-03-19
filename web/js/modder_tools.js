@@ -192,6 +192,37 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
+    // --- Toast Notification Helper ---
+    function showToast(message, isError = false) {
+        const toast = document.createElement('div');
+        toast.style.position = 'fixed';
+        toast.style.bottom = '20px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.backgroundColor = isError ? '#ff5555' : '#28a745';
+        toast.style.color = 'white';
+        toast.style.padding = '12px 24px';
+        toast.style.borderRadius = '6px';
+        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+        toast.style.zIndex = '10000';
+        toast.style.fontSize = '14px';
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        toast.style.whiteSpace = 'pre-wrap';
+        toast.style.textAlign = 'center';
+        toast.innerText = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '1';
+        }, 10);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
     // --- Build TMod Execution Logic ---
     const btnBuildTMod = document.getElementById('btn-build-tmod');
     if (btnBuildTMod) {
@@ -208,13 +239,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 const notes = document.getElementById('build-mod-notes').value.trim();
                 const tags = $('#build-mod-tags').val() || [];
 
-                if (!gamePath) { alert("Please select a target game installation."); return; }
-                if (!title) { alert("Please enter a mod title."); return; }
-                if (!author) { alert("Please enter a mod author."); return; }
-                if (!version) { alert("Please enter a mod version."); return; }
-                if (!notes) { alert("Please enter mod notes or a description."); return; }
-                if (tags.length === 0) { alert("Please select at least one tag."); return; }
-                if (document.querySelectorAll('#build-files-list tr').length === 0) { alert("Please add at least one file to your mod!"); return; }
+                if (!gamePath) { showToast("Please select a target game installation.", true); return; }
+                if (!title) { showToast("Please enter a mod title.", true); return; }
+                if (!author) { showToast("Please enter a mod author.", true); return; }
+                if (!version) { showToast("Please enter a mod version.", true); return; }
+                if (!notes) { showToast("Please enter mod notes or a description.", true); return; }
+                if (tags.length === 0) { showToast("Please select at least one tag.", true); return; }
+                if (document.querySelectorAll('#build-files-list tr').length === 0) { showToast("Please add at least one file to your mod!", true); return; }
 
                 const previewImg = document.getElementById('build-mod-preview');
                 let previewBase64 = null;
@@ -241,7 +272,7 @@ document.addEventListener('modder_tools_loaded', () => {
                                 tr.remove();
                             }
                         });
-                        alert(`Warning: ${missingResult.missing.length} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.`);
+                        showToast(`Warning: ${missingResult.missing.length} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.`, true);
                         btnBuildTMod.disabled = false;
                         btnBuildTMod.innerHTML = originalText;
                         return;
@@ -271,19 +302,19 @@ document.addEventListener('modder_tools_loaded', () => {
                     }
                 }
 
-                if (filesData.length === 0) { alert("Please add at least one file to your mod!"); return; }
+                if (filesData.length === 0) { showToast("Please add at least one file to your mod!", true); return; }
 
                 const payload = { gamePath, title, author, version, notes, tags, previewBase64, files: filesData };
                 const result = await eel.build_tmod(payload)();
 
                 if (result.success) {
-                    alert("TMod successfully built!\nSaved to: " + result.path);
+                    showToast("TMod successfully built!\nSaved to: " + result.path, false);
                 } else {
-                    alert("Failed to build TMod:\n" + result.error);
+                    showToast("Failed to build TMod:\n" + result.error, true);
                 }
             } catch (err) {
                 console.error(err);
-                alert("An unexpected error occurred while building the TMod.");
+                showToast("An unexpected error occurred while building the TMod.", true);
             } finally {
                 btnBuildTMod.disabled = false;
                 btnBuildTMod.innerHTML = originalText;
