@@ -38,12 +38,12 @@ document.addEventListener('file_manager_loaded', () => {
         clearTimeout(searchTimeout);
         const term = searchInput.value.toLowerCase().trim();
 
-        if (term === "") {
+        if (term.length < 4) {
             treeContainer.classList.remove('searching');
             treeContainer.querySelectorAll('.is-match, .has-match').forEach(n => {
                 n.classList.remove('is-match', 'has-match');
             });
-            searchCount.innerText = "";
+            searchCount.innerText = term.length > 0 ? "Minimum 4 characters required..." : "";
             return;
         }
 
