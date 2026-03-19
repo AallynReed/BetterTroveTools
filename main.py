@@ -49,7 +49,10 @@ try:
         '--no-default-browser-check',
         '--no-first-run',
         '--disable-background-mode',
-        '--disable-dev-tools'
+        '--disable-dev-tools',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-translate',
     ])
 except (SystemExit, MemoryError, KeyboardInterrupt):
     sys.exit()
