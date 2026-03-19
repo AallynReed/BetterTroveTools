@@ -152,6 +152,8 @@ body {
     color: #ffc107 !important;
     border: 1px solid rgba(255, 193, 7, 0.3) !important;
     animation: appUpdatePulse 2s infinite;
+    bottom: 10px;
+    position: relative;
 }
 
 .update-app-btn:hover {
