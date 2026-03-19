@@ -1,3 +1,34 @@
+// --- Global Toast Notification Helper ---
+window.showToast = function(message, isError = false) {
+    const toast = document.createElement('div');
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.backgroundColor = isError ? '#ff5555' : '#28a745';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 24px';
+    toast.style.borderRadius = '6px';
+    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+    toast.style.zIndex = '10000';
+    toast.style.fontSize = '14px';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s ease';
+    toast.style.whiteSpace = 'pre-wrap';
+    toast.style.textAlign = 'center';
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '1';
+    }, 10);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
+
 document.addEventListener('DOMContentLoaded', async () => {
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";
@@ -256,7 +287,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const response = await eel.toggle_mod(gamePath, currentPath)();
                 if (response.success) loadMods(gamePath); 
                 else {
-                    alert("Failed to toggle mod: " + response.error);
+                showToast("Failed to toggle mod: " + response.error, true);
                     loadMods(gamePath);
                 }
                 return;
@@ -276,7 +307,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (response.success) {
                     loadMods(gamePath); 
                 } else {
-                    alert("Failed to update mod: " + response.error);
+                showToast("Failed to update mod: " + response.error, true);
                     updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>'; 
                     updateBtn.disabled = false;
                     updateBtn.style.animation = "none";
@@ -305,7 +336,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     const runUtility = async (btn, eelFunc, successMsg) => {
         const gamePath = modSelect.value;
-        if (!gamePath) return alert("Select a game first.");
+        if (!gamePath) return showToast("Select a game first.", true);
         
         const originalText = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
@@ -313,9 +344,9 @@ document.addEventListener('mod_manager_loaded', async () => {
 
         const response = await eelFunc(gamePath)();
         if (response.success) {
-            alert(successMsg(response));
+            showToast(successMsg(response));
             loadMods(gamePath);
-        } else alert("Error: " + response.error);
+        } else showToast("Error: " + response.error, true);
 
         btn.innerHTML = originalText;
         btn.disabled = false;

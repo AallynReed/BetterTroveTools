@@ -95,7 +95,7 @@ document.addEventListener('file_manager_loaded', () => {
     if (loadBtn) {
         loadBtn.addEventListener('click', async () => {
             const selectedPath = installSelect.value;
-            if (!selectedPath) return alert("Select a game first.");
+            if (!selectedPath) return showToast("Select a game first.", true);
 
             treeContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h3><i class="fa-solid fa-spinner fa-spin"></i> Parsing ${selectedPath}...</h3></div>`;
             

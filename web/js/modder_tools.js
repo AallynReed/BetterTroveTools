@@ -129,7 +129,7 @@ document.addEventListener('modder_tools_loaded', () => {
         btnDetectOverrides.addEventListener('click', async () => {
             const gamePath = document.getElementById('build-game-select').value;
             if (!gamePath) {
-                alert("Please select a Target Game Installation first.");
+                showToast("Please select a Target Game Installation first.", true);
                 return;
             }
             
@@ -181,46 +181,15 @@ document.addEventListener('modder_tools_loaded', () => {
                     addedCount++;
                 });
                 if (addedCount === 0) {
-                    alert("No new override files found in the source directory.");
+                    showToast("No new override files found in the source directory.", true);
                 }
             } else {
-                alert("Error detecting overrides: " + result.error);
+                showToast("Error detecting overrides: " + result.error, true);
             }
             
             btnDetectOverrides.innerHTML = originalHtml;
             btnDetectOverrides.disabled = false;
         });
-    }
-
-    // --- Toast Notification Helper ---
-    function showToast(message, isError = false) {
-        const toast = document.createElement('div');
-        toast.style.position = 'fixed';
-        toast.style.bottom = '20px';
-        toast.style.left = '50%';
-        toast.style.transform = 'translateX(-50%)';
-        toast.style.backgroundColor = isError ? '#ff5555' : '#28a745';
-        toast.style.color = 'white';
-        toast.style.padding = '12px 24px';
-        toast.style.borderRadius = '6px';
-        toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-        toast.style.zIndex = '10000';
-        toast.style.fontSize = '14px';
-        toast.style.opacity = '0';
-        toast.style.transition = 'opacity 0.3s ease';
-        toast.style.whiteSpace = 'pre-wrap';
-        toast.style.textAlign = 'center';
-        toast.innerText = message;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.opacity = '1';
-        }, 10);
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
     }
 
     // --- Build TMod Execution Logic ---
@@ -349,8 +318,8 @@ document.addEventListener('modder_tools_loaded', () => {
             const sourceFile = inputExtractSource.value;
             const destDir = inputExtractDest.value;
             
-            if (!sourceFile) { alert("Please select a Source TMod File."); return; }
-            if (!destDir) { alert("Please select a Destination Folder."); return; }
+            if (!sourceFile) { showToast("Please select a Source TMod File.", true); return; }
+            if (!destDir) { showToast("Please select a Destination Folder.", true); return; }
             
             btnExtractTmod.disabled = true;
             const originalText = btnExtractTmod.innerHTML;
@@ -359,13 +328,13 @@ document.addEventListener('modder_tools_loaded', () => {
             try {
                 const result = await eel.extract_tmod(sourceFile, destDir)();
                 if (result.success) {
-                    alert(`Successfully extracted ${result.count} files to:\n${destDir}`);
+                    showToast(`Successfully extracted ${result.count} files to:\n${destDir}`);
                 } else {
-                    alert("Failed to extract TMod:\n" + result.error);
+                    showToast("Failed to extract TMod:\n" + result.error, true);
                 }
             } catch (err) {
                 console.error(err);
-                alert("An unexpected error occurred during extraction.");
+                showToast("An unexpected error occurred during extraction.", true);
             } finally {
                 btnExtractTmod.disabled = false;
                 btnExtractTmod.innerHTML = originalText;
