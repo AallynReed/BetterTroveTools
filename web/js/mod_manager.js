@@ -101,6 +101,7 @@ document.addEventListener('mod_manager_loaded', async () => {
         if (!modSelect) return;
         modSelect.innerHTML = `<option value="">Searching for Game Installs...</option>`;
         const response = await eel.get_detected_game_paths()();
+        const settings = await eel.get_settings()();
         modSelect.innerHTML = ""; 
         
         if (response.success && response.paths.length > 0) {
@@ -110,6 +111,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 option.textContent = `${game.name} - ${game.path}`;
                 modSelect.appendChild(option);
             });
+            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
+                modSelect.value = settings.last_game_path;
+            }
             if (modSelect.value) loadMods(modSelect.value);
         } else {
             modSelect.innerHTML = `<option value="">No installations found.</option>`;
@@ -121,7 +125,10 @@ document.addEventListener('mod_manager_loaded', async () => {
     if (refreshBtn) refreshBtn.addEventListener('click', scanForGames);
 
     if (modSelect) {
-        modSelect.addEventListener('change', () => {
+        modSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = modSelect.value;
+            await eel.save_settings(settings)();
             if (modSelect.value) loadMods(modSelect.value);
         });
     }

@@ -57,6 +57,7 @@ document.addEventListener('modder_tools_loaded', () => {
         if (!gameSelect) return;
         gameSelect.innerHTML = `<option value="">Searching...</option>`;
         const response = await eel.get_detected_game_paths()();
+        const settings = await eel.get_settings()();
         gameSelect.innerHTML = ""; 
         if (response.success && response.paths.length > 0) {
             response.paths.forEach(game => {
@@ -65,11 +66,23 @@ document.addEventListener('modder_tools_loaded', () => {
                 option.textContent = `${game.name} - ${game.path}`;
                 gameSelect.appendChild(option);
             });
+            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
+                gameSelect.value = settings.last_game_path;
+            }
         } else {
             gameSelect.innerHTML = `<option value="">No installations found.</option>`;
         }
     }
     scanForGames();
+
+    const buildGameSelect = document.getElementById('build-game-select');
+    if (buildGameSelect) {
+        buildGameSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = buildGameSelect.value;
+            await eel.save_settings(settings)();
+        });
+    }
 
     // --- Files Table Logic ---
     const btnAddFile = document.getElementById('btn-add-file');

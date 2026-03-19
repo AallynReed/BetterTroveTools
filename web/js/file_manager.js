@@ -19,6 +19,7 @@ document.addEventListener('file_manager_loaded', () => {
     async function scanForGames() {
         installSelect.innerHTML = `<option value="">Searching...</option>`;
         const response = await eel.get_detected_game_paths()();
+        const settings = await eel.get_settings()();
         installSelect.innerHTML = ""; 
         if (response.success && response.paths.length > 0) {
             response.paths.forEach(game => {
@@ -27,12 +28,23 @@ document.addEventListener('file_manager_loaded', () => {
                 option.textContent = `${game.name} - ${game.path}`;
                 installSelect.appendChild(option);
             });
+            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
+                installSelect.value = settings.last_game_path;
+            }
         } else {
             installSelect.innerHTML = `<option value="">No installations found.</option>`;
         }
     }
     scanForGames();
     if (refreshBtn) refreshBtn.addEventListener('click', scanForGames);
+
+    if (installSelect) {
+        installSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = installSelect.value;
+            await eel.save_settings(settings)();
+        });
+    }
 
     function performSearch() {
         clearTimeout(searchTimeout);
@@ -220,6 +232,25 @@ document.addEventListener('file_manager_loaded', () => {
             searchCount.innerText = "";
             
             console.log(`Collapsed ${openFolders.length} folders.`);
+        });
+    }
+
+    const selectVisibleBtn = document.getElementById('btn-select-visible');
+
+    if (selectVisibleBtn) {
+        selectVisibleBtn.addEventListener('click', () => {
+            const isSearching = treeContainer.classList.contains('searching');
+            const fileCheckboxes = isSearching 
+                ? treeContainer.querySelectorAll('.file-item.is-match .file-check')
+                : treeContainer.querySelectorAll('.file-check');
+
+            if (fileCheckboxes.length === 0) return;
+
+            // If all visible files are already checked, uncheck them. Otherwise, check them all.
+            const shouldCheck = Array.from(fileCheckboxes).some(cb => !cb.checked);
+            fileCheckboxes.forEach(cb => cb.checked = shouldCheck);
+
+            treeContainer.dispatchEvent(new Event('change', { bubbles: true }));
         });
     }
 });

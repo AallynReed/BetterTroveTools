@@ -35,6 +35,16 @@ document.addEventListener('trovesaurus_loaded', () => {
     const modalImg = document.getElementById('expanded-img');
     const modalCaption = document.getElementById('modal-caption');
 
+    const tsGameSelect = document.getElementById('ts-game-select');
+    if (tsGameSelect) {
+        tsGameSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = tsGameSelect.value;
+            await eel.save_settings(settings)();
+            fetchTrovesaurusMods(1);
+        });
+    }
+
     if (modGrid) {
         modGrid.addEventListener('click', (e) => {
             const installBtn = e.target.closest('.ts-install-btn');
@@ -74,13 +84,32 @@ async function getActiveGamePath() {
     }
 
     const response = await eel.get_detected_game_paths()();
+    const settings = await eel.get_settings()();
+    const lastPath = settings.last_game_path;
+
     if (response.success && response.paths.length > 0) {
         if (tsSelect) {
             tsSelect.innerHTML = response.paths.map(p => 
-                `<option value="${p.path}" ${p.name.toLowerCase().includes('live') ? 'selected' : ''}>${p.name}</option>`
+                `<option value="${p.path}">${p.name}</option>`
             ).join('');
+            
+            if (lastPath && response.paths.some(p => p.path === lastPath)) {
+                tsSelect.value = lastPath;
+            } else {
+                const liveInstall = response.paths.find(p => p.name.toLowerCase().includes('live'));
+                if (liveInstall) {
+                    tsSelect.value = liveInstall.path;
+                } else {
+                    tsSelect.value = response.paths[0].path;
+                }
+            }
+            
             tsSelect.setAttribute('data-loaded', 'true');
             return tsSelect.value;
+        }
+        
+        if (lastPath && response.paths.some(p => p.path === lastPath)) {
+            return lastPath;
         }
         const liveInstall = response.paths.find(p => p.name.toLowerCase().includes('live'));
         return liveInstall ? liveInstall.path : response.paths[0].path;
