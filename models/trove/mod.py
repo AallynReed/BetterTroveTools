@@ -355,7 +355,7 @@ class TroveMod:
             if file.trove_path == self.preview_path:
                 return base64.b64encode(file.data).decode("utf-8")
         return base64.b64encode(
-            open("assets/images/no_preview.png", "rb").read()
+            open("web/assets/images/no_preview.png", "rb").read()
         ).decode("utf-8")
 
     @property

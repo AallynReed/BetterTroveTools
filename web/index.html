@@ -10,10 +10,16 @@
     <link rel="stylesheet" href="css/file_manager.css">
     <link rel="stylesheet" href="css/trovesaurus.css">
     <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/modder_tools.css">
     
     
     <script type="text/javascript" src="/eel.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- jQuery and Select2 for multi-select dropdowns -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
@@ -34,20 +40,21 @@
             </li>
             <li>
                 <button class="nav-btn" data-target="mod_manager">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                        <line x1="12" y1="22.08" x2="12" y2="12"></line>
-                    </svg>
+                    <i class="fa-solid fa-cubes nav-icon"></i>
                     <span class="nav-text">Mod Manager</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="file_manager">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                    </svg>
+                    <i class="fa-solid fa-folder-tree nav-icon"></i>
                     <span class="nav-text">Game File Manager</span>
+                </button>
+            </li>
+            <li>
+                <button class="nav-btn" data-target="modder_tools">
+                    <i class="fa-solid fa-toolbox nav-icon"></i>
+
+                    <span class="nav-text">Modder Tools</span>
                 </button>
             </li>
         </ul>
@@ -67,6 +74,7 @@
     <script src="js/file_manager.js"></script>
     <script src="js/trovesaurus.js"></script>
     <script src="js/settings.js"></script>
+    <script src="js/modder_tools.js"></script>
     
 </body>
 </html>

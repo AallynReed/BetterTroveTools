@@ -1,0 +1,139 @@
+<div class="modder-tools-container">
+    <div class="modder-tools-header">
+        <h2><i class="fa-solid fa-toolbox"></i> Modder Tools</h2>
+        <p class="help-text" style="margin-top: 5px;">Create new TMods or extract existing ones for modification.</p>
+    </div>
+
+    <div class="tabs-container">
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="build-tab">
+                <i class="fa-solid fa-hammer"></i> Build TMod
+            </button>
+            <button class="tab-btn" data-tab="extract-tab">
+                <i class="fa-solid fa-box-open"></i> Extract TMod
+            </button>
+        </div>
+
+        <!-- Build Tab -->
+        <div class="tab-content active" id="build-tab">
+            <div class="tool-panel">
+                <div class="build-split-layout">
+                    <div class="build-left-col">
+                        <div class="form-group">
+                            <label>Mod Preview</label>
+                            <div class="mod-preview-picker" id="preview-picker-container" title="Click to select preview image">
+                                <img id="build-mod-preview" src="assets/images/no_preview.png" alt="Mod Preview">
+                                <div class="preview-overlay">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>Change Image</span>
+                                </div>
+                                <input type="file" id="build-preview-input" accept="image/png, image/jpeg" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="build-right-col">
+                        <div class="form-group">
+                            <label>Target Game Installation</label>
+                            <select id="build-game-select">
+                                <option value="">Searching...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label>Mod Title</label>
+                                <input type="text" id="build-mod-title" placeholder="My Awesome Mod">
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label>Authors</label>
+                                <input type="text" id="build-mod-author" placeholder="Author 1, Author 2">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>Version</label>
+                                <input type="text" id="build-mod-version" placeholder="1.0" value="1.0">
+                            </div>
+                        </div>
+
+                        
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+                <div class="form-group">
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea id="build-mod-notes" rows="3" placeholder="Enter mod description or notes..."></textarea>
+                    </div>
+                    <div class="form-group">
+                            <label>Tags</label>
+                            <select id="build-mod-tags" multiple="multiple" style="width: 100%;">
+                                <option value="Allies">Allies</option>
+                                <option value="Banners">Banners</option>
+                                <option value="Boats and Sails">Boats and Sails</option>
+                                <option value="Cosmetics">Cosmetics</option>
+                                <option value="Costumes">Costumes</option>
+                                <option value="Dragons">Dragons</option>
+                                <option value="Fishing">Fishing</option>
+                                <option value="GUI">GUI</option>
+                                <option value="Helmets">Helmets</option>
+                                <option value="Language">Language</option>
+                                <option value="Mag Riders">Mag Riders</option>
+                                <option value="Mounts">Mounts</option>
+                                <option value="NPCs">NPCs</option>
+                                <option value="Utility">Utility</option>
+                                <option value="Waypoint">Waypoint</option>
+                                <option value="Wings">Wings</option>
+                            </select>
+                        </div>
+                    <div class="input-row" style="margin-bottom: 10px;">
+                        <button class="primary-btn" id="btn-detect-overrides"><i class="fa-solid fa-magnifying-glass"></i> Detect Overrides</button>
+                        <button class="primary-btn" id="btn-add-file"><i class="fa-solid fa-file-circle-plus"></i> Add File</button>
+                    </div>
+                    <div class="table-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                        <table id="build-files-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                <tr>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">File</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="build-files-list">
+                                <!-- Files go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <button class="primary-btn execute-btn" id="btn-build-tmod"><i class="fa-solid fa-hammer"></i> Build TMod</button>
+            </div>
+        </div>
+
+        <!-- Extract Tab -->
+        <div class="tab-content" id="extract-tab">
+            <div class="tool-panel">
+                <h3>Extract an existing TMod</h3>
+                <p class="help-text">Select a .tmod archive to unpack its contents into a folder for editing.</p>
+                
+                <div class="form-group">
+                    <label>Source TMod File</label>
+                    <div class="input-row">
+                        <input type="text" id="extract-source-file" placeholder="Select a .tmod file..." readonly>
+                        <button class="primary-btn" id="btn-browse-extract-source"><i class="fa-solid fa-file-archive"></i> Browse</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Destination Folder</label>
+                    <div class="input-row">
+                        <input type="text" id="extract-dest-dir" placeholder="Select where to extract the files..." readonly>
+                        <button class="primary-btn" id="btn-browse-extract-dest"><i class="fa-solid fa-folder-open"></i> Browse</button>
+                    </div>
+                </div>
+
+                <button class="primary-btn execute-btn" id="btn-extract-tmod"><i class="fa-solid fa-box-open"></i> Extract TMod</button>
+            </div>
+        </div>
+    </div>
+</div>

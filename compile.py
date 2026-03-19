@@ -57,7 +57,6 @@ build_exe_options = {
         "cx_Freeze",
     ],
     "include_files": [
-        ("assets/", "assets/"),
         ("web/", "web/"),
         ("bin/", "bin/"),
         ("trove.dll", "trove.dll"),

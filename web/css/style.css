@@ -203,3 +203,17 @@ body {
 .primary-btn:hover {
     background-color: var(--accent-hover);
 }
+
+.nav-btn {
+    display: flex;
+    align-items: center;
+}
+.nav-icon {
+    width: 24px;
+    text-align: center;
+}
+
+.nav-icon.fa-solid:before {
+    top: 5px !important;
+    position: relative !important;
+}

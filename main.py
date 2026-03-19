@@ -11,6 +11,7 @@ import backend.mod_manager
 import backend.file_manager
 import backend.trovesaurus
 import backend.settings
+import backend.modder_tools
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)
