@@ -6,20 +6,12 @@ document.addEventListener('keydown', function(e) {
     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-    if (blockedKeys.includes(e.key)) {
-        e.preventDefault();
-    }
-    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) {
-        e.preventDefault();
-    }
-    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) {
-        e.preventDefault();
-    }
+    if (blockedKeys.includes(e.key)) e.preventDefault();
+    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
 });
 
-document.addEventListener('contextmenu', function(e) {
-    e.preventDefault(); // Disables right-click to prevent "Inspect Element"
-});
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ==========================================
 // Core Application Logic
@@ -54,20 +46,44 @@ document.addEventListener('DOMContentLoaded', () => {
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
             
-            console.log(`Successfully loaded and initialized view: ${target}`);
+            console.log(`Successfully loaded view: ${target}`);
         } catch (err) {
             console.error("View loading error:", err);
-            viewContainer.innerHTML = `<div class="placeholder-box" style="color: #ff5555; padding: 40px; text-align: center;">Failed to load view: ${err.message}</div>`;
+            viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">Failed to load view: ${err.message}</div>`;
         }
     }
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
-            if (target) {
-                loadView(target);
-            }
+            if (target) loadView(target);
         });
+    });
+
+    // ==========================================
+    // ABOUT VIEW LOGIC (Updated for your Metadata keys)
+    // ==========================================
+    document.addEventListener('about_loaded', async () => {
+        const versionSpan = document.getElementById('app-version');
+        const authorSpan = document.getElementById('app-author');
+        const descP = document.getElementById('app-description');
+        
+        if (!versionSpan) return;
+
+        try {
+            const metadata = await eel.get_app_metadata()();
+            console.log("Metadata received:", metadata);
+            
+            if (metadata) {
+                // Map your specific uppercase keys to the UI
+                if (versionSpan) versionSpan.textContent = metadata.APP_VERSION || "Unknown";
+                if (authorSpan) authorSpan.textContent = metadata.APP_AUTHOR || "Aallyn Reed";
+                if (descP) descP.textContent = metadata.APP_DESCRIPTION || "";
+            }
+        } catch (err) {
+            console.error("Metadata fetch error:", err);
+            versionSpan.textContent = "Error";
+        }
     });
 
     // ==========================================
@@ -78,39 +94,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateServerTime() {
         if (!dateEl || !clockEl) return;
-
         const now = new Date();
-        
-        // Get current UTC time in milliseconds
         const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-        
-        // Trove server time is strictly UTC - 11 hours
         const troveMs = utcMs - (11 * 3600000);
         const troveTime = new Date(troveMs);
 
-        // Format Date: e.g. "Fri, Mar 20"
-        const dateStr = troveTime.toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric' 
-        });
-
-        // Format Time: e.g. "15:25:31" (24-hour clock formatting)
-        const timeStr = troveTime.toLocaleTimeString('en-US', { 
-            hour12: false, 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit' 
-        });
-
-        dateEl.textContent = dateStr;
-        clockEl.textContent = timeStr;
+        dateEl.textContent = troveTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        clockEl.textContent = troveTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
-    // Run the clock immediately, then tick every 1 second
     updateServerTime();
     setInterval(updateServerTime, 1000);
 
-    // Load initial view
+    // Initial load
     loadView('home');
 });

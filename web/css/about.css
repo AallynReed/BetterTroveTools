@@ -1,0 +1,130 @@
+.about-view-container {
+    padding: 60px 40px;
+    max-width: 900px;
+    margin: 0 auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.about-header-hero {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.about-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 15px rgba(94, 198, 255, 0.4));
+}
+
+.about-header-hero h1 {
+    font-size: 2.5em;
+    margin: 0;
+    color: #fff;
+}
+
+.version-tag {
+    color: var(--accent-blue, #5ec6ff);
+    font-weight: bold;
+    font-size: 0.9em;
+    margin-top: 5px;
+    letter-spacing: 1px;
+}
+
+.about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+@media (max-width: 800px) {
+    .about-grid { grid-template-columns: 1fr; }
+}
+
+.about-section {
+    background: var(--bg-panel, #1d232b);
+    border: 1px solid var(--border-color, #444c5e);
+    border-radius: 12px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.about-section .section-title {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.about-section p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--text-muted, #a3adc2);
+    font-size: 0.95em;
+}
+
+/* Links & Donation styles */
+.link-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.about-link {
+    padding: 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.2s;
+}
+
+.about-link.github { background: #333; }
+.about-link.discord { background: #5865F2; }
+.about-link:hover { transform: translateY(-2px); filter: brightness(1.2); }
+
+.donation-row {
+    display: flex;
+    gap: 15px;
+}
+
+.donate-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: #fff;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.donate-icon.paypal { background: #003087; }
+.donate-icon.kofi { background: #FF5E5B; }
+.donate-icon.bmac { background: #FFDD00; color: #000; }
+
+.donate-icon:hover { transform: scale(1.1) rotate(5deg); }
+
+.credits-footer {
+    margin-top: 60px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 30px;
+    color: var(--text-muted);
+}
+
+.special-thanks {
+    font-size: 0.85em;
+    font-style: italic;
+    margin-top: 5px;
+}
