@@ -1,11 +1,11 @@
-# BetterTroveTools
+# Better Trove Tools
 
 ![GitHub Release](https://img.shields.io/github/v/release/AallynReed/BetterTroveTools?style=for-the-badge&color=blue)
 ![GitHub Repo stars](https://img.shields.io/github/stars/AallynReed/BetterTroveTools?style=for-the-badge&color=gold)
 ![GitHub last commit](https://img.shields.io/github/last-commit/AallynReed/BetterTroveTools?style=for-the-badge&color=green)
 ![GitHub issues](https://img.shields.io/github/issues/AallynReed/BetterTroveTools?style=for-the-badge)
 
-BetterTroveTools is a comprehensive, offline-capable suite of utilities designed for players and modders of the game *Trove*. Packed with multiple essential tools into a single, streamlined desktop application, it empowers you to manage mods, extract game files, build custom mods, and seamlessly integrate with Trovesaurus.
+Better Trove Tools is a comprehensive, offline-capable suite of utilities designed for players and modders of the game *Trove*. Packed with multiple essential tools into a single, streamlined desktop application, it empowers you to manage mods, extract game files, build custom mods, and seamlessly integrate with Trovesaurus.
 
 ## 🚀 Features
 
