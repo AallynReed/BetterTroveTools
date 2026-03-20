@@ -1,0 +1,2459 @@
+{
+    "Combat": {
+        "Path": "combat",
+        "Name": "Combat",
+        "Constellation": "Combat",
+        "Type": "Root",
+        "Description": "",
+        "Stars": [
+            {
+                "Path": "combat.a",
+                "Constellation": "Combat",
+                "Type": "Minor",
+                "Name": "Strength",
+                "Description": "Within the Strength side of the constellation we try to make Physical based classes tougher than the squishy magic ones.",
+                "Stats": [
+                    {
+                        "name": "Physical Damage",
+                        "percentage": true,
+                        "value": 3
+                    }
+                ],
+                "Abilities": [],
+                "Stars": [
+                    {
+                        "Path": "combat.a.0",
+                        "Constellation": "Combat",
+                        "Type": "Major",
+                        "Name": "Lucky Strikes",
+                        "Description": "Slot machine of extra damage. I like it.",
+                        "Stats": [],
+                        "Abilities": [
+                            "5% chance when critical hitting to increase Critical Hit by 20% for 10 seconds."
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "combat.a.0.a",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Haste",
+                                "Description": "Hitting more often means more Critical Hits.",
+                                "Stats": [
+                                    {
+                                        "name": "Attack Speed",
+                                        "percentage": false,
+                                        "value": 15
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "combat.a.0.a.0",
+                                        "Constellation": "Combat",
+                                        "Type": "Minor",
+                                        "Name": "Accuracy",
+                                        "Description": "A star viewing will lead you to never missing your target's weakness.",
+                                        "Stats": [
+                                            {
+                                                "name": "Critical Hit",
+                                                "percentage": false,
+                                                "value": 6
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "combat.a.0.a.1",
+                                        "Constellation": "Combat",
+                                        "Type": "Minor",
+                                        "Name": "Leaping and Anti-Knockback",
+                                        "Description": "If you get knocked back, you cannot critically hit as much.",
+                                        "Stats": [
+                                            {
+                                                "name": "Jump",
+                                                "percentage": false,
+                                                "value": 5
+                                            },
+                                            {
+                                                "name": "Stability",
+                                                "percentage": false,
+                                                "value": 100
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "combat.a.0.a.1.a",
+                                                "Constellation": "Combat",
+                                                "Type": "Minor",
+                                                "Name": "Accuracy",
+                                                "Description": "Look to the stars for a class that can use lots of critical hit...It's not up there.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Critical Hit",
+                                                        "percentage": false,
+                                                        "value": 6
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "combat.a.0.a.1.b",
+                                                "Constellation": "Combat",
+                                                "Type": "Major",
+                                                "Name": "Lucky Strikes 2.0",
+                                                "Description": "More Strikes then equals less pins to hit.",
+                                                "Stats": [],
+                                                "Overwrites": [
+                                                    "combat.a.0"
+                                                ],
+                                                "Abilities": [
+                                                    "10% chance when critical hitting to increase Critical Hit by 30% for 10 seconds."
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "combat.a.0.a.1.b.0",
+                                                        "Constellation": "Combat",
+                                                        "Type": "Minor",
+                                                        "Name": "Accuracy, Intellect and Strength",
+                                                        "Description": "Wow... Magic and Physical Damage with a little Critical Hit... Maybe this should be a Major Star.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Critical Hit",
+                                                                "percentage": false,
+                                                                "value": 5
+                                                            },
+                                                            {
+                                                                "name": "Magic Damage",
+                                                                "percentage": true,
+                                                                "value": 5
+                                                            },
+                                                            {
+                                                                "name": "Physical Damage",
+                                                                "percentage": true,
+                                                                "value": 5
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    },
+                                                    {
+                                                        "Path": "combat.a.0.a.1.b.1",
+                                                        "Constellation": "Combat",
+                                                        "Type": "Minor",
+                                                        "Name": "Accuracy and Heartiness",
+                                                        "Description": "Finding this star could grant more then just Health and Critical Hit.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Critical Hit",
+                                                                "percentage": false,
+                                                                "value": 5
+                                                            },
+                                                            {
+                                                                "name": "Maximum Health %",
+                                                                "percentage": false,
+                                                                "value": 10
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [
+                                                            "Grants a Caprian Dragon Egg Fragment when upgrading"
+                                                        ],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [
+                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                ],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "combat.a.0.b",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Accuracy",
+                                "Description": "Accurately read the stars.",
+                                "Stats": [
+                                    {
+                                        "name": "Critical Hit",
+                                        "percentage": false,
+                                        "value": 6
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    },
+                    {
+                        "Path": "combat.a.1",
+                        "Constellation": "Combat",
+                        "Type": "Major",
+                        "Name": "Reflection",
+                        "Description": "They hit you and you hit them back.",
+                        "Stats": [],
+                        "Abilities": [
+                            "When taking damage, you have a 10% chance to gain a 20% reflect shield for 10 seconds. Has a 1 minute cooldown."
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "combat.a.1.a",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Strength",
+                                "Description": "Continue to grow your strength and prove Might is better then brains.",
+                                "Stats": [
+                                    {
+                                        "name": "Physical Damage",
+                                        "percentage": true,
+                                        "value": 3
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "combat.a.1.a.0",
+                                        "Constellation": "Combat",
+                                        "Type": "Major",
+                                        "Name": "Reflection 2.0",
+                                        "Description": "Reflect even more damage back at your foes.",
+                                        "Overwrites": [
+                                            "combat.a.1"
+                                        ],
+                                        "Stats": [],
+                                        "Abilities": [
+                                            "When taking damage, you have a 20% chance to gain a 30% reflect shield for 10 seconds. Has a 1 minute cooldown."
+                                        ],
+                                        "Stars": [
+                                            {
+                                                "Path": "combat.a.1.a.0.a",
+                                                "Constellation": "Combat",
+                                                "Type": "Minor",
+                                                "Name": "Protection",
+                                                "Description": "Attack and defend is what these stars are about.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Damage Reduction",
+                                                        "percentage": false,
+                                                        "value": 3
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "combat.a.1.a.0.b",
+                                                "Constellation": "Combat",
+                                                "Type": "Minor",
+                                                "Name": "Strength",
+                                                "Description": "YESSSS... MORE STRENGTH!!!!",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Physical Damage",
+                                                        "percentage": true,
+                                                        "value": 6
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "combat.a.1.a.0.b.0",
+                                                        "Constellation": "Combat",
+                                                        "Type": "Minor",
+                                                        "Name": "Protection",
+                                                        "Description": "Additional shields will be needed for future bosses.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Damage Reduction",
+                                                                "percentage": false,
+                                                                "value": 3
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    },
+                                                    {
+                                                        "Path": "combat.a.1.a.0.b.1",
+                                                        "Constellation": "Combat",
+                                                        "Type": "Minor",
+                                                        "Name": "Strength",
+                                                        "Description": "Will need to double check numbers to make sure this is not too much strength.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Physical Damage",
+                                                                "percentage": true,
+                                                                "value": 6
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "combat.a.1.a.0.b.1.a",
+                                                                "Constellation": "Combat",
+                                                                "Type": "Major",
+                                                                "Name": "Reflection 3.0",
+                                                                "Description": "This star should help balance melee a little more.",
+                                                                "Stats": [],
+                                                                "Overwrites": [
+                                                                    "combat.a.1",
+                                                                    "combat.a.1.a.0"
+                                                                ],
+                                                                "Abilities": [
+                                                                    "When taking damage, you have a 30% chance to gain a 45% reflect shield and 30% damage reduction for 10 seconds. Has a 1 minute cooldown."
+                                                                ],
+                                                                "Stars": [],
+                                                                "Obtainables": [
+                                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                                ],
+                                                                "Acts": "Major"
+                                                            },
+                                                            {
+                                                                "Path": "combat.a.1.a.0.b.1.b",
+                                                                "Constellation": "Combat",
+                                                                "Type": "Minor",
+                                                                "Name": "Strength",
+                                                                "Description": "Ultimate Strength star is better than a Magic Star.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Physical Damage",
+                                                                        "percentage": true,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [
+                                                                    "Grants Ursa Minor when upgrading"
+                                                                ],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            }
+                                        ],
+                                        "Obtainables": [
+                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                        ],
+                                        "Acts": "Major"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "combat.a.1.b",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Anti-Knockback",
+                                "Description": "Not going to push around the brawler.",
+                                "Stats": [
+                                    {
+                                        "name": "Stability",
+                                        "percentage": false,
+                                        "value": 75
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    }
+                ],
+                "Obtainables": [],
+                "Acts": "Minor"
+            },
+            {
+                "Path": "combat.b",
+                "Constellation": "Combat",
+                "Type": "Minor",
+                "Name": "Intellect",
+                "Description": "Gain greater arcane knowledge to blast your foe down this path.",
+                "Stats": [
+                    {
+                        "name": "Magic Damage",
+                        "percentage": true,
+                        "value": 3
+                    }
+                ],
+                "Abilities": [],
+                "Stars": [
+                    {
+                        "Path": "combat.b.0",
+                        "Constellation": "Combat",
+                        "Type": "Major",
+                        "Name": "Rage",
+                        "Description": "Star of ARRRRRRRRRRRRRRR!!!!!",
+                        "Stats": [],
+                        "Abilities": [
+                            "When dropping below 30% health, gain a 6% Outgoing damage buff and 10% Attack Speed for 10 seconds. 120 second cooldown."
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "combat.b.0.a",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Intellect",
+                                "Description": "This star come with a free library card. Somehow that's what increases your damage.",
+                                "Stats": [
+                                    {
+                                        "name": "Magic Damage",
+                                        "percentage": true,
+                                        "value": 3
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "combat.b.0.a.0",
+                                        "Constellation": "Combat",
+                                        "Type": "Minor",
+                                        "Name": "Heartiness",
+                                        "Description": "Look at this star trying to make you less squishy over here.",
+                                        "Stats": [
+                                            {
+                                                "name": "Maximum Health %",
+                                                "percentage": false,
+                                                "value": 10
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "combat.b.0.a.1",
+                                        "Constellation": "Combat",
+                                        "Type": "Minor",
+                                        "Name": "Intellect",
+                                        "Description": "Wow, mind exploded.",
+                                        "Stats": [
+                                            {
+                                                "name": "Magic Damage",
+                                                "percentage": true,
+                                                "value": 3
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "combat.b.0.a.1.a",
+                                                "Constellation": "Combat",
+                                                "Type": "Minor",
+                                                "Name": "Heartiness",
+                                                "Description": "This star's blessing hopes you live a long and healthy life.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Maximum Health %",
+                                                        "percentage": false,
+                                                        "value": 10
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "combat.b.0.a.1.b",
+                                                "Constellation": "Combat",
+                                                "Type": "Major",
+                                                "Name": "Rage 1.5",
+                                                "Description": "Give in to your anger.",
+                                                "Stats": [],
+                                                "Overwrites": [
+                                                    "combat.b.0"
+                                                ],
+                                                "Abilities": [
+                                                    "When dropping below 40% health, gain a 8% Outgoing damage buff and 10% Attack Speed for 10 seconds. 120 second cooldown."
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "combat.b.0.a.1.b.0",
+                                                        "Constellation": "Combat",
+                                                        "Type": "Minor",
+                                                        "Name": "Anti-Knockback",
+                                                        "Description": "Even though most magic classes have good range, here is some stability so you don't go flying.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Stability",
+                                                                "percentage": false,
+                                                                "value": 75
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "combat.b.0.a.1.b.0.a",
+                                                                "Constellation": "Combat",
+                                                                "Type": "Minor",
+                                                                "Name": "Speed",
+                                                                "Description": "Little bit of speed for slow magic classes.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Movement Speed",
+                                                                        "percentage": false,
+                                                                        "value": 8
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    },
+                                                    {
+                                                        "Path": "combat.b.0.a.1.b.1",
+                                                        "Constellation": "Combat",
+                                                        "Type": "Minor",
+                                                        "Name": "Intellect",
+                                                        "Description": "Unlimited Magic... unless you run out of energy regen.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Magic Damage",
+                                                                "percentage": true,
+                                                                "value": 3
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "combat.b.0.a.1.b.1.a",
+                                                                "Constellation": "Combat",
+                                                                "Type": "Minor",
+                                                                "Name": "Haste",
+                                                                "Description": "Oops, didn't I mean to make this a health star?",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Attack Speed",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            },
+                                                            {
+                                                                "Path": "combat.b.0.a.1.b.1.b",
+                                                                "Constellation": "Combat",
+                                                                "Type": "Major",
+                                                                "Name": "Rage 2.5",
+                                                                "Description": "Kind of odd that the intellect tree has a rage mechanic...I guess it's a nerd rage.",
+                                                                "Stats": [],
+                                                                "Overwrites": [
+                                                                    "combat.b.0",
+                                                                    "combat.b.0.a.1.b"
+                                                                ],
+                                                                "Abilities": [
+                                                                    "When dropping below 45% health, gain a 10% Outgoing damage buff and 10% Attack Speed for 10 seconds. 120 second cooldown."
+                                                                ],
+                                                                "Stars": [
+                                                                    {
+                                                                        "Path": "combat.b.0.a.1.b.1.b.0",
+                                                                        "Constellation": "Combat",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Heartiness",
+                                                                        "Description": "Ahhh this is where I put that Health Star.",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Maximum Health %",
+                                                                                "percentage": false,
+                                                                                "value": 10
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    },
+                                                                    {
+                                                                        "Path": "combat.b.0.a.1.b.1.b.1",
+                                                                        "Constellation": "Combat",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Intellect",
+                                                                        "Description": "The final star spell is ready. Are you ready to cast it?",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Magic Damage",
+                                                                                "percentage": true,
+                                                                                "value": 15
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [
+                                                                            {
+                                                                                "Path": "combat.b.0.a.1.b.1.b.1.a",
+                                                                                "Constellation": "Combat",
+                                                                                "Type": "Major",
+                                                                                "Name": "Rage 3.0",
+                                                                                "Description": "This Star represents our home which was destroyed by the Void.",
+                                                                                "Stats": [],
+                                                                                "Overwrites": [
+                                                                                    "combat.b.0",
+                                                                                    "combat.b.0.a.1.b",
+                                                                                    "combat.b.0.a.1.b.1.b"
+                                                                                ],
+                                                                                "Abilities": [
+                                                                                    "When dropping below 45% health, gain a 12% Outgoing damage buff and 10% Attack Speed for 15 seconds. 120 second cooldown."
+                                                                                ],
+                                                                                "Stars": [],
+                                                                                "Obtainables": [
+                                                                                    "Grants Ursa Major when upgrading",
+                                                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                                                ],
+                                                                                "Acts": "Major"
+                                                                            }
+                                                                        ],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    }
+                                                                ],
+                                                                "Obtainables": [
+                                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                                ],
+                                                                "Acts": "Major"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [
+                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                ],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    },
+                    {
+                        "Path": "combat.b.1",
+                        "Constellation": "Combat",
+                        "Type": "Major",
+                        "Name": "Weakness",
+                        "Description": "You have found the Weakness, now keep on attacking.",
+                        "Stats": [],
+                        "Abilities": [
+                            "5% chance when critical hitting to increase Critical Damage by 15% for 10 seconds."
+                        ],
+                        "Ability_Values": [
+                            {
+                                "name": "Critical Damage",
+                                "percentage": false,
+                                "value": 15
+                            }
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "combat.b.1.a",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Critical",
+                                "Description": "Stop being so critical.",
+                                "Stats": [
+                                    {
+                                        "name": "Critical Damage",
+                                        "percentage": false,
+                                        "value": 5
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "combat.b.1.a.0",
+                                        "Constellation": "Combat",
+                                        "Type": "Minor",
+                                        "Acts": "Major",
+                                        "Name": "Weakness 1.5",
+                                        "Description": "A star all about seeing overly sized numbers appearing.",
+                                        "Stats": [],
+                                        "Overwrites": [
+                                            "combat.b.1"
+                                        ],
+                                        "Abilities": [
+                                            "10% chance when critical hitting to increases Critical Damage by 25% for 10 seconds."
+                                        ],
+                                        "Ability_Values": [
+                                            {
+                                                "name": "Critical Damage",
+                                                "percentage": false,
+                                                "value": 25
+                                            }
+                                        ],
+                                        "Stars": [],
+                                        "Obtainables": []
+                                    },
+                                    {
+                                        "Path": "combat.b.1.a.1",
+                                        "Constellation": "Combat",
+                                        "Type": "Minor",
+                                        "Name": "Critical",
+                                        "Description": "A Critical Hit!",
+                                        "Stats": [
+                                            {
+                                                "name": "Critical Damage",
+                                                "percentage": false,
+                                                "value": 10
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "combat.b.1.b",
+                                "Constellation": "Combat",
+                                "Type": "Minor",
+                                "Name": "Critical",
+                                "Description": "The Star Chart was critically well received by the players.\\nThey had nothing negative to say about it.",
+                                "Stats": [
+                                    {
+                                        "name": "Critical Damage",
+                                        "percentage": false,
+                                        "value": 10
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    }
+                ],
+                "Obtainables": [],
+                "Acts": "Minor"
+            }
+        ],
+        "Obtainables": [],
+        "Acts": "Root"
+    },
+    "Gathering": {
+        "Path": "gathering",
+        "Name": "Gathering",
+        "Constellation": "Gathering",
+        "Type": "Root",
+        "Description": "",
+        "Stars": [
+            {
+                "Path": "gathering.a",
+                "Constellation": "Gathering",
+                "Type": "Minor",
+                "Name": "Luck",
+                "Description": "Search the lands for greater goods.",
+                "Stats": [
+                    {
+                        "name": "Magic Find",
+                        "percentage": true,
+                        "value": 3
+                    }
+                ],
+                "Abilities": [],
+                "Stars": [
+                    {
+                        "Path": "gathering.a.0",
+                        "Constellation": "Gathering",
+                        "Type": "Major",
+                        "Name": "Shard Searcher",
+                        "Description": "Guides you to finding even more useful ore.",
+                        "Stats": [],
+                        "Abilities": [
+                            "Increases amount of ore mined by 10%. "
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "gathering.a.0.a",
+                                "Constellation": "Gathering",
+                                "Type": "Minor",
+                                "Name": "Mining",
+                                "Description": "Show how to have more mastery over your laser.",
+                                "Stats": [
+                                    {
+                                        "name": "Lasermancy",
+                                        "percentage": false,
+                                        "value": 20
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "gathering.a.0.a.0",
+                                        "Constellation": "Gathering",
+                                        "Type": "Major",
+                                        "Name": "Knowledge",
+                                        "Description": "Knowledge is power - with this you will gain even more.",
+                                        "Stats": [],
+                                        "Abilities": [
+                                            "Increases experience gain by 5%. "
+                                        ],
+                                        "Stars": [
+                                            {
+                                                "Path": "gathering.a.0.a.0.a",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Knowledge and Luck",
+                                                "Description": "With a little luck and brains you can do anything.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Experience Gain",
+                                                        "percentage": true,
+                                                        "value": 2.5
+                                                    },
+                                                    {
+                                                        "name": "Magic Find",
+                                                        "percentage": true,
+                                                        "value": 3
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "gathering.a.0.a.0.a.0",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Minor",
+                                                        "Name": "Knowledge and Accuracy",
+                                                        "Description": "See the weakness of your enemies and know how to exploit it.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Experience Gain",
+                                                                "percentage": true,
+                                                                "value": 2.5
+                                                            },
+                                                            {
+                                                                "name": "Critical Hit",
+                                                                "percentage": false,
+                                                                "value": 15
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "gathering.a.0.a.0.a.0.a",
+                                                                "Constellation": "Gathering",
+                                                                "Type": "Minor",
+                                                                "Name": "Knowledge and Critical",
+                                                                "Description": "A star too small to be a planet but hurts too much to accept the truth.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Experience Gain",
+                                                                        "percentage": true,
+                                                                        "value": 2.5
+                                                                    },
+                                                                    {
+                                                                        "name": "Critical Damage",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [
+                                                                    "Grants Staruable when upgrading"
+                                                                ],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    },
+                                                    {
+                                                        "Path": "gathering.a.0.a.0.a.1",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Minor",
+                                                        "Name": "Luck",
+                                                        "Description": "So glad to see you all the way out here, the star focuses on finding better gear.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Magic Find",
+                                                                "percentage": true,
+                                                                "value": 8
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "gathering.a.0.a.0.b",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Luck and DYI",
+                                                "Description": "Speeds up crafting...I know I would love that.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Magic Find",
+                                                        "percentage": true,
+                                                        "value": 3
+                                                    },
+                                                    {
+                                                        "name": "Crafting Speed",
+                                                        "percentage": false,
+                                                        "value": null
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            }
+                                        ],
+                                        "Obtainables": [
+                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                        ],
+                                        "Acts": "Major"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "gathering.a.0.b",
+                                "Constellation": "Gathering",
+                                "Type": "Minor",
+                                "Name": "Alchemy, Heartiness and Leaping",
+                                "Description": "Leap for the stars!!!!",
+                                "Stats": [
+                                    {
+                                        "name": "Flask Capacity",
+                                        "percentage": false,
+                                        "value": 1
+                                    },
+                                    {
+                                        "name": "Maximum Health %",
+                                        "percentage": false,
+                                        "value": 5
+                                    },
+                                    {
+                                        "name": "Jump",
+                                        "percentage": false,
+                                        "value": 5
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "gathering.a.0.b.0",
+                                        "Constellation": "Gathering",
+                                        "Type": "Major",
+                                        "Name": "Harvest",
+                                        "Description": "Grow even more crops.",
+                                        "Stats": [],
+                                        "Abilities": [
+                                            "Increases harvesting by 10%. "
+                                        ],
+                                        "Stars": [
+                                            {
+                                                "Path": "gathering.a.0.b.0.a",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Heartiness and Healing",
+                                                "Description": "Grants the feeling of vigor you get from eating a large meal.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Maximum Health %",
+                                                        "percentage": false,
+                                                        "value": 10
+                                                    },
+                                                    {
+                                                        "name": "Health Regen",
+                                                        "percentage": false,
+                                                        "value": 400
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "gathering.a.0.b.0.a.0",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Major",
+                                                        "Name": "Harvest 2.0",
+                                                        "Description": "Ultimate Harvest upgrade for any gathering min/maxer.",
+                                                        "Stats": [],
+                                                        "Overwrites": [
+                                                            "gathering.a.0.b.0"
+                                                        ],
+                                                        "Abilities": [
+                                                            "Increases harvesting by 15%. "
+                                                        ],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "gathering.a.0.b.0.a.0.a",
+                                                                "Constellation": "Gathering",
+                                                                "Type": "Minor",
+                                                                "Name": "Haste and Critical",
+                                                                "Description": "A reward for gathering - hitting hard and fast.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Attack Speed",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    },
+                                                                    {
+                                                                        "name": "Critical Damage",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            },
+                                                            {
+                                                                "Path": "gathering.a.0.b.0.a.0.b",
+                                                                "Constellation": "Gathering",
+                                                                "Type": "Minor",
+                                                                "Name": "Protection",
+                                                                "Description": "When searching for items, you have gained greater defense.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Damage Reduction",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [
+                                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                        ],
+                                                        "Acts": "Major"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "gathering.a.0.b.0.b",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Attack",
+                                                "Description": "Working on mining has given you a little more edge.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Outgoing Damage",
+                                                        "percentage": false,
+                                                        "value": 3
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "gathering.a.0.b.0.b.0",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Major",
+                                                        "Name": "Shard Searcher 2.0",
+                                                        "Description": "Lots more shiny ore to collect.",
+                                                        "Stats": [],
+                                                        "Overwrites": [
+                                                            "gathering.a.0"
+                                                        ],
+                                                        "Abilities": [
+                                                            "Increases amount of ore mined by 15%. "
+                                                        ],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "gathering.a.0.b.0.b.0.a",
+                                                                "Constellation": "Gathering",
+                                                                "Type": "Minor",
+                                                                "Name": "Mining and Heartiness",
+                                                                "Description": "This is the end of the path... was it worth it?",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Lasermancy",
+                                                                        "percentage": false,
+                                                                        "value": 45
+                                                                    },
+                                                                    {
+                                                                        "name": "Maximum Health %",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [
+                                                                    "Grants Star Dust when upgrading"
+                                                                ],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [
+                                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                        ],
+                                                        "Acts": "Major"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "gathering.a.0.b.0.c",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Alchemy",
+                                                "Description": "An extra flask here and there, soon you'll be invincible...",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Flask Capacity",
+                                                        "percentage": false,
+                                                        "value": 1
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "gathering.a.0.b.0.c.0",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Minor",
+                                                        "Name": "Healing and Caffeine",
+                                                        "Description": "A little bit of coffee will heal anyone.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Health Regen",
+                                                                "percentage": true,
+                                                                "value": 6
+                                                            },
+                                                            {
+                                                                "name": "Energy Regen",
+                                                                "percentage": true,
+                                                                "value": 6
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            }
+                                        ],
+                                        "Obtainables": [
+                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                        ],
+                                        "Acts": "Major"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    }
+                ],
+                "Obtainables": [],
+                "Acts": "Minor"
+            },
+            {
+                "Path": "gathering.b",
+                "Constellation": "Gathering",
+                "Type": "Minor",
+                "Name": "Mining and Leaps",
+                "Description": "Mine with ease of being able to jump a little more.",
+                "Stats": [
+                    {
+                        "name": "Lasermancy",
+                        "percentage": false,
+                        "value": 50
+                    },
+                    {
+                        "name": "Jump",
+                        "percentage": false,
+                        "value": 3
+                    }
+                ],
+                "Abilities": [],
+                "Stars": [
+                    {
+                        "Path": "gathering.b.0",
+                        "Constellation": "Gathering",
+                        "Type": "Major",
+                        "Name": "Long Reach",
+                        "Description": "When mounted, Harvest at short range.",
+                        "Stats": [],
+                        "Abilities": [
+                            "Slightly increases gathering range when mounted. "
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "gathering.b.0.a",
+                                "Constellation": "Gathering",
+                                "Type": "Minor",
+                                "Name": "Alchemy and Healing",
+                                "Description": "Gain healing and the ability to heal more. Sounds good, right?",
+                                "Stats": [
+                                    {
+                                        "name": "Flask Capacity",
+                                        "percentage": false,
+                                        "value": 1
+                                    },
+                                    {
+                                        "name": "Health Regen",
+                                        "percentage": false,
+                                        "value": 300
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "gathering.b.0.a.0",
+                                        "Constellation": "Gathering",
+                                        "Type": "Major",
+                                        "Name": "Sundard Flight",
+                                        "Description": "Fly free you fools in the Sundered Uplands.",
+                                        "Stats": [],
+                                        "Abilities": [
+                                            "Reduces glide reduction in Uber 7 of Sundered Uplands."
+                                        ],
+                                        "Stars": [
+                                            {
+                                                "Path": "gathering.b.0.a.0.a",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Sundered Flight 2.0",
+                                                "Description": "Fly even faster.",
+                                                "Stats": [],
+                                                "Overwrites": [
+                                                    "gathering.b.0.a.0"
+                                                ],
+                                                "Abilities": [
+                                                    "Reduces glide reduction in Uber 10 and lower of Sundered Uplands."
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "gathering.b.0.a.0.a.0",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Minor",
+                                                        "Name": "Sundered Flight 3.0",
+                                                        "Description": "I am like a dragon, I only fly away.",
+                                                        "Stats": [],
+                                                        "Overwrites": [
+                                                            "gathering.b.0.a.0",
+                                                            "gathering.b.0.a.0.a"
+                                                        ],
+                                                        "Abilities": [
+                                                            "Reduces glide reduction in all Sundered Uplands."
+                                                        ],
+                                                        "Stars": [],
+                                                        "Obtainables": [
+                                                            "Grants a Caprian Dragon Egg Fragment when upgrading"
+                                                        ],
+                                                        "Acts": "Major"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [
+                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                        ],
+                                        "Acts": "Major"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "gathering.b.0.b",
+                                "Constellation": "Gathering",
+                                "Type": "Minor",
+                                "Name": "Mining and Heartiness",
+                                "Description": "This star gains the boon of health and mining.",
+                                "Stats": [
+                                    {
+                                        "name": "Lasermancy",
+                                        "percentage": false,
+                                        "value": 25
+                                    },
+                                    {
+                                        "name": "Maximum Health %",
+                                        "percentage": false,
+                                        "value": 5
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "gathering.b.0.b.0",
+                                        "Constellation": "Gathering",
+                                        "Type": "Major",
+                                        "Name": "Long Reach 2.0",
+                                        "Description": "When mounted, Harvest at medium range.",
+                                        "Stats": [],
+                                        "Overwrites": [
+                                            "gathering.b.0"
+                                        ],
+                                        "Abilities": [
+                                            "Moderately increases gathering range when mounted. "
+                                        ],
+                                        "Stars": [
+                                            {
+                                                "Path": "gathering.b.0.b.0.a",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Intellect",
+                                                "Description": "After searching the stars, you have gained increased magic.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Magic Damage",
+                                                        "percentage": true,
+                                                        "value": 5
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "gathering.b.0.b.0.b",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Heartiness",
+                                                "Description": "Hee Hee this star gives more health.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Maximum Health %",
+                                                        "percentage": false,
+                                                        "value": 5
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "gathering.b.0.b.0.b.0",
+                                                        "Constellation": "Gathering",
+                                                        "Type": "Major",
+                                                        "Name": "Long Reach 3.0",
+                                                        "Description": "When mounted Harvest at Loooooooooooonger range. \\nGrants a Balefire Dragon Egg Fragment when unlocked",
+                                                        "Stats": [],
+                                                        "Overwrites": [
+                                                            "gathering.b.0",
+                                                            "gathering.b.0.b.0"
+                                                        ],
+                                                        "Abilities": [
+                                                            "Greatly increases gathering range when mounted."
+                                                        ],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "gathering.b.0.b.0.b.0.a",
+                                                                "Constellation": "Gathering",
+                                                                "Type": "Minor",
+                                                                "Name": "Protection",
+                                                                "Description": "Exploring and armoring up.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Incoming Damage",
+                                                                        "percentage": false,
+                                                                        "value": -5
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [
+                                                                    {
+                                                                        "Path": "gathering.b.0.b.0.b.0.a.0",
+                                                                        "Constellation": "Gathering",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Protection",
+                                                                        "Description": "Seeing the final frontier has left you tough.",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Incoming Damage",
+                                                                                "percentage": false,
+                                                                                "value": -10
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    }
+                                                                ],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            },
+                                                            {
+                                                                "Path": "gathering.b.0.b.0.b.0.b",
+                                                                "Constellation": "Gathering",
+                                                                "Type": "Major",
+                                                                "Acts": "Minor",
+                                                                "Name": "Heartiness, Haste and Mining",
+                                                                "Description": "Intense searching has led you to greater speed and adaptability.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Maximum Health %",
+                                                                        "percentage": false,
+                                                                        "value": 10
+                                                                    },
+                                                                    {
+                                                                        "name": "Attack Speed",
+                                                                        "percentage": false,
+                                                                        "value": 20
+                                                                    },
+                                                                    {
+                                                                        "name": "Lasermancy",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [
+                                                                    {
+                                                                        "Path": "gathering.b.0.b.0.b.0.b.0",
+                                                                        "Constellation": "Gathering",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Alchemy",
+                                                                        "Description": "Extra flasks are always good.",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Flask Capacity",
+                                                                                "percentage": false,
+                                                                                "value": 3
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [
+                                                                            {
+                                                                                "Path": "gathering.b.0.b.0.b.0.b.0.a",
+                                                                                "Constellation": "Gathering",
+                                                                                "Type": "Minor",
+                                                                                "Name": "Intellect",
+                                                                                "Description": "Magic power from gathering so much knowledge.",
+                                                                                "Stats": [
+                                                                                    {
+                                                                                        "name": "Magic Damage",
+                                                                                        "percentage": true,
+                                                                                        "value": 15
+                                                                                    }
+                                                                                ],
+                                                                                "Abilities": [],
+                                                                                "Stars": [],
+                                                                                "Obtainables": [
+                                                                                    "Grants Star Sebastian when upgrading"
+                                                                                ],
+                                                                                "Acts": "Minor"
+                                                                            },
+                                                                            {
+                                                                                "Path": "gathering.b.0.b.0.b.0.b.0.b",
+                                                                                "Constellation": "Gathering",
+                                                                                "Type": "Minor",
+                                                                                "Name": "Strength",
+                                                                                "Description": "You did so much Mining it improved your Physical Damage. Noice.",
+                                                                                "Stats": [
+                                                                                    {
+                                                                                        "name": "Physical Damage",
+                                                                                        "percentage": true,
+                                                                                        "value": 15
+                                                                                    }
+                                                                                ],
+                                                                                "Abilities": [],
+                                                                                "Stars": [],
+                                                                                "Obtainables": [],
+                                                                                "Acts": "Minor"
+                                                                            }
+                                                                        ],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    },
+                                                                    {
+                                                                        "Path": "gathering.b.0.b.0.b.0.b.1",
+                                                                        "Constellation": "Gathering",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Knowledge",
+                                                                        "Description": "Increased experience gain is always good.",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Experience Gain",
+                                                                                "percentage": true,
+                                                                                "value": 5
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    },
+                                                                    {
+                                                                        "Path": "gathering.b.0.b.0.b.0.b.2",
+                                                                        "Constellation": "Gathering",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Luck",
+                                                                        "Description": "Little bit of luck on this side of the stars as well.",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Magic Find",
+                                                                                "percentage": false,
+                                                                                "value": 50
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    }
+                                                                ],
+                                                                "Obtainables": [
+                                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                                ]
+                                                            }
+                                                        ],
+                                                        "Obtainables": [],
+                                                        "Acts": "Major"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            },
+                                            {
+                                                "Path": "gathering.b.0.b.0.c",
+                                                "Constellation": "Gathering",
+                                                "Type": "Minor",
+                                                "Name": "Strength",
+                                                "Description": "Gathering stars together has increased your strength.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Physical Damage",
+                                                        "percentage": true,
+                                                        "value": 5
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            }
+                                        ],
+                                        "Obtainables": [
+                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                        ],
+                                        "Acts": "Major"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    }
+                ],
+                "Obtainables": [],
+                "Acts": "Minor"
+            }
+        ],
+        "Obtainables": [],
+        "Acts": "Root"
+    },
+    "Pve": {
+        "Path": "pve",
+        "Name": "Pve",
+        "Constellation": "Pve",
+        "Type": "Root",
+        "Description": "",
+        "Stars": [
+            {
+                "Path": "pve.a",
+                "Constellation": "Pve",
+                "Type": "Minor",
+                "Name": "Alchemy",
+                "Description": "A branch of a constellation related to Flasks? What could go wrong?",
+                "Stats": [
+                    {
+                        "name": "Flask Capacity",
+                        "percentage": false,
+                        "value": 1
+                    }
+                ],
+                "Abilities": [],
+                "Stars": [
+                    {
+                        "Path": "pve.a.0",
+                        "Constellation": "Pve",
+                        "Type": "Major",
+                        "Name": "Minor Buffing",
+                        "Description": "Random buffs are always great because they are buffs.",
+                        "Stats": [],
+                        "Abilities": [
+                            "50% chance when using a Flask to gain either a 25% Bonus Damage, 200 Stability, or 200% Bonus Health Regen."
+                        ],
+                        "Ability_Values": [
+                            {
+                                "name": "Physical Damage",
+                                "percentage": true,
+                                "value": 25
+                            },
+                            {
+                                "name": "Magic Damage",
+                                "percentage": true,
+                                "value": 25
+                            }
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "pve.a.0.a",
+                                "Constellation": "Pve",
+                                "Type": "Minor",
+                                "Name": "Accuracy and Critical",
+                                "Description": "Real Critting is more about following your heart than following a build.",
+                                "Stats": [
+                                    {
+                                        "name": "Critical Hit",
+                                        "percentage": false,
+                                        "value": 6
+                                    },
+                                    {
+                                        "name": "Critical Damage",
+                                        "percentage": false,
+                                        "value": 6
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "pve.a.0.a.0",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Leaping and Anti-Knockback",
+                                        "Description": "This should help you jump and not get thrown across the room in delves.",
+                                        "Stats": [
+                                            {
+                                                "name": "Jump",
+                                                "percentage": false,
+                                                "value": 5
+                                            },
+                                            {
+                                                "name": "Stability",
+                                                "percentage": false,
+                                                "value": 50
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "pve.a.0.a.0.a",
+                                                "Constellation": "Pve",
+                                                "Type": "Major",
+                                                "Name": "Greater Alchemic Power",
+                                                "Description": "Why are flasks so OP... here is a random one.",
+                                                "Stats": [],
+                                                "Abilities": [
+                                                    "10% chance to gain a random emblem effect when using a flask."
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "pve.a.0.a.0.a.0",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Name": "Greater Alchemic Power 2.0",
+                                                        "Description": "More random effects. MOOOOORREEEEE!!!!",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Random Flask Emblem",
+                                                                "percentage": false,
+                                                                "value": 3
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "pve.a.0.a.0.a.0.a",
+                                                                "Constellation": "Pve",
+                                                                "Type": "Minor",
+                                                                "Name": "Greater Alchemic Power 3.0",
+                                                                "Description": "A higher chance to get additional effects is always good.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Random Flask Emblem",
+                                                                        "percentage": false,
+                                                                        "value": 3
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [
+                                                                    "Grants a Caprian Dragon Egg Fragment when upgrading"
+                                                                ],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [
+                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                ],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "pve.a.0.a.1",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Haste",
+                                        "Description": "This shooting star is so fast it teaches trovians to hit faster.",
+                                        "Stats": [
+                                            {
+                                                "name": "Attack Speed",
+                                                "percentage": true,
+                                                "value": 3
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "pve.a.0.a.1.a",
+                                                "Constellation": "Pve",
+                                                "Type": "Minor",
+                                                "Name": "Speed",
+                                                "Description": "Little bit of speed to help you in the world.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Movement Speed",
+                                                        "percentage": false,
+                                                        "value": 5
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "pve.a.0.a.1.a.0",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Major",
+                                                        "Name": "Flask Renewal",
+                                                        "Description": "Fighting throughout this Trovian world has given you the intellect to randomly recharge flasks.",
+                                                        "Stats": [],
+                                                        "Abilities": [
+                                                            "5% chance to gain a flask charge when using a Flask."
+                                                        ],
+                                                        "Stars": [
+                                                            {
+                                                                "Path": "pve.a.0.a.1.a.0.a",
+                                                                "Constellation": "Pve",
+                                                                "Type": "Minor",
+                                                                "Name": "Speed",
+                                                                "Description": "When visiting the final frontier, it's always good to have speed.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Movement Speed",
+                                                                        "percentage": false,
+                                                                        "value": 5
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            },
+                                                            {
+                                                                "Path": "pve.a.0.a.1.a.0.b",
+                                                                "Constellation": "Pve",
+                                                                "Type": "Minor",
+                                                                "Name": "Heartiness",
+                                                                "Description": "Star of health bless us with more health please.",
+                                                                "Stats": [
+                                                                    {
+                                                                        "name": "Maximum Health %",
+                                                                        "percentage": false,
+                                                                        "value": 15
+                                                                    }
+                                                                ],
+                                                                "Abilities": [],
+                                                                "Stars": [
+                                                                    {
+                                                                        "Path": "pve.a.0.a.1.a.0.b.0",
+                                                                        "Constellation": "Pve",
+                                                                        "Type": "Minor",
+                                                                        "Name": "Haste",
+                                                                        "Description": "Attack speed is all some classes need.",
+                                                                        "Stats": [
+                                                                            {
+                                                                                "name": "Attack Speed",
+                                                                                "percentage": true,
+                                                                                "value": 6
+                                                                            }
+                                                                        ],
+                                                                        "Abilities": [],
+                                                                        "Stars": [],
+                                                                        "Obtainables": [],
+                                                                        "Acts": "Minor"
+                                                                    },
+                                                                    {
+                                                                        "Path": "pve.a.0.a.1.a.0.b.1",
+                                                                        "Constellation": "Pve",
+                                                                        "Type": "Major",
+                                                                        "Name": "Flask Renewal 2.0",
+                                                                        "Description": "A Blessing of bountiful flasks... I really hope this is not too OP... Maybe I need to nerf Death-Defying...",
+                                                                        "Stats": [],
+                                                                        "Overwrites": [
+                                                                            "pve.a.0.a.1.a.0"
+                                                                        ],
+                                                                        "Abilities": [
+                                                                            "10% chance to gain a flask charge when using a Flask."
+                                                                        ],
+                                                                        "Stars": [
+                                                                            {
+                                                                                "Path": "pve.a.0.a.1.a.0.b.1.a",
+                                                                                "Constellation": "Pve",
+                                                                                "Type": "Minor",
+                                                                                "Name": "Alchemy",
+                                                                                "Description": "Now that flasks are powered up, heres a few more.",
+                                                                                "Stats": [
+                                                                                    {
+                                                                                        "name": "Flask Capacity",
+                                                                                        "percentage": false,
+                                                                                        "value": 3
+                                                                                    }
+                                                                                ],
+                                                                                "Abilities": [],
+                                                                                "Stars": [],
+                                                                                "Obtainables": [
+                                                                                    "Grants Charter's Chair when upgrading"
+                                                                                ],
+                                                                                "Acts": "Minor"
+                                                                            },
+                                                                            {
+                                                                                "Path": "pve.a.0.a.1.a.0.b.1.b",
+                                                                                "Constellation": "Pve",
+                                                                                "Type": "Minor",
+                                                                                "Name": "Alchemy",
+                                                                                "Description": "So Many Flasks!!!!!",
+                                                                                "Stats": [
+                                                                                    {
+                                                                                        "name": "Flask Capacity",
+                                                                                        "percentage": false,
+                                                                                        "value": 3
+                                                                                    }
+                                                                                ],
+                                                                                "Abilities": [],
+                                                                                "Stars": [],
+                                                                                "Obtainables": [],
+                                                                                "Acts": "Minor"
+                                                                            }
+                                                                        ],
+                                                                        "Obtainables": [
+                                                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                                        ],
+                                                                        "Acts": "Major"
+                                                                    }
+                                                                ],
+                                                                "Obtainables": [],
+                                                                "Acts": "Minor"
+                                                            }
+                                                        ],
+                                                        "Obtainables": [
+                                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                        ],
+                                                        "Acts": "Major"
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "pve.a.0.b",
+                                "Constellation": "Pve",
+                                "Type": "Major",
+                                "Name": "Minor Buffing Always",
+                                "Description": "You get a buff and you get a buff, everybody gets a buff.",
+                                "Stats": [],
+                                "Overwrites": [
+                                    "pve.a.0"
+                                ],
+                                "Abilities": [
+                                    "100% chance when using a Flask to gain either a 25% Bonus Damage, 200 Stability, or 200% Bonus Health Regen."
+                                ],
+                                "Ability_Values": [
+                                    {
+                                        "name": "Physical Damage",
+                                        "percentage": true,
+                                        "value": 25
+                                    },
+                                    {
+                                        "name": "Magic Damage",
+                                        "percentage": true,
+                                        "value": 25
+                                    }
+                                ],
+                                "Stars": [
+                                    {
+                                        "Path": "pve.a.0.b.0",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Strength and Intellect",
+                                        "Description": "Drinking too many flasks has made the random buffs gained from them stick.",
+                                        "Stats": [
+                                            {
+                                                "name": "Magic Damage",
+                                                "percentage": true,
+                                                "value": 5
+                                            },
+                                            {
+                                                "name": "Physical Damage",
+                                                "percentage": true,
+                                                "value": 5
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "pve.a.0.b.1",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Protection",
+                                        "Description": "The shield may be just as important as DPS number charts.",
+                                        "Stats": [
+                                            {
+                                                "name": "Damage Reduction",
+                                                "percentage": false,
+                                                "value": 8
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "pve.a.0.b.2",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Healing",
+                                        "Description": "Moooooooooooreeeeeeeee Healing PLEASE!!!",
+                                        "Stats": [
+                                            {
+                                                "name": "Health Regen",
+                                                "percentage": true,
+                                                "value": 8
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [
+                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                ],
+                                "Acts": "Major"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    }
+                ],
+                "Obtainables": [],
+                "Acts": "Minor"
+            },
+            {
+                "Path": "pve.b",
+                "Constellation": "Pve",
+                "Type": "Minor",
+                "Name": "Haste",
+                "Description": "Star of speed give me swiftness to strike my foes.",
+                "Stats": [
+                    {
+                        "name": "Attack Speed",
+                        "percentage": true,
+                        "value": 3
+                    }
+                ],
+                "Abilities": [],
+                "Stars": [
+                    {
+                        "Path": "pve.b.0",
+                        "Constellation": "Pve",
+                        "Type": "Major",
+                        "Name": "Draining Kiss",
+                        "Description": "Drain health from your enemies.",
+                        "Stats": [],
+                        "Abilities": [
+                            "Damaging enemies grants 10% Life Leech."
+                        ],
+                        "Stars": [
+                            {
+                                "Path": "pve.b.0.a",
+                                "Constellation": "Pve",
+                                "Type": "Minor",
+                                "Name": "Haste",
+                                "Description": "Attacks so fast you can not even animate fast enough.",
+                                "Stats": [
+                                    {
+                                        "name": "Attack Speed",
+                                        "percentage": true,
+                                        "value": 6
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "pve.b.0.a.0",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Healing and Heartiness",
+                                        "Description": "In this constellation of dungeon seeking we greet thee with more health.",
+                                        "Stats": [
+                                            {
+                                                "name": "Health Regen",
+                                                "percentage": false,
+                                                "value": 175
+                                            },
+                                            {
+                                                "name": "Maximum Health %",
+                                                "percentage": false,
+                                                "value": 14
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "pve.b.0.a.0.a",
+                                                "Constellation": "Pve",
+                                                "Type": "Major",
+                                                "Name": "Draining Kiss",
+                                                "Description": "With faster attack and higher life leech you may someday be invincible.",
+                                                "Stats": [],
+                                                "Overwrites": [
+                                                    "pve.b.0"
+                                                ],
+                                                "Abilities": [
+                                                    "Damaging enemies grants 20% Life Leech. "
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "pve.b.0.a.0.a.0",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Name": "Strength and Intellect",
+                                                        "Description": "Two damage types, maybe someday we will search the stars and find the 3rd one.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Physical Damage",
+                                                                "percentage": true,
+                                                                "value": 5
+                                                            },
+                                                            {
+                                                                "name": "Magic Damage",
+                                                                "percentage": true,
+                                                                "value": 5
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    },
+                                                    {
+                                                        "Path": "pve.b.0.a.0.a.1",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Name": "Haste",
+                                                        "Description": "Speed through the stars for greater power.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Attack Speed",
+                                                                "percentage": true,
+                                                                "value": 10
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    },
+                                                    {
+                                                        "Path": "pve.b.0.a.0.a.2",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Name": "Accuracy",
+                                                        "Description": "One day it will be super important to have a lot of this. Wink Wink",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Critical Hit",
+                                                                "percentage": false,
+                                                                "value": 10
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [
+                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                ],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "pve.b.0.a.1",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Speed",
+                                        "Description": "Fly, you fools, Fly to the end of that Delve.",
+                                        "Stats": [
+                                            {
+                                                "name": "Movement Speed",
+                                                "percentage": false,
+                                                "value": 5
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "pve.b.0.a.1.a",
+                                                "Constellation": "Pve",
+                                                "Type": "Major",
+                                                "Name": "Bounty Hunt Boon",
+                                                "Description": "Hunting enemies now grants you boons.",
+                                                "Stats": [],
+                                                "Abilities": [
+                                                    "After defeating a Sundered Uplands 5 Star Boss, gain 10% increased Physical and Magic Damage for 4 hours."
+                                                ],
+                                                "Ability_Values": [
+                                                    {
+                                                        "name": "Physical Damage",
+                                                        "percentage": true,
+                                                        "value": 10
+                                                    },
+                                                    {
+                                                        "name": "Magic Damage",
+                                                        "percentage": true,
+                                                        "value": 10
+                                                    }
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "pve.b.0.a.1.a.0",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Acts": "Major",
+                                                        "Name": "Bounty Hunt",
+                                                        "Description": "Looking up at the stars has granted additional buff time.",
+                                                        "Stats": [],
+                                                        "Overwrites": [
+                                                            "pve.b.0.a.1.a"
+                                                        ],
+                                                        "Abilities": [
+                                                            "After defeating a Sundered Uplands 5 Star Boss, gain 15% increased Physical and Magic Damage for 4 hours."
+                                                        ],
+                                                        "Ability_Values": [
+                                                            {
+                                                                "name": "Physical Damage",
+                                                                "percentage": true,
+                                                                "value": 15
+                                                            },
+                                                            {
+                                                                "name": "Magic Damage",
+                                                                "percentage": true,
+                                                                "value": 15
+                                                            }
+                                                        ],
+                                                        "Stars": [],
+                                                        "Obtainables": []
+                                                    },
+                                                    {
+                                                        "Path": "pve.b.0.a.1.a.1",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Name": "Light",
+                                                        "Description": "Grant me the true power of the stars. May I destroy the darkness of the cosmos.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Light",
+                                                                "percentage": false,
+                                                                "value": 50
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [
+                                                            "Grants Starry Skyfire when upgrading"
+                                                        ],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [
+                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                ],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            },
+                            {
+                                "Path": "pve.b.0.b",
+                                "Constellation": "Pve",
+                                "Type": "Minor",
+                                "Name": "Accuracy",
+                                "Description": "Wink Wink...",
+                                "Stats": [
+                                    {
+                                        "name": "Critical Hit",
+                                        "percentage": false,
+                                        "value": 10
+                                    }
+                                ],
+                                "Abilities": [],
+                                "Stars": [
+                                    {
+                                        "Path": "pve.b.0.b.0",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Leaping and Anti-Knockback",
+                                        "Description": "Jump up without being pushed around by bullies.",
+                                        "Stats": [
+                                            {
+                                                "name": "Jump",
+                                                "percentage": false,
+                                                "value": 5
+                                            },
+                                            {
+                                                "name": "Stability",
+                                                "percentage": false,
+                                                "value": 50
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "pve.b.0.b.0.a",
+                                                "Constellation": "Pve",
+                                                "Type": "Minor",
+                                                "Name": "Critical",
+                                                "Description": "Looking to the stars to decide how to increase those damage numbers.",
+                                                "Stats": [
+                                                    {
+                                                        "name": "Critical Damage",
+                                                        "percentage": false,
+                                                        "value": 10
+                                                    }
+                                                ],
+                                                "Abilities": [],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "pve.b.0.b.0.a.0",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Major",
+                                                        "Acts": "Minor",
+                                                        "Name": "Light",
+                                                        "Description": "Greater shining light to destroy the dark.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Light",
+                                                                "percentage": false,
+                                                                "value": 150
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [
+                                                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                        ]
+                                                    }
+                                                ],
+                                                "Obtainables": [],
+                                                "Acts": "Minor"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    },
+                                    {
+                                        "Path": "pve.b.0.b.1",
+                                        "Constellation": "Pve",
+                                        "Type": "Minor",
+                                        "Name": "Alchemy",
+                                        "Description": "Oops, did I leave a flask over on this side of the cosmos.",
+                                        "Stats": [
+                                            {
+                                                "name": "Flask Capacity",
+                                                "percentage": false,
+                                                "value": 1
+                                            }
+                                        ],
+                                        "Abilities": [],
+                                        "Stars": [
+                                            {
+                                                "Path": "pve.b.0.b.1.a",
+                                                "Constellation": "Pve",
+                                                "Type": "Major",
+                                                "Name": "Depths Boon",
+                                                "Description": "Delving just got a little bit easier.",
+                                                "Stats": [],
+                                                "Abilities": [
+                                                    "After defeating a delve boss, gain 20% damage reduction for 30 minutes. "
+                                                ],
+                                                "Stars": [
+                                                    {
+                                                        "Path": "pve.b.0.b.1.a.0",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Acts": "Major",
+                                                        "Name": "Depths Boon 2.0",
+                                                        "Description": "A little more time to the boon you just got.",
+                                                        "Stats": [],
+                                                        "Overwrites": [
+                                                            "pve.b.0.b.1.a"
+                                                        ],
+                                                        "Abilities": [
+                                                            "Increases the Depths boon damage reduction to 25% and duration to 1 hour."
+                                                        ],
+                                                        "Stars": [],
+                                                        "Obtainables": []
+                                                    },
+                                                    {
+                                                        "Path": "pve.b.0.b.1.a.1",
+                                                        "Constellation": "Pve",
+                                                        "Type": "Minor",
+                                                        "Name": "Light",
+                                                        "Description": "Look up at the sky one night and see the lights above.",
+                                                        "Stats": [
+                                                            {
+                                                                "name": "Light",
+                                                                "percentage": false,
+                                                                "value": 50
+                                                            }
+                                                        ],
+                                                        "Abilities": [],
+                                                        "Stars": [],
+                                                        "Obtainables": [
+                                                            "Grants Scorpius when upgrading"
+                                                        ],
+                                                        "Acts": "Minor"
+                                                    }
+                                                ],
+                                                "Obtainables": [
+                                                    "Grants a Balefire Dragon Egg Fragment when unlocked"
+                                                ],
+                                                "Acts": "Major"
+                                            }
+                                        ],
+                                        "Obtainables": [],
+                                        "Acts": "Minor"
+                                    }
+                                ],
+                                "Obtainables": [],
+                                "Acts": "Minor"
+                            }
+                        ],
+                        "Obtainables": [
+                            "Grants a Balefire Dragon Egg Fragment when unlocked"
+                        ],
+                        "Acts": "Major"
+                    }
+                ],
+                "Obtainables": [],
+                "Acts": "Minor"
+            }
+        ],
+        "Obtainables": [],
+        "Acts": "Root"
+    }
+}

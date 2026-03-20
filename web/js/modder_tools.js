@@ -4,17 +4,13 @@ document.addEventListener('modder_tools_loaded', () => {
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
-    // Tab Switching Logic
     tabButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            // 1. Remove active state from all tabs and contents
             tabButtons.forEach(b => b.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
 
-            // 2. Add active state to clicked tab
             btn.classList.add('active');
             
-            // 3. Show the corresponding content panel
             const targetId = btn.getAttribute('data-tab');
             const targetContent = document.getElementById(targetId);
             if (targetContent) {
@@ -23,7 +19,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     });
 
-    // --- Image Preview Logic ---
     const previewContainer = document.getElementById('preview-picker-container');
     const previewInput = document.getElementById('build-preview-input');
     const previewImg = document.getElementById('build-mod-preview');
@@ -43,7 +38,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Init Select2 ---
     if (typeof jQuery !== 'undefined' && $.fn.select2) {
         $('#build-mod-tags').select2({
             placeholder: "Select categories...",
@@ -51,7 +45,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Game Select Logic ---
     async function scanForGames() {
         const gameSelect = document.getElementById('build-game-select');
         if (!gameSelect) return;
@@ -84,12 +77,10 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Files Table Logic ---
     const btnAddFile = document.getElementById('btn-add-file');
     const btnDetectOverrides = document.getElementById('btn-detect-overrides');
     const filesList = document.getElementById('build-files-list');
 
-    // Create a hidden file input for selecting files
     const hiddenFileInput = document.createElement('input');
     hiddenFileInput.type = 'file';
     hiddenFileInput.multiple = true;
@@ -105,7 +96,7 @@ document.addEventListener('modder_tools_loaded', () => {
             Array.from(e.target.files).forEach(file => {
                 const filePath = file.path || file.name;
                 
-                let internalPath = file.name; // Direct file adds use the file name as the internal path
+                let internalPath = file.name;
                 const existing = Array.from(filesList.querySelectorAll('tr')).find(tr => tr.fileData && tr.fileData.path === filePath);
                 if (existing) return;
 
@@ -137,12 +128,10 @@ document.addEventListener('modder_tools_loaded', () => {
             btnDetectOverrides.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Detecting...';
             btnDetectOverrides.disabled = true;
             
-            // --- Check and remove any existing files that were deleted from disk ---
             const currentRows = Array.from(filesList.querySelectorAll('tr'));
             const pathsToCheck = [];
             currentRows.forEach(tr => {
                 if (tr.fileData && tr.fileData.path) {
-                    // Only verify absolute paths to avoid accidentally deleting valid in-memory File objects
                     if (tr.fileData.path.includes(':') || tr.fileData.path.startsWith('/')) {
                         pathsToCheck.push(tr.fileData.path);
                     }
@@ -192,7 +181,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Build TMod Execution Logic ---
     const btnBuildTMod = document.getElementById('btn-build-tmod');
     if (btnBuildTMod) {
         btnBuildTMod.addEventListener('click', async () => {
@@ -222,7 +210,6 @@ document.addEventListener('modder_tools_loaded', () => {
                     previewBase64 = previewImg.src;
                 }
 
-                // --- Check for missing files before building ---
                 const currentRows = Array.from(document.querySelectorAll('#build-files-list tr'));
                 const pathsToCheck = [];
                 currentRows.forEach(tr => {
@@ -291,7 +278,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Extract TMod Logic ---
     const btnBrowseExtractSource = document.getElementById('btn-browse-extract-source');
     const inputExtractSource = document.getElementById('extract-source-file');
     

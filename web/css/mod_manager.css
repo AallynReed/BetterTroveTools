@@ -196,7 +196,6 @@
     opacity: 0.7;
 }
 
-/* RED: Both mods are enabled! Game will have issues */
 .mod-conflict-inline.conflict-active {
     filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8));
     animation: criticalPulse 1s infinite;

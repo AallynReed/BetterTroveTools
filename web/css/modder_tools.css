@@ -120,7 +120,6 @@
     gap: 8px;
 }
 
-/* --- Build Tab Split Layout --- */
 .build-split-layout {
     display: flex;
     gap: 30px;
@@ -219,7 +218,6 @@ textarea:focus, select:focus {
     color: #ff5555;
 }
 
-/* --- Select2 Dark Theme Overrides --- */
 .select2-container--default .select2-selection--multiple {
     background-color: var(--bg-dark) !important;
     border: 1px solid var(--border-color) !important;
@@ -236,7 +234,6 @@ textarea:focus, select:focus {
 .select2-container--default .select2-results__option--highlighted[aria-selected] { background-color: var(--accent-blue); color: white; }
 .select2-dropdown { background-color: var(--bg-dark) !important; border: 1px solid var(--border-color) !important; }
 
-/* --- Files Table --- */
 #build-files-table tbody tr:hover {
     background: var(--bg-hover);
 }

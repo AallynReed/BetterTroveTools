@@ -1,17 +1,19 @@
-import eel
-import sys
-import os
 import json
+import os
+import sys
+
+import eel
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
-import backend.mod_manager
 import backend.file_manager
-import backend.trovesaurus
-import backend.settings
+import backend.mod_manager
 import backend.modder_tools
+import backend.settings
+import backend.star_chart
+import backend.trovesaurus
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)

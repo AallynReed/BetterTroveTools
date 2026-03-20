@@ -1,4 +1,3 @@
-/* --- CONTAINER & LAYOUT --- */
 .file-manager-container {
     padding: 40px;
     max-width: 1200px;
@@ -21,7 +20,6 @@
     color: var(--text-muted);
 }
 
-/* --- SEARCH BAR --- */
 .search-container {
     padding: 15px 20px;
     background: var(--bg-panel);
@@ -53,7 +51,6 @@
     font-weight: bold;
 }
 
-/* --- THE FILE TREE (Optimized for 130k nodes) --- */
 .file-tree {
     text-align: left;
     font-size: 14px;
@@ -63,11 +60,9 @@
     border: 1px solid var(--border-color);
     max-height: 70vh;
     overflow-y: auto;
-    /* Performance: Prevents expensive re-layouts */
     contain: content; 
 }
 
-/* Folders */
 details.folder {
     margin: 2px 0;
 }
@@ -98,11 +93,10 @@ details.folder > summary:hover {
     border-left: 1px solid rgba(255, 255, 255, 0.07);
 }
 
-/* --- FILE ITEM ALIGNMENT (The Fix) --- */
 .file-item {
     display: flex;
     justify-content: space-between;
-    align-items: center; /* Vertical center the whole row */
+    align-items: center;
     padding: 6px 12px;
     margin: 1px 0;
     border-radius: 4px;
@@ -118,7 +112,7 @@ details.folder > summary:hover {
 
 .checkbox-container {
     display: flex;
-    align-items: center; /* Center checkbox with icon/name */
+    align-items: center;
     gap: 12px;
     flex: 1;
     min-width: 0;
@@ -143,12 +137,11 @@ input[type="checkbox"] {
     padding: 0;
     width: 16px;
     height: 16px;
-    flex-shrink: 0; /* Prevents checkbox from squishing */
+    flex-shrink: 0;
     cursor: pointer;
     accent-color: var(--accent-blue);
 }
 
-/* Right Side Actions */
 .file-actions {
     display: flex;
     align-items: center;
@@ -179,7 +172,6 @@ input[type="checkbox"] {
     filter: brightness(1.2);
 }
 
-/* --- SEARCH LOGIC --- */
 .searching .file-item,
 .searching details.folder {
     display: none !important;
@@ -193,7 +185,6 @@ input[type="checkbox"] {
     display: block !important;
 }
 
-/* --- EXTRACTION BAR --- */
 #extraction-bar {
     display: none;
     position: fixed;
@@ -242,7 +233,7 @@ input[type="checkbox"] {
 }
 
 #btn-collapse-all {
-    background: #444; /* Darker, more neutral color */
+    background: #444;
     color: #ccc;
     border: 1px solid var(--border-color);
 }

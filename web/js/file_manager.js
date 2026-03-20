@@ -246,7 +246,6 @@ document.addEventListener('file_manager_loaded', () => {
 
             if (fileCheckboxes.length === 0) return;
 
-            // If all visible files are already checked, uncheck them. Otherwise, check them all.
             const shouldCheck = Array.from(fileCheckboxes).some(cb => !cb.checked);
             fileCheckboxes.forEach(cb => cb.checked = shouldCheck);
 
