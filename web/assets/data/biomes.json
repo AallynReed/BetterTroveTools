@@ -1,0 +1,242 @@
+{
+    "Data Spires": {
+        "name": "Data Spires",
+        "final_name": "Neon City",
+        "caves": 0,
+        "farm": 2,
+        "icon": "neon",
+        "biome": "Neon City"
+    },
+    "Luminopolis": {
+        "name": "Luminopolis",
+        "final_name": "Luminopolis",
+        "caves": 0,
+        "farm": 2,
+        "icon": "neon",
+        "biome": "Neon City"
+    },
+    "The Lost Isles": {
+        "name": "The Lost Isles",
+        "final_name": "The Lost Isles",
+        "caves": 0,
+        "farm": 0,
+        "icon": "pirate",
+        "biome": "Treasure Isles"
+    },
+    "Sundered Uplands": {
+        "name": "Sundered Uplands",
+        "final_name": "Sundered Uplands",
+        "caves": 0,
+        "farm": 3,
+        "icon": "giantland",
+        "biome": "Sundered Uplands"
+    },
+    "Dragon's Teeth": {
+        "name": "Dragon's Teeth",
+        "final_name": "Dragonfire Peaks",
+        "caves": 1,
+        "farm": 0,
+        "icon": "dragon",
+        "biome": "Dragonfire Peaks"
+    },
+    "Volcanic Fields": {
+        "name": "Volcanic Fields",
+        "final_name": "Dragonfire Peaks",
+        "caves": 3,
+        "farm": 2,
+        "icon": "dragon",
+        "biome": "Dragonfire Peaks"
+    },
+    "Blazing Emberlands": {
+        "name": "Blazing Emberlands",
+        "final_name": "Dragonfire Peaks",
+        "caves": 0,
+        "farm": 0,
+        "icon": "dragon",
+        "biome": "Dragonfire Peaks"
+    },
+    "Sugar Steppes": {
+        "name": "Sugar Steppes",
+        "final_name": "Candoria",
+        "caves": 1,
+        "farm": 0,
+        "icon": "candy",
+        "biome": "Candoria"
+    },
+    "Cupcake Canyon": {
+        "name": "Cupcake Canyon",
+        "final_name": "Candoria",
+        "caves": 1,
+        "farm": 2,
+        "icon": "candy",
+        "biome": "Candoria"
+    },
+    "Cocoa Craters": {
+        "name": "Cocoa Craters",
+        "final_name": "Candoria",
+        "caves": 0,
+        "farm": 0,
+        "icon": "candy",
+        "biome": "Candoria"
+    },
+    "Deep Forest": {
+        "name": "Deep Forest",
+        "final_name": "Medieval Highlands",
+        "caves": 1,
+        "farm": 0,
+        "icon": "forest",
+        "biome": "Medieval Highlands"
+    },
+    "Firefly Party": {
+        "name": "Firefly Party",
+        "final_name": "Medieval Highlands",
+        "caves": 1,
+        "farm": 0,
+        "icon": "forest",
+        "biome": "Medieval Highlands"
+    },
+    "Frigga's Fjord": {
+        "name": "Frigga's Fjord",
+        "final_name": "Medieval Highlands",
+        "caves": 0,
+        "farm": 0,
+        "icon": "forest",
+        "biome": "Medieval Highlands"
+    },
+    "Cursed Vale": {
+        "name": "Cursed Vale",
+        "final_name": "Cursed Vale",
+        "caves": 0,
+        "farm": 0,
+        "icon": "undead",
+        "biome": "Cursed Vale"
+    },
+    "Bewitching Wood": {
+        "name": "Bewitching Wood",
+        "final_name": "Fae Forest",
+        "caves": 1,
+        "farm": 0,
+        "icon": "fae",
+        "biome": "Fae Forest"
+    },
+    "Spellbound Thicket": {
+        "name": "Spellbound Thicket",
+        "final_name": "Fae Forest",
+        "caves": 1,
+        "farm": 1,
+        "icon": "fae",
+        "biome": "Fae Forest"
+    },
+    "Uncanny Valley": {
+        "name": "Uncanny Valley",
+        "final_name": "Fae Forest",
+        "caves": 1,
+        "farm": 0,
+        "icon": "fae",
+        "biome": "Fae Forest"
+    },
+    "Abandoned Boneyard": {
+        "name": "Abandoned Boneyard",
+        "final_name": "Desert Frontier",
+        "caves": 1,
+        "farm": 0,
+        "icon": "frontier",
+        "biome": "Desert Frontier"
+    },
+    "Alkali Flats": {
+        "name": "Alkali Flats",
+        "final_name": "Desert Frontier",
+        "caves": 1,
+        "farm": 2,
+        "icon": "frontier",
+        "biome": "Desert Frontier"
+    },
+    "Desert of Secrets": {
+        "name": "Desert of Secrets",
+        "final_name": "Desert Frontier",
+        "caves": 1,
+        "farm": 0,
+        "icon": "frontier",
+        "biome": "Desert Frontier"
+    },
+    "Frozen Wastes": {  
+        "name": "Frozen Wastes",
+        "final_name": "Permafrost",
+        "caves": 1,
+        "farm": 0,
+        "icon": "tundra",
+        "biome": "Permafrost"
+    },
+    "Dead of Winter": {
+        "name": "Dead of Winter",
+        "final_name": "Permafrost",
+        "caves": 1,
+        "farm": 1,
+        "icon": "tundra",
+        "biome": "Permafrost"
+    },
+    "Primal Preserve": {
+        "name": "Primal Preserve",
+        "final_name": "Primal Preserve",
+        "caves": 0,
+        "farm": 1,
+        "icon": "dinosaur",
+        "biome": "Jurassic Jungle"
+    },
+    "Saurian Swamp": {
+        "name": "Saurian Swamp",
+        "final_name": "Saurian Swamp",
+        "caves": 0,
+        "farm": 0,
+        "icon": "dinosaur",
+        "biome": "Jurassic Jungle"
+    },
+    "Viking Burial Grounds": {
+        "name": "Viking Burial Grounds",
+        "final_name": "Cursed Vale",
+        "caves": 1,
+        "farm": 0,
+        "icon": "undead",
+        "biome": "Cursed Vale"
+    },
+    "Ancient Heights": {
+        "name": "Ancient Heights",
+        "final_name": "Ancient Heights",
+        "caves": 0,
+        "farm": 0,
+        "icon": "spires",
+        "biome": "Forbidden Spires"
+    },
+    "Restless Range": {
+        "name": "Restless Range",
+        "final_name": "Restless Range",
+        "caves": 0,
+        "farm": 0,
+        "icon": "spires",
+        "biome": "Forbidden Spires"
+    },
+    "Hollow Dunes": {
+        "name": "Hollow Dunes",
+        "final_name": "Hollow Dunes",
+        "caves": 3,
+        "farm": 3,
+        "icon": "dunes",
+        "biome": "Geode Topside"
+    },
+    "Weathered Wastelands": {
+        "name": "Weathered Wastelands",
+        "final_name": "Weathered Wastelands",
+        "caves": 0,
+        "farm": 0,
+        "icon": "wasteland",
+        "biome": "Geode Topside"
+    },
+    "Cerise Sandsea": {
+        "name": "Cerise Sandsea",
+        "final_name": "Cerise Sandsea",
+        "caves": 1,
+        "farm": 1,
+        "icon": "sandsea",
+        "biome": "Geode Topside"
+    }
+}

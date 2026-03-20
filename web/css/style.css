@@ -261,3 +261,32 @@ body {
     height: 0;
     overflow: hidden;
 }
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color, #444c5e) transparent;
+}
+
+/* WebKit (Chrome, Edge, Safari, Eel) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color, #444c5e);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted, #a3adc2);
+}
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}

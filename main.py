@@ -48,7 +48,7 @@ eel.browsers.set_path('chrome', chromium_path)
 eel.init(os.path.join(base_dir, 'web'))
 
 try:
-    eel.start('index.html', mode='chrome', size=(1600, 900), port=28924, cmdline_args=[
+    eel.start('index.html', mode='chrome', size=(1600, 1000), port=28924, cmdline_args=[
         '--disable-infobars',
         '--no-default-browser-check',
         '--no-first-run',
