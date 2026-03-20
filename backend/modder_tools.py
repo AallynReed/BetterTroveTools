@@ -1,11 +1,13 @@
-import eel
 import base64
-from pathlib import Path
-from models.trove.mod import TMod, TroveModFile
 import tkinter as tk
-from tkinter import filedialog
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from hashlib import md5
+from pathlib import Path
+from tkinter import filedialog
+
+import eel
+
+from models.trove.mod import TMod, TroveModFile
 
 
 @eel.expose
@@ -125,7 +127,6 @@ def build_tmod(payload):
         if not tags: return {"success": False, "error": "At least one tag is required."}
         if not files: return {"success": False, "error": "At least one file is required."}
 
-        # Set Metadata
         mod.name = title
         mod.author = author
         mod.add_property("modVersion", version)
@@ -137,7 +138,6 @@ def build_tmod(payload):
         mod.add_property("modLoader", "BTT")
         mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))
             
-        # Pack Preview Image
         preview_b64 = payload.get("previewBase64")
         if preview_b64 and "," in preview_b64:
             header, data_str = preview_b64.split(",", 1)
@@ -147,7 +147,6 @@ def build_tmod(payload):
             mod.add_file(TroveModFile(preview_path, img_bytes))
             mod.preview_path = preview_path
             
-        # Pack Files
         for f in files:
             abs_path = f.get("abs_path")
             internal_path_str = f.get("internal_path", f.get("name", "unknown_file"))
@@ -163,7 +162,6 @@ def build_tmod(payload):
                     f_bytes = base64.b64decode(data_str)
                     mod.add_file(TroveModFile(f_path, f_bytes))
                 
-        # Compile and Save
         safe_name = "".join([c for c in title if c.isalpha() or c.isdigit() or c in " _-"]).strip()
         if not safe_name:
             safe_name = "Unnamed_Mod"

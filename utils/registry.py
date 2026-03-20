@@ -1,8 +1,8 @@
 import os
 from pathlib import Path
 from typing import Optional
-import vdf
 
+import vdf
 
 if os.name == "nt":
     import winreg
@@ -209,7 +209,6 @@ def get_trove_locations():
         print("Not running on Windows (nt). Aborting.")
         return []
 
-    # --- GLYPH DETECTION ---
     print("\n--- Scanning for Glyph ---")
     for Key in search_glyph_registry():
         try:
@@ -227,10 +226,8 @@ def get_trove_locations():
             print(f"[Glyph] Error reading registry value: {e}")
             continue
 
-    # --- STEAM DETECTION ---
     for Key in search_steam_registry():
         try:
-            # Try InstallPath first (HKLM), fallback to SteamPath (HKCU)
             try:
                 steam_path_str = winreg.QueryValueEx(Key, "InstallPath")[0]
             except FileNotFoundError:
@@ -263,7 +260,7 @@ def get_trove_locations():
                 for game_path in local_trove_path.iterdir():
                     if game_path.is_dir():
                         game = TroveGamePath(game_path, library_path)
-                        if game.is_valid: # This ensures Trove.exe is actually inside!
+                        if game.is_valid:
                             yield game
 
         except OSError:

@@ -6,13 +6,13 @@ from copy import copy
 from enum import Enum
 from hashlib import md5
 from pathlib import Path
-from typing import Generator, Optional
+from typing import AsyncGenerator, Generator, Optional
 
 import aiofiles
 from binary_reader import BinaryReader
-from utils.functions import read_leb128
-from models.trove.directory import Directories
 
+from models.trove.directory import Directories
+from utils.functions import read_leb128
 
 archive_id = re.compile(r"^archive(\d+)")
 
@@ -144,7 +144,7 @@ class TFArchive:
                 self._content_hash = md5(self._content).hexdigest()
         return self._content
 
-    async def files(self) -> Generator[TroveFile]:
+    async def files(self) -> AsyncGenerator[TroveFile]:
         for file in await self.index.files_list:
             if file["archive_index"] == int(self):
                 copy_file = copy(file)
@@ -199,7 +199,7 @@ class TFIndex:
             self._files.extend([x async for x in self.get_files_list()])
         return self._files
 
-    async def get_files_list(self) -> Generator[dict]:
+    async def get_files_list(self) -> AsyncGenerator[dict]:
         reader = BinaryReader(await self.content)
         while reader.pos() < reader.size():
             file = dict()
@@ -214,7 +214,7 @@ class TFIndex:
 
 async def find_all_indexes(
     path: Path, hashes: dict, track_changes=True
-) -> Generator[TFIndex]:
+) -> AsyncGenerator[TFIndex]:
     for item in path.iterdir():
         if item.is_file():
             continue
@@ -230,7 +230,7 @@ async def find_all_indexes(
                 yield index
 
 
-async def find_all_archives(path: Path, hashes: dict) -> Generator[TFArchive]:
+async def find_all_archives(path: Path, hashes: dict) -> AsyncGenerator[TFArchive]:
     async for index in find_all_indexes(path, hashes):
         for archive in index.archives:
             opath = archive.path.relative_to(path)
@@ -239,7 +239,7 @@ async def find_all_archives(path: Path, hashes: dict) -> Generator[TFArchive]:
                 yield archive
 
 
-async def find_all_files(path: Path, hashes: dict) -> Generator[TroveFile]:
+async def find_all_files(path: Path, hashes: dict) -> AsyncGenerator[TroveFile]:
     async for archive in find_all_archives(path, hashes):
         async for file in archive.files():
             file.index = archive.index
@@ -248,7 +248,7 @@ async def find_all_files(path: Path, hashes: dict) -> Generator[TroveFile]:
 
 async def find_changes(
     archive_path: Path, extracted_path: Path, hashes: dict
-) -> Generator[TroveFile]:
+) -> AsyncGenerator[TroveFile]:
     async for file in find_all_files(archive_path, hashes):
         if (await file.compare(archive_path, extracted_path)) in [
             FileStatus.added,

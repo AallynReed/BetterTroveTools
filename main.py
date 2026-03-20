@@ -9,6 +9,7 @@ os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
 import backend.file_manager
+import backend.gem_simulator
 import backend.mod_manager
 import backend.modder_tools
 import backend.settings
