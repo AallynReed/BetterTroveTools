@@ -219,3 +219,45 @@ body {
     top: 5px !important;
     position: relative !important;
 }
+
+#server-time-wrapper {
+    padding: 15px;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: opacity 0.2s;
+}
+
+#server-time-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: var(--accent-blue, #5ec6ff);
+}
+
+#server-time-date {
+    font-size: 12px;
+    color: #a3adc2;
+    font-weight: 600;
+}
+
+#server-time-clock {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Hide the clock when the sidebar is collapsed */
+#sidebar.collapsed #server-time-wrapper {
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+    height: 0;
+    overflow: hidden;
+}

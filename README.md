@@ -9,6 +9,7 @@ Better Trove Tools is a comprehensive, offline-capable suite of utilities design
 
 ## 🚀 Features
 
+* **Home Dashboard:** Stay up-to-date with live Trove server data including daily and weekly buffs, merchant statuses (Luxion, Corruxion, Fluxion), active Trovesaurus events, and top live Twitch streams.
 * **Mod Manager:** Easily enable, disable, install, and update your Trove mods. Includes conflict detection and Trovesaurus integration.
 * **Game File Extractor:** High-performance file manager to parse Trove's `.tfi` and `.tfa` archives to mass-extract game assets directly to your disk.
 * **Modder Tools:** 
@@ -16,6 +17,8 @@ Better Trove Tools is a comprehensive, offline-capable suite of utilities design
   * Extract existing `.tmod` files to inspect or modify their contents.
   * Auto-fix missing or incorrect mod configurations and names.
 * **Offline Capable:** Designed to run locally on your machine with a localized interface, fetching data from the web only when you need updates or Trovesaurus integration.
+* **Gem Simulator:** Build, level up, and augment virtual gems to optimize your character's stats without spending in-game resources. Includes features for sparking and flaring.
+* **Star Chart:** Explore and plan your Star Chart constellations.
 
 ## ⚠️ Disclaimer
 

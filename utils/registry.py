@@ -251,7 +251,6 @@ def get_trove_locations():
                 lib_path_str = library.get("path")
                 library_path = Path(lib_path_str)
                 
-                # Ignore the 'apps' list entirely. Just check the physical hard drive!
                 local_trove_path = library_path.joinpath("steamapps", "common", "Trove", "Games", "Trove")
 
                 if not local_trove_path.exists():

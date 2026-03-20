@@ -1,0 +1,52 @@
+<div class="home-container">
+    <div class="home-header">
+        <h1>Welcome to Better Trove Tools</h1>
+        <p class="subtitle">Your offline suite for Trove modding, theory-crafting, and game management.</p>
+    </div>
+
+    <div class="section-header">
+        <h2><i class="fa-brands fa-twitch" style="color: #9146FF;"></i> Live on Twitch</h2>
+    </div>
+    
+    <div id="streams-loading" class="loading-box">
+        <i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Streams...
+    </div>
+    
+    <div class="carousel-wrapper" id="carousel-wrapper" style="display: none;">
+        <button id="btn-scroll-left" class="carousel-btn left"><i class="fa-solid fa-chevron-left"></i></button>
+        <div class="streams-carousel" id="streams-carousel"></div>
+        <button id="btn-scroll-right" class="carousel-btn right"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+
+    <div class="split-layout">
+        
+        <div class="split-column">
+            <div class="section-header" style="margin-top: 40px;">
+                <h2><i class="fa-solid fa-bolt" style="color: #fbc02d;"></i> Server Buffs</h2>
+            </div>
+            <div id="buffs-loading" class="loading-box">
+                <i class="fa-solid fa-spinner fa-spin"></i> Fetching Server Data...
+            </div>
+            <div class="buffs-grid" id="buffs-grid" style="display: none;"></div>
+        </div>
+
+        <div class="split-column">
+            <div class="section-header" style="margin-top: 40px;">
+                <h2><i class="fa-solid fa-dragon" style="color: #ff5555;"></i> Dragon Merchants</h2>
+            </div>
+            <div id="merchants-grid" class="merchants-grid" style="display: none;">
+                </div>
+        </div>
+    </div>
+
+    <div class="section-header" style="margin-top: 40px;">
+        <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i>Events</h2>
+    </div>
+
+    <div id="events-loading" class="loading-box">
+        <i class="fa-solid fa-spinner fa-spin"></i> Loading Trovesaurus Calendar...
+    </div>
+
+    <div id="events-list" class="events-list" style="display: none;">
+        </div>
+</div>

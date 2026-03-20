@@ -6,6 +6,7 @@
     <title>Better Trove Tools</title>
     
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/mod_manager.css">
     <link rel="stylesheet" href="css/file_manager.css">
     <link rel="stylesheet" href="css/trovesaurus.css">
@@ -34,6 +35,12 @@
             <h2 id="app-title">Better Trove Tools</h2>
         </div>
         <ul class="menu">
+            <li>
+                <button class="nav-btn" data-target="home">
+                    <i class="fa-solid fa-house nav-icon"></i>
+                    <span class="nav-text">Home</span>
+                </button>
+            </li>
             <li>
                 <button class="nav-btn" data-target="trovesaurus">
                     <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 24px; height: 24px; object-fit: contain;">
@@ -76,6 +83,11 @@
             <i class="fa-solid fa-gear nav-icon"></i>
             <span class="nav-text">Settings</span>
         </button>
+        <div id="server-time-wrapper">
+            <div id="server-time-label">Server Time</div>
+            <div id="server-time-date">--</div>
+            <div id="server-time-clock">--:--:--</div>
+        </div>
 
     </nav>
 
@@ -84,6 +96,7 @@
     </main>
 
     <script src="js/main.js"></script>
+    <script src="js/home.js"></script>
     <script src="js/mod_manager.js"></script>
     <script src="js/file_manager.js"></script>
     <script src="js/trovesaurus.js"></script>

@@ -35,7 +35,6 @@ def write_storage(data):
 
 @eel.expose
 def load_gem_storage():
-    """Loads gem simulator data from APPDATA storage.json"""
     try:
         storage = read_storage()
         return storage.get("gem_simulator", {})
@@ -45,7 +44,6 @@ def load_gem_storage():
 
 @eel.expose
 def save_gem_storage(gem_data):
-    """Saves gem simulator data to APPDATA storage.json under its module key"""
     try:
         storage = read_storage()
         storage["gem_simulator"] = gem_data
@@ -57,7 +55,6 @@ def save_gem_storage(gem_data):
 
 @eel.expose
 def get_gem_lookups():
-    """Fetches all lookups in a single IPC call."""
     try:
         types = {t.name.replace("_", " ").title(): t.value for t in sorted(list(GemType), key=lambda x: x.value)}
         elements = {e.name.replace("_", " ").title(): e.value for e in sorted(list(GemElement), key=lambda x: x.value)}

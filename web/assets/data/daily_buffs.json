@@ -1,0 +1,130 @@
+{
+    "0": {
+        "name": "Delve Day",
+        "color": "260375",
+        "weekday": "Monday",
+        "emoji": "🏹",
+        "normal_buffs": [
+            "Double Crystal Drops",
+            "Double Shadow Shard Drops",
+            "Double Inert Geode Drops"
+        ],
+        "premium_buffs": [
+            "Triple Crystal Drops",
+            "Triple Shadow Shard Drops",
+            "Triple Inert Geode Drops"
+        ],
+        "icon": "https://i.imgur.com/sGpjABq.png",
+        "banner": "https://i.imgur.com/vlBJweQ.png"
+    },
+    "1": {
+        "name": "Gathering Day",
+        "color": "a14200",
+        "weekday": "Tuesday",
+        "emoji": "🐟",
+        "normal_buffs": [
+            "Double Radiant Shard Drops",
+            "20% Bonus Harvest Chance",
+            "50% Bonus Ore Chance",
+            "20% Bonus Fish Chance"
+        ],
+        "premium_buffs": [
+            "Triple Radiant Shard Drops",
+            "40% Bonus Harvest Chance",
+            "100% Bonus Ore Chance",
+            "40% Bonus Fish Chance"
+        ],
+        "icon": "https://i.imgur.com/zZ2RDe2.png",
+        "banner": "https://i.imgur.com/KQYmPtr.png"
+    },
+    "2": {
+        "name": "Gem Day",
+        "color": "181f79",
+        "weekday": "Wednesday",
+        "emoji": "💎",
+        "normal_buffs": [
+            "Gem Upgrade Dust Cost Reduced By 10%",
+            "25% Bonus Gem Box Drop Chance",
+            "Dungeons Can Drop Up To 3 Lustrous Gem Boxes"
+        ],
+        "premium_buffs": [
+            "Gem Upgrade Dust Cost Reduced By 20%",
+            "50% Bonus Gem Box Drop Chance",
+            "Dungeons Can Drop Up To 6 Lustrous Gem Boxes"
+        ],
+        "icon": "https://i.imgur.com/AmqEjbg.png",
+        "banner": "https://i.imgur.com/M5rAxEM.png"
+    },
+    "3": {
+        "name": "Adventure Day",
+        "color": "692e01",
+        "weekday": "Thursday",
+        "emoji": "🌀",
+        "normal_buffs": [
+            "Earn 50% More Adventurine",
+            "Double Chance to Find Adventure Boxes",
+            "Double Chance To Find Talismans"
+        ],
+        "premium_buffs": [
+            "Earn 100% More Adventurine",
+            "Triple Chance to Find Adventure Boxes",
+            "Triple Chance To Find Talismans"
+        ],
+        "icon": "https://i.imgur.com/6iM7zOI.png",
+        "banner": "https://i.imgur.com/WBfCJq7.png"
+    },
+    "4": {
+        "name": "Dragon Day",
+        "color": "6e0100",
+        "weekday": "Friday",
+        "emoji": "🐉",
+        "normal_buffs": [
+            "2x Dragon Coins from Challenges",
+            "2x Lesser Dragon Caches from Challenges",
+            "2x Chance Of Finding Dragon Fragments"
+        ],
+        "premium_buffs": [
+            "3x Dragon Coins from Challenges",
+            "3x Lesser Dragon Caches from Challenges",
+            "3x Chance Of Finding Dragon Fragments"
+        ],
+        "icon": "https://i.imgur.com/52xI3w0.png",
+        "banner": "https://i.imgur.com/D6b9z7X.png"
+    },
+    "5": {
+        "name": "XP Day",
+        "color": "05e97b",
+        "weekday": "Saturday",
+        "emoji": "💉",
+        "normal_buffs": [
+            "50% More Adventure Experience",
+            "50% More Club Experience",
+            "50% More Arena Win Experience"
+        ],
+        "premium_buffs": [
+            "100% More Adventure Experience",
+            "100% More Club Experience",
+            "100% More Arena Win Experience"
+        ],
+        "icon": "https://i.imgur.com/QOJcURU.png",
+        "banner": "https://i.imgur.com/kzsf681.png"
+    },
+    "6": {
+        "name": "Loot Day",
+        "color": "fdcf07",
+        "weekday": "Sunday",
+        "emoji": "💰",
+        "normal_buffs": [
+            "+100 Magic Find",
+            "Double Chance To Find Flux Artifacts",
+            "Increased Chaos Chest Drop Chance"
+        ],
+        "premium_buffs": [
+            "+400 Magic Find",
+            "Triple Chance To Find Flux Artifacts",
+            "Increased Chaos Chest Drop Chance"
+        ],
+        "icon": "https://i.imgur.com/pt2xXHd.png",
+        "banner": "https://i.imgur.com/KpPil8k.png"
+    }
+}

@@ -1,0 +1,42 @@
+{
+    "0": {
+        "name": "Double Star Bar",
+        "color": "260375",
+        "weekday": "Monday",
+        "emoji": "🌟",
+        "buffs": [
+            "Double Cubits and Flux from Star Bar completion!"
+        ],
+        "banner": "https://i.imgur.com/g1M4wkM.png"
+    },
+    "1": {
+        "name": "Bonus XP",
+        "color": "a14200",
+        "weekday": "Tuesday",
+        "emoji": "🏅",
+        "buffs": [
+            "+100% Base Experience!"
+        ],
+        "banner": "https://i.imgur.com/OL3oU5j.png"
+    },
+    "2": {
+        "name": "Second Stat Reroll",
+        "color": "181f79",
+        "weekday": "Wednesday",
+        "emoji": "🎰",
+        "buffs": [
+            "Chaos Forge can reroll the second stat on equipment!"
+        ],
+        "banner": "https://i.imgur.com/gvLsTrl.png"
+    },
+    "3": {
+        "name": "Fast Invasions",
+        "color": "692e01",
+        "weekday": "Thursday",
+        "emoji": "👾",
+        "buffs": [
+            "Increased rate of Shadow Invasions!"
+        ],
+        "banner": "https://i.imgur.com/ppArlMV.png"
+    }
+}
