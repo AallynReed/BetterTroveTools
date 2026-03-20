@@ -1,10 +1,42 @@
 document.addEventListener('home_loaded', () => {
     console.log("Home Dashboard initialized!");
     
-    // Boot Sequence
-    fetchStreams();
-    fetchServerData();
-    fetchEvents();
+    // Initial Boot Sequence
+    refreshAllData();
+
+    // Auto-refresh timers every 60 seconds
+    const autoRefresh = setInterval(() => {
+        // Only refresh if the home-container is still in the DOM
+        if (document.querySelector('.home-container')) {
+            refreshAllData();
+        } else {
+            clearInterval(autoRefresh);
+        }
+    }, 60000);
+
+    function refreshAllData() {
+        fetchStreams();
+        fetchServerData();
+        fetchEvents();
+    }
+
+    // =====================================
+    // HELPER: COUNTDOWN CALCULATOR
+    // =====================================
+    function getCountdown(timestamp) {
+        const now = Math.floor(Date.now() / 1000);
+        const diff = timestamp - now;
+
+        if (diff <= 0) return "Ending now...";
+
+        const days = Math.floor(diff / 86400);
+        const hours = Math.floor((diff % 86400) / 3600);
+        const mins = Math.floor((diff % 3600) / 60);
+
+        if (days > 0) return `${days}d ${hours}h left`;
+        if (hours > 0) return `${hours}h ${mins}m left`;
+        return `${mins}m left`;
+    }
 
     // =====================================
     // SERVER DATA (BUFFS & MERCHANTS)
@@ -17,18 +49,16 @@ document.addEventListener('home_loaded', () => {
         try {
             const response = await eel.get_current_server_data()();
             if (response && response.success) {
-                loading.style.display = 'none';
+                if (loading) loading.style.display = 'none';
                 renderBuffs(response.daily, response.weekly);
                 renderMerchants(response.merchants);
-            } else {
-                loading.innerHTML = `<span style="color: #ff5555;">Failed to load server data.</span>`;
             }
         } catch (e) {
-            console.error(e);
-            loading.innerHTML = `<span style="color: #ff5555;">Backend Connection Error</span>`;
+            console.error("Server Data Error:", e);
         }
 
         function renderBuffs(daily, weekly) {
+            if (!buffsGrid) return;
             buffsGrid.style.display = 'grid';
             buffsGrid.innerHTML = '';
             if (daily) buffsGrid.appendChild(createBuffCard("Daily: " + daily.name, daily));
@@ -72,6 +102,7 @@ document.addEventListener('home_loaded', () => {
         }
 
         function renderMerchants(merchants) {
+            if (!merchantsGrid) return;
             merchantsGrid.style.display = 'flex';
             merchantsGrid.innerHTML = '';
             const configs = [
@@ -110,7 +141,8 @@ document.addEventListener('home_loaded', () => {
         try {
             const response = await eel.get_trovesaurus_events()();
             if (response && response.success) {
-                loading.style.display = 'none';
+                if (loading) loading.style.display = 'none';
+                if (!list) return;
                 list.style.display = 'flex';
                 list.innerHTML = '';
 
@@ -125,8 +157,26 @@ document.addEventListener('home_loaded', () => {
                     card.href = event.url;
                     card.target = '_blank';
 
-                    const start = new Date(parseInt(event.startdate) * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                    const end = new Date(parseInt(event.enddate) * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    const startTs = parseInt(event.startdate);
+                    const endTs = parseInt(event.enddate);
+                    const nowTs = Math.floor(Date.now() / 1000);
+
+                    const startStr = new Date(startTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    const endStr = new Date(endTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                    
+                    let statusText = "";
+                    let statusColor = "#a3adc2"; 
+                    
+                    if (nowTs < startTs) {
+                        statusText = `Starts in ${getCountdown(startTs)}`;
+                        statusColor = "#5ec6ff"; 
+                    } else if (nowTs < endTs) {
+                        statusText = `Ends in ${getCountdown(endTs)}`;
+                        statusColor = "#ff5555"; 
+                    } else {
+                        statusText = "Event Ended";
+                    }
+
                     const img = event.image || event.icon || 'https://trovesaurus.com/images/logos/Sage_64.png';
 
                     card.innerHTML = `
@@ -136,14 +186,19 @@ document.addEventListener('home_loaded', () => {
                                 <span class="event-name">${event.name}</span>
                                 <span class="event-category">${event.category}</span>
                             </div>
-                            <div class="event-dates"><i class="fa-regular fa-calendar"></i> ${start} - ${end}</div>
+                            <div class="event-dates">
+                                <span><i class="fa-regular fa-calendar"></i> ${startStr} - ${endStr}</span>
+                                <span style="margin-left: 15px; color: ${statusColor}; font-weight: bold;">
+                                    <i class="fa-solid fa-hourglass-half"></i> ${statusText}
+                                </span>
+                            </div>
                         </div>
                         <div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
                     `;
                     list.appendChild(card);
                 });
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Events Error:", e); }
     }
 
     // =====================================
@@ -157,8 +212,9 @@ document.addEventListener('home_loaded', () => {
         try {
             const response = await eel.get_twitch_streams()();
             if (response && response.success) {
-                loading.style.display = 'none';
-                wrapper.style.display = 'flex';
+                if (loading) loading.style.display = 'none';
+                if (wrapper) wrapper.style.display = 'flex';
+                if (!carousel) return;
                 carousel.innerHTML = '';
 
                 if (!response.data || response.data.length === 0) {
@@ -189,14 +245,14 @@ document.addEventListener('home_loaded', () => {
                 });
                 setupCarouselNavigation();
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { console.error("Streams Error:", e); }
     }
 
     function setupCarouselNavigation() {
         const carousel = document.getElementById('streams-carousel');
         const btnLeft = document.getElementById('btn-scroll-left');
         const btnRight = document.getElementById('btn-scroll-right');
-        if (!btnLeft || !btnRight) return;
+        if (!carousel || !btnLeft || !btnRight) return;
 
         btnLeft.onclick = () => carousel.scrollBy({ left: -260, behavior: 'smooth' });
         btnRight.onclick = () => carousel.scrollBy({ left: 260, behavior: 'smooth' });

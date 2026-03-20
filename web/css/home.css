@@ -502,3 +502,12 @@
     font-size: 1.2em;
     opacity: 0.5;
 }
+
+.event-dates span i.fa-hourglass-half {
+    animation: pulse-opacity 2s infinite ease-in-out;
+}
+
+@keyframes pulse-opacity {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
