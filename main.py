@@ -16,6 +16,7 @@ import backend.modder_tools
 import backend.settings
 import backend.star_chart
 import backend.trovesaurus
+import backend.calculators
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)

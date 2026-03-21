@@ -1,0 +1,49 @@
+<head>
+    <link rel="stylesheet" href="css/allies.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</head>
+<div class="allies-container">
+    <div class="page-header">
+        <h1><i class="fa-solid fa-paw" style="color: #ff9800;"></i> Ally Codex</h1>
+        <div class="subtitle">Search and discover companions by name, stats, or abilities.</div>
+    </div>
+
+    <div class="search-section">
+        <div class="search-bar-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="ally-search-input" placeholder="Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...">
+        </div>
+        
+        <div class="filters-row">
+            <div class="filter-group" style="flex: 0.5;">
+                <label for="ally-category-select">Category</label>
+                <select id="ally-category-select" class="custom-select">
+                    <option value="All">All Categories</option>
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+            
+            <div class="filter-group select2-wrapper">
+                <label for="ally-stat-select">Required Stats</label>
+                <select id="ally-stat-select" class="custom-select" multiple="multiple" style="width: 100%;">
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+
+            <div class="filter-group select2-wrapper">
+                <label for="ally-ability-select">Required Abilities</label>
+                <select id="ally-ability-select" class="custom-select" multiple="multiple" style="width: 100%;">
+                    <!-- Populated via JS -->
+                </select>
+            </div>
+        </div>
+
+        <div class="search-stats" id="search-stats-display">Loading allies...</div>
+    </div>
+
+    <div class="allies-grid" id="allies-grid">
+        <!-- Ally cards will be injected here by JS -->
+    </div>
+</div>

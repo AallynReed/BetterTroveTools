@@ -1,0 +1,86 @@
+[
+    {
+        "name": "Dragons",
+        "type": "slider",
+        "percentage": false,
+        "value": 2900
+    },
+    {
+        "name": "Dragon Badges",
+        "type": "slider",
+        "percentage": false,
+        "value": 500
+    },
+    {
+        "name": "Hat",
+        "type": "switch",
+        "percentage": false,
+        "value": 325
+    },
+    {
+        "name": "Weapon",
+        "type": "switch",
+        "percentage": false,
+        "value": 325
+    },
+    {
+        "name": "Face",
+        "type": "switch",
+        "percentage": false,
+        "value": 325
+    },
+    {
+        "name": "Ring",
+        "type": "switch",
+        "percentage": false,
+        "value": 300
+    },
+    {
+        "name": "Pirate Captain",
+        "type": "switch",
+        "percentage": false,
+        "value": 70
+    },
+    {
+        "name": "Ally",
+        "type": "switch",
+        "percentage": false,
+        "value": 150
+    },
+    {
+        "name": "Club Fixture",
+        "type": "switch",
+        "percentage": false,
+        "value": 200
+    },
+    {
+        "name": "Borrowed Luck",
+        "type": "switch",
+        "percentage": false,
+        "value": 250
+    },
+    {
+        "name": "Clover",
+        "type": "switch",
+        "percentage": false,
+        "value": 50
+    },
+    {
+        "name": "Elixir",
+        "type": "switch",
+        "percentage": false,
+        "value": 75
+    },
+    {
+        "name": "Store Boost",
+        "type": "switch",
+        "percentage": false,
+        "value": 1000
+    },
+    {
+        "name": "Bonus MF (No deaths)",
+        "type": "switch",
+        "percentage": true,
+        "value": 50
+    }
+]
