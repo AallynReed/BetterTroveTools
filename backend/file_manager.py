@@ -14,6 +14,8 @@ import tkinter as tk
 from tkinter import filedialog
 import time
 from datetime import datetime
+import re
+import subprocess
 
 
 @eel.expose
@@ -304,16 +306,16 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
 
 
 @eel.expose
-def scan_and_extract_updates(game_path_str, tracking_dir_str):
+def scan_and_extract_updates(game_path_str, tracking_dir_str, run_catalog=False):
     try:
-        result = asyncio.run(_scan_and_extract_updates_async(game_path_str, tracking_dir_str))
+        result = asyncio.run(_scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog))
         return {"success": True, "details": result}
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
-async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
+async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog):
     game_path = Path(game_path_str)
     tracking_dir = Path(tracking_dir_str)
     data_path = tracking_dir / "extraction_data.json"
@@ -328,7 +330,6 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
         "files": {}
     }
     
-    # Create the timestamped extraction folder
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     update_folder = tracking_dir / date_str
     
@@ -356,20 +357,16 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
             new_cache["archives"][rel_tfa] = new_tfa_hash
             archives_dict[archive.id] = archive
             
-            # Did this specific TFA change?
             if old_cache["archives"].get(rel_tfa) != new_tfa_hash:
                 tfa_changed = True
                 
-        # If neither the index nor any of its archives changed, skip hashing inner files
         if not tfa_changed and old_cache["archives"].get(rel_tfi) == new_tfi_hash:
-            # Carry over the old file hashes to the new cache
             prefix = f"{rel_tfi}::"
             for k, v in old_cache["files"].items():
                 if k.startswith(prefix):
                     new_cache["files"][k] = v
             continue
             
-        # If we reach here, something in this index/archive changed. Time to dig in.
         files = await index.files_list
         current_tfi_files = set()
         
@@ -393,17 +390,15 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
                 elif old_file_hash != new_file_hash:
                     changed_files.append((file_obj, clean_name, "changed"))
                     
-        # Check for removed files within this specific TFI
         prefix = f"{rel_tfi}::"
         for old_key in old_cache["files"]:
             if old_key.startswith(prefix) and old_key not in current_tfi_files:
                 removed_files.append(old_key)
                 
-    # --- Extraction Phase ---
+    # --- Extraction & Catalog Phase ---
     if added_files or changed_files or removed_files:
         update_folder.mkdir(parents=True, exist_ok=True)
         
-        # Helper to save files to disk
         async def extract_list(file_list, subfolder_name):
             for file_obj, clean_name, status in file_list:
                 out_path = update_folder / subfolder_name / clean_name
@@ -414,6 +409,63 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
         await extract_list(added_files, "added")
         await extract_list(changed_files, "changed")
         
+        # --- NEW CATALOG LOGIC ---
+        if run_catalog and (added_files or changed_files):
+            eel.update_progress_ui(1, 1, "Generating Blueprint Previews...", "Cataloging")()
+            blueprints_to_catalog = set()
+            
+            for file_list in [added_files, changed_files]:
+                for _, clean_name, _ in file_list:
+                    if clean_name.endswith(".blueprint"):
+                        bp_name = re.sub(r"(?:\[.*\])?\.blueprint", "", Path(clean_name).name)
+                        if len(bp_name.split("_")) >= 5:
+                            match = re.match(r"^.*_", bp_name)
+                            if match: blueprints_to_catalog.add(match.group(0))
+                            else: blueprints_to_catalog.add(bp_name)
+                        else:
+                            blueprints_to_catalog.add(bp_name)
+            
+            if blueprints_to_catalog:                
+                trove_exe = game_path / "Trove.exe"
+                active_processes = []
+                cpu_limit = max(1, (os.cpu_count() or 4) - 1) # Keep 1 core free so UI doesn't freeze
+                
+                for bp in blueprints_to_catalog:
+                    cmd = f'"{trove_exe}" -tool catalog -filter "{bp}" -dimension "256"'
+                    
+                    # Hide the CMD window popping up on Windows
+                    startupinfo = None
+                    if os.name == 'nt':
+                        startupinfo = subprocess.STARTUPINFO()
+                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        
+                    proc = subprocess.Popen(cmd, cwd=str(game_path), startupinfo=startupinfo)
+                    active_processes.append(proc)
+                    
+                    # Wait if we hit our CPU limit
+                    if len(active_processes) >= cpu_limit:
+                        for p in active_processes: p.wait()
+                        active_processes = []
+                
+                # Cleanup any remaining processes
+                for p in active_processes: p.wait()
+                
+                # Move generated images to our update folder and rename as requested
+                # Cleanup any remaining processes
+                for p in active_processes: p.wait()
+                
+                # Move the entire catalog folder instantly to our update folder
+                game_catalog_dir = game_path / "catalog"
+                if game_catalog_dir.exists():
+                    dest_catalog_dir = update_folder
+                    shutil.move(str(game_catalog_dir), str(dest_catalog_dir))
+                    
+                    # Quickly rename the files inside to strip the ".blueprint" part
+                    for png_file in dest_catalog_dir.glob("*.blueprint.png"):
+                        dest_name = png_file.name.replace(".blueprint.png", ".png")
+                        png_file.rename(png_file.with_name(dest_name))
+        # --- END CATALOG LOGIC ---
+
         # Write Changelog
         changelog_path = update_folder / "changelog.txt"
         with open(changelog_path, "w", encoding="utf-8") as clog:
@@ -429,11 +481,9 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
             clog.write(f"\nREMOVED FILES ({len(removed_files)}):\n")
             for name in removed_files: clog.write(f" - {name}\n")
             
-        # Backup old JSON directly INTO the new update folder
         backup_path = update_folder / "extraction_data_backup.json"
         shutil.copy2(data_path, backup_path)
         
-        # Save the new cache to the root tracking directory for the next scan
         with open(data_path, "w", encoding="utf-8") as f:
             json.dump(new_cache, f, indent=4)
             

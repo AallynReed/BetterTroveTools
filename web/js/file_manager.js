@@ -394,11 +394,15 @@ document.addEventListener('file_manager_loaded', () => {
         const gamePath = trackerGameSelect.value;
         if (!gamePath || !currentTrackingDir) return;
 
+        // Grab the state of the new catalog toggle
+        const runCatalog = document.getElementById('tracker-catalog-toggle').checked;
+
         btnBuildBaseline.disabled = true;
         btnScanUpdates.disabled = true;
         showProgressUI();
         
-        const response = await eel.scan_and_extract_updates(gamePath, currentTrackingDir)();
+        // Pass the new boolean to Python
+        const response = await eel.scan_and_extract_updates(gamePath, currentTrackingDir, runCatalog)();
         
         hideProgressUI();
         btnBuildBaseline.disabled = false;
