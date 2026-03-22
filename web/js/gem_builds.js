@@ -1,7 +1,7 @@
 document.addEventListener("gem_builds_loaded", () => {
     let currentPage = 0;
     let cachedBuilds = [];
-    const itemsPerPage = 25;
+    const itemsPerPage = 24;
     let isCalculating = false;
 
     const tbody = document.getElementById("gb-results-body");
