@@ -1,0 +1,3021 @@
+[
+    {
+        "name": "Bard",
+        "qualified_name": "bard",
+        "shorts": [
+            "BD"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Fist"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 46,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 131,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 13.5,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "Personal Song",
+            "description": "Sing yourself a little song when you head into battle. When attacking gain Jubilant, Peaceful, and Battle song buffs in that order.",
+            "level": {
+                "1": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 1,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 3,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 6,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 9,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 12,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 15,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Boomeranger",
+        "qualified_name": "adventurer",
+        "shorts": [
+            "BR",
+            "Boom"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Bow",
+            "Sword"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 3080,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 6150,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 30,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 3025,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 43,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 110,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 10,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 30,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "Fae Companion",
+            "description": "A fae companion that provides healing when you are low on life.",
+            "level": {
+                "1": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 1,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 2,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 4,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 8,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 12,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "Critical Damage",
+                        "value": 20,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "30% Heal",
+                "5000": "32% Heal",
+                "10000": "34% Heal",
+                "15000": "36% Heal",
+                "20000": "38% Heal",
+                "25000": "40% Heal",
+                "30000": "45% Heal",
+                "35000": "50% Heal"
+            }
+        },
+        "abilities": [
+            {
+                "name": "Final Blow",
+                "icon": "icon_adventurer_passive",
+                "type": "Passive",
+                "stages": []
+            },
+            {
+                "name": "Basic Attack",
+                "icon": "icon_styles_gun",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Sword",
+                        "base": 300,
+                        "multiplier": 1.7
+                    },
+                    {
+                        "name": "Bow",
+                        "base": 250,
+                        "multiplier": 1.4
+                    }
+                ]
+            },
+            {
+                "name": "Boomerang",
+                "icon": "icon_adventurer_boomerang",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 0,
+                        "multiplier": 2.75
+                    }
+                ]
+            },
+            {
+                "name": "Big Bomb",
+                "icon": "icon_adventurer_bomb",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 0,
+                        "multiplier": 5
+                    }
+                ]
+            },
+            {
+                "name": "Mysterious Urn",
+                "icon": "icon_adventurer_urn",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 0,
+                        "multiplier": 6
+                    },
+                    {
+                        "name": "Bomb",
+                        "base": 0,
+                        "multiplier": 4
+                    },
+                    {
+                        "name": "Chicken",
+                        "base": 0,
+                        "multiplier": 2
+                    }
+                ]
+            },
+            {
+                "name": "Bawk Bomb",
+                "icon": "icon_adventurer_bomb",
+                "type": "Upgrade",
+                "stages": [
+                    {
+                        "name": "Explosion",
+                        "base": 0,
+                        "multiplier": 2.85
+                    },
+                    {
+                        "name": "Chicken",
+                        "base": 0,
+                        "multiplier": 0.65
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Candy Barbarian",
+        "qualified_name": "candybarbarian",
+        "shorts": [
+            "CB",
+            "Barb"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Sword"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 2900,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4970,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 2575,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 30,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "description": "Damaging an enemy has a chance to drop candy that doubles attack speed and movement speed by 20 or heals you by 10% max health. 15s cooldown.",
+            "level": {
+                "1": [
+                    {
+                        "name": "Stability",
+                        "value": 5,
+                        "percentage": false
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "Stability",
+                        "value": 15,
+                        "percentage": false
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "Stability",
+                        "value": 30,
+                        "percentage": false
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "Stability",
+                        "value": 50,
+                        "percentage": false
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "Stability",
+                        "value": 75,
+                        "percentage": false
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "Stability",
+                        "value": 105,
+                        "percentage": false
+                    }
+                ]
+            },
+            "power": {
+                "1": "22.5% chance to activate on damage dealt.",
+                "5000": "25% chance to activate on damage dealt.",
+                "10000": "27.5% chance to activate on damage dealt.",
+                "15000": "30% chance to activate on damage dealt.",
+                "20000": "32.5% chance to activate on damage dealt.",
+                "25000": "35% chance to activate on damage dealt.",
+                "30000": "40% chance to activate on damage dealt.",
+                "35000": "50% chance to activate on damage dealt."
+            }
+        },
+        "abilities": [
+            {
+                "name": "Gum Drop",
+                "icon": "ico_barbarian_passive_01",
+                "type": "Passive",
+                "stages": []
+            },
+            {
+                "name": "Basic Attack",
+                "icon": "icon_styles_gun",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 150,
+                        "multiplier": 1.85
+                    }
+                ]
+            },
+            {
+                "name": "Vanilla Swirlwind",
+                "icon": "ico_barbarian_whirlwind_01",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 0,
+                        "multiplier": 6.5
+                    }
+                ]
+            },
+            {
+                "name": "Sugar Crash",
+                "icon": "ico_barbarian_crash_01",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 50,
+                        "multiplier": 4.5
+                    }
+                ]
+            },
+            {
+                "name": "Eis-Crom Cone",
+                "icon": "ico_barbarian_cromcone_01",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 25,
+                        "multiplier": 15
+                    }
+                ]
+            },
+            {
+                "name": "Scoop n' Gloop",
+                "icon": "ico_barbarian_crash_01",
+                "type": "Upgrade",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 50,
+                        "multiplier": 4.5
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Chloromancer",
+        "qualified_name": "chloromancer",
+        "shorts": [
+            "CM",
+            "Chloro"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Staff"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 3075,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 147,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Dino Tamer",
+        "qualified_name": "dinotamer",
+        "shorts": [
+            "DT",
+            "Dino"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Gun"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 3025,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 131,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Dracolyte",
+        "qualified_name": "dracolyte",
+        "shorts": [
+            "DL",
+            "Draco"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Staff"
+        ],
+        "attributes": [
+            "Infinite Attack Speed"
+        ],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2440,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": null,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Fae Trickster",
+        "qualified_name": "faetrickster",
+        "shorts": [
+            "FT",
+            "Fae"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Staff"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 13.5,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Gunslinger",
+        "qualified_name": "gunslinger",
+        "shorts": [
+            "GS"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Gun"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 13.5,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        },
+        "abilities": [
+            {
+                "name": "Basic Attack",
+                "icon": "icon_styles_gun",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 200,
+                        "multiplier": 1.33
+                    }
+                ]
+            },
+            {
+                "name": "Lucky Shot",
+                "icon": "ico_gunslinger_luckyshot_01",
+                "type": "Passive",
+                "stages": []
+            },
+            {
+                "name": "Charged Shot",
+                "icon": "ico_gunslinger_chargeshot_01",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Stage 1 Hit",
+                        "base": 5,
+                        "multiplier": 1.5
+                    },
+                    {
+                        "name": "Stage 2 Hit",
+                        "base": 0,
+                        "multiplier": 2
+                    },
+                    {
+                        "name": "Stage 2 AoE",
+                        "base": 25,
+                        "multiplier": 2
+                    },
+                    {
+                        "name": "Stage 3 Hit",
+                        "base": 0,
+                        "multiplier": 4
+                    },
+                    {
+                        "name": "Stage 3 AoE",
+                        "base": 25,
+                        "multiplier": 3.5
+                    }
+                ]
+            },
+            {
+                "name": "Blast Jump",
+                "icon": "ico_gunslinger_blastjump_01",
+                "type": "Active",
+                "stages": [
+                    {
+                        "name": "Damage",
+                        "base": 10,
+                        "multiplier": 6
+                    }
+                ]
+            },
+            {
+                "name": "Run and Gun",
+                "icon": "ico_gunslinger_runandgun_01",
+                "type": "Passive",
+                "stages": []
+            },
+            {
+                "name": "Overcharged",
+                "icon": "ico_gunslinger_runandgun_01",
+                "type": "Upgrade",
+                "stages": [
+                    {
+                        "name": "Hit",
+                        "base": 0,
+                        "multiplier": 4
+                    },
+                    {
+                        "name": "AoE",
+                        "base": 25,
+                        "multiplier": 3.5
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "name": "Ice Sage",
+        "qualified_name": "icemage",
+        "shorts": [
+            "IS"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Staff"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 13.5,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Knight",
+        "qualified_name": "knight",
+        "shorts": [
+            "KT"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Sword"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 3202,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 6150,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 30,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 3025,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Lunar Lancer",
+        "qualified_name": "lunarlancer",
+        "shorts": [
+            "LL",
+            "Lunar"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Spear"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 56,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 131,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 5,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 30,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Neon Ninja",
+        "qualified_name": "neonninja",
+        "shorts": [
+            "NN",
+            "Ninja"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Sword"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 46,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 131,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Pirate Captain",
+        "qualified_name": "piratelord",
+        "shorts": [
+            "PC",
+            "Pirate"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Gun"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 61,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 43,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 4.5,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 165,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Revenant",
+        "qualified_name": "spirittank",
+        "shorts": [
+            "RV",
+            "Rev"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Spear"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 3230,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 5310,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 45,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 3225,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": null,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Shadow Hunter",
+        "qualified_name": "shadowhunter",
+        "shorts": [
+            "SH"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Bow"
+        ],
+        "attributes": [
+            "Infinite Attack Speed"
+        ],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 136,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 13.5,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Solarion",
+        "qualified_name": "solarion",
+        "shorts": [
+            "SL",
+            "Sol"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Bow"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 6030,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 30,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 3025,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 131,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 4,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 1,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 140,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 10,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 30,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Tomb Raiser",
+        "qualified_name": "tombraiser",
+        "shorts": [
+            "TR"
+        ],
+        "damage_type": "Magic",
+        "weapons": [
+            "Staff"
+        ],
+        "attributes": [
+            "Infinite Attack Speed"
+        ],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 2376,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 4850,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 1495,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 147,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": null,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 3,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 50,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    },
+    {
+        "name": "Vanguardian",
+        "qualified_name": "crimefighter",
+        "shorts": [
+            "VG",
+            "Vang"
+        ],
+        "damage_type": "Physical",
+        "weapons": [
+            "Fist"
+        ],
+        "attributes": [],
+        "stats": [
+            {
+                "name": "Physical Damage",
+                "value": 2976,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health",
+                "value": 5750,
+                "percentage": false
+            },
+            {
+                "name": "Maximum Health %",
+                "value": 20,
+                "percentage": true
+            },
+            {
+                "name": "Energy",
+                "value": 160,
+                "percentage": false
+            },
+            {
+                "name": "Health Regen",
+                "value": 25,
+                "percentage": false
+            },
+            {
+                "name": "Energy Regen",
+                "value": 100,
+                "percentage": false
+            },
+            {
+                "name": "Movement Speed",
+                "value": 40,
+                "percentage": false
+            },
+            {
+                "name": "Attack Speed",
+                "value": 100,
+                "percentage": true
+            },
+            {
+                "name": "Jump",
+                "value": 5,
+                "percentage": false
+            },
+            {
+                "name": "Critical Hit",
+                "value": 2,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 75,
+                "percentage": true
+            },
+            {
+                "name": "Light",
+                "value": 0,
+                "percentage": false
+            }
+        ],
+        "bonuses": [
+            {
+                "name": "Physical Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 0,
+                "percentage": true
+            },
+            {
+                "name": "Health Regen",
+                "value": 0,
+                "percentage": true
+            }
+        ],
+        "subclass": {
+            "name": "",
+            "level": {
+                "1": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "10": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "15": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "20": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "25": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ],
+                "30": [
+                    {
+                        "name": "",
+                        "value": 0,
+                        "percentage": true
+                    }
+                ]
+            },
+            "power": {
+                "1": "",
+                "5000": "",
+                "10000": "",
+                "15000": "",
+                "20000": "",
+                "25000": "",
+                "30000": "",
+                "35000": ""
+            }
+        }
+    }
+]

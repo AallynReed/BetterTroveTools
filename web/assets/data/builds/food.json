@@ -1,0 +1,62 @@
+{
+    "zephyr_rune": {
+        "qualified_name": "Zephyr Rune",
+        "stats": [
+            {
+                "name": "Light",
+                "value": 450,
+                "percentage": false
+            }
+        ]
+    },
+    "delve_freerange": {
+        "qualified_name": "Freerange Electrolytic Crystals",
+        "stats": [
+            {
+                "name": "Light",
+                "value": 300,
+                "percentage": false
+            }
+        ]
+    },
+    "fishing_phys_3_base": {
+        "qualified_name": "Premium Fish Fillet",
+        "stats": [
+            {
+                "name": "Light",
+                "value": 400,
+                "percentage": false
+            },
+            {
+                "name": "Physical Damage",
+                "value": 6,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 15,
+                "percentage": true
+            }
+        ]
+    },
+    "fishing_spell_3_base": {
+        "qualified_name": "Premium Fish Kabobs",
+        "stats": [
+            {
+                "name": "Light",
+                "value": 400,
+                "percentage": false
+            },
+            {
+                "name": "Magic Damage",
+                "value": 6,
+                "percentage": true
+            },
+            {
+                "name": "Critical Damage",
+                "value": 15,
+                "percentage": true
+            }
+        ]
+    }
+}

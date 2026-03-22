@@ -1,0 +1,46 @@
+{
+    "Lesser": {
+        "Critical Damage": [
+            240.0,
+            82.5
+        ],
+        "Damage": [
+            17304,
+            6720
+        ],
+        "Light": [
+            640,
+            325
+        ],
+        "Maximum Health": [
+            56700,
+            23625
+        ],
+        "Maximum Health %": [
+            567.0,
+            236.25
+        ]
+    },
+    "Empowered": {
+        "Critical Damage": [
+            252.5,
+            95
+        ],
+        "Damage": [
+            24276,
+            8400
+        ],
+        "Light": [
+            665,
+            350
+        ],
+        "Maximum Health": [
+            61950,
+            28875
+        ],
+        "Maximum Health %": [
+            619.5,
+            288.75
+        ]
+    }
+}

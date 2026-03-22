@@ -1,0 +1,135 @@
+<head>
+    <link rel="stylesheet" href="css/gem_builds.css">
+</head>
+<div id="view-gem-builds" class="view-container">
+    <div class="header">
+        <h2>Gem <span class="highlight-orange">Builds</span> Optimizer</h2>
+        <p>Calculate the absolute mathematical best gem allocations for your setup.</p>
+    </div>
+
+    <div class="gem-builds-grid">
+        
+        <!-- CONFIGURATION PANEL -->
+        <div class="card config-panel">
+            <h3>Configuration</h3>
+            
+            <div class="input-group">
+                <label>Class</label>
+                <select id="gb-class"></select>
+            </div>
+
+            <div class="input-group">
+                <label>Subclass</label>
+                <select id="gb-subclass"></select>
+            </div>
+
+            <div class="input-group">
+                <label>Build Type</label>
+                <select id="gb-build-type">
+                    <option value="Light">Light</option>
+                    <option value="Farm">Farm</option>
+                    <option value="Health">Health</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <label>Ally</label>
+                <select id="gb-ally"></select>
+            </div>
+
+            <div class="input-group">
+                <label>Food</label>
+                <select id="gb-food"></select>
+            </div>
+
+            <div class="input-row">
+                <div class="input-group">
+                    <label>Base Light</label>
+                    <input type="number" id="gb-light" value="0">
+                </div>
+                <div class="input-group">
+                    <label>Gear Crit Dmg Rolls (0-3)</label>
+                    <input type="number" id="gb-cd-count" min="0" max="3" value="3">
+                </div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="toggles-grid">
+                <label class="toggle-container">
+                    <input type="checkbox" id="gb-berserker">
+                    <span class="checkmark"></span>
+                    Berserker Battler
+                </label>
+
+                <label class="toggle-container">
+                    <input type="checkbox" id="gb-litany">
+                    <span class="checkmark"></span>
+                    Enlightened (Litany)
+                </label>
+
+                <label class="toggle-container">
+                    <input type="checkbox" id="gb-subclass-active">
+                    <span class="checkmark"></span>
+                    Subclass Active
+                </label>
+
+                <label class="toggle-container">
+                    <input type="checkbox" id="gb-no-face">
+                    <span class="checkmark"></span>
+                    No Face Stats
+                </label>
+            </div>
+
+            <hr class="divider">
+
+            <div class="input-group">
+                <label>Star Chart Build Code (Base64)</label>
+                <input type="text" id="gb-star-chart" placeholder="e.g. Y29tYmF0LmEkY29t...">
+            </div>
+            
+            <div id="gb-star-chart-summary" class="star-chart-summary" style="display: none;"></div>
+
+            <button id="btn-calculate-builds" class="btn btn-primary full-width mt-3">
+                <i class="fa-solid fa-calculator"></i> Calculate Optimal Builds
+            </button>
+        </div>
+
+        <!-- RESULTS PANEL -->
+        <div class="card results-panel">
+            <div class="results-header">
+                <h3>Top Builds</h3>
+                <div class="pagination">
+                    <button id="gb-prev" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="gb-page-info">Page 1 / 1</span>
+                    <button id="gb-next" class="btn-icon"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="btt-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Build</th>
+                            <th>Light</th>
+                            <th>Base Dmg</th>
+                            <th>Bonus Dmg</th>
+                            <th>Total Dmg</th>
+                            <th>Crit Dmg</th>
+                            <th>Coefficient</th>
+                            <th>Dev.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gb-results-body">
+                        <!-- JS will populate rows here -->
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">Click Calculate to generate builds.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>

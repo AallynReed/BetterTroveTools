@@ -1,0 +1,104 @@
+/* --- GEM BUILDS LAYOUT --- */
+.view-container { padding: 20px; }
+.header h2 { font-size: 2.5rem; margin-bottom: 5px; }
+.header p { color: var(--text-muted); margin-bottom: 30px; }
+
+.gem-builds-grid {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 20px;
+    align-items: start;
+}
+
+.card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.card h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+
+/* Inputs */
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; }
+.input-group select, .input-group input {
+    width: 100%; padding: 10px 15px;
+    background: var(--bg-dark); color: #fff;
+    border: 1px solid var(--border-color); border-radius: 8px;
+    font-size: 1rem;
+}
+.input-row { display: flex; gap: 15px; }
+.input-row .input-group { flex: 1; }
+
+.divider { border: 0; border-top: 1px solid var(--border-color); margin: 20px 0; }
+.full-width { width: 100%; justify-content: center; }
+.mt-3 { margin-top: 20px; }
+
+/* Custom Checkbox Toggles */
+.toggles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.toggle-container {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.9rem; cursor: pointer; user-select: none;
+}
+.toggle-container input { display: none; }
+.checkmark {
+    width: 20px; height: 20px; background: var(--bg-dark);
+    border: 1px solid var(--border-color); border-radius: 4px;
+    position: relative; display: flex; justify-content: center; align-items: center;
+    transition: 0.2s;
+}
+.toggle-container input:checked ~ .checkmark { background: var(--accent-orange); border-color: var(--accent-orange); }
+.toggle-container input:checked ~ .checkmark::after {
+    content: '\f00c'; font-family: 'FontAwesome'; color: #000; font-size: 12px;
+}
+
+/* Results Table */
+.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.pagination { display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-size: 0.9rem; }
+.btn-icon { background: none; border: none; color: var(--text-main); cursor: pointer; padding: 5px; transition: 0.2s; }
+.btn-icon:hover { color: var(--accent-blue); }
+
+.table-responsive { overflow-x: auto; max-height: 700px; }
+.btt-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+.btt-table th { background: var(--bg-dark); color: var(--text-muted); padding: 12px 15px; position: sticky; top: 0; }
+.btt-table td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
+.btt-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+
+/* Star Chart Summary Box */
+.star-chart-summary {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed var(--accent-blue);
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-top: 10px;
+    font-size: 0.85rem;
+}
+.star-chart-summary h4 {
+    margin: 0 0 5px 0;
+    color: var(--accent-blue);
+    font-size: 0.9rem;
+}
+.star-chart-summary ul {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-muted);
+}
+.star-chart-summary li {
+    margin-bottom: 3px;
+}
+
+.results-panel .table-responsive {
+    max-height: none !important; /* Removes any vertical height limit */
+    overflow-y: visible !important; /* Disables the vertical scrollbar */
+    overflow-x: auto; /* Keeps horizontal scrolling just in case of small screens */
+}
+
+/* Optional: If the card itself is restricting the height */
+.results-panel {
+    height: auto !important;
+    max-height: none !important;
+}
