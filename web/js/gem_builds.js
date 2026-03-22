@@ -18,6 +18,23 @@ document.addEventListener("gem_builds_loaded", () => {
         };
     }
 
+    // --- UI LOGIC: BASE LIGHT TOGGLE ---
+    function updateLightInputState() {
+        const buildType = document.getElementById("gb-build-type")?.value;
+        const lightInput = document.getElementById("gb-light");
+        
+        if (lightInput) {
+            const wrapper = lightInput.parentElement;
+            if (buildType === "Farm") {
+                lightInput.disabled = false;
+                if (wrapper) wrapper.style.opacity = "1";
+            } else {
+                lightInput.disabled = true;
+                if (wrapper) wrapper.style.opacity = "0.5";
+            }
+        }
+    }
+
     // --- 1. CORE CALCULATION LOGIC ---
     async function triggerCalculation() {
         if (isCalculating) return;
@@ -84,8 +101,14 @@ document.addEventListener("gem_builds_loaded", () => {
                     subclassSelect.add(new Option(cls.name, cls.value));
                 }
                 
-                if (subclassSelect.options.length > 1) {
-                    subclassSelect.selectedIndex = 1;
+                // Ensure Class and Subclass are never the same on load
+                if (classSelect.value === subclassSelect.value) {
+                    for (let i = 0; i < subclassSelect.options.length; i++) {
+                        if (subclassSelect.options[i].value !== classSelect.value) {
+                            subclassSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -109,6 +132,7 @@ document.addEventListener("gem_builds_loaded", () => {
             
             console.log("✅ Gem Builds: All dropdowns populated successfully!");
 
+            // Run initial calculation once populated
             triggerCalculation();
 
         } catch (err) {
@@ -121,12 +145,59 @@ document.addEventListener("gem_builds_loaded", () => {
         }
     }
 
+    // Set up Base Light tooltip and initial state
+    const lightInput = document.getElementById("gb-light");
+    if (lightInput) {
+        const label = lightInput.previousElementSibling;
+        if (label && label.tagName === "LABEL" && !label.querySelector('.fa-circle-info')) {
+            label.innerHTML += ` <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" title="Base Light optimization is only active for 'Farm' builds."></i>`;
+        }
+    }
+    updateLightInputState();
+
+    // Fire the initial load
     loadConfigData();
 
     // --- 3. EVENT LISTENERS ---
+
+    // Prevent Class and Subclass from being the same
+    const classSelect = document.getElementById("gb-class");
+    const subclassSelect = document.getElementById("gb-subclass");
+
+    if (classSelect && subclassSelect) {
+        classSelect.addEventListener("change", () => {
+            if (classSelect.value === subclassSelect.value) {
+                for (let i = 0; i < subclassSelect.options.length; i++) {
+                    if (subclassSelect.options[i].value !== classSelect.value) {
+                        subclassSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+
+        subclassSelect.addEventListener("change", () => {
+            if (subclassSelect.value === classSelect.value) {
+                for (let i = 0; i < classSelect.options.length; i++) {
+                    if (classSelect.options[i].value !== subclassSelect.value) {
+                        classSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+    }
+
+    // Watch Build Type to update Base Light input state
+    const buildTypeSelect = document.getElementById("gb-build-type");
+    if (buildTypeSelect) {
+        buildTypeSelect.addEventListener("change", updateLightInputState);
+    }
+
+    // Auto-calculate triggers for standard inputs
     const instantChangeElements = [
         "gb-class", "gb-subclass", "gb-build-type", "gb-ally", "gb-food",
-        "gb-berserker", "gb-litany", "gb-subclass-active", "gb-no-face", "gb-cd-count"
+        "gb-berserker", "gb-litany", "gb-subclass-active", "gb-no-face"
     ];
     
     instantChangeElements.forEach(id => {
@@ -134,13 +205,60 @@ document.addEventListener("gem_builds_loaded", () => {
         if(el) el.addEventListener("change", triggerCalculation);
     });
 
-    const lightInput = document.getElementById("gb-light");
     if(lightInput) lightInput.addEventListener("input", debouncedCalc);
+
+    // Gear Crit Dmg Rolls Slider Listener
+    const cdCountInput = document.getElementById("gb-cd-count");
+    const cdCountDisplay = document.getElementById("gb-cd-count-display");
+    if (cdCountInput) {
+        cdCountInput.addEventListener("input", (e) => {
+            if (cdCountDisplay) cdCountDisplay.innerText = e.target.value;
+            debouncedCalc();
+        });
+    }
 
     // --- STAR CHART UI FEEDBACK ---
     if (starChartInput && starChartSummary) {
+        const scTemplateSelect = document.createElement("select");
+        scTemplateSelect.className = 'btt-select';
+        scTemplateSelect.style.padding = '8px';
+        scTemplateSelect.style.background = 'var(--bg-dark, #111)';
+        scTemplateSelect.style.color = '#fff';
+        scTemplateSelect.style.border = '1px solid var(--border-color, #333)';
+        scTemplateSelect.style.borderRadius = '4px';
+        scTemplateSelect.style.width = '100%';
+        scTemplateSelect.style.marginBottom = '8px';
+        scTemplateSelect.innerHTML = '<option value="">-- Load Saved Star Chart --</option>';
+
+        starChartInput.parentElement.insertBefore(scTemplateSelect, starChartInput);
+
+        eel.get_star_chart_templates()().then(templates => {
+            for (let name in templates) {
+                let opt = document.createElement('option');
+                opt.value = templates[name];
+                opt.innerText = name;
+                scTemplateSelect.appendChild(opt);
+            }
+        });
+
+        scTemplateSelect.addEventListener("change", () => {
+            starChartInput.value = scTemplateSelect.value;
+            starChartInput.dispatchEvent(new Event("input"));
+        });
+
         starChartInput.addEventListener("input", async () => {
             const code = starChartInput.value.trim();
+            
+            let matched = false;
+            for (let i = 0; i < scTemplateSelect.options.length; i++) {
+                if (scTemplateSelect.options[i].value === code && code !== "") {
+                    scTemplateSelect.selectedIndex = i;
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) scTemplateSelect.value = "";
+
             if (!code) {
                 starChartSummary.style.display = "none";
                 debouncedCalc();

@@ -102,3 +102,9 @@
     height: auto !important;
     max-height: none !important;
 }
+
+input[type="range"] {
+    padding: 0 !important;
+    margin: 10px 0; /* Gives it a little breathing room */
+    background: transparent; /* Strips any inherited background colors */
+}

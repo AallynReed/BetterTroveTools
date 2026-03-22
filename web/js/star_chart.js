@@ -10,6 +10,41 @@ document.addEventListener('star_chart_loaded', async () => {
     const btnCopyCode = document.getElementById('btn-copy-code');
     const btnLoadCode = document.getElementById('btn-load-code');
 
+    const templateControlsWrapper = document.createElement('div');
+    templateControlsWrapper.style.display = 'flex';
+    templateControlsWrapper.style.gap = '5px';
+    templateControlsWrapper.style.marginTop = '10px';
+    templateControlsWrapper.style.marginBottom = '15px';
+    templateControlsWrapper.style.paddingBottom = '15px';
+    templateControlsWrapper.style.borderBottom = '1px dashed var(--border-color)';
+
+    const templateSelect = document.createElement('select');
+    templateSelect.className = 'btt-select';
+    templateSelect.style.padding = '8px';
+    templateSelect.style.background = 'var(--bg-dark, #111)';
+    templateSelect.style.color = '#fff';
+    templateSelect.style.border = '1px solid var(--border-color, #333)';
+    templateSelect.style.borderRadius = '4px';
+    templateSelect.style.width = '150px';
+
+    const btnSaveTemplate = document.createElement('button');
+    btnSaveTemplate.className = 'primary-btn';
+    btnSaveTemplate.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save';
+
+    const btnDeleteTemplate = document.createElement('button');
+    btnDeleteTemplate.className = 'danger-btn';
+    btnDeleteTemplate.innerHTML = '<i class="fa-solid fa-trash"></i>';
+    btnDeleteTemplate.style.display = 'none';
+    
+    templateControlsWrapper.appendChild(templateSelect);
+    templateControlsWrapper.appendChild(btnSaveTemplate);
+    templateControlsWrapper.appendChild(btnDeleteTemplate);
+    
+    const shareControls = document.querySelector('.build-share-controls');
+    if (shareControls) {
+        shareControls.insertAdjacentElement('afterend', templateControlsWrapper);
+    }
+
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     
     const COLORS = {
@@ -379,6 +414,121 @@ document.addEventListener('star_chart_loaded', async () => {
             codeInput.value = "";
         }
     });
+
+    // --- Templates Logic ---
+    let templates = {};
+
+    async function loadTemplates() {
+        templates = await eel.get_star_chart_templates()();
+        
+        templateSelect.innerHTML = '<option value="">-- Templates --</option>';
+        for (let name in templates) {
+            let opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = name;
+            templateSelect.appendChild(opt);
+        }
+        
+        btnDeleteTemplate.style.display = templateSelect.value ? 'inline-block' : 'none';
+    }
+
+    templateSelect.addEventListener('change', () => {
+        btnDeleteTemplate.style.display = templateSelect.value ? 'inline-block' : 'none';
+        if (templateSelect.value && templates[templateSelect.value]) {
+            codeInput.value = templates[templateSelect.value];
+            btnLoadCode.click(); 
+        }
+    });
+
+    const modalOverlay = document.createElement('div');
+    modalOverlay.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;";
+    modalOverlay.innerHTML = `
+        <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <h3 id="st-modal-title" style="margin-top:0; color:var(--text-main, #fff);"></h3>
+            <p id="st-modal-msg" style="color:var(--text-muted, #aaa); margin-bottom:15px; font-size:14px;"></p>
+            <input type="text" id="st-modal-input" style="width:calc(100% - 22px); margin-bottom:15px; display:none; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px;" placeholder="Template Name" />
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button id="st-modal-confirm" class="primary-btn" style="flex:1;">Confirm</button>
+                <button id="st-modal-cancel" class="secondary-btn" style="flex:1;">Cancel</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modalOverlay);
+
+    const stModalTitle = document.getElementById('st-modal-title');
+    const stModalMsg = document.getElementById('st-modal-msg');
+    const stModalInput = document.getElementById('st-modal-input');
+    const stModalConfirm = document.getElementById('st-modal-confirm');
+    const stModalCancel = document.getElementById('st-modal-cancel');
+
+    let currentModalAction = null;
+
+    function openModal(action, title, msg, showInput = false) {
+        currentModalAction = action;
+        stModalTitle.innerText = title;
+        stModalMsg.innerText = msg;
+        stModalInput.style.display = showInput ? 'block' : 'none';
+        stModalInput.value = '';
+        modalOverlay.style.display = 'flex';
+        if (showInput) stModalInput.focus();
+    }
+
+    stModalCancel.addEventListener('click', () => {
+        modalOverlay.style.display = 'none';
+    });
+
+    stModalConfirm.addEventListener('click', async () => {
+        if (currentModalAction === 'save') {
+            const name = stModalInput.value.trim();
+            if (!name) {
+                if (window.showToast) window.showToast("Please enter a name.", true);
+                return;
+            }
+            const code = codeInput.value.trim();
+            if (!code) {
+                if (window.showToast) window.showToast("No active build to save.", true);
+                modalOverlay.style.display = 'none';
+                return;
+            }
+            const res = await eel.save_star_chart_template(name, code)();
+            if (res.success) {
+                if (window.showToast) window.showToast(`Template '${name}' saved!`);
+                await loadTemplates();
+                templateSelect.value = name;
+                btnDeleteTemplate.style.display = 'inline-block';
+            } else {
+                if (window.showToast) window.showToast("Error saving template.", true);
+            }
+        } else if (currentModalAction === 'delete') {
+            const name = templateSelect.value;
+            if (!name) return;
+            const res = await eel.delete_star_chart_template(name)();
+            if (res.success) {
+                if (window.showToast) window.showToast(`Template '${name}' deleted!`);
+                await loadTemplates();
+            } else {
+                if (window.showToast) window.showToast("Error deleting template.", true);
+            }
+        }
+        modalOverlay.style.display = 'none';
+    });
+
+    btnSaveTemplate.addEventListener('click', () => {
+        const code = codeInput.value.trim();
+        if (!code) {
+            if (window.showToast) window.showToast("No active build to save.", true);
+            return;
+        }
+        openModal('save', 'Save Template', 'Enter a name for your build:', true);
+    });
+
+    btnDeleteTemplate.addEventListener('click', () => {
+        const name = templateSelect.value;
+        if (!name) return;
+        openModal('delete', 'Delete Template', `Are you sure you want to delete '${name}'?`, false);
+    });
+
+    loadTemplates();
 
     // --- Boot Sequence ---
 

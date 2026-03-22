@@ -1,6 +1,7 @@
 import json
 import os
 from math import cos, radians, sin
+from utils.helper import get_storage_file, read_storage, write_storage
 
 import eel
 
@@ -70,6 +71,54 @@ def get_calculated_star_chart():
             rotate_branch(constell, origin, radians(branch_rotation), distance)
 
         return {"success": True, "data": star_chart, "origin": origin}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+# ==========================================
+# STAR CHART TEMPLATE STORAGE ENDPOINTS
+# ==========================================
+
+@eel.expose
+def save_star_chart_template(name, base64_code):
+    """Saves a star chart build code under a specific name."""
+    try:
+        data = read_storage()
+        
+        # Ensure the templates dictionary exists
+        if "star_chart_templates" not in data:
+            data["star_chart_templates"] = {}
+            
+        data["star_chart_templates"][name] = base64_code
+        write_storage(data)
+        
+        return {"success": True}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def get_star_chart_templates():
+    """Returns a dictionary of all saved templates {name: base64_code}."""
+    try:
+        data = read_storage()
+        return data.get("star_chart_templates", {})
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {}
+
+@eel.expose
+def delete_star_chart_template(name):
+    """Deletes a saved template by name."""
+    try:
+        data = read_storage()
+        if "star_chart_templates" in data and name in data["star_chart_templates"]:
+            del data["star_chart_templates"][name]
+            write_storage(data)
+        return {"success": True}
     except Exception as e:
         import traceback
         traceback.print_exc()

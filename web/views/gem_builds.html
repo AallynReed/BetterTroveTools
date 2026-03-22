@@ -48,8 +48,8 @@
                     <input type="number" id="gb-light" value="0">
                 </div>
                 <div class="input-group">
-                    <label>Gear Crit Dmg Rolls (0-3)</label>
-                    <input type="number" id="gb-cd-count" min="0" max="3" value="3">
+                    <label>Gear Crit Dmg Rolls: <span id="gb-cd-count-display" style="color: var(--accent-orange); font-weight: bold;">3</span></label>
+                    <input type="range" id="gb-cd-count" min="0" max="3" value="3" step="1" style="width: 100%; cursor: pointer;">
                 </div>
             </div>
 
@@ -89,10 +89,6 @@
             </div>
             
             <div id="gb-star-chart-summary" class="star-chart-summary" style="display: none;"></div>
-
-            <button id="btn-calculate-builds" class="btn btn-primary full-width mt-3">
-                <i class="fa-solid fa-calculator"></i> Calculate Optimal Builds
-            </button>
         </div>
 
         <!-- RESULTS PANEL -->
