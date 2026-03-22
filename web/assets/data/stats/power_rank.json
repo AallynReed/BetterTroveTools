@@ -1,0 +1,74 @@
+[
+    {
+        "name": "Dragons",
+        "type": "slider",
+        "percentage": false,
+        "value": 2630
+    },
+    {
+        "name": "Hat",
+        "type": "switch",
+        "percentage": false,
+        "value": 2324
+    },
+    {
+        "name": "Weapon",
+        "type": "switch",
+        "percentage": false,
+        "value": 2324
+    },
+    {
+        "name": "Face",
+        "type": "switch",
+        "percentage": false,
+        "value": 2324
+    },
+    {
+        "name": "Ring",
+        "type": "switch",
+        "percentage": false,
+        "value": 1513
+    },
+    {
+        "name": "Banner",
+        "type": "switch",
+        "percentage": false,
+        "value": 350
+    },
+    {
+        "name": "Gems",
+        "type": "switch",
+        "percentage": false,
+        "value": 44540
+    },
+    {
+        "name": "Ally",
+        "type": "switch",
+        "percentage": false,
+        "value": 75
+    },
+    {
+        "name": "Flask",
+        "type": "switch",
+        "percentage": false,
+        "value": 50
+    },
+    {
+        "name": "Emblems",
+        "type": "switch",
+        "percentage": false,
+        "value": 100
+    },
+    {
+        "name": "Class Level 30",
+        "type": "switch",
+        "percentage": false,
+        "value": 450
+    },
+    {
+        "name": "Subclass level 30",
+        "type": "switch",
+        "percentage": false,
+        "value": 90
+    }
+]
