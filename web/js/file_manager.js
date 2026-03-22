@@ -1,6 +1,21 @@
 document.addEventListener('file_manager_loaded', () => {
     console.log("High-Performance File Manager initialized!");
 
+    // --- Tab Switching Logic ---
+    const tabButtons = document.querySelectorAll('.file-manager-container .tab-btn');
+    const tabContents = document.querySelectorAll('.file-manager-container .tab-content');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+        });
+    });
+
+    // --- Existing File Manager Selectors ---
     const installSelect = document.getElementById('game-install-select');
     const loadBtn = document.getElementById('btn-load-tree');
     const refreshBtn = document.getElementById('btn-refresh-installs');
@@ -11,30 +26,52 @@ document.addEventListener('file_manager_loaded', () => {
     const extractionBar = document.getElementById('extraction-bar');
     const extractionSummary = document.getElementById('extraction-summary');
     const massExtractBtn = document.getElementById('btn-mass-extract');
+    
+    // --- New Pro Tracker Selectors ---
+    const trackerGameSelect = document.getElementById('tracker-game-select');
+    const trackerDirInput = document.getElementById('tracker-dir-input');
+    const btnSelectTrackerDir = document.getElementById('btn-select-tracker-dir');
+    const trackerStatusText = document.getElementById('tracker-status-text');
+    const trackerSubText = document.getElementById('tracker-sub-text');
+    const trackerActions = document.getElementById('tracker-actions');
+    const btnBuildBaseline = document.getElementById('btn-build-baseline');
+    const btnScanUpdates = document.getElementById('btn-scan-updates');
 
     let fileCache = [];
     let fileIdCounter = 0;
     let searchTimeout = null;
+    let currentTrackingDir = null;
 
+    // --- Updated Scan Logic to handle both dropdowns ---
     async function scanForGames() {
         installSelect.innerHTML = `<option value="">Searching...</option>`;
+        trackerGameSelect.innerHTML = `<option value="">Searching...</option>`;
+        
         const response = await eel.get_detected_game_paths()();
         const settings = await eel.get_settings()();
+        
         installSelect.innerHTML = ""; 
+        trackerGameSelect.innerHTML = "";
+        
         if (response.success && response.paths.length > 0) {
             response.paths.forEach(game => {
                 let option = document.createElement('option');
                 option.value = game.path; 
                 option.textContent = `${game.name} - ${game.path}`;
-                installSelect.appendChild(option);
+                
+                installSelect.appendChild(option.cloneNode(true));
+                trackerGameSelect.appendChild(option.cloneNode(true));
             });
             if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
                 installSelect.value = settings.last_game_path;
+                trackerGameSelect.value = settings.last_game_path;
             }
         } else {
             installSelect.innerHTML = `<option value="">No installations found.</option>`;
+            trackerGameSelect.innerHTML = `<option value="">No installations found.</option>`;
         }
     }
+    
     scanForGames();
     if (refreshBtn) refreshBtn.addEventListener('click', scanForGames);
 
@@ -42,10 +79,21 @@ document.addEventListener('file_manager_loaded', () => {
         installSelect.addEventListener('change', async () => {
             const settings = await eel.get_settings()();
             settings.last_game_path = installSelect.value;
+            trackerGameSelect.value = installSelect.value; // Sync the tabs
             await eel.save_settings(settings)();
         });
     }
 
+    if (trackerGameSelect) {
+        trackerGameSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = trackerGameSelect.value;
+            installSelect.value = trackerGameSelect.value; // Sync the tabs
+            await eel.save_settings(settings)();
+        });
+    }
+
+    // --- Existing Tree/Search Logic (Unchanged) ---
     function performSearch() {
         clearTimeout(searchTimeout);
         const term = searchInput.value.toLowerCase().trim();
@@ -95,7 +143,7 @@ document.addEventListener('file_manager_loaded', () => {
     if (loadBtn) {
         loadBtn.addEventListener('click', async () => {
             const selectedPath = installSelect.value;
-            if (!selectedPath) return showToast("Select a game first.", true);
+            if (!selectedPath) return window.showToast("Select a game first.", true);
 
             treeContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h3><i class="fa-solid fa-spinner fa-spin"></i> Parsing ${selectedPath}...</h3></div>`;
             
@@ -179,7 +227,12 @@ document.addEventListener('file_manager_loaded', () => {
     eel.expose(update_progress_ui);
     function update_progress_ui(current, total, filename, etaStr) {
         document.getElementById('progress-fill').style.width = Math.round((current / total) * 100) + '%';
-        document.getElementById('progress-text').innerText = `${Math.round((current / total) * 100)}% | ETA: ${etaStr} | ${filename}`;
+        
+        const textToDisplay = (etaStr && etaStr.includes('Baseline') || etaStr.includes('Scanning')) 
+                               ? `${Math.round((current / total) * 100)}% | ${etaStr} | ${filename}`
+                               : `${Math.round((current / total) * 100)}% | ETA: ${etaStr} | ${filename}`;
+                               
+        document.getElementById('progress-text').innerText = textToDisplay;
     }
 
     if (massExtractBtn) {
@@ -218,25 +271,17 @@ document.addEventListener('file_manager_loaded', () => {
     }
 
     const collapseBtn = document.getElementById('btn-collapse-all');
-
     if (collapseBtn) {
         collapseBtn.addEventListener('click', () => {
             const openFolders = treeContainer.querySelectorAll('details.folder[open]');
-            
-            openFolders.forEach(folder => {
-                folder.open = false;
-            });
-            
+            openFolders.forEach(folder => { folder.open = false; });
             treeContainer.classList.remove('searching');
             searchInput.value = "";
             searchCount.innerText = "";
-            
-            console.log(`Collapsed ${openFolders.length} folders.`);
         });
     }
 
     const selectVisibleBtn = document.getElementById('btn-select-visible');
-
     if (selectVisibleBtn) {
         selectVisibleBtn.addEventListener('click', () => {
             const isSearching = treeContainer.classList.contains('searching');
@@ -252,4 +297,123 @@ document.addEventListener('file_manager_loaded', () => {
             treeContainer.dispatchEvent(new Event('change', { bubbles: true }));
         });
     }
+
+    // ========================================================
+    // NEW PRO TRACKER LOGIC
+    // ========================================================
+
+    async function checkTrackerStatus() {
+        if (!currentTrackingDir) return;
+        
+        trackerStatusText.innerText = "Checking directory...";
+        trackerSubText.innerText = "";
+        trackerActions.style.display = "none";
+        
+        const response = await eel.get_tracking_status(currentTrackingDir)();
+        
+        trackerActions.style.display = "flex";
+        
+        if (response.exists) {
+            trackerStatusText.innerText = "Active Baseline Found!";
+            trackerStatusText.style.color = "#28a745";
+            trackerSubText.innerText = `Last Scanned: ${new Date(response.last_scan).toLocaleString()}\nTracking Game: ${response.game_path}`;
+            
+            btnBuildBaseline.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Force Rebuild Cache';
+            btnBuildBaseline.style.backgroundColor = "transparent";
+            btnBuildBaseline.style.border = "1px solid var(--border-color)";
+            btnBuildBaseline.style.color = "var(--text-muted)";
+            
+            btnScanUpdates.style.display = "flex";
+        } else {
+            trackerStatusText.innerText = "No Baseline Found.";
+            trackerStatusText.style.color = "#e8b031";
+            trackerSubText.innerText = "You must build an initial cache hash before you can scan for updates. This will take a few minutes.";
+            
+            btnBuildBaseline.innerHTML = '<i class="fa-solid fa-database"></i> Build Baseline Cache';
+            btnBuildBaseline.style.backgroundColor = "#e8b031";
+            btnBuildBaseline.style.border = "none";
+            btnBuildBaseline.style.color = "#111";
+            
+            btnScanUpdates.style.display = "none";
+        }
+    }
+
+    btnSelectTrackerDir.addEventListener('click', async () => {
+        const response = await eel.select_tracking_directory()();
+        if (response.success && response.path) {
+            currentTrackingDir = response.path;
+            trackerDirInput.value = currentTrackingDir;
+            checkTrackerStatus();
+        }
+    });
+
+    // Share the extraction progress bar for visual feedback
+    function showProgressUI() {
+        extractionSummary.style.display = 'none';
+        document.getElementById('extraction-progress').style.display = 'flex';
+        extractionBar.classList.add('active');
+        btnMassExtract.style.display = 'none'; // Hide the extract button temporarily
+    }
+
+    function hideProgressUI() {
+        extractionBar.classList.remove('active');
+        setTimeout(() => {
+            extractionSummary.style.display = 'block';
+            document.getElementById('extraction-progress').style.display = 'none';
+            btnMassExtract.style.display = 'block';
+        }, 300);
+    }
+
+    const btnMassExtract = document.getElementById('btn-mass-extract');
+
+    btnBuildBaseline.addEventListener('click', async () => {
+        const gamePath = trackerGameSelect.value;
+        if (!gamePath || !currentTrackingDir) {
+            return window.showToast("Ensure both a Game Installation and Tracking Directory are selected.", true);
+        }
+
+        btnBuildBaseline.disabled = true;
+        btnScanUpdates.disabled = true;
+        showProgressUI();
+        
+        const response = await eel.build_baseline_cache(gamePath, currentTrackingDir)();
+        
+        hideProgressUI();
+        btnBuildBaseline.disabled = false;
+        btnScanUpdates.disabled = false;
+        
+        if (response.success) {
+            window.showToast("Baseline built successfully!");
+            checkTrackerStatus();
+        } else {
+            window.showToast("Error building baseline: " + response.error, true);
+        }
+    });
+
+    btnScanUpdates.addEventListener('click', async () => {
+        const gamePath = trackerGameSelect.value;
+        if (!gamePath || !currentTrackingDir) return;
+
+        btnBuildBaseline.disabled = true;
+        btnScanUpdates.disabled = true;
+        showProgressUI();
+        
+        const response = await eel.scan_and_extract_updates(gamePath, currentTrackingDir)();
+        
+        hideProgressUI();
+        btnBuildBaseline.disabled = false;
+        btnScanUpdates.disabled = false;
+        
+        if (response.success) {
+            const d = response.details;
+            if (d.added === 0 && d.changed === 0 && d.removed === 0) {
+                window.showToast("Scan complete. No game updates detected since the last baseline.");
+            } else {
+                window.showToast(`Update detected and extracted!\n\nAdded: ${d.added}\nChanged: ${d.changed}\nRemoved: ${d.removed}\n\nSaved to: ${d.folder}`);
+            }
+            checkTrackerStatus();
+        } else {
+            window.showToast("Error scanning for updates: " + response.error, true);
+        }
+    });
 });

@@ -4,52 +4,108 @@
     <link rel="stylesheet" href="css/modder_tools.css">
     <link rel="stylesheet" href="css/file_manager.css">
 </head>
+
 <div class="file-manager-container">
-    <div class="file-manager-header">
-        <h1>Game File Manager</h1>
-        
-        <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
-    <select id="game-install-select" style="flex-grow: 1; padding: 10px;">
-        <option value="">Searching for Game Installs...</option>
-    </select>
     
-    <button id="btn-refresh-installs" class="primary-btn" title="Refresh Detected Games">
-        <i class="fa-solid fa-rotate-right"></i>
-    </button>
-    
-    <button id="btn-load-tree" class="primary-btn">
-        <i class="fa-solid fa-box-archive"></i> Load Archives
-    </button>
-    
-    <button id="btn-collapse-all" class="primary-btn" title="Collapse All Folders">
-        <i class="fa-solid fa-folder-minus"></i> Collapse
-    </button>
-    <button class="primary-btn" id="btn-select-visible"><i class="fa-solid fa-check-double"></i> Select Visible</button>
-
-</div>
-    </div>
-    <div class="search-container">
-        <div style="position: relative; flex: 1; display: flex; align-items: center;">
-            <input type="text" id="tree-search" placeholder="Search files (e.g. .swf, dragon, ui_...)" />
-            <button id="clear-search" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+    <div class="tabs-container">
+        <!-- TAB NAVIGATION -->
+        <div class="tab-buttons" style="margin-bottom: 20px;">
+            <button class="tab-btn active" data-tab="tab-explorer"><i class="fa-solid fa-folder-tree"></i> File Explorer</button>
+            <button class="tab-btn" data-tab="tab-tracker"><i class="fa-solid fa-satellite-dish"></i> Update Tracker</button>
         </div>
-        <span id="search-count" class="file-meta"></span>
-    </div>
-    <div id="file-tree"></div>
 
-    <div id="file-tree-container" class="placeholder-box">
-        Select a game installation to view files.
-    </div>
-</div>
-<div id="extraction-bar">
-        <span id="extraction-summary">0 files selected (0 MB)</span>
-        
-        <div id="extraction-progress" class="progress-container">
-            <div class="progress-track">
-                <div id="progress-fill" class="progress-fill"></div>
+        <!-- TAB 1: EXISTING FILE MANAGER -->
+        <div id="tab-explorer" class="tab-content active">
+            <div class="file-manager-header" style="border-bottom: none; padding-bottom: 0;">
+                <h1>Game File Manager</h1>
+                <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                    <select id="game-install-select" style="flex-grow: 1; padding: 10px;">
+                        <option value="">Searching for Game Installs...</option>
+                    </select>
+                    <button id="btn-refresh-installs" class="primary-btn" title="Refresh Detected Games">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button id="btn-load-tree" class="primary-btn">
+                        <i class="fa-solid fa-box-archive"></i> Load Archives
+                    </button>
+                    <button id="btn-collapse-all" class="primary-btn" title="Collapse All Folders">
+                        <i class="fa-solid fa-folder-minus"></i> Collapse
+                    </button>
+                    <button class="primary-btn" id="btn-select-visible">
+                        <i class="fa-solid fa-check-double"></i> Select Visible
+                    </button>
+                </div>
             </div>
-            <span id="progress-text" class="progress-text">Starting extraction...</span>
+
+            <div class="search-container" style="margin-top: 20px;">
+                <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                    <input type="text" id="tree-search" placeholder="Search files (e.g. .swf, dragon, ui_...)" />
+                    <button id="clear-search" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+                </div>
+                <span id="search-count" class="file-meta"></span>
+            </div>
+            
+            <div id="file-tree"></div>
+
+            <div id="file-tree-container" class="placeholder-box">
+                Select a game installation to view files.
+            </div>
         </div>
 
-        <button id="btn-mass-extract" class="primary-btn">Extract Selected</button>
+        <!-- TAB 2: PRO UPDATE TRACKER -->
+        <div id="tab-tracker" class="tab-content">
+            <div class="tool-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Update Tracker</h3>
+                    <span class="mod-badge" style="position: relative; top: 0; right: 0; background: #e8b031; color: #111;">PRO</span>
+                </div>
+                <p class="help-text">Track game updates, generate patch baselines, and extract only modified files to save space.</p>
+                
+                <div class="form-group">
+                    <label>Target Game Installation</label>
+                    <select id="tracker-game-select" style="margin-bottom: 15px;">
+                        <option value="">Searching...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Tracking Directory (Where to save hashes and extracted patches)</label>
+                    <div class="input-row">
+                        <input type="text" id="tracker-dir-input" placeholder="Select a folder..." readonly />
+                        <button id="btn-select-tracker-dir" class="primary-btn"><i class="fa-solid fa-folder-open"></i> Browse</button>
+                    </div>
+                </div>
+
+                <div id="tracker-status-box" class="placeholder-box" style="margin-top: 20px; padding: 30px 20px;">
+                    <i class="fa-solid fa-circle-info" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i>
+                    <p id="tracker-status-text" style="color: var(--text-main); font-weight: bold; font-size: 16px;">Select a tracking directory to continue.</p>
+                    <p id="tracker-sub-text" class="help-text" style="margin-top: 5px;"></p>
+                    
+                    <div id="tracker-actions" style="margin-top: 20px; display: none; gap: 10px; justify-content: center;">
+                        <button id="btn-build-baseline" class="primary-btn" style="background-color: #e8b031; color: #111;">
+                            <i class="fa-solid fa-database"></i> Build Baseline Cache
+                        </button>
+                        <button id="btn-scan-updates" class="primary-btn" style="display: none; background-color: #28a745;">
+                            <i class="fa-solid fa-satellite-dish"></i> Scan & Extract Updates
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
+</div>
+
+<!-- EXTRACTION BAR (Kept outside so it overlays on top properly) -->
+<div id="extraction-bar">
+    <span id="extraction-summary">0 files selected (0 MB)</span>
+    
+    <div id="extraction-progress" class="progress-container">
+        <div class="progress-track">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <span id="progress-text" class="progress-text">Starting extraction...</span>
+    </div>
+
+    <button id="btn-mass-extract" class="primary-btn">Extract Selected</button>
+</div>

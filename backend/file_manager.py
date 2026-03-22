@@ -1,3 +1,5 @@
+import shutil
+
 import eel
 import asyncio
 from pathlib import Path
@@ -11,6 +13,7 @@ from backend.settings import get_settings
 import tkinter as tk
 from tkinter import filedialog
 import time
+from datetime import datetime
 
 
 @eel.expose
@@ -222,3 +225,221 @@ async def _mass_extract_async(dest_dir_str, file_list):
                         eta_str = "Calculating..."
                         
                     eel.update_progress_ui(processed_count, total_files, f["filepath"], eta_str)
+
+@eel.expose
+def select_tracking_directory():
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    folder_path = filedialog.askdirectory(title="Select Update Tracking Folder")
+    root.destroy()
+    return {"success": True, "path": folder_path} if folder_path else {"success": False}
+
+@eel.expose
+def get_tracking_status(tracking_dir_str):
+    data_path = Path(tracking_dir_str) / "extraction_data.json"
+    if data_path.exists():
+        try:
+            with open(data_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return {
+                "exists": True, 
+                "last_scan": data.get("last_scan_date", "Unknown"), 
+                "game_path": data.get("game_path", "Unknown")
+            }
+        except Exception as e:
+            return {"exists": False, "error": str(e)}
+    return {"exists": False}
+
+@eel.expose
+def build_baseline_cache(game_path_str, tracking_dir_str):
+    try:
+        asyncio.run(_build_baseline_async(game_path_str, tracking_dir_str))
+        return {"success": True}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+async def _build_baseline_async(game_path_str, tracking_dir_str):
+    game_path = Path(game_path_str)
+    tracking_dir = Path(tracking_dir_str)
+    
+    cache = {
+        "last_scan_date": datetime.utcnow().isoformat() + "Z",
+        "game_path": game_path_str,
+        "archives": {},
+        "files": {}
+    }
+    
+    tfi_files = list(game_path.rglob("index.tfi"))
+    total_tfis = len(tfi_files)
+    
+    for i, tfi_path in enumerate(tfi_files):
+        rel_tfi = tfi_path.relative_to(game_path).as_posix()
+        index = TFIndex(tfi_path)
+        cache["archives"][rel_tfi] = await index.content_hash
+        
+        eel.update_progress_ui(i, total_tfis, rel_tfi, "Building Baseline...")()
+        
+        archives_dict = {}
+        for archive in index.archives:
+            rel_tfa = archive.path.relative_to(game_path).as_posix()
+            cache["archives"][rel_tfa] = await archive.content_hash
+            archives_dict[archive.id] = archive
+            
+        files = await index.files_list
+        for f in files:
+            arch_id = f["archive_index"]
+            if arch_id in archives_dict:
+                archive = archives_dict[arch_id]
+                # We must hash the inner files once to establish the baseline
+                file_obj = TroveFile(offset=f["offset"], size=f["size"], archive=archive)
+                file_key = f"{rel_tfi}::{f['name'].replace(chr(92), '/')}"
+                cache["files"][file_key] = await file_obj.content_hash
+
+    data_path = tracking_dir / "extraction_data.json"
+    with open(data_path, "w", encoding="utf-8") as f:
+        json.dump(cache, f, indent=4)
+
+
+@eel.expose
+def scan_and_extract_updates(game_path_str, tracking_dir_str):
+    try:
+        result = asyncio.run(_scan_and_extract_updates_async(game_path_str, tracking_dir_str))
+        return {"success": True, "details": result}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str):
+    game_path = Path(game_path_str)
+    tracking_dir = Path(tracking_dir_str)
+    data_path = tracking_dir / "extraction_data.json"
+    
+    with open(data_path, "r", encoding="utf-8") as f:
+        old_cache = json.load(f)
+        
+    new_cache = {
+        "last_scan_date": datetime.utcnow().isoformat() + "Z",
+        "game_path": game_path_str,
+        "archives": {},
+        "files": {}
+    }
+    
+    # Create the timestamped extraction folder
+    date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    update_folder = tracking_dir / date_str
+    
+    added_files = []
+    changed_files = []
+    removed_files = []
+    
+    tfi_files = list(game_path.rglob("index.tfi"))
+    total_tfis = len(tfi_files)
+    
+    for i, tfi_path in enumerate(tfi_files):
+        rel_tfi = tfi_path.relative_to(game_path).as_posix()
+        index = TFIndex(tfi_path)
+        new_tfi_hash = await index.content_hash
+        new_cache["archives"][rel_tfi] = new_tfi_hash
+        
+        eel.update_progress_ui(i, total_tfis, rel_tfi, "Scanning for Updates...")()
+        
+        archives_dict = {}
+        tfa_changed = False
+        
+        for archive in index.archives:
+            rel_tfa = archive.path.relative_to(game_path).as_posix()
+            new_tfa_hash = await archive.content_hash
+            new_cache["archives"][rel_tfa] = new_tfa_hash
+            archives_dict[archive.id] = archive
+            
+            # Did this specific TFA change?
+            if old_cache["archives"].get(rel_tfa) != new_tfa_hash:
+                tfa_changed = True
+                
+        # If neither the index nor any of its archives changed, skip hashing inner files
+        if not tfa_changed and old_cache["archives"].get(rel_tfi) == new_tfi_hash:
+            # Carry over the old file hashes to the new cache
+            prefix = f"{rel_tfi}::"
+            for k, v in old_cache["files"].items():
+                if k.startswith(prefix):
+                    new_cache["files"][k] = v
+            continue
+            
+        # If we reach here, something in this index/archive changed. Time to dig in.
+        files = await index.files_list
+        current_tfi_files = set()
+        
+        for f in files:
+            arch_id = f["archive_index"]
+            if arch_id in archives_dict:
+                archive = archives_dict[arch_id]
+                file_obj = TroveFile(offset=f["offset"], size=f["size"], archive=archive)
+                
+                clean_name = f['name'].replace(chr(92), '/')
+                file_key = f"{rel_tfi}::{clean_name}"
+                current_tfi_files.add(file_key)
+                
+                new_file_hash = await file_obj.content_hash
+                new_cache["files"][file_key] = new_file_hash
+                
+                old_file_hash = old_cache["files"].get(file_key)
+                
+                if old_file_hash is None:
+                    added_files.append((file_obj, clean_name, "added"))
+                elif old_file_hash != new_file_hash:
+                    changed_files.append((file_obj, clean_name, "changed"))
+                    
+        # Check for removed files within this specific TFI
+        prefix = f"{rel_tfi}::"
+        for old_key in old_cache["files"]:
+            if old_key.startswith(prefix) and old_key not in current_tfi_files:
+                removed_files.append(old_key)
+                
+    # --- Extraction Phase ---
+    if added_files or changed_files or removed_files:
+        update_folder.mkdir(parents=True, exist_ok=True)
+        
+        # Helper to save files to disk
+        async def extract_list(file_list, subfolder_name):
+            for file_obj, clean_name, status in file_list:
+                out_path = update_folder / subfolder_name / clean_name
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(out_path, "wb") as out:
+                    out.write(await file_obj.content)
+                    
+        await extract_list(added_files, "added")
+        await extract_list(changed_files, "changed")
+        
+        # Write Changelog
+        changelog_path = update_folder / "changelog.txt"
+        with open(changelog_path, "w", encoding="utf-8") as clog:
+            clog.write(f"Trove Update Scan - {date_str}\n")
+            clog.write("="*40 + "\n\n")
+            
+            clog.write(f"ADDED FILES ({len(added_files)}):\n")
+            for _, name, _ in added_files: clog.write(f" + {name}\n")
+            
+            clog.write(f"\nCHANGED FILES ({len(changed_files)}):\n")
+            for _, name, _ in changed_files: clog.write(f" ~ {name}\n")
+            
+            clog.write(f"\nREMOVED FILES ({len(removed_files)}):\n")
+            for name in removed_files: clog.write(f" - {name}\n")
+            
+        # Backup old JSON directly INTO the new update folder
+        backup_path = update_folder / "extraction_data_backup.json"
+        shutil.copy2(data_path, backup_path)
+        
+        # Save the new cache to the root tracking directory for the next scan
+        with open(data_path, "w", encoding="utf-8") as f:
+            json.dump(new_cache, f, indent=4)
+            
+    return {
+        "added": len(added_files),
+        "changed": len(changed_files),
+        "removed": len(removed_files),
+        "folder": str(update_folder) if (added_files or changed_files or removed_files) else None
+    }
