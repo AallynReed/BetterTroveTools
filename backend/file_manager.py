@@ -295,7 +295,6 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
             arch_id = f["archive_index"]
             if arch_id in archives_dict:
                 archive = archives_dict[arch_id]
-                # We must hash the inner files once to establish the baseline
                 file_obj = TroveFile(offset=f["offset"], size=f["size"], archive=archive)
                 file_key = f"{rel_tfi}::{f['name'].replace(chr(92), '/')}"
                 cache["files"][file_key] = await file_obj.content_hash
@@ -395,7 +394,6 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
             if old_key.startswith(prefix) and old_key not in current_tfi_files:
                 removed_files.append(old_key)
                 
-    # --- Extraction & Catalog Phase ---
     if added_files or changed_files or removed_files:
         update_folder.mkdir(parents=True, exist_ok=True)
         
@@ -409,7 +407,6 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         await extract_list(added_files, "added")
         await extract_list(changed_files, "changed")
         
-        # --- NEW CATALOG LOGIC ---
         if run_catalog and (added_files or changed_files):
             eel.update_progress_ui(1, 1, "Generating Blueprint Previews...", "Cataloging")()
             blueprints_to_catalog = set()
@@ -428,12 +425,11 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
             if blueprints_to_catalog:                
                 trove_exe = game_path / "Trove.exe"
                 active_processes = []
-                cpu_limit = max(1, (os.cpu_count() or 4) - 1) # Keep 1 core free so UI doesn't freeze
+                cpu_limit = max(1, (os.cpu_count() or 4) - 1)
                 
                 for bp in blueprints_to_catalog:
                     cmd = f'"{trove_exe}" -tool catalog -filter "{bp}" -dimension "256"'
                     
-                    # Hide the CMD window popping up on Windows
                     startupinfo = None
                     if os.name == 'nt':
                         startupinfo = subprocess.STARTUPINFO()
@@ -442,31 +438,23 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                     proc = subprocess.Popen(cmd, cwd=str(game_path), startupinfo=startupinfo)
                     active_processes.append(proc)
                     
-                    # Wait if we hit our CPU limit
                     if len(active_processes) >= cpu_limit:
                         for p in active_processes: p.wait()
                         active_processes = []
                 
-                # Cleanup any remaining processes
                 for p in active_processes: p.wait()
                 
-                # Move generated images to our update folder and rename as requested
-                # Cleanup any remaining processes
                 for p in active_processes: p.wait()
                 
-                # Move the entire catalog folder instantly to our update folder
                 game_catalog_dir = game_path / "catalog"
                 if game_catalog_dir.exists():
                     dest_catalog_dir = update_folder
                     shutil.move(str(game_catalog_dir), str(dest_catalog_dir))
                     
-                    # Quickly rename the files inside to strip the ".blueprint" part
                     for png_file in dest_catalog_dir.glob("*.blueprint.png"):
                         dest_name = png_file.name.replace(".blueprint.png", ".png")
                         png_file.rename(png_file.with_name(dest_name))
-        # --- END CATALOG LOGIC ---
 
-        # Write Changelog
         changelog_path = update_folder / "changelog.txt"
         with open(changelog_path, "w", encoding="utf-8") as clog:
             clog.write(f"Trove Update Scan - {date_str}\n")

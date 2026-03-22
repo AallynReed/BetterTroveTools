@@ -1,7 +1,6 @@
 document.addEventListener('file_manager_loaded', () => {
     console.log("High-Performance File Manager initialized!");
 
-    // --- Tab Switching Logic ---
     const tabButtons = document.querySelectorAll('.file-manager-container .tab-btn');
     const tabContents = document.querySelectorAll('.file-manager-container .tab-content');
 
@@ -15,7 +14,6 @@ document.addEventListener('file_manager_loaded', () => {
         });
     });
 
-    // --- Existing File Manager Selectors ---
     const installSelect = document.getElementById('game-install-select');
     const loadBtn = document.getElementById('btn-load-tree');
     const refreshBtn = document.getElementById('btn-refresh-installs');
@@ -27,7 +25,6 @@ document.addEventListener('file_manager_loaded', () => {
     const extractionSummary = document.getElementById('extraction-summary');
     const massExtractBtn = document.getElementById('btn-mass-extract');
     
-    // --- New Pro Tracker Selectors ---
     const trackerGameSelect = document.getElementById('tracker-game-select');
     const trackerDirInput = document.getElementById('tracker-dir-input');
     const btnSelectTrackerDir = document.getElementById('btn-select-tracker-dir');
@@ -42,7 +39,6 @@ document.addEventListener('file_manager_loaded', () => {
     let searchTimeout = null;
     let currentTrackingDir = null;
 
-    // --- Updated Scan Logic to handle both dropdowns ---
     async function scanForGames() {
         installSelect.innerHTML = `<option value="">Searching...</option>`;
         trackerGameSelect.innerHTML = `<option value="">Searching...</option>`;
@@ -79,7 +75,7 @@ document.addEventListener('file_manager_loaded', () => {
         installSelect.addEventListener('change', async () => {
             const settings = await eel.get_settings()();
             settings.last_game_path = installSelect.value;
-            trackerGameSelect.value = installSelect.value; // Sync the tabs
+            trackerGameSelect.value = installSelect.value;
             await eel.save_settings(settings)();
         });
     }
@@ -88,12 +84,11 @@ document.addEventListener('file_manager_loaded', () => {
         trackerGameSelect.addEventListener('change', async () => {
             const settings = await eel.get_settings()();
             settings.last_game_path = trackerGameSelect.value;
-            installSelect.value = trackerGameSelect.value; // Sync the tabs
+            installSelect.value = trackerGameSelect.value;
             await eel.save_settings(settings)();
         });
     }
 
-    // --- Existing Tree/Search Logic (Unchanged) ---
     function performSearch() {
         clearTimeout(searchTimeout);
         const term = searchInput.value.toLowerCase().trim();
@@ -298,10 +293,6 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    // ========================================================
-    // NEW PRO TRACKER LOGIC
-    // ========================================================
-
     async function checkTrackerStatus() {
         if (!currentTrackingDir) return;
         
@@ -347,12 +338,11 @@ document.addEventListener('file_manager_loaded', () => {
         }
     });
 
-    // Share the extraction progress bar for visual feedback
     function showProgressUI() {
         extractionSummary.style.display = 'none';
         document.getElementById('extraction-progress').style.display = 'flex';
         extractionBar.classList.add('active');
-        btnMassExtract.style.display = 'none'; // Hide the extract button temporarily
+        btnMassExtract.style.display = 'none';
     }
 
     function hideProgressUI() {
@@ -394,14 +384,12 @@ document.addEventListener('file_manager_loaded', () => {
         const gamePath = trackerGameSelect.value;
         if (!gamePath || !currentTrackingDir) return;
 
-        // Grab the state of the new catalog toggle
         const runCatalog = document.getElementById('tracker-catalog-toggle').checked;
 
         btnBuildBaseline.disabled = true;
         btnScanUpdates.disabled = true;
         showProgressUI();
         
-        // Pass the new boolean to Python
         const response = await eel.scan_and_extract_updates(gamePath, currentTrackingDir, runCatalog)();
         
         hideProgressUI();
