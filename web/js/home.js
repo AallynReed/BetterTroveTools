@@ -375,6 +375,8 @@ document.addEventListener('home_loaded', () => {
 
     async function fetchStreams() {
         const wrapper = document.getElementById('carousel-wrapper'), carousel = document.getElementById('streams-carousel'), loading = document.getElementById('streams-loading');
+        const btnLeft = document.getElementById('btn-scroll-left'), btnRight = document.getElementById('btn-scroll-right');
+        
         try {
             const response = await eel.get_twitch_streams()();
             if (response && response.success) {
@@ -382,6 +384,25 @@ document.addEventListener('home_loaded', () => {
                 if (wrapper) wrapper.style.display = 'flex';
                 if (!carousel) return;
                 carousel.innerHTML = '';
+                
+                // Handle the scenario where no streams are live
+                if (!response.data || response.data.length === 0) {
+                    carousel.innerHTML = `
+                        <div style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
+                            <i class="fa-brands fa-twitch" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
+                            <span style="font-size: 14px;">No Trove streams are live right now. Check back later!</span>
+                        </div>
+                    `;
+                    // Hide the scroll buttons since there is nothing to scroll
+                    if (btnLeft) btnLeft.style.display = 'none';
+                    if (btnRight) btnRight.style.display = 'none';
+                    return;
+                }
+
+                // If streams exist, ensure buttons are visible
+                if (btnLeft) btnLeft.style.display = 'flex';
+                if (btnRight) btnRight.style.display = 'flex';
+
                 response.data.sort((a, b) => b.viewer_count - a.viewer_count).forEach(stream => {
                     const card = document.createElement('div');
                     card.className = 'stream-card'; 
@@ -396,7 +417,7 @@ document.addEventListener('home_loaded', () => {
                                       <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
                     carousel.appendChild(card);
                 });
-                const btnLeft = document.getElementById('btn-scroll-left'), btnRight = document.getElementById('btn-scroll-right');
+                
                 if (btnLeft && btnRight) {
                     btnLeft.onclick = () => carousel.scrollBy({ left: -260, behavior: 'smooth' });
                     btnRight.onclick = () => carousel.scrollBy({ left: 260, behavior: 'smooth' });
