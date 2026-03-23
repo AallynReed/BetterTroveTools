@@ -170,7 +170,7 @@ function renderTrovesaurusGrid(mods, container) {
     container.innerHTML = mods.map(mod => {
         const isInstalled = mod.is_installed;
         const needsUpdate = mod.needs_update;
-        const img = mod.image || 'https://trovesaurus.com/images/logos/Sage_64.png';
+        const img = mod.image || '/assets/images/no_preview.png';
         
         let btnClass = '';
         let btnIcon = '<i class="fa-solid fa-download"></i>';
@@ -191,7 +191,7 @@ function renderTrovesaurusGrid(mods, container) {
         return `
             <div class="ts-mod-card">
                 <div class="mod-image-container">
-                    <img src="${img}" class="mod-preview-img" loading="lazy" onerror="this.src='https://trovesaurus.com/images/logos/Sage_64.png'">
+                    <img src="${img}" class="mod-preview-img" loading="lazy" onerror="this.src='/assets/images/no_preview.png'">
                 </div>
                 <div class="mod-card-content">
                     <h3 class="mod-title ts-mod-title" title="${mod.name} (Click to view on Trovesaurus)" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
