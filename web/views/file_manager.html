@@ -5,13 +5,11 @@
 <div class="file-manager-container">
     
     <div class="tabs-container">
-        <!-- TAB NAVIGATION -->
         <div class="tab-buttons" style="margin-bottom: 20px;">
             <button class="tab-btn active" data-tab="tab-explorer"><i class="fa-solid fa-folder-tree"></i> File Explorer</button>
             <button class="tab-btn" data-tab="tab-tracker"><i class="fa-solid fa-satellite-dish"></i> Update Tracker</button>
         </div>
 
-        <!-- TAB 1: EXISTING FILE MANAGER -->
         <div id="tab-explorer" class="tab-content active">
             <div class="file-manager-header" style="border-bottom: none; padding-bottom: 0;">
                 <h1>Game File Manager</h1>
@@ -49,7 +47,6 @@
             </div>
         </div>
 
-        <!-- TAB 2: PRO UPDATE TRACKER -->
         <div id="tab-tracker" class="tab-content">
             <div class="tool-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -73,7 +70,6 @@
                     </div>
                 </div>
 
-                <!-- NEW CATALOG TOGGLE -->
                 <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); width: max-content;">
                     <input type="checkbox" id="tracker-catalog-toggle" style="width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;">
                     <label for="tracker-catalog-toggle" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
@@ -81,8 +77,6 @@
                         <i class="fa-solid fa-circle-question" title="Catalogs generate image previews of blueprints, this is mainly for Trovesaurus but may be of interest to some people.<br>This slows down the process considerably." style="color: var(--text-muted);"></i>
                     </label>
                 </div>
-                <!-- END NEW CATALOG TOGGLE -->
-
                 <div id="tracker-status-box" class="placeholder-box" style="margin-top: 20px; padding: 30px 20px;">
                     <i class="fa-solid fa-circle-info" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i>
                     <p id="tracker-status-text" style="color: var(--text-main); font-weight: bold; font-size: 16px;">Select a tracking directory to continue.</p>
@@ -103,15 +97,15 @@
     </div>
 </div>
 
-<!-- EXTRACTION BAR (Kept outside so it overlays on top properly) -->
 <div id="extraction-bar">
     <span id="extraction-summary">0 files selected (0 MB)</span>
     
-    <div id="extraction-progress" class="progress-container">
+    <div id="extraction-progress" class="progress-container" style="display: none;">
         <div class="progress-track">
             <div id="progress-fill" class="progress-fill"></div>
         </div>
         <span id="progress-text" class="progress-text">Starting extraction...</span>
+        <span id="progress-filename" class="progress-filename"></span>
     </div>
 
     <button id="btn-mass-extract" class="primary-btn">Extract Selected</button>

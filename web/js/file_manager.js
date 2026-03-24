@@ -220,14 +220,32 @@ document.addEventListener('file_manager_loaded', () => {
     });
 
     eel.expose(update_progress_ui);
-    function update_progress_ui(current, total, filename, etaStr) {
-        document.getElementById('progress-fill').style.width = Math.round((current / total) * 100) + '%';
+    function update_progress_ui(current, total, filename, etaStr, elapsedStr = "") {
+        const percent = Math.round((current / total) * 100);
+        document.getElementById('progress-fill').style.width = percent + '%';
         
-        const textToDisplay = (etaStr && etaStr.includes('Baseline') || etaStr.includes('Scanning')) 
-                               ? `${Math.round((current / total) * 100)}% | ${etaStr} | ${filename}`
-                               : `${Math.round((current / total) * 100)}% | ETA: ${etaStr} | ${filename}`;
-                               
-        document.getElementById('progress-text').innerText = textToDisplay;
+        let timeText = [];
+        
+        if (elapsedStr && elapsedStr !== "N/A") {
+            timeText.push(`Elapsed: ${elapsedStr}`);
+        }
+        
+        if (etaStr) {
+            if (!etaStr.includes('Baseline') && !etaStr.includes('Scanning') && !etaStr.includes('Cataloging')) {
+                timeText.push(`ETA: ${etaStr}`);
+            } else {
+                timeText.push(etaStr);
+            }
+        }
+        
+        const timeString = timeText.length > 0 ? timeText.join(' | ') : '';
+        
+        document.getElementById('progress-text').innerText = `${percent}% | ${timeString}`;
+        
+        const filenameEl = document.getElementById('progress-filename');
+        if (filenameEl) {
+            filenameEl.innerText = filename || "";
+        }
     }
 
     if (massExtractBtn) {

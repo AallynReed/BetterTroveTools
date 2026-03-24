@@ -1,5 +1,4 @@
 import shutil
-
 import eel
 import asyncio
 from pathlib import Path
@@ -218,15 +217,18 @@ async def _mass_extract_async(dest_dir_str, file_list):
                 processed_count += 1
                 if processed_count % max(1, total_files // 50) == 0 or processed_count == total_files:
                     elapsed = time.time() - start_time
+                    emins, esecs = divmod(int(elapsed), 60)
+                    elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
+                    
                     if elapsed > 0.5:
                         rate = processed_count / elapsed
                         eta_secs = int((total_files - processed_count) / rate)
-                        mins, secs = divmod(eta_secs, 60)
-                        eta_str = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+                        rmins, rsecs = divmod(eta_secs, 60)
+                        eta_str = f"{rmins}m {rsecs}s" if rmins > 0 else f"{rsecs}s"
                     else:
                         eta_str = "Calculating..."
                         
-                    eel.update_progress_ui(processed_count, total_files, f["filepath"], eta_str)
+                    eel.update_progress_ui(processed_count, total_files, f["filepath"], eta_str, elapsed_str)()
 
 @eel.expose
 def select_tracking_directory():
@@ -276,13 +278,27 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
     
     tfi_files = list(game_path.rglob("index.tfi"))
     total_tfis = len(tfi_files)
+    start_time = time.time()
     
     for i, tfi_path in enumerate(tfi_files):
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
+        
+        elapsed = time.time() - start_time
+        emins, esecs = divmod(int(elapsed), 60)
+        elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
+        
+        if elapsed > 0.5 and (i + 1) > 0:
+            rate = (i + 1) / elapsed
+            eta_secs = int((total_tfis - (i + 1)) / rate)
+            rmins, rsecs = divmod(eta_secs, 60)
+            eta_str = f"{rmins}m {rsecs}s" if rmins > 0 else f"{rsecs}s"
+        else:
+            eta_str = "Calculating..."
+            
+        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, f"Building Baseline (ETA: {eta_str})", elapsed_str)()
+        
         index = TFIndex(tfi_path)
         cache["archives"][rel_tfi] = await index.content_hash
-        
-        eel.update_progress_ui(i, total_tfis, rel_tfi, "Building Baseline...")()
         
         archives_dict = {}
         for archive in index.archives:
@@ -338,14 +354,29 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
     
     tfi_files = list(game_path.rglob("index.tfi"))
     total_tfis = len(tfi_files)
+    start_time = time.time()
     
     for i, tfi_path in enumerate(tfi_files):
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
+        tfi_dir = tfi_path.parent.relative_to(game_path) 
+        
+        elapsed = time.time() - start_time
+        emins, esecs = divmod(int(elapsed), 60)
+        elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
+        
+        if elapsed > 0.5 and (i + 1) > 0:
+            rate = (i + 1) / elapsed
+            eta_secs = int((total_tfis - (i + 1)) / rate)
+            rmins, rsecs = divmod(eta_secs, 60)
+            eta_str = f"{rmins}m {rsecs}s" if rmins > 0 else f"{rsecs}s"
+        else:
+            eta_str = "Calculating..."
+            
+        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, f"Scanning (ETA: {eta_str})", elapsed_str)()
+        
         index = TFIndex(tfi_path)
         new_tfi_hash = await index.content_hash
         new_cache["archives"][rel_tfi] = new_tfi_hash
-        
-        eel.update_progress_ui(i, total_tfis, rel_tfi, "Scanning for Updates...")()
         
         archives_dict = {}
         tfa_changed = False
@@ -379,15 +410,17 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                 file_key = f"{rel_tfi}::{clean_name}"
                 current_tfi_files.add(file_key)
                 
+                full_clean_path = (tfi_dir / clean_name).as_posix()
+                
                 new_file_hash = await file_obj.content_hash
                 new_cache["files"][file_key] = new_file_hash
                 
                 old_file_hash = old_cache["files"].get(file_key)
                 
                 if old_file_hash is None:
-                    added_files.append((file_obj, clean_name, "added"))
+                    added_files.append((file_obj, full_clean_path, "added"))
                 elif old_file_hash != new_file_hash:
-                    changed_files.append((file_obj, clean_name, "changed"))
+                    changed_files.append((file_obj, full_clean_path, "changed"))
                     
         prefix = f"{rel_tfi}::"
         for old_key in old_cache["files"]:
@@ -398,8 +431,8 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         update_folder.mkdir(parents=True, exist_ok=True)
         
         async def extract_list(file_list, subfolder_name):
-            for file_obj, clean_name, status in file_list:
-                out_path = update_folder / subfolder_name / clean_name
+            for file_obj, full_clean_path, status in file_list:
+                out_path = update_folder / subfolder_name / full_clean_path
                 out_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(out_path, "wb") as out:
                     out.write(await file_obj.content)
@@ -408,20 +441,20 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         await extract_list(changed_files, "changed")
         
         if run_catalog and (added_files or changed_files):
-            eel.update_progress_ui(1, 1, "Generating Blueprint Previews...", "Cataloging")()
+            eel.update_progress_ui(1, 1, "Generating Blueprint Previews...", "Cataloging", "N/A")()
             blueprints_to_catalog = set()
             
             for file_list in [added_files, changed_files]:
-                for _, clean_name, _ in file_list:
-                    if clean_name.endswith(".blueprint"):
-                        bp_name = re.sub(r"(?:\[.*\])?\.blueprint", "", Path(clean_name).name)
+                for _, full_clean_path, _ in file_list:
+                    if full_clean_path.endswith(".blueprint"):
+                        bp_name = re.sub(r"(?:\[.*\])?\.blueprint", "", Path(full_clean_path).name)
                         if len(bp_name.split("_")) >= 5:
                             match = re.match(r"^.*_", bp_name)
                             if match: blueprints_to_catalog.add(match.group(0))
                             else: blueprints_to_catalog.add(bp_name)
                         else:
                             blueprints_to_catalog.add(bp_name)
-            
+        
             if blueprints_to_catalog:                
                 trove_exe = game_path / "Trove.exe"
                 active_processes = []
@@ -444,8 +477,6 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                 
                 for p in active_processes: p.wait()
                 
-                for p in active_processes: p.wait()
-                
                 game_catalog_dir = game_path / "catalog"
                 if game_catalog_dir.exists():
                     dest_catalog_dir = update_folder
@@ -455,26 +486,28 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                         dest_name = png_file.name.replace(".blueprint.png", ".png")
                         png_file.rename(png_file.with_name(dest_name))
 
-        changelog_path = update_folder / "changelog.txt"
-        with open(changelog_path, "w", encoding="utf-8") as clog:
-            clog.write(f"Trove Update Scan - {date_str}\n")
-            clog.write("="*40 + "\n\n")
-            
-            clog.write(f"ADDED FILES ({len(added_files)}):\n")
-            for _, name, _ in added_files: clog.write(f" + {name}\n")
-            
-            clog.write(f"\nCHANGED FILES ({len(changed_files)}):\n")
-            for _, name, _ in changed_files: clog.write(f" ~ {name}\n")
-            
-            clog.write(f"\nREMOVED FILES ({len(removed_files)}):\n")
-            for name in removed_files: clog.write(f" - {name}\n")
-            
-        backup_path = update_folder / "extraction_data_backup.json"
-        shutil.copy2(data_path, backup_path)
+    changelog_path = update_folder / "changelog.txt"
+    with open(changelog_path, "w", encoding="utf-8") as clog:
+        clog.write(f"Trove Update Scan - {date_str}\n")
+        clog.write("="*40 + "\n\n")
         
-        with open(data_path, "w", encoding="utf-8") as f:
-            json.dump(new_cache, f, indent=4)
-            
+        clog.write(f"ADDED FILES ({len(added_files)}):\n")
+        for _, name, _ in added_files: clog.write(f" + {name}\n")
+        
+        clog.write(f"\nCHANGED FILES ({len(changed_files)}):\n")
+        for _, name, _ in changed_files: clog.write(f" ~ {name}\n")
+        
+        clog.write(f"\nREMOVED FILES ({len(removed_files)}):\n")
+        for name in removed_files: 
+            clean_removed_name = name.split("::")[-1] if "::" in name else name
+            clog.write(f" - {clean_removed_name}\n")
+        
+    backup_path = update_folder / "extraction_data_backup.json"
+    shutil.copy2(data_path, backup_path)
+    
+    with open(data_path, "w", encoding="utf-8") as f:
+        json.dump(new_cache, f, indent=4)
+        
     return {
         "added": len(added_files),
         "changed": len(changed_files),
