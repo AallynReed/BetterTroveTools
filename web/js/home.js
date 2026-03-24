@@ -339,7 +339,16 @@ document.addEventListener('home_loaded', () => {
         const list = document.getElementById('events-list');
         const loading = document.getElementById('events-loading');
         try {
-            const response = await eel.get_trovesaurus_events()();
+            // Set a 3 second timeout for the Trovesaurus request
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Trovesaurus request timed out')), 3000)
+            );
+            
+            const response = await Promise.race([
+                eel.get_trovesaurus_events()(),
+                timeoutPromise
+            ]);
+
             if (response && response.success) {
                 if (loading) loading.style.display = 'none';
                 if (!list) return;
@@ -369,8 +378,22 @@ document.addEventListener('home_loaded', () => {
                         </div><div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>`;
                     list.appendChild(card);
                 });
+            } else {
+                throw new Error("Failed to load events data.");
             }
-        } catch (e) { console.error(e); }
+        } catch (e) { 
+            console.error(e); 
+            if (loading) loading.style.display = 'none';
+            if (list) {
+                list.style.display = 'flex';
+                list.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: #ff5555; background: rgba(255, 85, 85, 0.1); border: 1px solid rgba(255, 85, 85, 0.3); border-radius: 10px; width: 100%;">
+                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                        <span style="font-size: 14px;">Failed to fetch events from Trovesaurus.</span>
+                    </div>
+                `;
+            }
+        }
     }
 
     async function fetchStreams() {
