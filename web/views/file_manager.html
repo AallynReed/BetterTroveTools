@@ -65,8 +65,10 @@
                 <div class="form-group">
                     <label>Tracking Directory (Where to save hashes and extracted patches)</label>
                     <div class="input-row">
-                        <input type="text" id="tracker-dir-input" placeholder="Select a folder..." readonly />
-                        <button id="btn-select-tracker-dir" class="primary-btn"><i class="fa-solid fa-folder-open"></i> Browse</button>
+                        <select id="tracker-dir-select" style="flex-grow: 1;">
+                            <option value="">Loading directories...</option>
+                        </select>
+                        <button id="btn-add-tracker-dir" class="primary-btn"><i class="fa-solid fa-plus"></i> Add Path</button>
                     </div>
                 </div>
 
@@ -94,6 +96,25 @@
             </div>
         </div>
 
+    </div>
+</div>
+
+<div id="tracker-modal" class="image-modal">
+    <div class="tool-panel" style="width: 450px; position: relative; padding-top: 35px;">
+        <span id="close-tracker-modal" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;">&times;</span>
+        <h3 style="margin-top: 0; margin-bottom: 20px;">Add Extraction Path</h3>
+        <div class="form-group">
+            <label>Name</label>
+            <input type="text" id="new-tracker-name" placeholder="e.g. Trove PTS, Live Build..." />
+        </div>
+        <div class="form-group">
+            <label>Directory</label>
+            <div class="input-row">
+                <input type="text" id="new-tracker-path" placeholder="Select a folder..." readonly />
+                <button id="btn-browse-new-tracker" class="primary-btn"><i class="fa-solid fa-folder-open"></i> Browse</button>
+            </div>
+        </div>
+        <button id="btn-save-tracker-dir" class="primary-btn" style="width: 100%; margin-top: 10px; background: var(--accent-blue);">Save Path</button>
     </div>
 </div>
 
