@@ -61,6 +61,8 @@ build_exe_options = {
         ("bin/", "bin/"),
         ("trove.dll", "trove.dll"),
         ("metadata.json", "metadata.json"),
+        ("LICENSE", "LICENSE"),
+        ("README.md", "README.md"),
     ],
     "optimize": 2,
     "include_msvcr": True,
