@@ -164,9 +164,9 @@ document.addEventListener('home_loaded', () => {
                 card.title = "Click to see upcoming rotations";
                 
                 let pills = stampy.current.biomes.map(b => 
-                    `<span class="biome-pill" title="Biome: ${b.final_name}">
+                    `<span class="biome-pill" title="Biome: ${b.name}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.name}
+                        ${b.final_name}
                     </span>`
                 ).join('');
 
@@ -202,9 +202,9 @@ document.addEventListener('home_loaded', () => {
                 card.title = "Click to see upcoming rotations";
                 
                 let pills = d15.current.biomes.map(b => 
-                    `<span class="biome-pill" title="Biome: ${b.final_name}">
+                    `<span class="biome-pill" title="Biome: ${b.name}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.name}
+                        ${b.final_name}
                     </span>`
                 ).join('');
 
@@ -238,9 +238,9 @@ document.addEventListener('home_loaded', () => {
                 card.title = "Click to see upcoming rotations";
                 
                 let pills = mana.current.biomes.map(b => 
-                    `<span class="biome-pill" title="Biome: ${b.final_name}">
+                    `<span class="biome-pill" title="Biome: ${b.name}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.name}
+                        ${b.final_name}
                     </span>`
                 ).join('');
 
@@ -280,9 +280,9 @@ document.addEventListener('home_loaded', () => {
                 }
                 
                 let pills = rot.biomes.map(b => 
-                    `<span class="biome-pill modal-pill" title="Biome: ${b.final_name}">
+                    `<span class="biome-pill modal-pill" title="Biome: ${b.name}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.name}
+                        ${b.final_name}
                     </span>`
                 ).join('');
 
