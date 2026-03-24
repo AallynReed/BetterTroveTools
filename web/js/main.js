@@ -47,9 +47,60 @@ window.showToast = function(message, isError = false) {
 };
 
 // ==========================================
+// App Protocol / Deep Link Handling
+// ==========================================
+window.pendingSearch = null;
+
+eel.expose(handle_deep_link);
+function handle_deep_link(url) {
+    console.log("Deep link received:", url);
+    if (url.startsWith('btt://trovesaurus')) {
+        try {
+            const queryString = url.split('?')[1];
+            if (queryString) {
+                const params = new URLSearchParams(queryString);
+                const modId = params.get('mod_id');
+                
+                if (modId) {
+                    window.pendingSearch = modId;
+                    
+                    const searchInput = document.getElementById('ts-search-input');
+                    if (searchInput) {
+                        // Already on the Trovesaurus tab, execute immediately
+                        window.executePendingSearch();
+                    } else {
+                        // Navigate to Trovesaurus tab, the event listener will pick up the search
+                        window.loadView('trovesaurus');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse deep link:", e);
+        }
+    }
+}
+
+window.executePendingSearch = function() {
+    if (window.pendingSearch) {
+        const searchInput = document.getElementById('ts-search-input');
+        const searchBtn = document.getElementById('btn-ts-search');
+        if (searchInput && searchBtn) {
+            searchInput.value = window.pendingSearch;
+            searchBtn.click();
+            window.pendingSearch = null; // Clear it out so it doesn't loop
+        }
+    }
+}
+
+// Attach the search execution to the trovesaurus loaded event
+document.addEventListener('trovesaurus_loaded', () => {
+    window.executePendingSearch();
+});
+
+// ==========================================
 // Core Application Logic
 // ==========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
 
@@ -62,8 +113,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // View Routing
-    async function loadView(target) {
+    // View Routing (Made global so the deep link handler can trigger it)
+    window.loadView = async function(target) {
         try {
             const response = await fetch(`views/${target}.html`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -84,17 +135,17 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("View loading error:", err);
             viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">Failed to load view: ${err.message}</div>`;
         }
-    }
+    };
 
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
-            if (target) loadView(target);
+            if (target) window.loadView(target);
         });
     });
 
     // ==========================================
-    // ABOUT VIEW LOGIC (Updated for your Metadata keys)
+    // ABOUT VIEW LOGIC
     // ==========================================
     document.addEventListener('about_loaded', async () => {
         const versionSpan = document.getElementById('app-version');
@@ -108,7 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("Metadata received:", metadata);
             
             if (metadata) {
-                // Map your specific uppercase keys to the UI
                 if (versionSpan) versionSpan.textContent = metadata.APP_VERSION || "Unknown";
                 if (authorSpan) authorSpan.textContent = metadata.APP_AUTHOR || "Aallyn Reed";
                 if (descP) descP.textContent = metadata.APP_DESCRIPTION || "";
@@ -139,6 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
     updateServerTime();
     setInterval(updateServerTime, 1000);
 
-    // Initial load
-    loadView('home');
+    // ==========================================
+    // Initial Load Protocol Checks
+    // ==========================================
+    const startupUrl = await eel.get_startup_url()();
+    if (startupUrl) {
+        window.handle_deep_link(startupUrl);
+    } else {
+        window.loadView('home');
+    }
 });
