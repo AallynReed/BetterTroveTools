@@ -486,9 +486,15 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                         dest_name = png_file.name.replace(".blueprint.png", ".png")
                         png_file.rename(png_file.with_name(dest_name))
 
+    # Calculate final elapsed time for the changelog
+    total_elapsed = time.time() - start_time
+    emins, esecs = divmod(int(total_elapsed), 60)
+    total_elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
+
     changelog_path = update_folder / "changelog.txt"
     with open(changelog_path, "w", encoding="utf-8") as clog:
         clog.write(f"Trove Update Scan - {date_str}\n")
+        clog.write(f"Time Elapsed: {total_elapsed_str}\n")
         clog.write("="*40 + "\n\n")
         
         clog.write(f"ADDED FILES ({len(added_files)}):\n")
