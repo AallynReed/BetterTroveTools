@@ -1,34 +1,4 @@
 // --- Global Toast Notification Helper ---
-window.showToast = function(message, isError = false) {
-    const toast = document.createElement('div');
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.backgroundColor = isError ? '#ff5555' : '#28a745';
-    toast.style.color = 'white';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '6px';
-    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-    toast.style.zIndex = '10000';
-    toast.style.fontSize = '14px';
-    toast.style.opacity = '0';
-    toast.style.transition = 'opacity 0.3s ease';
-    toast.style.whiteSpace = 'pre-wrap';
-    toast.style.textAlign = 'center';
-    toast.innerText = message;
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.opacity = '1';
-    }, 10);
-
-    setTimeout(() => {
-        toast.style.opacity = '0';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-};
-
 document.addEventListener('DOMContentLoaded', async () => {
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";
