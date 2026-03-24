@@ -1,24 +1,15 @@
 document.addEventListener('gem_simulator_loaded', async () => {
     console.log("Gem Simulator 3-Column UI initialized!");
 
-    // ==========================================
-    // 1. DOM Elements & Constants
-    // ==========================================
     const ELEMENT_COLORS = { Fire: '#e57373', Water: '#64b5f6', Air: '#fff59d', Cosmic: '#4db6ac' };
     const ELEMENT_DEFAULT_COLOR = '#888888';
 
-    // ==========================================
-    // 2. State Variables
-    // ==========================================
     let GEM_LOOKUPS = {};
     let equipped = [];
     let inventory = [];
     let selected = null;
     let selectedSource = null; 
 
-    // ==========================================
-    // 3. Helper Functions
-    // ==========================================
     function formatGemName(name) {
         if (!name) return "";
         return name.split('_').join(' ').split(' ').map(
@@ -62,7 +53,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             equipped: equipped,
             toggles: window.primordialDragonToggles || {}
         };
-        eel.save_gem_storage(data)(); // Fire and forget
+        eel.save_gem_storage(data)(); 
     }
 
     async function loadInventory() {
@@ -72,7 +63,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             if (data.equipped) equipped = data.equipped;
             if (data.toggles) window.primordialDragonToggles = data.toggles;
         }
-        render(); // Trigger initial render after loading
+        render(); 
     }
 
     function showConfirmModal(title, message, onConfirm) {
@@ -100,9 +91,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
         modal.style.display = 'flex';
     }
 
-    // ==========================================
-    // 4. Data Fetching & Form Population
-    // ==========================================
     async function fetchGemLookups() {
         try {
             const response = await eel.get_gem_lookups()();
@@ -151,9 +139,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
         }
     }
 
-    // ==========================================
-    // 5. Core Rendering Logic
-    // ==========================================
     function render() {
         renderEquipped();
         renderInventory();
@@ -221,7 +206,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
             equippedEl.appendChild(rowDiv);
         });
 
-        // Stats Summary
         const equippedStatsSummary = document.createElement('div');
         equippedStatsSummary.style.marginTop = '20px';
 
@@ -728,7 +712,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
         trashContainer.appendChild(label);
     }
 
-    // ===== Drag & Drop Logic =====
     function createItem(item, fromPane, fromIdx) {
         const itemEl = document.createElement('div');
         itemEl.className = 'item';
@@ -914,9 +897,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
         render();
     }
 
-    // ==========================================
-    // 6. Event Listeners
-    // ==========================================
     document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'gem-type') {
             const restrictionSelect = document.getElementById('gem-restriction');
@@ -1001,10 +981,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         });
     }
 
-    // ==========================================
-    // 7. Boot Sequence
-    // ==========================================
     await fetchGemLookups();
-    await loadInventory(); // Guarantees lookups are loaded before rendering
+    await loadInventory(); 
 
 });

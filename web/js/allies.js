@@ -11,7 +11,6 @@ document.addEventListener('allies_loaded', async () => {
 
     statsDisplay.innerText = "Checking for Codex updates...";
 
-    // 1. Ask Python to attempt the 3-second background update
     if (window.eel && eel.sync_allies_data) {
         try {
             await eel.sync_allies_data()();
@@ -22,7 +21,6 @@ document.addEventListener('allies_loaded', async () => {
 
     statsDisplay.innerText = "Loading allies...";
 
-    // 2. Fetch the local JSON 
     const cacheBuster = new Date().getTime();
     fetch(`/assets/data/allies.json?t=${cacheBuster}`)
         .then(response => response.json())
@@ -31,7 +29,6 @@ document.addEventListener('allies_loaded', async () => {
             const uniqueStats = new Set();
             const uniqueAbilities = new Set();
 
-            // Convert and Parse
             alliesData = Object.keys(data).map(key => {
                 const ally = data[key];
                 
@@ -40,7 +37,6 @@ document.addEventListener('allies_loaded', async () => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(ally.tooltip, 'text/html');
                 
-                // Extract Stats and parse numbers/percentages
                 const listItems = doc.querySelectorAll('li');
                 const rawStats = [];
                 const parsedStats = {};
@@ -60,7 +56,6 @@ document.addEventListener('allies_loaded', async () => {
                     }
                 });
 
-                // Extract Abilities
                 const paragraphs = doc.querySelectorAll('p');
                 const abilities = Array.from(paragraphs)
                     .map(p => p.textContent.trim())
@@ -77,7 +72,6 @@ document.addEventListener('allies_loaded', async () => {
                 };
             });
 
-            // Populate Category Dropdown (Standard Select)
             Array.from(uniqueCategories).sort().forEach(cat => {
                 const opt = document.createElement('option');
                 opt.value = cat;
@@ -85,7 +79,6 @@ document.addEventListener('allies_loaded', async () => {
                 categorySelect.appendChild(opt);
             });
 
-            // Populate Stat Dropdown (Multiple)
             Array.from(uniqueStats).sort().forEach(stat => {
                 const opt = document.createElement('option');
                 opt.value = stat;
@@ -93,7 +86,6 @@ document.addEventListener('allies_loaded', async () => {
                 statSelect.appendChild(opt);
             });
 
-            // Populate Ability Dropdown (Multiple)
             Array.from(uniqueAbilities).sort().forEach(ability => {
                 const opt = document.createElement('option');
                 opt.value = ability;
@@ -101,7 +93,6 @@ document.addEventListener('allies_loaded', async () => {
                 abilitySelect.appendChild(opt);
             });
 
-            // Initialize Select2 Multiple Dropdowns with Custom Theme
             if (window.jQuery && $.fn.select2) {
                 $('#ally-stat-select').select2({
                     placeholder: "Select one or more stats...",
@@ -115,14 +106,11 @@ document.addEventListener('allies_loaded', async () => {
                     theme: "btt-dark"
                 });
 
-                // Bind Select2 change events
                 $('#ally-stat-select, #ally-ability-select').on('change', applyFilters);
             }
 
-            // Initial render
             applyFilters();
             
-            // Set up native listeners
             searchInput.addEventListener('input', applyFilters);
             categorySelect.addEventListener('change', applyFilters);
         })
@@ -135,13 +123,11 @@ document.addEventListener('allies_loaded', async () => {
         const textQuery = searchInput.value.toLowerCase().trim();
         const catQuery = categorySelect.value;
         
-        // Select2 multiple returns an array, or null if empty
         const statQueries = window.jQuery && $.fn.select2 ? $('#ally-stat-select').val() : [];
         const abilityQueries = window.jQuery && $.fn.select2 ? $('#ally-ability-select').val() : [];
 
         let filtered = alliesData;
 
-        // 1. Filter by Text Search
         if (textQuery) {
             filtered = filtered.filter(ally => {
                 if (ally.name.toLowerCase().includes(textQuery)) return true;
@@ -150,18 +136,15 @@ document.addEventListener('allies_loaded', async () => {
             });
         }
 
-        // 2. Filter by Category
         if (catQuery && catQuery !== "All") {
             filtered = filtered.filter(ally => ally.category === catQuery);
         }
 
-        // 3. Filter by Selected Stats (Must have ALL selected stats)
         if (statQueries && statQueries.length > 0) {
             filtered = filtered.filter(ally => {
                 return statQueries.every(sq => ally.parsedStats[sq] !== undefined);
             });
             
-            // SORTING LOGIC: Sort by the FIRST stat selected. Percentages beat Flats.
             const primaryStat = statQueries[0];
             filtered.sort((a, b) => {
                 const statA = a.parsedStats[primaryStat];
@@ -173,11 +156,9 @@ document.addEventListener('allies_loaded', async () => {
                 return statB.value - statA.value;
             });
         } else {
-            // Default sort by Name if no stats are selected to sort by
             filtered.sort((a, b) => a.name.localeCompare(b.name));
         }
 
-        // 4. Filter by Selected Abilities (Must have ALL selected abilities)
         if (abilityQueries && abilityQueries.length > 0) {
             filtered = filtered.filter(ally => {
                 return abilityQueries.every(aq => ally.extractedAbilities.includes(aq));
@@ -191,7 +172,6 @@ document.addEventListener('allies_loaded', async () => {
         grid.innerHTML = '';
         statsDisplay.innerText = `Showing ${alliesToRender.length} of ${alliesData.length} allies`;
 
-        // Ensure arrays
         if (!activeStatHighlights) activeStatHighlights = [];
         if (!activeAbilityHighlights) activeAbilityHighlights = [];
 
@@ -199,7 +179,6 @@ document.addEventListener('allies_loaded', async () => {
             const card = document.createElement('div');
             card.className = 'ally-card';
 
-            // Build Stats HTML (Highlighting the searched stats)
             let statsHtml = '';
             if (ally.rawStats.length > 0) {
                 const lis = ally.rawStats.map(s => {
@@ -209,7 +188,6 @@ document.addEventListener('allies_loaded', async () => {
                 statsHtml = `<ul class="ally-stats-list">${lis}</ul>`;
             }
 
-            // Build Abilities HTML (Highlighting the searched abilities)
             let abilitiesHtml = '';
             if (ally.extractedAbilities.length > 0) {
                 abilitiesHtml = ally.extractedAbilities.map(a => {

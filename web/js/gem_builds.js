@@ -9,7 +9,6 @@ document.addEventListener("gem_builds_loaded", () => {
     const starChartInput = document.getElementById("gb-star-chart");
     const starChartSummary = document.getElementById("gb-star-chart-summary");
 
-    // --- UTILITY: DEBOUNCE ---
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -18,7 +17,6 @@ document.addEventListener("gem_builds_loaded", () => {
         };
     }
 
-    // --- UI LOGIC: BASE LIGHT TOGGLE ---
     function updateLightInputState() {
         const buildType = document.getElementById("gb-build-type")?.value;
         const lightInput = document.getElementById("gb-light");
@@ -35,7 +33,6 @@ document.addEventListener("gem_builds_loaded", () => {
         }
     }
 
-    // --- 1. CORE CALCULATION LOGIC ---
     async function triggerCalculation() {
         if (isCalculating) return;
         isCalculating = true;
@@ -76,7 +73,6 @@ document.addEventListener("gem_builds_loaded", () => {
 
     const debouncedCalc = debounce(triggerCalculation, 300);
 
-    // --- 2. INIT DATA VIA EEL ---
     async function loadConfigData() {
         try {
             const [classesData, foodsData, alliesData] = await Promise.all([
@@ -90,7 +86,6 @@ document.addEventListener("gem_builds_loaded", () => {
             const foodSelect = document.getElementById("gb-food");
             const allySelect = document.getElementById("gb-ally");
 
-            // 1. Populate Classes
             if (classSelect && subclassSelect && classesData) {
                 classSelect.options.length = 0;
                 subclassSelect.options.length = 0;
@@ -101,7 +96,6 @@ document.addEventListener("gem_builds_loaded", () => {
                     subclassSelect.add(new Option(cls.name, cls.value));
                 }
                 
-                // Ensure Class and Subclass are never the same on load
                 if (classSelect.value === subclassSelect.value) {
                     for (let i = 0; i < subclassSelect.options.length; i++) {
                         if (subclassSelect.options[i].value !== classSelect.value) {
@@ -112,7 +106,6 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
             }
 
-            // 2. Populate Food
             if (foodSelect && foodsData) {
                 foodSelect.options.length = 0;
                 foodSelect.add(new Option("None", ""));
@@ -121,7 +114,6 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
             }
 
-            // 3. Populate Allies
             if (allySelect && alliesData) {
                 allySelect.options.length = 0;
                 allySelect.add(new Option("None (Auto-Optimal)", "boot_clown"));
@@ -132,7 +124,6 @@ document.addEventListener("gem_builds_loaded", () => {
             
             console.log("✅ Gem Builds: All dropdowns populated successfully!");
 
-            // Run initial calculation once populated
             triggerCalculation();
 
         } catch (err) {
@@ -145,7 +136,6 @@ document.addEventListener("gem_builds_loaded", () => {
         }
     }
 
-    // Set up Base Light tooltip and initial state
     const lightInput = document.getElementById("gb-light");
     if (lightInput) {
         const label = lightInput.previousElementSibling;
@@ -155,12 +145,8 @@ document.addEventListener("gem_builds_loaded", () => {
     }
     updateLightInputState();
 
-    // Fire the initial load
     loadConfigData();
 
-    // --- 3. EVENT LISTENERS ---
-
-    // Prevent Class and Subclass from being the same
     const classSelect = document.getElementById("gb-class");
     const subclassSelect = document.getElementById("gb-subclass");
 
@@ -188,13 +174,11 @@ document.addEventListener("gem_builds_loaded", () => {
         });
     }
 
-    // Watch Build Type to update Base Light input state
     const buildTypeSelect = document.getElementById("gb-build-type");
     if (buildTypeSelect) {
         buildTypeSelect.addEventListener("change", updateLightInputState);
     }
 
-    // Auto-calculate triggers for standard inputs
     const instantChangeElements = [
         "gb-class", "gb-subclass", "gb-build-type", "gb-ally", "gb-food",
         "gb-berserker", "gb-litany", "gb-subclass-active", "gb-no-face"
@@ -207,7 +191,6 @@ document.addEventListener("gem_builds_loaded", () => {
 
     if(lightInput) lightInput.addEventListener("input", debouncedCalc);
 
-    // Gear Crit Dmg Rolls Slider Listener
     const cdCountInput = document.getElementById("gb-cd-count");
     const cdCountDisplay = document.getElementById("gb-cd-count-display");
     if (cdCountInput) {
@@ -217,7 +200,6 @@ document.addEventListener("gem_builds_loaded", () => {
         });
     }
 
-    // --- STAR CHART UI FEEDBACK ---
     if (starChartInput && starChartSummary) {
         const scTemplateSelect = document.createElement("select");
         scTemplateSelect.className = 'btt-select';
@@ -266,11 +248,9 @@ document.addEventListener("gem_builds_loaded", () => {
             }
 
             try {
-                // Basic client-side validation
                 const decoded = atob(code);
                 const paths = decoded.split('$');
                 
-                // Fetch the actual stats from the backend parser
                 const parsedData = await eel.parse_star_chart_code(code)();
                 
                 let statsHtml = "";
@@ -303,7 +283,6 @@ document.addEventListener("gem_builds_loaded", () => {
         });
     }
 
-    // --- 4. PAGINATION CONTROLS ---
     const btnPrev = document.getElementById("gb-prev");
     const btnNext = document.getElementById("gb-next");
 
@@ -326,7 +305,6 @@ document.addEventListener("gem_builds_loaded", () => {
         });
     }
 
-    // --- 5. TABLE RENDERER ---
     function renderTable() {
         if (!tbody) return;
         

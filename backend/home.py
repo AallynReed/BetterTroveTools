@@ -20,7 +20,6 @@ def format_timedelta(td):
 
 @eel.expose
 def get_twitch_streams():
-    """Fetches live Trove Twitch streams securely from the backend to avoid CORS."""
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
         response = requests.get("https://trovesaurus.aallyn.xyz/twitch_streams", headers=headers, timeout=10)
@@ -32,11 +31,9 @@ def get_twitch_streams():
 
 @eel.expose
 def get_current_server_data():
-    """Fetches the current daily/weekly buffs and merchant timings."""
     try:
         st = ServerTime()
         
-        # Calculate Merchants
         lux_active = st.is_dragon(st.first_luxion)
         lux_time = st.until_end_dragon(st.first_luxion) if lux_active else st.until_next_dragon(st.first_luxion)
         
@@ -78,15 +75,9 @@ def get_current_server_data():
 
 @eel.expose
 def get_merchant_schedules():
-    """
-    Returns future schedules for the Dragon Merchants.
-    NOTE: Since I don't have your ServerTime class internals, these are placeholder dates!
-    You should update this logic to use `st.first_luxion` etc. to project the exact dates.
-    """
     try:
         now = datetime.now(UTC)
         
-        # Mock generator: Replace with your ServerTime calculations
         def generate_mock_schedule(offset_days, interval_days, duration_days):
             schedule = []
             start = now + timedelta(days=offset_days)
@@ -111,14 +102,12 @@ def get_merchant_schedules():
     
 @eel.expose
 def get_trovesaurus_events():
-    """Fetches the Trovesaurus calendar feed."""
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
         response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=10)
         response.raise_for_status()
         events = response.json()
         
-        # Sort events by start date (closest first)
         events.sort(key=lambda x: int(x['startdate']))
 
         return {"success": True, "data": events}
@@ -303,16 +292,13 @@ def get_stampy_rotation():
     base_date = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC)
     now = datetime.now(UTC)
     
-    # Calculate weeks passed to find the general neighborhood
     weeks_offset = int((now - base_date).total_seconds() // (7 * 24 * 3600))
     
     events = []
-    # Loop through nearby weeks to build a timeline of when he arrives
     for w in range(weeks_offset - 1, weeks_offset + 10):
         s = base_date + timedelta(weeks=w)
-        e = s + timedelta(hours=48) # Stays for 48 hours
+        e = s + timedelta(hours=48) 
         
-        # Only add to the timeline if he hasn't completely left yet
         if e > now:
             b = biomes[w % len(biomes)]
             events.append({
@@ -320,7 +306,7 @@ def get_stampy_rotation():
                 "end": int(e.timestamp()),
                 "biomes": [{"name": b, "final_name": b, "icon": icon_map.get(b, fallback_map.get(b, "unknown"))}]
             })
-            if len(events) == 8: # Get current + 7 future
+            if len(events) == 8: 
                 break
                 
     if not events:
