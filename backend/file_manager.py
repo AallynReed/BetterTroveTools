@@ -487,7 +487,6 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                         dest_name = png_file.name.replace(".blueprint.png", ".png")
                         png_file.rename(png_file.with_name(dest_name))
 
-    # Calculate final elapsed time for the changelog
     total_elapsed = time.time() - start_time
     emins, esecs = divmod(int(total_elapsed), 60)
     total_elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
@@ -530,7 +529,6 @@ def get_tracking_directories():
     valid_dirs = []
     changed = False
     
-    # Validate directories still exist on disk
     for d in dirs:
         if Path(d["path"]).exists():
             valid_dirs.append(d)
@@ -550,7 +548,6 @@ def save_tracking_directory(name, path_str):
     dirs = data.get("tracking_directories", [])
     now = datetime.utcnow().isoformat() + "Z"
     
-    # Check if path already exists, update name and time
     found = False
     for d in dirs:
         if d["path"] == path_str:
@@ -573,7 +570,6 @@ def set_last_tracking_directory(path_str):
     dirs = data.get("tracking_directories", [])
     now = datetime.utcnow().isoformat() + "Z"
     
-    # Update the timestamp for the selected directory
     for d in dirs:
         if d["path"] == path_str:
             d["last_used"] = now

@@ -14,7 +14,6 @@ document.addEventListener('file_manager_loaded', () => {
         });
     });
 
-    // --- File Explorer Elements ---
     const installSelect = document.getElementById('game-install-select');
     const loadBtn = document.getElementById('btn-load-tree');
     const refreshBtn = document.getElementById('btn-refresh-installs');
@@ -28,7 +27,6 @@ document.addEventListener('file_manager_loaded', () => {
     const collapseBtn = document.getElementById('btn-collapse-all');
     const selectVisibleBtn = document.getElementById('btn-select-visible');
     
-    // --- Tracker Elements ---
     const trackerGameSelect = document.getElementById('tracker-game-select');
     const trackerStatusText = document.getElementById('tracker-status-text');
     const trackerSubText = document.getElementById('tracker-sub-text');
@@ -36,7 +34,6 @@ document.addEventListener('file_manager_loaded', () => {
     const btnBuildBaseline = document.getElementById('btn-build-baseline');
     const btnScanUpdates = document.getElementById('btn-scan-updates');
 
-    // --- New Directory Management Elements ---
     const trackerDirSelect = document.getElementById('tracker-dir-select');
     const btnAddTrackerDir = document.getElementById('btn-add-tracker-dir');
     const trackerModal = document.getElementById('tracker-modal');
@@ -51,9 +48,6 @@ document.addEventListener('file_manager_loaded', () => {
     let searchTimeout = null;
     let currentTrackingDir = null;
 
-    // ==========================================
-    // Initialization & Game Scanning
-    // ==========================================
     async function scanForGames() {
         installSelect.innerHTML = `<option value="">Searching...</option>`;
         trackerGameSelect.innerHTML = `<option value="">Searching...</option>`;
@@ -104,9 +98,6 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    // ==========================================
-    // Directory Management Logic
-    // ==========================================
     function timeSince(dateString) {
         if (!dateString) return "";
         const date = new Date(dateString);
@@ -132,7 +123,6 @@ document.addEventListener('file_manager_loaded', () => {
                 trackerDirSelect.innerHTML = `<option value="">No paths saved. Add one...</option>`;
                 currentTrackingDir = null;
             } else {
-                // Sort directories: Most recently used first
                 res.directories.sort((a, b) => {
                     const timeA = a.last_used ? new Date(a.last_used).getTime() : 0;
                     const timeB = b.last_used ? new Date(b.last_used).getTime() : 0;
@@ -143,7 +133,6 @@ document.addEventListener('file_manager_loaded', () => {
                     const opt = document.createElement('option');
                     opt.value = d.path;
                     
-                    // Format the text to include the relative time if available
                     let text = `${d.name} (${d.path})`;
                     if (d.last_used) {
                         text += ` - Last used: ${timeSince(d.last_used)}`;
@@ -153,7 +142,6 @@ document.addEventListener('file_manager_loaded', () => {
                     trackerDirSelect.appendChild(opt);
                 });
                 
-                // Since we sorted by newest, the last used will naturally be the first item
                 if (res.last_used && res.directories.some(d => d.path === res.last_used)) {
                     trackerDirSelect.value = res.last_used;
                     currentTrackingDir = res.last_used;
@@ -195,7 +183,6 @@ document.addEventListener('file_manager_loaded', () => {
         if (response.success && response.path) {
             newTrackerPath.value = response.path;
             if (!newTrackerName.value) {
-                // Auto-fill a suggested name based on the folder name
                 newTrackerName.value = response.path.split('\\').pop().split('/').pop(); 
             }
         }
@@ -218,9 +205,6 @@ document.addEventListener('file_manager_loaded', () => {
         window.showToast("Tracking directory saved!");
     });
 
-    // ==========================================
-    // File Explorer & Search
-    // ==========================================
     function performSearch() {
         clearTimeout(searchTimeout);
         const term = searchInput.value.toLowerCase().trim();
@@ -377,9 +361,6 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    // ==========================================
-    // Progress UI & Extraction Core
-    // ==========================================
     eel.expose(update_progress_ui);
     function update_progress_ui(current, total, filename, etaStr, elapsedStr = "") {
         const percent = Math.round((current / total) * 100);
@@ -460,9 +441,6 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    // ==========================================
-    // Update Tracker
-    // ==========================================
     async function checkTrackerStatus() {
         if (!currentTrackingDir) {
             trackerStatusText.innerText = "Select or add a tracking directory to continue.";
