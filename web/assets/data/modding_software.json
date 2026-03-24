@@ -1,0 +1,99 @@
+{
+    "blueprints": {
+        "description": "A blueprint is a file that contains Voxel models (3D Models information) for Trove's collectibles.\nThis includes the Items, Blocks, Item Icons, Mounts, Allies, Costumes and much more.",
+        "software": [
+            {
+                "name": "Qubicle",
+                "free": false,
+                "url": "https://www.getqubicle.com/",
+                "description": "Qubicle is a professional voxel editor that is used to create voxel models."
+            },
+            {
+                "name": "MagicaVoxel",
+                "free": true,
+                "url": "https://ephtracy.github.io/",
+                "description": "MagicaVoxel is a free lightweight 8-bit voxel editor and interactive path tracing renderer."
+            },
+            {
+                "name": "Zoxel",
+                "free": true,
+                "url": "https://github.com/chrmoritz/zoxel/releases/tag/0.6.2",
+                "description": "Zoxel is a free voxel editor that is used to create and edit voxel models."
+            },
+            {
+                "name": "VoxelShop",
+                "free": true,
+                "url": "https://github.com/simlu/voxelshop",
+                "description": "VoxelShop is a free voxel editor that is used to create and edit voxel models."
+            },
+            {
+                "name": "Troxel",
+                "free": true,
+                "url": "https://troxel.js.org/",
+                "description": "Troxel is a free online voxel editor that is used to create and edit voxel models."
+            },
+            {
+                "name": "Metaforge",
+                "free": true,
+                "url": "https://trovesaurus.com/page=3977/metaforge-guide",
+                "description": "Metaforge is a free in-game voxel editor that is used to create and edit voxel models."
+            }
+        ]
+    },
+    "vfx": {
+        "description": "Create visual effects for Trove's collectibles.\nThis includes the Items, Blocks, Item Icons, Mounts, Allies, Costumes and much more.",
+        "software": [
+            {
+                "name": "PopcornFX (1.13.5)",
+                "free": true,
+                "url": "https://wiki.popcornfx.com/index.php/PK-Editor_v1.13",
+                "description": "PopcornFX is a free particle editor that is used to create visual effects."
+            }
+        ]
+    },
+    "ui": {
+        "description": "UI (User Interface) is used to edit user interfaces present in Trove and alter or add to their functionality.",
+        "software": [
+            {
+                "name": "Adobe Animate",
+                "free": false,
+                "url": "https://www.adobe.com/products/animate.html",
+                "description": "Adobe Animate is a professional animation software that is used to create visual effects."
+            },
+            {
+                "name": "Jpexs Free Flash Decompiler",
+                "free": true,
+                "url": "https://www.free-decompiler.com/flash/",
+                "description": "Jpexs Free Flash Decompiler is a free tool that is used to decompile and edit SWF files."
+            }
+        ]
+    },
+    "sound": {
+        "description": "Create sound effects and music for Trove'.\nThis includes the Items, Blocks, Item Icons, Mounts, Allies, Costumes and much more.",
+        "software": [
+            {
+                "name": "BNK Replacer",
+                "free": true,
+                "url": "https://github.com/EtiTheSpirit/BNKReplacer",
+                "description": "BNK Replacer is a free tool that is used to replace sound effects in Trove's sound bank."
+            }
+        ]
+    },
+    "textures": {
+        "description": "Create textures for Trove's visual effects.",
+        "software": [
+            {
+                "name": "Paint.NET",
+                "free": true,
+                "url": "https://www.getpaint.net/",
+                "description": "Paint.NET is a free image and photo editing software that is used to create and edit textures."
+            },
+            {
+                "name": "GIMP",
+                "free": true,
+                "url": "https://www.gimp.org/",
+                "description": "GIMP is a free image and photo editing software that is used to create and edit textures."
+            }
+        ]
+    }
+}

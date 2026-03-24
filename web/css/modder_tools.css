@@ -241,3 +241,64 @@ textarea:focus, select:focus {
     padding: 8px 10px;
     border-bottom: 1px solid var(--border-color);
 }
+
+.software-badge {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    text-decoration: none; /* Removes underline from links */
+    cursor: pointer;       /* Shows the pointer hand on hover */
+}
+
+.software-badge i {
+    color: var(--accent-blue);
+}
+
+.software-badge:hover {
+    border-color: var(--accent-blue);
+    background-color: var(--bg-hover);
+    color: #ffffff;
+    transform: translateY(-2px); /* Gives it a slight "pop" effect */
+}
+
+/* Price Tags within Software Badges */
+.sw-price-tag {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto; /* Pushes the tag to the right side of the badge */
+    letter-spacing: 0.5px;
+}
+
+.sw-price-tag.free {
+    background-color: rgba(76, 175, 80, 0.15); /* Subtle Green background */
+    color: #81c784; /* Lighter Green text for dark theme */
+    border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.sw-price-tag.paid {
+    background-color: rgba(255, 152, 0, 0.15); /* Subtle Orange background */
+    color: #ffb74d; /* Lighter Orange text for dark theme */
+    border: 1px solid rgba(255, 152, 0, 0.3);
+}
+
+/* Update hover state to make tags pop more */
+.software-badge:hover .sw-price-tag.free {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.software-badge:hover .sw-price-tag.paid {
+    background-color: #ff9800;
+    color: white;
+}
