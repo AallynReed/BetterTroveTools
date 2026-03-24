@@ -4,7 +4,6 @@
 .file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
 .placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
 
-/* Tabs */
 .tabs-container { display: flex; flex-direction: column; gap: 20px; }
 .tab-buttons { display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
@@ -13,7 +12,6 @@
 .tab-content { display: none; animation: fadeIn 0.2s ease; }
 .tab-content.active { display: block; }
 
-/* Tracker Tools & Forms */
 .tool-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 25px; }
 .tool-panel h3 { margin-bottom: 5px; color: var(--text-main); }
 .help-text { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
@@ -23,13 +21,11 @@
 .form-group input[type="text"] { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; }
 .form-group input[type="text"]:focus { border-color: var(--accent-blue); }
 
-/* Select Dropdowns (Matches mod-game-select) */
 select { width: 100%; padding: 10px 12px; background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; font-family: inherit; }
 select:focus { border-color: var(--accent-blue); }
 
 .mod-badge { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; }
 
-/* File Explorer */
 .search-container { padding: 15px 20px; background: var(--bg-panel); border: 1px solid var(--border-color); border-bottom: none; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 15px; }
 #tree-search { flex: 1; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 12px; border-radius: 4px; outline: none; }
 #tree-search:focus { border-color: var(--accent-blue); }
@@ -55,7 +51,6 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 .searching .is-match { display: flex !important; }
 .searching details.folder.has-match { display: block !important; }
 
-/* Extraction Bar */
 @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 #extraction-bar { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--bg-hover); border: 1px solid var(--border-color); padding: 12px 25px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 9999; align-items: center; gap: 20px; backdrop-filter: blur(10px); }
 #extraction-bar.active { display: flex; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }

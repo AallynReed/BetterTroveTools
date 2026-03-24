@@ -4,7 +4,6 @@
 .file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
 .placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
 
-/* Search & Filter Bar */
 .search-filter-bar { display: flex; gap: 15px; align-items: center; background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
 .search-wrapper { position: relative; flex-grow: 1; }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
@@ -14,7 +13,6 @@
 #ts-search-input { width: 100%; padding: 10px 10px 10px 35px; background: #111; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); outline: none; transition: border-color 0.2s; }
 #ts-search-input:focus { border-color: var(--accent-blue); }
 
-/* Grid & Cards */
 #ts-mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 15px 0; }
 .ts-mod-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
 .ts-mod-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); border-color: var(--accent-blue); }
@@ -24,10 +22,8 @@
 .mod-preview-img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; transition: filter 0.2s; }
 .mod-preview-img:hover { filter: brightness(1.15); }
 
-/* Card Content Layout */
 .mod-card-content { display: flex; flex-direction: column; padding: 12px; flex-grow: 1; gap: 6px; }
 
-/* Typography & Stats */
 .ts-mod-title { font-size: 15px; font-weight: 600; margin: 0; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: color 0.2s; }
 .ts-mod-title:hover { color: var(--accent-blue); }
 
@@ -45,7 +41,6 @@
 .ts-mod-author { cursor: pointer; transition: color 0.2s; }
 .ts-mod-author:hover { color: var(--accent-blue); text-decoration: underline; }
 
-/* Buttons & Pagination */
 .ts-install-btn { background: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; color: #28a745; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; transition: all 0.2s; width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 6px; }
 .ts-install-btn:hover { background: #28a745; color: white; }
 .ts-install-btn:disabled { background: #333; border-color: #444; color: #888; cursor: not-allowed; }
@@ -56,7 +51,6 @@
 .pagination-controls button { min-width: 100px; display: flex; justify-content: center; align-items: center; gap: 8px; }
 .pagination-controls button:disabled { opacity: 0.5; cursor: not-allowed; background: transparent; border-color: #444; color: #666; }
 
-/* Modal */
 .image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; flex-direction: column; }
 .image-modal.active { display: flex; animation: fadeIn 0.2s ease; }
 .modal-content { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); object-fit: contain; }

@@ -1,4 +1,3 @@
-/* --- GEM BUILDS LAYOUT --- */
 .view-container { padding: 20px; }
 .header h2 { font-size: 2.5rem; margin-bottom: 5px; }
 .header p { color: var(--text-muted); margin-bottom: 30px; }
@@ -20,7 +19,6 @@
 
 .card h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 
-/* Inputs */
 .input-group { margin-bottom: 15px; }
 .input-group label { display: block; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; }
 .input-group select, .input-group input {
@@ -36,7 +34,6 @@
 .full-width { width: 100%; justify-content: center; }
 .mt-3 { margin-top: 20px; }
 
-/* Custom Checkbox Toggles */
 .toggles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 .toggle-container {
     display: flex; align-items: center; gap: 10px;
@@ -54,7 +51,6 @@
     content: '\f00c'; font-family: 'FontAwesome'; color: #000; font-size: 12px;
 }
 
-/* Results Table */
 .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .pagination { display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-size: 0.9rem; }
 .btn-icon { background: none; border: none; color: var(--text-main); cursor: pointer; padding: 5px; transition: 0.2s; }
@@ -68,7 +64,6 @@
 .text-center { text-align: center; }
 .text-muted { color: var(--text-muted); }
 
-/* Star Chart Summary Box */
 .star-chart-summary {
     background: rgba(0, 0, 0, 0.2);
     border: 1px dashed var(--accent-blue);
@@ -92,12 +87,11 @@
 }
 
 .results-panel .table-responsive {
-    max-height: none !important; /* Removes any vertical height limit */
-    overflow-y: visible !important; /* Disables the vertical scrollbar */
-    overflow-x: auto; /* Keeps horizontal scrolling just in case of small screens */
+    max-height: none !important; 
+    overflow-y: visible !important; 
+    overflow-x: auto; 
 }
 
-/* Optional: If the card itself is restricting the height */
 .results-panel {
     height: auto !important;
     max-height: none !important;
@@ -105,6 +99,6 @@
 
 input[type="range"] {
     padding: 0 !important;
-    margin: 10px 0; /* Gives it a little breathing room */
-    background: transparent; /* Strips any inherited background colors */
+    margin: 10px 0; 
+    background: transparent; 
 }
