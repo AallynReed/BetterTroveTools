@@ -296,6 +296,13 @@ document.addEventListener('calculators_loaded', () => {
                     max: 1100, // Visual slider max
                     default: 899
                 },
+                {
+                    name: "Geode Mastery",
+                    type: "pr_geode_mastery",
+                    percentage: false,
+                    max: 150, // Visual slider max (soft cap handled in calc)
+                    default: 100
+                },
                 ...data
             ];
 
@@ -322,11 +329,21 @@ document.addEventListener('calculators_loaded', () => {
                 badgeText = `+0 PR`;
                 controlHtml = `
                     <div class="calc-slider-wrapper">
-                        <input type="range" class="calc-slider pr-input" data-index="${index}" min="0" max="${item.max}" value="${item.default}" style="accent-color: #fbc02d;">
-                        <input type="number" class="calc-number-input pr-input-sync" data-index="${index}" min="0" max="2000" value="${item.default}">
+                        <input type="range" class="calc-slider pr-input" data-index="${index}" min="1" max="${item.max}" value="${item.default}" style="accent-color: #fbc02d;">
+                        <input type="number" class="calc-number-input pr-input-sync" data-index="${index}" min="1" max="2000" value="${item.default}">
                     </div>
                 `;
             } 
+            // Special Geode Mastery Input
+            else if (item.type === 'pr_geode_mastery') {
+                badgeText = `+0 PR`;
+                controlHtml = `
+                    <div class="calc-slider-wrapper">
+                        <input type="range" class="calc-slider pr-input" data-index="${index}" min="1" max="${item.max}" value="${item.default}" style="accent-color: #fbc02d;">
+                        <input type="number" class="calc-number-input pr-input-sync" data-index="${index}" min="1" max="200" value="${item.default}">
+                    </div>
+                `;
+            }
             // Standard Slider (e.g., Dragons)
             else if (item.type === 'slider') {
                 badgeText = `+${item.value} PR`;
@@ -429,7 +446,13 @@ document.addEventListener('calculators_loaded', () => {
                     const tier2 = Math.max(0, capped - 500); // Ranks 501-1000
                     
                     val = (tier1 * 4) + (tier2 * 1);
-                } else {
+                } 
+                // Special Geode Mastery PR math logic
+                else if (dataItem.type === 'pr_geode_mastery') {
+                    const capped = Math.min(rawVal, 100); // Soft cap at 100
+                    val = capped * 5; // 5 PR per level
+                } 
+                else {
                     val = rawVal;
                 }
                 
