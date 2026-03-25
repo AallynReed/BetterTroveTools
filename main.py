@@ -175,3 +175,8 @@ for current_port in range(start_port, start_port + max_ports_to_try):
             sys.exit(1)
     except (SystemExit, MemoryError, KeyboardInterrupt):
         sys.exit(0)
+
+try:
+    clean_chromium_startup(chromium_path)
+except Exception as e:
+    print(f"⚠️ Failed to clean up startup registry: {e}")
