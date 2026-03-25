@@ -184,13 +184,22 @@ document.addEventListener('modder_tools_loaded', () => {
     const btnBuildTMod = document.getElementById('btn-build-tmod');
     if (btnBuildTMod) {
         btnBuildTMod.addEventListener('click', async () => {
+            const titleInput = document.getElementById('build-mod-title');
+            const title = titleInput.value.trim();
+            
+            // Validate Windows Filename compliance
+            const illegalChars = /[<>:"/\\|?*]/;
+            if (illegalChars.test(title)) {
+                showToast("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue.", true);
+                return;
+            }
+
             btnBuildTMod.disabled = true;
             const originalText = btnBuildTMod.innerHTML;
             btnBuildTMod.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compiling TMod...';
             
             try {
                 const gamePath = document.getElementById('build-game-select').value;
-                const title = document.getElementById('build-mod-title').value.trim();
                 const author = document.getElementById('build-mod-author').value.trim();
                 const version = document.getElementById('build-mod-version').value.trim();
                 const notes = document.getElementById('build-mod-notes').value.trim();

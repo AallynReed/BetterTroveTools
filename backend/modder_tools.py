@@ -1,4 +1,5 @@
 import base64
+import re
 import tkinter as tk
 from datetime import UTC, datetime
 from hashlib import md5
@@ -114,13 +115,19 @@ def build_tmod(payload):
         mod = TMod()
         
         title = payload.get("title", "").strip()
+        if not title:
+            return {"success": False, "error": "Mod title is required."}
+
+        # Strict validation for Windows filename compliance
+        if re.search(r'[<>:"/\\|?*]', title):
+            return {"success": False, "error": "Mod title contains illegal characters (< > : \" / \\ | ? *)."}
+
         author = payload.get("author", "").strip()
         version = payload.get("version", "").strip()
         notes = payload.get("notes", "").strip()
         tags = payload.get("tags", [])
         files = payload.get("files", [])
         
-        if not title: return {"success": False, "error": "Mod title is required."}
         if not author: return {"success": False, "error": "Mod author is required."}
         if not version: return {"success": False, "error": "Mod version is required."}
         if not notes: return {"success": False, "error": "Mod notes are required."}
@@ -161,15 +168,12 @@ def build_tmod(payload):
                     _, data_str = b64_data.split(",", 1)
                     f_bytes = base64.b64decode(data_str)
                     mod.add_file(TroveModFile(f_path, f_bytes))
-                
-        safe_name = "".join([c for c in title if c.isalpha() or c.isdigit() or c in " _-"]).strip()
-        if not safe_name:
-            safe_name = "Unnamed_Mod"
             
         out_dir = game_path / "mods"
         out_dir.mkdir(parents=True, exist_ok=True)
         
-        save_path = out_dir / f"{safe_name}.tmod"
+        # Now filename and mod name are guaranteed to be the same string
+        save_path = out_dir / f"{title}.tmod"
         mod.mod_path = save_path
         
         tmod_bytes = mod.compile_tmod()
