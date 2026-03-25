@@ -1,9 +1,12 @@
 from __future__ import annotations
-import time
-import json
+
 import asyncio
 import base64
 import io
+import json
+import os
+import re
+import time
 import zipfile
 import zlib
 from hashlib import md5
@@ -15,13 +18,12 @@ from aiohttp import ClientSession
 from binary_reader import BinaryReader
 from pydantic import BaseModel
 from toml import dumps
-import re
-import os
 
-from utils.functions import read_leb128, write_leb128, calculate_hash, chunks, get_attr
-from ..trovesaurus.mods import Mod
+from utils.functions import (calculate_hash, chunks, get_attr, read_leb128,
+                             write_leb128)
 from utils.registry import TroveGamePath
 
+from ..trovesaurus.mods import Mod
 
 mod_file_cache = {}
 
@@ -226,8 +228,8 @@ class TroveMod:
         return False
 
     @property
-    def is_rtt_mod(self):
-        return self.get_property_value("modLoader") == "RTT"
+    def is_btt_mod(self):
+        return self.get_property_value("modLoader") == "BTT"
 
     def toggle(self):
         self.enabled = not self.enabled
@@ -447,7 +449,7 @@ class TroveMod:
         properties_stream = BinaryReader(bytearray())
         files_list_stream = BinaryReader(bytearray())
         file_stream = BinaryReader(bytearray())
-        self.add_property("modLoader", "RTT")
+        self.add_property("modLoader", "BTT")
         for prop in self.properties:
             properties_stream.write_bytes(write_leb128(len(prop.name)))
             properties_stream.write_str(prop.name)

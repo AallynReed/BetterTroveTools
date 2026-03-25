@@ -223,9 +223,15 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (document.querySelectorAll('#build-files-list tr').length === 0) { showToast("Please add at least one file to your mod!", true); return; }
 
                 const previewImg = document.getElementById('build-mod-preview');
+                const previewInputElem = document.getElementById('build-preview-input');
                 let previewBase64 = null;
+                let previewName = "preview.png";
+                
                 if (previewImg.src.startsWith('data:image')) {
                     previewBase64 = previewImg.src;
+                    if (previewInputElem && previewInputElem.files && previewInputElem.files.length > 0) {
+                        previewName = previewInputElem.files[0].name;
+                    }
                 }
 
                 const currentRows = Array.from(document.querySelectorAll('#build-files-list tr'));
@@ -278,7 +284,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
                 if (filesData.length === 0) { showToast("Please add at least one file to your mod!", true); return; }
 
-                const payload = { gamePath, title, author, version, notes, tags, previewBase64, files: filesData };
+                const payload = { gamePath, title, author, version, notes, tags, previewBase64, previewName, files: filesData };
                 const result = await eel.build_tmod(payload)();
 
                 if (result.success) {

@@ -2,7 +2,6 @@ import base64
 import re
 import tkinter as tk
 from datetime import UTC, datetime
-from hashlib import md5
 from pathlib import Path
 from tkinter import filedialog
 
@@ -209,15 +208,16 @@ def build_tmod(payload):
         for tag in tags:
             mod.add_tag(tag)
 
-        mod.add_property("modLoader", "BTT")
         mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))
             
         preview_b64 = payload.get("previewBase64")
+        preview_name = payload.get("previewName", "preview.png")
+
         if preview_b64 and "," in preview_b64:
             header, data_str = preview_b64.split(",", 1)
             img_bytes = base64.b64decode(data_str)
-            preview_hash = md5(img_bytes).hexdigest()
-            preview_path = Path(f"ui/{preview_hash}.png")
+            clean_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
+            preview_path = Path(f"ui/{clean_name}")
             mod.add_file(TroveModFile(preview_path, img_bytes))
             mod.preview_path = preview_path
             
