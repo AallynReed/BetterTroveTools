@@ -55,7 +55,6 @@ def check_single_instance_and_send_ipc():
             break
 
     try:
-        # Try to connect to the IPC port. If successful, another instance is running.
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client.connect(('localhost', IPC_PORT))
         
@@ -63,14 +62,12 @@ def check_single_instance_and_send_ipc():
             client.sendall(url.encode('utf-8'))
             print("Link sent to existing instance. Exiting.")
         else:
-            # Send a dummy payload to keep the socket alive just long enough to exit cleanly
             client.sendall(b"WAKE_UP") 
             print("Another instance is already running. Exiting.")
             
         client.close()
-        sys.exit(0) # Exit because we are the second instance
+        sys.exit(0)
     except ConnectionRefusedError:
-        # Port is free, meaning we are the first instance!
         pass  
             
     return url
@@ -85,10 +82,41 @@ def start_ipc_server():
             data = conn.recv(1024).decode('utf-8')
             if data and data.startswith('btt://'):
                 eel.handle_deep_link(data)()
-            # The server will ignore "WAKE_UP" or empty payloads naturally
             conn.close()
             
     threading.Thread(target=listen, daemon=True).start()
+
+def clean_chromium_startup(exe_path):
+    """
+    Checks the HKCU Run registry key for entries containing the specific
+    Chromium executable path and removes them.
+    """
+    if sys.platform != 'win32':
+        return
+
+    run_key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, run_key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
+        
+        values_to_delete = []
+        i = 0
+        
+        while True:
+            try:
+                name, value, _ = winreg.EnumValue(key, i)
+                if exe_path.lower() in value.lower():
+                    values_to_delete.append(name)
+                i += 1
+            except OSError:
+                break
+                
+        for name in values_to_delete:
+            winreg.DeleteValue(key, name)
+            print(f"✅ Removed unwanted Chromium startup entry: '{name}'")
+            
+        winreg.CloseKey(key)
+    except Exception as e:
+        print(f"⚠️ Failed to check/remove startup registry keys: {e}")
 
 register_btt_protocol()
 startup_url = check_single_instance_and_send_ipc()
@@ -115,13 +143,14 @@ if not os.path.exists(chromium_path):
     print("Please check your 'bin' folder and update the folder names in main.py.")
     sys.exit(1)
 else:
-    print("✅ Chromium found! Starting app...")
+    print("✅ Chromium found! Cleaning up startup registry...")
+    clean_chromium_startup(chromium_path)
+    print("✅ Starting app...")
 
 eel.browsers.set_path('chrome', chromium_path)
 
 eel.init(os.path.join(base_dir, 'web'))
 
-# Fallback logic: Try sequential ports if the primary one is busy
 start_port = 28924
 max_ports_to_try = 10
 
@@ -138,7 +167,7 @@ for current_port in range(start_port, start_port + max_ports_to_try):
             '--disable-sync',
             '--disable-translate',
         ])
-        break  # UI closed normally, break out of the loop
+        break
     except OSError as e:
         print(f"⚠️ Port {current_port} is unavailable ({e}).")
         if current_port == start_port + max_ports_to_try - 1:
