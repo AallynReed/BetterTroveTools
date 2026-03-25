@@ -136,6 +136,8 @@ def get_app_metadata():
         return {}
 
 chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
+#C:\Users\IT\AppData\Roaming\Trove\ModManagerCache
+appdata_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'ModManagerCache', 'profile')
 
 print(f"Looking for Chromium at: {chromium_path}")
 if not os.path.exists(chromium_path):
@@ -162,10 +164,23 @@ for current_port in range(start_port, start_port + max_ports_to_try):
             '--no-default-browser-check',
             '--no-first-run',
             '--disable-background-mode',
-            '--disable-dev-tools',
+            '--disable-features=BackgroundMode,AutoLaunchAtStartup',
+            '--disable-background-networking',
+            '--disable-component-update',
             '--disable-extensions',
             '--disable-sync',
             '--disable-translate',
+            '--disable-default-apps',
+            '--metrics-recording-only',
+            f'--user-data-dir={appdata_path}',
+            '--incognito',
+            '--disable-cache',
+            '--disk-cache-size=0',
+            '--media-cache-size=0',
+            '--disable-application-cache',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-client-side-phishing-detection',
+            '--disable-breakpad',
         ])
         break
     except OSError as e:
