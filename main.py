@@ -31,7 +31,7 @@ if getattr(sys, 'frozen', False):
 else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-IPC_PORT = 28925  
+IPC_PORT = 28923
 
 def register_btt_protocol():
     if sys.platform == 'win32':
@@ -47,23 +47,31 @@ def register_btt_protocol():
         except Exception as e:
             print(f"Failed to register protocol: {e}")
 
-def check_and_send_ipc():
+def check_single_instance_and_send_ipc():
     url = None
     for arg in sys.argv:
         if arg.startswith('btt://'):
             url = arg
             break
 
-    if url:
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect(('localhost', IPC_PORT))
+    try:
+        # Try to connect to the IPC port. If successful, another instance is running.
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(('localhost', IPC_PORT))
+        
+        if url:
             client.sendall(url.encode('utf-8'))
-            client.close()
             print("Link sent to existing instance. Exiting.")
-            sys.exit(0)  
-        except ConnectionRefusedError:
-            pass  
+        else:
+            # Send a dummy payload to keep the socket alive just long enough to exit cleanly
+            client.sendall(b"WAKE_UP") 
+            print("Another instance is already running. Exiting.")
+            
+        client.close()
+        sys.exit(0) # Exit because we are the second instance
+    except ConnectionRefusedError:
+        # Port is free, meaning we are the first instance!
+        pass  
             
     return url
 
@@ -77,12 +85,13 @@ def start_ipc_server():
             data = conn.recv(1024).decode('utf-8')
             if data and data.startswith('btt://'):
                 eel.handle_deep_link(data)()
+            # The server will ignore "WAKE_UP" or empty payloads naturally
             conn.close()
             
     threading.Thread(target=listen, daemon=True).start()
 
 register_btt_protocol()
-startup_url = check_and_send_ipc()
+startup_url = check_single_instance_and_send_ipc()
 start_ipc_server()
 
 @eel.expose
@@ -112,13 +121,14 @@ eel.browsers.set_path('chrome', chromium_path)
 
 eel.init(os.path.join(base_dir, 'web'))
 
-# Retry logic: 3 attempts over 6 seconds (2-second delay between tries)
-max_retries = 3
-retry_delay = 2
+# Fallback logic: Try sequential ports if the primary one is busy
+start_port = 28924
+max_ports_to_try = 10
 
-for attempt in range(max_retries):
+for current_port in range(start_port, start_port + max_ports_to_try):
     try:
-        eel.start('index.html', mode='chrome', size=(1600, 1000), port=28924, cmdline_args=[
+        print(f"Attempting to launch UI on port {current_port}...")
+        eel.start('index.html', mode='chrome', size=(1600, 1000), port=current_port, cmdline_args=[
             '--disable-infobars',
             '--no-default-browser-check',
             '--no-first-run',
@@ -128,14 +138,11 @@ for attempt in range(max_retries):
             '--disable-sync',
             '--disable-translate',
         ])
-        break  # If eel.start somehow returns normally, break the loop
+        break  # UI closed normally, break out of the loop
     except OSError as e:
-        print(f"⚠️ Attempt {attempt + 1}/{max_retries}: Failed to bind to port 28924 ({e}).")
-        if attempt < max_retries - 1:
-            print(f"Retrying in {retry_delay} seconds...")
-            time.sleep(retry_delay)
-        else:
-            print("❌ ERROR: Could not bind to port 28924 after 3 attempts. Exiting cleanly.")
+        print(f"⚠️ Port {current_port} is unavailable ({e}).")
+        if current_port == start_port + max_ports_to_try - 1:
+            print(f"❌ ERROR: Could not find an open port after {max_ports_to_try} attempts. Exiting cleanly.")
             sys.exit(1)
     except (SystemExit, MemoryError, KeyboardInterrupt):
         sys.exit(0)
