@@ -23,7 +23,7 @@ class ServerTime:
         self.first_week_buff = datetime(2020, 3, 23, tzinfo=UTC)
         self.first_luxion = datetime(2024, 3, 1, tzinfo=UTC)
         self.first_corruxion = datetime(2024, 3, 8, tzinfo=UTC)
-        self.first_fluxion = datetime(2023, 7, 11, tzinfo=UTC)
+        self.first_fluxion = datetime(2023, 7, 18, tzinfo=UTC)
 
     def __str__(self):
         return self.now.strftime("%a, %b %d\t\t%H:%M")
