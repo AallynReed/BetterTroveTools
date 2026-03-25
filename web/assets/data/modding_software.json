@@ -72,6 +72,12 @@
         "description": "Create sound effects and music for Trove'.\nThis includes the Items, Blocks, Item Icons, Mounts, Allies, Costumes and much more.",
         "software": [
             {
+                "name": "BKSMTool",
+                "free": true,
+                "url": "https://saltwatersam.github.io/BKSMTool/",
+                "description": "This GUI/CLI allows users to modify *.bnk files used by Wwise."
+            },
+            {
                 "name": "BNK Replacer",
                 "free": true,
                 "url": "https://github.com/EtiTheSpirit/BNKReplacer",
