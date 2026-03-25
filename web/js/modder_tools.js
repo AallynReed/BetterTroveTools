@@ -1,7 +1,6 @@
 document.addEventListener('modder_tools_loaded', () => {
     console.log("Modder Tools view initialized!");
 
-    // --- Tab Switching Logic ---
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -20,7 +19,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     });
 
-    // --- Mod Preview Logic ---
     const previewContainer = document.getElementById('preview-picker-container');
     const previewInput = document.getElementById('build-preview-input');
     const previewImg = document.getElementById('build-mod-preview');
@@ -40,7 +38,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Select2 Initialization ---
     if (typeof jQuery !== 'undefined' && $.fn.select2) {
         $('#build-mod-tags').select2({
             placeholder: "Select categories...",
@@ -48,7 +45,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Game Scanning Logic ---
     async function scanForGames() {
         const gameSelect = document.getElementById('build-game-select');
         if (!gameSelect) return;
@@ -81,7 +77,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Add File Logic ---
     const btnAddFile = document.getElementById('btn-add-file');
     const btnDetectOverrides = document.getElementById('btn-detect-overrides');
     const filesList = document.getElementById('build-files-list');
@@ -121,7 +116,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Detect Overrides Logic ---
     if (btnDetectOverrides) {
         btnDetectOverrides.addEventListener('click', async () => {
             const gamePath = document.getElementById('build-game-select').value;
@@ -187,7 +181,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Build TMod Logic ---
     const btnBuildTMod = document.getElementById('btn-build-tmod');
     if (btnBuildTMod) {
         btnBuildTMod.addEventListener('click', async () => {
@@ -285,7 +278,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Extract TMod Logic ---
     const btnBrowseExtractSource = document.getElementById('btn-browse-extract-source');
     const inputExtractSource = document.getElementById('extract-source-file');
     
@@ -336,17 +328,14 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- Modding Software Directory Logic ---
     async function loadModdingSoftware() {
         const container = document.getElementById('software-list-container');
         if (!container) return;
 
         try {
-            // Fetch the JSON file (Eel serves the 'web' folder as the root directory)
             const response = await fetch('assets/data/modding_software.json');
             const data = await response.json();
 
-            // Map categories to specific FontAwesome icons
             const categoryIcons = {
                 'blueprints': 'fa-cube',
                 'vfx': 'fa-wand-magic-sparkles',
@@ -355,13 +344,11 @@ document.addEventListener('modder_tools_loaded', () => {
                 'textures': 'fa-palette'
             };
 
-            container.innerHTML = ''; // Clear out the hardcoded placeholders
-            container.style.display = 'block'; // Change from flex to block so categories stack properly
+            container.innerHTML = '';
+            container.style.display = 'block';
 
-            // Loop through each category in the JSON
             for (const [categoryKey, categoryData] of Object.entries(data)) {
                 
-                // 1. Create a Category Header
                 const catHeader = document.createElement('h4');
                 catHeader.style.marginTop = '20px';
                 catHeader.style.marginBottom = '10px';
@@ -372,24 +359,19 @@ document.addEventListener('modder_tools_loaded', () => {
                 catHeader.innerHTML = `<i class="fa-solid ${categoryIcons[categoryKey] || 'fa-laptop-code'}" style="color: var(--text-muted); margin-right: 5px;"></i> ${categoryKey}`;
                 container.appendChild(catHeader);
 
-                // 2. Create a flex wrapper for the badges in this category
                 const badgeWrapper = document.createElement('div');
                 badgeWrapper.style.display = 'flex';
                 badgeWrapper.style.flexWrap = 'wrap';
                 badgeWrapper.style.gap = '10px';
 
-                // 3. Loop through the software array and build the badges
-                // 3. Loop through the software array and build the badges
                 categoryData.software.forEach(sw => {
                     const badge = document.createElement('a');
                     badge.className = 'software-badge';
                     badge.href = sw.url;
-                    badge.target = '_blank'; // Opens link in a new tab
+                    badge.target = '_blank';
                     
-                    // Standard tooltip showing description
                     badge.title = sw.description;
 
-                    // --- UPDATED: Creating obvious text tags ---
                     let priceTagHtml = '';
                     if (sw.free) {
                         priceTagHtml = `<span class="sw-price-tag free">Free</span>`;
@@ -414,6 +396,5 @@ document.addEventListener('modder_tools_loaded', () => {
         }
     }
 
-    // Execute the fetch when the view loads
     loadModdingSoftware();
 });

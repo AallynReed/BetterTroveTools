@@ -1,6 +1,9 @@
 import json
 import os
 import sys
+import socket
+import threading
+import winreg
 
 import eel
 
@@ -23,8 +26,67 @@ if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)
     if not hasattr(sys, '_MEIPASS'):
         sys._MEIPASS = base_dir
+    os.chdir(base_dir)
 else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
+
+IPC_PORT = 28925  
+
+def register_btt_protocol():
+    if sys.platform == 'win32':
+        try:
+            exe_path = sys.executable if getattr(sys, 'frozen', False) else os.path.abspath(sys.argv[0])
+            
+            key = winreg.CreateKey(winreg.HKEY_CURRENT_USER, r"Software\Classes\btt")
+            winreg.SetValue(key, "", winreg.REG_SZ, "URL:btt Protocol")
+            winreg.SetValueEx(key, "URL Protocol", 0, winreg.REG_SZ, "")
+            
+            cmd_key = winreg.CreateKey(key, r"shell\open\command")
+            winreg.SetValue(cmd_key, "", winreg.REG_SZ, f'"{exe_path}" "%1"')
+        except Exception as e:
+            print(f"Failed to register protocol: {e}")
+
+def check_and_send_ipc():
+    url = None
+    for arg in sys.argv:
+        if arg.startswith('btt://'):
+            url = arg
+            break
+
+    if url:
+        try:
+            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client.connect(('localhost', IPC_PORT))
+            client.sendall(url.encode('utf-8'))
+            client.close()
+            print("Link sent to existing instance. Exiting.")
+            sys.exit(0)  
+        except ConnectionRefusedError:
+            pass  
+            
+    return url
+
+def start_ipc_server():
+    def listen():
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(('localhost', IPC_PORT))
+        server.listen(1)
+        while True:
+            conn, addr = server.accept()
+            data = conn.recv(1024).decode('utf-8')
+            if data and data.startswith('btt://'):
+                eel.handle_deep_link(data)()
+            conn.close()
+            
+    threading.Thread(target=listen, daemon=True).start()
+
+register_btt_protocol()
+startup_url = check_and_send_ipc()
+start_ipc_server()
+
+@eel.expose
+def get_startup_url():
+    return startup_url
 
 @eel.expose
 def get_app_metadata():

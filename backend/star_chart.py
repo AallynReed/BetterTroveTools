@@ -76,17 +76,12 @@ def get_calculated_star_chart():
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
-# ==========================================
-# STAR CHART TEMPLATE STORAGE ENDPOINTS
-# ==========================================
 
 @eel.expose
 def save_star_chart_template(name, base64_code):
-    """Saves a star chart build code under a specific name."""
     try:
         data = read_storage()
         
-        # Ensure the templates dictionary exists
         if "star_chart_templates" not in data:
             data["star_chart_templates"] = {}
             
@@ -101,7 +96,6 @@ def save_star_chart_template(name, base64_code):
 
 @eel.expose
 def get_star_chart_templates():
-    """Returns a dictionary of all saved templates {name: base64_code}."""
     try:
         data = read_storage()
         return data.get("star_chart_templates", {})
@@ -112,7 +106,6 @@ def get_star_chart_templates():
 
 @eel.expose
 def delete_star_chart_template(name):
-    """Deletes a saved template by name."""
     try:
         data = read_storage()
         if "star_chart_templates" in data and name in data["star_chart_templates"]:

@@ -1,4 +1,3 @@
-/* --- LAYOUT --- */
 .gem-sim-container {
     display: flex;
     gap: 20px;
@@ -21,7 +20,6 @@
 
 .left-column { flex: 0 0 380px; }
 .center-column { flex: 1; min-width: 350px; }
-/* Fix for the horizontal scrolling: use flex 1 and min/max boundaries */
 .right-column { flex: 1; min-width: 450px; max-width: 530px; } 
 
 .column-header {
@@ -55,10 +53,8 @@
     margin-top: 40px;
 }
 
-/* --- SLOTS --- */
 .slots { display: grid; gap: 10px; }
 .right-slots {
-    /* Automatically fit as many 40px columns as the width allows without overflowing */
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
     grid-auto-columns: 40px;
     grid-auto-rows: 40px;
@@ -112,7 +108,6 @@
     margin: 0px -15px;
 }
 
-/* --- ITEMS --- */
 .item {
     border-radius: 50%;
     display: flex;
@@ -159,7 +154,6 @@
 .item-lv { top: -6px; font-size: 9px; color: #a3adc2; }
 .item-power { bottom: -6px; font-size: 10px; color: #5ec6ff; }
 
-/* --- GEM FORGE --- */
 .gem-form-row {
     display: flex;
     gap: 15px;
@@ -184,7 +178,6 @@
 .gem-form-row select:focus { border-color: var(--accent-blue, #5ec6ff); }
 .gem-form-row select:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* --- SELECTED GEM VIEW --- */
 .selected-container {
     display: flex;
     flex-direction: row;
@@ -236,7 +229,6 @@
 .container-chip-bar-wrap { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
 .container-chip-bar { height: 100%; border-radius: 3px; }
 
-/* Actions */
 .button-row { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
 .action-square { width: 40px; height: 40px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-dark); }
 .action-square:hover { border-color: #5ec6ff; }
@@ -259,7 +251,6 @@
 .gem-action-btn:hover:not(:disabled), .save-gem-btn:hover:not(:disabled) { background: var(--accent-blue, #5ec6ff); color: #111; }
 .gem-action-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555; color: #888; background: var(--bg-dark); }
 
-/* --- PRIMORDIAL TOGGLES --- */
 .primordial-toggles-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -278,7 +269,6 @@
 .primordial-toggle-checkbox:checked + .primordial-toggle-slider { background: #34d058; }
 .primordial-toggle-checkbox:checked + .primordial-toggle-slider:after { left: 16px; }
 
-/* --- TRASH SLOT --- */
 .trash-slot { 
     width: 50px; 
     height: 50px; 
@@ -296,7 +286,6 @@
 .trash-slot:hover { background: rgba(211, 47, 47, 0.2); border-style: solid; }
 .trash-label { text-align: center; color: #d32f2f; font-size: 0.8em; margin-top: 5px; text-transform: uppercase; font-weight: bold;}
 
-/* --- MODAL --- */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;

@@ -5,6 +5,9 @@ ENV/
 
 # Ignore the massive chrome binaries
 bin/
+build/
+dist/
+Better_Trove_Tools.egg-info
 
 # Ignore Python cache
 __pycache__/

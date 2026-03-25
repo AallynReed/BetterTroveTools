@@ -253,7 +253,6 @@ body {
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* Hide the clock when the sidebar is collapsed */
 #sidebar.collapsed #server-time-wrapper {
     opacity: 0;
     pointer-events: none;
@@ -267,7 +266,6 @@ body {
     scrollbar-color: var(--border-color, #444c5e) transparent;
 }
 
-/* WebKit (Chrome, Edge, Safari, Eel) */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;

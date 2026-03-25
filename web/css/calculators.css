@@ -1,4 +1,3 @@
-/* --- CALCULATORS LAYOUT --- */
 .calculators-container {
     padding: 30px;
     animation: fadeIn 0.4s ease-out;
@@ -14,7 +13,6 @@
     color: #fff;
 }
 
-/* --- TAB SYSTEM --- */
 .tabs-wrapper {
     background: var(--bg-panel, #1d232b);
     border: 1px solid var(--border-color, #444c5e);
@@ -72,7 +70,6 @@
     animation: fadeIn 0.3s ease-out;
 }
 
-/* --- MAGIC FIND & MASTERY HEADERS --- */
 .mf-header {
     text-align: center;
     margin-bottom: 30px;
@@ -109,7 +106,6 @@
     border-radius: 20px;
 }
 
-/* Mastery Specific Stats Grid */
 .mastery-stats-grid {
     display: flex;
     justify-content: center;
@@ -141,7 +137,6 @@
     margin-top: 4px;
 }
 
-/* --- CALCULATOR GRIDS --- */
 .mf-calculator-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -187,7 +182,6 @@
     color: #fbc02d;
 }
 
-/* SLIDERS */
 .calc-slider-wrapper { display: flex; gap: 12px; align-items: center; }
 .calc-slider { flex: 1; accent-color: #5ec6ff; cursor: pointer; }
 .calc-number-input {
@@ -204,7 +198,6 @@
 
 .calc-number-input:focus { outline: none; border-color: #5ec6ff; }
 
-/* TOGGLE SWITCHES */
 .calc-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
 .calc-switch input { opacity: 0; width: 0; height: 0; }
 .slider-toggle {
@@ -220,7 +213,6 @@
 .calc-switch input:checked + .slider-toggle { background-color: #5ec6ff; border-color: #5ec6ff; }
 .calc-switch input:checked + .slider-toggle:before { transform: translateX(22px); background-color: #fff; }
 
-/* --- ANIMATIONS --- */
 @keyframes fadeIn { 
     from { opacity: 0; transform: translateY(5px); } 
     to { opacity: 1; transform: translateY(0); } 

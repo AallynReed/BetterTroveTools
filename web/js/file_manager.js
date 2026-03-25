@@ -24,15 +24,24 @@ document.addEventListener('file_manager_loaded', () => {
     const extractionBar = document.getElementById('extraction-bar');
     const extractionSummary = document.getElementById('extraction-summary');
     const massExtractBtn = document.getElementById('btn-mass-extract');
+    const collapseBtn = document.getElementById('btn-collapse-all');
+    const selectVisibleBtn = document.getElementById('btn-select-visible');
     
     const trackerGameSelect = document.getElementById('tracker-game-select');
-    const trackerDirInput = document.getElementById('tracker-dir-input');
-    const btnSelectTrackerDir = document.getElementById('btn-select-tracker-dir');
     const trackerStatusText = document.getElementById('tracker-status-text');
     const trackerSubText = document.getElementById('tracker-sub-text');
     const trackerActions = document.getElementById('tracker-actions');
     const btnBuildBaseline = document.getElementById('btn-build-baseline');
     const btnScanUpdates = document.getElementById('btn-scan-updates');
+
+    const trackerDirSelect = document.getElementById('tracker-dir-select');
+    const btnAddTrackerDir = document.getElementById('btn-add-tracker-dir');
+    const trackerModal = document.getElementById('tracker-modal');
+    const closeTrackerModal = document.getElementById('close-tracker-modal');
+    const btnBrowseNewTracker = document.getElementById('btn-browse-new-tracker');
+    const newTrackerName = document.getElementById('new-tracker-name');
+    const newTrackerPath = document.getElementById('new-tracker-path');
+    const btnSaveTrackerDir = document.getElementById('btn-save-tracker-dir');
 
     let fileCache = [];
     let fileIdCounter = 0;
@@ -88,6 +97,113 @@ document.addEventListener('file_manager_loaded', () => {
             await eel.save_settings(settings)();
         });
     }
+
+    function timeSince(dateString) {
+        if (!dateString) return "";
+        const date = new Date(dateString);
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " years ago";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " months ago";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " days ago";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " hours ago";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + " minutes ago";
+        return "Just now";
+    }
+
+    async function loadTrackingDirectories() {
+        const res = await eel.get_tracking_directories()();
+        if (res.success) {
+            trackerDirSelect.innerHTML = "";
+            if (res.directories.length === 0) {
+                trackerDirSelect.innerHTML = `<option value="">No paths saved. Add one...</option>`;
+                currentTrackingDir = null;
+            } else {
+                res.directories.sort((a, b) => {
+                    const timeA = a.last_used ? new Date(a.last_used).getTime() : 0;
+                    const timeB = b.last_used ? new Date(b.last_used).getTime() : 0;
+                    return timeB - timeA; 
+                });
+
+                res.directories.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d.path;
+                    
+                    let text = `${d.name} (${d.path})`;
+                    if (d.last_used) {
+                        text += ` - Last used: ${timeSince(d.last_used)}`;
+                    }
+                    
+                    opt.textContent = text;
+                    trackerDirSelect.appendChild(opt);
+                });
+                
+                if (res.last_used && res.directories.some(d => d.path === res.last_used)) {
+                    trackerDirSelect.value = res.last_used;
+                    currentTrackingDir = res.last_used;
+                } else {
+                    trackerDirSelect.value = res.directories[0].path;
+                    currentTrackingDir = res.directories[0].path;
+                    eel.set_last_tracking_directory(currentTrackingDir)();
+                }
+            }
+            checkTrackerStatus();
+        }
+    }
+
+    loadTrackingDirectories();
+
+    trackerDirSelect.addEventListener('change', () => {
+        if (trackerDirSelect.value) {
+            currentTrackingDir = trackerDirSelect.value;
+            eel.set_last_tracking_directory(currentTrackingDir)();
+            checkTrackerStatus();
+        } else {
+            currentTrackingDir = null;
+            checkTrackerStatus();
+        }
+    });
+
+    btnAddTrackerDir.addEventListener('click', () => {
+        trackerModal.classList.add('active');
+        newTrackerName.value = '';
+        newTrackerPath.value = '';
+    });
+
+    closeTrackerModal.addEventListener('click', () => {
+        trackerModal.classList.remove('active');
+    });
+
+    btnBrowseNewTracker.addEventListener('click', async () => {
+        const response = await eel.select_tracking_directory()();
+        if (response.success && response.path) {
+            newTrackerPath.value = response.path;
+            if (!newTrackerName.value) {
+                newTrackerName.value = response.path.split('\\').pop().split('/').pop(); 
+            }
+        }
+    });
+
+    btnSaveTrackerDir.addEventListener('click', async () => {
+        const name = newTrackerName.value.trim();
+        const path = newTrackerPath.value.trim();
+        
+        if (!name || !path) {
+            return window.showToast("Please provide both a name and a valid path.", true);
+        }
+        
+        btnSaveTrackerDir.disabled = true;
+        await eel.save_tracking_directory(name, path)();
+        trackerModal.classList.remove('active');
+        btnSaveTrackerDir.disabled = false;
+        
+        await loadTrackingDirectories();
+        window.showToast("Tracking directory saved!");
+    });
 
     function performSearch() {
         clearTimeout(searchTimeout);
@@ -219,15 +335,75 @@ document.addEventListener('file_manager_loaded', () => {
         }
     });
 
+    if (collapseBtn) {
+        collapseBtn.addEventListener('click', () => {
+            const openFolders = treeContainer.querySelectorAll('details.folder[open]');
+            openFolders.forEach(folder => { folder.open = false; });
+            treeContainer.classList.remove('searching');
+            searchInput.value = "";
+            searchCount.innerText = "";
+        });
+    }
+
+    if (selectVisibleBtn) {
+        selectVisibleBtn.addEventListener('click', () => {
+            const isSearching = treeContainer.classList.contains('searching');
+            const fileCheckboxes = isSearching 
+                ? treeContainer.querySelectorAll('.file-item.is-match .file-check')
+                : treeContainer.querySelectorAll('.file-check');
+
+            if (fileCheckboxes.length === 0) return;
+
+            const shouldCheck = Array.from(fileCheckboxes).some(cb => !cb.checked);
+            fileCheckboxes.forEach(cb => cb.checked = shouldCheck);
+
+            treeContainer.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    }
+
     eel.expose(update_progress_ui);
-    function update_progress_ui(current, total, filename, etaStr) {
-        document.getElementById('progress-fill').style.width = Math.round((current / total) * 100) + '%';
+    function update_progress_ui(current, total, filename, etaStr, elapsedStr = "") {
+        const percent = Math.round((current / total) * 100);
+        document.getElementById('progress-fill').style.width = percent + '%';
         
-        const textToDisplay = (etaStr && etaStr.includes('Baseline') || etaStr.includes('Scanning')) 
-                               ? `${Math.round((current / total) * 100)}% | ${etaStr} | ${filename}`
-                               : `${Math.round((current / total) * 100)}% | ETA: ${etaStr} | ${filename}`;
-                               
-        document.getElementById('progress-text').innerText = textToDisplay;
+        let timeText = [];
+        
+        if (elapsedStr && elapsedStr !== "N/A") {
+            timeText.push(`Elapsed: ${elapsedStr}`);
+        }
+        
+        if (etaStr) {
+            if (!etaStr.includes('Baseline') && !etaStr.includes('Scanning') && !etaStr.includes('Cataloging')) {
+                timeText.push(`ETA: ${etaStr}`);
+            } else {
+                timeText.push(etaStr);
+            }
+        }
+        
+        const timeString = timeText.length > 0 ? timeText.join(' | ') : '';
+        
+        document.getElementById('progress-text').innerText = `${percent}% | ${timeString}`;
+        
+        const filenameEl = document.getElementById('progress-filename');
+        if (filenameEl) {
+            filenameEl.innerText = filename || "";
+        }
+    }
+
+    function showProgressUI() {
+        extractionSummary.style.display = 'none';
+        document.getElementById('extraction-progress').style.display = 'flex';
+        extractionBar.classList.add('active');
+        massExtractBtn.style.display = 'none';
+    }
+
+    function hideProgressUI() {
+        extractionBar.classList.remove('active');
+        setTimeout(() => {
+            extractionSummary.style.display = 'block';
+            document.getElementById('extraction-progress').style.display = 'none';
+            massExtractBtn.style.display = 'block';
+        }, 300);
     }
 
     if (massExtractBtn) {
@@ -265,36 +441,14 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    const collapseBtn = document.getElementById('btn-collapse-all');
-    if (collapseBtn) {
-        collapseBtn.addEventListener('click', () => {
-            const openFolders = treeContainer.querySelectorAll('details.folder[open]');
-            openFolders.forEach(folder => { folder.open = false; });
-            treeContainer.classList.remove('searching');
-            searchInput.value = "";
-            searchCount.innerText = "";
-        });
-    }
-
-    const selectVisibleBtn = document.getElementById('btn-select-visible');
-    if (selectVisibleBtn) {
-        selectVisibleBtn.addEventListener('click', () => {
-            const isSearching = treeContainer.classList.contains('searching');
-            const fileCheckboxes = isSearching 
-                ? treeContainer.querySelectorAll('.file-item.is-match .file-check')
-                : treeContainer.querySelectorAll('.file-check');
-
-            if (fileCheckboxes.length === 0) return;
-
-            const shouldCheck = Array.from(fileCheckboxes).some(cb => !cb.checked);
-            fileCheckboxes.forEach(cb => cb.checked = shouldCheck);
-
-            treeContainer.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-    }
-
     async function checkTrackerStatus() {
-        if (!currentTrackingDir) return;
+        if (!currentTrackingDir) {
+            trackerStatusText.innerText = "Select or add a tracking directory to continue.";
+            trackerStatusText.style.color = "var(--text-main)";
+            trackerSubText.innerText = "";
+            trackerActions.style.display = "none";
+            return;
+        }
         
         trackerStatusText.innerText = "Checking directory...";
         trackerSubText.innerText = "";
@@ -328,33 +482,6 @@ document.addEventListener('file_manager_loaded', () => {
             btnScanUpdates.style.display = "none";
         }
     }
-
-    btnSelectTrackerDir.addEventListener('click', async () => {
-        const response = await eel.select_tracking_directory()();
-        if (response.success && response.path) {
-            currentTrackingDir = response.path;
-            trackerDirInput.value = currentTrackingDir;
-            checkTrackerStatus();
-        }
-    });
-
-    function showProgressUI() {
-        extractionSummary.style.display = 'none';
-        document.getElementById('extraction-progress').style.display = 'flex';
-        extractionBar.classList.add('active');
-        btnMassExtract.style.display = 'none';
-    }
-
-    function hideProgressUI() {
-        extractionBar.classList.remove('active');
-        setTimeout(() => {
-            extractionSummary.style.display = 'block';
-            document.getElementById('extraction-progress').style.display = 'none';
-            btnMassExtract.style.display = 'block';
-        }, 300);
-    }
-
-    const btnMassExtract = document.getElementById('btn-mass-extract');
 
     btnBuildBaseline.addEventListener('click', async () => {
         const gamePath = trackerGameSelect.value;

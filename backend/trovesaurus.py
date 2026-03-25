@@ -78,9 +78,11 @@ async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str
             if query:
                 q = query.lower()
                 name = str(mod.get("name") or "").lower()
+                mod_id_str = str(mod.get("id") or "")
                 author_data = mod.get("author") or {}
                 author = str(author_data.get("Username") or "").lower() if isinstance(author_data, dict) else ""
-                if q not in name and q not in author:
+                
+                if q not in name and q not in author and q != mod_id_str:
                     continue
 
             if category:
