@@ -8,6 +8,7 @@ from tkinter import filedialog
 
 import eel
 
+from models.trove.directory import Directories
 from models.trove.mod import TMod, TroveModFile
 
 
@@ -37,6 +38,68 @@ def ask_extract_destination():
     folder_path = filedialog.askdirectory(title="Select Extraction Destination")
     root.destroy()
     return folder_path
+
+@eel.expose
+def ask_add_files(game_path_str=None):
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    file_paths = filedialog.askopenfilenames(title="Select Files to Add")
+    root.destroy()
+    
+    files = []
+    rejected = []
+    if not file_paths:
+        return {"success": True, "files": files, "rejected": rejected}
+        
+    try:
+        game_path = Path(game_path_str).resolve() if game_path_str else None
+    except Exception:
+        game_path = None
+        
+    valid_dirs = [d.value.lower() for d in Directories]
+        
+    for p in file_paths:
+        file_path = Path(p).resolve()
+        internal_path = file_path.name
+        
+        is_relative = False
+        internal_parts = []
+        
+        if game_path:
+            try:
+                # Primary strict check
+                rel_parts = file_path.relative_to(game_path).parts
+                is_relative = True
+                internal_parts = [part for part in rel_parts if part.lower() != "override"]
+            except ValueError:
+                # Fallback check for Windows drive letter/casing inconsistencies
+                file_str = str(file_path).lower()
+                game_str = str(game_path).lower()
+                if file_str.startswith(game_str):
+                    is_relative = True
+                    # Slice out the relative portion
+                    rel_path_str = str(file_path)[len(str(game_path)):].strip("\\/")
+                    rel_parts = Path(rel_path_str).parts
+                    internal_parts = [part for part in rel_parts if part.lower() != "override"]
+                else:
+                    is_relative = False
+                    
+        if not is_relative or not internal_parts:
+            rejected.append(file_path.name)
+        else:
+            # Check if the root directory of the internal path is valid
+            root_dir = internal_parts[0].lower()
+            if root_dir not in valid_dirs:
+                rejected.append(file_path.name)
+            else:
+                internal_path = "/".join(internal_parts)
+                files.append({
+                    "path": str(file_path),
+                    "internal_path": internal_path
+                })
+            
+    return {"success": True, "files": files, "rejected": rejected}
 
 @eel.expose
 def extract_tmod(tmod_path_str, dest_path_str):
@@ -73,18 +136,23 @@ def detect_override_files(source_dir_str):
         if not source_dir.exists() or not source_dir.is_dir():
             return {"success": False, "error": "Invalid source directory."}
             
+        valid_dirs = [d.value.lower() for d in Directories]
         files = []
+        
         for file_path in source_dir.rglob("*"):
             if file_path.is_file():
                 parts = file_path.relative_to(source_dir).parts
                 if "override" in [p.lower() for p in parts]:
                     internal_parts = [p for p in parts if p.lower() != "override"]
-                    internal_path = "/".join(internal_parts)
                     
-                    files.append({
-                        "path": str(file_path),
-                        "internal_path": internal_path
-                    })
+                    if internal_parts:
+                        root_dir = internal_parts[0].lower()
+                        if root_dir in valid_dirs:
+                            internal_path = "/".join(internal_parts)
+                            files.append({
+                                "path": str(file_path),
+                                "internal_path": internal_path
+                            })
                     
         return {"success": True, "files": files}
     except Exception as e:
@@ -118,7 +186,6 @@ def build_tmod(payload):
         if not title:
             return {"success": False, "error": "Mod title is required."}
 
-        # Strict validation for Windows filename compliance
         if re.search(r'[<>:"/\\|?*]', title):
             return {"success": False, "error": "Mod title contains illegal characters (< > : \" / \\ | ? *)."}
 
@@ -172,7 +239,6 @@ def build_tmod(payload):
         out_dir = game_path / "mods"
         out_dir.mkdir(parents=True, exist_ok=True)
         
-        # Now filename and mod name are guaranteed to be the same string
         save_path = out_dir / f"{title}.tmod"
         mod.mod_path = save_path
         

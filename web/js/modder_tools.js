@@ -81,38 +81,47 @@ document.addEventListener('modder_tools_loaded', () => {
     const btnDetectOverrides = document.getElementById('btn-detect-overrides');
     const filesList = document.getElementById('build-files-list');
 
-    const hiddenFileInput = document.createElement('input');
-    hiddenFileInput.type = 'file';
-    hiddenFileInput.multiple = true;
-    hiddenFileInput.style.display = 'none';
-    document.body.appendChild(hiddenFileInput);
-
     if (btnAddFile) {
-        btnAddFile.addEventListener('click', () => {
-            hiddenFileInput.click();
-        });
-
-        hiddenFileInput.addEventListener('change', (e) => {
-            Array.from(e.target.files).forEach(file => {
-                const filePath = file.path || file.name;
+        btnAddFile.addEventListener('click', async () => {
+            const gameSelect = document.getElementById('build-game-select');
+            const gamePath = gameSelect ? gameSelect.value : "";
+            
+            if (!gamePath) {
+                showToast("Please select a Target Game Installation first.", true);
+                return;
+            }
+            
+            try {
+                const result = await eel.ask_add_files(gamePath)();
                 
-                let internalPath = file.name;
-                const existing = Array.from(filesList.querySelectorAll('tr')).find(tr => tr.fileData && tr.fileData.path === filePath);
-                if (existing) return;
+                if (result && result.success) {
+                    if (result.rejected && result.rejected.length > 0) {
+                        showToast(`Denied ${result.rejected.length} file(s):\nSelected files must be located within the active game path.`, true);
+                    }
 
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td title="Source: ${filePath}" style="color: var(--text-main); font-size: 13px; word-break: break-all;">
-                        <div>${internalPath}</div>
-                        <div style="color: var(--text-muted); font-size: 11px;">${filePath}</div>
-                    </td>
-                    <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="Remove File"><i class="fa-solid fa-trash"></i></button></td>
-                `;
-                tr.fileData = { name: internalPath, path: filePath, fileObj: file };
-                filesList.appendChild(tr);
-                tr.querySelector('.remove-file').addEventListener('click', () => tr.remove());
-            });
-            hiddenFileInput.value = '';
+                    if (result.files && result.files.length > 0) {
+                        result.files.forEach(f => {
+                            const existing = Array.from(filesList.querySelectorAll('tr')).find(tr => tr.fileData && tr.fileData.path === f.path);
+                            if (existing) return;
+
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td title="Source: ${f.path}" style="color: var(--text-main); font-size: 13px; word-break: break-all;">
+                                    <div>${f.internal_path}</div>
+                                    <div style="color: var(--text-muted); font-size: 11px;">${f.path}</div>
+                                </td>
+                                <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="Remove File"><i class="fa-solid fa-trash"></i></button></td>
+                            `;
+                            tr.fileData = { name: f.internal_path, path: f.path };
+                            filesList.appendChild(tr);
+                            tr.querySelector('.remove-file').addEventListener('click', () => tr.remove());
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error adding files:", error);
+                showToast("An error occurred while adding files.", true);
+            }
         });
     }
 
