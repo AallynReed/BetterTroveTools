@@ -18,16 +18,42 @@ def format_timedelta(td):
         return f"{days}d {hours}h"
     return f"{hours}h {minutes}m"
 
+import threading
+
+
 @eel.expose
 def get_twitch_streams():
-    try:
-        headers = {"User-Agent": "BetterTroveTools/1.0"}
-        response = requests.get("https://trovesaurus.aallyn.xyz/twitch_streams", headers=headers, timeout=10)
-        response.raise_for_status()
-        return {"success": True, "data": response.json()}
-    except Exception as e:
-        traceback.print_exc()
-        return {"success": False, "error": str(e)}
+    def fetch_task():
+        try:
+            headers = {"User-Agent": "BetterTroveTools/1.0"}
+            response = requests.get("https://trovesaurus.aallyn.xyz/twitch_streams", headers=headers, timeout=10)
+            response.raise_for_status()
+            # Send data back to JS callback
+            eel.receive_twitch_streams({"success": True, "data": response.json()})
+        except Exception as e:
+            traceback.print_exc()
+            eel.receive_twitch_streams({"success": False, "error": str(e)})
+            
+    # Run the blocking network request in a background thread
+    threading.Thread(target=fetch_task, daemon=True).start()
+
+@eel.expose
+def get_trovesaurus_events():
+    def fetch_task():
+        try:
+            headers = {"User-Agent": "BetterTroveTools/1.0"}
+            response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=3)
+            response.raise_for_status()
+            events = response.json()
+            events.sort(key=lambda x: int(x['startdate']))
+            # Send data back to JS callback
+            eel.receive_events_data({"success": True, "data": events})
+        except Exception as e:
+            traceback.print_exc()
+            eel.receive_events_data({"success": False, "error": str(e)})
+            
+    # Run the blocking network request in a background thread
+    threading.Thread(target=fetch_task, daemon=True).start()
 
 @eel.expose
 def get_current_server_data():
@@ -96,21 +122,6 @@ def get_merchant_schedules():
             "corruxion": generate_mock_schedule(9, 14, 3),
             "fluxion": generate_mock_schedule(4, 14, 7)
         }
-    except Exception as e:
-        traceback.print_exc()
-        return {"success": False, "error": str(e)}
-    
-@eel.expose
-def get_trovesaurus_events():
-    try:
-        headers = {"User-Agent": "BetterTroveTools/1.0"}
-        response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=3)
-        response.raise_for_status()
-        events = response.json()
-        
-        events.sort(key=lambda x: int(x['startdate']))
-
-        return {"success": True, "data": events}
     except Exception as e:
         traceback.print_exc()
         return {"success": False, "error": str(e)}

@@ -118,6 +118,7 @@ async function getActiveGamePath() {
     return null;
 }
 
+// -- MOD FETCHING --
 async function fetchTrovesaurusMods(page = 1) {
     if (ts_isLoading) return;
     
@@ -125,9 +126,6 @@ async function fetchTrovesaurusMods(page = 1) {
     const searchInput = document.getElementById('ts-search-input');
     const catSelect = document.getElementById('ts-category-select');
     const sortSelect = document.getElementById('ts-sort-select');
-    const prevBtn = document.getElementById('btn-ts-prev');
-    const nextBtn = document.getElementById('btn-ts-next');
-    const pageDisplay = document.getElementById('ts-page-display');
 
     if (!grid) return;
 
@@ -140,22 +138,29 @@ async function fetchTrovesaurusMods(page = 1) {
     
     const gamePath = await getActiveGamePath() || "";
 
-    try {
-        const response = await eel.get_trovesaurus_mods(page, query, category, sort, gamePath)();
+    // Trigger Python thread, don't wait for response here
+    eel.get_trovesaurus_mods(page, query, category, sort, gamePath)();
+}
+
+// Callback handler for when the Python fetch finishes
+eel.expose(receive_trovesaurus_mods, 'receive_trovesaurus_mods');
+function receive_trovesaurus_mods(response) {
+    const grid = document.getElementById('ts-mod-grid');
+    const prevBtn = document.getElementById('btn-ts-prev');
+    const nextBtn = document.getElementById('btn-ts-next');
+    const pageDisplay = document.getElementById('ts-page-display');
+
+    if (!grid) return;
+
+    if (response && response.success) {
+        ts_currentPage = response.page;
+        renderTrovesaurusGrid(response.mods, grid);
         
-        if (response.success) {
-            ts_currentPage = response.page;
-            renderTrovesaurusGrid(response.mods, grid);
-            
-            if (pageDisplay) pageDisplay.innerText = `Page ${ts_currentPage} of ${response.max_pages}`;
-            if (prevBtn) prevBtn.disabled = ts_currentPage <= 1;
-            if (nextBtn) nextBtn.disabled = ts_currentPage >= response.max_pages;
-        } else {
-            grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> ${response.error}</div>`;
-        }
-    } catch (err) {
-        console.error("Trovesaurus fetch error:", err);
-        grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> ${err.message || err}</div>`;
+        if (pageDisplay) pageDisplay.innerText = `Page ${ts_currentPage} of ${response.max_pages}`;
+        if (prevBtn) prevBtn.disabled = ts_currentPage <= 1;
+        if (nextBtn) nextBtn.disabled = ts_currentPage >= response.max_pages;
+    } else {
+        grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> ${response?.error || 'Unknown error occurred'}</div>`;
     }
 
     ts_isLoading = false;
@@ -210,6 +215,7 @@ function renderTrovesaurusGrid(mods, container) {
     }).join('');
 }
 
+// -- MOD INSTALLATION --
 async function handleTrovesaurusInstall(e) {
     const btn = e.target.closest('.ts-install-btn');
     if (!btn || btn.disabled) return;
@@ -224,27 +230,33 @@ async function handleTrovesaurusInstall(e) {
         return;
     }
 
-    const originalHTML = btn.innerHTML;
+    // Save the original HTML state just in case it fails and we need to revert it
+    btn.setAttribute('data-original-html', btn.innerHTML);
+    
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Installing...`;
     btn.disabled = true;
 
-    try {
-        const response = await eel.install_trovesaurus_mod(gamePath, modId)();
+    // Trigger Python thread, don't wait for response
+    eel.install_trovesaurus_mod(gamePath, modId)();
+}
 
-        if (response.success) {
-            btn.innerHTML = `<i class="fa-solid fa-check"></i> Installed`;
-            btn.classList.remove('update');
-            btn.classList.add('installed');
-            btn.disabled = true;
-        } else {
-            alert(`Error: ${response.error}`);
-            btn.innerHTML = originalHTML;
-            btn.disabled = false;
-        }
-    } catch (err) {
-        console.error("Trovesaurus install error:", err);
-        alert(`Eel Error: ${err.message || err}`);
-        btn.innerHTML = originalHTML;
+// Callback handler for when the Python installation finishes
+eel.expose(receive_install_result, 'receive_install_result');
+function receive_install_result(response) {
+    // Find the specific button using the ID we passed back from Python
+    const btn = document.querySelector(`.ts-install-btn[data-id="${response.mod_id}"]`);
+    if (!btn) return;
+
+    if (response && response.success) {
+        btn.innerHTML = `<i class="fa-solid fa-check"></i> Installed`;
+        btn.classList.remove('update');
+        btn.classList.add('installed');
+        btn.disabled = true;
+    } else {
+        alert(`Error: ${response?.error || 'Unknown error occurred'}`);
+        // Restore original visual state if installation failed
+        const originalHTML = btn.getAttribute('data-original-html');
+        if (originalHTML) btn.innerHTML = originalHTML;
         btn.disabled = false;
     }
 }

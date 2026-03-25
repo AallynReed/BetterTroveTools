@@ -1,11 +1,13 @@
 import asyncio
-import aiohttp
 import json
-import time
 import math
 import os
+import threading
+import time
 import webbrowser
 from pathlib import Path
+
+import aiohttp
 import eel
 
 from models.trove.mod import TroveModList
@@ -51,7 +53,15 @@ async def _get_cached_api(session, endpoint, cache_filename, expiry=900):
 
 @eel.expose
 def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_str=""):
-    return asyncio.run(_async_get_trovesaurus_mods(page, query, category, sort, game_path_str))
+    def task():
+        try:
+            # Run the asyncio loop in this background thread
+            res = asyncio.run(_async_get_trovesaurus_mods(page, query, category, sort, game_path_str))
+            eel.receive_trovesaurus_mods(res)
+        except Exception as e:
+            eel.receive_trovesaurus_mods({"success": False, "error": str(e)})
+            
+    threading.Thread(target=task, daemon=True).start()
 
 async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str):
     async with aiohttp.ClientSession() as session:
@@ -209,7 +219,17 @@ async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str
 
 @eel.expose
 def install_trovesaurus_mod(game_path_str, mod_id):
-    return asyncio.run(_async_install_ts_mod(game_path_str, mod_id))
+    def task():
+        try:
+            # Run the asyncio loop in this background thread
+            res = asyncio.run(_async_install_ts_mod(game_path_str, mod_id))
+            # Inject the mod_id into the result so JS knows which button to update
+            res["mod_id"] = mod_id
+            eel.receive_install_result(res)
+        except Exception as e:
+            eel.receive_install_result({"success": False, "error": str(e), "mod_id": mod_id})
+            
+    threading.Thread(target=task, daemon=True).start()
 
 async def _async_install_ts_mod(game_path_str, mod_id):
     if not game_path_str: return {"success": False, "error": "No game path provided."}

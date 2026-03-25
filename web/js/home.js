@@ -186,7 +186,7 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> Upcoming Stampy Locations`;
-                    populateBiomeModal(stampy.future, stampyColor, true); // true = format as arrival/departure
+                    populateBiomeModal(stampy.future, stampyColor, true); 
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
 
@@ -335,117 +335,116 @@ document.addEventListener('home_loaded', () => {
         }
     }
 
-    async function fetchEvents() {
+    // --- EVENTS FETCHING VIA BACKGROUND CALLBACK ---
+    eel.expose(receive_events_data, 'receive_events_data');
+    function receive_events_data(response) {
         const list = document.getElementById('events-list');
         const loading = document.getElementById('events-loading');
-        try {
-            // Set a 3 second timeout for the Trovesaurus request
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Trovesaurus request timed out')), 3000)
-            );
-            
-            const response = await Promise.race([
-                eel.get_trovesaurus_events()(),
-                timeoutPromise
-            ]);
+        
+        if (loading) loading.style.display = 'none';
+        if (!list) return;
 
-            if (response && response.success) {
-                if (loading) loading.style.display = 'none';
-                if (!list) return;
-                list.style.display = 'flex';
-                list.innerHTML = '';
-                response.data.forEach(event => {
-                    const card = document.createElement('div');
-                    card.className = 'event-card';
-                    card.style.cursor = 'pointer'; 
-                    
-                    card.onclick = () => {
-                        eel.open_url_in_browser(event.url)();
-                    };
+        if (response && response.success) {
+            list.style.display = 'flex';
+            list.innerHTML = '';
+            response.data.forEach(event => {
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.style.cursor = 'pointer'; 
+                
+                card.onclick = () => {
+                    eel.open_url_in_browser(event.url)();
+                };
 
-                    const startTs = parseInt(event.startdate), endTs = parseInt(event.enddate), nowTs = Math.floor(Date.now() / 1000);
-                    const startStr = new Date(startTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                    const endStr = new Date(endTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                    let statusText = nowTs < startTs ? `Starts in ${getCountdown(startTs)}` : (nowTs < endTs ? `Ends in ${getCountdown(endTs)}` : "Event Ended");
-                    let statusColor = nowTs < startTs ? "#5ec6ff" : (nowTs < endTs ? "#ff5555" : "#a3adc2");
-                    const img = event.image || event.icon || 'https://trovesaurus.com/images/logos/Sage_64.png';
-                    card.innerHTML = `
-                        <div class="event-image"><img src="${img}" alt=""></div>
-                        <div class="event-main">
-                            <div class="event-name-row"><span class="event-name">${event.name}</span><span class="event-category">${event.category}</span></div>
-                            <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> ${startStr} - ${endStr}</span>
-                            <span style="margin-left: 15px; color: ${statusColor}; font-weight: bold;"><i class="fa-solid fa-hourglass-half"></i> ${statusText}</span></div>
-                        </div><div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>`;
-                    list.appendChild(card);
-                });
-            } else {
-                throw new Error("Failed to load events data.");
-            }
-        } catch (e) { 
-            console.error(e); 
-            if (loading) loading.style.display = 'none';
-            if (list) {
-                list.style.display = 'flex';
-                list.innerHTML = `
-                    <div style="text-align: center; padding: 20px; color: #ff5555; background: rgba(255, 85, 85, 0.1); border: 1px solid rgba(255, 85, 85, 0.3); border-radius: 10px; width: 100%;">
-                        <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
-                        <span style="font-size: 14px;">Failed to fetch events from Trovesaurus.</span>
-                    </div>
-                `;
-            }
+                const startTs = parseInt(event.startdate), endTs = parseInt(event.enddate), nowTs = Math.floor(Date.now() / 1000);
+                const startStr = new Date(startTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                const endStr = new Date(endTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                let statusText = nowTs < startTs ? `Starts in ${getCountdown(startTs)}` : (nowTs < endTs ? `Ends in ${getCountdown(endTs)}` : "Event Ended");
+                let statusColor = nowTs < startTs ? "#5ec6ff" : (nowTs < endTs ? "#ff5555" : "#a3adc2");
+                const img = event.image || event.icon || 'https://trovesaurus.com/images/logos/Sage_64.png';
+                card.innerHTML = `
+                    <div class="event-image"><img src="${img}" alt=""></div>
+                    <div class="event-main">
+                        <div class="event-name-row"><span class="event-name">${event.name}</span><span class="event-category">${event.category}</span></div>
+                        <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> ${startStr} - ${endStr}</span>
+                        <span style="margin-left: 15px; color: ${statusColor}; font-weight: bold;"><i class="fa-solid fa-hourglass-half"></i> ${statusText}</span></div>
+                    </div><div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>`;
+                list.appendChild(card);
+            });
+        } else {
+            console.error("Event fetch error:", response?.error);
+            list.style.display = 'flex';
+            list.innerHTML = `
+                <div style="text-align: center; padding: 20px; color: #ff5555; background: rgba(255, 85, 85, 0.1); border: 1px solid rgba(255, 85, 85, 0.3); border-radius: 10px; width: 100%;">
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                    <span style="font-size: 14px;">Failed to fetch events from Trovesaurus.</span>
+                </div>
+            `;
         }
     }
 
-    async function fetchStreams() {
-        const wrapper = document.getElementById('carousel-wrapper'), carousel = document.getElementById('streams-carousel'), loading = document.getElementById('streams-loading');
-        const btnLeft = document.getElementById('btn-scroll-left'), btnRight = document.getElementById('btn-scroll-right');
+    function fetchEvents() {
+        // Just trigger the backend thread; don't wait for a return value
+        eel.get_trovesaurus_events()();
+    }
+
+    // --- STREAMS FETCHING VIA BACKGROUND CALLBACK ---
+    eel.expose(receive_twitch_streams, 'receive_twitch_streams');
+    function receive_twitch_streams(response) {
+        const wrapper = document.getElementById('carousel-wrapper');
+        const carousel = document.getElementById('streams-carousel');
+        const loading = document.getElementById('streams-loading');
+        const btnLeft = document.getElementById('btn-scroll-left');
+        const btnRight = document.getElementById('btn-scroll-right');
         
-        try {
-            const response = await eel.get_twitch_streams()();
-            if (response && response.success) {
-                if (loading) loading.style.display = 'none';
-                if (wrapper) wrapper.style.display = 'flex';
-                if (!carousel) return;
-                carousel.innerHTML = '';
-                
-                // Handle the scenario where no streams are live
-                if (!response.data || response.data.length === 0) {
-                    carousel.innerHTML = `
-                        <div style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
-                            <i class="fa-brands fa-twitch" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
-                            <span style="font-size: 14px;">No Trove streams are live right now. Check back later!</span>
-                        </div>
-                    `;
-                    // Hide the scroll buttons since there is nothing to scroll
-                    if (btnLeft) btnLeft.style.display = 'none';
-                    if (btnRight) btnRight.style.display = 'none';
-                    return;
-                }
+        if (loading) loading.style.display = 'none';
+        if (wrapper) wrapper.style.display = 'flex';
+        if (!carousel) return;
+        
+        carousel.innerHTML = '';
 
-                // If streams exist, ensure buttons are visible
-                if (btnLeft) btnLeft.style.display = 'flex';
-                if (btnRight) btnRight.style.display = 'flex';
-
-                response.data.sort((a, b) => b.viewer_count - a.viewer_count).forEach(stream => {
-                    const card = document.createElement('div');
-                    card.className = 'stream-card'; 
-                    card.style.cursor = 'pointer';
-                    
-                    card.onclick = () => {
-                        eel.open_url_in_browser(`https://twitch.tv/${stream.user_login}`)();
-                    };
-
-                    const thumb = stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248');
-                    card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">🔴 ${stream.viewer_count.toLocaleString()}</span></div></div>
-                                      <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
-                    carousel.appendChild(card);
-                });
-                
-                if (btnLeft && btnRight) {
-                    btnLeft.onclick = () => carousel.scrollBy({ left: -260, behavior: 'smooth' });
-                    btnRight.onclick = () => carousel.scrollBy({ left: 260, behavior: 'smooth' });
-                }
+        if (response && response.success) {
+            if (!response.data || response.data.length === 0) {
+                carousel.innerHTML = `
+                    <div style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
+                        <i class="fa-brands fa-twitch" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
+                        <span style="font-size: 14px;">No Trove streams are live right now. Check back later!</span>
+                    </div>
+                `;
+                if (btnLeft) btnLeft.style.display = 'none';
+                if (btnRight) btnRight.style.display = 'none';
+                return;
             }
-        } catch (e) { console.error(e); }
+
+            if (btnLeft) btnLeft.style.display = 'flex';
+            if (btnRight) btnRight.style.display = 'flex';
+
+            response.data.sort((a, b) => b.viewer_count - a.viewer_count).forEach(stream => {
+                const card = document.createElement('div');
+                card.className = 'stream-card'; 
+                card.style.cursor = 'pointer';
+                
+                card.onclick = () => {
+                    eel.open_url_in_browser(`https://twitch.tv/${stream.user_login}`)();
+                };
+
+                const thumb = stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248');
+                card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">🔴 ${stream.viewer_count.toLocaleString()}</span></div></div>
+                                  <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
+                carousel.appendChild(card);
+            });
+            
+            if (btnLeft && btnRight) {
+                btnLeft.onclick = () => carousel.scrollBy({ left: -260, behavior: 'smooth' });
+                btnRight.onclick = () => carousel.scrollBy({ left: 260, behavior: 'smooth' });
+            }
+        } else {
+            console.error("Stream fetch error:", response?.error);
+        }
+    }
+
+    function fetchStreams() {
+        // Just trigger the backend thread; don't wait for a return value
+        eel.get_twitch_streams()();
     }
 });
