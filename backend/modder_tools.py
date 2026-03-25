@@ -67,17 +67,14 @@ def ask_add_files(game_path_str=None):
         
         if game_path:
             try:
-                # Primary strict check
                 rel_parts = file_path.relative_to(game_path).parts
                 is_relative = True
                 internal_parts = [part for part in rel_parts if part.lower() != "override"]
             except ValueError:
-                # Fallback check for Windows drive letter/casing inconsistencies
                 file_str = str(file_path).lower()
                 game_str = str(game_path).lower()
                 if file_str.startswith(game_str):
                     is_relative = True
-                    # Slice out the relative portion
                     rel_path_str = str(file_path)[len(str(game_path)):].strip("\\/")
                     rel_parts = Path(rel_path_str).parts
                     internal_parts = [part for part in rel_parts if part.lower() != "override"]
@@ -87,7 +84,6 @@ def ask_add_files(game_path_str=None):
         if not is_relative or not internal_parts:
             rejected.append(file_path.name)
         else:
-            # Check if the root directory of the internal path is valid
             root_dir = internal_parts[0].lower()
             if root_dir not in valid_dirs:
                 rejected.append(file_path.name)

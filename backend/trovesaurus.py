@@ -55,7 +55,6 @@ async def _get_cached_api(session, endpoint, cache_filename, expiry=900):
 def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_str=""):
     def task():
         try:
-            # Run the asyncio loop in this background thread
             res = asyncio.run(_async_get_trovesaurus_mods(page, query, category, sort, game_path_str))
             eel.receive_trovesaurus_mods(res)
         except Exception as e:
@@ -221,9 +220,7 @@ async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str
 def install_trovesaurus_mod(game_path_str, mod_id):
     def task():
         try:
-            # Run the asyncio loop in this background thread
             res = asyncio.run(_async_install_ts_mod(game_path_str, mod_id))
-            # Inject the mod_id into the result so JS knows which button to update
             res["mod_id"] = mod_id
             eel.receive_install_result(res)
         except Exception as e:

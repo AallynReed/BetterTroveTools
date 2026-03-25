@@ -196,7 +196,6 @@ document.addEventListener('modder_tools_loaded', () => {
             const titleInput = document.getElementById('build-mod-title');
             const title = titleInput.value.trim();
             
-            // Validate Windows Filename compliance
             const illegalChars = /[<>:"/\\|?*]/;
             if (illegalChars.test(title)) {
                 showToast("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue.", true);

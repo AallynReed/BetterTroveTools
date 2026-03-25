@@ -28,13 +28,11 @@ def get_twitch_streams():
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.aallyn.xyz/twitch_streams", headers=headers, timeout=10)
             response.raise_for_status()
-            # Send data back to JS callback
             eel.receive_twitch_streams({"success": True, "data": response.json()})
         except Exception as e:
             traceback.print_exc()
             eel.receive_twitch_streams({"success": False, "error": str(e)})
             
-    # Run the blocking network request in a background thread
     threading.Thread(target=fetch_task, daemon=True).start()
 
 @eel.expose
@@ -46,13 +44,11 @@ def get_trovesaurus_events():
             response.raise_for_status()
             events = response.json()
             events.sort(key=lambda x: int(x['startdate']))
-            # Send data back to JS callback
             eel.receive_events_data({"success": True, "data": events})
         except Exception as e:
             traceback.print_exc()
             eel.receive_events_data({"success": False, "error": str(e)})
             
-    # Run the blocking network request in a background thread
     threading.Thread(target=fetch_task, daemon=True).start()
 
 @eel.expose
