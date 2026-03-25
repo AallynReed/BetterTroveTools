@@ -1,8 +1,8 @@
 import datetime
-from datetime import datetime, timedelta, UTC
-import os
 import json
+import os
 import traceback
+from datetime import UTC, datetime, timedelta
 
 import eel
 import requests
@@ -104,7 +104,7 @@ def get_merchant_schedules():
 def get_trovesaurus_events():
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
-        response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=10)
+        response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=3)
         response.raise_for_status()
         events = response.json()
         
