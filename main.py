@@ -1,8 +1,9 @@
 import json
 import os
-import sys
 import socket
+import sys
 import threading
+import time
 import winreg
 
 import eel
@@ -11,16 +12,16 @@ os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
-import backend.home
+import backend.calculators
 import backend.file_manager
+import backend.gem_builds
 import backend.gem_simulator
+import backend.home
 import backend.mod_manager
 import backend.modder_tools
 import backend.settings
 import backend.star_chart
 import backend.trovesaurus
-import backend.calculators
-import backend.gem_builds
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)
@@ -111,16 +112,30 @@ eel.browsers.set_path('chrome', chromium_path)
 
 eel.init(os.path.join(base_dir, 'web'))
 
-try:
-    eel.start('index.html', mode='chrome', size=(1600, 1000), port=28924, cmdline_args=[
-        '--disable-infobars',
-        '--no-default-browser-check',
-        '--no-first-run',
-        '--disable-background-mode',
-        '--disable-dev-tools',
-        '--disable-extensions',
-        '--disable-sync',
-        '--disable-translate',
-    ])
-except (SystemExit, MemoryError, KeyboardInterrupt):
-    sys.exit()
+# Retry logic: 3 attempts over 6 seconds (2-second delay between tries)
+max_retries = 3
+retry_delay = 2
+
+for attempt in range(max_retries):
+    try:
+        eel.start('index.html', mode='chrome', size=(1600, 1000), port=28924, cmdline_args=[
+            '--disable-infobars',
+            '--no-default-browser-check',
+            '--no-first-run',
+            '--disable-background-mode',
+            '--disable-dev-tools',
+            '--disable-extensions',
+            '--disable-sync',
+            '--disable-translate',
+        ])
+        break  # If eel.start somehow returns normally, break the loop
+    except OSError as e:
+        print(f"⚠️ Attempt {attempt + 1}/{max_retries}: Failed to bind to port 28924 ({e}).")
+        if attempt < max_retries - 1:
+            print(f"Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+        else:
+            print("❌ ERROR: Could not bind to port 28924 after 3 attempts. Exiting cleanly.")
+            sys.exit(1)
+    except (SystemExit, MemoryError, KeyboardInterrupt):
+        sys.exit(0)
