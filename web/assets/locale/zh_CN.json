@@ -1,5 +1,5 @@
 {
-    "language_name": "English",
+    "language_name": "中文（中国）",
     "keys": {
         "Home": "Home",
         "Trovesaurus": "Trovesaurus",
@@ -2646,6 +2646,7 @@
         "Search by name, author, or ID...": "",
         "Browsing Trovesaurus...": "",
         "Install": "",
-        "Click to view on Trovesaurus": ""
+        "Click to view on Trovesaurus": "",
+        "Language": ""
     }
 }
