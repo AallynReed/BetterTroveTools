@@ -19,7 +19,6 @@ document.addEventListener('home_loaded', () => {
     window._homeLangListener = (e) => {
         if (e.target && e.target.id === 'global-language-select') {
             if (document.querySelector('.home-container')) {
-                // Give I18nManager a tiny buffer to fetch the new dictionary before rebuilding
                 setTimeout(refreshAllData, 150);
             }
         }
@@ -86,16 +85,18 @@ document.addEventListener('home_loaded', () => {
             if (!buffsGrid) return;
             buffsGrid.style.display = 'grid';
             buffsGrid.innerHTML = '';
-            // Wrap the names of the buffs (e.g. "Gathering Day")
             if (daily) buffsGrid.appendChild(createBuffCard(`${t("Daily:")} ${t(daily.name)}`, daily, true));
             if (weekly) buffsGrid.appendChild(createBuffCard(`${t("Weekly:")} ${t(weekly.name)}`, weekly, false));
         }
 
         function createBuffCard(title, data, isDaily) {
             const card = document.createElement('div');
-            card.className = 'buff-card';
+            card.className = 'buff-card hover-card'; 
             const colorHex = data.color ? `#${data.color}` : '#5ec6ff';
             card.style.setProperty('--buff-color', colorHex); 
+            card.style.cursor = 'pointer';
+            card.title = t("Click to see schedule");
+            
             let headerBg = data.banner ? `url('${data.banner}') center/cover` : colorHex;
             let html = `<div class="buff-header" style="background: linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), ${headerBg};">
                             ${data.icon ? `<img src="${data.icon}" alt="">` : ''}
@@ -119,6 +120,103 @@ document.addEventListener('home_loaded', () => {
             }
             html += `</div>`;
             card.innerHTML = html;
+
+            card.addEventListener('click', async () => {
+                const modalTitle = document.querySelector('.modal-header h3');
+                modalTitle.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: ${colorHex};"></i> ${title} ${t("Schedule")}`;
+                const modalBody = document.getElementById('d15-modal-body');
+                
+                modalBody.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading schedule...")}</div>`;
+                if(rotationModal) rotationModal.style.display = 'flex';
+
+                try {
+                    if (isDaily) {
+                        const res = await fetch('/assets/data/daily_buffs.json');
+                        const scheduleData = await res.json();
+                        
+                        // Trove resets daily at 11am UTC (UTC - 11 logic matches your sidebar clock)
+                        const now = new Date();
+                        const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+                        const troveMs = utcMs - (11 * 3600000);
+                        const troveTime = new Date(troveMs);
+                        
+                        // JS getDay() is Sun=0. Trove's JSON is Mon=0.
+                        const currentDayIndex = (troveTime.getDay() + 6) % 7; 
+
+                        let contentHtml = '';
+                        for (let i = 0; i < 7; i++) {
+                            const d = scheduleData[i.toString()];
+                            if (!d) continue;
+                            const isActive = i === currentDayIndex;
+                            
+                            contentHtml += `
+                                <div class="modal-rotation-row" style="${isActive ? `border-left: 4px solid #${d.color}; background: rgba(255,255,255,0.05);` : ''}">
+                                    <div class="modal-time-col" style="min-width: 120px;">
+                                        <div style="font-weight: bold; color: ${isActive ? `#${d.color}` : '#fff'};">${t(d.weekday)}</div>
+                                        ${isActive ? `<div style="font-size: 0.85em; color: #${d.color};">${t("ACTIVE TODAY")}</div>` : ''}
+                                    </div>
+                                    <div class="modal-biomes-col" style="flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+                                        <div style="font-weight: bold; color: #fff;">${d.emoji} ${t(d.name)}</div>
+                                        <div style="font-size: 0.85em; color: var(--text-muted);">
+                                            <ul style="margin: 0; padding-left: 15px;">
+                                                ${d.normal_buffs.map(b => `<li>${t(b)}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        modalBody.innerHTML = contentHtml;
+
+                    } else {
+                        const res = await fetch('/assets/data/weekly_buffs.json');
+                        const scheduleData = await res.json();
+                        
+                        let activeIndex = 0;
+                        const weeklyKeys = Object.keys(scheduleData).sort();
+                        
+                        // Find the currently active week based on the name provided by the server
+                        for (let k of weeklyKeys) {
+                            if (scheduleData[k].name === data.name) {
+                                activeIndex = parseInt(k);
+                                break;
+                            }
+                        }
+
+                        let contentHtml = '';
+                        for (let i = 0; i < weeklyKeys.length; i++) {
+                            // Shift the array so the active week is always rendered first
+                            const targetIndex = (activeIndex + i) % weeklyKeys.length;
+                            const w = scheduleData[targetIndex.toString()];
+                            if (!w) continue;
+                            
+                            const isActive = i === 0;
+                            
+                            contentHtml += `
+                                <div class="modal-rotation-row" style="${isActive ? `border-left: 4px solid #${w.color}; background: rgba(255,255,255,0.05);` : ''}">
+                                    <div class="modal-time-col" style="min-width: 120px;">
+                                        <div style="font-weight: bold; color: ${isActive ? `#${w.color}` : '#fff'};">${isActive ? t('Current Week') : `${t("Week")} +${i}`}</div>
+                                        ${isActive ? `<div style="font-size: 0.85em; color: #${w.color};">${t("ACTIVE NOW")}</div>` : ''}
+                                    </div>
+                                    <div class="modal-biomes-col" style="flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+                                        <div style="font-weight: bold; color: #fff;">${w.emoji} ${t(w.name)}</div>
+                                        <div style="font-size: 0.85em; color: var(--text-muted);">
+                                            <ul style="margin: 0; padding-left: 15px;">
+                                                ${w.buffs.map(b => `<li>${t(b)}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        modalBody.innerHTML = contentHtml;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    modalBody.innerHTML = `<div style="padding: 20px; text-align: center; color: #ff5555;">${t("Failed to load schedule data.")}</div>`;
+                }
+            });
+
             return card;
         }
 
@@ -446,6 +544,7 @@ document.addEventListener('home_loaded', () => {
                 };
 
                 const thumb = stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248');
+                // We don't translate Twitch streams because it's user-generated content!
                 card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">🔴 ${stream.viewer_count.toLocaleString()}</span></div></div>
                                   <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
                 carousel.appendChild(card);
