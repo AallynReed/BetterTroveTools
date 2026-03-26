@@ -1,4 +1,5 @@
 document.addEventListener("gem_builds_loaded", () => {
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     let currentPage = 0;
     let cachedBuilds = [];
     const itemsPerPage = 24;
@@ -53,7 +54,7 @@ document.addEventListener("gem_builds_loaded", () => {
         };
 
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> Crunching Math...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Crunching Math...")}</td></tr>`;
         }
 
         try {
@@ -64,7 +65,7 @@ document.addEventListener("gem_builds_loaded", () => {
         } catch (err) {
             console.error("Gem Builds Engine Error:", err);
             if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color: #ff4444;">Calculation failed. Check console.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color: #ff4444;">${t("Calculation failed. Check console.")}</td></tr>`;
             }
         } finally {
             isCalculating = false;
@@ -92,8 +93,8 @@ document.addEventListener("gem_builds_loaded", () => {
                 
                 for (let i = 0; i < classesData.length; i++) {
                     const cls = classesData[i];
-                    classSelect.add(new Option(cls.name, cls.value));
-                    subclassSelect.add(new Option(cls.name, cls.value));
+                    classSelect.add(new Option(t(cls.name), cls.value));
+                    subclassSelect.add(new Option(t(cls.name), cls.value));
                 }
                 
                 if (classSelect.value === subclassSelect.value) {
@@ -108,17 +109,17 @@ document.addEventListener("gem_builds_loaded", () => {
 
             if (foodSelect && foodsData) {
                 foodSelect.options.length = 0;
-                foodSelect.add(new Option("None", ""));
+                foodSelect.add(new Option(t("None"), ""));
                 for (const [key, data] of Object.entries(foodsData)) {
-                    foodSelect.add(new Option(data.qualified_name || key, key));
+                    foodSelect.add(new Option(t(data.qualified_name || key), key));
                 }
             }
 
             if (allySelect && alliesData) {
                 allySelect.options.length = 0;
-                allySelect.add(new Option("None (Auto-Optimal)", "boot_clown"));
+                allySelect.add(new Option(t("None (Auto-Optimal)"), "boot_clown"));
                 for (const [key, data] of Object.entries(alliesData)) {
-                    allySelect.add(new Option(data.qualified_name || key, key));
+                    allySelect.add(new Option(t(data.qualified_name || key), key));
                 }
             }
             
@@ -131,7 +132,7 @@ document.addEventListener("gem_builds_loaded", () => {
             const classSelect = document.getElementById("gb-class");
             if (classSelect) {
                 classSelect.options.length = 0;
-                classSelect.add(new Option("Error Loading Data", "error"));
+                classSelect.add(new Option(t("Error Loading Data"), "error"));
             }
         }
     }
@@ -140,7 +141,7 @@ document.addEventListener("gem_builds_loaded", () => {
     if (lightInput) {
         const label = lightInput.previousElementSibling;
         if (label && label.tagName === "LABEL" && !label.querySelector('.fa-circle-info')) {
-            label.innerHTML += ` <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" title="Base Light optimization is only active for 'Farm' builds."></i>`;
+            label.innerHTML += ` <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" title="${t("Base Light optimization is only active for 'Farm' builds.")}"></i>`;
         }
     }
     updateLightInputState();
@@ -210,7 +211,7 @@ document.addEventListener("gem_builds_loaded", () => {
         scTemplateSelect.style.borderRadius = '4px';
         scTemplateSelect.style.width = '100%';
         scTemplateSelect.style.marginBottom = '8px';
-        scTemplateSelect.innerHTML = '<option value="">-- Load Saved Star Chart --</option>';
+        scTemplateSelect.innerHTML = `<option value="">-- ${t("Load Saved Star Chart")} --</option>`;
 
         starChartInput.parentElement.insertBefore(scTemplateSelect, starChartInput);
 
@@ -261,15 +262,15 @@ document.addEventListener("gem_builds_loaded", () => {
                         if (values.pct > 0) valStr.push(`+${values.pct}%`);
                         
                         if (valStr.length > 0) {
-                            statsHtml += `<li><strong>${statName}:</strong> <span style="color: var(--accent-orange);">${valStr.join(" / ")}</span></li>`;
+                            statsHtml += `<li><strong>${t(statName)}:</strong> <span style="color: var(--accent-orange);">${valStr.join(" / ")}</span></li>`;
                         }
                     }
                 }
 
                 starChartSummary.innerHTML = `
-                    <h4><i class="fa-solid fa-chart-network"></i> Star Chart Loaded</h4>
+                    <h4><i class="fa-solid fa-chart-network"></i> ${t("Star Chart Loaded")}</h4>
                     <ul style="margin-bottom: 8px;">
-                        <li><strong>${paths.length}</strong> Nodes Detected</li>
+                        <li><strong>${paths.length}</strong> ${t("Nodes Detected")}</li>
                     </ul>
                     ${statsHtml ? `<hr class="divider" style="margin: 8px 0;"><ul style="list-style-type: none; padding-left: 0;">${statsHtml}</ul>` : ""}
                 `;
@@ -278,7 +279,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 debouncedCalc();
             } catch (e) {
                 starChartSummary.style.display = "block";
-                starChartSummary.innerHTML = `<span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> Invalid Base64 Build Code</span>`;
+                starChartSummary.innerHTML = `<span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> ${t("Invalid Base64 Build Code")}</span>`;
             }
         });
     }
@@ -309,13 +310,13 @@ document.addEventListener("gem_builds_loaded", () => {
         if (!tbody) return;
         
         if (cachedBuilds.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">No builds generated. Check your config.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">${t("No builds generated. Check your config.")}</td></tr>`;
             return;
         }
 
         const maxPages = Math.ceil(cachedBuilds.length / itemsPerPage);
         if (pageInfo) {
-            pageInfo.innerText = `Page ${currentPage + 1} / ${maxPages}`;
+            pageInfo.innerText = `${t("Page")} ${currentPage + 1} / ${maxPages}`;
         }
 
         const startIdx = currentPage * itemsPerPage;
@@ -326,7 +327,7 @@ document.addEventListener("gem_builds_loaded", () => {
         pageItems.forEach(build => {
             const isBest = build.rank === 1;
             const deviation = isBest ? 
-                `<span style="color: var(--accent-blue);">Best</span>` : 
+                `<span style="color: var(--accent-blue);">${t("Best")}</span>` : 
                 `-${(((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3)}%`;
 
             const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
@@ -358,7 +359,7 @@ document.addEventListener("gem_builds_loaded", () => {
                     const originalColor = e.target.style.color;
                     e.target.style.color = "#4CAF50"; 
                     setTimeout(() => e.target.style.color = originalColor, 500);
-                    if(window.showToast) window.showToast("Copied Build Layout to clipboard!");
+                    if(window.showToast) window.showToast(t("Copied Build Layout to clipboard!"));
                 } catch (err) {
                     console.error("Failed to copy:", err);
                 }

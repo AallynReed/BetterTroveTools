@@ -1,5 +1,6 @@
 document.addEventListener('star_chart_loaded', async () => {
     console.log("Star Chart initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     
     const wrapper = document.getElementById('chart-wrapper');
     const tooltip = document.getElementById('star-tooltip');
@@ -29,7 +30,7 @@ document.addEventListener('star_chart_loaded', async () => {
 
     const btnSaveTemplate = document.createElement('button');
     btnSaveTemplate.className = 'primary-btn';
-    btnSaveTemplate.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save';
+    btnSaveTemplate.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${t("Save")}`;
 
     const btnDeleteTemplate = document.createElement('button');
     btnDeleteTemplate.className = 'danger-btn';
@@ -60,7 +61,7 @@ document.addEventListener('star_chart_loaded', async () => {
     const response = await eel.get_calculated_star_chart()();
     
     if (!response.success) {
-        wrapper.innerHTML = `<div style="color: #ff4444; text-align: center;">Error loading chart data:<br>${response.error}</div>`;
+        wrapper.innerHTML = `<div style="color: #ff4444; text-align: center;">${t("Error loading chart data:")}<br>${response.error}</div>`;
         return;
     }
 
@@ -73,7 +74,6 @@ document.addEventListener('star_chart_loaded', async () => {
     svg.setAttribute("viewBox", "0 0 1000 1000");
     wrapper.appendChild(svg);
 
-    // Populate nodeMap and build SVG hierarchy
     function registerNode(star, constellName, parentPath) {
         star.parentPath = parentPath;
         star.constellName = constellName;
@@ -155,7 +155,7 @@ document.addEventListener('star_chart_loaded', async () => {
             } else {
                 const nodesToAdd = getAncestorsToSelect(star.Path, []);
                 if (selectedPaths.size + nodesToAdd.length > 40) {
-                    window.showToast("Cannot exceed maximum of 40 active nodes.", true);
+                    window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
                     return; 
                 }
                 nodesToAdd.forEach(p => selectedPaths.add(p));
@@ -166,18 +166,18 @@ document.addEventListener('star_chart_loaded', async () => {
         });
 
         shape.addEventListener("mouseenter", () => {
-            let html = `<h3>${star.Name || star.Constellation}</h3>`;
-            html += `<span class="type">${star.Type} Node</span>`;
-            if (star.Description) html += `<p>${star.Description}</p><hr/>`;
+            let html = `<h3>${t(star.Name || star.Constellation)}</h3>`;
+            html += `<span class="type">${t(star.Type)} ${t("Node")}</span>`;
+            if (star.Description) html += `<p>${t(star.Description)}</p><hr/>`;
             if (star.Stats && star.Stats.length > 0) {
                 html += `<ul>`;
-                star.Stats.forEach(s => html += `<li><strong>${s.name}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`);
+                star.Stats.forEach(s => html += `<li><strong>${t(s.name)}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`);
                 html += `</ul>`;
             }
             if (star.Abilities && star.Abilities.length > 0) {
                 if(star.Stats && star.Stats.length > 0) html += `<hr/>`;
                 html += `<ul>`;
-                star.Abilities.forEach(a => html += `<li>${a}</li>`);
+                star.Abilities.forEach(a => html += `<li>${t(a)}</li>`);
                 html += `</ul>`;
             }
             tooltip.innerHTML = html;
@@ -193,8 +193,6 @@ document.addEventListener('star_chart_loaded', async () => {
 
         svg.appendChild(shape);
     }
-
-    // --- Graph Logic ---
 
     function getAncestorsToSelect(path, newNodes = []) {
         if (!path || selectedPaths.has(path)) return newNodes;
@@ -233,7 +231,7 @@ document.addEventListener('star_chart_loaded', async () => {
         });
 
         if (limitHit) {
-            window.showToast("Cannot exceed maximum of 40 active nodes.", true);
+            window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
         }
     }
 
@@ -325,47 +323,45 @@ document.addEventListener('star_chart_loaded', async () => {
 
     function renderSummary(aggData) {
         if (aggData.paths.length === 0) {
-            summaryPanel.innerHTML = '<p class="file-meta">Select nodes to calculate stats.</p>';
+            summaryPanel.innerHTML = `<p class="file-meta">${t("Select nodes to calculate stats.")}</p>`;
             return;
         }
 
-        let html = `<div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">Nodes Active: ${aggData.paths.length} / 40</div>`;
+        let html = `<div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">${t("Nodes Active:")} ${aggData.paths.length} / 40</div>`;
         
         if (aggData.stats.length > 0) {
-            html += `<div class="summary-section"><h4>Aggregated Stats</h4><ul>`;
+            html += `<div class="summary-section"><h4>${t("Aggregated Stats")}</h4><ul>`;
             aggData.stats.forEach(s => {
-                html += `<li><strong>${s.name}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`;
+                html += `<li><strong>${t(s.name)}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`;
             });
             html += `</ul></div>`;
         }
 
         if (aggData.abilities.length > 0) {
-            html += `<div class="summary-section"><h4>Active Abilities</h4><ul>`;
-            aggData.abilities.forEach(a => html += `<li>${a}</li>`);
+            html += `<div class="summary-section"><h4>${t("Active Abilities")}</h4><ul>`;
+            aggData.abilities.forEach(a => html += `<li>${t(a)}</li>`);
             html += `</ul></div>`;
         }
 
         if (aggData.obtainables.length > 0) {
-            html += `<div class="summary-section"><h4>Obtainables</h4><ul>`;
-            aggData.obtainables.forEach(o => html += `<li>${o}</li>`);
+            html += `<div class="summary-section"><h4>${t("Obtainables")}</h4><ul>`;
+            aggData.obtainables.forEach(o => html += `<li>${t(o)}</li>`);
             html += `</ul></div>`;
         }
 
         summaryPanel.innerHTML = html;
     }
 
-    // --- Share Controls Logic ---
-
     btnCopyCode.addEventListener('click', () => {
         const code = codeInput.value;
         if (!code) {
-            window.showToast("No nodes selected to copy.", true);
+            window.showToast(t("No nodes selected to copy."), true);
             return;
         }
         navigator.clipboard.writeText(code).then(() => {
-            window.showToast("Build code copied to clipboard!");
+            window.showToast(t("Build code copied to clipboard!"));
         }).catch(err => {
-            window.showToast("Failed to copy: " + err, true);
+            window.showToast(t("Failed to copy:") + " " + err, true);
         });
     });
 
@@ -394,14 +390,14 @@ document.addEventListener('star_chart_loaded', async () => {
             calculateStats(); 
             
             if (skipped > 0) {
-                window.showToast(`Loaded ${loaded} nodes. Skipped ${skipped} (Max 40 limit).`, true);
+                window.showToast(`${t("Loaded")} ${loaded} ${t("nodes. Skipped")} ${skipped} ${t("(Max 40 limit).")}`, true);
             } else if (loaded > 0) {
-                window.showToast(`Successfully loaded ${loaded} nodes!`);
+                window.showToast(`${t("Successfully loaded")} ${loaded} ${t("nodes!")}`);
             } else {
-                window.showToast("No valid nodes found in build code.", true);
+                window.showToast(t("No valid nodes found in build code."), true);
             }
         } catch (e) {
-            window.showToast("Invalid build code format.", true);
+            window.showToast(t("Invalid build code format."), true);
         }
     });
 
@@ -415,13 +411,12 @@ document.addEventListener('star_chart_loaded', async () => {
         }
     });
 
-    // --- Templates Logic ---
     let templates = {};
 
     async function loadTemplates() {
         templates = await eel.get_star_chart_templates()();
         
-        templateSelect.innerHTML = '<option value="">-- Templates --</option>';
+        templateSelect.innerHTML = `<option value="">-- ${t("Templates")} --</option>`;
         for (let name in templates) {
             let opt = document.createElement('option');
             opt.value = name;
@@ -446,10 +441,10 @@ document.addEventListener('star_chart_loaded', async () => {
         <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <h3 id="st-modal-title" style="margin-top:0; color:var(--text-main, #fff);"></h3>
             <p id="st-modal-msg" style="color:var(--text-muted, #aaa); margin-bottom:15px; font-size:14px;"></p>
-            <input type="text" id="st-modal-input" style="width:calc(100% - 22px); margin-bottom:15px; display:none; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px;" placeholder="Template Name" />
+            <input type="text" id="st-modal-input" style="width:calc(100% - 22px); margin-bottom:15px; display:none; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px;" placeholder="${t("Template Name")}" />
             <div style="display:flex; gap:10px; justify-content:center;">
-                <button id="st-modal-confirm" class="primary-btn" style="flex:1;">Confirm</button>
-                <button id="st-modal-cancel" class="secondary-btn" style="flex:1;">Cancel</button>
+                <button id="st-modal-confirm" class="primary-btn" style="flex:1;">${t("Confirm")}</button>
+                <button id="st-modal-cancel" class="secondary-btn" style="flex:1;">${t("Cancel")}</button>
             </div>
         </div>
     `;
@@ -481,33 +476,33 @@ document.addEventListener('star_chart_loaded', async () => {
         if (currentModalAction === 'save') {
             const name = stModalInput.value.trim();
             if (!name) {
-                if (window.showToast) window.showToast("Please enter a name.", true);
+                if (window.showToast) window.showToast(t("Please enter a name."), true);
                 return;
             }
             const code = codeInput.value.trim();
             if (!code) {
-                if (window.showToast) window.showToast("No active build to save.", true);
+                if (window.showToast) window.showToast(t("No active build to save."), true);
                 modalOverlay.style.display = 'none';
                 return;
             }
             const res = await eel.save_star_chart_template(name, code)();
             if (res.success) {
-                if (window.showToast) window.showToast(`Template '${name}' saved!`);
+                if (window.showToast) window.showToast(`${t("Template")} '${name}' ${t("saved!")}`);
                 await loadTemplates();
                 templateSelect.value = name;
                 btnDeleteTemplate.style.display = 'inline-block';
             } else {
-                if (window.showToast) window.showToast("Error saving template.", true);
+                if (window.showToast) window.showToast(t("Error saving template."), true);
             }
         } else if (currentModalAction === 'delete') {
             const name = templateSelect.value;
             if (!name) return;
             const res = await eel.delete_star_chart_template(name)();
             if (res.success) {
-                if (window.showToast) window.showToast(`Template '${name}' deleted!`);
+                if (window.showToast) window.showToast(`${t("Template")} '${name}' ${t("deleted!")}`);
                 await loadTemplates();
             } else {
-                if (window.showToast) window.showToast("Error deleting template.", true);
+                if (window.showToast) window.showToast(t("Error deleting template."), true);
             }
         }
         modalOverlay.style.display = 'none';
@@ -516,16 +511,16 @@ document.addEventListener('star_chart_loaded', async () => {
     btnSaveTemplate.addEventListener('click', () => {
         const code = codeInput.value.trim();
         if (!code) {
-            if (window.showToast) window.showToast("No active build to save.", true);
+            if (window.showToast) window.showToast(t("No active build to save."), true);
             return;
         }
-        openModal('save', 'Save Template', 'Enter a name for your build:', true);
+        openModal('save', t('Save Template'), t('Enter a name for your build:'), true);
     });
 
     btnDeleteTemplate.addEventListener('click', () => {
         const name = templateSelect.value;
         if (!name) return;
-        openModal('delete', 'Delete Template', `Are you sure you want to delete '${name}'?`, false);
+        openModal('delete', t('Delete Template'), `${t("Are you sure you want to delete")} '${name}'?`, false);
     });
 
     loadTemplates();

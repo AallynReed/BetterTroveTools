@@ -3,30 +3,28 @@
 </head>
 <div class="star-chart-container">
     <div class="star-chart-header">
-        <h1>Star Chart</h1>
-        <p class="file-meta">Interactive Constellation Map</p>
+        <h1 data-i18n>Star Chart</h1>
+        <p class="file-meta" data-i18n>Interactive Constellation Map</p>
     </div>
     
     <div class="chart-layout">
-        <!-- The visual map -->
         <div id="chart-wrapper" class="placeholder-box">
-            <h3><i class="fa-solid fa-spinner fa-spin"></i> Calculating Constellations...</h3>
+            <h3><i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Calculating Constellations...</span></h3>
         </div>
 
-        <!-- The stats side panel -->
         <div id="build-summary-panel">
-            <h3>Current Build</h3>
+            <h3 data-i18n>Current Build</h3>
             
             <div class="build-share-controls">
-                <input type="text" id="build-code-input" placeholder="Paste build code here..." autocomplete="off" spellcheck="false" />
+                <input type="text" id="build-code-input" data-i18n-placeholder="Paste build code here..." autocomplete="off" spellcheck="false" />
                 <div class="build-buttons">
-                    <button id="btn-load-code" class="secondary-btn" title="Load Build from Code"><i class="fa-solid fa-download"></i></button>
-                    <button id="btn-copy-code" class="secondary-btn" title="Copy Build Code"><i class="fa-regular fa-copy"></i></button>
+                    <button id="btn-load-code" class="secondary-btn" data-i18n-title="Load Build from Code"><i class="fa-solid fa-download"></i></button>
+                    <button id="btn-copy-code" class="secondary-btn" data-i18n-title="Copy Build Code"><i class="fa-regular fa-copy"></i></button>
                 </div>
             </div>
             
             <div id="summary-content">
-                <p class="file-meta">Select nodes to calculate stats.</p>
+                <p class="file-meta" data-i18n>Select nodes to calculate stats.</p>
             </div>
         </div>
     </div>

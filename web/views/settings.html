@@ -3,16 +3,16 @@
 </head>
 <div class="settings-container">
     <div class="settings-header">
-        <h2>Settings</h2>
-        <p style="color: var(--text-muted); margin-top: 5px;">Manage your application preferences and custom game installations.</p>
+        <h2 data-i18n>Settings</h2>
+        <p style="color: var(--text-muted); margin-top: 5px;" data-i18n>Manage your application preferences and custom game installations.</p>
     </div>
     
     <div class="settings-section">
-        <h3>Mod Manager Preferences</h3>
+        <h3 data-i18n>Mod Manager Preferences</h3>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
             <div>
-                <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">Auto-Fix Mod Names</div>
-                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">Automatically rename mod files to match their internal titles when loading mods.</div>
+                <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Names</div>
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically rename mod files to match their internal titles when loading mods.</div>
             </div>
             <label class="switch">
                 <input type="checkbox" id="setting-auto-fix-names">
@@ -21,8 +21,8 @@
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
             <div>
-                <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">Auto-Fix Mod Configs</div>
-                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">Automatically create and fix missing UI config files.</div>
+                <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Configs</div>
+                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically create and fix missing UI config files.</div>
             </div>
             <label class="switch">
                 <input type="checkbox" id="setting-auto-fix-configs">
@@ -32,14 +32,14 @@
     </div>
 
     <div class="settings-section">
-        <h3>Custom Game Directories</h3>
-        <p class="settings-help-text">Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.</p>
+        <h3 data-i18n>Custom Game Directories</h3>
+        <p class="settings-help-text" data-i18n>Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.</p>
         
         <div id="custom-dirs-list" class="custom-dirs-list">
         </div>
         
         <button class="primary-btn" id="btn-open-add-dir-modal" style="margin-top: 15px;">
-            <i class="fa-solid fa-folder-plus"></i> Add Custom Directory
+            <i class="fa-solid fa-folder-plus"></i> <span data-i18n>Add Custom Directory</span>
         </button>
     </div>
 </div>
@@ -47,23 +47,23 @@
 <div id="add-dir-modal" class="settings-modal-overlay">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
-            <h2>Add Custom Directory</h2>
+            <h2 data-i18n>Add Custom Directory</h2>
             <button class="settings-close-modal" id="btn-close-add-dir-modal"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">Display Name</label>
-                <input type="text" id="add-dir-name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" placeholder="e.g. PTS Server">
+                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;" data-i18n>Display Name</label>
+                <input type="text" id="add-dir-name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" data-i18n-placeholder="e.g. PTS Server">
             </div>
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">Folder Path</label>
+                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;" data-i18n>Folder Path</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="add-dir-path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" placeholder="No folder selected">
-                    <button class="primary-btn" id="btn-browse-dir"><i class="fa-solid fa-folder-open"></i> Browse</button>
+                    <input type="text" id="add-dir-path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" data-i18n-placeholder="No folder selected">
+                    <button class="primary-btn" id="btn-browse-dir"><i class="fa-solid fa-folder-open"></i> <span data-i18n>Browse</span></button>
                 </div>
             </div>
             <div style="display: flex; justify-content: flex-end;">
-                <button class="primary-btn" id="btn-save-dir" disabled style="opacity: 0.5; cursor: not-allowed;">Save Directory</button>
+                <button class="primary-btn" id="btn-save-dir" disabled style="opacity: 0.5; cursor: not-allowed;" data-i18n>Save Directory</button>
             </div>
         </div>
     </div>
@@ -72,17 +72,17 @@
 <div id="edit-dir-modal" class="settings-modal-overlay">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
-            <h2>Edit Directory Name</h2>
+            <h2 data-i18n>Edit Directory Name</h2>
             <button class="settings-close-modal" id="btn-close-edit-dir-modal"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">Display Name</label>
-                <input type="text" id="edit-dir-name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" placeholder="e.g. PTS Server">
+                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;" data-i18n>Display Name</label>
+                <input type="text" id="edit-dir-name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" data-i18n-placeholder="e.g. PTS Server">
                 <input type="hidden" id="edit-dir-path">
             </div>
             <div style="display: flex; justify-content: flex-end;">
-                <button class="primary-btn" id="btn-save-edit-dir">Save Name</button>
+                <button class="primary-btn" id="btn-save-edit-dir" data-i18n>Save Name</button>
             </div>
         </div>
     </div>

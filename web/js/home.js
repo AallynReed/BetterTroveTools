@@ -1,5 +1,6 @@
 document.addEventListener('home_loaded', () => {
     console.log("Home Dashboard initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     
     refreshAllData();
 
@@ -11,6 +12,19 @@ document.addEventListener('home_loaded', () => {
         }
     }, 60000);
 
+    // Watch for language changes to immediately re-render dynamic content
+    if (window._homeLangListener) {
+        document.removeEventListener('change', window._homeLangListener);
+    }
+    window._homeLangListener = (e) => {
+        if (e.target && e.target.id === 'global-language-select') {
+            if (document.querySelector('.home-container')) {
+                setTimeout(refreshAllData, 150);
+            }
+        }
+    };
+    document.addEventListener('change', window._homeLangListener);
+
     function refreshAllData() {
         fetchStreams();
         fetchServerData();
@@ -20,13 +34,13 @@ document.addEventListener('home_loaded', () => {
     function getCountdown(timestamp) {
         const now = Math.floor(Date.now() / 1000);
         const diff = timestamp - now;
-        if (diff <= 0) return "Ending now...";
+        if (diff <= 0) return t("Ending now...");
         const days = Math.floor(diff / 86400);
         const hours = Math.floor((diff % 86400) / 3600);
         const mins = Math.floor((diff % 3600) / 60);
-        if (days > 0) return `${days}d ${hours}h left`;
-        if (hours > 0) return `${hours}h ${mins}m left`;
-        return `${mins}m left`;
+        if (days > 0) return `${days}d ${hours}h ${t("left")}`;
+        if (hours > 0) return `${hours}h ${mins}m ${t("left")}`;
+        return `${mins}m ${t("left")}`;
     }
 
     // Modal Logic
@@ -71,15 +85,18 @@ document.addEventListener('home_loaded', () => {
             if (!buffsGrid) return;
             buffsGrid.style.display = 'grid';
             buffsGrid.innerHTML = '';
-            if (daily) buffsGrid.appendChild(createBuffCard("Daily: " + daily.name, daily, true));
-            if (weekly) buffsGrid.appendChild(createBuffCard("Weekly: " + weekly.name, weekly, false));
+            if (daily) buffsGrid.appendChild(createBuffCard(`${t("Daily:")} ${t(daily.name)}`, daily, true));
+            if (weekly) buffsGrid.appendChild(createBuffCard(`${t("Weekly:")} ${t(weekly.name)}`, weekly, false));
         }
 
         function createBuffCard(title, data, isDaily) {
             const card = document.createElement('div');
-            card.className = 'buff-card';
+            card.className = 'buff-card hover-card'; 
             const colorHex = data.color ? `#${data.color}` : '#5ec6ff';
             card.style.setProperty('--buff-color', colorHex); 
+            card.style.cursor = 'pointer';
+            card.title = t("Click to see schedule");
+            
             let headerBg = data.banner ? `url('${data.banner}') center/cover` : colorHex;
             let html = `<div class="buff-header" style="background: linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), ${headerBg};">
                             ${data.icon ? `<img src="${data.icon}" alt="">` : ''}
@@ -90,19 +107,116 @@ document.addEventListener('home_loaded', () => {
                 html += `
                     <div class="buff-split-container">
                         <div class="buff-column normal-buffs">
-                            <div class="buff-column-title"><i class="fa-solid fa-crown" style="opacity: 0.5;"></i> Free</div>
-                            <ul class="buff-list">${(data.normal_buffs || data.buffs || []).map(b => `<li>${b}</li>`).join('')}</ul>
+                            <div class="buff-column-title"><i class="fa-solid fa-crown" style="opacity: 0.5;"></i> ${t("Free")}</div>
+                            <ul class="buff-list">${(data.normal_buffs || data.buffs || []).map(b => `<li>${t(b)}</li>`).join('')}</ul>
                         </div>
                         <div class="buff-column patron-buffs">
-                            <div class="buff-column-title"><i class="fa-solid fa-crown"></i> Patron</div>
-                            <ul class="buff-list">${(data.premium_buffs || data.buffs || []).map(b => `<li>${b}</li>`).join('')}</ul>
+                            <div class="buff-column-title"><i class="fa-solid fa-crown"></i> ${t("Patron")}</div>
+                            <ul class="buff-list">${(data.premium_buffs || data.buffs || []).map(b => `<li>${t(b)}</li>`).join('')}</ul>
                         </div>
                     </div>`;
             } else {
-                html += `<div style="padding: 15px;"><ul class="buff-list">${(data.buffs || []).map(b => `<li>${b}</li>`).join('')}</ul></div>`;
+                html += `<div style="padding: 15px;"><ul class="buff-list">${(data.buffs || []).map(b => `<li>${t(b)}</li>`).join('')}</ul></div>`;
             }
             html += `</div>`;
             card.innerHTML = html;
+
+            card.addEventListener('click', async () => {
+                const modalTitle = document.querySelector('.modal-header h3');
+                modalTitle.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: ${colorHex};"></i> ${title} ${t("Schedule")}`;
+                const modalBody = document.getElementById('d15-modal-body');
+                
+                modalBody.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading schedule...")}</div>`;
+                if(rotationModal) rotationModal.style.display = 'flex';
+
+                try {
+                    if (isDaily) {
+                        const res = await fetch('/assets/data/daily_buffs.json');
+                        const scheduleData = await res.json();
+                        
+                        // Trove resets daily at 11am UTC (UTC - 11 logic matches your sidebar clock)
+                        const now = new Date();
+                        const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+                        const troveMs = utcMs - (11 * 3600000);
+                        const troveTime = new Date(troveMs);
+                        
+                        // JS getDay() is Sun=0. Trove's JSON is Mon=0.
+                        const currentDayIndex = (troveTime.getDay() + 6) % 7; 
+
+                        let contentHtml = '';
+                        for (let i = 0; i < 7; i++) {
+                            const d = scheduleData[i.toString()];
+                            if (!d) continue;
+                            const isActive = i === currentDayIndex;
+                            
+                            contentHtml += `
+                                <div class="modal-rotation-row" style="${isActive ? `border-left: 4px solid #${d.color}; background: rgba(255,255,255,0.05);` : ''}">
+                                    <div class="modal-time-col" style="min-width: 120px;">
+                                        <div style="font-weight: bold; color: ${isActive ? `#${d.color}` : '#fff'};">${t(d.weekday)}</div>
+                                        ${isActive ? `<div style="font-size: 0.85em; color: #${d.color};">${t("ACTIVE TODAY")}</div>` : ''}
+                                    </div>
+                                    <div class="modal-biomes-col" style="flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+                                        <div style="font-weight: bold; color: #fff;">${d.emoji} ${t(d.name)}</div>
+                                        <div style="font-size: 0.85em; color: var(--text-muted);">
+                                            <ul style="margin: 0; padding-left: 15px;">
+                                                ${d.normal_buffs.map(b => `<li>${t(b)}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        modalBody.innerHTML = contentHtml;
+
+                    } else {
+                        const res = await fetch('/assets/data/weekly_buffs.json');
+                        const scheduleData = await res.json();
+                        
+                        let activeIndex = 0;
+                        const weeklyKeys = Object.keys(scheduleData).sort();
+                        
+                        // Find the currently active week based on the name provided by the server
+                        for (let k of weeklyKeys) {
+                            if (scheduleData[k].name === data.name) {
+                                activeIndex = parseInt(k);
+                                break;
+                            }
+                        }
+
+                        let contentHtml = '';
+                        for (let i = 0; i < weeklyKeys.length; i++) {
+                            // Shift the array so the active week is always rendered first
+                            const targetIndex = (activeIndex + i) % weeklyKeys.length;
+                            const w = scheduleData[targetIndex.toString()];
+                            if (!w) continue;
+                            
+                            const isActive = i === 0;
+                            
+                            contentHtml += `
+                                <div class="modal-rotation-row" style="${isActive ? `border-left: 4px solid #${w.color}; background: rgba(255,255,255,0.05);` : ''}">
+                                    <div class="modal-time-col" style="min-width: 120px;">
+                                        <div style="font-weight: bold; color: ${isActive ? `#${w.color}` : '#fff'};">${isActive ? t('Current Week') : `${t("Week")} +${i}`}</div>
+                                        ${isActive ? `<div style="font-size: 0.85em; color: #${w.color};">${t("ACTIVE NOW")}</div>` : ''}
+                                    </div>
+                                    <div class="modal-biomes-col" style="flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;">
+                                        <div style="font-weight: bold; color: #fff;">${w.emoji} ${t(w.name)}</div>
+                                        <div style="font-size: 0.85em; color: var(--text-muted);">
+                                            <ul style="margin: 0; padding-left: 15px;">
+                                                ${w.buffs.map(b => `<li>${t(b)}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        modalBody.innerHTML = contentHtml;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    modalBody.innerHTML = `<div style="padding: 20px; text-align: center; color: #ff5555;">${t("Failed to load schedule data.")}</div>`;
+                }
+            });
+
             return card;
         }
 
@@ -125,24 +239,24 @@ document.addEventListener('home_loaded', () => {
                 card.className = `merchant-card hover-card ${data.active ? '' : 'inactive'}`;
                 card.style.setProperty('--merchant-color', conf.color);
                 card.style.cursor = 'pointer';
-                card.title = "Click to see upcoming schedule";
+                card.title = t("Click to see upcoming schedule");
                 
-                const displayName = (conf.id === 'fluxion' && data.active) ? `${conf.name} (${data.state})` : conf.name;
+                const displayName = (conf.id === 'fluxion' && data.active) ? `${conf.name} (${t(data.state)})` : conf.name;
                 card.innerHTML = `
                     <div class="merchant-icon"><i class="fa-solid ${conf.icon}"></i></div>
                     <div class="merchant-info" style="width: 100%;">
-                        <div class="merchant-name">${displayName} <span class="merchant-status-badge">${data.active ? 'ACTIVE' : 'AWAY'}</span></div>
-                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> ${data.action} <b>${data.time_str}</b></div>
+                        <div class="merchant-name">${displayName} <span class="merchant-status-badge">${data.active ? t('ACTIVE') : t('AWAY')}</span></div>
+                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> ${t(data.action)} <b>${data.time_str}</b></div>
                     </div>`;
                 
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
-                    modalTitle.innerHTML = `<i class="fa-solid ${conf.icon}" style="color: ${conf.color};"></i> Upcoming ${conf.name} Schedule`;
+                    modalTitle.innerHTML = `<i class="fa-solid ${conf.icon}" style="color: ${conf.color};"></i> ${t("Upcoming")} ${conf.name} ${t("Schedule")}`;
                     
                     if(schedules && schedules.success && schedules[conf.id]) {
                         populateMerchantModal(schedules[conf.id], conf.color);
                     } else {
-                        document.getElementById('d15-modal-body').innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Schedule data unavailable.</div>';
+                        document.getElementById('d15-modal-body').innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">${t("Schedule data unavailable.")}</div>`;
                     }
                     
                     if(rotationModal) rotationModal.style.display = 'flex';
@@ -161,17 +275,17 @@ document.addEventListener('home_loaded', () => {
                 const stampyColor = '#ff9800'; 
                 card.style.setProperty('--merchant-color', stampyColor); 
                 card.style.cursor = 'pointer';
-                card.title = "Click to see upcoming rotations";
+                card.title = t("Click to see upcoming rotations");
                 
                 let pills = stampy.current.biomes.map(b => 
-                    `<span class="biome-pill" title="Biome: ${b.name}">
+                    `<span class="biome-pill" title="Biome: ${t(b.name)}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.final_name}
+                        ${t(b.final_name)}
                     </span>`
                 ).join('');
 
-                const statusText = isActive ? 'ACTIVE' : 'AWAY';
-                const timeText = isActive ? `Leaves in <b>${getCountdown(stampy.current.end).replace(' left', '')}</b>` : `Arrives in <b>${getCountdown(stampy.current.start).replace(' left', '')}</b>`;
+                const statusText = isActive ? t('ACTIVE') : t('AWAY');
+                const timeText = isActive ? `${t("Leaves in")} <b>${getCountdown(stampy.current.end).replace(t('left'), '')}</b>` : `${t("Arrives in")} <b>${getCountdown(stampy.current.start).replace(t('left'), '')}</b>`;
 
                 card.innerHTML = `
                     <div class="merchant-icon"><i class="fa-solid fa-paw"></i></div>
@@ -185,7 +299,7 @@ document.addEventListener('home_loaded', () => {
                 
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
-                    modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> Upcoming Stampy Locations`;
+                    modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> ${t("Upcoming Stampy Locations")}`;
                     populateBiomeModal(stampy.future, stampyColor, true); 
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -199,20 +313,20 @@ document.addEventListener('home_loaded', () => {
                 card.className = `merchant-card hover-card`; 
                 card.style.setProperty('--merchant-color', '#4caf50'); 
                 card.style.cursor = 'pointer';
-                card.title = "Click to see upcoming rotations";
+                card.title = t("Click to see upcoming rotations");
                 
                 let pills = d15.current.biomes.map(b => 
-                    `<span class="biome-pill" title="Biome: ${b.name}">
+                    `<span class="biome-pill" title="Biome: ${t(b.name)}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.final_name}
+                        ${t(b.final_name)}
                     </span>`
                 ).join('');
 
                 card.innerHTML = `
                     <div class="merchant-icon"><i class="fa-solid fa-leaf"></i></div>
                     <div class="merchant-info" style="width: 100%;">
-                        <div class="merchant-name">D15 Biomes <span class="merchant-status-badge">ACTIVE</span></div>
-                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> Ends in <b>${getCountdown(d15.current.end).replace(' left', '')}</b></div>
+                        <div class="merchant-name">D15 Biomes <span class="merchant-status-badge">${t("ACTIVE")}</span></div>
+                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> ${t("Ends in")} <b>${getCountdown(d15.current.end).replace(t('left'), '')}</b></div>
                         <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
                             ${pills}
                         </div>
@@ -220,7 +334,7 @@ document.addEventListener('home_loaded', () => {
                 
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
-                    modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> Upcoming D15 Biomes`;
+                    modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")}`;
                     populateBiomeModal(d15.future, '#4caf50');
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -235,20 +349,20 @@ document.addEventListener('home_loaded', () => {
                 const manaColor = '#00bcd4'; 
                 card.style.setProperty('--merchant-color', manaColor); 
                 card.style.cursor = 'pointer';
-                card.title = "Click to see upcoming rotations";
+                card.title = t("Click to see upcoming rotations");
                 
                 let pills = mana.current.biomes.map(b => 
-                    `<span class="biome-pill" title="Biome: ${b.name}">
+                    `<span class="biome-pill" title="Biome: ${t(b.name)}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.final_name}
+                        ${t(b.final_name)}
                     </span>`
                 ).join('');
 
                 card.innerHTML = `
                     <div class="merchant-icon"><i class="fa-solid fa-flask"></i></div>
                     <div class="merchant-info" style="width: 100%;">
-                        <div class="merchant-name">Wild Trovian Mana <span class="merchant-status-badge">ACTIVE</span></div>
-                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> Ends in <b>${getCountdown(mana.current.end).replace(' left', '')}</b></div>
+                        <div class="merchant-name">Wild Trovian Mana <span class="merchant-status-badge">${t("ACTIVE")}</span></div>
+                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> ${t("Ends in")} <b>${getCountdown(mana.current.end).replace(t('left'), '')}</b></div>
                         <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
                             ${pills}
                         </div>
@@ -256,7 +370,7 @@ document.addEventListener('home_loaded', () => {
                 
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
-                    modalTitle.innerHTML = `<i class="fa-solid fa-flask" style="color: ${manaColor};"></i> Upcoming Wild Mana Biomes`;
+                    modalTitle.innerHTML = `<i class="fa-solid fa-flask" style="color: ${manaColor};"></i> ${t("Upcoming Wild Mana Biomes")}`;
                     populateBiomeModal(mana.future, manaColor);
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -274,15 +388,15 @@ document.addEventListener('home_loaded', () => {
             futureRotations.forEach((rot, index) => {
                 const isNext = index === 0;
                 
-                let timeText = `Starts in ${getCountdown(rot.start).replace(' left', '')}`;
+                let timeText = `${t("Starts in")} ${getCountdown(rot.start).replace(t('left'), '')}`;
                 if (isArrival) {
-                    timeText = `Arrives in ${getCountdown(rot.start).replace(' left', '')}`;
+                    timeText = `${t("Arrives in")} ${getCountdown(rot.start).replace(t('left'), '')}`;
                 }
                 
                 let pills = rot.biomes.map(b => 
-                    `<span class="biome-pill modal-pill" title="Biome: ${b.name}">
+                    `<span class="biome-pill modal-pill" title="Biome: ${t(b.name)}">
                         <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="">
-                        ${b.final_name}
+                        ${t(b.final_name)}
                     </span>`
                 ).join('');
 
@@ -290,7 +404,7 @@ document.addEventListener('home_loaded', () => {
                 row.className = 'modal-rotation-row';
                 row.innerHTML = `
                     <div class="modal-time-col" style="${isArrival ? 'min-width: 150px;' : ''}">
-                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? (isArrival ? 'Next Arrival' : 'Next Rotation') : `Rotation +${index + 1}`}</div>
+                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? (isArrival ? t('Next Arrival') : t('Next Rotation')) : `${t("Rotation")} +${index + 1}`}</div>
                         <div style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${timeText}</div>
                     </div>
                     <div class="modal-biomes-col">
@@ -310,19 +424,20 @@ document.addEventListener('home_loaded', () => {
             schedule.forEach((rot, index) => {
                 const isNext = index === 0;
                 
-                const startStr = new Date(rot.start * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-                const endStr = new Date(rot.end * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+                const startStr = new Date(rot.start * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                const endStr = new Date(rot.end * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                 
-                let timeText = `Arrives in ${getCountdown(rot.start).replace(' left', '')}`;
+                let timeText = `${t("Arrives in")} ${getCountdown(rot.start).replace(t('left'), '')}`;
                 if (rot.start * 1000 < Date.now()) {
-                    timeText = `Leaves in ${getCountdown(rot.end).replace(' left', '')}`;
+                    timeText = `${t("Leaves in")} ${getCountdown(rot.end).replace(t('left'), '')}`;
                 }
 
                 const row = document.createElement('div');
                 row.className = 'modal-rotation-row';
                 row.innerHTML = `
                     <div class="modal-time-col" style="min-width: 150px;">
-                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? 'Next Arrival' : `Arrival +${index + 1}`}</div>
+                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? t('Next Arrival') : `${t("Arrival")} +${index + 1}`}</div>
                         <div style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${timeText}</div>
                     </div>
                     <div class="modal-biomes-col" style="flex-direction: column; justify-content: center; gap: 4px;">
@@ -357,15 +472,16 @@ document.addEventListener('home_loaded', () => {
                 };
 
                 const startTs = parseInt(event.startdate), endTs = parseInt(event.enddate), nowTs = Math.floor(Date.now() / 1000);
-                const startStr = new Date(startTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                const endStr = new Date(endTs * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                let statusText = nowTs < startTs ? `Starts in ${getCountdown(startTs)}` : (nowTs < endTs ? `Ends in ${getCountdown(endTs)}` : "Event Ended");
+                const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+                const startStr = new Date(startTs * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+                const endStr = new Date(endTs * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+                let statusText = nowTs < startTs ? `${t("Starts in")} ${getCountdown(startTs)}` : (nowTs < endTs ? `${t("Ends in")} ${getCountdown(endTs)}` : t("Event Ended"));
                 let statusColor = nowTs < startTs ? "#5ec6ff" : (nowTs < endTs ? "#ff5555" : "#a3adc2");
                 const img = event.image || event.icon || 'https://trovesaurus.com/images/logos/Sage_64.png';
                 card.innerHTML = `
                     <div class="event-image"><img src="${img}" alt=""></div>
                     <div class="event-main">
-                        <div class="event-name-row"><span class="event-name">${event.name}</span><span class="event-category">${event.category}</span></div>
+                        <div class="event-name-row"><span class="event-name">${t(event.name)}</span><span class="event-category">${t(event.category)}</span></div>
                         <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> ${startStr} - ${endStr}</span>
                         <span style="margin-left: 15px; color: ${statusColor}; font-weight: bold;"><i class="fa-solid fa-hourglass-half"></i> ${statusText}</span></div>
                     </div><div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>`;
@@ -377,14 +493,13 @@ document.addEventListener('home_loaded', () => {
             list.innerHTML = `
                 <div style="text-align: center; padding: 20px; color: #ff5555; background: rgba(255, 85, 85, 0.1); border: 1px solid rgba(255, 85, 85, 0.3); border-radius: 10px; width: 100%;">
                     <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
-                    <span style="font-size: 14px;">Failed to fetch events from Trovesaurus.</span>
+                    <span style="font-size: 14px;">${t("Failed to fetch events from Trovesaurus.")}</span>
                 </div>
             `;
         }
     }
 
     function fetchEvents() {
-        // Just trigger the backend thread; don't wait for a return value
         eel.get_trovesaurus_events()();
     }
 
@@ -408,7 +523,7 @@ document.addEventListener('home_loaded', () => {
                 carousel.innerHTML = `
                     <div style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
                         <i class="fa-brands fa-twitch" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
-                        <span style="font-size: 14px;">No Trove streams are live right now. Check back later!</span>
+                        <span style="font-size: 14px;">${t("No Trove streams are live right now. Check back later!")}</span>
                     </div>
                 `;
                 if (btnLeft) btnLeft.style.display = 'none';
@@ -429,6 +544,7 @@ document.addEventListener('home_loaded', () => {
                 };
 
                 const thumb = stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248');
+                // We don't translate Twitch streams because it's user-generated content!
                 card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">🔴 ${stream.viewer_count.toLocaleString()}</span></div></div>
                                   <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
                 carousel.appendChild(card);
@@ -444,7 +560,6 @@ document.addEventListener('home_loaded', () => {
     }
 
     function fetchStreams() {
-        // Just trigger the backend thread; don't wait for a return value
         eel.get_twitch_streams()();
     }
 });

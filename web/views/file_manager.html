@@ -6,35 +6,35 @@
     
     <div class="tabs-container">
         <div class="tab-buttons" style="margin-bottom: 20px;">
-            <button class="tab-btn active" data-tab="tab-explorer"><i class="fa-solid fa-folder-tree"></i> File Explorer</button>
-            <button class="tab-btn" data-tab="tab-tracker"><i class="fa-solid fa-satellite-dish"></i> Update Tracker</button>
+            <button class="tab-btn active" data-tab="tab-explorer"><i class="fa-solid fa-folder-tree"></i> <span data-i18n>File Explorer</span></button>
+            <button class="tab-btn" data-tab="tab-tracker"><i class="fa-solid fa-satellite-dish"></i> <span data-i18n>Update Tracker</span></button>
         </div>
 
         <div id="tab-explorer" class="tab-content active">
             <div class="file-manager-header" style="border-bottom: none; padding-bottom: 0;">
-                <h1>Game File Manager</h1>
+                <h1 data-i18n>Game File Manager</h1>
                 <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
                     <select id="game-install-select" style="flex-grow: 1; padding: 10px;">
-                        <option value="">Searching for Game Installs...</option>
+                        <option value="" data-i18n>Searching for Game Installs...</option>
                     </select>
-                    <button id="btn-refresh-installs" class="primary-btn" title="Refresh Detected Games">
+                    <button id="btn-refresh-installs" class="primary-btn" data-i18n-title="Refresh Detected Games">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
                     <button id="btn-load-tree" class="primary-btn">
-                        <i class="fa-solid fa-box-archive"></i> Load Archives
+                        <i class="fa-solid fa-box-archive"></i> <span data-i18n>Load Archives</span>
                     </button>
-                    <button id="btn-collapse-all" class="primary-btn" title="Collapse All Folders">
-                        <i class="fa-solid fa-folder-minus"></i> Collapse
+                    <button id="btn-collapse-all" class="primary-btn" data-i18n-title="Collapse All Folders">
+                        <i class="fa-solid fa-folder-minus"></i> <span data-i18n>Collapse</span>
                     </button>
                     <button class="primary-btn" id="btn-select-visible">
-                        <i class="fa-solid fa-check-double"></i> Select Visible
+                        <i class="fa-solid fa-check-double"></i> <span data-i18n>Select Visible</span>
                     </button>
                 </div>
             </div>
 
             <div class="search-container" style="margin-top: 20px;">
                 <div style="position: relative; flex: 1; display: flex; align-items: center;">
-                    <input type="text" id="tree-search" placeholder="Search files (e.g. .swf, dragon, ui_...)" />
+                    <input type="text" id="tree-search" data-i18n-placeholder="Search files (e.g. .swf, dragon, ui_...)" />
                     <button id="clear-search" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
                 </div>
                 <span id="search-count" class="file-meta"></span>
@@ -42,7 +42,7 @@
             
             <div id="file-tree"></div>
 
-            <div id="file-tree-container" class="placeholder-box">
+            <div id="file-tree-container" class="placeholder-box" data-i18n>
                 Select a game installation to view files.
             </div>
         </div>
@@ -50,46 +50,46 @@
         <div id="tab-tracker" class="tab-content">
             <div class="tool-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3>Update Tracker</h3>
-                    <span class="mod-badge" style="position: relative; top: 0; right: 0; background: #e8b031; color: #111;">PRO</span>
+                    <h3 data-i18n>Update Tracker</h3>
+                    <span class="mod-badge" style="position: relative; top: 0; right: 0; background: #e8b031; color: #111;" data-i18n>PRO</span>
                 </div>
-                <p class="help-text">Track game updates, generate patch baselines, and extract only modified files to save space.</p>
+                <p class="help-text" data-i18n>Track game updates, generate patch baselines, and extract only modified files to save space.</p>
                 
                 <div class="form-group">
-                    <label>Target Game Installation</label>
+                    <label data-i18n>Target Game Installation</label>
                     <select id="tracker-game-select" style="margin-bottom: 15px;">
-                        <option value="">Searching...</option>
+                        <option value="" data-i18n>Searching...</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Tracking Directory (Where to save hashes and extracted patches)</label>
+                    <label data-i18n>Tracking Directory (Where to save hashes and extracted patches)</label>
                     <div class="input-row">
                         <select id="tracker-dir-select" style="flex-grow: 1;">
-                            <option value="">Loading directories...</option>
+                            <option value="" data-i18n>Loading directories...</option>
                         </select>
-                        <button id="btn-add-tracker-dir" class="primary-btn"><i class="fa-solid fa-plus"></i> Add Path</button>
+                        <button id="btn-add-tracker-dir" class="primary-btn"><i class="fa-solid fa-plus"></i> <span data-i18n>Add Path</span></button>
                     </div>
                 </div>
 
                 <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); width: max-content;">
                     <input type="checkbox" id="tracker-catalog-toggle" style="width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;">
                     <label for="tracker-catalog-toggle" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                        Run catalog mode
-                        <i class="fa-solid fa-circle-question" title="Catalogs generate image previews of blueprints, this is mainly for Trovesaurus but may be of interest to some people.<br>This slows down the process considerably." style="color: var(--text-muted);"></i>
+                        <span data-i18n>Run catalog mode</span>
+                        <i class="fa-solid fa-circle-question" data-i18n-title="Catalogs generate image previews of blueprints, this is mainly for Trovesaurus but may be of interest to some people.<br>This slows down the process considerably." style="color: var(--text-muted);"></i>
                     </label>
                 </div>
                 <div id="tracker-status-box" class="placeholder-box" style="margin-top: 20px; padding: 30px 20px;">
                     <i class="fa-solid fa-circle-info" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i>
-                    <p id="tracker-status-text" style="color: var(--text-main); font-weight: bold; font-size: 16px;">Select a tracking directory to continue.</p>
+                    <p id="tracker-status-text" style="color: var(--text-main); font-weight: bold; font-size: 16px;" data-i18n>Select a tracking directory to continue.</p>
                     <p id="tracker-sub-text" class="help-text" style="margin-top: 5px;"></p>
                     
                     <div id="tracker-actions" style="margin-top: 20px; display: none; gap: 10px; justify-content: center;">
                         <button id="btn-build-baseline" class="primary-btn" style="background-color: #e8b031; color: #111;">
-                            <i class="fa-solid fa-database"></i> Build Baseline Cache
+                            <i class="fa-solid fa-database"></i> <span data-i18n>Build Baseline Cache</span>
                         </button>
                         <button id="btn-scan-updates" class="primary-btn" style="display: none; background-color: #28a745;">
-                            <i class="fa-solid fa-satellite-dish"></i> Scan & Extract Updates
+                            <i class="fa-solid fa-satellite-dish"></i> <span data-i18n>Scan & Extract Updates</span>
                         </button>
                     </div>
                 </div>
@@ -102,32 +102,32 @@
 <div id="tracker-modal" class="image-modal">
     <div class="tool-panel" style="width: 450px; position: relative; padding-top: 35px;">
         <span id="close-tracker-modal" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;">&times;</span>
-        <h3 style="margin-top: 0; margin-bottom: 20px;">Add Extraction Path</h3>
+        <h3 style="margin-top: 0; margin-bottom: 20px;" data-i18n>Add Extraction Path</h3>
         <div class="form-group">
-            <label>Name</label>
-            <input type="text" id="new-tracker-name" placeholder="e.g. Trove PTS, Live Build..." />
+            <label data-i18n>Name</label>
+            <input type="text" id="new-tracker-name" data-i18n-placeholder="e.g. Trove PTS, Live Build..." />
         </div>
         <div class="form-group">
-            <label>Directory</label>
+            <label data-i18n>Directory</label>
             <div class="input-row">
-                <input type="text" id="new-tracker-path" placeholder="Select a folder..." readonly />
-                <button id="btn-browse-new-tracker" class="primary-btn"><i class="fa-solid fa-folder-open"></i> Browse</button>
+                <input type="text" id="new-tracker-path" data-i18n-placeholder="Select a folder..." readonly />
+                <button id="btn-browse-new-tracker" class="primary-btn"><i class="fa-solid fa-folder-open"></i> <span data-i18n>Browse</span></button>
             </div>
         </div>
-        <button id="btn-save-tracker-dir" class="primary-btn" style="width: 100%; margin-top: 10px; background: var(--accent-blue);">Save Path</button>
+        <button id="btn-save-tracker-dir" class="primary-btn" style="width: 100%; margin-top: 10px; background: var(--accent-blue);" data-i18n>Save Path</button>
     </div>
 </div>
 
 <div id="extraction-bar">
-    <span id="extraction-summary">0 files selected (0 MB)</span>
+    <span id="extraction-summary" data-i18n>0 files selected (0 MB)</span>
     
     <div id="extraction-progress" class="progress-container" style="display: none;">
         <div class="progress-track">
             <div id="progress-fill" class="progress-fill"></div>
         </div>
-        <span id="progress-text" class="progress-text">Starting extraction...</span>
+        <span id="progress-text" class="progress-text" data-i18n>Starting extraction...</span>
         <span id="progress-filename" class="progress-filename"></span>
     </div>
 
-    <button id="btn-mass-extract" class="primary-btn">Extract Selected</button>
+    <button id="btn-mass-extract" class="primary-btn" data-i18n>Extract Selected</button>
 </div>

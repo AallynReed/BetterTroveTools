@@ -1,3 +1,52 @@
+// --- Global App Boot & GitHub Updates ---
+document.addEventListener('DOMContentLoaded', async () => {
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+    
+    const metaResponse = await eel.get_app_metadata()();
+    let currentVersion = metaResponse?.APP_VERSION || "Unknown";
+    
+    if (metaResponse && metaResponse.APP_VERSION) {
+        const appName = metaResponse.APP_NAME || "Better Trove Tools";
+        document.title = `${appName} v${currentVersion}`;
+        const titleEl = document.getElementById('app-title');
+        if (titleEl) {
+            titleEl.innerHTML = `
+                <div class="app-name-text">${appName}</div>
+                <div class="app-version-text">v${currentVersion}</div>
+            `;
+        }
+    }
+
+    try {
+        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases/latest');
+        if (ghResponse.ok) {
+            const ghData = await ghResponse.json();
+            let latestVersion = ghData.tag_name;
+            
+            if (latestVersion && latestVersion.startsWith('v')) {
+                latestVersion = latestVersion.substring(1);
+            }
+            
+            if (latestVersion && currentVersion !== latestVersion) {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) {
+                    const updateContainer = document.createElement('div');
+                    updateContainer.className = 'app-update-container';
+                    updateContainer.innerHTML = `
+                        <button class="nav-btn update-app-btn" title="${t("A new version is available! Click to download.")}" onclick="eel.open_url_in_browser('${ghData.html_url}')()">
+                            <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
+                            <span class="nav-text">${t("Update")} v${latestVersion}</span>
+                        </button>
+                    `;
+                    sidebar.appendChild(updateContainer);
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Failed to check for app updates:", err);
+    }
+});
+
 // ==========================================
 // App Security & Hotkey Blocking
 // ==========================================
@@ -33,7 +82,10 @@ window.showToast = function(message, isError = false) {
     toast.style.transition = 'opacity 0.3s ease';
     toast.style.whiteSpace = 'pre-wrap';
     toast.style.textAlign = 'center';
-    toast.innerText = message;
+    
+    // Pass the incoming message through our translator globally
+    toast.innerText = window.I18nManager && window.I18nManager.t ? window.I18nManager.t(message) : message;
+    
     document.body.appendChild(toast);
 
     setTimeout(() => {
@@ -66,10 +118,8 @@ function handle_deep_link(url) {
                     
                     const searchInput = document.getElementById('ts-search-input');
                     if (searchInput) {
-                        // Already on the Trovesaurus tab, execute immediately
                         window.executePendingSearch();
                     } else {
-                        // Navigate to Trovesaurus tab, the event listener will pick up the search
                         window.loadView('trovesaurus');
                     }
                 }
@@ -87,18 +137,17 @@ window.executePendingSearch = function() {
         if (searchInput && searchBtn) {
             searchInput.value = window.pendingSearch;
             searchBtn.click();
-            window.pendingSearch = null; // Clear it out so it doesn't loop
+            window.pendingSearch = null; 
         }
     }
 }
 
-// Attach the search execution to the trovesaurus loaded event
 document.addEventListener('trovesaurus_loaded', () => {
     window.executePendingSearch();
 });
 
 // ==========================================
-// Core Application Logic
+// Core Application Routing & Logic
 // ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -113,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // View Routing (Made global so the deep link handler can trigger it)
+    // View Routing
     window.loadView = async function(target) {
         try {
             const response = await fetch(`views/${target}.html`);
@@ -126,6 +175,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.classList.toggle('active', btn.getAttribute('data-target') === target);
             });
 
+            // SCAN THE NEWLY INJECTED HTML FOR TRANSLATIONS
+            if (window.I18nManager) {
+                await window.I18nManager.translatePage();
+            }
+
             // Dispatch event so individual scripts know their HTML just loaded
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
@@ -133,7 +187,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`Successfully loaded view: ${target}`);
         } catch (err) {
             console.error("View loading error:", err);
-            viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">Failed to load view: ${err.message}</div>`;
+            const errorPrefix = window.I18nManager ? window.I18nManager.t("Failed to load view:") : "Failed to load view:";
+            viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">${errorPrefix} ${err.message}</div>`;
         }
     };
 
@@ -165,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (err) {
             console.error("Metadata fetch error:", err);
-            versionSpan.textContent = "Error";
+            versionSpan.textContent = window.I18nManager ? window.I18nManager.t("Error") : "Error";
         }
     });
 
@@ -182,8 +237,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const troveMs = utcMs - (11 * 3600000);
         const troveTime = new Date(troveMs);
 
-        dateEl.textContent = troveTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        clockEl.textContent = troveTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        // Format date and time dynamically based on the current locale!
+        const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+        dateEl.textContent = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+        clockEl.textContent = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     }
 
     updateServerTime();

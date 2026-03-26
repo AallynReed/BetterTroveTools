@@ -3,23 +3,23 @@
 </head>
 <div class="file-manager-container">
     <div class="file-manager-header">
-        <h1>Local Mod Manager</h1>
+        <h1 data-i18n>Local Mod Manager</h1>
         
         <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
             <select id="mod-game-select" style="flex-grow: 1; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-panel); color: var(--text-main);">
-                <option value="">Searching for Game Installs...</option>
+                <option value="" data-i18n>Searching for Game Installs...</option>
             </select>
             
-            <button id="btn-refresh-mods" class="primary-btn" title="Refresh Detected Games">
+            <button id="btn-refresh-mods" class="primary-btn" data-i18n-title="Refresh Detected Games">
                 <i class="fa-solid fa-rotate-right"></i>
             </button>
             
-            <button id="btn-fix-names" class="primary-btn" title="Rename files to match Mod internal names" style="background: var(--accent-blue);">
-                <i class="fa-solid fa-tag"></i> Fix Names
+            <button id="btn-fix-names" class="primary-btn" data-i18n-title="Rename files to match Mod internal names" style="background: var(--accent-blue);">
+                <i class="fa-solid fa-tag"></i> <span data-i18n>Fix Names</span>
             </button>
             
-            <button id="btn-fix-configs" class="primary-btn" title="Generate missing UI config files" style="background: var(--accent-blue);">
-                <i class="fa-solid fa-gear"></i> Fix Configs
+            <button id="btn-fix-configs" class="primary-btn" data-i18n-title="Generate missing UI config files" style="background: var(--accent-blue);">
+                <i class="fa-solid fa-gear"></i> <span data-i18n>Fix Configs</span>
             </button>
         </div>
     </div>
@@ -27,27 +27,27 @@
     <div class="search-filter-bar">
         <div class="search-wrapper">
             <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="mod-search-input" placeholder="Search mods by name or author...">
+            <input type="text" id="mod-search-input" data-i18n-placeholder="Search mods by name or author...">
         </div>
         
         <select id="mod-filter-status">
-            <option value="all">All Mods</option>
-            <option value="enabled">Enabled Only</option>
-            <option value="disabled">Disabled Only</option>
-            <option value="conflicts">Active Conflicts (Red)</option>
+            <option value="all" data-i18n>All Mods</option>
+            <option value="enabled" data-i18n>Enabled Only</option>
+            <option value="disabled" data-i18n>Disabled Only</option>
+            <option value="conflicts" data-i18n>Active Conflicts (Red)</option>
         </select>
         
         <div class="mod-count-display">
-            Showing <span id="visible-count">0</span> / <span id="total-count">0</span> mods
+            <span data-i18n>Showing</span> <span id="visible-count">0</span> / <span id="total-count">0</span> <span data-i18n>mods</span>
         </div>
     </div>
 
-    <div id="mod-grid-container" class="placeholder-box">
+    <div id="mod-grid-container" class="placeholder-box" data-i18n>
         Select a game installation to view installed mods.
     </div>
 
     <div id="image-modal" class="image-modal">
-        <span class="close-modal" title="Close Modal"><i class="fa-solid fa-xmark"></i></span>
+        <span class="close-modal" data-i18n-title="Close Modal"><i class="fa-solid fa-xmark"></i></span>
         <img class="modal-content" id="expanded-img" alt="Expanded Mod Preview">
         <div id="modal-caption"></div>
     </div>

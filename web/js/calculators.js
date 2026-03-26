@@ -1,5 +1,6 @@
 document.addEventListener('calculators_loaded', () => {
     console.log("Calculators view initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     // ==========================================
     // --- TAB SYSTEM LOGIC ---
@@ -32,10 +33,8 @@ document.addEventListener('calculators_loaded', () => {
         const geodeSlider = document.getElementById('geode-slider');
         const geodeNum = document.getElementById('geode-number');
 
-        // Failsafe in case elements are missing
         if (!troveSlider || !troveNum || !geodeSlider || !geodeNum) return;
 
-        // Sync inputs
         const syncInputs = (slider, num) => {
             slider.addEventListener('input', () => { num.value = slider.value; calculateMastery(); });
             num.addEventListener('input', () => { 
@@ -51,36 +50,29 @@ document.addEventListener('calculators_loaded', () => {
         syncInputs(troveSlider, troveNum);
         syncInputs(geodeSlider, geodeNum);
 
-        // Run initial calc
         calculateMastery();
     }
 
     function calculateMastery() {
-        // Parse Inputs
         const rawTrove = parseInt(document.getElementById('trove-number').value) || 0;
         const rawGeode = parseInt(document.getElementById('geode-number').value) || 0;
 
-        // Apply Soft Caps
         const troveCapped = Math.min(rawTrove, 1000);
         const geodeCapped = Math.min(rawGeode, 100);
 
-        // Trove Math
-        const troveTier1 = Math.min(troveCapped, 500); // Ranks 1-500
-        const troveTier2 = Math.max(0, troveCapped - 500); // Ranks 501-1000
+        const troveTier1 = Math.min(troveCapped, 500); 
+        const troveTier2 = Math.max(0, troveCapped - 500); 
 
         const hpBonus = (troveTier1 * 0.6).toFixed(1);
         const dmgBonus = (troveTier1 * 0.2).toFixed(1);
         const trovePR = (troveTier1 * 4) + (troveTier2 * 1);
         const troveMF = troveTier2 * 1;
 
-        // Geode Math
         const geodeLight = geodeCapped * 10;
         const geodePR = geodeCapped * 5;
 
-        // Totals
         const totalPR = trovePR + geodePR;
 
-        // Update UI
         document.getElementById('mastery-pr-display').innerText = totalPR.toLocaleString();
         document.getElementById('mastery-dmg').innerText = `+${dmgBonus}%`;
         document.getElementById('mastery-hp').innerText = `+${hpBonus}%`;
@@ -88,7 +80,6 @@ document.addEventListener('calculators_loaded', () => {
         document.getElementById('mastery-mf').innerText = `+${troveMF}`;
     }
 
-    // Initialize Mastery Tab
     initMasteryCalculator();
 
     // ==========================================
@@ -96,7 +87,6 @@ document.addEventListener('calculators_loaded', () => {
     // ==========================================
     let mfData = [];
 
-    // Fetch the raw JSON data
     fetch('/assets/data/stats/magic_find.json')
         .then(response => {
             if (!response.ok) throw new Error("File not found");
@@ -135,7 +125,6 @@ document.addEventListener('calculators_loaded', () => {
             const el = document.createElement('div');
             el.className = 'calc-item';
             
-            // Determine badge style
             let badgeClass = 'calc-item-badge';
             if (item.type === 'patron_switch') {
                 badgeClass += ' patron';
@@ -148,7 +137,7 @@ document.addEventListener('calculators_loaded', () => {
             
             if (item.type === 'mastery') {
                 const initialBonus = Math.max(0, item.default - 500);
-                badgeText = `+${initialBonus} Flat`;
+                badgeText = `+${initialBonus} ${t("Flat")}`;
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider mf-input" data-index="${index}" min="1" max="${item.max}" value="${item.default}">
@@ -156,7 +145,7 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             } else if (item.type === 'patron_switch') {
-                badgeText = `+${item.value}% Multiplier`;
+                badgeText = `+${item.value}% ${t("Multiplier")}`;
                 controlHtml = `
                     <label class="calc-switch">
                         <input type="checkbox" class="mf-input" data-index="${index}" ${item.default_checked ? 'checked' : ''}>
@@ -164,7 +153,7 @@ document.addEventListener('calculators_loaded', () => {
                     </label>
                 `;
             } else if (item.type === 'slider') {
-                badgeText = `+${item.value} Flat`;
+                badgeText = `+${item.value} ${t("Flat")}`;
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider mf-input" data-index="${index}" min="0" max="${item.value}" value="${item.value}">
@@ -172,7 +161,7 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             } else if (item.type === 'switch') {
-                badgeText = item.percentage ? `+${item.value}% Bonus` : `+${item.value} Flat`;
+                badgeText = item.percentage ? `+${item.value}% ${t("Bonus")}` : `+${item.value} ${t("Flat")}`;
                 controlHtml = `
                     <label class="calc-switch">
                         <input type="checkbox" class="mf-input" data-index="${index}" checked>
@@ -183,7 +172,7 @@ document.addEventListener('calculators_loaded', () => {
 
             el.innerHTML = `
                 <div class="calc-item-header">
-                    <span>${item.name}</span>
+                    <span>${t(item.name)}</span>
                     <span class="${badgeClass}" id="mf-badge-${index}">${badgeText}</span>
                 </div>
                 <div>
@@ -249,7 +238,7 @@ document.addEventListener('calculators_loaded', () => {
                     val = rawVal;
                 }
                 const badge = document.getElementById(`mf-badge-${idx}`);
-                if (badge) badge.innerText = `+${val} Flat`;
+                if (badge) badge.innerText = `+${val} ${t("Flat")}`;
             }
 
             if (dataItem.type === 'patron_switch') {
@@ -268,9 +257,9 @@ document.addEventListener('calculators_loaded', () => {
         const displayTotal = document.getElementById('mf-total-display');
         if (displayTotal) displayTotal.innerText = totalMF.toLocaleString();
         
-        let breakdownText = `Base MF: ${flatMF.toLocaleString()} | Bonus Multiplier: +${bonusPercent}%`;
+        let breakdownText = `${t("Base MF:")} ${flatMF.toLocaleString()} | ${t("Bonus Multiplier:")} +${bonusPercent}%`;
         if (patronMultiplier > 1) {
-            breakdownText += ` | Patron: x${patronMultiplier}`;
+            breakdownText += ` | ${t("Patron:")} x${patronMultiplier}`;
         }
         const displayBreakdown = document.getElementById('mf-breakdown-display');
         if(displayBreakdown) displayBreakdown.innerText = breakdownText;
@@ -281,7 +270,6 @@ document.addEventListener('calculators_loaded', () => {
     // ==========================================
     let prData = [];
 
-    // Fetch the raw JSON data for Power Rank
     fetch('/assets/data/stats/power_rank.json')
         .then(response => {
             if (!response.ok) throw new Error("File not found");
@@ -293,14 +281,14 @@ document.addEventListener('calculators_loaded', () => {
                     name: "Trove Mastery",
                     type: "pr_mastery",
                     percentage: false,
-                    max: 1100, // Visual slider max
+                    max: 1100, 
                     default: 899
                 },
                 {
                     name: "Geode Mastery",
                     type: "pr_geode_mastery",
                     percentage: false,
-                    max: 150, // Visual slider max (soft cap handled in calc)
+                    max: 150, 
                     default: 100
                 },
                 ...data
@@ -320,11 +308,10 @@ document.addEventListener('calculators_loaded', () => {
             const el = document.createElement('div');
             el.className = 'calc-item';
             
-            let badgeClass = 'calc-item-badge patron'; // Default to yellow style for PR
+            let badgeClass = 'calc-item-badge patron'; 
             let badgeText = '';
             let controlHtml = '';
             
-            // Special Trove Mastery Input
             if (item.type === 'pr_mastery') {
                 badgeText = `+0 PR`;
                 controlHtml = `
@@ -334,7 +321,6 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             } 
-            // Special Geode Mastery Input
             else if (item.type === 'pr_geode_mastery') {
                 badgeText = `+0 PR`;
                 controlHtml = `
@@ -344,7 +330,6 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             }
-            // Standard Slider (e.g., Dragons)
             else if (item.type === 'slider') {
                 badgeText = `+${item.value} PR`;
                 controlHtml = `
@@ -354,7 +339,6 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             } 
-            // Standard Switch (e.g., Hat, Weapon, Ring)
             else if (item.type === 'switch') {
                 badgeText = `+${item.value} PR`;
                 controlHtml = `
@@ -367,7 +351,7 @@ document.addEventListener('calculators_loaded', () => {
 
             el.innerHTML = `
                 <div class="calc-item-header">
-                    <span>${item.name}</span>
+                    <span>${t(item.name)}</span>
                     <span class="${badgeClass}" id="pr-badge-${index}">${badgeText}</span>
                 </div>
                 <div>
@@ -378,7 +362,6 @@ document.addEventListener('calculators_loaded', () => {
             container.appendChild(el);
         });
 
-        // CSS tweak appended once to ensure PR switches use yellow when checked
         if (!document.getElementById('pr-switch-styles')) {
             const style = document.createElement('style');
             style.id = 'pr-switch-styles';
@@ -439,24 +422,21 @@ document.addEventListener('calculators_loaded', () => {
             } else if (input.type === 'range') {
                 const rawVal = parseInt(input.value) || 0;
                 
-                // Special Trove Mastery PR math logic
                 if (dataItem.type === 'pr_mastery') {
                     const capped = Math.min(rawVal, 1000);
-                    const tier1 = Math.min(capped, 500); // First 500 ranks
-                    const tier2 = Math.max(0, capped - 500); // Ranks 501-1000
+                    const tier1 = Math.min(capped, 500); 
+                    const tier2 = Math.max(0, capped - 500); 
                     
                     val = (tier1 * 4) + (tier2 * 1);
                 } 
-                // Special Geode Mastery PR math logic
                 else if (dataItem.type === 'pr_geode_mastery') {
-                    const capped = Math.min(rawVal, 100); // Soft cap at 100
-                    val = capped * 5; // 5 PR per level
+                    const capped = Math.min(rawVal, 100); 
+                    val = capped * 5; 
                 } 
                 else {
                     val = rawVal;
                 }
                 
-                // Update badge dynamically
                 const badge = document.getElementById(`pr-badge-${idx}`);
                 if (badge) badge.innerText = `+${val} PR`;
             }
