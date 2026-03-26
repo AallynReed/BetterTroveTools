@@ -1,5 +1,5 @@
 {
-    "language_name": "English",
+    "language_name": "English (United States)",
     "keys": {
         "Home": "Home",
         "Trovesaurus": "Trovesaurus",
@@ -2646,6 +2646,23 @@
         "Search by name, author, or ID...": "",
         "Browsing Trovesaurus...": "",
         "Install": "",
-        "Click to view on Trovesaurus": ""
+        "Click to view on Trovesaurus": "",
+        "Language": "",
+        "Frozen Wastes": "",
+        "Permafrost": "",
+        "Uncanny Valley": "",
+        "Fae Forest": "",
+        "No paths saved. Add one...": "",
+        "Select or add a tracking directory to continue.": "",
+        "No mods found in the selected directory.": "",
+        "Adventure Day": "",
+        "Earn 50% More Adventurine": "",
+        "Double Chance to Find Adventure Boxes": "",
+        "Double Chance To Find Talismans": "",
+        "Earn 100% More Adventurine": "",
+        "Triple Chance to Find Adventure Boxes": "",
+        "Triple Chance To Find Talismans": "",
+        "Bonus XP": "",
+        "+100% Base Experience!": ""
     }
 }

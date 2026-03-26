@@ -12,6 +12,20 @@ document.addEventListener('home_loaded', () => {
         }
     }, 60000);
 
+    // Watch for language changes to immediately re-render dynamic content
+    if (window._homeLangListener) {
+        document.removeEventListener('change', window._homeLangListener);
+    }
+    window._homeLangListener = (e) => {
+        if (e.target && e.target.id === 'global-language-select') {
+            if (document.querySelector('.home-container')) {
+                // Give I18nManager a tiny buffer to fetch the new dictionary before rebuilding
+                setTimeout(refreshAllData, 150);
+            }
+        }
+    };
+    document.addEventListener('change', window._homeLangListener);
+
     function refreshAllData() {
         fetchStreams();
         fetchServerData();
@@ -72,8 +86,9 @@ document.addEventListener('home_loaded', () => {
             if (!buffsGrid) return;
             buffsGrid.style.display = 'grid';
             buffsGrid.innerHTML = '';
-            if (daily) buffsGrid.appendChild(createBuffCard(t("Daily:") + " " + daily.name, daily, true));
-            if (weekly) buffsGrid.appendChild(createBuffCard(t("Weekly:") + " " + weekly.name, weekly, false));
+            // Wrap the names of the buffs (e.g. "Gathering Day")
+            if (daily) buffsGrid.appendChild(createBuffCard(`${t("Daily:")} ${t(daily.name)}`, daily, true));
+            if (weekly) buffsGrid.appendChild(createBuffCard(`${t("Weekly:")} ${t(weekly.name)}`, weekly, false));
         }
 
         function createBuffCard(title, data, isDaily) {
@@ -92,15 +107,15 @@ document.addEventListener('home_loaded', () => {
                     <div class="buff-split-container">
                         <div class="buff-column normal-buffs">
                             <div class="buff-column-title"><i class="fa-solid fa-crown" style="opacity: 0.5;"></i> ${t("Free")}</div>
-                            <ul class="buff-list">${(data.normal_buffs || data.buffs || []).map(b => `<li>${b}</li>`).join('')}</ul>
+                            <ul class="buff-list">${(data.normal_buffs || data.buffs || []).map(b => `<li>${t(b)}</li>`).join('')}</ul>
                         </div>
                         <div class="buff-column patron-buffs">
                             <div class="buff-column-title"><i class="fa-solid fa-crown"></i> ${t("Patron")}</div>
-                            <ul class="buff-list">${(data.premium_buffs || data.buffs || []).map(b => `<li>${b}</li>`).join('')}</ul>
+                            <ul class="buff-list">${(data.premium_buffs || data.buffs || []).map(b => `<li>${t(b)}</li>`).join('')}</ul>
                         </div>
                     </div>`;
             } else {
-                html += `<div style="padding: 15px;"><ul class="buff-list">${(data.buffs || []).map(b => `<li>${b}</li>`).join('')}</ul></div>`;
+                html += `<div style="padding: 15px;"><ul class="buff-list">${(data.buffs || []).map(b => `<li>${t(b)}</li>`).join('')}</ul></div>`;
             }
             html += `</div>`;
             card.innerHTML = html;

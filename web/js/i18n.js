@@ -1,5 +1,5 @@
 const I18nManager = {
-    currentLocale: localStorage.getItem('btt_locale') || 'pt_PT',
+    currentLocale: 'en_US', // Fallback default; overwritten by backend settings
     dictionary: {},
     availableLanguages: [],
     
@@ -14,6 +14,18 @@ const I18nManager = {
     async init() {
         if (window.eel && eel.get_available_languages) {
             this.availableLanguages = await eel.get_available_languages()();
+            
+            // Fetch saved locale from backend settings.json
+            try {
+                const settings = await eel.get_settings()();
+                if (settings && settings.locale) {
+                    this.currentLocale = settings.locale;
+                }
+            } catch (e) {
+                console.warn("Could not load locale from settings, defaulting to en_US.");
+            }
+
+            this.populateLanguageDropdown();
             await this.loadDictionary(this.currentLocale);
         }
         
@@ -21,9 +33,38 @@ const I18nManager = {
         this.startObserver();
     },
 
+    populateLanguageDropdown() {
+        const select = document.getElementById('global-language-select');
+        if (!select) return;
+        
+        select.innerHTML = '';
+        this.availableLanguages.forEach(lang => {
+            const opt = document.createElement('option');
+            opt.value = lang.code;
+            opt.textContent = lang.name;
+            if (lang.code === this.currentLocale) {
+                opt.selected = true;
+            }
+            select.appendChild(opt);
+        });
+
+        // Trigger translation and save to backend when user changes language
+        select.addEventListener('change', async (e) => {
+            const newLocale = e.target.value;
+            await this.setLanguage(newLocale);
+            
+            try {
+                const settings = await eel.get_settings()();
+                settings.locale = newLocale;
+                await eel.save_settings(settings)();
+            } catch (err) {
+                console.error("Failed to save locale to settings.json:", err);
+            }
+        });
+    },
+
     async loadDictionary(localeCode) {
         this.currentLocale = localeCode;
-        localStorage.setItem('btt_locale', localeCode);
 
         try {
             const response = await fetch(`/assets/locale/${localeCode}.json?t=${new Date().getTime()}`);

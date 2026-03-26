@@ -86,7 +86,16 @@
                 </button>
             </li>
         </ul>
-        <button class="nav-btn" data-target="settings" style="margin-top: auto;">
+
+        <div style="margin-top: auto; padding: 10px 20px; display: flex; align-items: center; cursor: default;">
+            <i class="fa-solid fa-globe nav-icon" style="color: var(--text-muted);" data-i18n-title="Language"></i>
+            <span class="nav-text" style="width: 100%;">
+                <select id="global-language-select" style="width: 100%; background: var(--bg-dark, #111); color: var(--text-main, #fff); border: 1px solid var(--border-color, #333); padding: 6px; border-radius: 4px; outline: none; cursor: pointer;">
+                    </select>
+            </span>
+        </div>
+
+        <button class="nav-btn" data-target="settings">
             <i class="fa-solid fa-gear nav-icon"></i>
             <span class="nav-text" data-i18n>Settings</span>
         </button>
