@@ -7,11 +7,9 @@
     
     <link rel="stylesheet" href="css/style.css">
     
-    
     <script type="text/javascript" src="/eel.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- jQuery and Select2 for multi-select dropdowns -->
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
@@ -30,75 +28,74 @@
             <li>
                 <button class="nav-btn" data-target="home">
                     <i class="fa-solid fa-house nav-icon"></i>
-                    <span class="nav-text">Home</span>
+                    <span class="nav-text" data-i18n>Home</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="trovesaurus">
                     <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 24px; height: 24px; object-fit: contain;">
-                    <span class="nav-text">Trovesaurus</span>
+                    <span class="nav-text" data-i18n>Trovesaurus</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="mod_manager">
                     <i class="fa-solid fa-cubes nav-icon"></i>
-                    <span class="nav-text">Mod Manager</span>
+                    <span class="nav-text" data-i18n>Mod Manager</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="file_manager">
                     <i class="fa-solid fa-folder-tree nav-icon"></i>
-                    <span class="nav-text">Game File Manager</span>
+                    <span class="nav-text" data-i18n>Game File Manager</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="modder_tools">
                     <i class="fa-solid fa-toolbox nav-icon"></i>
-
-                    <span class="nav-text">Modder Tools</span>
+                    <span class="nav-text" data-i18n>Modder Tools</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="star_chart">
                     <i class="fa-solid fa-star nav-icon"></i>
-                    <span class="nav-text">Star Chart</span>
+                    <span class="nav-text" data-i18n>Star Chart</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="gem_builds">
                     <i class="fa-solid fa-dice-five nav-icon"></i>
-                    <span class="nav-text">Gem Builds</span>
+                    <span class="nav-text" data-i18n>Gem Builds</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="gem_simulator">
                     <i class="fa-solid fa-gem nav-icon"></i>
-                    <span class="nav-text">Gem Simulator</span>
+                    <span class="nav-text" data-i18n>Gem Simulator</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="calculators">
                     <i class="fa-solid fa-calculator nav-icon"></i>
-                    <span class="nav-text">Calculators</span>
+                    <span class="nav-text" data-i18n>Calculators</span>
                 </button>
             </li>
             <li>
                 <button class="nav-btn" data-target="allies">
                     <i class="fa-solid fa-paw nav-icon"></i>
-                    <span class="nav-text">Ally Codex</span>
+                    <span class="nav-text" data-i18n>Ally Codex</span>
                 </button>
             </li>
         </ul>
         <button class="nav-btn" data-target="settings" style="margin-top: auto;">
             <i class="fa-solid fa-gear nav-icon"></i>
-            <span class="nav-text">Settings</span>
+            <span class="nav-text" data-i18n>Settings</span>
         </button>
         <button class="nav-btn" data-target="about">
             <i class="fa-solid fa-circle-info nav-icon"></i>
-            <span class="nav-text">About</span>
+            <span class="nav-text" data-i18n>About</span>
         </button>
         <div id="server-time-wrapper">
-            <div id="server-time-label">Server Time</div>
+            <div id="server-time-label" data-i18n>Server Time</div>
             <div id="server-time-date">--</div>
             <div id="server-time-clock">--:--:--</div>
         </div>
@@ -106,9 +103,10 @@
     </nav>
 
     <main id="view-container">
-        <h1 style="padding: 40px; color: #666;">Select a tool from the menu.</h1>
+        <h1 style="padding: 40px; color: #666;" data-i18n>Select a tool from the menu.</h1>
     </main>
 
+    <script src="js/i18n.js"></script>
     <script src="js/main.js"></script>
     <script src="js/home.js"></script>
     <script src="js/mod_manager.js"></script>

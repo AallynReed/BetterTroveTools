@@ -1,5 +1,7 @@
 document.addEventListener('settings_loaded', async () => {
     console.log("Settings view initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+
     await refreshCustomDirsList();
 
     const settings = await eel.get_settings()();
@@ -72,7 +74,7 @@ document.addEventListener('settings_loaded', async () => {
                 pathInput.value = response.path;
                 
                 if (!nameInput.value.trim()) {
-                    nameInput.value = response.path.split(/[\\/]/).pop() || "Custom Trove";
+                    nameInput.value = response.path.split(/[\\/]/).pop() || t("Custom Trove");
                 }
                 
                 saveBtn.disabled = false;
@@ -90,12 +92,12 @@ document.addEventListener('settings_loaded', async () => {
     if (saveBtn) {
         saveBtn.addEventListener('click', async () => {
             const path = pathInput.value;
-            const name = nameInput.value.trim() || "Custom Trove";
+            const name = nameInput.value.trim() || t("Custom Trove");
             
             if (!path) return;
 
             const originalText = saveBtn.innerHTML;
-            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            saveBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Saving...")}`;
             saveBtn.disabled = true;
 
             const settings = await eel.get_settings()();
@@ -109,7 +111,7 @@ document.addEventListener('settings_loaded', async () => {
                 await refreshCustomDirsList();
                 modal.classList.remove('active');
             } else {
-                alert("This directory is already in your custom list.");
+                alert(t("This directory is already in your custom list."));
             }
             
             saveBtn.innerHTML = originalText;
@@ -163,10 +165,10 @@ document.addEventListener('settings_loaded', async () => {
     if (saveEditBtn) {
         saveEditBtn.addEventListener('click', async () => {
             const path = document.getElementById('edit-dir-path').value;
-            const newName = document.getElementById('edit-dir-name').value.trim() || "Custom Trove";
+            const newName = document.getElementById('edit-dir-name').value.trim() || t("Custom Trove");
             
             const originalText = saveEditBtn.innerHTML;
-            saveEditBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            saveEditBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Saving...")}`;
             saveEditBtn.disabled = true;
 
             const settings = await eel.get_settings()();
@@ -191,12 +193,13 @@ document.addEventListener('settings_loaded', async () => {
 async function refreshCustomDirsList() {
     const listEl = document.getElementById('custom-dirs-list');
     if (!listEl) return;
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     
     const settings = await eel.get_settings()();
     const dirs = settings.custom_directories || [];
     
     if (dirs.length === 0) {
-        listEl.innerHTML = '<div class="placeholder-box" style="padding: 10px;">No custom directories added.</div>';
+        listEl.innerHTML = `<div class="placeholder-box" style="padding: 10px;">${t("No custom directories added.")}</div>`;
         return;
     }
 

@@ -1,5 +1,6 @@
 document.addEventListener('file_manager_loaded', () => {
     console.log("High-Performance File Manager initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     const tabButtons = document.querySelectorAll('.file-manager-container .tab-btn');
     const tabContents = document.querySelectorAll('.file-manager-container .tab-content');
@@ -49,8 +50,8 @@ document.addEventListener('file_manager_loaded', () => {
     let currentTrackingDir = null;
 
     async function scanForGames() {
-        installSelect.innerHTML = `<option value="">Searching...</option>`;
-        trackerGameSelect.innerHTML = `<option value="">Searching...</option>`;
+        installSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
+        trackerGameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
         
         const response = await eel.get_detected_game_paths()();
         const settings = await eel.get_settings()();
@@ -72,8 +73,8 @@ document.addEventListener('file_manager_loaded', () => {
                 trackerGameSelect.value = settings.last_game_path;
             }
         } else {
-            installSelect.innerHTML = `<option value="">No installations found.</option>`;
-            trackerGameSelect.innerHTML = `<option value="">No installations found.</option>`;
+            installSelect.innerHTML = `<option value="">${t("No installations found.")}</option>`;
+            trackerGameSelect.innerHTML = `<option value="">${t("No installations found.")}</option>`;
         }
     }
     
@@ -103,16 +104,16 @@ document.addEventListener('file_manager_loaded', () => {
         const date = new Date(dateString);
         const seconds = Math.floor((new Date() - date) / 1000);
         let interval = seconds / 31536000;
-        if (interval > 1) return Math.floor(interval) + " years ago";
+        if (interval > 1) return Math.floor(interval) + " " + t("years ago");
         interval = seconds / 2592000;
-        if (interval > 1) return Math.floor(interval) + " months ago";
+        if (interval > 1) return Math.floor(interval) + " " + t("months ago");
         interval = seconds / 86400;
-        if (interval > 1) return Math.floor(interval) + " days ago";
+        if (interval > 1) return Math.floor(interval) + " " + t("days ago");
         interval = seconds / 3600;
-        if (interval > 1) return Math.floor(interval) + " hours ago";
+        if (interval > 1) return Math.floor(interval) + " " + t("hours ago");
         interval = seconds / 60;
-        if (interval > 1) return Math.floor(interval) + " minutes ago";
-        return "Just now";
+        if (interval > 1) return Math.floor(interval) + " " + t("minutes ago");
+        return t("Just now");
     }
 
     async function loadTrackingDirectories() {
@@ -120,7 +121,7 @@ document.addEventListener('file_manager_loaded', () => {
         if (res.success) {
             trackerDirSelect.innerHTML = "";
             if (res.directories.length === 0) {
-                trackerDirSelect.innerHTML = `<option value="">No paths saved. Add one...</option>`;
+                trackerDirSelect.innerHTML = `<option value="">${t("No paths saved. Add one...")}</option>`;
                 currentTrackingDir = null;
             } else {
                 res.directories.sort((a, b) => {
@@ -135,7 +136,7 @@ document.addEventListener('file_manager_loaded', () => {
                     
                     let text = `${d.name} (${d.path})`;
                     if (d.last_used) {
-                        text += ` - Last used: ${timeSince(d.last_used)}`;
+                        text += ` - ${t("Last used:")} ${timeSince(d.last_used)}`;
                     }
                     
                     opt.textContent = text;
@@ -193,7 +194,7 @@ document.addEventListener('file_manager_loaded', () => {
         const path = newTrackerPath.value.trim();
         
         if (!name || !path) {
-            return window.showToast("Please provide both a name and a valid path.", true);
+            return window.showToast(t("Please provide both a name and a valid path."), true);
         }
         
         btnSaveTrackerDir.disabled = true;
@@ -202,7 +203,7 @@ document.addEventListener('file_manager_loaded', () => {
         btnSaveTrackerDir.disabled = false;
         
         await loadTrackingDirectories();
-        window.showToast("Tracking directory saved!");
+        window.showToast(t("Tracking directory saved!"));
     });
 
     function performSearch() {
@@ -214,7 +215,7 @@ document.addEventListener('file_manager_loaded', () => {
             treeContainer.querySelectorAll('.is-match, .has-match').forEach(n => {
                 n.classList.remove('is-match', 'has-match');
             });
-            searchCount.innerText = term.length > 0 ? "Minimum 4 characters required..." : "";
+            searchCount.innerText = term.length > 0 ? t("Minimum 4 characters required...") : "";
             return;
         }
 
@@ -241,7 +242,7 @@ document.addEventListener('file_manager_loaded', () => {
                 }
             });
 
-            searchCount.innerText = `Found ${matches.length} matches`;
+            searchCount.innerText = `${t("Found")} ${matches.length} ${t("matches")}`;
         }, 300);
     }
 
@@ -254,9 +255,9 @@ document.addEventListener('file_manager_loaded', () => {
     if (loadBtn) {
         loadBtn.addEventListener('click', async () => {
             const selectedPath = installSelect.value;
-            if (!selectedPath) return window.showToast("Select a game first.", true);
+            if (!selectedPath) return window.showToast(t("Select a game first."), true);
 
-            treeContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h3><i class="fa-solid fa-spinner fa-spin"></i> Parsing ${selectedPath}...</h3></div>`;
+            treeContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h3><i class="fa-solid fa-spinner fa-spin"></i> ${t("Parsing")} ${selectedPath}...</h3></div>`;
             
             fileCache = [];
             fileIdCounter = 0;
@@ -328,7 +329,7 @@ document.addEventListener('file_manager_loaded', () => {
         });
 
         if (totalFiles > 0) {
-            extractionSummary.innerText = `${totalFiles} files selected (${(totalBytes / 1048576).toFixed(2)} MB)`;
+            extractionSummary.innerText = `${totalFiles} ${t("files selected")} (${(totalBytes / 1048576).toFixed(2)} MB)`;
             extractionBar.classList.add('active');
         } else {
             extractionBar.classList.remove('active');
@@ -369,14 +370,14 @@ document.addEventListener('file_manager_loaded', () => {
         let timeText = [];
         
         if (elapsedStr && elapsedStr !== "N/A") {
-            timeText.push(`Elapsed: ${elapsedStr}`);
+            timeText.push(`${t("Elapsed:")} ${elapsedStr}`);
         }
         
         if (etaStr) {
             if (!etaStr.includes('Baseline') && !etaStr.includes('Scanning') && !etaStr.includes('Cataloging')) {
-                timeText.push(`ETA: ${etaStr}`);
+                timeText.push(`${t("ETA:")} ${t(etaStr)}`);
             } else {
-                timeText.push(etaStr);
+                timeText.push(t(etaStr));
             }
         }
         
@@ -428,12 +429,12 @@ document.addEventListener('file_manager_loaded', () => {
             const response = await eel.mass_extract_files(destDir, filesToExtract)();
 
             if (response.success) {
-                massExtractBtn.innerHTML = '<i class="fa-solid fa-check"></i> Complete!';
+                massExtractBtn.innerHTML = '<i class="fa-solid fa-check"></i> ' + t("Complete!");
                 setTimeout(() => {
                     document.querySelectorAll('input[type="checkbox"]').forEach(b => b.checked = false);
                     extractionBar.classList.remove('active');
                     massExtractBtn.disabled = false;
-                    massExtractBtn.innerHTML = '<i class="fa-solid fa-file-export"></i> Extract Selected';
+                    massExtractBtn.innerHTML = '<i class="fa-solid fa-file-export"></i> ' + t("Extract Selected");
                     extractionSummary.style.display = 'block';
                     document.getElementById('extraction-progress').style.display = 'none';
                 }, 2000);
@@ -443,14 +444,14 @@ document.addEventListener('file_manager_loaded', () => {
 
     async function checkTrackerStatus() {
         if (!currentTrackingDir) {
-            trackerStatusText.innerText = "Select or add a tracking directory to continue.";
+            trackerStatusText.innerText = t("Select or add a tracking directory to continue.");
             trackerStatusText.style.color = "var(--text-main)";
             trackerSubText.innerText = "";
             trackerActions.style.display = "none";
             return;
         }
         
-        trackerStatusText.innerText = "Checking directory...";
+        trackerStatusText.innerText = t("Checking directory...");
         trackerSubText.innerText = "";
         trackerActions.style.display = "none";
         
@@ -459,22 +460,22 @@ document.addEventListener('file_manager_loaded', () => {
         trackerActions.style.display = "flex";
         
         if (response.exists) {
-            trackerStatusText.innerText = "Active Baseline Found!";
+            trackerStatusText.innerText = t("Active Baseline Found!");
             trackerStatusText.style.color = "#28a745";
-            trackerSubText.innerText = `Last Scanned: ${new Date(response.last_scan).toLocaleString()}\nTracking Game: ${response.game_path}`;
+            trackerSubText.innerText = `${t("Last Scanned:")} ${new Date(response.last_scan).toLocaleString()}\n${t("Tracking Game:")} ${response.game_path}`;
             
-            btnBuildBaseline.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Force Rebuild Cache';
+            btnBuildBaseline.innerHTML = '<i class="fa-solid fa-rotate-right"></i> ' + t("Force Rebuild Cache");
             btnBuildBaseline.style.backgroundColor = "transparent";
             btnBuildBaseline.style.border = "1px solid var(--border-color)";
             btnBuildBaseline.style.color = "var(--text-muted)";
             
             btnScanUpdates.style.display = "flex";
         } else {
-            trackerStatusText.innerText = "No Baseline Found.";
+            trackerStatusText.innerText = t("No Baseline Found.");
             trackerStatusText.style.color = "#e8b031";
-            trackerSubText.innerText = "You must build an initial cache hash before you can scan for updates. This will take a few minutes.";
+            trackerSubText.innerText = t("You must build an initial cache hash before you can scan for updates. This will take a few minutes.");
             
-            btnBuildBaseline.innerHTML = '<i class="fa-solid fa-database"></i> Build Baseline Cache';
+            btnBuildBaseline.innerHTML = '<i class="fa-solid fa-database"></i> ' + t("Build Baseline Cache");
             btnBuildBaseline.style.backgroundColor = "#e8b031";
             btnBuildBaseline.style.border = "none";
             btnBuildBaseline.style.color = "#111";
@@ -486,7 +487,7 @@ document.addEventListener('file_manager_loaded', () => {
     btnBuildBaseline.addEventListener('click', async () => {
         const gamePath = trackerGameSelect.value;
         if (!gamePath || !currentTrackingDir) {
-            return window.showToast("Ensure both a Game Installation and Tracking Directory are selected.", true);
+            return window.showToast(t("Ensure both a Game Installation and Tracking Directory are selected."), true);
         }
 
         btnBuildBaseline.disabled = true;
@@ -500,10 +501,10 @@ document.addEventListener('file_manager_loaded', () => {
         btnScanUpdates.disabled = false;
         
         if (response.success) {
-            window.showToast("Baseline built successfully!");
+            window.showToast(t("Baseline built successfully!"));
             checkTrackerStatus();
         } else {
-            window.showToast("Error building baseline: " + response.error, true);
+            window.showToast(t("Error building baseline:") + " " + response.error, true);
         }
     });
 
@@ -526,13 +527,13 @@ document.addEventListener('file_manager_loaded', () => {
         if (response.success) {
             const d = response.details;
             if (d.added === 0 && d.changed === 0 && d.removed === 0) {
-                window.showToast("Scan complete. No game updates detected since the last baseline.");
+                window.showToast(t("Scan complete. No game updates detected since the last baseline."));
             } else {
-                window.showToast(`Update detected and extracted!\n\nAdded: ${d.added}\nChanged: ${d.changed}\nRemoved: ${d.removed}\n\nSaved to: ${d.folder}`);
+                window.showToast(`${t("Update detected and extracted!")}\n\n${t("Added:")} ${d.added}\n${t("Changed:")} ${d.changed}\n${t("Removed:")} ${d.removed}\n\n${t("Saved to:")} ${d.folder}`);
             }
             checkTrackerStatus();
         } else {
-            window.showToast("Error scanning for updates: " + response.error, true);
+            window.showToast(t("Error scanning for updates:") + " " + response.error, true);
         }
     });
 });

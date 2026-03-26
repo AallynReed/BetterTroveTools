@@ -1,5 +1,6 @@
 document.addEventListener('gem_simulator_loaded', async () => {
     console.log("Gem Simulator 3-Column UI initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     const ELEMENT_COLORS = { Fire: '#e57373', Water: '#64b5f6', Air: '#fff59d', Cosmic: '#4db6ac' };
     const ELEMENT_DEFAULT_COLOR = '#888888';
@@ -19,17 +20,17 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
     function getTypeDisplayName(typeIdOrName) {
         const entry = Object.entries(GEM_LOOKUPS.types || {}).find(([key, val]) => val == typeIdOrName || key == typeIdOrName);
-        return entry ? formatGemName(entry[0]) : typeIdOrName;
+        return entry ? t(formatGemName(entry[0])) : typeIdOrName;
     }
 
     function getElementNameById(id) {
         const found = Object.entries(GEM_LOOKUPS.elements || {}).find(([, val]) => val == id);
-        return found ? formatGemName(found[0]) : "Unknown";
+        return found ? t(formatGemName(found[0])) : t("Unknown");
     }
 
     function getTierDisplayName(tierId) {
         const backendName = Object.keys(GEM_LOOKUPS.tiers || {}).find(key => String(GEM_LOOKUPS.tiers[key]) === String(tierId));
-        return backendName ? formatGemName(backendName) : tierId;
+        return backendName ? t(formatGemName(backendName)) : tierId;
     }
 
     function gemTierBgUrl(item) { return `assets/gems/gem_tiers/${item.tier}.png`; }
@@ -99,10 +100,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 populateGemFormMenus();
                 setInitialRestrictionState();
             } else {
-                window.showToast("Failed to fetch gem lookups: " + (response ? response.error : "Unknown Error"), true);
+                window.showToast(t("Failed to fetch gem lookups:") + " " + (response ? response.error : t("Unknown Error")), true);
             }
         } catch (e) {
-            window.showToast("Backend connection error: " + e, true);
+            window.showToast(t("Backend connection error:") + " " + e, true);
         }
     }
 
@@ -110,13 +111,13 @@ document.addEventListener('gem_simulator_loaded', async () => {
         function fillSelect(id, dataObj) {
             const select = document.getElementById(id);
             if (!select) return;
-            select.innerHTML = '<option value="">(None)</option>';
+            select.innerHTML = `<option value="">(${t("None")})</option>`;
             Object.entries(dataObj || {})
                 .sort((a, b) => a[1] - b[1])
                 .forEach(([name, val]) => {
                     const opt = document.createElement('option');
                     opt.value = val;
-                    opt.textContent = formatGemName(name);
+                    opt.textContent = t(formatGemName(name));
                     select.appendChild(opt);
                 });
         }
@@ -230,7 +231,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             customSlider.style.background = toggleInput.checked ? color : '#333';
 
             const labelText = document.createElement('span');
-            labelText.textContent = `${formatGemName(elementName)}`;
+            labelText.textContent = `${t(formatGemName(elementName))}`;
             labelText.style.color = color;
 
             toggleDiv.appendChild(toggleInput);
@@ -278,13 +279,13 @@ document.addEventListener('gem_simulator_loaded', async () => {
         totalsCard.style.maxWidth = '100%';
         totalsCard.style.boxSizing = 'border-box';
         
-        let statsHtml = `<div style="text-align:center;font-weight:bold;font-size:1.1em;margin-bottom:10px;color:var(--accent-blue);">Total Power Rank: ${Math.round(totalPRBuffed)}</div><hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">`;
+        let statsHtml = `<div style="text-align:center;font-weight:bold;font-size:1.1em;margin-bottom:10px;color:var(--accent-blue);">${t("Total Power Rank:")} ${Math.round(totalPRBuffed)}</div><hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">`;
         
         statsHtml += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">`;
         Array.from(allStatNames).sort().forEach(statName => {
             const statVal = statTotalsBuffed[statName] ?? 0;
             if (statVal > 0) {
-                statsHtml += `<div><span style="color:var(--text-muted);">${statName}</span><br><b>${Math.round(statVal * 100) / 100}</b></div>`;
+                statsHtml += `<div><span style="color:var(--text-muted);">${t(statName)}</span><br><b>${Math.round(statVal * 100) / 100}</b></div>`;
             }
         });
         statsHtml += `</div>`;
@@ -320,7 +321,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
         updateBtn = document.createElement('button');
         updateBtn.id = 'update-gems-btn';
-        updateBtn.innerText = 'Sync Inventory Bases';
+        updateBtn.innerText = t('Sync Inventory Bases');
         updateBtn.className = 'primary-btn';
         updateBtn.style.width = '100%';
         updateBtn.style.marginTop = '20px';
@@ -350,7 +351,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 selected = null; selectedSource = null;
             }
             render();
-            window.showToast("Gems synced with backend!");
+            window.showToast(t("Gems synced with backend!"));
         };
         inventoryEl.parentNode.insertBefore(updateBtn, inventoryEl.nextSibling);
     }
@@ -364,7 +365,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         selectedEl.innerHTML = '';
         
         if (!selected) {
-            selectedEl.innerHTML = '<div class="placeholder-text">Select a gem to view details</div>';
+            selectedEl.innerHTML = `<div class="placeholder-text">${t("Select a gem to view details")}</div>`;
             return;
         }
 
@@ -379,7 +380,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         nameDiv.style.fontWeight = 'bold';
         nameDiv.style.fontSize = '1.2em';
         nameDiv.style.marginBottom = '15px';
-        nameDiv.textContent = selected.gem_name || '(Unnamed Gem)';
+        nameDiv.textContent = selected.gem_name ? t(selected.gem_name) : `(${t("Unnamed Gem")})`;
         selectedEl.appendChild(nameDiv);
 
         const container = document.createElement('div');
@@ -417,11 +418,11 @@ document.addEventListener('gem_simulator_loaded', async () => {
         detailsPanel.style.flex = "1";
         detailsPanel.innerHTML = `
             <div style="font-size: 0.9em; line-height: 1.6;">
-                <div><span style="color:var(--text-muted)">Power:</span> <b>${selected.power_rank}</b></div>
-                <div><span style="color:var(--text-muted)">Level:</span> <b>${selected.level}</b></div>
-                <div><span style="color:var(--text-muted)">Type:</span> <b>${getTypeDisplayName(selected.type)}</b></div>
-                <div><span style="color:var(--text-muted)">Tier:</span> <b>${getTierDisplayName(selected.tier)}</b></div>
-                <div><span style="color:var(--text-muted)">Quality:</span> <b>${(selected.quality * 100).toFixed(1)}%</b></div>
+                <div><span style="color:var(--text-muted)">${t("Power:")}</span> <b>${selected.power_rank}</b></div>
+                <div><span style="color:var(--text-muted)">${t("Level:")}</span> <b>${selected.level}</b></div>
+                <div><span style="color:var(--text-muted)">${t("Type:")}</span> <b>${getTypeDisplayName(selected.type)}</b></div>
+                <div><span style="color:var(--text-muted)">${t("Tier:")}</span> <b>${getTierDisplayName(selected.tier)}</b></div>
+                <div><span style="color:var(--text-muted)">${t("Quality:")}</span> <b>${(selected.quality * 100).toFixed(1)}%</b></div>
             </div>
         `;
         container.appendChild(detailsPanel);
@@ -456,7 +457,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const statLabel = document.createElement('div');
             statLabel.className = 'stat-label';
             statLabel.style.margin = "0";
-            statLabel.innerHTML = `<b>${statValue !== undefined ? statValue.toFixed(2) : '0.00'}</b> <span style="color:var(--text-muted); font-size:0.9em; font-weight:normal;">${statTypeName}</span>`;
+            statLabel.innerHTML = `<b>${statValue !== undefined ? statValue.toFixed(2) : '0.00'}</b> <span style="color:var(--text-muted); font-size:0.9em; font-weight:normal;">${t(statTypeName)}</span>`;
             statLabelRow.appendChild(statLabel);
 
             const augPct = document.createElement('div');
@@ -545,10 +546,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
         const levelUpBtn = document.createElement('button');
         levelUpBtn.className = 'gem-action-btn';
         if (selected.is_max_level) {
-            levelUpBtn.textContent = 'Max Level';
+            levelUpBtn.textContent = t('Max Level');
             levelUpBtn.disabled = true;
         } else {
-            levelUpBtn.textContent = 'Level Up';
+            levelUpBtn.textContent = t('Level Up');
             levelUpBtn.onclick = async () => {
                 levelUpBtn.disabled = true;
                 levelUpBtn.textContent = '...';
@@ -561,14 +562,14 @@ document.addEventListener('gem_simulator_loaded', async () => {
                         if (selectedSource && selectedSource.pane === 'equipped' && selectedSource.idx != null) equipped[selectedSource.idx] = resp.gem;
                         render();
                     } else {
-                        window.showToast('Could not level up gem: ' + (resp ? resp.error : "Unknown Error"), true);
+                        window.showToast(t('Could not level up gem:') + " " + (resp ? resp.error : t("Unknown Error")), true);
                         levelUpBtn.disabled = false;
-                        levelUpBtn.textContent = 'Level Up';
+                        levelUpBtn.textContent = t('Level Up');
                     }
                 } catch(e) {
-                    window.showToast('Connection error: ' + e, true);
+                    window.showToast(t('Connection error:') + " " + e, true);
                     levelUpBtn.disabled = false;
-                    levelUpBtn.textContent = 'Level Up';
+                    levelUpBtn.textContent = t('Level Up');
                 }
             };
         }
@@ -577,10 +578,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
         const actionBtn = document.createElement('button');
         actionBtn.className = 'gem-action-btn';
         actionBtn.disabled = !window._selectedActionKey;
-        if (!window._selectedActionKey) actionBtn.textContent = 'Action';
-        else if (window._selectedActionKey === 'spark') actionBtn.textContent = 'Change Stat';
-        else if (window._selectedActionKey === 'flare') actionBtn.textContent = 'Move Boost';
-        else actionBtn.textContent = 'Augment Stat';
+        if (!window._selectedActionKey) actionBtn.textContent = t('Action');
+        else if (window._selectedActionKey === 'spark') actionBtn.textContent = t('Change Stat');
+        else if (window._selectedActionKey === 'flare') actionBtn.textContent = t('Move Boost');
+        else actionBtn.textContent = t('Augment Stat');
 
         actionBtn.onclick = async () => {
             if (!window._selectedActionKey) return;
@@ -608,15 +609,15 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     if (selectedSource && selectedSource.pane === 'equipped' && selectedSource.idx != null) equipped[selectedSource.idx] = resp.gem;
                     render();
                 } else {
-                    window.showToast('Action failed: ' + (resp ? resp.error : "Unknown Error"), true);
+                    window.showToast(t('Action failed:') + " " + (resp ? resp.error : t("Unknown Error")), true);
                     actionBtn.disabled = false;
-                    if (!window._selectedActionKey) actionBtn.textContent = 'Action';
-                    else if (window._selectedActionKey === 'spark') actionBtn.textContent = 'Change Stat';
-                    else if (window._selectedActionKey === 'flare') actionBtn.textContent = 'Move Boost';
-                    else actionBtn.textContent = 'Augment Stat';
+                    if (!window._selectedActionKey) actionBtn.textContent = t('Action');
+                    else if (window._selectedActionKey === 'spark') actionBtn.textContent = t('Change Stat');
+                    else if (window._selectedActionKey === 'flare') actionBtn.textContent = t('Move Boost');
+                    else actionBtn.textContent = t('Augment Stat');
                 }
             } catch(e) {
-                window.showToast('Connection error: ' + e, true);
+                window.showToast(t('Connection error:') + " " + e, true);
                 actionBtn.disabled = false;
             }
         };
@@ -629,10 +630,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
         if (selected.id !== undefined && !inInventory && !inEquipped) {
             const saveBtn = document.createElement('button');
             saveBtn.className = 'save-gem-btn';
-            saveBtn.textContent = 'Add to Inventory';
+            saveBtn.textContent = t('Add to Inventory');
             saveBtn.onclick = () => {
                 const emptyIdx = inventory.findIndex(i => !i);
-                if (emptyIdx === -1) return window.showToast('Inventory is full.', true);
+                if (emptyIdx === -1) return window.showToast(t('Inventory is full.'), true);
                 inventory[emptyIdx] = JSON.parse(JSON.stringify(selected));
                 render();
             };
@@ -647,14 +648,14 @@ document.addEventListener('gem_simulator_loaded', async () => {
         
         const trashSlot = document.createElement('div');
         trashSlot.className = 'trash-slot';
-        trashSlot.title = "Click to delete selected gem, or drag a gem here";
+        trashSlot.title = t("Click to delete selected gem, or drag a gem here");
         
         trashSlot.onclick = function() {
             if (!selected) {
-                window.showToast("No gem selected to trash.", true);
+                window.showToast(t("No gem selected to trash."), true);
                 return;
             }
-            showConfirmModal("Trash Gem", "Are you sure you want to permanently delete the selected gem?", () => {
+            showConfirmModal(t("Trash Gem"), t("Are you sure you want to permanently delete the selected gem?"), () => {
                 if (selectedSource) {
                     if (selectedSource.pane === 'equipped') equipped[selectedSource.idx] = null;
                     else if (selectedSource.pane === 'inventory') inventory[selectedSource.idx] = null;
@@ -662,7 +663,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 selected = null;
                 selectedSource = null;
                 render();
-                window.showToast("Gem deleted.");
+                window.showToast(t("Gem deleted."));
             });
         };
 
@@ -685,7 +686,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
             if (!item) return;
             
-            showConfirmModal("Trash Gem", "Are you sure you want to permanently delete this gem?", () => {
+            showConfirmModal(t("Trash Gem"), t("Are you sure you want to permanently delete this gem?"), () => {
                 if (fromPane === 'equipped') equipped[fromIdx] = null;
                 else if (fromPane === 'inventory') inventory[fromIdx] = null;
                 
@@ -694,7 +695,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     selectedSource = null;
                 }
                 render();
-                window.showToast("Gem deleted.");
+                window.showToast(t("Gem deleted."));
             });
         };
         
@@ -706,7 +707,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         
         const label = document.createElement('div');
         label.className = 'trash-label';
-        label.textContent = "Trash";
+        label.textContent = t("Trash");
         
         trashContainer.appendChild(trashSlot);
         trashContainer.appendChild(label);
@@ -719,7 +720,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         itemEl.addEventListener('mousedown', function (e) {
             if (e.button === 1) { 
                 e.preventDefault(); 
-                showConfirmModal("Trash Gem", "Are you sure you want to permanently delete this gem?", () => {
+                showConfirmModal(t("Trash Gem"), t("Are you sure you want to permanently delete this gem?"), () => {
                     if (fromPane === 'inventory') inventory[fromIdx] = null;
                     else if (fromPane === 'equipped') equipped[fromIdx] = null;
                     if (selected && selected.id === item.id) {
@@ -820,13 +821,13 @@ document.addEventListener('gem_simulator_loaded', async () => {
                         }
                     }
                     if (String(oldTargetGem.element) !== String(restrictElement) || String(oldTargetGem.type) !== String(restrictType)) {
-                        window.showToast("Cannot swap: inventory gem is incompatible with the equipped slot.", true);
+                        window.showToast(t("Cannot swap: inventory gem is incompatible with the equipped slot."), true);
                         return;
                     }
                     if (oldTargetGem.ability) {
                         const isDup = equipped.some((g, i) => g && i !== fromIdx && String(g.ability) === String(oldTargetGem.ability));
                         if (isDup) {
-                            window.showToast("Cannot swap: an Empowered Gem with this ability is already equipped.", true);
+                            window.showToast(t("Cannot swap: an Empowered Gem with this ability is already equipped."), true);
                             return;
                         }
                     }
@@ -860,7 +861,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         if (!draggedGem) return;
         
         if (String(draggedGem.element) !== String(elementId) || String(draggedGem.type) !== String(typeRestriction)) {
-            window.showToast(String(draggedGem.element) !== String(elementId) ? `Requires ${getElementNameById(elementId)}.` : `Requires ${getTypeDisplayName(typeRestriction)} gem.`, true);
+            window.showToast(String(draggedGem.element) !== String(elementId) ? `${t("Requires")} ${getElementNameById(elementId)}.` : `${t("Requires")} ${getTypeDisplayName(typeRestriction)} ${t("gem")}.`, true);
             return;
         }
 
@@ -868,7 +869,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         if (draggedGem.ability) {
             const isDup = equipped.some((g, i) => g && i !== equippedIdx && i !== sourceIdx && String(g.ability) === String(draggedGem.ability));
             if (isDup) {
-                window.showToast("Cannot equip multiple Empowered Gems with the same ability.", true);
+                window.showToast(t("Cannot equip multiple Empowered Gems with the same ability."), true);
                 return;
             }
         }
@@ -879,7 +880,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             if (oldTargetGem) {
                 const free = inventory.findIndex(i => !i);
                 if (free !== -1) inventory[free] = oldTargetGem;
-                else { window.showToast("Inventory full, cannot displace equipped gem.", true); return; }
+                else { window.showToast(t("Inventory full, cannot displace equipped gem."), true); return; }
             }
             equipped[equippedIdx] = draggedGem;
             selectedSource = { pane: 'equipped', idx: equippedIdx };
@@ -970,14 +971,14 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     selectedSource = null;
                     render();
                 } else {
-                    window.showToast('Could not generate gem: ' + (resp ? resp.error : "Unknown Error"), true);
+                    window.showToast(t('Could not generate gem:') + " " + (resp ? resp.error : t("Unknown Error")), true);
                 }
             } catch(err) {
-                window.showToast('Connection error: ' + err, true);
+                window.showToast(t('Connection error:') + " " + err, true);
             }
             
             btnGenerate.disabled = false;
-            btnGenerate.textContent = 'Generate Random Gem';
+            btnGenerate.textContent = t('Generate Random Gem');
         });
     }
 

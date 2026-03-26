@@ -3,52 +3,51 @@
 </head>
 <div id="view-gem-builds" class="view-container">
     <div class="header">
-        <h2>Gem <span class="highlight-orange">Builds</span> Optimizer</h2>
-        <p>Calculate the absolute mathematical best gem allocations for your setup.</p>
+        <h2><span data-i18n>Gem</span> <span class="highlight-orange" data-i18n>Builds</span> <span data-i18n>Optimizer</span></h2>
+        <p data-i18n>Calculate the absolute mathematical best gem allocations for your setup.</p>
     </div>
 
     <div class="gem-builds-grid">
         
-        <!-- CONFIGURATION PANEL -->
         <div class="card config-panel">
-            <h3>Configuration</h3>
+            <h3 data-i18n>Configuration</h3>
             
             <div class="input-group">
-                <label>Class</label>
+                <label data-i18n>Class</label>
                 <select id="gb-class"></select>
             </div>
 
             <div class="input-group">
-                <label>Subclass</label>
+                <label data-i18n>Subclass</label>
                 <select id="gb-subclass"></select>
             </div>
 
             <div class="input-group">
-                <label>Build Type</label>
+                <label data-i18n>Build Type</label>
                 <select id="gb-build-type">
-                    <option value="Light">Light</option>
-                    <option value="Farm">Farm</option>
-                    <option value="Health">Health</option>
+                    <option value="Light" data-i18n>Light</option>
+                    <option value="Farm" data-i18n>Farm</option>
+                    <option value="Health" data-i18n>Health</option>
                 </select>
             </div>
 
             <div class="input-group">
-                <label>Ally</label>
+                <label data-i18n>Ally</label>
                 <select id="gb-ally"></select>
             </div>
 
             <div class="input-group">
-                <label>Food</label>
+                <label data-i18n>Food</label>
                 <select id="gb-food"></select>
             </div>
 
             <div class="input-row">
                 <div class="input-group">
-                    <label>Base Light</label>
+                    <label data-i18n>Base Light</label>
                     <input type="number" id="gb-light" value="0">
                 </div>
                 <div class="input-group">
-                    <label>Gear Crit Dmg Rolls: <span id="gb-cd-count-display" style="color: var(--accent-orange); font-weight: bold;">3</span></label>
+                    <label><span data-i18n>Gear Crit Dmg Rolls:</span> <span id="gb-cd-count-display" style="color: var(--accent-orange); font-weight: bold;">3</span></label>
                     <input type="range" id="gb-cd-count" min="0" max="3" value="3" step="1" style="width: 100%; cursor: pointer;">
                 </div>
             </div>
@@ -59,45 +58,44 @@
                 <label class="toggle-container">
                     <input type="checkbox" id="gb-berserker">
                     <span class="checkmark"></span>
-                    Berserker Battler
+                    <span data-i18n>Berserker Battler</span>
                 </label>
 
                 <label class="toggle-container">
                     <input type="checkbox" id="gb-litany">
                     <span class="checkmark"></span>
-                    Enlightened (Litany)
+                    <span data-i18n>Enlightened (Litany)</span>
                 </label>
 
                 <label class="toggle-container">
                     <input type="checkbox" id="gb-subclass-active">
                     <span class="checkmark"></span>
-                    Subclass Active
+                    <span data-i18n>Subclass Active</span>
                 </label>
 
                 <label class="toggle-container">
                     <input type="checkbox" id="gb-no-face">
                     <span class="checkmark"></span>
-                    No Face Stats
+                    <span data-i18n>No Face Stats</span>
                 </label>
             </div>
 
             <hr class="divider">
 
             <div class="input-group">
-                <label>Star Chart Build Code (Base64)</label>
-                <input type="text" id="gb-star-chart" placeholder="e.g. Y29tYmF0LmEkY29t...">
+                <label data-i18n>Star Chart Build Code (Base64)</label>
+                <input type="text" id="gb-star-chart" data-i18n-placeholder="e.g. Y29tYmF0LmEkY29t...">
             </div>
             
             <div id="gb-star-chart-summary" class="star-chart-summary" style="display: none;"></div>
         </div>
 
-        <!-- RESULTS PANEL -->
         <div class="card results-panel">
             <div class="results-header">
-                <h3>Top Builds</h3>
+                <h3 data-i18n>Top Builds</h3>
                 <div class="pagination">
                     <button id="gb-prev" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span id="gb-page-info">Page 1 / 1</span>
+                    <span id="gb-page-info" data-i18n>Page 1 / 1</span>
                     <button id="gb-next" class="btn-icon"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>
@@ -106,21 +104,20 @@
                 <table class="btt-table">
                     <thead>
                         <tr>
-                            <th>#</th>
-                            <th>Build</th>
-                            <th>Light</th>
-                            <th>Base Dmg</th>
-                            <th>Bonus Dmg</th>
-                            <th>Total Dmg</th>
-                            <th>Crit Dmg</th>
-                            <th>Coefficient</th>
-                            <th>Dev.</th>
+                            <th data-i18n>#</th>
+                            <th data-i18n>Build</th>
+                            <th data-i18n>Light</th>
+                            <th data-i18n>Base Dmg</th>
+                            <th data-i18n>Bonus Dmg</th>
+                            <th data-i18n>Total Dmg</th>
+                            <th data-i18n>Crit Dmg</th>
+                            <th data-i18n>Coefficient</th>
+                            <th data-i18n>Dev.</th>
                         </tr>
                     </thead>
                     <tbody id="gb-results-body">
-                        <!-- JS will populate rows here -->
                         <tr>
-                            <td colspan="9" class="text-center text-muted">Click Calculate to generate builds.</td>
+                            <td colspan="9" class="text-center text-muted" data-i18n>Click Calculate to generate builds.</td>
                         </tr>
                     </tbody>
                 </table>

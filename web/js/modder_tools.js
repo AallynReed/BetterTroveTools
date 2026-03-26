@@ -1,5 +1,6 @@
 document.addEventListener('modder_tools_loaded', () => {
     console.log("Modder Tools view initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -40,7 +41,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (typeof jQuery !== 'undefined' && $.fn.select2) {
         $('#build-mod-tags').select2({
-            placeholder: "Select categories...",
+            placeholder: t("Select categories..."),
             width: '100%'
         });
     }
@@ -48,7 +49,7 @@ document.addEventListener('modder_tools_loaded', () => {
     async function scanForGames() {
         const gameSelect = document.getElementById('build-game-select');
         if (!gameSelect) return;
-        gameSelect.innerHTML = `<option value="">Searching...</option>`;
+        gameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
         const response = await eel.get_detected_game_paths()();
         const settings = await eel.get_settings()();
         gameSelect.innerHTML = ""; 
@@ -63,7 +64,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 gameSelect.value = settings.last_game_path;
             }
         } else {
-            gameSelect.innerHTML = `<option value="">No installations found.</option>`;
+            gameSelect.innerHTML = `<option value="">${t("No installations found.")}</option>`;
         }
     }
     scanForGames();
@@ -87,7 +88,7 @@ document.addEventListener('modder_tools_loaded', () => {
             const gamePath = gameSelect ? gameSelect.value : "";
             
             if (!gamePath) {
-                showToast("Please select a Target Game Installation first.", true);
+                window.showToast(t("Please select a Target Game Installation first."), true);
                 return;
             }
             
@@ -96,7 +97,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 
                 if (result && result.success) {
                     if (result.rejected && result.rejected.length > 0) {
-                        showToast(`Denied ${result.rejected.length} file(s):\nSelected files must be located within the active game path.`, true);
+                        window.showToast(`${t("Denied")} ${result.rejected.length} ${t("file(s):")}\n${t("Selected files must be located within the active game path.")}`, true);
                     }
 
                     if (result.files && result.files.length > 0) {
@@ -110,7 +111,7 @@ document.addEventListener('modder_tools_loaded', () => {
                                     <div>${f.internal_path}</div>
                                     <div style="color: var(--text-muted); font-size: 11px;">${f.path}</div>
                                 </td>
-                                <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="Remove File"><i class="fa-solid fa-trash"></i></button></td>
+                                <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="${t("Remove File")}"><i class="fa-solid fa-trash"></i></button></td>
                             `;
                             tr.fileData = { name: f.internal_path, path: f.path };
                             filesList.appendChild(tr);
@@ -120,7 +121,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 }
             } catch (error) {
                 console.error("Error adding files:", error);
-                showToast("An error occurred while adding files.", true);
+                window.showToast(t("An error occurred while adding files."), true);
             }
         });
     }
@@ -129,12 +130,12 @@ document.addEventListener('modder_tools_loaded', () => {
         btnDetectOverrides.addEventListener('click', async () => {
             const gamePath = document.getElementById('build-game-select').value;
             if (!gamePath) {
-                showToast("Please select a Target Game Installation first.", true);
+                window.showToast(t("Please select a Target Game Installation first."), true);
                 return;
             }
             
             const originalHtml = btnDetectOverrides.innerHTML;
-            btnDetectOverrides.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Detecting...';
+            btnDetectOverrides.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Detecting...")}`;
             btnDetectOverrides.disabled = true;
             
             const currentRows = Array.from(filesList.querySelectorAll('tr'));
@@ -171,7 +172,7 @@ document.addEventListener('modder_tools_loaded', () => {
                             <div>${f.internal_path}</div>
                             <div style="color: var(--text-muted); font-size: 11px;">${f.path}</div>
                         </td>
-                        <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="Remove File"><i class="fa-solid fa-trash"></i></button></td>
+                        <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="${t("Remove File")}"><i class="fa-solid fa-trash"></i></button></td>
                     `;
                     tr.fileData = { name: f.internal_path, path: f.path };
                     filesList.appendChild(tr);
@@ -179,10 +180,10 @@ document.addEventListener('modder_tools_loaded', () => {
                     addedCount++;
                 });
                 if (addedCount === 0) {
-                    showToast("No new override files found in the source directory.", true);
+                    window.showToast(t("No new override files found in the source directory."), true);
                 }
             } else {
-                showToast("Error detecting overrides: " + result.error, true);
+                window.showToast(`${t("Error detecting overrides:")} ${result.error}`, true);
             }
             
             btnDetectOverrides.innerHTML = originalHtml;
@@ -198,13 +199,13 @@ document.addEventListener('modder_tools_loaded', () => {
             
             const illegalChars = /[<>:"/\\|?*]/;
             if (illegalChars.test(title)) {
-                showToast("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue.", true);
+                window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
                 return;
             }
 
             btnBuildTMod.disabled = true;
             const originalText = btnBuildTMod.innerHTML;
-            btnBuildTMod.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Compiling TMod...';
+            btnBuildTMod.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Compiling TMod...")}`;
             
             try {
                 const gamePath = document.getElementById('build-game-select').value;
@@ -213,13 +214,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 const notes = document.getElementById('build-mod-notes').value.trim();
                 const tags = $('#build-mod-tags').val() || [];
 
-                if (!gamePath) { showToast("Please select a target game installation.", true); return; }
-                if (!title) { showToast("Please enter a mod title.", true); return; }
-                if (!author) { showToast("Please enter a mod author.", true); return; }
-                if (!version) { showToast("Please enter a mod version.", true); return; }
-                if (!notes) { showToast("Please enter mod notes or a description.", true); return; }
-                if (tags.length === 0) { showToast("Please select at least one tag.", true); return; }
-                if (document.querySelectorAll('#build-files-list tr').length === 0) { showToast("Please add at least one file to your mod!", true); return; }
+                if (!gamePath) { window.showToast(t("Please select a target game installation."), true); return; }
+                if (!title) { window.showToast(t("Please enter a mod title."), true); return; }
+                if (!author) { window.showToast(t("Please enter a mod author."), true); return; }
+                if (!version) { window.showToast(t("Please enter a mod version."), true); return; }
+                if (!notes) { window.showToast(t("Please enter mod notes or a description."), true); return; }
+                if (tags.length === 0) { window.showToast(t("Please select at least one tag."), true); return; }
+                if (document.querySelectorAll('#build-files-list tr').length === 0) { window.showToast(t("Please add at least one file to your mod!"), true); return; }
 
                 const previewImg = document.getElementById('build-mod-preview');
                 const previewInputElem = document.getElementById('build-preview-input');
@@ -251,7 +252,7 @@ document.addEventListener('modder_tools_loaded', () => {
                                 tr.remove();
                             }
                         });
-                        showToast(`Warning: ${missingResult.missing.length} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.`, true);
+                        window.showToast(`${t("Warning:")} ${missingResult.missing.length} ${t("file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.")}`, true);
                         btnBuildTMod.disabled = false;
                         btnBuildTMod.innerHTML = originalText;
                         return;
@@ -281,19 +282,19 @@ document.addEventListener('modder_tools_loaded', () => {
                     }
                 }
 
-                if (filesData.length === 0) { showToast("Please add at least one file to your mod!", true); return; }
+                if (filesData.length === 0) { window.showToast(t("Please add at least one file to your mod!"), true); return; }
 
                 const payload = { gamePath, title, author, version, notes, tags, previewBase64, previewName, files: filesData };
                 const result = await eel.build_tmod(payload)();
 
                 if (result.success) {
-                    showToast("TMod successfully built!\nSaved to: " + result.path, false);
+                    window.showToast(`${t("TMod successfully built!")}\n${t("Saved to:")} ${result.path}`, false);
                 } else {
-                    showToast("Failed to build TMod:\n" + result.error, true);
+                    window.showToast(`${t("Failed to build TMod:")}\n${result.error}`, true);
                 }
             } catch (err) {
                 console.error(err);
-                showToast("An unexpected error occurred while building the TMod.", true);
+                window.showToast(t("An unexpected error occurred while building the TMod."), true);
             } finally {
                 btnBuildTMod.disabled = false;
                 btnBuildTMod.innerHTML = originalText;
@@ -327,23 +328,23 @@ document.addEventListener('modder_tools_loaded', () => {
             const sourceFile = inputExtractSource.value;
             const destDir = inputExtractDest.value;
             
-            if (!sourceFile) { showToast("Please select a Source TMod File.", true); return; }
-            if (!destDir) { showToast("Please select a Destination Folder.", true); return; }
+            if (!sourceFile) { window.showToast(t("Please select a Source TMod File."), true); return; }
+            if (!destDir) { window.showToast(t("Please select a Destination Folder."), true); return; }
             
             btnExtractTmod.disabled = true;
             const originalText = btnExtractTmod.innerHTML;
-            btnExtractTmod.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Extracting...';
+            btnExtractTmod.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Extracting...")}`;
             
             try {
                 const result = await eel.extract_tmod(sourceFile, destDir)();
                 if (result.success) {
-                    showToast(`Successfully extracted ${result.count} files to:\n${destDir}`);
+                    window.showToast(`${t("Successfully extracted")} ${result.count} ${t("files to:")}\n${destDir}`);
                 } else {
-                    showToast("Failed to extract TMod:\n" + result.error, true);
+                    window.showToast(`${t("Failed to extract TMod:")}\n${result.error}`, true);
                 }
             } catch (err) {
                 console.error(err);
-                showToast("An unexpected error occurred during extraction.", true);
+                window.showToast(t("An unexpected error occurred during extraction."), true);
             } finally {
                 btnExtractTmod.disabled = false;
                 btnExtractTmod.innerHTML = originalText;
@@ -379,7 +380,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 catHeader.style.textTransform = 'capitalize';
                 catHeader.style.borderBottom = '1px solid var(--border-color)';
                 catHeader.style.paddingBottom = '5px';
-                catHeader.innerHTML = `<i class="fa-solid ${categoryIcons[categoryKey] || 'fa-laptop-code'}" style="color: var(--text-muted); margin-right: 5px;"></i> ${categoryKey}`;
+                catHeader.innerHTML = `<i class="fa-solid ${categoryIcons[categoryKey] || 'fa-laptop-code'}" style="color: var(--text-muted); margin-right: 5px;"></i> ${t(categoryKey)}`;
                 container.appendChild(catHeader);
 
                 const badgeWrapper = document.createElement('div');
@@ -393,13 +394,13 @@ document.addEventListener('modder_tools_loaded', () => {
                     badge.href = sw.url;
                     badge.target = '_blank';
                     
-                    badge.title = sw.description;
+                    badge.title = t(sw.description);
 
                     let priceTagHtml = '';
                     if (sw.free) {
-                        priceTagHtml = `<span class="sw-price-tag free">Free</span>`;
+                        priceTagHtml = `<span class="sw-price-tag free">${t("Free")}</span>`;
                     } else {
-                        priceTagHtml = `<span class="sw-price-tag paid">Paid</span>`;
+                        priceTagHtml = `<span class="sw-price-tag paid">${t("Paid")}</span>`;
                     }
 
                     badge.innerHTML = `
@@ -415,7 +416,7 @@ document.addEventListener('modder_tools_loaded', () => {
             }
         } catch (error) {
             console.error("Failed to load modding software data:", error);
-            container.innerHTML = '<p class="help-text" style="color: #ff5555;">Failed to load software list. Make sure the JSON file exists.</p>';
+            container.innerHTML = `<p class="help-text" style="color: #ff5555;">${t("Failed to load software list. Make sure the JSON file exists.")}</p>`;
         }
     }
 

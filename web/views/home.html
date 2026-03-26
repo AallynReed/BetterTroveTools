@@ -3,15 +3,15 @@
 </head>
 <div class="home-container">
     <div class="home-header">
-        <h1>Welcome to Better Trove Tools</h1>
+        <h1 data-i18n>Welcome to Better Trove Tools</h1>
     </div>
 
     <div class="section-header">
-        <h2><i class="fa-brands fa-twitch" style="color: #9146FF;"></i> Live on Twitch</h2>
+        <h2><i class="fa-brands fa-twitch" style="color: #9146FF;"></i> <span data-i18n>Live on Twitch</span></h2>
     </div>
     
     <div id="streams-loading" class="loading-box">
-        <i class="fa-solid fa-spinner fa-spin"></i> Fetching Live Streams...
+        <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Fetching Live Streams...</span>
     </div>
     
     <div class="carousel-wrapper" id="carousel-wrapper" style="display: none;">
@@ -22,33 +22,29 @@
 
     <div class="split-layout">
         
-        <!-- LEFT COLUMN: Buffs & Events -->
         <div class="split-column">
             
-            <!-- Buffs Section -->
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-bolt" style="color: #fbc02d;"></i> Server Buffs</h2>
+                <h2><i class="fa-solid fa-bolt" style="color: #fbc02d;"></i> <span data-i18n>Server Buffs</span></h2>
             </div>
             <div id="buffs-loading" class="loading-box">
-                <i class="fa-solid fa-spinner fa-spin"></i> Fetching Server Data...
+                <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Fetching Server Data...</span>
             </div>
             <div class="buffs-grid" id="buffs-grid" style="display: none;"></div>
 
-            <!-- Events Section -->
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i> Events</h2>
+                <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i> <span data-i18n>Events</span></h2>
             </div>
             <div id="events-loading" class="loading-box">
-                <i class="fa-solid fa-spinner fa-spin"></i> Loading Trovesaurus Calendar...
+                <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Loading Trovesaurus Calendar...</span>
             </div>
             <div id="events-list" class="events-list" style="display: none;"></div>
 
         </div>
 
-        <!-- RIGHT COLUMN: Rotations -->
         <div class="split-column">
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> Rotations</h2>
+                <h2><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> <span data-i18n>Rotations</span></h2>
             </div>
             <div id="merchants-grid" class="merchants-grid" style="display: none;"></div>
         </div>
@@ -56,15 +52,13 @@
     </div>
 </div>
 
-<!-- D15 Future Rotations Modal -->
 <div id="d15-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3><i class="fa-solid fa-leaf" style="color: #4caf50;"></i> Upcoming D15 Biomes</h3>
+            <h3><i class="fa-solid fa-leaf" style="color: #4caf50;"></i> <span data-i18n>Upcoming D15 Biomes</span></h3>
             <button class="modal-close" id="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body" id="d15-modal-body">
-            <!-- Rendered via JS -->
-        </div>
+            </div>
     </div>
 </div>

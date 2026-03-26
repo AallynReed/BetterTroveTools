@@ -1,52 +1,6 @@
-// --- Global Toast Notification Helper ---
-document.addEventListener('DOMContentLoaded', async () => {
-    const metaResponse = await eel.get_app_metadata()();
-    let currentVersion = metaResponse?.APP_VERSION || "Unknown";
-    
-    if (metaResponse && metaResponse.APP_VERSION) {
-        const appName = metaResponse.APP_NAME || "Better Trove Tools";
-        document.title = `${appName} v${currentVersion}`;
-        const titleEl = document.getElementById('app-title');
-        if (titleEl) {
-            titleEl.innerHTML = `
-                <div class="app-name-text">${appName}</div>
-                <div class="app-version-text">v${currentVersion}</div>
-            `;
-        }
-    }
-
-    try {
-        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases/latest');
-        if (ghResponse.ok) {
-            const ghData = await ghResponse.json();
-            let latestVersion = ghData.tag_name;
-            
-            if (latestVersion && latestVersion.startsWith('v')) {
-                latestVersion = latestVersion.substring(1);
-            }
-            
-            if (latestVersion && currentVersion !== latestVersion) {
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar) {
-                    const updateContainer = document.createElement('div');
-                    updateContainer.className = 'app-update-container';
-                    updateContainer.innerHTML = `
-                        <button class="nav-btn update-app-btn" title="A new version is available! Click to download." onclick="eel.open_url_in_browser('${ghData.html_url}')()">
-                            <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
-                            <span class="nav-text">Update v${latestVersion}</span>
-                        </button>
-                    `;
-                    sidebar.appendChild(updateContainer);
-                }
-            }
-        }
-    } catch (err) {
-        console.error("Failed to check for app updates:", err);
-    }
-});
-
 document.addEventListener('mod_manager_loaded', async () => {
     console.log("Mod Manager view initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     const modSelect = document.getElementById('mod-game-select');
     const refreshBtn = document.getElementById('btn-refresh-mods');
@@ -100,7 +54,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     async function scanForGames() {
         if (!modSelect) return;
-        modSelect.innerHTML = `<option value="">Searching for Game Installs...</option>`;
+        modSelect.innerHTML = `<option value="">${t("Searching for Game Installs...")}</option>`;
         const response = await eel.get_detected_game_paths()();
         const settings = await eel.get_settings()();
         modSelect.innerHTML = ""; 
@@ -117,7 +71,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             }
             if (modSelect.value) loadMods(modSelect.value);
         } else {
-            modSelect.innerHTML = `<option value="">No installations found.</option>`;
+            modSelect.innerHTML = `<option value="">${t("No installations found.")}</option>`;
         }
     }
     
@@ -136,16 +90,16 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     async function loadMods(gamePath) {
         if (!modGrid) return;
-        modGrid.innerHTML = `<div class="placeholder-box">Scanning Mod Directory...</div>`;
+        modGrid.innerHTML = `<div class="placeholder-box">${t("Scanning Mod Directory...")}</div>`;
         modGrid.className = ""; 
         
         const settings = await eel.get_settings()();
-        let statusText = "Scanning Mod Directory...";
+        let statusText = t("Scanning Mod Directory...");
         if (settings.auto_fix_names || settings.auto_fix_configs) {
             let fixing = [];
             if (settings.auto_fix_names) fixing.push("Names");
             if (settings.auto_fix_configs) fixing.push("Configs");
-            statusText = `Auto-fixing Mod ${fixing.join(" & ")}...`;
+            statusText = `${t("Auto-fixing Mod")} ${fixing.join(" & ")}...`;
         }
         modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> ${statusText}</div>`;
         
@@ -153,7 +107,7 @@ document.addEventListener('mod_manager_loaded', async () => {
         
         if (response.success) {
             if (response.mods.length === 0) {
-                modGrid.innerHTML = `<div class="placeholder-box">No mods found in the selected directory.</div>`;
+                modGrid.innerHTML = `<div class="placeholder-box">${t("No mods found in the selected directory.")}</div>`;
                 return;
             }
 
@@ -163,7 +117,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             response.mods.forEach(mod => {
                 const isEnabled = mod.status === 'enabled';
                 const statusColor = isEnabled ? '#28a745' : '#666'; 
-                const btnText = isEnabled ? 'Disable' : 'Enable';
+                const btnText = isEnabled ? t('Disable') : t('Enable');
                 const btnClass = isEnabled ? 'active' : '';
                 const cardOpacity = isEnabled ? '1' : '0.6'; 
                 
@@ -171,13 +125,14 @@ document.addEventListener('mod_manager_loaded', async () => {
 
                 const imageHTML = mod.image 
                     ? `<img src="data:image/png;base64,${mod.image}" alt="Preview" class="mod-preview-img" loading="lazy" style="max-height: 200px; object-fit: cover; width: 100%;">`
-                    : `<div class="mod-preview-img placeholder-img" style="height: 200px; display: flex; align-items: center; justify-content: center;">No Preview</div>`;
+                    : `<div class="mod-preview-img placeholder-img" style="height: 200px; display: flex; align-items: center; justify-content: center;">${t("No Preview")}</div>`;
                 
                 let conflictBadge = '';
                 if (mod.has_conflicts) {
                     const badgeClass = hasActiveConflict ? 'conflict-active' : 'conflict-inactive';
-                    const conflictNames = mod.conflicts_with.map(c => `${c.name} (${c.enabled ? 'ENABLED' : 'Disabled'})`).join('&#10;• ');
-                    conflictBadge = `<span class="mod-conflict-inline ${badgeClass}" title="${hasActiveConflict ? 'CRITICAL CONFLICT' : 'POTENTIAL CONFLICT'}&#10;• ${conflictNames}"><i class="fa-solid fa-triangle-exclamation"></i></span>`;
+                    const conflictNames = mod.conflicts_with.map(c => `${c.name} (${c.enabled ? t('ENABLED') : t('Disabled')})`).join('&#10;• ');
+                    const titleText = `${hasActiveConflict ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT')}&#10;• ${conflictNames}`;
+                    conflictBadge = `<span class="mod-conflict-inline ${badgeClass}" title="${titleText}"><i class="fa-solid fa-triangle-exclamation"></i></span>`;
                 }
                 
                 html += `
@@ -189,14 +144,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                          style="opacity: ${cardOpacity}">
                         <div class="mod-image-container">
                             ${imageHTML}
-                            <span class="mod-badge" style="background: ${statusColor}">${mod.status.toUpperCase()}</span>
+                            <span class="mod-badge" style="background: ${statusColor}">${t(mod.status.toUpperCase())}</span>
                         </div>
                         <div class="mod-card-content">
                             <h3 class="mod-title" title="${mod.name}">${mod.name}</h3>
                             <span class="mod-meta">${mod.author}</span>
                             <div class="mod-card-footer">
                                 ${conflictBadge}
-                                <button class="update-mod-btn hidden" data-path="${mod.path}" title="Update Available"><i class="fa-solid fa-download"></i></button>
+                                <button class="update-mod-btn hidden" data-path="${mod.path}" title="${t("Update Available")}"><i class="fa-solid fa-download"></i></button>
                                 <button class="toggle-mod-btn ${btnClass}" data-path="${mod.path}">${btnText}</button>
                             </div>
                         </div>
@@ -209,7 +164,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             getModUrls(gamePath);
             checkForUpdates(gamePath);
         } else {
-            modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">Error loading mods: ${response.error}</div>`;
+            modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error loading mods:")} ${response.error}</div>`;
         }
     }
 
@@ -223,7 +178,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     const titleEl = card ? card.querySelector('.mod-title') : null;
                     if (titleEl && !titleEl.classList.contains('ts-mod-title')) {
                         titleEl.classList.add('ts-mod-title');
-                        titleEl.title = titleEl.innerText + " (Click to view on Trovesaurus)";
+                        titleEl.title = titleEl.innerText + ` (${t("Click to view on Trovesaurus")})`;
                         titleEl.onclick = () => eel.open_url_in_browser(response.urls[path])();
                     }
                 }
@@ -251,13 +206,13 @@ document.addEventListener('mod_manager_loaded', async () => {
             if (toggleBtn) {
                 const currentPath = toggleBtn.getAttribute('data-path');
                 const gamePath = modSelect.value;
-                toggleBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Working...';
+                toggleBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Working...")}`;
                 toggleBtn.disabled = true;
 
                 const response = await eel.toggle_mod(gamePath, currentPath)();
                 if (response.success) loadMods(gamePath); 
                 else {
-                showToast("Failed to toggle mod: " + response.error, true);
+                    window.showToast(`${t("Failed to toggle mod:")} ${response.error}`, true);
                     loadMods(gamePath);
                 }
                 return;
@@ -277,7 +232,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (response.success) {
                     loadMods(gamePath); 
                 } else {
-                showToast("Failed to update mod: " + response.error, true);
+                    window.showToast(`${t("Failed to update mod:")} ${response.error}`, true);
                     updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>'; 
                     updateBtn.disabled = false;
                     updateBtn.style.animation = "none";
@@ -306,22 +261,22 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     const runUtility = async (btn, eelFunc, successMsg) => {
         const gamePath = modSelect.value;
-        if (!gamePath) return showToast("Select a game first.", true);
+        if (!gamePath) return window.showToast(t("Select a game first."), true);
         
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Processing...")}`;
         btn.disabled = true;
 
         const response = await eelFunc(gamePath)();
         if (response.success) {
-            showToast(successMsg(response));
+            window.showToast(successMsg(response));
             loadMods(gamePath);
-        } else showToast("Error: " + response.error, true);
+        } else window.showToast(t("Error:") + " " + response.error, true);
 
         btn.innerHTML = originalText;
         btn.disabled = false;
     };
 
-    if (fixNamesBtn) fixNamesBtn.addEventListener('click', () => runUtility(fixNamesBtn, eel.fix_mod_names, r => `Fixed ${r.fixed_count} mod names!`));
-    if (fixConfigsBtn) fixConfigsBtn.addEventListener('click', () => runUtility(fixConfigsBtn, eel.fix_mod_configs, r => `Verified configs for ${r.configs_ensured} mods!`));
+    if (fixNamesBtn) fixNamesBtn.addEventListener('click', () => runUtility(fixNamesBtn, eel.fix_mod_names, r => `${t("Fixed")} ${r.fixed_count} ${t("mod names!")}`));
+    if (fixConfigsBtn) fixConfigsBtn.addEventListener('click', () => runUtility(fixConfigsBtn, eel.fix_mod_configs, r => `${t("Verified configs for")} ${r.configs_ensured} ${t("mods!")}`));
 });

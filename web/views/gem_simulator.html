@@ -3,27 +3,27 @@
 </head>
 <div class="gem-sim-container">
     <div class="gem-sim-column left-column">
-        <div class="column-header">Equipped Gems & Stats</div>
+        <div class="column-header" data-i18n>Equipped Gems & Stats</div>
         <div class="column-scroll-area">
             <div id="equipped"></div>
         </div>
     </div>
     
     <div class="gem-sim-column center-column">
-        <div class="column-header">Gem Forge</div>
+        <div class="column-header" data-i18n>Gem Forge</div>
         <div class="column-scroll-area">
             <div class="gem-form" id="gem-creator-panel">
                 <div class="gem-form-row">
-                    <label>Type<select id="gem-type"></select></label>
-                    <label>Tier<select id="gem-tier"></select></label>
+                    <label><span data-i18n>Type</span><select id="gem-type"></select></label>
+                    <label><span data-i18n>Tier</span><select id="gem-tier"></select></label>
                 </div>
                 <div class="gem-form-row">
-                    <label>Element<select id="gem-element"></select></label>
-                    <label id="gem-restriction-label">Restriction<select id="gem-restriction"></select></label>
+                    <label><span data-i18n>Element</span><select id="gem-element"></select></label>
+                    <label id="gem-restriction-label"><span data-i18n>Restriction</span><select id="gem-restriction"></select></label>
                 </div>
                 <div class="gem-form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
                     <label style="flex:1;">
-                        Level
+                        <span data-i18n>Level</span>
                         <div style="display: flex; align-items: center; margin-top: 6px;">
                             <input type="range" id="gem-level-slider" min="1" max="35" value="1" style="flex:1;">
                             <span id="gem-level-value" style="width:30px;text-align:right;">1</span>
@@ -32,7 +32,7 @@
                     <div style="flex:1; display: flex; flex-direction: column; justify-content: flex-end;">
                         <label style="display:flex; align-items:center; margin-bottom: 6px; cursor: pointer; user-select: none;">
                             <input type="checkbox" id="gem-augment-null" checked style="margin-right:6px;">
-                            <span style="font-size: 0.9em; color: var(--text-muted);">Random Augment</span>
+                            <span style="font-size: 0.9em; color: var(--text-muted);" data-i18n>Random Augment</span>
                         </label>
                         <div style="display: flex; align-items: center;">
                             <input type="range" id="gem-augment-slider" min="0" max="100" value="0" style="flex:1;" disabled>
@@ -40,13 +40,13 @@
                         </div>
                     </div>
                 </div>
-                <button id="btn-generate-gem" class="primary-btn" style="width: 100%; margin-top: 10px;">Generate Random Gem</button>
+                <button id="btn-generate-gem" class="primary-btn" style="width: 100%; margin-top: 10px;" data-i18n>Generate Random Gem</button>
             </div>
             
             <hr class="panel-divider">
             
             <div id="selected">
-                <div class="placeholder-text">Select a gem to view details</div>
+                <div class="placeholder-text" data-i18n>Select a gem to view details</div>
             </div>
             
             <div id="trash-slot-container"></div>
@@ -54,7 +54,7 @@
     </div>
     
     <div class="gem-sim-column right-column">
-        <div class="column-header">Inventory</div>
+        <div class="column-header" data-i18n>Inventory</div>
         <div class="column-scroll-area">
             <div class="slots right-slots" id="inventory"></div>
         </div>
@@ -63,11 +63,11 @@
 
 <div id="custom-confirm-modal" class="modal-overlay">
     <div class="modal-content">
-        <h3 id="modal-title">Delete Gem?</h3>
-        <p id="modal-message">Are you sure you want to permanently delete this gem?</p>
+        <h3 id="modal-title" data-i18n>Delete Gem?</h3>
+        <p id="modal-message" data-i18n>Are you sure you want to permanently delete this gem?</p>
         <div class="modal-actions">
-            <button id="modal-cancel-btn" class="secondary-btn">Cancel</button>
-            <button id="modal-confirm-btn" class="danger-btn">Delete</button>
+            <button id="modal-cancel-btn" class="secondary-btn" data-i18n>Cancel</button>
+            <button id="modal-confirm-btn" class="danger-btn" data-i18n>Delete</button>
         </div>
     </div>
 </div>

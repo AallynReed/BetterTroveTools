@@ -1,5 +1,6 @@
 document.addEventListener('allies_loaded', async () => {
     console.log("Ally Codex initialized!");
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     let alliesData = [];
     const grid = document.getElementById('allies-grid');
@@ -9,7 +10,7 @@ document.addEventListener('allies_loaded', async () => {
     const abilitySelect = document.getElementById('ally-ability-select');
     const statsDisplay = document.getElementById('search-stats-display');
 
-    statsDisplay.innerText = "Checking for Codex updates...";
+    statsDisplay.innerText = t("Checking for Codex updates...");
 
     if (window.eel && eel.sync_allies_data) {
         try {
@@ -19,7 +20,7 @@ document.addEventListener('allies_loaded', async () => {
         }
     }
 
-    statsDisplay.innerText = "Loading allies...";
+    statsDisplay.innerText = t("Loading allies...");
 
     const cacheBuster = new Date().getTime();
     fetch(`/assets/data/allies.json?t=${cacheBuster}`)
@@ -75,33 +76,33 @@ document.addEventListener('allies_loaded', async () => {
             Array.from(uniqueCategories).sort().forEach(cat => {
                 const opt = document.createElement('option');
                 opt.value = cat;
-                opt.innerText = cat;
+                opt.innerText = t(cat);
                 categorySelect.appendChild(opt);
             });
 
             Array.from(uniqueStats).sort().forEach(stat => {
                 const opt = document.createElement('option');
                 opt.value = stat;
-                opt.innerText = stat;
+                opt.innerText = t(stat);
                 statSelect.appendChild(opt);
             });
 
             Array.from(uniqueAbilities).sort().forEach(ability => {
                 const opt = document.createElement('option');
                 opt.value = ability;
-                opt.innerText = ability;
+                opt.innerText = t(ability);
                 abilitySelect.appendChild(opt);
             });
 
             if (window.jQuery && $.fn.select2) {
                 $('#ally-stat-select').select2({
-                    placeholder: "Select one or more stats...",
+                    placeholder: t("Select one or more stats..."),
                     allowClear: true,
                     theme: "btt-dark"
                 });
                 
                 $('#ally-ability-select').select2({
-                    placeholder: "Select one or more abilities...",
+                    placeholder: t("Select one or more abilities..."),
                     allowClear: true,
                     theme: "btt-dark"
                 });
@@ -116,7 +117,7 @@ document.addEventListener('allies_loaded', async () => {
         })
         .catch(err => {
             console.error("Failed to load allies data:", err);
-            statsDisplay.innerText = "Error loading data.";
+            statsDisplay.innerText = t("Error loading data.");
         });
 
     function applyFilters() {
@@ -170,7 +171,7 @@ document.addEventListener('allies_loaded', async () => {
 
     function renderAllies(alliesToRender, activeStatHighlights = [], activeAbilityHighlights = []) {
         grid.innerHTML = '';
-        statsDisplay.innerText = `Showing ${alliesToRender.length} of ${alliesData.length} allies`;
+        statsDisplay.innerText = `${t("Showing")} ${alliesToRender.length} ${t("of")} ${alliesData.length} ${t("allies")}`;
 
         if (!activeStatHighlights) activeStatHighlights = [];
         if (!activeAbilityHighlights) activeAbilityHighlights = [];
@@ -205,18 +206,18 @@ document.addEventListener('allies_loaded', async () => {
                         <img src="${imagePath}" onerror="this.src='/assets/images/default_ally.png'; this.onerror=null;" alt="">
                     </div>
                     <div class="ally-title-area">
-                        <div class="ally-name">${ally.name}</div>
-                        <div class="ally-category">${ally.category || 'Unknown'}</div>
+                        <div class="ally-name">${t(ally.name)}</div>
+                        <div class="ally-category">${t(ally.category || 'Unknown')}</div>
                     </div>
                 </div>
                 <div class="ally-body">
-                    <div class="ally-desc">"${ally.desc}"</div>
+                    <div class="ally-desc">"${t(ally.desc)}"</div>
                     ${statsHtml}
                     ${abilitiesHtml}
                 </div>
                 <div class="ally-footer">
                     <span class="footer-stat"><i class="fa-solid fa-star" style="color: #fbc02d;"></i> PR ${ally.powerrank}</span>
-                    <span class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> Mastery ${ally.mastery}</span>
+                    <span class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> ${t("Mastery")} ${ally.mastery}</span>
                 </div>
             `;
 

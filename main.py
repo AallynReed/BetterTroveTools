@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 import winreg
+from pathlib import Path
 
 import eel
 
@@ -136,6 +137,63 @@ def get_app_metadata():
             return json.load(f)
     except Exception:
         return {}
+
+
+LOCALE_DIR = Path("web/assets/locale")
+
+@eel.expose
+def get_available_languages():
+    """Scans the locale directory and returns available languages."""
+    LOCALE_DIR.mkdir(parents=True, exist_ok=True)
+    languages = []
+    
+    for file_path in LOCALE_DIR.glob("*.json"):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                languages.append({
+                    "code": file_path.stem, # e.g., "en_US"
+                    "name": data.get("language_name", file_path.stem)
+                })
+        except Exception as e:
+            print(f"⚠️ Error reading locale file {file_path}: {e}")
+            
+    return languages
+
+@eel.expose
+def add_missing_translation_keys(locale_code, missing_keys):
+    """Appends missing keys to the specified locale JSON file with blank values."""
+    if not missing_keys:
+        return {"success": True}
+    
+    file_path = LOCALE_DIR / f"{locale_code}.json"
+    if not file_path.exists():
+        return {"success": False, "error": "Locale file not found."}
+        
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        if "keys" not in data:
+            data["keys"] = {}
+            
+        added_count = 0
+        for key in missing_keys:
+            # Only add if it doesn't exist at all.
+            if key not in data["keys"]:
+                data["keys"][key] = ""  # Leave blank for you to translate later
+                added_count += 1
+                
+        # Only write to disk if we actually added new keys to save I/O
+        if added_count > 0:
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4, ensure_ascii=False)
+                
+        return {"success": True, "added": added_count}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
 
 chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
 #C:\Users\IT\AppData\Roaming\Trove\ModManagerCache
