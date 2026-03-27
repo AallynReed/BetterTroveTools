@@ -3,12 +3,18 @@
 venv/
 ENV/
 
-# Ignore the massive chrome binaries
+# Ignore build artifacts
 bin/
 build/
 dist/
+strings/
 Better_Trove_Tools.egg-info
 
 # Ignore Python cache
 __pycache__/
 *.py[cod]
+
+# Ignore scratch files
+populate_translations.py
+test_binfab_decoded.py
+test_gem_engine.py
