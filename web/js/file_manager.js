@@ -329,7 +329,10 @@ document.addEventListener('file_manager_loaded', () => {
         });
 
         if (totalFiles > 0) {
-            extractionSummary.innerText = `${totalFiles} ${t("files selected")} (${(totalBytes / 1048576).toFixed(2)} MB)`;
+            const extCount = document.getElementById('ext-count');
+            const extSize = document.getElementById('ext-size');
+            if (extCount) extCount.innerText = totalFiles;
+            if (extSize) extSize.innerText = (totalBytes / 1048576).toFixed(2);
             extractionBar.classList.add('active');
         } else {
             extractionBar.classList.remove('active');

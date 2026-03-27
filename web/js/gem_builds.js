@@ -6,7 +6,6 @@ document.addEventListener("gem_builds_loaded", () => {
     let isCalculating = false;
 
     const tbody = document.getElementById("gb-results-body");
-    const pageInfo = document.getElementById("gb-page-info");
     const starChartInput = document.getElementById("gb-star-chart");
     const starChartSummary = document.getElementById("gb-star-chart-summary");
 
@@ -315,9 +314,11 @@ document.addEventListener("gem_builds_loaded", () => {
         }
 
         const maxPages = Math.ceil(cachedBuilds.length / itemsPerPage);
-        if (pageInfo) {
-            pageInfo.innerText = `${t("Page")} ${currentPage + 1} / ${maxPages}`;
-        }
+        
+        const pageCurrent = document.getElementById('gb-page-current');
+        const pageMax = document.getElementById('gb-page-max');
+        if (pageCurrent) pageCurrent.innerText = currentPage + 1;
+        if (pageMax) pageMax.innerText = maxPages;
 
         const startIdx = currentPage * itemsPerPage;
         const pageItems = cachedBuilds.slice(startIdx, startIdx + itemsPerPage);

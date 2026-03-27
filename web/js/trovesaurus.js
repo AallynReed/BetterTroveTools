@@ -149,7 +149,10 @@ function receive_trovesaurus_mods(response) {
     const grid = document.getElementById('ts-mod-grid');
     const prevBtn = document.getElementById('btn-ts-prev');
     const nextBtn = document.getElementById('btn-ts-next');
-    const pageDisplay = document.getElementById('ts-page-display');
+    
+    const pageCurrent = document.getElementById('ts-page-current');
+    const pageMaxContainer = document.getElementById('ts-page-max-container');
+    const pageMax = document.getElementById('ts-page-max');
 
     if (!grid) return;
 
@@ -157,7 +160,12 @@ function receive_trovesaurus_mods(response) {
         ts_currentPage = response.page;
         renderTrovesaurusGrid(response.mods, grid);
         
-        if (pageDisplay) pageDisplay.innerText = `${t("Page")} ${ts_currentPage} ${t("of")} ${response.max_pages}`;
+        if (pageCurrent) pageCurrent.innerText = ts_currentPage;
+        if (pageMaxContainer && pageMax) {
+            pageMaxContainer.style.display = 'inline';
+            pageMax.innerText = response.max_pages;
+        }
+
         if (prevBtn) prevBtn.disabled = ts_currentPage <= 1;
         if (nextBtn) nextBtn.disabled = ts_currentPage >= response.max_pages;
     } else {

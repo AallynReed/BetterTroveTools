@@ -105,14 +105,13 @@
         "Star Chart Build Code (Base64)": "",
         "Top Builds": "",
         "Page 1 / 1": "",
-        "#": "",
         "Build": "",
         "Base Dmg": "",
         "Bonus Dmg": "",
         "Total Dmg": "",
         "Crit Dmg": "",
         "Coefficient": "",
-        "Dev.": "",
+        "Diff.": "",
         "Click Calculate to generate builds.": "",
         "e.g. Y29tYmF0LmEkY29t...": "",
         "Interactive Constellation Map": "",
@@ -2777,6 +2776,8 @@
         "Alkali Flats": "",
         "Ancient Heights": "",
         "Cupcake Canyon": "",
-        "No Trove streams are live right now. Check back later!": ""
+        "No Trove streams are live right now. Check back later!": "",
+        "files selected": "",
+        "Parsing": ""
     }
 }
