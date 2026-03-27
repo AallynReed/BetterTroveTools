@@ -106,7 +106,19 @@ document.addEventListener('mod_manager_loaded', async () => {
         const response = await eel.get_installed_mods(gamePath, settings.auto_fix_names === true, settings.auto_fix_configs === true)();
         
         if (response.success) {
-            if (response.mods.length === 0) {
+            // NEW CODE: Fetch the json dump directly via HTTP request
+            let modsData = [];
+            try {
+                const fetchRes = await fetch(response.cached_file + '?t=' + new Date().getTime());
+                const data = await fetchRes.json();
+                modsData = data.mods;
+            } catch (err) {
+                console.error("Failed to load mod cache:", err);
+                modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error reading mod data from cache.")}</div>`;
+                return;
+            }
+
+            if (modsData.length === 0) {
                 modGrid.innerHTML = `<div class="placeholder-box">${t("No mods found in the selected directory.")}</div>`;
                 return;
             }
@@ -114,7 +126,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             modGrid.className = "mod-grid";
             let html = "";
             
-            response.mods.forEach(mod => {
+            modsData.forEach(mod => {
                 const isEnabled = mod.status === 'enabled';
                 const statusColor = isEnabled ? '#28a745' : '#666'; 
                 const btnText = isEnabled ? t('Disable') : t('Enable');

@@ -1,6 +1,8 @@
 import eel
+import json
 from pathlib import Path
 from models.trove.mod import TroveModList, TroveGamePath
+from utils.functions import BasePath
 import asyncio
 import aiohttp
 
@@ -26,7 +28,15 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                 ] 
             })
             
-        return {"success": True, "mods": result_mods}
+        # Bypass websocket limits by saving the massive payload to disk
+        cache_dir = BasePath / "web" / "cache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / "installed_mods.json"
+        
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump({"mods": result_mods}, f)
+            
+        return {"success": True, "cached_file": "/cache/installed_mods.json"}
         
     except Exception as e:
         import traceback
