@@ -1,5 +1,5 @@
 {
-    "language_name": "Korean",
+    "language_name": "한국어 (대한민국)",
     "keys": {
         "Home": "홈",
         "Settings": "설정",
@@ -2473,6 +2473,7 @@
         "Zippin' Heckbug": "",
         "Wings? They fly? This keeps getting worse!": "",
         "Zynny": "",
-        "Zynny is less interested in the fighting and more interested in the blasts.": ""
+        "Zynny is less interested in the fighting and more interested in the blasts.": "",
+        "Ancient Heights": "고대의 고원"
     }
 }

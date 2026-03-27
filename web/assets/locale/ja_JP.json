@@ -1,5 +1,5 @@
 {
-    "language_name": "Japanese",
+    "language_name": "日本語 (日本)",
     "keys": {
         "Home": "Home",
         "Trovesaurus": "",
@@ -2814,6 +2814,7 @@
         "Attack speed is all some classes need.": "",
         "Gathering stars together has increased your strength.": "",
         "Mining": "",
-        "Show how to have more mastery over your laser.": ""
+        "Show how to have more mastery over your laser.": "",
+        "Ancient Heights": "エンシェントハイツ"
     }
 }

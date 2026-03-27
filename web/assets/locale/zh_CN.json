@@ -1,5 +1,5 @@
 {
-    "language_name": "Chinese",
+    "language_name": "中文 (中国)",
     "keys": {
         "Home": "主页",
         "Star Chart": "星图",
@@ -2607,6 +2607,7 @@
         "Enter mod description or notes...": "",
         "Select a .tmod file...": "",
         "Select where to extract the files...": "",
-        "Click to select preview image": ""
+        "Click to select preview image": "",
+        "Ancient Heights": "远古高地"
     }
 }
