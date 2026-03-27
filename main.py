@@ -143,7 +143,7 @@ LOCALE_DIR = Path("web/assets/locale")
 
 @eel.expose
 def get_available_languages():
-    """Scans the locale directory and returns available languages."""
+    """Scans the locale directory and returns available languages with translation percentages."""
     LOCALE_DIR.mkdir(parents=True, exist_ok=True)
     languages = []
     
@@ -151,13 +151,31 @@ def get_available_languages():
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
+                keys = data.get("keys", {})
+                total_keys = len(keys)
+                
+                # Calculate completion percentage
+                if file_path.stem == "en_US":
+                    # English is the baseline, so it is always 100%
+                    percent = 100
+                elif total_keys == 0:
+                    percent = 0
+                else:
+                    # Count how many values are strictly empty strings
+                    empty_keys = sum(1 for v in keys.values() if str(v).strip() == "")
+                    percent = int(((total_keys - empty_keys) / total_keys) * 100)
+
                 languages.append({
-                    "code": file_path.stem, # e.g., "en_US"
-                    "name": data.get("language_name", file_path.stem)
+                    "code": file_path.stem,
+                    "name": data.get("language_name", file_path.stem),
+                    "percent": percent
                 })
         except Exception as e:
             print(f"⚠️ Error reading locale file {file_path}: {e}")
             
+    # Sort languages alphabetically by name, but keep English at the top
+    languages.sort(key=lambda x: (x["code"] != "en_US", x["name"]))
+    
     return languages
 
 @eel.expose
@@ -179,12 +197,10 @@ def add_missing_translation_keys(locale_code, missing_keys):
             
         added_count = 0
         for key in missing_keys:
-            # Only add if it doesn't exist at all.
             if key not in data["keys"]:
-                data["keys"][key] = ""  # Leave blank for you to translate later
+                data["keys"][key] = ""  # Leave blank for translation
                 added_count += 1
                 
-        # Only write to disk if we actually added new keys to save I/O
         if added_count > 0:
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)

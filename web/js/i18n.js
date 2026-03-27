@@ -41,7 +41,10 @@ const I18nManager = {
         this.availableLanguages.forEach(lang => {
             const opt = document.createElement('option');
             opt.value = lang.code;
-            opt.textContent = lang.name;
+            
+            // Append the translation percentage!
+            opt.textContent = `${lang.name} (${lang.percent}%)`;
+            
             if (lang.code === this.currentLocale) {
                 opt.selected = true;
             }
