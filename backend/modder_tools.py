@@ -1,5 +1,6 @@
 import base64
 import re
+import json
 import shutil
 import tkinter as tk
 from datetime import UTC, datetime
@@ -341,6 +342,327 @@ def build_tmod(payload):
         tmod_bytes = mod.compile_tmod()
         save_path.write_bytes(tmod_bytes)
         
+        return {"success": True, "path": str(save_path)}
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def load_mod_project(project_path_str):
+    try:
+        project_path = Path(project_path_str)
+        if not project_path.exists() or not project_path.is_dir():
+            return {"success": False, "error": "Invalid project directory."}
+
+        project_file = project_path / "project.json"
+        
+        # Scan for existing version folders automatically
+        versions = []
+        for item in project_path.iterdir():
+            if item.is_dir() and item.name.startswith("v"):
+                versions.append(item.name.lstrip("v"))
+        
+        if not versions:
+            versions = ["1.0"]
+            (project_path / "v1.0").mkdir(exist_ok=True)
+
+        if project_file.exists():
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            data["versions"] = sorted(list(set(versions + data.get("versions", []))))
+            return {"success": True, "data": data}
+        else:
+            # Default template for a new project
+            default_data = {
+                "title": project_path.name,
+                "author": "",
+                "notes": "",
+                "tags": [],
+                "versions": versions,
+                "active_version": versions[0]
+            }
+            project_file.write_text(json.dumps(default_data, indent=4), encoding="utf-8")
+            return {"success": True, "data": default_data}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def save_mod_project(project_path_str, payload):
+    try:
+        project_path = Path(project_path_str)
+        project_file = project_path / "project.json"
+        
+        if project_file.exists():
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            data.update(payload)
+        else:
+            data = payload
+            
+        project_file.write_text(json.dumps(data, indent=4), encoding="utf-8")
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def create_project_version(project_path_str, new_version):
+    try:
+        project_path = Path(project_path_str)
+        version_folder = project_path / f"v{new_version}"
+        
+        if version_folder.exists():
+            return {"success": False, "error": "Version folder already exists."}
+            
+        version_folder.mkdir(parents=True, exist_ok=True)
+        
+        project_file = project_path / "project.json"
+        if project_file.exists():
+            data = json.loads(project_file.read_text(encoding="utf-8"))
+            if new_version not in data.get("versions", []):
+                versions = data.get("versions", [])
+                versions.append(new_version)
+                data["versions"] = sorted(versions)
+                data["active_version"] = new_version
+                project_file.write_text(json.dumps(data, indent=4), encoding="utf-8")
+
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    
+@eel.expose
+def get_project_files(project_path_str, version):
+    try:
+        target_dir = Path(project_path_str) / f"v{version}"
+        if not target_dir.exists():
+            return {"success": True, "files": []}
+            
+        files = []
+        # Glob everything, but ignore folders/files starting with __
+        for file_path in target_dir.rglob("*"):
+            if file_path.is_file():
+                # Check if any part of the path starts with __ (e.g. __backup/file.png or __wip.swf)
+                if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
+                    continue
+                    
+                rel_path = file_path.relative_to(target_dir).as_posix()
+                files.append({
+                    "name": file_path.name,
+                    "rel_path": rel_path,
+                    "abs_path": str(file_path)
+                })
+                
+        # Sort alphabetically by relative path
+        files.sort(key=lambda x: x["rel_path"])
+        return {"success": True, "files": files}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def auto_structure_project_version(project_path_str, version, game_path_str):
+    try:
+        game_path = Path(game_path_str)
+        target_dir = Path(project_path_str) / f"v{version}"
+        
+        if not game_path.exists() or not target_dir.exists():
+            return {"success": False, "error": "Invalid game path or version directory."}
+            
+        file_map = {}
+        valid_dirs = [d.value.lower() for d in Directories]
+        
+        def _local_read_leb128(reader: BinaryReader):
+            result = 0
+            shift = 0
+            while True:
+                byte = reader.read_uint8()
+                result |= (byte & 0x7F) << shift
+                if not (byte & 0x80):
+                    return int(result & ((1 << 32) - 1))
+                shift += 7
+
+        # Build Master Map from index.tfi
+        for d in valid_dirs:
+            dir_path = game_path / d
+            if not dir_path.exists(): continue
+                
+            for tfi_path in dir_path.rglob("index.tfi"):
+                tfi_rel_dir = tfi_path.parent.relative_to(game_path)
+                try:
+                    reader = BinaryReader(tfi_path.read_bytes())
+                    while reader.pos() < reader.size():
+                        name_len = _local_read_leb128(reader)
+                        internal_path = reader.read_str(name_len)
+                        _ = _local_read_leb128(reader) # archive
+                        _ = _local_read_leb128(reader) # offset
+                        _ = _local_read_leb128(reader) # size
+                        _ = _local_read_leb128(reader) # hash
+                        
+                        full_rel_path = (tfi_rel_dir / internal_path).as_posix()
+                        filename = Path(full_rel_path).name.lower()
+                        if filename not in file_map:
+                            file_map[filename] = full_rel_path
+                except Exception:
+                    continue
+
+        moved_files = []
+        ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
+        
+        for file_path in list(target_dir.rglob("*")):
+            # Ignore non-files, ignored extensions, and our __ ignore prefix
+            if not file_path.is_file() or file_path.suffix.lower() in ignored_extensions:
+                continue
+            if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
+                continue
+                
+            filename = file_path.name.lower()
+            
+            if filename in file_map:
+                # We DO NOT inject 'override' here. We want 1:1 game path logic.
+                expected_full = file_map[filename]
+                new_path = target_dir / expected_full
+                
+                if file_path.resolve() != new_path.resolve():
+                    new_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.move(str(file_path), str(new_path))
+                    moved_files.append({"old": str(file_path), "new": str(new_path)})
+                        
+        return {"success": True, "count": len(moved_files)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+    
+@eel.expose
+def place_project_overrides(project_path_str, version, game_path_str):
+    try:
+        game_path = Path(game_path_str)
+        target_dir = Path(project_path_str) / f"v{version}"
+        
+        if not game_path.exists() or not target_dir.exists():
+            return {"success": False, "error": "Invalid game path or version directory."}
+            
+        placed_files = []
+        
+        for file_path in target_dir.rglob("*"):
+            if file_path.is_file():
+                # Ignore files/folders starting with __
+                if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
+                    continue
+                    
+                rel_path = file_path.relative_to(target_dir)
+                
+                # Transform path: e.g., ui/managed/file.swf -> ui/managed/override/file.swf
+                parts = list(rel_path.parts)
+                parts.insert(-1, "override")
+                game_override_path = game_path.joinpath(*parts)
+                
+                game_override_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(str(file_path), str(game_override_path))
+                placed_files.append(str(game_override_path))
+                
+        return {"success": True, "placed_files": placed_files, "count": len(placed_files)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def remove_project_overrides(placed_files):
+    try:
+        removed_count = 0
+        for file_str in placed_files:
+            file_path = Path(file_str)
+            if file_path.exists() and file_path.is_file():
+                file_path.unlink()
+                removed_count += 1
+                
+                # Optional: Clean up the override folder if it is now empty
+                try:
+                    if not any(file_path.parent.iterdir()):
+                        file_path.parent.rmdir()
+                except Exception:
+                    pass
+                    
+        return {"success": True, "count": removed_count}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+    
+@eel.expose
+def compile_project(project_path_str, version, game_path_str):
+    try:
+        project_path = Path(project_path_str)
+        game_path = Path(game_path_str)
+        target_dir = project_path / f"v{version}"
+        project_file = project_path / "project.json"
+
+        if not game_path.exists() or not target_dir.exists() or not project_file.exists():
+            return {"success": False, "error": "Invalid paths or missing project.json. Please save the project first."}
+
+        import json
+        meta = json.loads(project_file.read_text(encoding="utf-8"))
+
+        title = meta.get("title", "Untitled Project").strip()
+        author = meta.get("author", "Unknown").strip()
+        notes = meta.get("notes", "").strip()
+        tags = meta.get("tags", [])
+
+        if not title:
+            return {"success": False, "error": "Project title cannot be empty."}
+        if re.search(r'[<>:"/\\|?*]', title):
+            return {"success": False, "error": "Project title contains illegal characters."}
+
+        mod = TMod()
+        mod.name = title
+        mod.author = author
+        # Automatically use the folder's version number
+        mod.add_property("modVersion", version.strip())
+        mod.notes = notes
+        for tag in tags:
+            mod.add_tag(tag)
+        
+        mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))
+
+        preview_b64 = meta.get("previewBase64")
+        preview_name = meta.get("previewName", "preview.png")
+        if preview_b64 and "," in preview_b64:
+            header, data_str = preview_b64.split(",", 1)
+            img_bytes = base64.b64decode(data_str)
+            clean_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
+            preview_path = Path(f"ui/{clean_name}")
+            mod.add_file(TroveModFile(preview_path, img_bytes))
+            mod.preview_path = preview_path
+
+        file_count = 0
+        ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
+        
+        for file_path in target_dir.rglob("*"):
+            if file_path.is_file() and file_path.suffix.lower() not in ignored_extensions:
+                # Ignore __ files (backups, WIPs, etc.)
+                if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
+                    continue
+                
+                # The relative path is already the correct internal Trove path thanks to auto-structure
+                rel_path = file_path.relative_to(target_dir)
+                f_bytes = file_path.read_bytes()
+                mod.add_file(TroveModFile(Path(rel_path.as_posix()), f_bytes))
+                file_count += 1
+
+        if file_count == 0:
+            return {"success": False, "error": f"No valid game files found in the v{version} folder."}
+
+        out_dir = game_path / "mods"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
+        save_path = out_dir / f"{title}.tmod"
+        
+        # Overwrite safely for fast project iteration
+        if save_path.exists():
+            save_path.unlink(missing_ok=True)
+
+        mod.mod_path = save_path
+        tmod_bytes = mod.compile_tmod()
+        save_path.write_bytes(tmod_bytes)
+
         return {"success": True, "path": str(save_path)}
         
     except Exception as e:

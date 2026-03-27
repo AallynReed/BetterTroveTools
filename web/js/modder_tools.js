@@ -2,6 +2,7 @@ document.addEventListener('modder_tools_loaded', () => {
     console.log("Modder Tools view initialized!");
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
+    // --- TABS LOGIC ---
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -20,15 +21,81 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     });
 
+    // --- SELECT2 INITIALIZATION ---
+    if (typeof jQuery !== 'undefined' && $.fn.select2) {
+        $('#build-mod-tags').select2({
+            placeholder: t("Select categories..."),
+            width: '100%'
+        });
+        $('#project-mod-tags').select2({
+            placeholder: t("Select categories..."),
+            width: '100%'
+        });
+    }
+
+    // --- GLOBAL GAME SCANNING ---
+    const buildGameSelect = document.getElementById('build-game-select');
+    const projectGameSelect = document.getElementById('project-game-select');
+
+    async function scanForGames() {
+        if (buildGameSelect) buildGameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
+        if (projectGameSelect) projectGameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
+        
+        const response = await eel.get_detected_game_paths()();
+        const settings = await eel.get_settings()();
+        
+        if (buildGameSelect) buildGameSelect.innerHTML = ""; 
+        if (projectGameSelect) projectGameSelect.innerHTML = "";
+        
+        if (response.success && response.paths.length > 0) {
+            response.paths.forEach(game => {
+                let option = document.createElement('option');
+                option.value = game.path; 
+                option.textContent = `${game.name} - ${game.path}`;
+                
+                if (buildGameSelect) buildGameSelect.appendChild(option.cloneNode(true));
+                if (projectGameSelect) projectGameSelect.appendChild(option.cloneNode(true));
+            });
+            
+            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
+                if (buildGameSelect) buildGameSelect.value = settings.last_game_path;
+                if (projectGameSelect) projectGameSelect.value = settings.last_game_path;
+            }
+        } else {
+            const noGamesStr = `<option value="">${t("No installations found.")}</option>`;
+            if (buildGameSelect) buildGameSelect.innerHTML = noGamesStr;
+            if (projectGameSelect) projectGameSelect.innerHTML = noGamesStr;
+        }
+    }
+    scanForGames();
+
+    if (buildGameSelect) {
+        buildGameSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = buildGameSelect.value;
+            if (projectGameSelect) projectGameSelect.value = buildGameSelect.value;
+            await eel.save_settings(settings)();
+        });
+    }
+
+    if (projectGameSelect) {
+        projectGameSelect.addEventListener('change', async () => {
+            const settings = await eel.get_settings()();
+            settings.last_game_path = projectGameSelect.value;
+            if (buildGameSelect) buildGameSelect.value = projectGameSelect.value;
+            await eel.save_settings(settings)();
+        });
+    }
+
+    // ==========================================
+    // BUILD TMOD TAB
+    // ==========================================
     const previewContainer = document.getElementById('preview-picker-container');
     const previewInput = document.getElementById('build-preview-input');
     const previewImg = document.getElementById('build-mod-preview');
 
     if (previewContainer && previewInput) {
-        previewContainer.addEventListener('click', () => {
-            previewInput.click();
-        });
-
+        previewContainer.addEventListener('click', () => previewInput.click());
         previewInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -39,45 +106,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    if (typeof jQuery !== 'undefined' && $.fn.select2) {
-        $('#build-mod-tags').select2({
-            placeholder: t("Select categories..."),
-            width: '100%'
-        });
-    }
-
-    async function scanForGames() {
-        const gameSelect = document.getElementById('build-game-select');
-        if (!gameSelect) return;
-        gameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
-        const response = await eel.get_detected_game_paths()();
-        const settings = await eel.get_settings()();
-        gameSelect.innerHTML = ""; 
-        if (response.success && response.paths.length > 0) {
-            response.paths.forEach(game => {
-                let option = document.createElement('option');
-                option.value = game.path; 
-                option.textContent = `${game.name} - ${game.path}`;
-                gameSelect.appendChild(option);
-            });
-            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
-                gameSelect.value = settings.last_game_path;
-            }
-        } else {
-            gameSelect.innerHTML = `<option value="">${t("No installations found.")}</option>`;
-        }
-    }
-    scanForGames();
-
-    const buildGameSelect = document.getElementById('build-game-select');
-    if (buildGameSelect) {
-        buildGameSelect.addEventListener('change', async () => {
-            const settings = await eel.get_settings()();
-            settings.last_game_path = buildGameSelect.value;
-            await eel.save_settings(settings)();
-        });
-    }
-
     const btnAddFile = document.getElementById('btn-add-file');
     const btnDetectOverrides = document.getElementById('btn-detect-overrides');
     const btnAutoStructure = document.getElementById('btn-auto-structure');
@@ -85,9 +113,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (btnAddFile) {
         btnAddFile.addEventListener('click', async () => {
-            const gameSelect = document.getElementById('build-game-select');
-            const gamePath = gameSelect ? gameSelect.value : "";
-            
+            const gamePath = buildGameSelect ? buildGameSelect.value : "";
             if (!gamePath) {
                 window.showToast(t("Please select a Target Game Installation first."), true);
                 return;
@@ -95,7 +121,6 @@ document.addEventListener('modder_tools_loaded', () => {
             
             try {
                 const result = await eel.ask_add_files(gamePath)();
-                
                 if (result && result.success) {
                     if (result.rejected && result.rejected.length > 0) {
                         window.showToast(`${t("Denied")} ${result.rejected.length} ${t("file(s):")}\n${t("Selected files must be located within the active game path.")}`, true);
@@ -129,19 +154,21 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (btnAutoStructure) {
         btnAutoStructure.addEventListener('click', async () => {
-            const gamePath = document.getElementById('build-game-select').value;
+            const gamePath = buildGameSelect.value;
             if (!gamePath) {
                 window.showToast(t("Please select a Target Game Installation first."), true);
                 return;
             }
+            
+            const workspaceDir = await eel.ask_mod_source_directory()();
+            if (!workspaceDir) return;
             
             const originalHtml = btnAutoStructure.innerHTML;
             btnAutoStructure.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Structuring...")}`;
             btnAutoStructure.disabled = true;
             
             try {
-                const result = await eel.auto_structure_workspace(gamePath, gamePath)();
-                
+                const result = await eel.auto_structure_workspace(workspaceDir, gamePath)();
                 if (result.success) {
                     window.showToast(`${t("Successfully auto-structured")} ${result.count} ${t("files!")}`);
                 } else {
@@ -159,7 +186,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (btnDetectOverrides) {
         btnDetectOverrides.addEventListener('click', async () => {
-            const gamePath = document.getElementById('build-game-select').value;
+            const gamePath = buildGameSelect.value;
             if (!gamePath) {
                 window.showToast(t("Please select a Target Game Installation first."), true);
                 return;
@@ -190,7 +217,14 @@ document.addEventListener('modder_tools_loaded', () => {
                 }
             }
             
-            const result = await eel.detect_override_files(gamePath)();
+            const sourceDir = await eel.ask_mod_source_directory()();
+            if (!sourceDir) {
+                btnDetectOverrides.innerHTML = originalHtml;
+                btnDetectOverrides.disabled = false;
+                return;
+            }
+
+            const result = await eel.detect_override_files(sourceDir)();
             if (result.success) {
                 let addedCount = 0;
                 result.files.forEach(f => {
@@ -241,7 +275,7 @@ document.addEventListener('modder_tools_loaded', () => {
             btnBuildTMod.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Compiling TMod...")}`;
             
             try {
-                const gamePath = document.getElementById('build-game-select').value;
+                const gamePath = buildGameSelect.value;
                 const author = document.getElementById('build-mod-author').value.trim();
                 const version = document.getElementById('build-mod-version').value.trim();
                 const notes = document.getElementById('build-mod-notes').value.trim();
@@ -255,15 +289,12 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (tags.length === 0) { window.showToast(t("Please select at least one tag."), true); return; }
                 if (document.querySelectorAll('#build-files-list tr').length === 0) { window.showToast(t("Please add at least one file to your mod!"), true); return; }
 
-                const previewImg = document.getElementById('build-mod-preview');
-                const previewInputElem = document.getElementById('build-preview-input');
                 let previewBase64 = null;
                 let previewName = "preview.png";
-                
                 if (previewImg.src.startsWith('data:image')) {
                     previewBase64 = previewImg.src;
-                    if (previewInputElem && previewInputElem.files && previewInputElem.files.length > 0) {
-                        previewName = previewInputElem.files[0].name;
+                    if (previewInput.files && previewInput.files.length > 0) {
+                        previewName = previewInput.files[0].name;
                     }
                 }
 
@@ -294,7 +325,6 @@ document.addEventListener('modder_tools_loaded', () => {
 
                 const filesData = [];
                 const rows = document.querySelectorAll('#build-files-list tr');
-                
                 for (let row of rows) {
                     const fileData = row.fileData;
                     if (fileData) {
@@ -335,6 +365,9 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
+    // ==========================================
+    // EXTRACT TMOD TAB
+    // ==========================================
     const btnBrowseExtractSource = document.getElementById('btn-browse-extract-source');
     const inputExtractSource = document.getElementById('extract-source-file');
     
@@ -385,6 +418,9 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
+    // ==========================================
+    // SOFTWARE TAB
+    // ==========================================
     async function loadModdingSoftware() {
         const container = document.getElementById('software-list-container');
         if (!container) return;
@@ -405,7 +441,6 @@ document.addEventListener('modder_tools_loaded', () => {
             container.style.display = 'block';
 
             for (const [categoryKey, categoryData] of Object.entries(data)) {
-                
                 const catHeader = document.createElement('h4');
                 catHeader.style.marginTop = '20px';
                 catHeader.style.marginBottom = '10px';
@@ -426,7 +461,6 @@ document.addEventListener('modder_tools_loaded', () => {
                     badge.className = 'software-badge';
                     badge.href = sw.url;
                     badge.target = '_blank';
-                    
                     badge.title = t(sw.description);
 
                     let priceTagHtml = '';
@@ -441,10 +475,8 @@ document.addEventListener('modder_tools_loaded', () => {
                         <span class="software-name">${sw.name}</span>
                         ${priceTagHtml}
                     `;
-                    
                     badgeWrapper.appendChild(badge);
                 });
-
                 container.appendChild(badgeWrapper);
             }
         } catch (error) {
@@ -452,6 +484,322 @@ document.addEventListener('modder_tools_loaded', () => {
             container.innerHTML = `<p class="help-text" style="color: #ff5555;">${t("Failed to load software list. Make sure the JSON file exists.")}</p>`;
         }
     }
-
     loadModdingSoftware();
+
+    // ==========================================
+    // PROJECTS TAB LOGIC
+    // ==========================================
+    const btnBrowseProject = document.getElementById('btn-browse-project');
+    const projectDirInput = document.getElementById('project-dir-input');
+    const projectWorkspace = document.getElementById('project-workspace');
+    const btnSaveProject = document.getElementById('btn-save-project');
+    const btnNewVersion = document.getElementById('btn-new-version');
+    const versionSelect = document.getElementById('project-version-select');
+    const btnCompileProject = document.getElementById('btn-compile-project');
+    
+    const projPreviewContainer = document.getElementById('project-preview-container');
+    const projPreviewInput = document.getElementById('project-preview-input');
+    const projPreviewImg = document.getElementById('project-mod-preview');
+
+    const btnRefreshProjectFiles = document.getElementById('btn-refresh-project-files');
+    const btnProjectAutoStructure = document.getElementById('btn-project-auto-structure');
+    const projectFilesList = document.getElementById('project-files-list');
+
+    const btnPlaceOverrides = document.getElementById('btn-place-overrides');
+    const btnRemoveOverrides = document.getElementById('btn-remove-overrides');
+    let activeOverrides = []; // Keeps track of files pushed to the game
+
+    if (projPreviewContainer && projPreviewInput) {
+        projPreviewContainer.addEventListener('click', () => projPreviewInput.click());
+        projPreviewInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => projPreviewImg.src = event.target.result;
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+
+    async function refreshProjectFiles() {
+        const dir = projectDirInput.value;
+        const version = versionSelect.value;
+        if (!dir || !version) return;
+
+        projectFilesList.innerHTML = `<tr><td style="padding: 10px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading files...")}</td></tr>`;
+        
+        const result = await eel.get_project_files(dir, version)();
+        if (result.success) {
+            projectFilesList.innerHTML = '';
+            if (result.files.length === 0) {
+                projectFilesList.innerHTML = `<tr><td style="padding: 10px; text-align: center; color: var(--text-muted);">${t("No files found in this version folder.")}</td></tr>`;
+            } else {
+                result.files.forEach(f => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td style="padding: 8px 10px; color: var(--text-main); font-family: monospace;">${f.rel_path}</td>`;
+                    projectFilesList.appendChild(tr);
+                });
+            }
+        } else {
+            projectFilesList.innerHTML = `<tr><td style="padding: 10px; text-align: center; color: #ff5555;">${t("Error loading files.")}</td></tr>`;
+        }
+    }
+
+    if (btnRefreshProjectFiles) {
+        btnRefreshProjectFiles.addEventListener('click', refreshProjectFiles);
+    }
+    if (versionSelect) {
+        versionSelect.addEventListener('change', refreshProjectFiles);
+    }
+
+    async function loadProjectData(folderPath) {
+        const result = await eel.load_mod_project(folderPath)();
+        if (result.success) {
+            projectWorkspace.style.display = 'block';
+            
+            document.getElementById('project-mod-title').value = result.data.title || '';
+            document.getElementById('project-mod-author').value = result.data.author || '';
+            document.getElementById('project-mod-notes').value = result.data.notes || '';
+            
+            if (result.data.tags) {
+                $('#project-mod-tags').val(result.data.tags).trigger('change');
+            } else {
+                $('#project-mod-tags').val(null).trigger('change');
+            }
+
+            if (result.data.previewBase64) {
+                projPreviewImg.src = result.data.previewBase64;
+            } else {
+                projPreviewImg.src = "assets/images/no_preview.png";
+            }
+
+            versionSelect.innerHTML = '';
+            if (result.data.versions && result.data.versions.length > 0) {
+                result.data.versions.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v;
+                    opt.textContent = `Version ${v}`;
+                    versionSelect.appendChild(opt);
+                });
+                versionSelect.value = result.data.active_version || result.data.versions[0];
+            } else {
+                const opt = document.createElement('option');
+                opt.value = "1.0";
+                opt.textContent = `Version 1.0 (Default)`;
+                versionSelect.appendChild(opt);
+            }
+            
+            await refreshProjectFiles();
+        } else {
+            window.showToast(`${t("Error loading project:")} ${result.error}`, true);
+        }
+    }
+
+    if (btnBrowseProject) {
+        btnBrowseProject.addEventListener('click', async () => {
+            const dir = await eel.ask_mod_source_directory()();
+            if (dir) {
+                projectDirInput.value = dir;
+                await loadProjectData(dir);
+            }
+        });
+    }
+
+    if (btnSaveProject) {
+        btnSaveProject.addEventListener('click', async () => {
+            const dir = projectDirInput.value;
+            if (!dir) return;
+
+            const payload = {
+                title: document.getElementById('project-mod-title').value.trim(),
+                author: document.getElementById('project-mod-author').value.trim(),
+                notes: document.getElementById('project-mod-notes').value.trim(),
+                tags: $('#project-mod-tags').val() || [],
+                active_version: versionSelect.value
+            };
+
+            if (projPreviewImg.src.startsWith('data:image')) {
+                payload.previewBase64 = projPreviewImg.src;
+                if (projPreviewInput.files && projPreviewInput.files.length > 0) {
+                    payload.previewName = projPreviewInput.files[0].name;
+                }
+            }
+
+            const result = await eel.save_mod_project(dir, payload)();
+            if (result.success) {
+                window.showToast(t("Project metadata saved successfully!"));
+            } else {
+                window.showToast(`${t("Error saving project:")} ${result.error}`, true);
+            }
+        });
+    }
+
+    if (btnNewVersion) {
+        btnNewVersion.addEventListener('click', async () => {
+            const dir = projectDirInput.value;
+            if (!dir) return;
+
+            const newVersion = prompt(t("Enter new version number (e.g., 1.1):"));
+            if (!newVersion) return;
+
+            const result = await eel.create_project_version(dir, newVersion)();
+            if (result.success) {
+                window.showToast(t("New version folder created!"));
+                await loadProjectData(dir);
+                versionSelect.value = newVersion;
+            } else {
+                window.showToast(`${t("Error creating version:")} ${result.error}`, true);
+            }
+        });
+    }
+
+    if (btnProjectAutoStructure) {
+        btnProjectAutoStructure.addEventListener('click', async () => {
+            const dir = projectDirInput.value;
+            const version = versionSelect.value;
+            const gamePath = projectGameSelect.value;
+            
+            if (!dir || !version || !gamePath) {
+                window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                return;
+            }
+
+            const originalHtml = btnProjectAutoStructure.innerHTML;
+            btnProjectAutoStructure.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Structuring...")}`;
+            btnProjectAutoStructure.disabled = true;
+
+            try {
+                const result = await eel.auto_structure_project_version(dir, version, gamePath)();
+                if (result.success) {
+                    window.showToast(`${t("Successfully structured")} ${result.count} ${t("files!")}`);
+                    await refreshProjectFiles();
+                } else {
+                    window.showToast(`${t("Error structuring files:")} ${result.error}`, true);
+                }
+            } catch (err) {
+                window.showToast(t("An unexpected error occurred."), true);
+            } finally {
+                btnProjectAutoStructure.innerHTML = originalHtml;
+                btnProjectAutoStructure.disabled = false;
+            }
+        });
+    }
+
+    if (btnCompileProject) {
+        btnCompileProject.addEventListener('click', async () => {
+            const dir = projectDirInput.value;
+            const version = versionSelect.value;
+            const gamePath = projectGameSelect.value;
+
+            if (!dir || !version || !gamePath) {
+                window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                return;
+            }
+
+            const title = document.getElementById('project-mod-title').value.trim();
+            if (!title) {
+                window.showToast(t("Project title cannot be empty."), true);
+                return;
+            }
+
+            // Save metadata immediately before compiling
+            const payload = {
+                title: title,
+                author: document.getElementById('project-mod-author').value.trim(),
+                notes: document.getElementById('project-mod-notes').value.trim(),
+                tags: $('#project-mod-tags').val() || [],
+                active_version: version
+            };
+            if (projPreviewImg.src.startsWith('data:image')) {
+                payload.previewBase64 = projPreviewImg.src;
+                if (projPreviewInput.files && projPreviewInput.files.length > 0) {
+                    payload.previewName = projPreviewInput.files[0].name;
+                }
+            }
+            await eel.save_mod_project(dir, payload)();
+
+            const originalHtml = btnCompileProject.innerHTML;
+            btnCompileProject.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Compiling...")}`;
+            btnCompileProject.disabled = true;
+
+            try {
+                const result = await eel.compile_project(dir, version, gamePath)();
+                if (result.success) {
+                    window.showToast(`${t("Project successfully compiled!")}\n${t("Saved to:")} ${result.path}`, false);
+                } else {
+                    window.showToast(`${t("Failed to compile project:")}\n${result.error}`, true);
+                }
+            } catch (err) {
+                console.error(err);
+                window.showToast(t("An unexpected error occurred while compiling the project."), true);
+            } finally {
+                btnCompileProject.innerHTML = originalHtml;
+                btnCompileProject.disabled = false;
+            }
+        });
+    }
+
+    if (btnPlaceOverrides && btnRemoveOverrides) {
+        btnPlaceOverrides.addEventListener('click', async () => {
+            const dir = projectDirInput.value;
+            const version = versionSelect.value;
+            const gamePath = projectGameSelect.value;
+            
+            if (!dir || !version || !gamePath) {
+                window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                return;
+            }
+
+            const originalHtml = btnPlaceOverrides.innerHTML;
+            btnPlaceOverrides.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Placing...")}`;
+            btnPlaceOverrides.disabled = true;
+
+            try {
+                const result = await eel.place_project_overrides(dir, version, gamePath)();
+                if (result.success) {
+                    if (result.count === 0) {
+                        window.showToast(t("No valid files found to test."));
+                        btnPlaceOverrides.disabled = false;
+                    } else {
+                        activeOverrides = result.placed_files;
+                        window.showToast(`${result.count} ${t("files placed in game overrides for testing.")}`);
+                        btnRemoveOverrides.disabled = false;
+                    }
+                } else {
+                    window.showToast(`${t("Error placing overrides:")} ${result.error}`, true);
+                    btnPlaceOverrides.disabled = false;
+                }
+            } catch (err) {
+                window.showToast(t("An unexpected error occurred."), true);
+                btnPlaceOverrides.disabled = false;
+            } finally {
+                btnPlaceOverrides.innerHTML = originalHtml;
+            }
+        });
+
+        btnRemoveOverrides.addEventListener('click', async () => {
+            if (activeOverrides.length === 0) return;
+
+            const originalHtml = btnRemoveOverrides.innerHTML;
+            btnRemoveOverrides.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Removing...")}`;
+            btnRemoveOverrides.disabled = true;
+
+            try {
+                const result = await eel.remove_project_overrides(activeOverrides)();
+                if (result.success) {
+                    window.showToast(`${result.count} ${t("override files successfully removed from game.")}`);
+                    activeOverrides = [];
+                    btnPlaceOverrides.disabled = false;
+                } else {
+                    window.showToast(`${t("Error removing overrides:")} ${result.error}`, true);
+                    btnRemoveOverrides.disabled = false;
+                }
+            } catch (err) {
+                window.showToast(t("An unexpected error occurred."), true);
+                btnRemoveOverrides.disabled = false;
+            } finally {
+                btnRemoveOverrides.innerHTML = originalHtml;
+            }
+        });
+    }
 });
