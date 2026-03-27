@@ -15,6 +15,9 @@
             <button class="tab-btn" data-tab="extract-tab">
                 <i class="fa-solid fa-box-open"></i> <span data-i18n>Extract TMod</span>
             </button>
+            <button class="tab-btn" data-tab="projects-tab">
+                <i class="fa-solid fa-diagram-project"></i> <span data-i18n>Projects</span>
+            </button>
             <button class="tab-btn" data-tab="software-tab">
                 <i class="fa-solid fa-computer"></i> <span data-i18n>Software</span>
             </button>
@@ -137,6 +140,125 @@
                 </div>
 
                 <button class="primary-btn execute-btn" id="btn-extract-tmod"><i class="fa-solid fa-box-open"></i> <span data-i18n>Extract TMod</span></button>
+            </div>
+        </div>
+
+        <div class="tab-content" id="projects-tab">
+            <div class="tool-panel">
+                <h3 data-i18n>Mod Project Manager</h3>
+                <p class="help-text" data-i18n>Manage persistent mod projects, versioning, and live game testing.</p>
+                
+                <div class="form-group" style="background: var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label data-i18n>Project Folder</label>
+                    <div class="input-row">
+                        <input type="text" id="project-dir-input" data-i18n-placeholder="Select or create a project folder..." readonly>
+                        <button class="primary-btn" id="btn-browse-project"><i class="fa-solid fa-folder-open"></i> <span data-i18n>Browse</span></button>
+                    </div>
+                </div>
+
+                <div id="project-workspace" style="display: none; margin-top: 20px;">
+                    <div class="build-split-layout">
+                        <div class="build-left-col">
+                            <div class="form-group">
+                                <label data-i18n>Project Preview</label>
+                                <div class="mod-preview-picker" id="project-preview-container">
+                                    <img id="project-mod-preview" src="assets/images/no_preview.png" alt="Project Preview">
+                                    <div class="preview-overlay">
+                                        <i class="fa-solid fa-camera"></i>
+                                        <span data-i18n>Change Image</span>
+                                    </div>
+                                    <input type="file" id="project-preview-input" accept="image/png, image/jpeg" style="display: none;">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label data-i18n>Target Game Installation</label>
+                                <select id="project-game-select">
+                                    <option value="" data-i18n>Searching...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n>Active Version Workspace</label>
+                                <div class="input-row">
+                                    <select id="project-version-select" style="flex: 1;">
+                                        </select>
+                                    <button class="icon-btn-small" id="btn-new-version" data-i18n-title="Create New Version Folder"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="build-right-col">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label data-i18n>Project Title</label>
+                                    <input type="text" id="project-mod-title">
+                                </div>
+                                <div class="form-group" style="flex: 2;">
+                                    <label data-i18n>Authors</label>
+                                    <input type="text" id="project-mod-author">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n>Notes</label>
+                                <textarea id="project-mod-notes" rows="2"></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label data-i18n>Tags</label>
+                                <select id="project-mod-tags" multiple="multiple" style="width: 100%;">
+                                    <option value="Allies">Allies</option>
+                                    <option value="Banners">Banners</option>
+                                    <option value="Cosmetics">Cosmetics</option>
+                                    <option value="Costumes">Costumes</option>
+                                    <option value="Dragons">Dragons</option>
+                                    <option value="GUI">GUI</option>
+                                    <option value="Helmets">Helmets</option>
+                                    <option value="Mounts">Mounts</option>
+                                    <option value="Utility">Utility</option>
+                                    <option value="VFX">VFX</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+                    <div class="form-group">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="margin: 0;" data-i18n>Version Files (ignores '__' prefix)</label>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="icon-btn-small" id="btn-refresh-project-files" data-i18n-title="Refresh Files"><i class="fa-solid fa-rotate-right"></i></button>
+                                <button class="primary-btn" id="btn-project-auto-structure" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n>Structure Relative to Game</span></button>
+                            </div>
+                        </div>
+                        <div class="table-container" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                    <tr>
+                                        <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);" data-i18n>Relative Path</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="project-files-list">
+                                    <tr><td style="padding: 10px; text-align: center; color: var(--text-muted);" data-i18n>No files loaded.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+                        <div style="display: flex; gap: 10px;">
+                            <button class="primary-btn" id="btn-save-project"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n>Save Metadata</span></button>
+                            <button class="primary-btn" id="btn-compile-project" style="background: var(--accent-blue);"><i class="fa-solid fa-hammer"></i> <span data-i18n>Compile Active Version</span></button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px dashed var(--border-color);">
+                            <button class="primary-btn" id="btn-place-overrides" style="background: #28a745;"><i class="fa-solid fa-play"></i> <span data-i18n>Test in Game</span></button>
+                            <button class="primary-btn" id="btn-remove-overrides" style="background: #dc3545;" disabled><i class="fa-solid fa-stop"></i> <span data-i18n>Remove Overrides</span></button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
