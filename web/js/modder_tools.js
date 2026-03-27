@@ -80,6 +80,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     const btnAddFile = document.getElementById('btn-add-file');
     const btnDetectOverrides = document.getElementById('btn-detect-overrides');
+    const btnAutoStructure = document.getElementById('btn-auto-structure');
     const filesList = document.getElementById('build-files-list');
 
     if (btnAddFile) {
@@ -122,6 +123,36 @@ document.addEventListener('modder_tools_loaded', () => {
             } catch (error) {
                 console.error("Error adding files:", error);
                 window.showToast(t("An error occurred while adding files."), true);
+            }
+        });
+    }
+
+    if (btnAutoStructure) {
+        btnAutoStructure.addEventListener('click', async () => {
+            const gamePath = document.getElementById('build-game-select').value;
+            if (!gamePath) {
+                window.showToast(t("Please select a Target Game Installation first."), true);
+                return;
+            }
+            
+            const originalHtml = btnAutoStructure.innerHTML;
+            btnAutoStructure.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Structuring...")}`;
+            btnAutoStructure.disabled = true;
+            
+            try {
+                const result = await eel.auto_structure_workspace(gamePath, gamePath)();
+                
+                if (result.success) {
+                    window.showToast(`${t("Successfully auto-structured")} ${result.count} ${t("files!")}`);
+                } else {
+                    window.showToast(`${t("Error structuring files:")} ${result.error}`, true);
+                }
+            } catch (err) {
+                console.error(err);
+                window.showToast(t("An unexpected error occurred while structuring files."), true);
+            } finally {
+                btnAutoStructure.innerHTML = originalHtml;
+                btnAutoStructure.disabled = false;
             }
         });
     }
@@ -181,6 +212,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 });
                 if (addedCount === 0) {
                     window.showToast(t("No new override files found in the source directory."), true);
+                } else {
+                    window.showToast(`${addedCount} ${t("override file(s) successfully detected.")}`);
                 }
             } else {
                 window.showToast(`${t("Error detecting overrides:")} ${result.error}`, true);

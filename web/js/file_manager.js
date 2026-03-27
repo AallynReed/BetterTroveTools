@@ -264,18 +264,30 @@ document.addEventListener('file_manager_loaded', () => {
 
             const response = await eel.load_entire_game_tree(selectedPath)();
             if (response.success) {
-                let treeHTML = `<div class="file-tree">`;
-                const rootChildren = response.tree.children;
-                const sortedKeys = Object.keys(rootChildren).sort((a, b) => {
-                    const nodeA = rootChildren[a], nodeB = rootChildren[b];
-                    if (nodeA.type === 'folder' && nodeB.type === 'file') return -1;
-                    return a.localeCompare(b);
-                });
+                try {
+                    // Force cache-busting to ensure we don't load a stale JSON file
+                    const fetchRes = await fetch('/cache/temp_tree.json?t=' + new Date().getTime());
+                    const treeData = await fetchRes.json();
+                    
+                    let treeHTML = `<div class="file-tree">`;
+                    const rootChildren = treeData.children || treeData; 
+                    
+                    const sortedKeys = Object.keys(rootChildren).sort((a, b) => {
+                        const nodeA = rootChildren[a], nodeB = rootChildren[b];
+                        if (nodeA.type === 'folder' && nodeB.type === 'file') return -1;
+                        return a.localeCompare(b);
+                    });
 
-                sortedKeys.forEach(key => { treeHTML += buildTreeHTML(key, rootChildren[key]); });
-                treeHTML += `</div>`;
-                treeContainer.innerHTML = treeHTML;
-                treeContainer.classList.remove('placeholder-box');
+                    sortedKeys.forEach(key => { treeHTML += buildTreeHTML(key, rootChildren[key]); });
+                    treeHTML += `</div>`;
+                    treeContainer.innerHTML = treeHTML;
+                    treeContainer.classList.remove('placeholder-box');
+                } catch (error) {
+                    console.error("Failed to load tree cache:", error);
+                    treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error loading parsed game files.")}</h3></div>`;
+                }
+            } else {
+                 treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error parsing game tree:")} ${response.error || "Unknown error"}</h3></div>`;
             }
         });
     }
