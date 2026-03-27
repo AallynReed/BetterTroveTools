@@ -284,10 +284,15 @@ class Gem(BaseModel):
     @computed_field
     @property
     def quality(self) -> float:
-        value = 0
+        total_value = 0
+        count = 0
         for stat in self.stats:
-            value += stat.augmentation_progress
-        return value / len(self.stats)
+            for container in stat.containers:
+                total_value += container.value
+                count += 1
+        
+        if count == 0: return 0.0
+        return round((total_value / count) * 100, 1) / 100
 
     def get_lesser_power_rank_increment(self):
         return get_increment_power_rank_lesser(self.tier, self.level)
@@ -298,31 +303,32 @@ class Gem(BaseModel):
     @computed_field
     @property
     def power_rank(self) -> int:
-        power_rank = 0
+        # 1. Get the 'static' PR from levels (the guaranteed gains)
+        # This part doesn't change regardless of gem quality
+        level_pr = 0
+        for l in range(2, self.level + 1):
+            if self.type == GemType.LESSER:
+                level_pr += get_increment_power_rank_lesser(self.tier, l)
+            else:
+                level_pr += get_increment_power_rank_empowered(self.tier, l)
+
+        # 2. Get the 'variable' PR from stats (Base rolls + Procs)
+        # Each container is a "roll" of [min_base to max_base]
         if self.type == GemType.LESSER:
-            power_rank += 0
+            thresholds = get_lesser_gem_pr_threshold(self.tier, self.element)
         else:
-            power_rank += 100
-        if self.type == GemType.LESSER:
-            thresholds = get_lesser_gem_pr_threshold(
-                self.tier, self.element
-            )
-        else:
-            thresholds = get_empowered_gem_pr_threshold(
-                self.tier, self.element
-            )
+            thresholds = get_empowered_gem_pr_threshold(self.tier, self.element)
+        
+        min_base_pr = thresholds[0]
+        diff = thresholds[1] - thresholds[0]
+        
+        variable_pr = 0
         for stat in self.stats:
-            progress = thresholds[0] + (thresholds[1] - thresholds[0]) * stat.augmentation_progress
-            stat_value = progress * len(stat.containers)
-            power_rank += stat_value
-        for _ in self.stats:
-            for level in range(1, self.level + 1):
-                if self.type == GemType.LESSER:
-                    pr_increment = get_increment_power_rank_lesser(self.tier, level)
-                else:
-                    pr_increment = get_increment_power_rank_empowered(self.tier, level)
-                power_rank += pr_increment
-        return round(power_rank)
+            for container in stat.containers:
+                # PR per container = Min + (Percentage * Range)
+                variable_pr += min_base_pr + (container.value * diff)
+                
+        return round(level_pr + variable_pr)
 
     @computed_field
     @property
