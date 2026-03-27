@@ -18,3 +18,6 @@ __pycache__/
 populate_translations.py
 test_binfab_decoded.py
 test_gem_engine.py
+
+# Ignore web cache
+web/cache/
