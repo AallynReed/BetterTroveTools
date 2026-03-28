@@ -173,15 +173,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 return;
             }
             
-            const workspaceDir = await eel.ask_mod_source_directory()();
-            if (!workspaceDir) return;
-            
             const originalHtml = btnAutoStructure.innerHTML;
             btnAutoStructure.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Structuring...")}`;
             btnAutoStructure.disabled = true;
             
             try {
-                const result = await eel.auto_structure_workspace(workspaceDir, gamePath)();
+                // Pass gamePath directly instead of popping up a folder dialog!
+                const result = await eel.auto_structure_workspace(gamePath, gamePath)();
                 if (result.success) {
                     window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
                 } else {
@@ -230,14 +228,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 }
             }
             
-            const sourceDir = await eel.ask_mod_source_directory()();
-            if (!sourceDir) {
-                btnDetectOverrides.innerHTML = originalHtml;
-                btnDetectOverrides.disabled = false;
-                return;
-            }
-
-            const result = await eel.detect_override_files(sourceDir)();
+            // Pass gamePath directly instead of popping up a folder dialog!
+            const result = await eel.detect_override_files(gamePath)();
             if (result.success) {
                 let addedCount = 0;
                 result.files.forEach(f => {

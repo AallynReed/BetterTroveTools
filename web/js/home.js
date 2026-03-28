@@ -41,10 +41,24 @@ document.addEventListener('home_loaded', () => {
         const hours = Math.floor((diff % 86400) / 3600);
         const mins = Math.floor((diff % 3600) / 60);
         
-        let timeStr = "";
-        if (days > 0) timeStr = t("{days}d {hours}h").replace("{days}", days).replace("{hours}", hours);
-        else if (hours > 0) timeStr = t("{hours}h {mins}m").replace("{hours}", hours).replace("{mins}", mins);
-        else timeStr = t("{mins}m").replace("{mins}", mins);
+        // Force plural tokens for everything
+        const dStr = t("{count} days").replace("{count}", days);
+        const hStr = t("{count} hours").replace("{count}", hours);
+        const mStr = t("{count} minutes").replace("{count}", mins);
+        
+        let timeParts = [];
+        
+        if (days > 0) {
+            timeParts.push(dStr);
+            if (hours > 0) timeParts.push(hStr);
+        } else if (hours > 0) {
+            timeParts.push(hStr);
+            if (mins > 0) timeParts.push(mStr);
+        } else {
+            timeParts.push(mStr);
+        }
+
+        const timeStr = timeParts.join(" ");
 
         if (showLeft) return t("{time} left").replace("{time}", timeStr);
         return timeStr;

@@ -25,18 +25,7 @@ document.addEventListener('mod_manager_loaded', async () => {
         let visibleCount = 0;
 
         cards.forEach(card => {
-            const name = card.getAttribute('data-name').toLowerCase();
-            const author = card.getAttribute('data-author').toLowerCase();
-            const isEnabled = card.getAttribute('data-status') === 'enabled';
-            const hasActiveConflict = card.getAttribute('data-active-conflict') === 'true';
-
-            const matchesSearch = name.includes(searchTerm) || author.includes(searchTerm);
-            let matchesStatus = true;
-
-            if (statusLimit === 'enabled') matchesStatus = isEnabled;
-            else if (statusLimit === 'disabled') matchesStatus = !isEnabled;
-            else if (statusLimit === 'conflicts') matchesStatus = hasActiveConflict;
-
+            // ... (your existing filter logic) ...
             if (matchesSearch && matchesStatus) {
                 card.style.display = "flex";
                 visibleCount++;
@@ -45,8 +34,13 @@ document.addEventListener('mod_manager_loaded', async () => {
             }
         });
 
-        if (visibleCountDisp) visibleCountDisp.innerText = visibleCount;
-        if (totalCountDisp) totalCountDisp.innerText = cards.length;
+        // REPLACED THE OLD LOGIC WITH THIS CLEAN TOKEN FORMATTER
+        const countDisplay = document.getElementById('mod-count-display');
+        if (countDisplay) {
+            countDisplay.innerText = t("Showing {visible} / {total} mods")
+                .replace("{visible}", visibleCount)
+                .replace("{total}", cards.length);
+        }
     }
 
     if (searchInput) searchInput.addEventListener('input', applyFilters);

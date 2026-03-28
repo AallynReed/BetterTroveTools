@@ -83,8 +83,9 @@ window.showToast = function(message, isError = false) {
     toast.style.whiteSpace = 'pre-wrap';
     toast.style.textAlign = 'center';
     
-    // Pass the incoming message through our translator globally
-    toast.innerText = window.I18nManager && window.I18nManager.t ? window.I18nManager.t(message) : message;
+    // REMOVED: The global t() wrapper. 
+    // The message is already translated by the caller before being passed in!
+    toast.innerText = message;
     
     document.body.appendChild(toast);
 

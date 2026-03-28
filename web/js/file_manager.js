@@ -382,10 +382,15 @@ document.addEventListener('file_manager_loaded', () => {
         if (totalSeconds === null || totalSeconds === undefined || isNaN(totalSeconds)) return "";
         const m = Math.floor(totalSeconds / 60);
         const s = Math.floor(totalSeconds % 60);
+        
+        // Force plural tokens for everything
+        const mStr = t("{count} minutes").replace("{count}", m);
+        const sStr = t("{count} seconds").replace("{count}", s);
+        
         if (m > 0) {
-            return `${m}${t("m")} ${s}${t("s")}`;
+            return `${mStr} ${sStr}`; 
         }
-        return `${s}${t("s")}`;
+        return sStr;
     }
 
     // --- UPDATED INTEGER-BASED PROGRESS UI ---
