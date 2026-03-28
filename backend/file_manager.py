@@ -53,11 +53,15 @@ def get_detected_game_paths():
 def load_entire_game_tree(game_path_str):
     try:
         tree = asyncio.run(_build_full_tree_async(game_path_str))
-        cache_path = Path("web/cache/temp_tree.json")
-    
-        with open(cache_path, "w", encoding="utf-8") as f:
+        cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        cache_file = cache_dir / "temp_tree.json"
+        
+        with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(tree, f)
-        return {"success": True, "cached_file": "temp_tree.json"}
+
+        # Tell JS to fetch from the custom Bottle route we just made
+        return {"success": True, "cached_file": "/api/cache/temp_tree.json"}
     except Exception as e:
         import traceback
         traceback.print_exc()

@@ -5,6 +5,7 @@ from models.trove.mod import TroveModList, TroveGamePath
 from utils.functions import BasePath
 import asyncio
 import aiohttp
+import os
 
 @eel.expose
 def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
@@ -13,7 +14,6 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
         mod_list = TroveModList(path=trove_path, partial=True, fix_names=fix_names, fix_configs=fix_configs)
         
         result_mods = []
-        
         for mod in mod_list:
             result_mods.append({
                 "name": mod.name or "Unknown Mod",
@@ -28,15 +28,16 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                 ] 
             })
             
-        # Bypass websocket limits by saving the massive payload to disk
-        cache_dir = BasePath / "web" / "cache"
+        # SAVE TO APPDATA INSTEAD OF PROGRAM FILES
+        cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / "installed_mods.json"
         
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump({"mods": result_mods}, f)
             
-        return {"success": True, "cached_file": "/cache/installed_mods.json"}
+        # Tell JS to fetch from the custom Bottle route we just made
+        return {"success": True, "cached_file": "/api/cache/installed_mods.json"}
         
     except Exception as e:
         import traceback

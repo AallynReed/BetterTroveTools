@@ -8,6 +8,7 @@ import winreg
 from pathlib import Path
 
 import eel
+import bottle
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
@@ -210,6 +211,19 @@ def add_missing_translation_keys(locale_code, missing_keys):
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
+
+@bottle.route('/api/cache/<filename>')
+def serve_cache(filename):
+    cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
+    
+    # Basic security to prevent directory traversal attacks
+    if ".." in filename or "/" in filename or "\\" in filename:
+        return bottle.HTTPError(403, "Forbidden")
+        
+    # Serve the file and force the browser not to cache it locally
+    response = bottle.static_file(filename, root=str(cache_dir))
+    response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
+    return response
 
 chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
 #C:\Users\IT\AppData\Roaming\Trove\ModManagerCache
