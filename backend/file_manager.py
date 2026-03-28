@@ -189,8 +189,6 @@ def mass_extract_files(dest_dir, files_to_extract):
         start_time = time.time()
         
         for index, file_data in enumerate(files_to_extract):
-            # ... (Your extraction logic) ...
-            
             # Send raw integers to the frontend
             if index % 50 == 0 or index == total_files - 1:
                 elapsed = time.time() - start_time
@@ -201,7 +199,7 @@ def mass_extract_files(dest_dir, files_to_extract):
                     index + 1, 
                     total_files, 
                     file_data.get('filepath', 'Unknown'), 
-                    "Extracting...",  # The safe translation key
+                    "Extracting...",  # Safe translation key
                     int(eta_seconds), # Raw Integer
                     int(elapsed)      # Raw Integer
                 )
@@ -248,18 +246,13 @@ async def _mass_extract_async(dest_dir_str, file_list):
                 processed_count += 1
                 if processed_count % max(1, total_files // 50) == 0 or processed_count == total_files:
                     elapsed = time.time() - start_time
-                    emins, esecs = divmod(int(elapsed), 60)
-                    elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
                     
+                    eta_secs = ""
                     if elapsed > 0.5:
                         rate = processed_count / elapsed
                         eta_secs = int((total_files - processed_count) / rate)
-                        rmins, rsecs = divmod(eta_secs, 60)
-                        eta_str = f"{rmins}m {rsecs}s" if rmins > 0 else f"{rsecs}s"
-                    else:
-                        eta_str = "Calculating..."
                         
-                    eel.update_progress_ui(processed_count, total_files, f["filepath"], eta_str, elapsed_str)()
+                    eel.update_progress_ui(processed_count, total_files, f["filepath"], "Extracting...", eta_secs, int(elapsed))()
 
 @eel.expose
 def select_tracking_directory():
@@ -313,20 +306,14 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
     
     for i, tfi_path in enumerate(tfi_files):
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
-        
         elapsed = time.time() - start_time
-        emins, esecs = divmod(int(elapsed), 60)
-        elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
         
+        eta_secs = ""
         if elapsed > 0.5 and (i + 1) > 0:
             rate = (i + 1) / elapsed
             eta_secs = int((total_tfis - (i + 1)) / rate)
-            rmins, rsecs = divmod(eta_secs, 60)
-            eta_str = f"{rmins}m {rsecs}s" if rmins > 0 else f"{rsecs}s"
-        else:
-            eta_str = "Calculating..."
             
-        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, f"Building Baseline (ETA: {eta_str})", elapsed_str)()
+        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, "Building Baseline Cache...", eta_secs, int(elapsed))()
         
         index = TFIndex(tfi_path)
         cache["archives"][rel_tfi] = await index.content_hash
@@ -392,18 +379,13 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         tfi_dir = tfi_path.parent.relative_to(game_path) 
         
         elapsed = time.time() - start_time
-        emins, esecs = divmod(int(elapsed), 60)
-        elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
+        eta_secs = ""
         
         if elapsed > 0.5 and (i + 1) > 0:
             rate = (i + 1) / elapsed
             eta_secs = int((total_tfis - (i + 1)) / rate)
-            rmins, rsecs = divmod(eta_secs, 60)
-            eta_str = f"{rmins}m {rsecs}s" if rmins > 0 else f"{rsecs}s"
-        else:
-            eta_str = "Calculating..."
             
-        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, f"Scanning (ETA: {eta_str})", elapsed_str)()
+        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, "Scanning for Updates...", eta_secs, int(elapsed))()
         
         index = TFIndex(tfi_path)
         new_tfi_hash = await index.content_hash
@@ -472,7 +454,7 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         await extract_list(changed_files, "changed")
         
         if run_catalog and (added_files or changed_files):
-            eel.update_progress_ui(1, 1, "Generating Blueprint Previews...", "Cataloging", "N/A")()
+            eel.update_progress_ui(1, 1, "Generating Blueprint Previews...", "Cataloging...", "", "")()
             blueprints_to_catalog = set()
             
             for file_list in [added_files, changed_files]:
