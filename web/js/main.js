@@ -50,17 +50,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==========================================
 // App Security & Hotkey Blocking
 // ==========================================
-// document.addEventListener('keydown', function(e) {
-//     const blockedKeys = ['F12', 'F5', 'F11'];
-//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+document.addEventListener('keydown', function(e) {
+    const blockedKeys = ['F12', 'F5', 'F11'];
+    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-//     if (blockedKeys.includes(e.key)) e.preventDefault();
-//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-// });
+    if (blockedKeys.includes(e.key)) e.preventDefault();
+    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+});
 
-// document.addEventListener('contextmenu', (e) => e.preventDefault());
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ==========================================
 // Toast Notification System
