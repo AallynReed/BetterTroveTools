@@ -58,7 +58,7 @@ document.addEventListener("gem_builds_loaded", () => {
         }
 
         try {
-            const results = await eel.calculate_gem_builds(config)(); 
+            const results = await eel.calculate_gem_builds(config)();
             cachedBuilds = results;
             currentPage = 0;
             renderTable();
@@ -123,12 +123,12 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
             }
             
-            console.log("✅ Gem Builds: All dropdowns populated successfully!");
+            console.log("Gem Builds: All dropdowns populated successfully!");
 
             triggerCalculation();
 
         } catch (err) {
-            console.error("❌ Gem Builds: Failed to load config data from Python:", err);
+            console.error("Gem Builds: Failed to load config data from Python:", err);
             const classSelect = document.getElementById("gb-class");
             if (classSelect) {
                 classSelect.options.length = 0;
@@ -289,9 +289,9 @@ document.addEventListener("gem_builds_loaded", () => {
 
     if (btnPrev) {
         btnPrev.addEventListener("click", () => {
-            if (currentPage > 0) { 
-                currentPage--; 
-                renderTable(); 
+            if (currentPage > 0) {
+                currentPage--;
+                renderTable();
             }
         });
     }
@@ -299,9 +299,9 @@ document.addEventListener("gem_builds_loaded", () => {
     if (btnNext) {
         btnNext.addEventListener("click", () => {
             const maxPages = Math.ceil(cachedBuilds.length / itemsPerPage);
-            if (currentPage < maxPages - 1) { 
-                currentPage++; 
-                renderTable(); 
+            if (currentPage < maxPages - 1) {
+                currentPage++;
+                renderTable();
             }
         });
     }
@@ -323,7 +323,7 @@ document.addEventListener("gem_builds_loaded", () => {
 
         const startIdx = currentPage * itemsPerPage;
         const pageItems = cachedBuilds.slice(startIdx, startIdx + itemsPerPage);
-        const bestCoeff = cachedBuilds[0].coefficient; 
+        const bestCoeff = cachedBuilds[0].coefficient;
 
         let tableHTML = "";
         pageItems.forEach(build => {
@@ -359,7 +359,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 try {
                     await navigator.clipboard.writeText(layoutText);
                     const originalColor = e.target.style.color;
-                    e.target.style.color = "#4CAF50"; 
+                    e.target.style.color = "#4CAF50";
                     setTimeout(() => e.target.style.color = originalColor, 500);
                     if(window.showToast) window.showToast(t("Copied Build Layout to clipboard!"));
                 } catch (err) {

@@ -9,7 +9,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
     let equipped = [];
     let inventory = [];
     let selected = null;
-    let selectedSource = null; 
+    let selectedSource = null;
 
     function formatGemName(name) {
         if (!name) return "";
@@ -54,7 +54,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             equipped: equipped,
             toggles: window.primordialDragonToggles || {}
         };
-        eel.save_gem_storage(data)(); 
+        eel.save_gem_storage(data)();
     }
 
     async function loadInventory() {
@@ -64,7 +64,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             if (data.equipped) equipped = data.equipped;
             if (data.toggles) window.primordialDragonToggles = data.toggles;
         }
-        render(); 
+        render();
     }
 
     function showConfirmModal(title, message, onConfirm) {
@@ -718,8 +718,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
         itemEl.className = 'item';
         itemEl.draggable = true;
         itemEl.addEventListener('mousedown', function (e) {
-            if (e.button === 1) { 
-                e.preventDefault(); 
+            if (e.button === 1) {
+                e.preventDefault();
                 showConfirmModal(t("Trash Gem"), t("Are you sure you want to permanently delete this gem?"), () => {
                     if (fromPane === 'inventory') inventory[fromIdx] = null;
                     else if (fromPane === 'equipped') equipped[fromIdx] = null;
@@ -888,12 +888,12 @@ document.addEventListener('gem_simulator_loaded', async () => {
             equipped[equippedIdx] = draggedGem;
             selectedSource = { pane: 'equipped', idx: equippedIdx };
         } else if (fromPane === 'inventory') {
-            inventory[fromIdx] = oldTargetGem; 
+            inventory[fromIdx] = oldTargetGem;
             equipped[equippedIdx] = draggedGem;
             if (selected && selected.id === draggedGem.id) selectedSource = { pane: 'equipped', idx: equippedIdx };
             if (selected && oldTargetGem && selected.id === oldTargetGem.id) selectedSource = { pane: 'inventory', idx: fromIdx };
         } else if (fromPane === 'equipped') {
-            equipped[fromIdx] = oldTargetGem; 
+            equipped[fromIdx] = oldTargetGem;
             equipped[equippedIdx] = draggedGem;
             if (selected && selected.id === draggedGem.id) selectedSource = { pane: 'equipped', idx: equippedIdx };
             if (selected && oldTargetGem && selected.id === oldTargetGem.id) selectedSource = { pane: 'equipped', idx: fromIdx };
@@ -904,7 +904,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
     document.addEventListener('change', function (e) {
         if (e.target && e.target.id === 'gem-type') {
             const restrictionSelect = document.getElementById('gem-restriction');
-            if (e.target.value === "1") { 
+            if (e.target.value === "1") {
                 restrictionSelect.disabled = false;
             } else {
                 restrictionSelect.disabled = true;
@@ -986,6 +986,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
     }
 
     await fetchGemLookups();
-    await loadInventory(); 
+    await loadInventory();
 
 });

@@ -60,7 +60,7 @@ document.addEventListener('allies_loaded', async () => {
                 const paragraphs = doc.querySelectorAll('p');
                 const abilities = Array.from(paragraphs)
                     .map(p => p.textContent.trim())
-                    .filter(text => text !== 'Ally' && text !== ''); 
+                    .filter(text => text !== 'Ally' && text !== '');
 
                 abilities.forEach(ab => uniqueAbilities.add(ab));
 

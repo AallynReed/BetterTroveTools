@@ -6,7 +6,6 @@ document.addEventListener('star_chart_loaded', async () => {
     const tooltip = document.getElementById('star-tooltip');
     const summaryPanel = document.getElementById('summary-content');
     
-    // Share Controls
     const codeInput = document.getElementById('build-code-input');
     const btnCopyCode = document.getElementById('btn-copy-code');
     const btnLoadCode = document.getElementById('btn-load-code');
@@ -54,9 +53,9 @@ document.addEventListener('star_chart_loaded', async () => {
         Pve: { minor: "#6A1B9A", major: "#283593" }
     };
 
-    let nodeMap = {}; 
+    let nodeMap = {};
     let selectedPaths = new Set();
-    let currentAggregatedData = null; 
+    let currentAggregatedData = null;
 
     const response = await eel.get_calculated_star_chart()();
     
@@ -113,7 +112,7 @@ document.addEventListener('star_chart_loaded', async () => {
             const size = 16;
             const [cx, cy] = star.Coords;
             shape.setAttribute("points", `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`);
-            shape.setAttribute("fill", "var(--bg-dark, #111)"); 
+            shape.setAttribute("fill", "var(--bg-dark, #111)");
             shape.setAttribute("stroke", COLORS[constellName].major);
             shape.setAttribute("stroke-width", "4");
             shape.classList.add("star-node", "root-node");
@@ -156,7 +155,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 const nodesToAdd = getAncestorsToSelect(star.Path, []);
                 if (selectedPaths.size + nodesToAdd.length > 40) {
                     window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
-                    return; 
+                    return;
                 }
                 nodesToAdd.forEach(p => selectedPaths.add(p));
             }
@@ -387,7 +386,7 @@ document.addEventListener('star_chart_loaded', async () => {
             });
 
             updateChartVisuals();
-            calculateStats(); 
+            calculateStats();
             
             if (skipped > 0) {
                 window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max 40 limit).").replace("{loaded}", loaded).replace("{skipped}", skipped), true);
@@ -431,7 +430,7 @@ document.addEventListener('star_chart_loaded', async () => {
         btnDeleteTemplate.style.display = templateSelect.value ? 'inline-block' : 'none';
         if (templateSelect.value && templates[templateSelect.value]) {
             codeInput.value = templates[templateSelect.value];
-            btnLoadCode.click(); 
+            btnLoadCode.click();
         }
     });
 
@@ -525,7 +524,6 @@ document.addEventListener('star_chart_loaded', async () => {
 
     loadTemplates();
 
-    // --- Boot Sequence ---
 
     const centerNode = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     centerNode.setAttribute("cx", origin[0]);

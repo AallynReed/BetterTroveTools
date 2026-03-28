@@ -68,7 +68,7 @@ document.addEventListener('trovesaurus_loaded', () => {
         imageModal.addEventListener('click', (e) => {
             if (e.target === imageModal || e.target.classList.contains('close-modal')) {
                 imageModal.classList.remove('active');
-                setTimeout(() => { modalImg.src = ""; }, 200); 
+                setTimeout(() => { modalImg.src = ""; }, 200);
             }
         });
     }
@@ -119,7 +119,6 @@ async function getActiveGamePath() {
     return null;
 }
 
-// -- MOD FETCHING --
 async function fetchTrovesaurusMods(page = 1) {
     if (ts_isLoading) return;
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
@@ -225,7 +224,6 @@ function renderTrovesaurusGrid(mods, container) {
     }).join('');
 }
 
-// -- MOD INSTALLATION --
 async function handleTrovesaurusInstall(e) {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     const btn = e.target.closest('.ts-install-btn');

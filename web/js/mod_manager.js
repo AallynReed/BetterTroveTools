@@ -25,7 +25,6 @@ document.addEventListener('mod_manager_loaded', async () => {
         let visibleCount = 0;
 
         cards.forEach(card => {
-            // ... (your existing filter logic) ...
             if (matchesSearch && matchesStatus) {
                 card.style.display = "flex";
                 visibleCount++;
@@ -34,7 +33,6 @@ document.addEventListener('mod_manager_loaded', async () => {
             }
         });
 
-        // REPLACED THE OLD LOGIC WITH THIS CLEAN TOKEN FORMATTER
         const countDisplay = document.getElementById('mod-count-display');
         if (countDisplay) {
             countDisplay.innerText = t("Showing {visible} / {total} mods")
@@ -121,10 +119,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             
             modsData.forEach(mod => {
                 const isEnabled = mod.status === 'enabled';
-                const statusColor = isEnabled ? '#28a745' : '#666'; 
+                const statusColor = isEnabled ? '#28a745' : '#666';
                 const btnText = isEnabled ? t('Disable') : t('Enable');
                 const btnClass = isEnabled ? 'active' : '';
-                const cardOpacity = isEnabled ? '1' : '0.6'; 
+                const cardOpacity = isEnabled ? '1' : '0.6';
                 
                 const hasActiveConflict = isEnabled && mod.conflicts_with.some(c => c.enabled);
 
@@ -218,7 +216,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 toggleBtn.disabled = true;
 
                 const response = await eel.toggle_mod(gamePath, currentPath)();
-                if (response.success) loadMods(gamePath); 
+                if (response.success) loadMods(gamePath);
                 else {
                     window.showToast(t("Failed to toggle mod: {error}").replace("{error}", response.error), true);
                     loadMods(gamePath);
@@ -238,10 +236,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const response = await eel.perform_mod_update(gamePath, currentPath)();
                 
                 if (response.success) {
-                    loadMods(gamePath); 
+                    loadMods(gamePath);
                 } else {
                     window.showToast(t("Failed to update mod: {error}").replace("{error}", response.error), true);
-                    updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>'; 
+                    updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
                     updateBtn.disabled = false;
                     updateBtn.style.animation = "none";
                 }
@@ -262,7 +260,7 @@ document.addEventListener('mod_manager_loaded', async () => {
         imageModal.addEventListener('click', (e) => {
             if (e.target === imageModal || e.target.classList.contains('close-modal')) {
                 imageModal.classList.remove('active');
-                setTimeout(() => { modalImg.src = ""; }, 200); 
+                setTimeout(() => { modalImg.src = ""; }, 200);
             }
         });
     }

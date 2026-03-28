@@ -127,7 +127,7 @@ document.addEventListener('file_manager_loaded', () => {
                 res.directories.sort((a, b) => {
                     const timeA = a.last_used ? new Date(a.last_used).getTime() : 0;
                     const timeB = b.last_used ? new Date(b.last_used).getTime() : 0;
-                    return timeB - timeA; 
+                    return timeB - timeA;
                 });
 
                 res.directories.forEach(d => {
@@ -184,7 +184,7 @@ document.addEventListener('file_manager_loaded', () => {
         if (response.success && response.path) {
             newTrackerPath.value = response.path;
             if (!newTrackerName.value) {
-                newTrackerName.value = response.path.split('\\').pop().split('/').pop(); 
+                newTrackerName.value = response.path.split('\\').pop().split('/').pop();
             }
         }
     });
@@ -234,9 +234,9 @@ document.addEventListener('file_manager_loaded', () => {
                     el.classList.add('is-match');
                     let parent = el.closest('details.folder');
                     while (parent) {
-                        if (parent.classList.contains('has-match')) break; 
+                        if (parent.classList.contains('has-match')) break;
                         parent.classList.add('has-match');
-                        parent.open = true; 
+                        parent.open = true;
                         parent = parent.parentElement.closest('details.folder');
                     }
                 }
@@ -265,12 +265,11 @@ document.addEventListener('file_manager_loaded', () => {
             const response = await eel.load_entire_game_tree(selectedPath)();
             if (response.success) {
                 try {
-                    // Fetch the generated JSON file directly via custom bottle HTTP route
                     const fetchRes = await fetch('/api/cache/temp_tree.json?t=' + new Date().getTime());
                     const treeData = await fetchRes.json();
                     
                     let treeHTML = `<div class="file-tree">`;
-                    const rootChildren = treeData.children || treeData; 
+                    const rootChildren = treeData.children || treeData;
                     
                     const sortedKeys = Object.keys(rootChildren).sort((a, b) => {
                         const nodeA = rootChildren[a], nodeB = rootChildren[b];
@@ -377,13 +376,11 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    // --- NEW FORMATTING HELPERS ---
     function formatTime(totalSeconds) {
         if (totalSeconds === null || totalSeconds === undefined || isNaN(totalSeconds)) return "";
         const m = Math.floor(totalSeconds / 60);
         const s = Math.floor(totalSeconds % 60);
         
-        // Force plural tokens for everything
         const mStr = t("{count} minutes").replace("{count}", m);
         const sStr = t("{count} seconds").replace("{count}", s);
         
@@ -393,7 +390,6 @@ document.addEventListener('file_manager_loaded', () => {
         return sStr;
     }
 
-    // --- UPDATED INTEGER-BASED PROGRESS UI ---
     eel.expose(update_progress_ui);
     function update_progress_ui(current, total, filename, statusKey, etaSeconds = null, elapsedSeconds = null) {
         const percent = total > 0 ? Math.round((current / total) * 100) : 0;
@@ -402,7 +398,7 @@ document.addEventListener('file_manager_loaded', () => {
         let timeText = [];
         
         if (statusKey) {
-            timeText.push(t(statusKey)); // Safe localization!
+            timeText.push(t(statusKey));
         }
         
         if (elapsedSeconds !== null && elapsedSeconds !== "") {
@@ -419,7 +415,7 @@ document.addEventListener('file_manager_loaded', () => {
         
         const filenameEl = document.getElementById('progress-filename');
         if (filenameEl) {
-            filenameEl.innerText = filename || ""; // Never translate dynamic filenames
+            filenameEl.innerText = filename || "";
         }
     }
 

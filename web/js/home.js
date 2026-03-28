@@ -12,7 +12,6 @@ document.addEventListener('home_loaded', () => {
         }
     }, 60000);
 
-    // Watch for language changes to immediately re-render dynamic content
     if (window._homeLangListener) {
         document.removeEventListener('change', window._homeLangListener);
     }
@@ -31,7 +30,6 @@ document.addEventListener('home_loaded', () => {
         fetchEvents();
     }
 
-    // Refactored to cleanly format time, and optionally append "left" without breaking strings later
     function getCountdown(timestamp, showLeft = true) {
         const now = Math.floor(Date.now() / 1000);
         const diff = timestamp - now;
@@ -41,7 +39,6 @@ document.addEventListener('home_loaded', () => {
         const hours = Math.floor((diff % 86400) / 3600);
         const mins = Math.floor((diff % 3600) / 60);
         
-        // Force plural tokens for everything
         const dStr = t("{count} days").replace("{count}", days);
         const hStr = t("{count} hours").replace("{count}", hours);
         const mStr = t("{count} minutes").replace("{count}", mins);
@@ -64,7 +61,6 @@ document.addEventListener('home_loaded', () => {
         return timeStr;
     }
 
-    // Modal Logic
     const rotationModal = document.getElementById('d15-modal');
     const closeBtn = document.getElementById('modal-close-btn');
 
@@ -241,7 +237,6 @@ document.addEventListener('home_loaded', () => {
             merchantsGrid.style.display = 'flex';
             merchantsGrid.innerHTML = '';
             
-            // 1. Render Dragons
             const configs = [
                 { id: 'luxion', name: 'Luxion', color: '#fbc02d', icon: 'fa-dragon' },
                 { id: 'corruxion', name: 'Corruxion', color: '#9c27b0', icon: 'fa-dragon' },
@@ -281,15 +276,14 @@ document.addEventListener('home_loaded', () => {
                 merchantsGrid.appendChild(card);
             });
 
-            // 2. Render Stampy
             if (stampy && stampy.success && stampy.current) {
                 const nowSec = Math.floor(Date.now() / 1000);
                 const isActive = nowSec >= stampy.current.start && nowSec < stampy.current.end;
                 
                 const card = document.createElement('div');
                 card.className = `merchant-card hover-card ${isActive ? '' : 'inactive'}`; 
-                const stampyColor = '#ff9800'; 
-                card.style.setProperty('--merchant-color', stampyColor); 
+                const stampyColor = '#ff9800';
+                card.style.setProperty('--merchant-color', stampyColor);
                 card.style.cursor = 'pointer';
                 card.title = t("Click to see upcoming rotations");
                 
@@ -318,18 +312,17 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> ${t("Upcoming Stampy Locations")}`;
-                    populateBiomeModal(stampy.future, stampyColor, true); 
+                    populateBiomeModal(stampy.future, stampyColor, true);
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
 
                 merchantsGrid.appendChild(card);
             }
 
-            // 3. Render D15 Biomes
             if (d15 && d15.success && d15.current) {
                 const card = document.createElement('div');
                 card.className = `merchant-card hover-card`; 
-                card.style.setProperty('--merchant-color', '#4caf50'); 
+                card.style.setProperty('--merchant-color', '#4caf50');
                 card.style.cursor = 'pointer';
                 card.title = t("Click to see upcoming rotations");
                 
@@ -360,12 +353,11 @@ document.addEventListener('home_loaded', () => {
                 merchantsGrid.appendChild(card);
             }
 
-            // 4. Render Wild Trovian Mana Biomes
             if (mana && mana.success && mana.current) {
                 const card = document.createElement('div');
                 card.className = `merchant-card hover-card`; 
-                const manaColor = '#00bcd4'; 
-                card.style.setProperty('--merchant-color', manaColor); 
+                const manaColor = '#00bcd4';
+                card.style.setProperty('--merchant-color', manaColor);
                 card.style.cursor = 'pointer';
                 card.title = t("Click to see upcoming rotations");
                 
@@ -397,7 +389,6 @@ document.addEventListener('home_loaded', () => {
             }
         }
         
-        // Modal Formatter for Biomes
         function populateBiomeModal(futureRotations, highlightColor, isArrival = false) {
             const modalBody = document.getElementById('d15-modal-body');
             if (!modalBody) return;
@@ -433,7 +424,6 @@ document.addEventListener('home_loaded', () => {
             });
         }
 
-        // Modal Formatter for Dragons
         function populateMerchantModal(schedule, highlightColor) {
             const modalBody = document.getElementById('d15-modal-body');
             if (!modalBody) return;
@@ -468,7 +458,6 @@ document.addEventListener('home_loaded', () => {
         }
     }
 
-    // --- EVENTS FETCHING ---
     eel.expose(receive_events_data, 'receive_events_data');
     function receive_events_data(response) {
         const list = document.getElementById('events-list');
@@ -483,7 +472,7 @@ document.addEventListener('home_loaded', () => {
             response.data.forEach(event => {
                 const card = document.createElement('div');
                 card.className = 'event-card';
-                card.style.cursor = 'pointer'; 
+                card.style.cursor = 'pointer';
                 
                 card.onclick = () => {
                     eel.open_url_in_browser(event.url)();
@@ -525,7 +514,6 @@ document.addEventListener('home_loaded', () => {
         eel.get_trovesaurus_events()();
     }
 
-    // --- STREAMS FETCHING ---
     eel.expose(receive_twitch_streams, 'receive_twitch_streams');
     function receive_twitch_streams(response) {
         const wrapper = document.getElementById('carousel-wrapper');
@@ -558,7 +546,7 @@ document.addEventListener('home_loaded', () => {
 
             response.data.sort((a, b) => b.viewer_count - a.viewer_count).forEach(stream => {
                 const card = document.createElement('div');
-                card.className = 'stream-card'; 
+                card.className = 'stream-card';
                 card.style.cursor = 'pointer';
                 
                 card.onclick = () => {

@@ -1,13 +1,11 @@
 const I18nManager = {
-    currentLocale: 'en_US', // Fallback default; overwritten by backend settings
+    currentLocale: 'en_US',
     dictionary: {},
     availableLanguages: [],
     
-    // Background sync queues
     pendingMissingKeys: new Set(),
     syncTimeout: null,
     
-    // DOM Mutation tracking
     observer: null,
     translateTimeout: null,
 
@@ -15,7 +13,6 @@ const I18nManager = {
         if (window.eel && eel.get_available_languages) {
             this.availableLanguages = await eel.get_available_languages()();
             
-            // Fetch saved locale from backend settings.json
             try {
                 const settings = await eel.get_settings()();
                 if (settings && settings.locale) {
@@ -29,7 +26,6 @@ const I18nManager = {
             await this.loadDictionary(this.currentLocale);
         }
         
-        // Start watching the DOM for dynamic changes after the first load
         this.startObserver();
     },
 
@@ -42,7 +38,6 @@ const I18nManager = {
             const opt = document.createElement('option');
             opt.value = lang.code;
             
-            // Append the translation percentage!
             opt.textContent = `${lang.name} (${lang.percent}%)`;
             
             if (lang.code === this.currentLocale) {
@@ -51,7 +46,6 @@ const I18nManager = {
             select.appendChild(opt);
         });
 
-        // Trigger translation and save to backend when user changes language
         select.addEventListener('change', async (e) => {
             const newLocale = e.target.value;
             await this.setLanguage(newLocale);
@@ -86,12 +80,8 @@ const I18nManager = {
         await this.translatePage();
     },
 
-    // ---------------------------------------------------------
-    // MUTATION OBSERVER (Catches dynamically injected HTML)
-    // ---------------------------------------------------------
     startObserver() {
         this.observer = new MutationObserver((mutations) => {
-            // Debounce: Wait 50ms for JS to finish injecting elements before translating
             if (this.translateTimeout) clearTimeout(this.translateTimeout);
             this.translateTimeout = setTimeout(() => {
                 this.translatePage();
@@ -107,7 +97,6 @@ const I18nManager = {
 
     resumeObserver() {
         if (this.observer) {
-            // Watch the entire body for injected nodes (childList) and deep changes (subtree)
             this.observer.observe(document.body, {
                 childList: true,
                 subtree: true
@@ -115,25 +104,19 @@ const I18nManager = {
         }
     },
 
-    // ---------------------------------------------------------
-    // METHOD 1: The DOM Scanner (For HTML files)
-    // ---------------------------------------------------------
     async translatePage() {
-        // PAUSE the observer so our translations don't trigger an infinite loop
         this.pauseObserver();
 
         const missingKeys = new Set();
 
-        // 1. Standard text translations
         document.querySelectorAll('[data-i18n]').forEach(el => {
             let key = el.getAttribute('data-i18n');
             if (!key) {
                 key = el.innerHTML.trim();
-                el.setAttribute('data-i18n', key); 
+                el.setAttribute('data-i18n', key);
             }
             if (key) {
                 if (this.dictionary[key] !== undefined && this.dictionary[key] !== "") {
-                    // Only update if it actually changed to save browser paint cycles
                     if (el.innerHTML !== this.dictionary[key]) {
                         el.innerHTML = this.dictionary[key];
                     }
@@ -143,7 +126,6 @@ const I18nManager = {
             }
         });
 
-        // 2. Placeholder translations
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             let key = el.getAttribute('data-i18n-placeholder');
             if (key) {
@@ -153,14 +135,13 @@ const I18nManager = {
                     }
                 } else {
                     if (el.getAttribute('placeholder') !== key) {
-                        el.setAttribute('placeholder', key); 
+                        el.setAttribute('placeholder', key);
                     }
                     missingKeys.add(key);
                 }
             }
         });
 
-        // 3. Title/Tooltip translations
         document.querySelectorAll('[data-i18n-title]').forEach(el => {
             let key = el.getAttribute('data-i18n-title');
             if (key) {
@@ -170,7 +151,7 @@ const I18nManager = {
                     }
                 } else {
                     if (el.getAttribute('title') !== key) {
-                        el.setAttribute('title', key); 
+                        el.setAttribute('title', key);
                     }
                     missingKeys.add(key);
                 }
@@ -182,13 +163,9 @@ const I18nManager = {
             await eel.add_missing_translation_keys(this.currentLocale, Array.from(missingKeys))();
         }
 
-        // RESUME the observer now that we are done changing the DOM
         this.resumeObserver();
     },
 
-    // ---------------------------------------------------------
-    // METHOD 2: The JS Translator (For Toast messages/dynamic JS)
-    // ---------------------------------------------------------
     t(key) {
         if (!key) return "";
         
@@ -198,7 +175,7 @@ const I18nManager = {
         
         this.pendingMissingKeys.add(key);
         this.scheduleSync();
-        return key; 
+        return key;
     },
 
     scheduleSync() {

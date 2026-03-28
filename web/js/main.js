@@ -1,4 +1,3 @@
-// --- Global App Boot & GitHub Updates ---
 document.addEventListener('DOMContentLoaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     
@@ -47,9 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// ==========================================
-// App Security & Hotkey Blocking
-// ==========================================
 document.addEventListener('keydown', function(e) {
     const blockedKeys = ['F12', 'F5', 'F11'];
     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
@@ -62,9 +58,6 @@ document.addEventListener('keydown', function(e) {
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-// ==========================================
-// Toast Notification System
-// ==========================================
 window.showToast = function(message, isError = false) {
     const toast = document.createElement('div');
     toast.style.position = 'fixed';
@@ -83,8 +76,6 @@ window.showToast = function(message, isError = false) {
     toast.style.whiteSpace = 'pre-wrap';
     toast.style.textAlign = 'center';
     
-    // REMOVED: The global t() wrapper. 
-    // The message is already translated by the caller before being passed in!
     toast.innerText = message;
     
     document.body.appendChild(toast);
@@ -99,9 +90,6 @@ window.showToast = function(message, isError = false) {
     }, 3000);
 };
 
-// ==========================================
-// App Protocol / Deep Link Handling
-// ==========================================
 window.pendingSearch = null;
 
 eel.expose(handle_deep_link);
@@ -138,7 +126,7 @@ window.executePendingSearch = function() {
         if (searchInput && searchBtn) {
             searchInput.value = window.pendingSearch;
             searchBtn.click();
-            window.pendingSearch = null; 
+            window.pendingSearch = null;
         }
     }
 }
@@ -147,15 +135,11 @@ document.addEventListener('trovesaurus_loaded', () => {
     window.executePendingSearch();
 });
 
-// ==========================================
-// Core Application Routing & Logic
-// ==========================================
 document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    // Sidebar toggle logic
     const burgerBtn = document.getElementById('burger-btn');
     const sidebar = document.getElementById('sidebar');
     if (burgerBtn && sidebar) {
@@ -164,7 +148,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // View Routing
     window.loadView = async function(target) {
         try {
             const response = await fetch(`views/${target}.html`);
@@ -177,12 +160,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.classList.toggle('active', btn.getAttribute('data-target') === target);
             });
 
-            // SCAN THE NEWLY INJECTED HTML FOR TRANSLATIONS
             if (window.I18nManager) {
                 await window.I18nManager.translatePage();
             }
 
-            // Dispatch event so individual scripts know their HTML just loaded
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
             
@@ -201,9 +182,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    // ==========================================
-    // ABOUT VIEW LOGIC
-    // ==========================================
     document.addEventListener('about_loaded', async () => {
         const versionSpan = document.getElementById('app-version');
         const authorSpan = document.getElementById('app-author');
@@ -226,9 +204,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // ==========================================
-    // Live Server Clock (Trove Time: UTC - 11)
-    // ==========================================
     const dateEl = document.getElementById('server-time-date');
     const clockEl = document.getElementById('server-time-clock');
 
@@ -239,7 +214,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const troveMs = utcMs - (11 * 3600000);
         const troveTime = new Date(troveMs);
 
-        // Format date and time dynamically based on the current locale!
         const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
         dateEl.textContent = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
         clockEl.textContent = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -248,9 +222,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateServerTime();
     setInterval(updateServerTime, 1000);
 
-    // ==========================================
-    // Initial Load Protocol Checks
-    // ==========================================
     const startupUrl = await eel.get_startup_url()();
     if (startupUrl) {
         window.handle_deep_link(startupUrl);

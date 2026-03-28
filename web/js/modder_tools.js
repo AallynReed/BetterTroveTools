@@ -2,7 +2,6 @@ document.addEventListener('modder_tools_loaded', () => {
     console.log("Modder Tools view initialized!");
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    // --- TABS LOGIC ---
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -21,7 +20,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     });
 
-    // --- SELECT2 INITIALIZATION ---
     if (typeof jQuery !== 'undefined' && $.fn.select2) {
         $('#build-mod-tags').select2({
             placeholder: t("Select categories..."),
@@ -33,7 +31,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // --- GLOBAL GAME SCANNING ---
     const buildGameSelect = document.getElementById('build-game-select');
     const projectGameSelect = document.getElementById('project-game-select');
 
@@ -87,9 +84,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // ==========================================
-    // BUILD TMOD TAB
-    // ==========================================
     const previewContainer = document.getElementById('preview-picker-container');
     const previewInput = document.getElementById('build-preview-input');
     const previewImg = document.getElementById('build-mod-preview');
@@ -112,7 +106,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (btnRemoveBuildPreview) {
         btnRemoveBuildPreview.addEventListener('click', (e) => {
-            e.stopPropagation(); 
+            e.stopPropagation();
             previewImg.src = "assets/images/no_preview.png";
             previewInput.value = "";
             btnRemoveBuildPreview.style.display = 'none';
@@ -178,7 +172,6 @@ document.addEventListener('modder_tools_loaded', () => {
             btnAutoStructure.disabled = true;
             
             try {
-                // Pass gamePath directly instead of popping up a folder dialog!
                 const result = await eel.auto_structure_workspace(gamePath, gamePath)();
                 if (result.success) {
                     window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
@@ -228,7 +221,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 }
             }
             
-            // Pass gamePath directly instead of popping up a folder dialog!
             const result = await eel.detect_override_files(gamePath)();
             if (result.success) {
                 let addedCount = 0;
@@ -375,9 +367,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // ==========================================
-    // EXTRACT TMOD TAB
-    // ==========================================
     const btnBrowseExtractSource = document.getElementById('btn-browse-extract-source');
     const inputExtractSource = document.getElementById('extract-source-file');
     
@@ -428,9 +417,6 @@ document.addEventListener('modder_tools_loaded', () => {
         });
     }
 
-    // ==========================================
-    // SOFTWARE TAB
-    // ==========================================
     async function loadModdingSoftware() {
         const container = document.getElementById('software-list-container');
         if (!container) return;
@@ -496,9 +482,6 @@ document.addEventListener('modder_tools_loaded', () => {
     }
     loadModdingSoftware();
 
-    // ==========================================
-    // PROJECTS TAB LOGIC
-    // ==========================================
     const btnBrowseProject = document.getElementById('btn-browse-project');
     const projectDirInput = document.getElementById('project-dir-input');
     const projectWorkspace = document.getElementById('project-workspace');
@@ -518,7 +501,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     const btnPlaceOverrides = document.getElementById('btn-place-overrides');
     const btnRemoveOverrides = document.getElementById('btn-remove-overrides');
-    let activeOverrides = []; 
+    let activeOverrides = [];
 
     if (projPreviewContainer && projPreviewInput) {
         projPreviewContainer.addEventListener('click', () => projPreviewInput.click());
@@ -655,7 +638,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     payload.previewName = projPreviewInput.files[0].name;
                 }
             } else {
-                payload.previewBase64 = null; 
+                payload.previewBase64 = null;
             }
 
             const result = await eel.save_mod_project(dir, payload)();
@@ -833,7 +816,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     btnPlaceOverrides.disabled = false;
                 } else {
                     window.showToast(t("Error removing overrides: {error}").replace("{error}", result.error), true);
-                    btnRemoveOverrides.disabled = false; 
+                    btnRemoveOverrides.disabled = false;
                 }
             } catch (err) {
                 window.showToast(t("An unexpected error occurred."), true);

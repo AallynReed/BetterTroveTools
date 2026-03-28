@@ -2,9 +2,6 @@ document.addEventListener('calculators_loaded', () => {
     console.log("Calculators view initialized!");
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    // ==========================================
-    // --- TAB SYSTEM LOGIC ---
-    // ==========================================
     const tabButtons = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
 
@@ -24,9 +21,6 @@ document.addEventListener('calculators_loaded', () => {
         });
     });
 
-    // ==========================================
-    // --- MASTERY CALCULATOR LOGIC ---
-    // ==========================================
     function initMasteryCalculator() {
         const troveSlider = document.getElementById('trove-slider');
         const troveNum = document.getElementById('trove-number');
@@ -60,8 +54,8 @@ document.addEventListener('calculators_loaded', () => {
         const troveCapped = Math.min(rawTrove, 1000);
         const geodeCapped = Math.min(rawGeode, 100);
 
-        const troveTier1 = Math.min(troveCapped, 500); 
-        const troveTier2 = Math.max(0, troveCapped - 500); 
+        const troveTier1 = Math.min(troveCapped, 500);
+        const troveTier2 = Math.max(0, troveCapped - 500);
 
         const hpBonus = (troveTier1 * 0.6).toFixed(1);
         const dmgBonus = (troveTier1 * 0.2).toFixed(1);
@@ -82,9 +76,6 @@ document.addEventListener('calculators_loaded', () => {
 
     initMasteryCalculator();
 
-    // ==========================================
-    // --- MAGIC FIND CALCULATOR LOGIC ---
-    // ==========================================
     let mfData = [];
 
     fetch('/assets/data/stats/magic_find.json')
@@ -186,7 +177,7 @@ document.addEventListener('calculators_loaded', () => {
         });
 
         bindMFListeners();
-        calculateMF(); 
+        calculateMF();
     }
 
     function bindMFListeners() {
@@ -271,9 +262,6 @@ document.addEventListener('calculators_loaded', () => {
         if(displayBreakdown) displayBreakdown.innerText = breakdownText;
     }
 
-    // ==========================================
-    // --- POWER RANK CALCULATOR LOGIC ---
-    // ==========================================
     let prData = [];
 
     fetch('/assets/data/stats/power_rank.json')
@@ -287,14 +275,14 @@ document.addEventListener('calculators_loaded', () => {
                     name: "Trove Mastery",
                     type: "pr_mastery",
                     percentage: false,
-                    max: 1100, 
+                    max: 1100,
                     default: 899
                 },
                 {
                     name: "Geode Mastery",
                     type: "pr_geode_mastery",
                     percentage: false,
-                    max: 150, 
+                    max: 150,
                     default: 100
                 },
                 ...data
@@ -381,7 +369,7 @@ document.addEventListener('calculators_loaded', () => {
         }
 
         bindPRListeners();
-        calculatePR(); 
+        calculatePR();
     }
 
     function bindPRListeners() {
@@ -430,14 +418,14 @@ document.addEventListener('calculators_loaded', () => {
                 
                 if (dataItem.type === 'pr_mastery') {
                     const capped = Math.min(rawVal, 1000);
-                    const tier1 = Math.min(capped, 500); 
-                    const tier2 = Math.max(0, capped - 500); 
+                    const tier1 = Math.min(capped, 500);
+                    const tier2 = Math.max(0, capped - 500);
                     
                     val = (tier1 * 4) + (tier2 * 1);
                 } 
                 else if (dataItem.type === 'pr_geode_mastery') {
-                    const capped = Math.min(rawVal, 100); 
-                    val = capped * 5; 
+                    const capped = Math.min(rawVal, 100);
+                    val = capped * 5;
                 } 
                 else {
                     val = rawVal;
