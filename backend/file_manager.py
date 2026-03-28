@@ -183,10 +183,32 @@ def ask_extraction_directory():
     return folder_path
 
 @eel.expose
-def mass_extract_files(dest_dir_str, file_list):
+def mass_extract_files(dest_dir, files_to_extract):
     try:
-        asyncio.run(_mass_extract_async(dest_dir_str, file_list))
+        total_files = len(files_to_extract)
+        start_time = time.time()
+        
+        for index, file_data in enumerate(files_to_extract):
+            # ... (Your extraction logic) ...
+            
+            # Send raw integers to the frontend
+            if index % 50 == 0 or index == total_files - 1:
+                elapsed = time.time() - start_time
+                files_per_sec = (index + 1) / elapsed if elapsed > 0 else 0
+                eta_seconds = (total_files - (index + 1)) / files_per_sec if files_per_sec > 0 else 0
+                
+                eel.update_progress_ui(
+                    index + 1, 
+                    total_files, 
+                    file_data.get('filepath', 'Unknown'), 
+                    "Extracting...",  # The safe translation key
+                    int(eta_seconds), # Raw Integer
+                    int(elapsed)      # Raw Integer
+                )
+                eel.sleep(0.001)
+
         return {"success": True}
+        
     except Exception as e:
         import traceback
         traceback.print_exc()

@@ -265,8 +265,8 @@ document.addEventListener('file_manager_loaded', () => {
             const response = await eel.load_entire_game_tree(selectedPath)();
             if (response.success) {
                 try {
-                    // Force cache-busting to ensure we don't load a stale JSON file
-                    const fetchRes = await fetch('/cache/temp_tree.json?t=' + new Date().getTime());
+                    // Fetch the generated JSON file directly via custom bottle HTTP route
+                    const fetchRes = await fetch('/api/cache/temp_tree.json?t=' + new Date().getTime());
                     const treeData = await fetchRes.json();
                     
                     let treeHTML = `<div class="file-tree">`;
@@ -377,23 +377,35 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
+    // --- NEW FORMATTING HELPERS ---
+    function formatTime(totalSeconds) {
+        if (totalSeconds === null || totalSeconds === undefined || isNaN(totalSeconds)) return "";
+        const m = Math.floor(totalSeconds / 60);
+        const s = Math.floor(totalSeconds % 60);
+        if (m > 0) {
+            return `${m}${t("m")} ${s}${t("s")}`;
+        }
+        return `${s}${t("s")}`;
+    }
+
+    // --- UPDATED INTEGER-BASED PROGRESS UI ---
     eel.expose(update_progress_ui);
-    function update_progress_ui(current, total, filename, etaStr, elapsedStr = "") {
-        const percent = Math.round((current / total) * 100);
+    function update_progress_ui(current, total, filename, statusKey, etaSeconds = null, elapsedSeconds = null) {
+        const percent = total > 0 ? Math.round((current / total) * 100) : 0;
         document.getElementById('progress-fill').style.width = percent + '%';
         
         let timeText = [];
         
-        if (elapsedStr && elapsedStr !== "N/A") {
-            timeText.push(`${t("Elapsed:")} ${elapsedStr}`);
+        if (statusKey) {
+            timeText.push(t(statusKey)); // Safe localization!
         }
         
-        if (etaStr) {
-            if (!etaStr.includes('Baseline') && !etaStr.includes('Scanning') && !etaStr.includes('Cataloging')) {
-                timeText.push(`${t("ETA:")} ${t(etaStr)}`);
-            } else {
-                timeText.push(t(etaStr));
-            }
+        if (elapsedSeconds !== null && elapsedSeconds !== "") {
+            timeText.push(`${t("Elapsed:")} ${formatTime(elapsedSeconds)}`);
+        }
+        
+        if (etaSeconds !== null && etaSeconds !== "") {
+            timeText.push(`${t("ETA:")} ${formatTime(etaSeconds)}`);
         }
         
         const timeString = timeText.length > 0 ? timeText.join(' | ') : '';
@@ -402,7 +414,7 @@ document.addEventListener('file_manager_loaded', () => {
         
         const filenameEl = document.getElementById('progress-filename');
         if (filenameEl) {
-            filenameEl.innerText = filename || "";
+            filenameEl.innerText = filename || ""; // Never translate dynamic filenames
         }
     }
 
