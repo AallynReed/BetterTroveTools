@@ -112,7 +112,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (btnRemoveBuildPreview) {
         btnRemoveBuildPreview.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevents the file picker from opening
+            e.stopPropagation(); 
             previewImg.src = "assets/images/no_preview.png";
             previewInput.value = "";
             btnRemoveBuildPreview.style.display = 'none';
@@ -136,7 +136,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 const result = await eel.ask_add_files(gamePath)();
                 if (result && result.success) {
                     if (result.rejected && result.rejected.length > 0) {
-                        window.showToast(`${t("Denied")} ${result.rejected.length} ${t("file(s):")}\n${t("Selected files must be located within the active game path.")}`, true);
+                        window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
                     }
 
                     if (result.files && result.files.length > 0) {
@@ -183,9 +183,9 @@ document.addEventListener('modder_tools_loaded', () => {
             try {
                 const result = await eel.auto_structure_workspace(workspaceDir, gamePath)();
                 if (result.success) {
-                    window.showToast(`${t("Successfully auto-structured")} ${result.count} ${t("files!")}`);
+                    window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
                 } else {
-                    window.showToast(`${t("Error structuring files:")} ${result.error}`, true);
+                    window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
                 }
             } catch (err) {
                 console.error(err);
@@ -260,10 +260,10 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (addedCount === 0) {
                     window.showToast(t("No new override files found in the source directory."), true);
                 } else {
-                    window.showToast(`${addedCount} ${t("override file(s) successfully detected.")}`);
+                    window.showToast(t("{count} override file(s) successfully detected.").replace("{count}", addedCount));
                 }
             } else {
-                window.showToast(`${t("Error detecting overrides:")} ${result.error}`, true);
+                window.showToast(t("Error detecting overrides: {error}").replace("{error}", result.error), true);
             }
             
             btnDetectOverrides.innerHTML = originalHtml;
@@ -334,7 +334,7 @@ document.addEventListener('modder_tools_loaded', () => {
                                 tr.remove();
                             }
                         });
-                        window.showToast(`${t("Warning:")} ${missingResult.missing.length} ${t("file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.")}`, true);
+                        window.showToast(t("Warning: {count} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.").replace("{count}", missingResult.missing.length), true);
                         btnBuildTMod.disabled = false;
                         btnBuildTMod.innerHTML = originalText;
                         return;
@@ -369,9 +369,9 @@ document.addEventListener('modder_tools_loaded', () => {
                 const result = await eel.build_tmod(payload)();
 
                 if (result.success) {
-                    window.showToast(`${t("TMod successfully built!")}\n${t("Saved to:")} ${result.path}`, false);
+                    window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
                 } else {
-                    window.showToast(`${t("Failed to build TMod:")}\n${result.error}`, true);
+                    window.showToast(t("Failed to build TMod:\n{error}").replace("{error}", result.error), true);
                 }
             } catch (err) {
                 console.error(err);
@@ -422,9 +422,9 @@ document.addEventListener('modder_tools_loaded', () => {
             try {
                 const result = await eel.extract_tmod(sourceFile, destDir)();
                 if (result.success) {
-                    window.showToast(`${t("Successfully extracted")} ${result.count} ${t("files to:")}\n${destDir}`);
+                    window.showToast(t("Successfully extracted {count} files to:\n{path}").replace("{count}", result.count).replace("{path}", destDir));
                 } else {
-                    window.showToast(`${t("Failed to extract TMod:")}\n${result.error}`, true);
+                    window.showToast(t("Failed to extract TMod:\n{error}").replace("{error}", result.error), true);
                 }
             } catch (err) {
                 console.error(err);
@@ -545,7 +545,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     if (btnRemoveProjectPreview) {
         btnRemoveProjectPreview.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevents the file picker from opening
+            e.stopPropagation();
             projPreviewImg.src = "assets/images/no_preview.png";
             projPreviewInput.value = "";
             btnRemoveProjectPreview.style.display = 'none';
@@ -624,7 +624,7 @@ document.addEventListener('modder_tools_loaded', () => {
             
             await refreshProjectFiles();
         } else {
-            window.showToast(`${t("Error loading project:")} ${result.error}`, true);
+            window.showToast(t("Error loading project: {error}").replace("{error}", result.error), true);
         }
     }
 
@@ -663,14 +663,14 @@ document.addEventListener('modder_tools_loaded', () => {
                     payload.previewName = projPreviewInput.files[0].name;
                 }
             } else {
-                payload.previewBase64 = null; // Explicitly clear if removed
+                payload.previewBase64 = null; 
             }
 
             const result = await eel.save_mod_project(dir, payload)();
             if (result.success) {
                 window.showToast(t("Project metadata saved successfully!"));
             } else {
-                window.showToast(`${t("Error saving project:")} ${result.error}`, true);
+                window.showToast(t("Error saving project: {error}").replace("{error}", result.error), true);
             }
         });
     }
@@ -689,7 +689,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 await loadProjectData(dir);
                 versionSelect.value = newVersion;
             } else {
-                window.showToast(`${t("Error creating version:")} ${result.error}`, true);
+                window.showToast(t("Error creating version: {error}").replace("{error}", result.error), true);
             }
         });
     }
@@ -712,10 +712,10 @@ document.addEventListener('modder_tools_loaded', () => {
             try {
                 const result = await eel.auto_structure_project_version(dir, version, gamePath)();
                 if (result.success) {
-                    window.showToast(`${t("Successfully structured")} ${result.count} ${t("files!")}`);
+                    window.showToast(t("Successfully structured {count} files!").replace("{count}", result.count));
                     await refreshProjectFiles();
                 } else {
-                    window.showToast(`${t("Error structuring files:")} ${result.error}`, true);
+                    window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
                 }
             } catch (err) {
                 window.showToast(t("An unexpected error occurred."), true);
@@ -749,7 +749,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 return;
             }
 
-            // Save metadata immediately before compiling
             const payload = {
                 title: title,
                 author: document.getElementById('project-mod-author').value.trim(),
@@ -775,9 +774,9 @@ document.addEventListener('modder_tools_loaded', () => {
             try {
                 const result = await eel.compile_project(dir, version, gamePath)();
                 if (result.success) {
-                    window.showToast(`${t("Project successfully compiled!")}\n${t("Saved to:")} ${result.path}`, false);
+                    window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
                 } else {
-                    window.showToast(`${t("Failed to compile project:")}\n${result.error}`, true);
+                    window.showToast(t("Failed to compile project:\n{error}").replace("{error}", result.error), true);
                 }
             } catch (err) {
                 console.error(err);
@@ -812,11 +811,11 @@ document.addEventListener('modder_tools_loaded', () => {
                         btnPlaceOverrides.disabled = false;
                     } else {
                         activeOverrides = result.placed_files;
-                        window.showToast(`${result.count} ${t("files placed in game overrides for testing.")}`);
+                        window.showToast(t("{count} files placed in game overrides for testing.").replace("{count}", result.count));
                         btnRemoveOverrides.disabled = false;
                     }
                 } else {
-                    window.showToast(`${t("Error placing overrides:")} ${result.error}`, true);
+                    window.showToast(t("Error placing overrides: {error}").replace("{error}", result.error), true);
                     btnPlaceOverrides.disabled = false;
                 }
             } catch (err) {
@@ -837,11 +836,11 @@ document.addEventListener('modder_tools_loaded', () => {
             try {
                 const result = await eel.remove_project_overrides(activeOverrides)();
                 if (result.success) {
-                    window.showToast(`${result.count} ${t("override files successfully removed from game.")}`);
+                    window.showToast(t("{count} override files successfully removed from game.").replace("{count}", result.count));
                     activeOverrides = [];
                     btnPlaceOverrides.disabled = false;
                 } else {
-                    window.showToast(`${t("Error removing overrides:")} ${result.error}`, true);
+                    window.showToast(t("Error removing overrides: {error}").replace("{error}", result.error), true);
                     btnRemoveOverrides.disabled = false; 
                 }
             } catch (err) {

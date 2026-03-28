@@ -1,4 +1,5 @@
 document.addEventListener("gem_builds_loaded", () => {
+    console.log("Gem Builds Engine initialized!");
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     let currentPage = 0;
     let cachedBuilds = [];
@@ -210,7 +211,7 @@ document.addEventListener("gem_builds_loaded", () => {
         scTemplateSelect.style.borderRadius = '4px';
         scTemplateSelect.style.width = '100%';
         scTemplateSelect.style.marginBottom = '8px';
-        scTemplateSelect.innerHTML = `<option value="">-- ${t("Load Saved Star Chart")} --</option>`;
+        scTemplateSelect.innerHTML = `<option value="">${t("-- Load Saved Star Chart --")}</option>`;
 
         starChartInput.parentElement.insertBefore(scTemplateSelect, starChartInput);
 
@@ -269,7 +270,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 starChartSummary.innerHTML = `
                     <h4><i class="fa-solid fa-chart-network"></i> ${t("Star Chart Loaded")}</h4>
                     <ul style="margin-bottom: 8px;">
-                        <li><strong>${paths.length}</strong> ${t("Nodes Detected")}</li>
+                        <li>${t("{count} Nodes Detected").replace("{count}", `<strong>${paths.length}</strong>`)}</li>
                     </ul>
                     ${statsHtml ? `<hr class="divider" style="margin: 8px 0;"><ul style="list-style-type: none; padding-left: 0;">${statsHtml}</ul>` : ""}
                 `;

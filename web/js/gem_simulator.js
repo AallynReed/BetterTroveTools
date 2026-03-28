@@ -100,10 +100,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 populateGemFormMenus();
                 setInitialRestrictionState();
             } else {
-                window.showToast(t("Failed to fetch gem lookups:") + " " + (response ? response.error : t("Unknown Error")), true);
+                window.showToast(t("Failed to fetch gem lookups: {error}").replace("{error}", response ? response.error : t("Unknown Error")), true);
             }
         } catch (e) {
-            window.showToast(t("Backend connection error:") + " " + e, true);
+            window.showToast(t("Backend connection error: {error}").replace("{error}", e), true);
         }
     }
 
@@ -279,7 +279,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         totalsCard.style.maxWidth = '100%';
         totalsCard.style.boxSizing = 'border-box';
         
-        let statsHtml = `<div style="text-align:center;font-weight:bold;font-size:1.1em;margin-bottom:10px;color:var(--accent-blue);">${t("Total Power Rank:")} ${Math.round(totalPRBuffed)}</div><hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">`;
+        let statsHtml = `<div style="text-align:center;font-weight:bold;font-size:1.1em;margin-bottom:10px;color:var(--accent-blue);">${t("Total Power Rank: {pr}").replace("{pr}", Math.round(totalPRBuffed))}</div><hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">`;
         
         statsHtml += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">`;
         Array.from(allStatNames).sort().forEach(statName => {
@@ -562,12 +562,12 @@ document.addEventListener('gem_simulator_loaded', async () => {
                         if (selectedSource && selectedSource.pane === 'equipped' && selectedSource.idx != null) equipped[selectedSource.idx] = resp.gem;
                         render();
                     } else {
-                        window.showToast(t('Could not level up gem:') + " " + (resp ? resp.error : t("Unknown Error")), true);
+                        window.showToast(t("Could not level up gem: {error}").replace("{error}", resp ? resp.error : t("Unknown Error")), true);
                         levelUpBtn.disabled = false;
                         levelUpBtn.textContent = t('Level Up');
                     }
                 } catch(e) {
-                    window.showToast(t('Connection error:') + " " + e, true);
+                    window.showToast(t("Connection error: {error}").replace("{error}", e), true);
                     levelUpBtn.disabled = false;
                     levelUpBtn.textContent = t('Level Up');
                 }
@@ -609,7 +609,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     if (selectedSource && selectedSource.pane === 'equipped' && selectedSource.idx != null) equipped[selectedSource.idx] = resp.gem;
                     render();
                 } else {
-                    window.showToast(t('Action failed:') + " " + (resp ? resp.error : t("Unknown Error")), true);
+                    window.showToast(t("Action failed: {error}").replace("{error}", resp ? resp.error : t("Unknown Error")), true);
                     actionBtn.disabled = false;
                     if (!window._selectedActionKey) actionBtn.textContent = t('Action');
                     else if (window._selectedActionKey === 'spark') actionBtn.textContent = t('Change Stat');
@@ -617,7 +617,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     else actionBtn.textContent = t('Augment Stat');
                 }
             } catch(e) {
-                window.showToast(t('Connection error:') + " " + e, true);
+                window.showToast(t("Connection error: {error}").replace("{error}", e), true);
                 actionBtn.disabled = false;
             }
         };
@@ -861,7 +861,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
         if (!draggedGem) return;
         
         if (String(draggedGem.element) !== String(elementId) || String(draggedGem.type) !== String(typeRestriction)) {
-            window.showToast(String(draggedGem.element) !== String(elementId) ? `${t("Requires")} ${getElementNameById(elementId)}.` : `${t("Requires")} ${getTypeDisplayName(typeRestriction)} ${t("gem")}.`, true);
+            const errorMsg = String(draggedGem.element) !== String(elementId)
+                ? t("Requires {element}.").replace("{element}", getElementNameById(elementId))
+                : t("Requires {type} gem.").replace("{type}", getTypeDisplayName(typeRestriction));
+            window.showToast(errorMsg, true);
             return;
         }
 
@@ -971,10 +974,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     selectedSource = null;
                     render();
                 } else {
-                    window.showToast(t('Could not generate gem:') + " " + (resp ? resp.error : t("Unknown Error")), true);
+                    window.showToast(t("Could not generate gem: {error}").replace("{error}", resp ? resp.error : t("Unknown Error")), true);
                 }
             } catch(err) {
-                window.showToast(t('Connection error:') + " " + err, true);
+                window.showToast(t("Connection error: {error}").replace("{error}", err), true);
             }
             
             btnGenerate.disabled = false;

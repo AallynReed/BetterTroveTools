@@ -99,14 +99,13 @@ document.addEventListener('mod_manager_loaded', async () => {
             let fixing = [];
             if (settings.auto_fix_names) fixing.push("Names");
             if (settings.auto_fix_configs) fixing.push("Configs");
-            statusText = `${t("Auto-fixing Mod")} ${fixing.join(" & ")}...`;
+            statusText = t("Auto-fixing Mod {fixing}...").replace("{fixing}", fixing.join(" & "));
         }
         modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> ${statusText}</div>`;
         
         const response = await eel.get_installed_mods(gamePath, settings.auto_fix_names === true, settings.auto_fix_configs === true)();
         
         if (response.success) {
-            // NEW CODE: Fetch the json dump directly via HTTP request
             let modsData = [];
             try {
                 const fetchRes = await fetch(response.cached_file + '?t=' + new Date().getTime());
@@ -143,7 +142,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (mod.has_conflicts) {
                     const badgeClass = hasActiveConflict ? 'conflict-active' : 'conflict-inactive';
                     const conflictNames = mod.conflicts_with.map(c => `${c.name} (${c.enabled ? t('ENABLED') : t('Disabled')})`).join('&#10;• ');
-                    const titleText = `${hasActiveConflict ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT')}&#10;• ${conflictNames}`;
+                    
+                    const conflictTitle = hasActiveConflict ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT');
+                    const titleText = `${conflictTitle}&#10;• ${conflictNames}`;
+                    
                     conflictBadge = `<span class="mod-conflict-inline ${badgeClass}" title="${titleText}"><i class="fa-solid fa-triangle-exclamation"></i></span>`;
                 }
                 
@@ -176,7 +178,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             getModUrls(gamePath);
             checkForUpdates(gamePath);
         } else {
-            modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error loading mods:")} ${response.error}</div>`;
+            modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error loading mods: {error}").replace("{error}", response.error)}</div>`;
         }
     }
 
@@ -190,7 +192,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     const titleEl = card ? card.querySelector('.mod-title') : null;
                     if (titleEl && !titleEl.classList.contains('ts-mod-title')) {
                         titleEl.classList.add('ts-mod-title');
-                        titleEl.title = titleEl.innerText + ` (${t("Click to view on Trovesaurus")})`;
+                        titleEl.title = t("{title} (Click to view on Trovesaurus)").replace("{title}", titleEl.innerText);
                         titleEl.onclick = () => eel.open_url_in_browser(response.urls[path])();
                     }
                 }
@@ -224,7 +226,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const response = await eel.toggle_mod(gamePath, currentPath)();
                 if (response.success) loadMods(gamePath); 
                 else {
-                    window.showToast(`${t("Failed to toggle mod:")} ${response.error}`, true);
+                    window.showToast(t("Failed to toggle mod: {error}").replace("{error}", response.error), true);
                     loadMods(gamePath);
                 }
                 return;
@@ -244,7 +246,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (response.success) {
                     loadMods(gamePath); 
                 } else {
-                    window.showToast(`${t("Failed to update mod:")} ${response.error}`, true);
+                    window.showToast(t("Failed to update mod: {error}").replace("{error}", response.error), true);
                     updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>'; 
                     updateBtn.disabled = false;
                     updateBtn.style.animation = "none";
@@ -283,12 +285,12 @@ document.addEventListener('mod_manager_loaded', async () => {
         if (response.success) {
             window.showToast(successMsg(response));
             loadMods(gamePath);
-        } else window.showToast(t("Error:") + " " + response.error, true);
+        } else window.showToast(t("Error: {error}").replace("{error}", response.error), true);
 
         btn.innerHTML = originalText;
         btn.disabled = false;
     };
 
-    if (fixNamesBtn) fixNamesBtn.addEventListener('click', () => runUtility(fixNamesBtn, eel.fix_mod_names, r => `${t("Fixed")} ${r.fixed_count} ${t("mod names!")}`));
-    if (fixConfigsBtn) fixConfigsBtn.addEventListener('click', () => runUtility(fixConfigsBtn, eel.fix_mod_configs, r => `${t("Verified configs for")} ${r.configs_ensured} ${t("mods!")}`));
+    if (fixNamesBtn) fixNamesBtn.addEventListener('click', () => runUtility(fixNamesBtn, eel.fix_mod_names, r => t("Fixed {count} mod names!").replace("{count}", r.fixed_count)));
+    if (fixConfigsBtn) fixConfigsBtn.addEventListener('click', () => runUtility(fixConfigsBtn, eel.fix_mod_configs, r => t("Verified configs for {count} mods!").replace("{count}", r.configs_ensured)));
 });

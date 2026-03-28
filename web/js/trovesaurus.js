@@ -209,8 +209,8 @@ function renderTrovesaurusGrid(mods, container) {
                     <img src="${img}" class="mod-preview-img" loading="lazy" onerror="this.src='/assets/images/no_preview.png'">
                 </div>
                 <div class="mod-card-content">
-                    <h3 class="mod-title ts-mod-title" title="${mod.name} (${t("Click to view on Trovesaurus")})" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
-                    <span class="mod-meta"><span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="View ${mod.author}'s profile" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
+                    <h3 class="mod-title ts-mod-title" title="${t("{name} (Click to view on Trovesaurus)").replace("{name}", mod.name)}" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
+                    <span class="mod-meta"><span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="${t("View {author}'s profile").replace("{author}", mod.author)}" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
                     <div class="ts-mod-stats">
                         <span class="ts-stat-item"><i class="fa-solid fa-download"></i> ${mod.downloads}</span>
                         <span class="ts-stat-item"><i class="fa-solid fa-heart"></i> ${mod.likes}</span>
@@ -261,7 +261,7 @@ function receive_install_result(response) {
         btn.classList.add('installed');
         btn.disabled = true;
     } else {
-        alert(`${t("Error:")} ${response?.error || t('Unknown error occurred')}`);
+        alert(t("Error: {error}").replace("{error}", response?.error || t('Unknown error occurred')));
         const originalHTML = btn.getAttribute('data-original-html');
         if (originalHTML) btn.innerHTML = originalHTML;
         btn.disabled = false;

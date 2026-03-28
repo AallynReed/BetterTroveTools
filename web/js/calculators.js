@@ -137,7 +137,7 @@ document.addEventListener('calculators_loaded', () => {
             
             if (item.type === 'mastery') {
                 const initialBonus = Math.max(0, item.default - 500);
-                badgeText = `+${initialBonus} ${t("Flat")}`;
+                badgeText = t("+{val} Flat").replace("{val}", initialBonus);
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider mf-input" data-index="${index}" min="1" max="${item.max}" value="${item.default}">
@@ -145,7 +145,7 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             } else if (item.type === 'patron_switch') {
-                badgeText = `+${item.value}% ${t("Multiplier")}`;
+                badgeText = t("+{val}% Multiplier").replace("{val}", item.value);
                 controlHtml = `
                     <label class="calc-switch">
                         <input type="checkbox" class="mf-input" data-index="${index}" ${item.default_checked ? 'checked' : ''}>
@@ -153,7 +153,7 @@ document.addEventListener('calculators_loaded', () => {
                     </label>
                 `;
             } else if (item.type === 'slider') {
-                badgeText = `+${item.value} ${t("Flat")}`;
+                badgeText = t("+{val} Flat").replace("{val}", item.value);
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider mf-input" data-index="${index}" min="0" max="${item.value}" value="${item.value}">
@@ -161,7 +161,9 @@ document.addEventListener('calculators_loaded', () => {
                     </div>
                 `;
             } else if (item.type === 'switch') {
-                badgeText = item.percentage ? `+${item.value}% ${t("Bonus")}` : `+${item.value} ${t("Flat")}`;
+                badgeText = item.percentage 
+                    ? t("+{val}% Bonus").replace("{val}", item.value) 
+                    : t("+{val} Flat").replace("{val}", item.value);
                 controlHtml = `
                     <label class="calc-switch">
                         <input type="checkbox" class="mf-input" data-index="${index}" checked>
@@ -238,7 +240,7 @@ document.addEventListener('calculators_loaded', () => {
                     val = rawVal;
                 }
                 const badge = document.getElementById(`mf-badge-${idx}`);
-                if (badge) badge.innerText = `+${val} ${t("Flat")}`;
+                if (badge) badge.innerText = t("+{val} Flat").replace("{val}", val);
             }
 
             if (dataItem.type === 'patron_switch') {
@@ -257,10 +259,14 @@ document.addEventListener('calculators_loaded', () => {
         const displayTotal = document.getElementById('mf-total-display');
         if (displayTotal) displayTotal.innerText = totalMF.toLocaleString();
         
-        let breakdownText = `${t("Base MF:")} ${flatMF.toLocaleString()} | ${t("Bonus Multiplier:")} +${bonusPercent}%`;
+        let breakdownText = t("Base MF: {base} | Bonus Multiplier: +{bonus}%")
+            .replace("{base}", flatMF.toLocaleString())
+            .replace("{bonus}", bonusPercent);
+            
         if (patronMultiplier > 1) {
-            breakdownText += ` | ${t("Patron:")} x${patronMultiplier}`;
+            breakdownText += t(" | Patron: x{multiplier}").replace("{multiplier}", patronMultiplier);
         }
+        
         const displayBreakdown = document.getElementById('mf-breakdown-display');
         if(displayBreakdown) displayBreakdown.innerText = breakdownText;
     }
@@ -313,7 +319,7 @@ document.addEventListener('calculators_loaded', () => {
             let controlHtml = '';
             
             if (item.type === 'pr_mastery') {
-                badgeText = `+0 PR`;
+                badgeText = t("+0 PR");
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider pr-input" data-index="${index}" min="1" max="${item.max}" value="${item.default}" style="accent-color: #fbc02d;">
@@ -322,7 +328,7 @@ document.addEventListener('calculators_loaded', () => {
                 `;
             } 
             else if (item.type === 'pr_geode_mastery') {
-                badgeText = `+0 PR`;
+                badgeText = t("+0 PR");
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider pr-input" data-index="${index}" min="1" max="${item.max}" value="${item.default}" style="accent-color: #fbc02d;">
@@ -331,7 +337,7 @@ document.addEventListener('calculators_loaded', () => {
                 `;
             }
             else if (item.type === 'slider') {
-                badgeText = `+${item.value} PR`;
+                badgeText = t("+{val} PR").replace("{val}", item.value);
                 controlHtml = `
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider pr-input" data-index="${index}" min="0" max="${item.value}" value="${item.value}" style="accent-color: #fbc02d;">
@@ -340,7 +346,7 @@ document.addEventListener('calculators_loaded', () => {
                 `;
             } 
             else if (item.type === 'switch') {
-                badgeText = `+${item.value} PR`;
+                badgeText = t("+{val} PR").replace("{val}", item.value);
                 controlHtml = `
                     <label class="calc-switch">
                         <input type="checkbox" class="pr-input" data-index="${index}" checked>
@@ -438,7 +444,7 @@ document.addEventListener('calculators_loaded', () => {
                 }
                 
                 const badge = document.getElementById(`pr-badge-${idx}`);
-                if (badge) badge.innerText = `+${val} PR`;
+                if (badge) badge.innerText = t("+{val} PR").replace("{val}", val);
             }
 
             totalPR += val;

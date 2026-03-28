@@ -171,7 +171,9 @@ document.addEventListener('allies_loaded', async () => {
 
     function renderAllies(alliesToRender, activeStatHighlights = [], activeAbilityHighlights = []) {
         grid.innerHTML = '';
-        statsDisplay.innerText = `${t("Showing")} ${alliesToRender.length} ${t("of")} ${alliesData.length} ${t("allies")}`;
+        statsDisplay.innerText = t("Showing {count} of {total} allies")
+            .replace("{count}", alliesToRender.length)
+            .replace("{total}", alliesData.length);
 
         if (!activeStatHighlights) activeStatHighlights = [];
         if (!activeAbilityHighlights) activeAbilityHighlights = [];
@@ -217,7 +219,7 @@ document.addEventListener('allies_loaded', async () => {
                 </div>
                 <div class="ally-footer">
                     <span class="footer-stat"><i class="fa-solid fa-star" style="color: #fbc02d;"></i> PR ${ally.powerrank}</span>
-                    <span class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> ${t("Mastery")} ${ally.mastery}</span>
+                    <span class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> ${t("Mastery {val}").replace("{val}", ally.mastery)}</span>
                 </div>
             `;
 

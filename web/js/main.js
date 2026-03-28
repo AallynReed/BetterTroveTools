@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateContainer.innerHTML = `
                         <button class="nav-btn update-app-btn" title="${t("A new version is available! Click to download.")}" onclick="eel.open_url_in_browser('${ghData.html_url}')()">
                             <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
-                            <span class="nav-text">${t("Update")} v${latestVersion}</span>
+                            <span class="nav-text">${t("Update v{version}").replace("{version}", latestVersion)}</span>
                         </button>
                     `;
                     sidebar.appendChild(updateContainer);
@@ -50,17 +50,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ==========================================
 // App Security & Hotkey Blocking
 // ==========================================
-document.addEventListener('keydown', function(e) {
-    const blockedKeys = ['F12', 'F5', 'F11'];
-    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+// document.addEventListener('keydown', function(e) {
+//     const blockedKeys = ['F12', 'F5', 'F11'];
+//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-    if (blockedKeys.includes(e.key)) e.preventDefault();
-    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-});
+//     if (blockedKeys.includes(e.key)) e.preventDefault();
+//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+// });
 
-document.addEventListener('contextmenu', (e) => e.preventDefault());
+// document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // ==========================================
 // Toast Notification System
@@ -152,6 +152,7 @@ document.addEventListener('trovesaurus_loaded', () => {
 document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
     // Sidebar toggle logic
     const burgerBtn = document.getElementById('burger-btn');
@@ -187,8 +188,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`Successfully loaded view: ${target}`);
         } catch (err) {
             console.error("View loading error:", err);
-            const errorPrefix = window.I18nManager ? window.I18nManager.t("Failed to load view:") : "Failed to load view:";
-            viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">${errorPrefix} ${err.message}</div>`;
+            const errorMsg = t("Failed to load view: {error}").replace("{error}", err.message);
+            viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">${errorMsg}</div>`;
         }
     };
 
@@ -220,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (err) {
             console.error("Metadata fetch error:", err);
-            versionSpan.textContent = window.I18nManager ? window.I18nManager.t("Error") : "Error";
+            versionSpan.textContent = t("Error");
         }
     });
 

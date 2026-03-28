@@ -61,7 +61,7 @@ document.addEventListener('star_chart_loaded', async () => {
     const response = await eel.get_calculated_star_chart()();
     
     if (!response.success) {
-        wrapper.innerHTML = `<div style="color: #ff4444; text-align: center;">${t("Error loading chart data:")}<br>${response.error}</div>`;
+        wrapper.innerHTML = `<div style="color: #ff4444; text-align: center;">${t("Error loading chart data: {error}").replace("{error}", response.error)}</div>`;
         return;
     }
 
@@ -167,7 +167,7 @@ document.addEventListener('star_chart_loaded', async () => {
 
         shape.addEventListener("mouseenter", () => {
             let html = `<h3>${t(star.Name || star.Constellation)}</h3>`;
-            html += `<span class="type">${t(star.Type)} ${t("Node")}</span>`;
+            html += `<span class="type">${t("{type} Node").replace("{type}", t(star.Type))}</span>`;
             if (star.Description) html += `<p>${t(star.Description)}</p><hr/>`;
             if (star.Stats && star.Stats.length > 0) {
                 html += `<ul>`;
@@ -327,7 +327,7 @@ document.addEventListener('star_chart_loaded', async () => {
             return;
         }
 
-        let html = `<div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">${t("Nodes Active:")} ${aggData.paths.length} / 40</div>`;
+        let html = `<div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">${t("Nodes Active: {count} / 40").replace("{count}", aggData.paths.length)}</div>`;
         
         if (aggData.stats.length > 0) {
             html += `<div class="summary-section"><h4>${t("Aggregated Stats")}</h4><ul>`;
@@ -361,7 +361,7 @@ document.addEventListener('star_chart_loaded', async () => {
         navigator.clipboard.writeText(code).then(() => {
             window.showToast(t("Build code copied to clipboard!"));
         }).catch(err => {
-            window.showToast(t("Failed to copy:") + " " + err, true);
+            window.showToast(t("Failed to copy: {error}").replace("{error}", err), true);
         });
     });
 
@@ -390,9 +390,9 @@ document.addEventListener('star_chart_loaded', async () => {
             calculateStats(); 
             
             if (skipped > 0) {
-                window.showToast(`${t("Loaded")} ${loaded} ${t("nodes. Skipped")} ${skipped} ${t("(Max 40 limit).")}`, true);
+                window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max 40 limit).").replace("{loaded}", loaded).replace("{skipped}", skipped), true);
             } else if (loaded > 0) {
-                window.showToast(`${t("Successfully loaded")} ${loaded} ${t("nodes!")}`);
+                window.showToast(t("Successfully loaded {loaded} nodes!").replace("{loaded}", loaded));
             } else {
                 window.showToast(t("No valid nodes found in build code."), true);
             }
@@ -487,7 +487,7 @@ document.addEventListener('star_chart_loaded', async () => {
             }
             const res = await eel.save_star_chart_template(name, code)();
             if (res.success) {
-                if (window.showToast) window.showToast(`${t("Template")} '${name}' ${t("saved!")}`);
+                if (window.showToast) window.showToast(t("Template '{name}' saved!").replace("{name}", name));
                 await loadTemplates();
                 templateSelect.value = name;
                 btnDeleteTemplate.style.display = 'inline-block';
@@ -499,7 +499,7 @@ document.addEventListener('star_chart_loaded', async () => {
             if (!name) return;
             const res = await eel.delete_star_chart_template(name)();
             if (res.success) {
-                if (window.showToast) window.showToast(`${t("Template")} '${name}' ${t("deleted!")}`);
+                if (window.showToast) window.showToast(t("Template '{name}' deleted!").replace("{name}", name));
                 await loadTemplates();
             } else {
                 if (window.showToast) window.showToast(t("Error deleting template."), true);
@@ -520,7 +520,7 @@ document.addEventListener('star_chart_loaded', async () => {
     btnDeleteTemplate.addEventListener('click', () => {
         const name = templateSelect.value;
         if (!name) return;
-        openModal('delete', t('Delete Template'), `${t("Are you sure you want to delete")} '${name}'?`, false);
+        openModal('delete', t('Delete Template'), t("Are you sure you want to delete '{name}'?").replace("{name}", name), false);
     });
 
     loadTemplates();
