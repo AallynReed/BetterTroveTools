@@ -35,6 +35,9 @@
                                     <i class="fa-solid fa-camera"></i>
                                     <span data-i18n>Change Image</span>
                                 </div>
+                                <button type="button" class="remove-preview-btn" id="btn-remove-build-preview" title="Remove Preview" style="display: none;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
                                 <input type="file" id="build-preview-input" accept="image/png, image/jpeg" style="display: none;">
                             </div>
                         </div>
@@ -159,16 +162,16 @@
                 <div id="project-workspace" style="display: none; margin-top: 20px;">
                     <div class="build-split-layout">
                         <div class="build-left-col">
-                            <div class="form-group">
-                                <label data-i18n>Project Preview</label>
-                                <div class="mod-preview-picker" id="project-preview-container">
-                                    <img id="project-mod-preview" src="assets/images/no_preview.png" alt="Project Preview">
-                                    <div class="preview-overlay">
-                                        <i class="fa-solid fa-camera"></i>
-                                        <span data-i18n>Change Image</span>
-                                    </div>
-                                    <input type="file" id="project-preview-input" accept="image/png, image/jpeg" style="display: none;">
+                            <div class="mod-preview-picker" id="project-preview-container">
+                                <img id="project-mod-preview" src="assets/images/no_preview.png" alt="Project Preview">
+                                <div class="preview-overlay">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span data-i18n>Change Image</span>
                                 </div>
+                                <button type="button" class="remove-preview-btn" id="btn-remove-project-preview" title="Remove Preview" style="display: none;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                                <input type="file" id="project-preview-input" accept="image/png, image/jpeg" style="display: none;">
                             </div>
                             
                             <div class="form-group" style="margin-top: 15px;">

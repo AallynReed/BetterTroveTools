@@ -62,3 +62,27 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .sw-price-tag.paid { background-color: rgba(255, 152, 0, 0.15); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.3); }
 .software-badge:hover .sw-price-tag.free { background-color: #4CAF50; color: white; }
 .software-badge:hover .sw-price-tag.paid { background-color: #ff9800; color: white; }
+
+/* Remove Preview Button */
+.remove-preview-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(0, 0, 0, 0.65);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.remove-preview-btn:hover {
+    background: #ff5555;
+    transform: scale(1.1);
+}

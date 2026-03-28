@@ -93,6 +93,7 @@ document.addEventListener('modder_tools_loaded', () => {
     const previewContainer = document.getElementById('preview-picker-container');
     const previewInput = document.getElementById('build-preview-input');
     const previewImg = document.getElementById('build-mod-preview');
+    const btnRemoveBuildPreview = document.getElementById('btn-remove-build-preview');
 
     if (previewContainer && previewInput) {
         previewContainer.addEventListener('click', () => previewInput.click());
@@ -100,9 +101,21 @@ document.addEventListener('modder_tools_loaded', () => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (event) => previewImg.src = event.target.result;
+                reader.onload = (event) => {
+                    previewImg.src = event.target.result;
+                    if (btnRemoveBuildPreview) btnRemoveBuildPreview.style.display = 'flex';
+                };
                 reader.readAsDataURL(file);
             }
+        });
+    }
+
+    if (btnRemoveBuildPreview) {
+        btnRemoveBuildPreview.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents the file picker from opening
+            previewImg.src = "assets/images/no_preview.png";
+            previewInput.value = "";
+            btnRemoveBuildPreview.style.display = 'none';
         });
     }
 
@@ -296,7 +309,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
                 let previewBase64 = null;
                 let previewName = "preview.png";
-                if (previewImg.src.startsWith('data:image')) {
+                if (previewImg.src.startsWith('data:image') && !previewImg.src.includes('no_preview.png')) {
                     previewBase64 = previewImg.src;
                     if (previewInput.files && previewInput.files.length > 0) {
                         previewName = previewInput.files[0].name;
@@ -505,6 +518,7 @@ document.addEventListener('modder_tools_loaded', () => {
     const projPreviewContainer = document.getElementById('project-preview-container');
     const projPreviewInput = document.getElementById('project-preview-input');
     const projPreviewImg = document.getElementById('project-mod-preview');
+    const btnRemoveProjectPreview = document.getElementById('btn-remove-project-preview');
 
     const btnRefreshProjectFiles = document.getElementById('btn-refresh-project-files');
     const btnProjectAutoStructure = document.getElementById('btn-project-auto-structure');
@@ -520,9 +534,21 @@ document.addEventListener('modder_tools_loaded', () => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (event) => projPreviewImg.src = event.target.result;
+                reader.onload = (event) => {
+                    projPreviewImg.src = event.target.result;
+                    if (btnRemoveProjectPreview) btnRemoveProjectPreview.style.display = 'flex';
+                };
                 reader.readAsDataURL(file);
             }
+        });
+    }
+
+    if (btnRemoveProjectPreview) {
+        btnRemoveProjectPreview.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents the file picker from opening
+            projPreviewImg.src = "assets/images/no_preview.png";
+            projPreviewInput.value = "";
+            btnRemoveProjectPreview.style.display = 'none';
         });
     }
 
@@ -574,8 +600,10 @@ document.addEventListener('modder_tools_loaded', () => {
 
             if (result.data.previewBase64) {
                 projPreviewImg.src = result.data.previewBase64;
+                if (btnRemoveProjectPreview) btnRemoveProjectPreview.style.display = 'flex';
             } else {
                 projPreviewImg.src = "assets/images/no_preview.png";
+                if (btnRemoveProjectPreview) btnRemoveProjectPreview.style.display = 'none';
             }
 
             versionSelect.innerHTML = '';
@@ -629,11 +657,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 active_version: versionSelect.value
             };
 
-            if (projPreviewImg.src.startsWith('data:image')) {
+            if (projPreviewImg.src.startsWith('data:image') && !projPreviewImg.src.includes('no_preview.png')) {
                 payload.previewBase64 = projPreviewImg.src;
                 if (projPreviewInput.files && projPreviewInput.files.length > 0) {
                     payload.previewName = projPreviewInput.files[0].name;
                 }
+            } else {
+                payload.previewBase64 = null; // Explicitly clear if removed
             }
 
             const result = await eel.save_mod_project(dir, payload)();
@@ -727,11 +757,14 @@ document.addEventListener('modder_tools_loaded', () => {
                 tags: $('#project-mod-tags').val() || [],
                 active_version: version
             };
-            if (projPreviewImg.src.startsWith('data:image')) {
+            
+            if (projPreviewImg.src.startsWith('data:image') && !projPreviewImg.src.includes('no_preview.png')) {
                 payload.previewBase64 = projPreviewImg.src;
                 if (projPreviewInput.files && projPreviewInput.files.length > 0) {
                     payload.previewName = projPreviewInput.files[0].name;
                 }
+            } else {
+                payload.previewBase64 = null;
             }
             await eel.save_mod_project(dir, payload)();
 
