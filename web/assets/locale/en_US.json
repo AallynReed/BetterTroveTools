@@ -2966,6 +2966,9 @@
         "Successfully structured {count} files!": "",
         "Remove File": "",
         "{count} override file(s) successfully detected.": "",
-        "Successfully auto-structured {count} files!": ""
+        "Successfully auto-structured {count} files!": "",
+        "Another one...": "",
+        "Version {version}": "",
+        "Created by {name}": ""
     }
 }

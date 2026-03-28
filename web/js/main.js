@@ -182,28 +182,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    document.addEventListener('about_loaded', async () => {
-        const versionSpan = document.getElementById('app-version');
-        const authorSpan = document.getElementById('app-author');
-        const descP = document.getElementById('app-description');
-        
-        if (!versionSpan) return;
-
-        try {
-            const metadata = await eel.get_app_metadata()();
-            console.log("Metadata received:", metadata);
-            
-            if (metadata) {
-                if (versionSpan) versionSpan.textContent = metadata.APP_VERSION || "Unknown";
-                if (authorSpan) authorSpan.textContent = metadata.APP_AUTHOR || "Aallyn Reed";
-                if (descP) descP.textContent = metadata.APP_DESCRIPTION || "";
-            }
-        } catch (err) {
-            console.error("Metadata fetch error:", err);
-            versionSpan.textContent = t("Error");
-        }
-    });
-
     const dateEl = document.getElementById('server-time-date');
     const clockEl = document.getElementById('server-time-clock');
 
