@@ -263,10 +263,16 @@ document.addEventListener('modder_tools_loaded', () => {
         btnBuildTMod.addEventListener('click', async () => {
             const titleInput = document.getElementById('build-mod-title');
             const title = titleInput.value.trim();
+            const notes = document.getElementById('build-mod-notes').value.trim();
             
             const illegalChars = /[<>:"/\\|?*]/;
             if (illegalChars.test(title)) {
                 window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
+                return;
+            }
+
+            if (notes.length > 220) {
+                window.showToast(t("Mod notes cannot exceed 220 characters."), true);
                 return;
             }
 
@@ -278,7 +284,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 const gamePath = buildGameSelect.value;
                 const author = document.getElementById('build-mod-author').value.trim();
                 const version = document.getElementById('build-mod-version').value.trim();
-                const notes = document.getElementById('build-mod-notes').value.trim();
                 const tags = $('#build-mod-tags').val() || [];
 
                 if (!gamePath) { window.showToast(t("Please select a target game installation."), true); return; }
@@ -507,7 +512,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     const btnPlaceOverrides = document.getElementById('btn-place-overrides');
     const btnRemoveOverrides = document.getElementById('btn-remove-overrides');
-    let activeOverrides = []; // Keeps track of files pushed to the game
+    let activeOverrides = []; 
 
     if (projPreviewContainer && projPreviewInput) {
         projPreviewContainer.addEventListener('click', () => projPreviewInput.click());
@@ -610,10 +615,16 @@ document.addEventListener('modder_tools_loaded', () => {
             const dir = projectDirInput.value;
             if (!dir) return;
 
+            const notes = document.getElementById('project-mod-notes').value.trim();
+            if (notes.length > 220) {
+                window.showToast(t("Project notes cannot exceed 220 characters."), true);
+                return;
+            }
+
             const payload = {
                 title: document.getElementById('project-mod-title').value.trim(),
                 author: document.getElementById('project-mod-author').value.trim(),
-                notes: document.getElementById('project-mod-notes').value.trim(),
+                notes: notes,
                 tags: $('#project-mod-tags').val() || [],
                 active_version: versionSelect.value
             };
@@ -702,11 +713,17 @@ document.addEventListener('modder_tools_loaded', () => {
                 return;
             }
 
+            const notes = document.getElementById('project-mod-notes').value.trim();
+            if (notes.length > 220) {
+                window.showToast(t("Project notes cannot exceed 220 characters."), true);
+                return;
+            }
+
             // Save metadata immediately before compiling
             const payload = {
                 title: title,
                 author: document.getElementById('project-mod-author').value.trim(),
-                notes: document.getElementById('project-mod-notes').value.trim(),
+                notes: notes,
                 tags: $('#project-mod-tags').val() || [],
                 active_version: version
             };
@@ -792,7 +809,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     btnPlaceOverrides.disabled = false;
                 } else {
                     window.showToast(`${t("Error removing overrides:")} ${result.error}`, true);
-                    btnRemoveOverrides.disabled = false;
+                    btnRemoveOverrides.disabled = false; 
                 }
             } catch (err) {
                 window.showToast(t("An unexpected error occurred."), true);

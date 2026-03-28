@@ -285,6 +285,8 @@ def build_tmod(payload):
         author = payload.get("author", "").strip()
         version = payload.get("version", "").strip()
         notes = payload.get("notes", "").strip()
+        if len(notes) > 220:
+            return {"success": False, "error": "Mod notes cannot exceed 220 characters."}
         tags = payload.get("tags", [])
         files = payload.get("files", [])
         
@@ -391,6 +393,8 @@ def load_mod_project(project_path_str):
 @eel.expose
 def save_mod_project(project_path_str, payload):
     try:
+        if len(payload.get("notes", "")) > 220:
+            return {"success": False, "error": "Mod notes cannot exceed 220 characters."}
         project_path = Path(project_path_str)
         project_file = project_path / "project.json"
         
@@ -598,8 +602,10 @@ def compile_project(project_path_str, version, game_path_str):
         if not game_path.exists() or not target_dir.exists() or not project_file.exists():
             return {"success": False, "error": "Invalid paths or missing project.json. Please save the project first."}
 
-        import json
         meta = json.loads(project_file.read_text(encoding="utf-8"))
+        notes = meta.get("notes", "").strip()
+        if len(notes) > 220:
+            return {"success": False, "error": "Mod notes cannot exceed 220 characters. Please edit the notes and try again."}
 
         title = meta.get("title", "Untitled Project").strip()
         author = meta.get("author", "Unknown").strip()
