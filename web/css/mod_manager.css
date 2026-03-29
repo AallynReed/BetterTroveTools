@@ -4,7 +4,6 @@
 .file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
 .placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
 
-/* Search & Filter Bar */
 .search-filter-bar { display: flex; gap: 15px; align-items: center; background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
 .search-wrapper { position: relative; flex-grow: 1; }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
@@ -13,7 +12,6 @@
 #mod-filter-status { padding: 10px; background: #111; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer; }
 .mod-count-display { font-size: 12px; color: var(--text-muted); min-width: 120px; text-align: right; }
 
-/* Mod Grid */
 .mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; padding: 10px 0; animation: fadeIn 0.3s ease; }
 .mod-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s, opacity 0.3s; }
 .mod-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); border-color: var(--accent-blue); }
@@ -28,7 +26,6 @@
 .mod-meta { font-size: 11px; color: var(--text-muted); }
 .mod-card-footer { display: flex; justify-content: flex-end; margin-top: auto; padding-top: 10px; }
 
-/* Mod Buttons */
 .toggle-mod-btn { background: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; color: #28a745; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: all 0.2s; }
 .toggle-mod-btn:hover { background: #28a745; color: white; }
 .toggle-mod-btn.active { background: rgba(255, 85, 85, 0.1); color: #ff5555; border-color: #ff5555; }
@@ -39,13 +36,11 @@
 .update-mod-btn:hover { background: #ffc107; color: #111; }
 .update-mod-btn.hidden { display: none; }
 
-/* Conflicts */
 @keyframes criticalPulse { 0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 0, 0, 1)); } 50% { transform: scale(1.3); filter: drop-shadow(0 0 12px rgba(255, 0, 0, 1)); } 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(255, 0, 0, 1)); } }
 .mod-conflict-inline { font-size: 18px; cursor: help; margin-right: auto; display: flex; align-items: center; transition: all 0.3s ease; }
 .mod-conflict-inline.conflict-inactive { filter: drop-shadow(0 0 2px rgba(255, 152, 0, 0.5)); opacity: 0.7; }
 .mod-conflict-inline.conflict-active { filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.8)); animation: criticalPulse 1s infinite; color: #ff4444; }
 
-/* Modal */
 .image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; flex-direction: column; }
 .image-modal.active { display: flex; animation: fadeIn 0.2s ease; }
 .modal-content { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); object-fit: contain; }

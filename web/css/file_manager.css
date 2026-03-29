@@ -63,8 +63,7 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 #btn-collapse-all { background: #444; color: #ccc; border: 1px solid var(--border-color); }
 #btn-collapse-all:hover { background: #555; color: #fff; }
 
-/* Modal Styles */
-.image-modal { 
+.image-modal {
     display: none; 
     position: fixed; 
     z-index: 9999; 
