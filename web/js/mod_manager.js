@@ -25,6 +25,22 @@ document.addEventListener('mod_manager_loaded', async () => {
         let visibleCount = 0;
 
         cards.forEach(card => {
+            const name = card.dataset.name.toLowerCase();
+            const author = card.dataset.author.toLowerCase();
+            const status = card.dataset.status;
+            const activeConflict = card.dataset.activeConflict === 'true';
+
+            const matchesSearch = name.includes(searchTerm) || author.includes(searchTerm);
+            
+            let matchesStatus = false;
+            if (statusLimit === 'all') {
+                matchesStatus = true;
+            } else if (statusLimit === 'conflicts') {
+                matchesStatus = activeConflict;
+            } else {
+                matchesStatus = status === statusLimit;
+            }
+
             if (matchesSearch && matchesStatus) {
                 card.style.display = "flex";
                 visibleCount++;
@@ -33,11 +49,21 @@ document.addEventListener('mod_manager_loaded', async () => {
             }
         });
 
-        const countDisplay = document.getElementById('mod-count-display');
-        if (countDisplay) {
-            countDisplay.innerText = t("Showing {visible} / {total} mods")
-                .replace("{visible}", visibleCount)
-                .replace("{total}", cards.length);
+        if (visibleCountDisp) visibleCountDisp.innerText = visibleCount;
+        if (totalCountDisp) totalCountDisp.innerText = cards.length;
+
+        if (visibleCount === 0 && cards.length > 0) {
+            let noResultsMsg = modGrid.querySelector('.no-results-message');
+            if (!noResultsMsg) {
+                noResultsMsg = document.createElement('div');
+                noResultsMsg.className = 'placeholder-box no-results-message';
+                modGrid.appendChild(noResultsMsg);
+            }
+            noResultsMsg.style.display = 'block';
+            noResultsMsg.innerText = t("No mods match your current filters.");
+        } else {
+            const noResultsMsg = modGrid.querySelector('.no-results-message');
+            if (noResultsMsg) noResultsMsg.style.display = 'none';
         }
     }
 
@@ -82,15 +108,15 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     async function loadMods(gamePath) {
         if (!modGrid) return;
-        modGrid.innerHTML = `<div class="placeholder-box">${t("Scanning Mod Directory...")}</div>`;
-        modGrid.className = ""; 
+        modGrid.innerHTML = `<div class="placeholder-box"><span data-i18n>Scanning Mod Directory...</span></div>`;
+        modGrid.className = "placeholder-box"; 
         
         const settings = await eel.get_settings()();
         let statusText = t("Scanning Mod Directory...");
         if (settings.auto_fix_names || settings.auto_fix_configs) {
             let fixing = [];
-            if (settings.auto_fix_names) fixing.push("Names");
-            if (settings.auto_fix_configs) fixing.push("Configs");
+            if (settings.auto_fix_names) fixing.push(t("Names"));
+            if (settings.auto_fix_configs) fixing.push(t("Configs"));
             statusText = t("Auto-fixing Mod {fixing}...").replace("{fixing}", fixing.join(" & "));
         }
         modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> ${statusText}</div>`;
@@ -115,6 +141,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             }
 
             modGrid.className = "mod-grid";
+            if (totalCountDisp) totalCountDisp.innerText = modsData.length;
             let html = "";
             
             modsData.forEach(mod => {

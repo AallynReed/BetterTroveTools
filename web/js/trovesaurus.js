@@ -235,7 +235,7 @@ async function handleTrovesaurusInstall(e) {
     const gamePath = await getActiveGamePath();
 
     if (!gamePath) {
-        alert(t("Could not automatically detect your Trove installation folder! Please check your game install."));
+        window.showToast(t("Could not automatically detect your Trove installation folder! Please check your game install."), true);
         return;
     }
 
@@ -259,7 +259,7 @@ function receive_install_result(response) {
         btn.classList.add('installed');
         btn.disabled = true;
     } else {
-        alert(t("Error: {error}").replace("{error}", response?.error || t('Unknown error occurred')));
+        window.showToast(t("Error: {error}").replace("{error}", response?.error || t('Unknown error occurred')), true);
         const originalHTML = btn.getAttribute('data-original-html');
         if (originalHTML) btn.innerHTML = originalHTML;
         btn.disabled = false;

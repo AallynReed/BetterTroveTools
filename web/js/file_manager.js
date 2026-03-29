@@ -257,14 +257,16 @@ document.addEventListener('file_manager_loaded', () => {
             const selectedPath = installSelect.value;
             if (!selectedPath) return window.showToast(t("Select a game first."), true);
 
+            loadBtn.disabled = true;
+            loadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading...")}`;
             treeContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h3><i class="fa-solid fa-spinner fa-spin"></i> ${t("Parsing")} ${selectedPath}...</h3></div>`;
             
             fileCache = [];
             fileIdCounter = 0;
 
-            const response = await eel.load_entire_game_tree(selectedPath)();
-            if (response.success) {
-                try {
+            try {
+                const response = await eel.load_entire_game_tree(selectedPath)();
+                if (response.success) {
                     const fetchRes = await fetch('/api/cache/temp_tree.json?t=' + new Date().getTime());
                     const treeData = await fetchRes.json();
                     
@@ -281,12 +283,15 @@ document.addEventListener('file_manager_loaded', () => {
                     treeHTML += `</div>`;
                     treeContainer.innerHTML = treeHTML;
                     treeContainer.classList.remove('placeholder-box');
-                } catch (error) {
-                    console.error("Failed to load tree cache:", error);
-                    treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error loading parsed game files.")}</h3></div>`;
+                } else {
+                     treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error parsing game tree:")} ${response.error || "Unknown error"}</h3></div>`;
                 }
-            } else {
-                 treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error parsing game tree:")} ${response.error || "Unknown error"}</h3></div>`;
+            } catch (error) {
+                console.error("Failed to load tree cache:", error);
+                treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error loading parsed game files.")}</h3></div>`;
+            } finally {
+                loadBtn.disabled = false;
+                loadBtn.innerHTML = `<i class="fa-solid fa-box-archive"></i> ${t("Load Archives")}`;
             }
         });
     }

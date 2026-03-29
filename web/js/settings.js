@@ -81,7 +81,7 @@ document.addEventListener('settings_loaded', async () => {
                 saveBtn.style.opacity = '1';
                 saveBtn.style.cursor = 'pointer';
             } else if (response.error) {
-                alert(response.error);
+                window.showToast(response.error, true);
             }
             
             browseBtn.innerHTML = originalText;
@@ -111,7 +111,7 @@ document.addEventListener('settings_loaded', async () => {
                 await refreshCustomDirsList();
                 modal.classList.remove('active');
             } else {
-                alert(t("This directory is already in your custom list."));
+                window.showToast(t("This directory is already in your custom list."), true);
             }
             
             saveBtn.innerHTML = originalText;
