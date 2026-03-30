@@ -109,7 +109,6 @@ const I18nManager = {
 
         const missingKeys = new Set();
 
-        // 1. Standard innerHTML Translations
         document.querySelectorAll('[data-i18n]').forEach(el => {
             let key = el.getAttribute('data-i18n');
             if (!key) {
@@ -122,7 +121,6 @@ const I18nManager = {
                         el.innerHTML = this.dictionary[key];
                     }
                 } else {
-                    // THE FIX: Push the English key back to the UI if translation is missing!
                     if (el.innerHTML !== key) {
                         el.innerHTML = key;
                     }
@@ -131,10 +129,8 @@ const I18nManager = {
             }
         });
 
-        // 2. Placeholder Translations
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             let key = el.getAttribute('data-i18n-placeholder');
-            // Auto-grab the placeholder text if the attribute is empty
             if (!key && el.hasAttribute('placeholder')) {
                 key = el.getAttribute('placeholder').trim();
                 el.setAttribute('data-i18n-placeholder', key);
@@ -154,10 +150,8 @@ const I18nManager = {
             }
         });
 
-        // 3. Title (Tooltip) Translations
         document.querySelectorAll('[data-i18n-title]').forEach(el => {
             let key = el.getAttribute('data-i18n-title');
-            // Auto-grab the title text if the attribute is empty
             if (!key && el.hasAttribute('title')) {
                 key = el.getAttribute('title').trim();
                 el.setAttribute('data-i18n-title', key);

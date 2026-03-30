@@ -60,51 +60,65 @@ def load_entire_game_tree(game_path_str):
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(tree, f)
 
-        # Tell JS to fetch from the custom Bottle route we just made
         return {"success": True, "cached_file": "/api/cache/temp_tree.json"}
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
+
 async def _build_full_tree_async(game_path_str):
     game_path = Path(game_path_str)
     if not game_path.exists():
         raise FileNotFoundError("Game path does not exist.")
 
-    master_tree = {"type": "folder", "children": {}}
+    master_tree = {"type": "folder", "children": {}, "files": []}
 
     for tfi_path in game_path.rglob("index.tfi"):
         relative_dir = tfi_path.parent.relative_to(game_path)
-        
         base_parts = list(relative_dir.parts)
 
         index = TFIndex(tfi_path)
-        files = await index.files_list
+        files_from_index = await index.files_list
         
-        for file_data in files:
+        for file_data in files_from_index:
             internal_path = file_data["name"].replace('\\', '/')
             internal_parts = internal_path.split('/')
-            
             full_parts = base_parts + internal_parts
             
-            current_node = master_tree["children"]
+            current_node = master_tree
             
             for part in full_parts[:-1]: 
-                if part not in current_node:
-                    current_node[part] = {"type": "folder", "children": {}}
-                current_node = current_node[part]["children"]
+                if part not in current_node["children"]:
+                    current_node["children"][part] = {"type": "folder", "children": {}, "files": []}
+                current_node = current_node["children"][part]
                 
             file_name = full_parts[-1]
-            current_node[file_name] = {
+            current_node["files"].append({
+                "name": file_name,
                 "type": "file",
                 "size": file_data["size"],
                 "archive_index": file_data["archive_index"],
                 "offset": file_data["offset"],
                 "hash": file_data["hash"],
                 "tfi_parent": str(tfi_path)
-            }
+            })
             
+    def process_node(node):
+        node.get("files", []).sort(key=lambda x: x["name"])
+        sorted_children = dict(sorted(node.get("children", {}).items()))
+        node["children"] = sorted_children
+        node["dir_count_direct"] = len(node.get("children", {}))
+        node["file_count_direct"] = len(node.get("files", []))
+        total_dir_count = node["dir_count_direct"]
+        total_file_count = node["file_count_direct"]
+        for child_node in node.get("children", {}).values():
+            process_node(child_node)
+            total_dir_count += child_node.get("dir_count_total", 0)
+            total_file_count += child_node.get("file_count_total", 0)
+        node["dir_count_total"] = total_dir_count
+        node["file_count_total"] = total_file_count
+    process_node(master_tree)
     return master_tree
 
 @eel.expose
@@ -185,28 +199,8 @@ def ask_extraction_directory():
 @eel.expose
 def mass_extract_files(dest_dir, files_to_extract):
     try:
-        total_files = len(files_to_extract)
-        start_time = time.time()
-        
-        for index, file_data in enumerate(files_to_extract):
-            # Send raw integers to the frontend
-            if index % 50 == 0 or index == total_files - 1:
-                elapsed = time.time() - start_time
-                files_per_sec = (index + 1) / elapsed if elapsed > 0 else 0
-                eta_seconds = (total_files - (index + 1)) / files_per_sec if files_per_sec > 0 else 0
-                
-                eel.update_progress_ui(
-                    index + 1, 
-                    total_files, 
-                    file_data.get('filepath', 'Unknown'), 
-                    "Extracting...",  # Safe translation key
-                    int(eta_seconds), # Raw Integer
-                    int(elapsed)      # Raw Integer
-                )
-                eel.sleep(0.001)
-
+        asyncio.run(_mass_extract_async(dest_dir, files_to_extract))
         return {"success": True}
-        
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -244,15 +238,17 @@ async def _mass_extract_async(dest_dir_str, file_list):
                     out.write(file_bytes)
                 
                 processed_count += 1
-                if processed_count % max(1, total_files // 50) == 0 or processed_count == total_files:
+                if processed_count % 50 == 0 or processed_count == total_files:
                     elapsed = time.time() - start_time
                     
                     eta_secs = ""
+                    rate = 0
                     if elapsed > 0.5:
                         rate = processed_count / elapsed
+                    if rate > 0:
                         eta_secs = int((total_files - processed_count) / rate)
-                        
-                    eel.update_progress_ui(processed_count, total_files, f["filepath"], "Extracting...", eta_secs, int(elapsed))()
+                    eel.update_progress_ui(processed_count, total_files, f["filepath"], "Extracting...", eta_secs, int(elapsed))
+                    eel.sleep(0.001)
 
 @eel.expose
 def select_tracking_directory():
@@ -499,30 +495,30 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                         dest_name = png_file.name.replace(".blueprint.png", ".png")
                         png_file.rename(png_file.with_name(dest_name))
 
-    total_elapsed = time.time() - start_time
-    emins, esecs = divmod(int(total_elapsed), 60)
-    total_elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
+        total_elapsed = time.time() - start_time
+        emins, esecs = divmod(int(total_elapsed), 60)
+        total_elapsed_str = f"{emins}m {esecs}s" if emins > 0 else f"{esecs}s"
 
-    changelog_path = update_folder / "changelog.txt"
-    with open(changelog_path, "w", encoding="utf-8") as clog:
-        clog.write(f"Trove Update Scan - {date_str}\n")
-        clog.write(f"Game Path: {game_path_str}\n")
-        clog.write(f"Time Elapsed: {total_elapsed_str}\n")
-        clog.write("="*40 + "\n\n")
-        
-        clog.write(f"ADDED FILES ({len(added_files)}):\n")
-        for _, name, _ in added_files: clog.write(f" + {name}\n")
-        
-        clog.write(f"\nCHANGED FILES ({len(changed_files)}):\n")
-        for _, name, _ in changed_files: clog.write(f" ~ {name}\n")
-        
-        clog.write(f"\nREMOVED FILES ({len(removed_files)}):\n")
-        for name in removed_files: 
-            clean_removed_name = name.split("::")[-1] if "::" in name else name
-            clog.write(f" - {clean_removed_name}\n")
-        
-    backup_path = update_folder / "extraction_data_backup.json"
-    shutil.copy2(data_path, backup_path)
+        changelog_path = update_folder / "changelog.txt"
+        with open(changelog_path, "w", encoding="utf-8") as clog:
+            clog.write(f"Trove Update Scan - {date_str}\n")
+            clog.write(f"Game Path: {game_path_str}\n")
+            clog.write(f"Time Elapsed: {total_elapsed_str}\n")
+            clog.write("="*40 + "\n\n")
+            
+            clog.write(f"ADDED FILES ({len(added_files)}):\n")
+            for _, name, _ in added_files: clog.write(f" + {name}\n")
+            
+            clog.write(f"\nCHANGED FILES ({len(changed_files)}):\n")
+            for _, name, _ in changed_files: clog.write(f" ~ {name}\n")
+            
+            clog.write(f"\nREMOVED FILES ({len(removed_files)}):\n")
+            for name in removed_files: 
+                clean_removed_name = name.split("::")[-1] if "::" in name else name
+                clog.write(f" - {clean_removed_name}\n")
+            
+        backup_path = update_folder / "extraction_data_backup.json"
+        shutil.copy2(data_path, backup_path)
     
     with open(data_path, "w", encoding="utf-8") as f:
         json.dump(new_cache, f, indent=4)

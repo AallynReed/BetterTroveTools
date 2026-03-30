@@ -48,6 +48,7 @@ document.addEventListener('file_manager_loaded', () => {
     let fileIdCounter = 0;
     let searchTimeout = null;
     let currentTrackingDir = null;
+    let fullFileTree = {};
 
     async function scanForGames() {
         installSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
@@ -210,47 +211,61 @@ document.addEventListener('file_manager_loaded', () => {
         clearTimeout(searchTimeout);
         const term = searchInput.value.toLowerCase().trim();
 
+        treeContainer.classList.remove('searching');
+        treeContainer.querySelectorAll('.is-match, .has-match').forEach(n => {
+            n.classList.remove('is-match', 'has-match');
+        });
+
         if (term.length < 4) {
-            treeContainer.classList.remove('searching');
-            treeContainer.querySelectorAll('.is-match, .has-match').forEach(n => {
-                n.classList.remove('is-match', 'has-match');
-            });
             searchCount.innerText = term.length > 0 ? t("Minimum 4 characters required...") : "";
             return;
         }
 
+        treeContainer.querySelectorAll('details[open]').forEach(d => d.open = false);
+
         searchTimeout = setTimeout(() => {
             treeContainer.classList.add('searching');
             
-            treeContainer.querySelectorAll('.is-match, .has-match').forEach(n => {
-                n.classList.remove('is-match', 'has-match');
-            });
-
-            const matches = fileCache.filter(f => f.name.includes(term) || f.path.includes(term));
+            const matches = fileCache.filter(f => f.name.includes(term) || f.fullPath.toLowerCase().includes(term));
             
             matches.forEach(match => {
-                const el = document.getElementById(match.id);
-                if (el) {
-                    el.classList.add('is-match');
-                    let parent = el.closest('details.folder');
-                    while (parent) {
-                        if (parent.classList.contains('has-match')) break;
-                        parent.classList.add('has-match');
-                        parent.open = true;
-                        parent = parent.parentElement.closest('details.folder');
+                const pathParts = match.fullPath.split('/');
+                let currentPath = '';
+                let parentEl = treeContainer.querySelector('.file-tree');
+
+                for (let i = 0; i < pathParts.length - 1; i++) {
+                    const part = pathParts[i];
+                    currentPath = currentPath ? `${currentPath}/${part}` : part;
+                    
+                    let detailsEl = parentEl.querySelector(`:scope > details[data-path="${currentPath}"]`);
+                    if (detailsEl) {
+                        if (!detailsEl.open) {
+                            detailsEl.open = true;
+                        }
+                        detailsEl.classList.add('has-match');
+                        parentEl = detailsEl.querySelector('.folder-content');
+                    } else {
+                        break; 
                     }
+                }
+
+                const filesGroupEl = parentEl.querySelector(`:scope > details[data-is-files-group="true"]`);
+                if (filesGroupEl) {
+                    if (!filesGroupEl.open) {
+                        filesGroupEl.open = true;
+                    }
+                    filesGroupEl.classList.add('has-match');
+                }
+
+                const fileEl = document.getElementById(match.id);
+                if (fileEl) {
+                    fileEl.classList.add('is-match');
                 }
             });
 
             searchCount.innerText = `${t("Found")} ${matches.length} ${t("matches")}`;
         }, 300);
     }
-
-    searchInput.addEventListener('input', performSearch);
-    clearSearchBtn.addEventListener('click', () => {
-        searchInput.value = "";
-        performSearch();
-    });
 
     if (loadBtn) {
         loadBtn.addEventListener('click', async () => {
@@ -260,31 +275,40 @@ document.addEventListener('file_manager_loaded', () => {
             loadBtn.disabled = true;
             loadBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading...")}`;
             treeContainer.innerHTML = `<div style="text-align: center; padding: 40px;"><h3><i class="fa-solid fa-spinner fa-spin"></i> ${t("Parsing")} ${selectedPath}...</h3></div>`;
-            
+
             fileCache = [];
             fileIdCounter = 0;
+            fullFileTree = {};
 
             try {
                 const response = await eel.load_entire_game_tree(selectedPath)();
                 if (response.success) {
                     const fetchRes = await fetch('/api/cache/temp_tree.json?t=' + new Date().getTime());
-                    const treeData = await fetchRes.json();
+                    fullFileTree = await fetchRes.json();
                     
-                    let treeHTML = `<div class="file-tree">`;
-                    const rootChildren = treeData.children || treeData;
-                    
-                    const sortedKeys = Object.keys(rootChildren).sort((a, b) => {
-                        const nodeA = rootChildren[a], nodeB = rootChildren[b];
-                        if (nodeA.type === 'folder' && nodeB.type === 'file') return -1;
-                        return a.localeCompare(b);
-                    });
+                    function cacheAllFiles(node, currentPath = "") {
+                        if (node.files) {
+                            for (const fileNode of node.files) {
+                                const id = `f-${fileIdCounter++}`;
+                                const fullPath = currentPath ? `${currentPath}/${fileNode.name}` : fileNode.name;
+                                fileNode.id = id;
+                                fileNode.fullPath = fullPath;
+                                fileCache.push({ id, name: fileNode.name.toLowerCase(), path: fullPath.toLowerCase(), fullPath });
+                            }
+                        }
+                        if (node.children) {
+                            for (const key in node.children) {
+                                const childPath = currentPath ? `${currentPath}/${key}` : key;
+                                cacheAllFiles(node.children[key], childPath);
+                            }
+                        }
+                    }
+                    cacheAllFiles(fullFileTree);
 
-                    sortedKeys.forEach(key => { treeHTML += buildTreeHTML(key, rootChildren[key]); });
-                    treeHTML += `</div>`;
-                    treeContainer.innerHTML = treeHTML;
+                    renderLazyTree(fullFileTree, treeContainer);
                     treeContainer.classList.remove('placeholder-box');
                 } else {
-                     treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error parsing game tree:")} ${response.error || "Unknown error"}</h3></div>`;
+                    treeContainer.innerHTML = `<div style="text-align: center; padding: 40px; color: #ff5555;"><h3>${t("Error parsing game tree:")} ${response.error || "Unknown error"}</h3></div>`;
                 }
             } catch (error) {
                 console.error("Failed to load tree cache:", error);
@@ -296,44 +320,134 @@ document.addEventListener('file_manager_loaded', () => {
         });
     }
 
-    function buildTreeHTML(name, node, currentPath = "") {
-        let fullPath = currentPath ? currentPath + "/" + name : name;
-        
-        if (node.type === 'folder') {
-            let html = `<details class="folder"><summary><div class="checkbox-container"><input type="checkbox" class="folder-check"><span><i class="fa-solid fa-folder" style="color: #e8b031; margin-right: 4px;"></i> ${name}</span></div></summary><div class="folder-content">`;
-            const sortedKeys = Object.keys(node.children).sort((a, b) => {
-                const childA = node.children[a], childB = node.children[b];
-                if (childA.type === 'folder' && childB.type === 'file') return -1;
-                return a.localeCompare(b);
-            });
-            sortedKeys.forEach(childName => { html += buildTreeHTML(childName, node.children[childName], fullPath); });
-            return html + `</div></details>`;
-        } else {
-            const id = `f-${fileIdCounter++}`;
-            const fileNameLower = name.toLowerCase();
-            const filePathLower = fullPath.toLowerCase();
+    function getNodeFromPath(path) {
+        if (!path) return fullFileTree;
+        const parts = path.split('/');
+        let currentNode = fullFileTree;
+        for (const part of parts) {
+            if (currentNode && currentNode.children && currentNode.children[part]) {
+                currentNode = currentNode.children[part];
+            } else {
+                return null;
+            }
+        }
+        return currentNode;
+    }
 
-            fileCache.push({ id: id, name: fileNameLower, path: filePathLower });
+    function renderLazyTree(node, parentElement) {
+        let treeHTML = `<div class="file-tree">`;
+        const sortedFolderKeys = Object.keys(node.children || {});
+        for (const key of sortedFolderKeys) {
+            treeHTML += buildFolderHTML(key, node.children[key], key);
+        }
+        if (node.files && node.files.length > 0) {
+            treeHTML += buildFilesGroupHTML(node, '');
+        }
+        treeHTML += `</div>`;
+        parentElement.innerHTML = treeHTML;
+    }
 
-            const sizeStr = node.size > 1048576 ? (node.size / 1048576).toFixed(2) + ' MB' : (node.size / 1024).toFixed(2) + ' KB';
-            
-            return `<div class="file-item" id="${id}">
+    function buildFolderHTML(name, node, fullPath) {
+        const dirCount = node.dir_count_total || 0;
+        const fileCount = node.file_count_total || 0;
+        const meta = `(${dirCount} ${t('dirs')}, ${fileCount} ${t('files')})`;
+        return `<details class="folder" data-path="${fullPath}">
+            <summary>
+                <div class="checkbox-container">
+                    <input type="checkbox" class="folder-check">
+                    <span><i class="fa-solid fa-folder"></i> ${name}</span>
+                </div>
+                <span class="folder-meta">${meta}</span>
+            </summary>
+            <div class="folder-content"><div class="lazy-placeholder">${t("Loading...")}</div></div>
+        </details>`;
+    }
+
+    function buildFilesGroupHTML(node, fullPath) {
+        const fileCount = node.file_count_direct || 0;
+        if (fileCount === 0) return '';
+        return `<details class="files-group" data-path="${fullPath}" data-is-files-group="true">
+            <summary>
+                <div class="checkbox-container">
+                    <input type="checkbox" class="folder-check">
+                    <span><i class="fa-regular fa-folder-open"></i> ${t("Files")} (${fileCount})</span>
+                </div>
+            </summary>
+            <div class="folder-content"><div class="lazy-placeholder">${t("Loading...")}</div></div>
+        </details>`;
+    }
+
+    function buildFileItemHTML(fileNode, fullPath) {
+        const id = fileNode.id;
+        const sizeStr = fileNode.size > 1048576 ? (fileNode.size / 1048576).toFixed(2) + ' MB' : (fileNode.size / 1024).toFixed(2) + ' KB';
+        return `<div class="file-item" id="${id}">
             <div class="checkbox-container">
-                <input type="checkbox" class="file-check" data-archive="${node.archive_index}" data-offset="${node.offset}" data-tfi="${node.tfi_parent}" data-size="${node.size}" data-filepath="${fullPath}">
+                <input type="checkbox" class="file-check" data-archive="${fileNode.archive_index}" data-offset="${fileNode.offset}" data-tfi="${fileNode.tfi_parent}" data-size="${fileNode.size}" data-filepath="${fullPath}">
                 <div class="file-label">
-                    <span class="file-name"><i class="fa-regular fa-file"></i> ${name}</span>
+                    <span class="file-name"><i class="fa-regular fa-file"></i> ${fileNode.name}</span>
                 </div>
             </div>
             <div class="file-actions">
-                <span class="file-meta">archive${node.archive_index}.tfa | ${sizeStr}</span>
+                <span class="file-meta">archive${fileNode.archive_index}.tfa | ${sizeStr}</span>
             </div>
         </div>`;
-        }
     }
+
+    function populateNode(details) {
+        if (details.dataset.populated === 'true') return;
+        
+        const path = details.dataset.path;
+        const isFilesGroup = details.dataset.isFilesGroup === 'true';
+        const node = getNodeFromPath(path);
+        const contentElement = details.querySelector('.folder-content');
+
+        if (!node || !contentElement) return;
+
+        let childrenHTML = '';
+
+        if (isFilesGroup) {
+            for (const fileNode of node.files) {
+                childrenHTML += buildFileItemHTML(fileNode, fileNode.fullPath);
+            }
+        } else {
+            const sortedFolderKeys = Object.keys(node.children || {});
+            for (const key of sortedFolderKeys) {
+                const childNode = node.children[key];
+                const childPath = path ? `${path}/${key}` : key;
+                childrenHTML += buildFolderHTML(key, childNode, childPath);
+            }
+            if (node.files && node.files.length > 0) {
+                childrenHTML += buildFilesGroupHTML(node, path);
+            }
+        }
+
+        contentElement.innerHTML = childrenHTML;
+        details.dataset.populated = 'true';
+    }
+
+    treeContainer.addEventListener('toggle', (e) => {
+        const details = e.target;
+        if (!details.open || details.dataset.populated === 'true' || !details.closest('.file-tree')) {
+            return;
+        }
+        populateNode(details);
+    }, true);
 
     treeContainer.addEventListener('change', (e) => {
         if (e.target.classList.contains('folder-check')) {
             const isChecked = e.target.checked;
+            const details = e.target.closest('details');
+            
+            if (isChecked) {
+                const queue = [details];
+                while(queue.length > 0) {
+                    const current = queue.shift();
+                    populateNode(current);
+                    const childDetails = current.querySelectorAll(':scope > .folder-content > details');
+                    childDetails.forEach(child => queue.push(child));
+                }
+            }
+
             const content = e.target.closest('details').querySelector('.folder-content');
             content.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = isChecked);
         }
@@ -353,6 +467,12 @@ document.addEventListener('file_manager_loaded', () => {
         } else {
             extractionBar.classList.remove('active');
         }
+    });
+
+    searchInput.addEventListener('input', performSearch);
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = "";
+        performSearch();
     });
 
     if (collapseBtn) {
