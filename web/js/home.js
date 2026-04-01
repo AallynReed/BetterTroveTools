@@ -351,11 +351,21 @@ document.addEventListener('home_loaded', () => {
                 
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
-                    modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")} <button id="btn-toggle-all-slots" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="${t('Expand/Collapse All')}"><i class="fa-solid fa-expand"></i></button>`;
+                    modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")} <button id="btn-toggle-biome-names" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="${t('Toggle Biome Names')}"><i class="fa-solid fa-font"></i></button> <button id="btn-toggle-all-slots" style="margin-left: 5px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="${t('Expand/Collapse All')}"><i class="fa-solid fa-expand"></i></button>`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '95%';
                     document.querySelector('#d15-modal .modal-content').style.width = 'max-content';
                     populateWeeklyBiomeModal(d15.rotations, '#4caf50');
                     
+                    const toggleNamesBtn = document.getElementById('btn-toggle-biome-names');
+                    let showFinalName = true;
+                    toggleNamesBtn.addEventListener('click', () => {
+                        showFinalName = !showFinalName;
+                        const textEls = document.querySelectorAll('#d15-modal-body .biome-name-text');
+                        textEls.forEach(el => {
+                            el.innerText = showFinalName ? el.getAttribute('data-final-name') : el.getAttribute('data-name');
+                        });
+                    });
+
                     const toggleAllBtn = document.getElementById('btn-toggle-all-slots');
                     let allExpanded = false;
                     toggleAllBtn.addEventListener('click', () => {
@@ -558,7 +568,7 @@ document.addEventListener('home_loaded', () => {
                     let expandedPills = rot.biomes.map(b => 
                         `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.8em;">
                             <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 14px; height: 14px;">
-                            ${t(b.final_name)}
+                            <span class="biome-name-text" data-name="${t(b.name)}" data-final-name="${t(b.final_name)}">${t(b.final_name)}</span>
                         </span>`
                     ).join('');
 
