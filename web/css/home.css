@@ -369,21 +369,50 @@
 /* Weekly Schedule Grid for Rotations */
 .weekly-schedule-grid {
     display: flex;
-    gap: 12px;
+    flex-direction: column;
+    gap: 10px;
     overflow-x: auto;
     padding-bottom: 10px;
     scrollbar-width: thin;
 }
 
-.schedule-day-col {
-    flex: 1;
-    min-width: 145px;
+.schedule-row {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+    width: max-content;
+}
+
+.schedule-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--bg-panel);
+    padding-bottom: 5px;
+}
+
+.schedule-time-col {
+    min-width: 60px;
+    position: sticky;
+    left: 0;
+    background: var(--bg-panel);
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--text-muted);
+    border-right: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-right: 10px;
+}
+
+.schedule-header-row .schedule-time-col {
+    z-index: 4;
+    border-right: none;
 }
 
 .schedule-day-header {
+    width: 145px;
+    flex-shrink: 0;
     text-align: center;
     font-weight: bold;
     padding: 8px 5px;
@@ -391,12 +420,11 @@
     border-bottom: 2px solid rgba(255, 255, 255, 0.1);
     border-radius: 6px 6px 0 0;
     color: #fff;
-    position: sticky;
-    top: 0;
-    z-index: 1;
 }
 
 .schedule-slot {
+    width: 145px;
+    flex-shrink: 0;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 6px;
@@ -410,15 +438,6 @@
 .schedule-slot:hover {
     border-color: rgba(255, 255, 255, 0.15);
     background: rgba(0, 0, 0, 0.3);
-}
-
-.schedule-time {
-    font-size: 0.85em;
-    color: var(--text-muted);
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
-    padding-bottom: 6px;
-    display: flex;
-    align-items: center;
 }
 
 .schedule-biomes {

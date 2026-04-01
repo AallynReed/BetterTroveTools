@@ -315,6 +315,7 @@ document.addEventListener('home_loaded', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> ${t("Upcoming Stampy Locations")}`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
+                    document.querySelector('#d15-modal .modal-content').style.width = '90%';
                     populateBiomeModal(stampy.future, stampyColor, true);
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -386,6 +387,7 @@ document.addEventListener('home_loaded', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-flask" style="color: ${manaColor};"></i> ${t("Upcoming Wild Mana Biomes")}`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
+                    document.querySelector('#d15-modal .modal-content').style.width = '90%';
                     populateBiomeModal(mana.future, manaColor);
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -442,50 +444,83 @@ document.addEventListener('home_loaded', () => {
             const nowTs = now.getTime();
             const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
 
-            // Create exactly 7 columns, rigidly starting from Today at 12:00 AM Local Time
+            const daysData = [];
+            let maxRows = 0;
+
             for (let i = 0; i < 7; i++) {
-                // Set day bounds: 12:00 AM to 11:59:59 PM local time
                 const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
                 const dayStartTs = dayStart.getTime();
-                const dayEndTs = dayStartTs + 86400000; // +24 hours
+                const dayEndTs = dayStartTs + 86400000;
 
-                const col = document.createElement('div');
-                col.className = 'schedule-day-col';
-                
+                const dayRots = rotations.filter(rot => (rot.start * 1000 < dayEndTs && rot.end * 1000 > dayStartTs));
+                dayRots.sort((a,b) => a.start - b.start);
+                if (dayRots.length > maxRows) maxRows = dayRots.length;
+
+                daysData.push({ dateObj: dayStart, rots: dayRots });
+            }
+
+            const headerRow = document.createElement('div');
+            headerRow.className = 'schedule-row schedule-header-row';
+            
+            const timeHeader = document.createElement('div');
+            timeHeader.className = 'schedule-time-col';
+            headerRow.appendChild(timeHeader);
+
+            daysData.forEach((day, i) => {
                 const header = document.createElement('div');
                 header.className = 'schedule-day-header';
-                header.innerText = (i === 0) ? t("Today") : dayStart.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
-                col.appendChild(header);
+                header.innerText = (i === 0) ? t("Today") : day.dateObj.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+                headerRow.appendChild(header);
+            });
+            grid.appendChild(headerRow);
 
-                // Fit the rotations into this exact local 24-hour window
-                const dayRots = rotations.filter(rot => {
-                    return (rot.start * 1000 < dayEndTs && rot.end * 1000 > dayStartTs);
-                });
+            for (let r = 0; r < maxRows; r++) {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'schedule-row';
 
-                dayRots.forEach(rot => {
+                let rowTimeStr = "";
+                let baseRot = daysData[0].rots[r] || daysData[1].rots[r];
+                if (baseRot) {
+                    const timeObj = new Date(baseRot.start * 1000);
+                    rowTimeStr = timeObj.toLocaleTimeString(locale, { hour: '2-digit', minute:'2-digit' });
+                }
+
+                const timeCol = document.createElement('div');
+                timeCol.className = 'schedule-time-col';
+                timeCol.innerText = rowTimeStr;
+                rowEl.appendChild(timeCol);
+
+                daysData.forEach((day, i) => {
+                    const rot = day.rots[r];
+                    const slot = document.createElement('div');
+                    slot.className = 'schedule-slot';
+                    
+                    if (!rot) {
+                        slot.style.visibility = 'hidden';
+                        rowEl.appendChild(slot);
+                        return;
+                    }
+
                     const rotStartTs = rot.start * 1000;
                     const rotEndTs = rot.end * 1000;
-                    
                     const isCurrent = nowTs >= rotStartTs && nowTs < rotEndTs;
                     const hasPassed = nowTs >= rotEndTs;
                     
-                    const slot = document.createElement('div');
-                    slot.className = 'schedule-slot';
                     if (hasPassed && i === 0) {
                         slot.style.opacity = '0.5';
                     }
+
+                    if (isCurrent) {
+                        slot.style.borderColor = highlightColor;
+                        slot.style.boxShadow = `inset 0 0 10px rgba(0,0,0,0.5), 0 0 8px -2px ${highlightColor}`;
+                    }
                     
-                    const timeObj = new Date(rotStartTs);
-                    const timeStr = timeObj.toLocaleTimeString(locale, { hour: '2-digit', minute:'2-digit' });
-                    
-                    // Collapsed View: Just icons side-by-side
                     let collapsedPills = rot.biomes.map(b => 
                         `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="padding: 4px; flex: 1; justify-content: center;">
                             <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 16px; height: 16px;">
                         </span>`
                     ).join('');
 
-                    // Expanded View: Full rows with text
                     let expandedPills = rot.biomes.map(b => 
                         `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.8em;">
                             <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 14px; height: 14px;">
@@ -493,47 +528,43 @@ document.addEventListener('home_loaded', () => {
                         </span>`
                     ).join('');
 
-                    const highlightStyle = isCurrent ? `color: ${highlightColor}; font-weight: bold;` : '';
-                    const dot = isCurrent ? `<i class="fa-solid fa-circle-play" style="margin-right: 4px;"></i>` : '';
+                    const dot = isCurrent ? `<div style="text-align: center; color: ${highlightColor}; font-size: 0.75em; margin-bottom: 4px; font-weight: bold;"><i class="fa-solid fa-circle-play"></i> ${t("ACTIVE")}</div>` : '';
 
                     slot.innerHTML = `
-                        <div class="schedule-time" style="justify-content: space-between; ${highlightStyle}">
-                            <span>${dot}${timeStr}</span>
-                            <button class="expand-btn" style="background: none; border: none; color: inherit; opacity: 0.6; cursor: pointer; padding: 0 5px;">
-                                <i class="fa-solid fa-chevron-${isCurrent ? 'up' : 'down'}"></i>
-                            </button>
-                        </div>
-                        <div class="schedule-biomes-collapsed" style="display: ${isCurrent ? 'none' : 'flex'}; flex-direction: row; gap: 6px; padding-top: 4px;">
+                        ${dot}
+                        <div class="schedule-biomes-collapsed" style="display: ${isCurrent ? 'none' : 'flex'}; flex-direction: row; gap: 6px;">
                             ${collapsedPills}
                         </div>
-                        <div class="schedule-biomes-expanded" style="display: ${isCurrent ? 'flex' : 'none'}; flex-direction: column; gap: 4px; padding-top: 2px;">
+                        <div class="schedule-biomes-expanded" style="display: ${isCurrent ? 'flex' : 'none'}; flex-direction: column; gap: 4px;">
                             ${expandedPills}
+                        </div>
+                        <div style="text-align: center; margin-top: auto; opacity: 0.4; padding-top: 4px;">
+                            <i class="fa-solid fa-chevron-${isCurrent ? 'up' : 'down'} expand-icon"></i>
                         </div>
                     `;
 
                     slot.style.cursor = 'pointer';
-                    const btn = slot.querySelector('.expand-btn');
                     const collapsedView = slot.querySelector('.schedule-biomes-collapsed');
                     const expandedView = slot.querySelector('.schedule-biomes-expanded');
+                    const btn = slot.querySelector('.expand-icon');
                     
-                    // Make the entire tile clickable to toggle views
                     slot.addEventListener('click', () => {
                         const isExpanded = expandedView.style.display === 'flex';
                         if (isExpanded) {
                             expandedView.style.display = 'none';
                             collapsedView.style.display = 'flex';
-                            btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+                            btn.className = 'fa-solid fa-chevron-down expand-icon';
                         } else {
                             expandedView.style.display = 'flex';
                             collapsedView.style.display = 'none';
-                            btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+                            btn.className = 'fa-solid fa-chevron-up expand-icon';
                         }
                     });
 
-                    col.appendChild(slot);
+                    rowEl.appendChild(slot);
                 });
                 
-                grid.appendChild(col);
+                grid.appendChild(rowEl);
             }
             
             modalBody.appendChild(grid);
