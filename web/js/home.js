@@ -351,10 +351,20 @@ document.addEventListener('home_loaded', () => {
                 
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
-                    modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")}`;
+                    modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")} <button id="btn-toggle-all-slots" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="${t('Expand/Collapse All')}"><i class="fa-solid fa-expand"></i></button>`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '95%';
                     document.querySelector('#d15-modal .modal-content').style.width = 'max-content';
                     populateWeeklyBiomeModal(d15.rotations, '#4caf50');
+                    
+                    const toggleAllBtn = document.getElementById('btn-toggle-all-slots');
+                    let allExpanded = false;
+                    toggleAllBtn.addEventListener('click', () => {
+                        allExpanded = !allExpanded;
+                        toggleAllBtn.innerHTML = allExpanded ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
+                        const slots = document.querySelectorAll('#d15-modal-body .schedule-slot');
+                        slots.forEach(s => { if (s._toggleView) s._toggleView(allExpanded); });
+                    });
+
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
 
@@ -473,6 +483,16 @@ document.addEventListener('home_loaded', () => {
                 const header = document.createElement('div');
                 header.className = 'schedule-day-header';
                 header.innerText = (i === 0) ? t("Today") : day.dateObj.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+                
+                header.style.cursor = 'pointer';
+                header.title = t("Click to toggle column");
+                let colExpanded = false;
+                header.addEventListener('click', () => {
+                    colExpanded = !colExpanded;
+                    const slots = grid.querySelectorAll(`.schedule-slot[data-col="${i}"]`);
+                    slots.forEach(s => { if (s._toggleView) s._toggleView(colExpanded); });
+                });
+                
                 headerRow.appendChild(header);
             });
             grid.appendChild(headerRow);
@@ -491,12 +511,23 @@ document.addEventListener('home_loaded', () => {
                 const timeCol = document.createElement('div');
                 timeCol.className = 'schedule-time-col';
                 timeCol.innerText = rowTimeStr;
+                
+                timeCol.style.cursor = 'pointer';
+                timeCol.title = t("Click to toggle row");
+                let rowExpanded = false;
+                timeCol.addEventListener('click', () => {
+                    rowExpanded = !rowExpanded;
+                    const slots = rowEl.querySelectorAll('.schedule-slot');
+                    slots.forEach(s => { if (s._toggleView) s._toggleView(rowExpanded); });
+                });
+                
                 rowEl.appendChild(timeCol);
 
                 daysData.forEach((day, i) => {
                     const rot = day.rots[r];
                     const slot = document.createElement('div');
                     slot.className = 'schedule-slot';
+                    slot.dataset.col = i;
                     
                     if (!rot) {
                         slot.style.visibility = 'hidden';
@@ -531,10 +562,7 @@ document.addEventListener('home_loaded', () => {
                         </span>`
                     ).join('');
 
-                    const dot = isCurrent ? `<div style="text-align: center; color: ${highlightColor}; font-size: 0.75em; margin-bottom: 4px; font-weight: bold;"><i class="fa-solid fa-circle-play"></i> ${t("ACTIVE")}</div>` : '';
-
                     slot.innerHTML = `
-                        ${dot}
                         <div class="schedule-biomes-collapsed" style="display: ${isCurrent ? 'none' : 'flex'}; flex-direction: row; gap: 6px;">
                             ${collapsedPills}
                         </div>
@@ -551,18 +579,22 @@ document.addEventListener('home_loaded', () => {
                     const expandedView = slot.querySelector('.schedule-biomes-expanded');
                     const btn = slot.querySelector('.expand-icon');
                     
-                    slot.addEventListener('click', () => {
+                    slot._toggleView = (forceExpand) => {
                         const isExpanded = expandedView.style.display === 'flex';
-                        if (isExpanded) {
-                            expandedView.style.display = 'none';
-                            collapsedView.style.display = 'flex';
-                            btn.className = 'fa-solid fa-chevron-down expand-icon';
-                        } else {
+                        const targetState = forceExpand !== undefined ? forceExpand : !isExpanded;
+                        
+                        if (targetState) {
                             expandedView.style.display = 'flex';
                             collapsedView.style.display = 'none';
                             btn.className = 'fa-solid fa-chevron-up expand-icon';
+                        } else {
+                            expandedView.style.display = 'none';
+                            collapsedView.style.display = 'flex';
+                            btn.className = 'fa-solid fa-chevron-down expand-icon';
                         }
-                    });
+                    };
+                    
+                    slot.addEventListener('click', () => slot._toggleView());
 
                     rowEl.appendChild(slot);
                 });
