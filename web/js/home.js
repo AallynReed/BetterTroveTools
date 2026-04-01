@@ -76,6 +76,266 @@ document.addEventListener('home_loaded', () => {
         }
     });
 
+    const yearlyCalendarModal = document.getElementById('yearly-calendar-modal');
+    const yearlyCloseBtn = document.getElementById('yearly-modal-close-btn');
+    const openCalendarBtn = document.getElementById('btn-open-yearly-calendar');
+
+    if (yearlyCloseBtn) {
+        yearlyCloseBtn.addEventListener('click', () => {
+            yearlyCalendarModal.style.display = 'none';
+        });
+    }
+
+    if (openCalendarBtn) {
+        openCalendarBtn.addEventListener('click', () => {
+            yearlyCalendarModal.style.display = 'flex';
+            loadYearlyCalendar();
+        });
+    }
+    
+    window.addEventListener('click', (event) => {
+        if (event.target === rotationModal) {
+            rotationModal.style.display = 'none';
+        }
+        if (yearlyCalendarModal && event.target === yearlyCalendarModal) {
+            yearlyCalendarModal.style.display = 'none';
+        }
+    });
+
+    async function loadYearlyCalendar() {
+        const modalBody = document.getElementById('yearly-calendar-body');
+        if (!modalBody) return;
+        
+        modalBody.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Calculating predictions...")}</div>`;
+        
+        try {
+            const res = await eel.get_yearly_calendar_data()();
+            if (!res || !res.success) {
+                modalBody.innerHTML = `<div style="padding: 40px; text-align: center; color: #ff5555;">${t("Error loading calendar data.")}</div>`;
+                return;
+            }
+
+            const events = res.events;
+            const now = new Date();
+            
+            // Set timeline bounds relative to midnight local time for precise grid alignment
+            const startTs = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 365).getTime();
+            
+            const totalDays = 730;
+            const dayWidth = 40; // px
+            const labelWidth = 140; // px
+            const totalWidth = labelWidth + (totalDays * dayWidth);
+            
+            let html = `<div class="calendar-timeline-wrapper" id="timeline-wrapper">`;
+            
+            const todayPx = 365 * dayWidth;
+            html += `<div class="calendar-today-line" style="left: ${todayPx + labelWidth + 20}px;"></div>`;
+            
+            html += `<div class="calendar-timeline-header" style="width: ${totalWidth}px;">`;
+            html += `<div class="calendar-track-label" style="min-width: ${labelWidth}px; width: ${labelWidth}px; border-bottom: none; box-shadow: none;"></div>`;
+            
+            for(let i=0; i<totalDays; i++) {
+                const d = new Date(startTs + (i * 86400000));
+                const isToday = (i === 365) ? 'is-today' : '';
+                const monthStr = window.I18nManager ? d.toLocaleDateString(window.I18nManager.currentLocale.replace("_", "-"), { month: 'short' }) : d.toLocaleDateString(undefined, { month: 'short' });
+                const dayNum = d.getDate();
+                const displayMonth = (dayNum === 1 || i === 0 || i === 365) ? monthStr : '';
+                
+                html += `
+                    <div class="calendar-day-col ${isToday}" id="day-col-${i}">
+                        <div class="calendar-day-month">${displayMonth}</div>
+                        <div class="calendar-day-num">${dayNum}</div>
+                    </div>
+                `;
+            }
+            html += `</div>`; 
+            
+            html += `<div class="calendar-tracks" style="width: ${totalWidth}px;">`;
+            
+            const tracks = [
+                { id: 'weekly_buff', name: 'Weekly Buffs', color: 'weekly', icon: 'fa-bolt' },
+                { id: 'luxion', name: 'Luxion', color: 'luxion', icon: 'fa-dragon' },
+                { id: 'corruxion', name: 'Corruxion', color: 'corruxion', icon: 'fa-dragon' },
+                { id: 'fluxion', name: 'Fluxion', color: 'fluxion', icon: 'fa-scale-balanced' },
+                { id: 'mana', name: 'Wild Mana', color: 'mana', icon: 'fa-flask' },
+                { id: 'stampy', name: 'Stampy', color: 'stampy', icon: 'fa-paw' }
+            ];
+
+            const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+
+            tracks.forEach(track => {
+                html += `<div class="calendar-track" style="width: 100%;">
+                            <div class="calendar-track-label" style="min-width: ${labelWidth}px; width: ${labelWidth}px;">
+                                <i class="fa-solid ${track.icon}" style="margin-right: 8px; opacity: 0.8;"></i> ${t(track.name)}
+                            </div>`;
+                
+                const trackEvents = events.filter(e => e.type === track.id);
+                trackEvents.forEach(ev => {
+                    const eStartTs = ev.start * 1000;
+                    const eEndTs = ev.end * 1000;
+                    
+                    let leftPx = ((eStartTs - startTs) / 86400000) * dayWidth;
+                    let widthPx = ((eEndTs - eStartTs) / 86400000) * dayWidth;
+                    
+                    if (leftPx + widthPx > 0 && leftPx < totalDays * dayWidth) {
+                        if (leftPx < 0) { widthPx += leftPx; leftPx = 0; }
+                        
+                        const startStr = new Date(eStartTs).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                        const endStr = new Date(eEndTs).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                        
+                        let customStyle = "";
+                        if (ev.color) {
+                            const hex = ev.color.replace('#', '');
+                            if (hex.length === 6) {
+                                const r = parseInt(hex.substr(0, 2), 16);
+                                const g = parseInt(hex.substr(2, 2), 16);
+                                const b = parseInt(hex.substr(4, 2), 16);
+                                // Darken dynamically loaded colors by 20% for improved readability
+                                const darkR = Math.floor(r * 0.8);
+                                const darkG = Math.floor(g * 0.8);
+                                const darkB = Math.floor(b * 0.8);
+                                const yiq = ((darkR * 299) + (darkG * 587) + (darkB * 114)) / 1000;
+                                const isDark = yiq < 128;
+                                customStyle = `background: rgb(${darkR},${darkG},${darkB}); color: ${isDark ? '#fff' : '#000'} !important; border: 1px solid rgba(255,255,255,0.2); text-shadow: ${isDark ? '0 1px 2px rgba(0,0,0,0.8)' : 'none'};`;
+                            }
+                        }
+
+                        let tooltipText = `<div style="font-weight: bold; color: #5ec6ff; margin-bottom: 5px; font-size: 1.1em;">${t(ev.name)}</div>`;
+                        if (ev.biome_names && ev.biome_names.length > 0) {
+                            tooltipText += `<div style="margin-bottom: 5px; color: #fff;">${ev.biome_names.map(b => '• ' + t(b)).join('<br>')}</div>`;
+                        }
+                        tooltipText += `<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 4px;"><i class="fa-regular fa-clock"></i> ${startStr} - ${endStr}</div>`;
+                        
+                        let iconsHtml = "";
+                        if (ev.icons && ev.icons.length > 0) {
+                            iconsHtml = `<div style="display: flex; gap: 2px; align-items: center; margin-right: 4px;">` + 
+                                ev.icons.map(ic => `<img src="/assets/images/biomes/${ic}.png" onerror="this.style.display='none'" style="width: 14px; height: 14px; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.5));">`).join('') +
+                                `</div>`;
+                        }
+                        else if (track.id === 'fluxion') {
+                            const isVoting = ev.name.includes('Voting');
+                            const iconClass = isVoting ? 'fa-check-to-slot' : 'fa-sack-dollar';
+                            iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid ${iconClass}"></i></div>`;
+                        }
+                        else if (track.id === 'luxion' || track.id === 'corruxion') {
+                            iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;
+                        }
+
+                        let showText = "";
+                        if (track.id === 'weekly_buff' && widthPx > 40) showText = t(ev.name);
+
+                        const encodedTooltip = tooltipText.replace(/"/g, '&quot;');
+
+                        html += `<div class="calendar-event event-${track.color}" 
+                                      style="left: ${leftPx + labelWidth}px; width: ${widthPx}px; top: 6px; ${customStyle}"
+                                      data-tooltip-content="${encodedTooltip}">
+                                      ${iconsHtml}${showText}
+                                 </div>`;
+                    }
+                });
+                html += `</div>`; 
+            });
+            
+            html += `</div></div>`;
+            modalBody.innerHTML = html;
+
+            const wrapper = document.getElementById('timeline-wrapper');
+            if (wrapper) {
+                const centerToday = () => {
+                    wrapper.scrollLeft = todayPx + labelWidth - (wrapper.clientWidth / 2) + 20;
+                };
+                
+                setTimeout(centerToday, 50);
+
+                // "Jump to Today" Button Logic
+                const btnToday = document.getElementById('btn-calendar-today');
+                if (btnToday) {
+                    btnToday.onclick = () => {
+                        wrapper.style.scrollBehavior = 'smooth';
+                        centerToday();
+                        setTimeout(() => wrapper.style.scrollBehavior = 'auto', 500); // Reset after animation
+                    };
+                }
+
+                // Drag to Scroll Logic
+                let isDown = false;
+                let startX, scrollLeft;
+
+                wrapper.classList.add('draggable');
+
+                let tooltip = document.getElementById('calendar-tooltip');
+                if (!tooltip) {
+                    tooltip = document.createElement('div');
+                    tooltip.id = 'calendar-tooltip';
+                    tooltip.style.cssText = 'position: fixed; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: none; z-index: 10000; display: none; color: #fff; font-size: 0.9em; line-height: 1.4;';
+                    document.body.appendChild(tooltip);
+                }
+
+                wrapper.addEventListener('mousemove', (e) => {
+                    if (isDown) {
+                        tooltip.style.display = 'none';
+                        return;
+                    }
+                    const eventEl = e.target.closest('.calendar-event');
+                    if (eventEl) {
+                        const content = eventEl.getAttribute('data-tooltip-content');
+                        if (content) {
+                            tooltip.innerHTML = content;
+                            tooltip.style.display = 'block';
+                            let x = e.clientX + 15;
+                            let y = e.clientY + 15;
+                            if (x + tooltip.offsetWidth > window.innerWidth) x = e.clientX - tooltip.offsetWidth - 15;
+                            if (y + tooltip.offsetHeight > window.innerHeight) y = e.clientY - tooltip.offsetHeight - 15;
+                            tooltip.style.left = x + 'px';
+                            tooltip.style.top = y + 'px';
+                        }
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                });
+
+                wrapper.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+                const onMouseMove = (e) => {
+                    if (!isDown) return;
+                    e.preventDefault(); // Prevent text highlighting while dragging
+                    const x = e.pageX - wrapper.offsetLeft;
+                    const walk = (x - startX) * 1.5; // Drag speed multiplier
+                    wrapper.scrollLeft = scrollLeft - walk;
+                };
+
+                const onMouseUp = () => {
+                    isDown = false;
+                    wrapper.classList.remove('dragging');
+                    window.removeEventListener('mousemove', onMouseMove);
+                    window.removeEventListener('mouseup', onMouseUp);
+                };
+
+                wrapper.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    wrapper.classList.add('dragging');
+                    startX = e.pageX - wrapper.offsetLeft;
+                    scrollLeft = wrapper.scrollLeft;
+                    
+                    window.addEventListener('mousemove', onMouseMove);
+                    window.addEventListener('mouseup', onMouseUp);
+                });
+
+                // Mouse Wheel Horizontal Scroll Logic
+                wrapper.addEventListener('wheel', (e) => {
+                    if (e.deltaY !== 0) {
+                        e.preventDefault();
+                        wrapper.scrollLeft += e.deltaY;
+                    }
+                });
+            }
+
+        } catch (e) {
+            console.error(e);
+            modalBody.innerHTML = `<div style="padding: 40px; text-align: center; color: #ff5555;">${t("Error loading calendar data.")}</div>`;
+        }
+    }
+
     async function fetchServerData() {
         const buffsGrid = document.getElementById('buffs-grid');
         const merchantsGrid = document.getElementById('merchants-grid');
@@ -139,7 +399,7 @@ document.addEventListener('home_loaded', () => {
             card.innerHTML = html;
 
             card.addEventListener('click', async () => {
-                const modalTitle = document.querySelector('.modal-header h3');
+                const modalTitle = document.querySelector('#d15-modal .modal-header h3');
                 modalTitle.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: ${colorHex};"></i> ${t("{title} Schedule").replace("{title}", title)}`;
                 const modalBody = document.getElementById('d15-modal-body');
                 document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
@@ -263,7 +523,7 @@ document.addEventListener('home_loaded', () => {
                     </div>`;
                 
                 card.addEventListener('click', () => {
-                    const modalTitle = document.querySelector('.modal-header h3');
+                    const modalTitle = document.querySelector('#d15-modal .modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid ${conf.icon}" style="color: ${conf.color};"></i> ${t("Upcoming {name} Schedule").replace("{name}", conf.name)}`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                     document.querySelector('#d15-modal .modal-content').style.width = '90%';
@@ -314,7 +574,7 @@ document.addEventListener('home_loaded', () => {
                     </div>`;
                 
                 card.addEventListener('click', () => {
-                    const modalTitle = document.querySelector('.modal-header h3');
+                    const modalTitle = document.querySelector('#d15-modal .modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> ${t("Upcoming Stampy Locations")}`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                     document.querySelector('#d15-modal .modal-content').style.width = '90%';
@@ -350,7 +610,7 @@ document.addEventListener('home_loaded', () => {
                     </div>`;
                 
                 card.addEventListener('click', () => {
-                    const modalTitle = document.querySelector('.modal-header h3');
+                    const modalTitle = document.querySelector('#d15-modal .modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")} <button id="btn-toggle-biome-names" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="${t('Toggle Biome Names')}"><i class="fa-solid fa-font"></i></button> <button id="btn-toggle-all-slots" style="margin-left: 5px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="${t('Expand/Collapse All')}"><i class="fa-solid fa-expand"></i></button>`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '95%';
                     document.querySelector('#d15-modal .modal-content').style.width = 'max-content';
@@ -407,7 +667,7 @@ document.addEventListener('home_loaded', () => {
                     </div>`;
                 
                 card.addEventListener('click', () => {
-                    const modalTitle = document.querySelector('.modal-header h3');
+                    const modalTitle = document.querySelector('#d15-modal .modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-flask" style="color: ${manaColor};"></i> ${t("Upcoming Wild Mana Biomes")}`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                     document.querySelector('#d15-modal .modal-content').style.width = '90%';
@@ -633,6 +893,8 @@ document.addEventListener('home_loaded', () => {
                     timeText = t("Leaves in {time}").replace("{time}", getCountdown(rot.end, false));
                 }
 
+                const phaseLabel = rot.name ? `<div style="font-weight: bold; color: ${highlightColor}; margin-bottom: 2px;">${t(rot.name)}</div>` : '';
+
                 const row = document.createElement('div');
                 row.className = 'modal-rotation-row';
                 row.innerHTML = `
@@ -641,6 +903,7 @@ document.addEventListener('home_loaded', () => {
                         <div style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${timeText}</div>
                     </div>
                     <div class="modal-biomes-col" style="flex-direction: column; justify-content: center; gap: 4px;">
+                        ${phaseLabel}
                         <div style="font-size: 0.9em; color: #eee;"><i class="fa-solid fa-plane-arrival"></i> ${startStr}</div>
                         <div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid fa-plane-departure"></i> ${endStr}</div>
                     </div>

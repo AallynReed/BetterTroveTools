@@ -43,12 +43,23 @@
         </div>
 
         <div class="split-column">
-            <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> <span data-i18n>Rotations</span></h2>
+            <div class="section-header" style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;"><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> <span data-i18n>Rotations</span></h2>
+                <button id="btn-open-yearly-calendar" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="View Yearly Calendar"><i class="fa-regular fa-calendar-days"></i> <span data-i18n>Calendar</span></button>
             </div>
             <div id="merchants-grid" class="merchants-grid" style="display: none;"></div>
         </div>
 
+    </div>
+</div>
+
+<div id="yearly-calendar-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 95%; width: 1200px;">
+        <div class="modal-header">
+            <h3><i class="fa-regular fa-calendar-days" style="color: #5ec6ff;"></i> <span data-i18n>Yearly Rotation Calendar</span> <button id="btn-calendar-today" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" data-i18n-title="Jump to Today"><i class="fa-solid fa-location-crosshairs"></i></button></h3>
+            <button class="modal-close" id="yearly-modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body" id="yearly-calendar-body" style="padding: 0;"></div>
     </div>
 </div>
 

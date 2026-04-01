@@ -101,10 +101,10 @@ class ServerTime:
         return self._calculate_fluxion()[2] < self.dragon_duration.total_seconds()
 
     def is_fluxion_voting(self):
-        return self._calculate_fluxion()[1] == 0
+        return self.is_fluxion() and self._calculate_fluxion()[1] == 0
 
     def is_fluxion_selling(self):
-        return self._calculate_fluxion()[1] == 1
+        return self.is_fluxion() and self._calculate_fluxion()[1] == 1
 
     def next_fluxion(self):
         return self._calculate_fluxion()[3]

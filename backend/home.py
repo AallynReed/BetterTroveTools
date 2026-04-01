@@ -98,6 +98,8 @@ def get_current_server_data():
 @eel.expose
 def get_merchant_schedules():
     try:
+        from utils.trove.server_time import ServerTime
+        st = ServerTime()
         now = datetime.now(UTC)
         
         def generate_mock_schedule(offset_days, interval_days, duration_days):
@@ -112,11 +114,31 @@ def get_merchant_schedules():
                 })
             return schedule
 
+        def generate_fluxion_schedule():
+            schedule = []
+            base_date = st.first_fluxion
+            diff = (now - base_date).total_seconds()
+            intervals = int(diff // (7 * 24 * 3600))
+            s = base_date + timedelta(days=intervals * 7)
+            if s + timedelta(days=3) < now:
+                s += timedelta(days=7)
+                intervals += 1
+            for i in range(8):
+                curr_s = s + timedelta(days=i * 7)
+                curr_e = curr_s + timedelta(days=3)
+                phase = (intervals + i) % 2
+                schedule.append({
+                    "start": int(curr_s.timestamp()),
+                    "end": int(curr_e.timestamp()),
+                    "name": "Voting" if phase == 0 else "Selling"
+                })
+            return schedule
+
         return {
             "success": True,
             "luxion": generate_mock_schedule(2, 14, 3),
             "corruxion": generate_mock_schedule(9, 14, 3),
-            "fluxion": generate_mock_schedule(4, 14, 7)
+            "fluxion": generate_fluxion_schedule()
         }
     except Exception as e:
         traceback.print_exc()
@@ -139,6 +161,142 @@ biome3 = [
     "The Lost Isles", "Cupcake Canyon", "Dragon's Teeth", "Luminopolis", 
     "The Lost Isles", "Data Spires"
 ]
+
+@eel.expose
+def get_yearly_calendar_data():
+    try:
+        now = datetime.now(UTC)
+        start_date = now - timedelta(days=365)
+        end_date = now + timedelta(days=365)
+        
+        events = []
+
+        # Weekly Buffs
+        try:
+            st = ServerTime()
+            current_weekly = st.current_weekly_buffs
+            weekly_buffs_path = os.path.join(os.getcwd(), "web", "assets", "data", "weekly_buffs.json")
+            
+            with open(weekly_buffs_path, "r", encoding="utf-8") as f:
+                weekly_buffs_data = json.load(f)
+                
+            weekly_keys = sorted(weekly_buffs_data.keys(), key=lambda x: int(x))
+            current_index = next((int(k) for k in weekly_keys if weekly_buffs_data[k].get("name") == current_weekly.get("name")), 0)
+                    
+            days_since_monday = now.weekday()
+            current_week_start = now.replace(hour=11, minute=0, second=0, microsecond=0) - timedelta(days=days_since_monday)
+            if now < current_week_start:
+                current_week_start -= timedelta(days=7)
+                
+            for w_offset in range(-55, 55):
+                s_week = current_week_start + timedelta(weeks=w_offset)
+                e_week = s_week + timedelta(weeks=1)
+                
+                if e_week > start_date and s_week < end_date:
+                    buff_idx = (current_index + w_offset) % len(weekly_keys)
+                    buff = weekly_buffs_data[weekly_keys[buff_idx]]
+                    events.append({
+                        "type": "weekly_buff", "start": int(s_week.timestamp()), "end": int(e_week.timestamp()), 
+                        "name": buff.get("name", "Weekly Buff"), "color": buff.get("color", "fbc02d")
+                    })
+        except Exception as e:
+            traceback.print_exc()
+        
+        # Biome Icon Data Loading
+        biomes_path = os.path.join(os.getcwd(), "web", "assets", "data", "biomes.json")
+        try:
+            with open(biomes_path, "r", encoding="utf-8") as f:
+                subbiomes = json.load(f)
+        except Exception:
+            subbiomes = {}
+
+        icon_map = {}
+        for key, val in subbiomes.items():
+            parent_biome = val.get("biome")
+            if parent_biome and parent_biome not in icon_map:
+                icon_map[parent_biome] = val.get("icon", "unknown")
+
+        fallback_map = {
+            "Neon City": "neon", "Jurassic Jungle": "dinosaur", "Dragonfire Peaks": "dragon",
+            "Forbidden Spires": "spires", "Sundered Uplands": "giantland", "Medieval Highlands": "forest",
+            "Permafrost": "tundra", "Cursed Vale": "undead", "Desert Frontier": "frontier",
+            "Fae Forest": "fae", "Candoria": "candy", "Geode Topside": "dunes", "The Lost Isles": "pirate"
+        }
+        
+        # Stampy (Every Friday for 48 hours)
+        stampy_biomes = ['Desert Frontier', 'The Lost Isles', 'Geode Topside', 'Neon City', 'Dragonfire Peaks', 'Permafrost', 'Candoria', 'Cursed Vale', 'Forbidden Spires', 'Fae Forest', 'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands']
+        base_stampy = datetime(2023, 9, 29, 11, 0, 0, tzinfo=UTC) 
+        diff = (start_date - base_stampy).total_seconds()
+        weeks_stampy = int(diff // (7 * 24 * 3600))
+        s = base_stampy + timedelta(weeks=weeks_stampy)
+        while s < end_date:
+            e = s + timedelta(hours=48)
+            if e > start_date:
+                b = stampy_biomes[weeks_stampy % len(stampy_biomes)]
+                icon = icon_map.get(b, fallback_map.get(b, "unknown"))
+                events.append({"type": "stampy", "start": int(s.timestamp()), "end": int(e.timestamp()), "name": "Stampy", "icons": [icon], "biome_names": [b]})
+            s += timedelta(weeks=1)
+            weeks_stampy += 1
+            
+        # Wild Mana (Every Monday for 7 days)
+        mana_biomes = ["Neon City", "Jurassic Jungle", "Dragonfire Peaks", "Forbidden Spires", "Sundered Uplands", "Medieval Highlands", "Permafrost", "Cursed Vale", "Desert Frontier", "Fae Forest", "Candoria"]
+        base_mana = datetime(2023, 11, 20, 11, 0, 0, tzinfo=UTC)
+        diff = (start_date - base_mana).total_seconds()
+        weeks_mana = int(diff // (7 * 24 * 3600))
+        s = base_mana + timedelta(weeks=weeks_mana)
+        while s < end_date:
+            e = s + timedelta(days=7)
+            if e > start_date:
+                b0 = mana_biomes[weeks_mana % len(mana_biomes)]
+                b1 = mana_biomes[(weeks_mana - 1) % len(mana_biomes)]
+                b2 = mana_biomes[(weeks_mana - 2) % len(mana_biomes)]
+                icon0 = icon_map.get(b0, fallback_map.get(b0, "unknown"))
+                icon1 = icon_map.get(b1, fallback_map.get(b1, "unknown"))
+                icon2 = icon_map.get(b2, fallback_map.get(b2, "unknown"))
+                events.append({"type": "mana", "start": int(s.timestamp()), "end": int(e.timestamp()), "name": "Wild Mana", "icons": [icon0, icon1, icon2], "biome_names": [b0, b1, b2]})
+            s += timedelta(weeks=1)
+            weeks_mana += 1
+            
+        # Merchants
+        def generate_merchant_events(base_date, interval_days, duration_days, m_type, name):
+            diff = (start_date - base_date).total_seconds()
+            intervals = int(diff // (interval_days * 24 * 3600))
+            s = base_date + timedelta(days=intervals * interval_days)
+            while s < end_date:
+                e = s + timedelta(days=duration_days)
+                if e > start_date:
+                    events.append({"type": m_type, "start": int(s.timestamp()), "end": int(e.timestamp()), "name": name})
+                s += timedelta(days=interval_days)
+                
+        def generate_fluxion_events(base_date, interval_days):
+            diff = (start_date - base_date).total_seconds()
+            intervals = int(diff // (interval_days * 24 * 3600))
+            s = base_date + timedelta(days=intervals * interval_days)
+            while s < end_date:
+                s_vote = s
+                e_vote = s_vote + timedelta(days=3)
+                
+                s_sell = s + timedelta(days=7)
+                e_sell = s_sell + timedelta(days=3)
+                
+                if e_vote > start_date:
+                    events.append({"type": "fluxion", "start": int(s_vote.timestamp()), "end": int(e_vote.timestamp()), "name": "Fluxion (Voting)", "color": "5ca8cc"})
+                if e_sell > start_date and s_sell < end_date:
+                    events.append({"type": "fluxion", "start": int(s_sell.timestamp()), "end": int(e_sell.timestamp()), "name": "Fluxion (Selling)", "color": "02679e"})
+                s += timedelta(days=interval_days)
+
+        base_luxion = datetime(2023, 12, 1, 11, 0, 0, tzinfo=UTC) # Friday
+        base_corruxion = datetime(2023, 12, 8, 11, 0, 0, tzinfo=UTC) # Friday
+        base_fluxion = datetime(2023, 12, 5, 11, 0, 0, tzinfo=UTC) # Tuesday
+
+        generate_merchant_events(base_luxion, 14, 3, "luxion", "Luxion")
+        generate_merchant_events(base_corruxion, 14, 3, "corruxion", "Corruxion")
+        generate_fluxion_events(base_fluxion, 14)
+
+        return {"success": True, "events": events}
+    except Exception as e:
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
 
 system_epoch = datetime.fromtimestamp(1718708400, UTC)
 system_interval = 60 * 60 * 3
