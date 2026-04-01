@@ -143,6 +143,7 @@ document.addEventListener('home_loaded', () => {
                 modalTitle.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: ${colorHex};"></i> ${t("{title} Schedule").replace("{title}", title)}`;
                 const modalBody = document.getElementById('d15-modal-body');
                 document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
+                document.querySelector('#d15-modal .modal-content').style.width = '90%';
                 
                 modalBody.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading schedule...")}</div>`;
                 if(rotationModal) rotationModal.style.display = 'flex';
@@ -265,6 +266,7 @@ document.addEventListener('home_loaded', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid ${conf.icon}" style="color: ${conf.color};"></i> ${t("Upcoming {name} Schedule").replace("{name}", conf.name)}`;
                     document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
+                    document.querySelector('#d15-modal .modal-content').style.width = '90%';
                     
                     if(schedules && schedules.success && schedules[conf.id]) {
                         populateMerchantModal(schedules[conf.id], conf.color);
@@ -350,7 +352,8 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")}`;
-                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '1200px';
+                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '95%';
+                    document.querySelector('#d15-modal .modal-content').style.width = 'max-content';
                     populateWeeklyBiomeModal(d15.rotations, '#4caf50');
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
