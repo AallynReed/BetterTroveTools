@@ -90,7 +90,7 @@ document.addEventListener('calculators_loaded', () => {
                     type: "mastery",
                     percentage: false,
                     max: 1000,
-                    default: 899
+                    default: 900
                 },
                 ...data,
                 {
@@ -276,7 +276,7 @@ document.addEventListener('calculators_loaded', () => {
                     type: "pr_mastery",
                     percentage: false,
                     max: 1100,
-                    default: 899
+                    default: 900
                 },
                 {
                     name: "Geode Mastery",
