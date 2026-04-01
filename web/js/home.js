@@ -478,7 +478,15 @@ document.addEventListener('home_loaded', () => {
                     const timeObj = new Date(rotStartTs);
                     const timeStr = timeObj.toLocaleTimeString(locale, { hour: '2-digit', minute:'2-digit' });
                     
-                    let pills = rot.biomes.map(b => 
+                    // Collapsed View: Just icons side-by-side
+                    let collapsedPills = rot.biomes.map(b => 
+                        `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="padding: 4px; flex: 1; justify-content: center;">
+                            <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 16px; height: 16px;">
+                        </span>`
+                    ).join('');
+
+                    // Expanded View: Full rows with text
+                    let expandedPills = rot.biomes.map(b => 
                         `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.8em;">
                             <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 14px; height: 14px;">
                             ${t(b.final_name)}
@@ -489,11 +497,39 @@ document.addEventListener('home_loaded', () => {
                     const dot = isCurrent ? `<i class="fa-solid fa-circle-play" style="margin-right: 4px;"></i>` : '';
 
                     slot.innerHTML = `
-                        <div class="schedule-time" style="${highlightStyle}">${dot}${timeStr}</div>
-                        <div class="schedule-biomes">
-                            ${pills}
+                        <div class="schedule-time" style="justify-content: space-between; ${highlightStyle}">
+                            <span>${dot}${timeStr}</span>
+                            <button class="expand-btn" style="background: none; border: none; color: inherit; opacity: 0.6; cursor: pointer; padding: 0 5px;">
+                                <i class="fa-solid fa-chevron-${isCurrent ? 'up' : 'down'}"></i>
+                            </button>
+                        </div>
+                        <div class="schedule-biomes-collapsed" style="display: ${isCurrent ? 'none' : 'flex'}; flex-direction: row; gap: 6px; padding-top: 4px;">
+                            ${collapsedPills}
+                        </div>
+                        <div class="schedule-biomes-expanded" style="display: ${isCurrent ? 'flex' : 'none'}; flex-direction: column; gap: 4px; padding-top: 2px;">
+                            ${expandedPills}
                         </div>
                     `;
+
+                    slot.style.cursor = 'pointer';
+                    const btn = slot.querySelector('.expand-btn');
+                    const collapsedView = slot.querySelector('.schedule-biomes-collapsed');
+                    const expandedView = slot.querySelector('.schedule-biomes-expanded');
+                    
+                    // Make the entire tile clickable to toggle views
+                    slot.addEventListener('click', () => {
+                        const isExpanded = expandedView.style.display === 'flex';
+                        if (isExpanded) {
+                            expandedView.style.display = 'none';
+                            collapsedView.style.display = 'flex';
+                            btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+                        } else {
+                            expandedView.style.display = 'flex';
+                            collapsedView.style.display = 'none';
+                            btn.innerHTML = '<i class="fa-solid fa-chevron-up"></i>';
+                        }
+                    });
+
                     col.appendChild(slot);
                 });
                 
