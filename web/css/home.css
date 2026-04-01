@@ -391,7 +391,7 @@
 }
 
 .schedule-time-col {
-    width: 90px;
+    width: 40px;
     flex-shrink: 0;
     box-sizing: border-box;
     position: sticky;
@@ -401,10 +401,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 0.85em;
     font-weight: bold;
     color: var(--text-muted);
     border-right: 1px dashed rgba(255, 255, 255, 0.1);
-    padding-right: 10px;
+    padding: 10px 0;
 }
 
 .schedule-header-row .schedule-time-col {

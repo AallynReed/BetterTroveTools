@@ -520,7 +520,8 @@ document.addEventListener('home_loaded', () => {
 
                 const timeCol = document.createElement('div');
                 timeCol.className = 'schedule-time-col';
-                timeCol.innerText = rowTimeStr;
+                // Make the text display vertically, reading bottom-to-top
+                timeCol.innerHTML = `<span style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;">${rowTimeStr}</span>`;
                 
                 timeCol.style.cursor = 'pointer';
                 timeCol.title = t("Click to toggle row");
@@ -566,7 +567,7 @@ document.addEventListener('home_loaded', () => {
                     ).join('');
 
                     let expandedPills = rot.biomes.map(b => 
-                        `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.8em;">
+                        `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.7em;">
                             <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 14px; height: 14px;">
                             <span class="biome-name-text" data-name="${t(b.name)}" data-final-name="${t(b.final_name)}">${t(b.final_name)}</span>
                         </span>`
