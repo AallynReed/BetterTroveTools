@@ -317,6 +317,8 @@ document.addEventListener('star_chart_loaded', async () => {
             }
         }
 
+        if (typeof updateTemplateDropdown === 'function') updateTemplateDropdown();
+
         renderSummary(currentAggregatedData);
     }
 
@@ -401,16 +403,36 @@ document.addEventListener('star_chart_loaded', async () => {
     });
 
     codeInput.addEventListener('focus', () => codeInput.dataset.focused = "true");
-    codeInput.addEventListener('blur', () => {
-        codeInput.dataset.focused = "false";
-        if (currentAggregatedData && currentAggregatedData.paths.length > 0) {
-            codeInput.value = btoa(currentAggregatedData.paths.join('$'));
-        } else {
-            codeInput.value = "";
-        }
+    codeInput.addEventListener('blur', () => codeInput.dataset.focused = "false");
+    codeInput.addEventListener('input', () => {
+        if (typeof updateTemplateDropdown === 'function') updateTemplateDropdown();
     });
 
     let templates = {};
+
+    function normalizeCode(code) {
+        if (!code) return "";
+        try {
+            return atob(code).split('$').sort().join('$');
+        } catch(e) {
+            return code;
+        }
+    }
+
+    function updateTemplateDropdown() {
+        let matchedTemplate = "";
+        const currentCode = codeInput.value.trim();
+        const normalizedCurrent = normalizeCode(currentCode);
+        
+        for (let name in templates) {
+            if (normalizeCode(templates[name]) === normalizedCurrent && currentCode !== "") {
+                matchedTemplate = name;
+                break;
+            }
+        }
+        templateSelect.value = matchedTemplate;
+        btnDeleteTemplate.style.display = matchedTemplate ? 'inline-block' : 'none';
+    }
 
     async function loadTemplates() {
         templates = await eel.get_star_chart_templates()();
@@ -423,7 +445,7 @@ document.addEventListener('star_chart_loaded', async () => {
             templateSelect.appendChild(opt);
         }
         
-        btnDeleteTemplate.style.display = templateSelect.value ? 'inline-block' : 'none';
+        updateTemplateDropdown();
     }
 
     templateSelect.addEventListener('change', () => {
