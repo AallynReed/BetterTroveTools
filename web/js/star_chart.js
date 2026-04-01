@@ -434,7 +434,11 @@ document.addEventListener('star_chart_loaded', async () => {
         }
     });
 
+    const oldModal = document.getElementById('st-modal-overlay');
+    if (oldModal) oldModal.remove();
+
     const modalOverlay = document.createElement('div');
+    modalOverlay.id = 'st-modal-overlay';
     modalOverlay.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;";
     modalOverlay.innerHTML = `
         <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
