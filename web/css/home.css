@@ -472,11 +472,40 @@
 }
 .calendar-timeline-header {
     display: flex;
+    flex-direction: column;
     position: sticky;
     top: 0;
     background: var(--bg-panel);
     z-index: 10;
     border-bottom: 1px solid var(--border-color);
+}
+.calendar-months-row {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(0,0,0,0.2);
+}
+.calendar-days-row {
+    display: flex;
+}
+.calendar-month-col {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    border-right: 1px dashed rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+.calendar-month-label {
+    position: sticky;
+    display: inline-block;
+    padding: 6px 15px;
+    font-weight: bold;
+    color: var(--accent-blue, #5ec6ff);
+    white-space: nowrap;
+    z-index: 6;
+    font-size: 0.95em;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
 }
 .calendar-day-col {
     min-width: 40px;
@@ -488,7 +517,7 @@
     display: flex;
     flex-direction: column;
 }
-.calendar-day-month {
+.calendar-day-weekday {
     font-size: 0.65em;
     color: var(--text-muted);
     font-weight: bold;

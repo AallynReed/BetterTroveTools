@@ -131,24 +131,53 @@ document.addEventListener('home_loaded', () => {
             const todayPx = 365 * dayWidth;
             html += `<div class="calendar-today-line" style="left: ${todayPx + labelWidth + 20}px;"></div>`;
             
-            html += `<div class="calendar-timeline-header" style="width: ${totalWidth}px;">`;
-            html += `<div class="calendar-track-label" style="min-width: ${labelWidth}px; width: ${labelWidth}px; border-bottom: none; box-shadow: none;"></div>`;
+            html += `<div class="calendar-timeline-header" style="width: ${totalWidth}px; flex-direction: column;">`;
             
+            let monthsHtml = `<div class="calendar-months-row" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">`;
+            monthsHtml += `<div class="calendar-track-label" style="min-width: ${labelWidth}px; width: ${labelWidth}px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>`;
+            
+            let daysHtml = `<div class="calendar-days-row" style="display: flex;">`;
+            daysHtml += `<div class="calendar-track-label" style="min-width: ${labelWidth}px; width: ${labelWidth}px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>`;
+            
+            let currentMonthKey = null;
+            let currentMonthDays = 0;
+            let currentMonthName = "";
+            let currentYear = "";
+
             for(let i=0; i<totalDays; i++) {
                 const d = new Date(startTs + (i * 86400000));
-                const isToday = (i === 365) ? 'is-today' : '';
-                const monthStr = window.I18nManager ? d.toLocaleDateString(window.I18nManager.currentLocale.replace("_", "-"), { month: 'short' }) : d.toLocaleDateString(undefined, { month: 'short' });
-                const dayNum = d.getDate();
-                const displayMonth = (dayNum === 1 || i === 0 || i === 365) ? monthStr : '';
+                const monthKey = d.getFullYear() + "-" + d.getMonth();
+                const monthLongStr = window.I18nManager ? d.toLocaleDateString(window.I18nManager.currentLocale.replace("_", "-"), { month: 'long' }) : d.toLocaleDateString(undefined, { month: 'long' });
                 
-                html += `
+                if (monthKey !== currentMonthKey) {
+                    if (currentMonthKey !== null) {
+                        monthsHtml += `<div class="calendar-month-col" style="width: ${currentMonthDays * dayWidth}px;"><div class="calendar-month-label" style="left: ${labelWidth}px;">${currentMonthName} ${currentYear}</div></div>`;
+                    }
+                    currentMonthKey = monthKey;
+                    currentMonthDays = 0;
+                    currentMonthName = monthLongStr;
+                    currentYear = d.getFullYear();
+                }
+                currentMonthDays++;
+
+                const isToday = (i === 365) ? 'is-today' : '';
+                const dayNum = d.getDate();
+                const weekdayStr = window.I18nManager ? d.toLocaleDateString(window.I18nManager.currentLocale.replace("_", "-"), { weekday: 'short' }) : d.toLocaleDateString(undefined, { weekday: 'short' });
+                
+                daysHtml += `
                     <div class="calendar-day-col ${isToday}" id="day-col-${i}">
-                        <div class="calendar-day-month">${displayMonth}</div>
+                        <div class="calendar-day-weekday">${weekdayStr}</div>
                         <div class="calendar-day-num">${dayNum}</div>
                     </div>
                 `;
             }
-            html += `</div>`; 
+            if (currentMonthDays > 0) {
+                monthsHtml += `<div class="calendar-month-col" style="width: ${currentMonthDays * dayWidth}px;"><div class="calendar-month-label" style="left: ${labelWidth}px;">${currentMonthName} ${currentYear}</div></div>`;
+            }
+            monthsHtml += `</div>`;
+            daysHtml += `</div>`;
+            
+            html += monthsHtml + daysHtml + `</div>`; 
             
             html += `<div class="calendar-tracks" style="width: ${totalWidth}px;">`;
             
