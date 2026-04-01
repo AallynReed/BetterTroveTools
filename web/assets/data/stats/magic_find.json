@@ -3,13 +3,13 @@
         "name": "Dragons",
         "type": "slider",
         "percentage": false,
-        "value": 2900
+        "value": 3800
     },
     {
-        "name": "Ascension Dragon Badges",
-        "type": "slider",
+        "name": "Class Minimum MF",
+        "type": "switch",
         "percentage": false,
-        "value": 500
+        "value": 100
     },
     {
         "name": "Hat",
