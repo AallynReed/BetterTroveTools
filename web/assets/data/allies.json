@@ -384,12 +384,12 @@
         "designer": "0sita",
         "file": "Pets",
         "filename": "collections/pet/biped_dragonpirate",
-        "mastery": "0",
+        "mastery": "20",
         "mastery_geode": "0",
         "name": "Captain Draco",
-        "powerrank": "0",
+        "powerrank": "20",
         "tooltip": "",
-        "updated_at": 1774089442
+        "updated_at": 1774701682
     },
     "biped_goblin": {
         "blueprint": "2023/allies/biped_goblin/c_c_biped_goblin_ui[labbe]",
@@ -5452,12 +5452,12 @@
         "designer": "Trove Team",
         "file": "Pets",
         "filename": "collections/pet/goat_pinzata",
-        "mastery": "0",
+        "mastery": "10",
         "mastery_geode": "0",
         "name": "Placated Pinzata",
-        "powerrank": "0",
+        "powerrank": "20",
         "tooltip": "",
-        "updated_at": 1774089442
+        "updated_at": 1774976308
     },
     "goat_prestige": {
         "blueprint": "2021/allies/goat_prestige/c_c_goat_ui",
