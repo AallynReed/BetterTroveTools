@@ -1,3 +1,64 @@
+// Global Tooltip System
+const globalTooltip = document.createElement('div');
+globalTooltip.id = 'global-tooltip';
+globalTooltip.style.cssText = 'position: fixed; background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: none; z-index: 10000; display: none; color: #fff; font-size: 0.9em; line-height: 1.4; max-width: 300px;';
+document.body.appendChild(globalTooltip);
+
+const tooltipStyle = document.createElement('style');
+tooltipStyle.innerHTML = `
+    @keyframes tooltipFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    #global-tooltip { animation: tooltipFadeIn 0.15s ease-out; }
+    #global-tooltip h3 { margin: 0 0 5px 0; color: var(--accent-blue, #5ec6ff); font-size: 1.1em; }
+    #global-tooltip p { margin: 5px 0; color: var(--text-muted, #a3adc2); }
+    #global-tooltip ul { margin: 5px 0; padding-left: 20px; }
+    #global-tooltip hr { border: 0; border-top: 1px dashed var(--border-color, #444c5e); margin: 8px 0; }
+    #global-tooltip .type { font-size: 0.8em; color: var(--text-muted, #a3adc2); text-transform: uppercase; font-weight: bold; }
+`;
+document.head.appendChild(tooltipStyle);
+
+document.addEventListener('mouseover', (e) => {
+    let target = e.target.closest('[title], [data-tooltip], [data-tooltip-text]');
+    if (!target) return;
+
+    // Suppress default browser tooltip & support line breaks
+    if (target.hasAttribute('title') && target.getAttribute('title').trim() !== "") {
+        target.setAttribute('data-tooltip-text', target.getAttribute('title').replace(/\n/g, '<br>'));
+        target.removeAttribute('title');
+    }
+
+    const content = target.getAttribute('data-tooltip') || target.getAttribute('data-tooltip-text');
+    if (content) {
+        globalTooltip.innerHTML = content;
+        globalTooltip.style.display = 'block';
+        
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+        if (x + globalTooltip.offsetWidth > window.innerWidth) x = e.clientX - globalTooltip.offsetWidth - 15;
+        if (y + globalTooltip.offsetHeight > window.innerHeight) y = e.clientY - globalTooltip.offsetHeight - 15;
+        globalTooltip.style.left = x + 'px';
+        globalTooltip.style.top = y + 'px';
+    }
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (globalTooltip.style.display === 'block') {
+        if (e.buttons > 0) { globalTooltip.style.display = 'none'; return; } // Hide while dragging
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+        if (x + globalTooltip.offsetWidth > window.innerWidth) x = e.clientX - globalTooltip.offsetWidth - 15;
+        if (y + globalTooltip.offsetHeight > window.innerHeight) y = e.clientY - globalTooltip.offsetHeight - 15;
+        globalTooltip.style.left = x + 'px';
+        globalTooltip.style.top = y + 'px';
+    }
+});
+
+document.addEventListener('mouseout', (e) => {
+    let target = e.target.closest('[data-tooltip], [data-tooltip-text]');
+    if (target) globalTooltip.style.display = 'none';
+});
+
+document.addEventListener('click', () => globalTooltip.style.display = 'none');
+
 document.addEventListener('DOMContentLoaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     

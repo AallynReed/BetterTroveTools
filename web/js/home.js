@@ -257,7 +257,7 @@ document.addEventListener('home_loaded', () => {
 
                         html += `<div class="calendar-event event-${track.color}" 
                                       style="left: ${leftPx + labelWidth}px; width: ${widthPx}px; top: 6px; ${customStyle}"
-                                      data-tooltip-content="${encodedTooltip}">
+                                      data-tooltip="${encodedTooltip}">
                                       ${iconsHtml}${showText}
                                  </div>`;
                     }
@@ -291,39 +291,6 @@ document.addEventListener('home_loaded', () => {
                 let startX, scrollLeft;
 
                 wrapper.classList.add('draggable');
-
-                let tooltip = document.getElementById('calendar-tooltip');
-                if (!tooltip) {
-                    tooltip = document.createElement('div');
-                    tooltip.id = 'calendar-tooltip';
-                    tooltip.style.cssText = 'position: fixed; background: var(--bg-panel); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: none; z-index: 10000; display: none; color: #fff; font-size: 0.9em; line-height: 1.4;';
-                    document.body.appendChild(tooltip);
-                }
-
-                wrapper.addEventListener('mousemove', (e) => {
-                    if (isDown) {
-                        tooltip.style.display = 'none';
-                        return;
-                    }
-                    const eventEl = e.target.closest('.calendar-event');
-                    if (eventEl) {
-                        const content = eventEl.getAttribute('data-tooltip-content');
-                        if (content) {
-                            tooltip.innerHTML = content;
-                            tooltip.style.display = 'block';
-                            let x = e.clientX + 15;
-                            let y = e.clientY + 15;
-                            if (x + tooltip.offsetWidth > window.innerWidth) x = e.clientX - tooltip.offsetWidth - 15;
-                            if (y + tooltip.offsetHeight > window.innerHeight) y = e.clientY - tooltip.offsetHeight - 15;
-                            tooltip.style.left = x + 'px';
-                            tooltip.style.top = y + 'px';
-                        }
-                    } else {
-                        tooltip.style.display = 'none';
-                    }
-                });
-
-                wrapper.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
 
                 const onMouseMove = (e) => {
                     if (!isDown) return;

@@ -3,7 +3,6 @@ document.addEventListener('star_chart_loaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     
     const wrapper = document.getElementById('chart-wrapper');
-    const tooltip = document.getElementById('star-tooltip');
     const summaryPanel = document.getElementById('summary-content');
     
     const codeInput = document.getElementById('build-code-input');
@@ -164,31 +163,21 @@ document.addEventListener('star_chart_loaded', async () => {
             calculateStats();
         });
 
-        shape.addEventListener("mouseenter", () => {
-            let html = `<h3>${t(star.Name || star.Constellation)}</h3>`;
-            html += `<span class="type">${t("{type} Node").replace("{type}", t(star.Type))}</span>`;
-            if (star.Description) html += `<p>${t(star.Description)}</p><hr/>`;
-            if (star.Stats && star.Stats.length > 0) {
-                html += `<ul>`;
-                star.Stats.forEach(s => html += `<li><strong>${t(s.name)}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`);
-                html += `</ul>`;
-            }
-            if (star.Abilities && star.Abilities.length > 0) {
-                if(star.Stats && star.Stats.length > 0) html += `<hr/>`;
-                html += `<ul>`;
-                star.Abilities.forEach(a => html += `<li>${t(a)}</li>`);
-                html += `</ul>`;
-            }
-            tooltip.innerHTML = html;
-            tooltip.style.display = "block";
-        });
-        
-        shape.addEventListener("mousemove", (e) => {
-            tooltip.style.left = (e.clientX + 15) + "px";
-            tooltip.style.top = (e.clientY + 15) + "px";
-        });
-        
-        shape.addEventListener("mouseleave", () => tooltip.style.display = "none");
+        let tooltipHtml = `<h3>${t(star.Name || star.Constellation)}</h3>`;
+        tooltipHtml += `<span class="type">${t("{type} Node").replace("{type}", t(star.Type))}</span>`;
+        if (star.Description) tooltipHtml += `<p>${t(star.Description)}</p><hr/>`;
+        if (star.Stats && star.Stats.length > 0) {
+            tooltipHtml += `<ul>`;
+            star.Stats.forEach(s => tooltipHtml += `<li><strong>${t(s.name)}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`);
+            tooltipHtml += `</ul>`;
+        }
+        if (star.Abilities && star.Abilities.length > 0) {
+            if(star.Stats && star.Stats.length > 0) tooltipHtml += `<hr/>`;
+            tooltipHtml += `<ul>`;
+            star.Abilities.forEach(a => tooltipHtml += `<li>${t(a)}</li>`);
+            tooltipHtml += `</ul>`;
+        }
+        shape.setAttribute("data-tooltip", tooltipHtml.replace(/"/g, '&quot;'));
 
         svg.appendChild(shape);
     }
