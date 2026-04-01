@@ -159,7 +159,7 @@
         "icon": "frontier",
         "biome": "Desert Frontier"
     },
-    "Frozen Wastes": {  
+    "Frozen Wastes": {
         "name": "Frozen Wastes",
         "final_name": "Permafrost",
         "caves": 1,
@@ -201,7 +201,7 @@
     },
     "Ancient Heights": {
         "name": "Ancient Heights",
-        "final_name": "Ancient Heights",
+        "final_name": "Forbidden Spires",
         "caves": 0,
         "farm": 0,
         "icon": "spires",
@@ -209,7 +209,7 @@
     },
     "Restless Range": {
         "name": "Restless Range",
-        "final_name": "Restless Range",
+        "final_name": "Forbidden Spires",
         "caves": 0,
         "farm": 0,
         "icon": "spires",

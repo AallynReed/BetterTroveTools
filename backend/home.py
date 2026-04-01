@@ -157,11 +157,11 @@ def get_d15_rotation():
     consumed = int(elapsed // system_interval)
     
     start = now - timedelta(seconds=elapsed % system_interval)
-    
-    current_rot = {}
-    future_rots = []
 
-    for i in range(8):
+    rotations = []
+    # Go back 1 day (8 rotations) to be safe for all timezones
+    # And go forward enough for a full week (56 rotations)
+    for i in range(-8, 56):
         current_offset = consumed + i
         s = start + timedelta(seconds=i * system_interval)
         e = s + timedelta(seconds=system_interval)
@@ -169,30 +169,25 @@ def get_d15_rotation():
         _, b1_idx = divmod(current_offset, len(biome1))
         _, b2_idx = divmod(current_offset, len(biome2))
         _, b3_idx = divmod(current_offset, len(biome3))
-        
-        first = biome1[b1_idx]
-        second = biome2[b2_idx]
-        third = biome3[b3_idx]
-        
+
         rot_data = {
             "start": int(s.timestamp()),
             "end": int(e.timestamp()),
             "biomes": [
-                subbiomes.get(first, {"name": first, "final_name": first, "icon": "unknown"}),
-                subbiomes.get(second, {"name": second, "final_name": second, "icon": "unknown"}),
-                subbiomes.get(third, {"name": third, "final_name": third, "icon": "unknown"})
+                subbiomes.get(biome1[b1_idx], {"name": biome1[b1_idx], "final_name": biome1[b1_idx], "icon": "unknown"}),
+                subbiomes.get(biome2[b2_idx], {"name": biome2[b2_idx], "final_name": biome2[b2_idx], "icon": "unknown"}),
+                subbiomes.get(biome3[b3_idx], {"name": biome3[b3_idx], "final_name": biome3[b3_idx], "icon": "unknown"})
             ]
         }
-        
-        if i == 0:
-            current_rot = rot_data
-        else:
-            future_rots.append(rot_data)
+        rotations.append(rot_data)
+
+    now_ts = now.timestamp()
+    current_rot = next((rot for rot in rotations if rot['start'] <= now_ts < rot['end']), None)
 
     return {
         "success": True,
         "current": current_rot,
-        "future": future_rots
+        "rotations": rotations
     }
 
 

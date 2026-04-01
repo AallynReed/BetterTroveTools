@@ -366,5 +366,66 @@
     background: rgba(255, 255, 255, 0.05);
 }
 
+/* Weekly Schedule Grid for Rotations */
+.weekly-schedule-grid {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+}
+
+.schedule-day-col {
+    flex: 1;
+    min-width: 145px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.schedule-day-header {
+    text-align: center;
+    font-weight: bold;
+    padding: 8px 5px;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px 6px 0 0;
+    color: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.schedule-slot {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.schedule-slot:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.schedule-time {
+    font-size: 0.85em;
+    color: var(--text-muted);
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.schedule-biomes {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse-opacity { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

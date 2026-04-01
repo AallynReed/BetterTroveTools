@@ -142,6 +142,7 @@ document.addEventListener('home_loaded', () => {
                 const modalTitle = document.querySelector('.modal-header h3');
                 modalTitle.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: ${colorHex};"></i> ${t("{title} Schedule").replace("{title}", title)}`;
                 const modalBody = document.getElementById('d15-modal-body');
+                document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                 
                 modalBody.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading schedule...")}</div>`;
                 if(rotationModal) rotationModal.style.display = 'flex';
@@ -263,6 +264,7 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid ${conf.icon}" style="color: ${conf.color};"></i> ${t("Upcoming {name} Schedule").replace("{name}", conf.name)}`;
+                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                     
                     if(schedules && schedules.success && schedules[conf.id]) {
                         populateMerchantModal(schedules[conf.id], conf.color);
@@ -312,6 +314,7 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-paw" style="color: ${stampyColor};"></i> ${t("Upcoming Stampy Locations")}`;
+                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                     populateBiomeModal(stampy.future, stampyColor, true);
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -346,7 +349,8 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")}`;
-                    populateBiomeModal(d15.future, '#4caf50');
+                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '1200px';
+                    populateWeeklyBiomeModal(d15.rotations, '#4caf50');
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
 
@@ -381,6 +385,7 @@ document.addEventListener('home_loaded', () => {
                 card.addEventListener('click', () => {
                     const modalTitle = document.querySelector('.modal-header h3');
                     modalTitle.innerHTML = `<i class="fa-solid fa-flask" style="color: ${manaColor};"></i> ${t("Upcoming Wild Mana Biomes")}`;
+                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
                     populateBiomeModal(mana.future, manaColor);
                     if(rotationModal) rotationModal.style.display = 'flex';
                 });
@@ -422,6 +427,80 @@ document.addEventListener('home_loaded', () => {
                 `;
                 modalBody.appendChild(row);
             });
+        }
+
+        function populateWeeklyBiomeModal(rotations, highlightColor) {
+            const modalBody = document.getElementById('d15-modal-body');
+            if (!modalBody) return;
+            
+            modalBody.innerHTML = '';
+            
+            const grid = document.createElement('div');
+            grid.className = 'weekly-schedule-grid';
+
+            const now = new Date();
+            const nowTs = now.getTime();
+            const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+
+            // Create exactly 7 columns, rigidly starting from Today at 12:00 AM Local Time
+            for (let i = 0; i < 7; i++) {
+                // Set day bounds: 12:00 AM to 11:59:59 PM local time
+                const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+                const dayStartTs = dayStart.getTime();
+                const dayEndTs = dayStartTs + 86400000; // +24 hours
+
+                const col = document.createElement('div');
+                col.className = 'schedule-day-col';
+                
+                const header = document.createElement('div');
+                header.className = 'schedule-day-header';
+                header.innerText = (i === 0) ? t("Today") : dayStart.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+                col.appendChild(header);
+
+                // Fit the rotations into this exact local 24-hour window
+                const dayRots = rotations.filter(rot => {
+                    return (rot.start * 1000 < dayEndTs && rot.end * 1000 > dayStartTs);
+                });
+
+                dayRots.forEach(rot => {
+                    const rotStartTs = rot.start * 1000;
+                    const rotEndTs = rot.end * 1000;
+                    
+                    const isCurrent = nowTs >= rotStartTs && nowTs < rotEndTs;
+                    const hasPassed = nowTs >= rotEndTs;
+                    
+                    const slot = document.createElement('div');
+                    slot.className = 'schedule-slot';
+                    if (hasPassed && i === 0) {
+                        slot.style.opacity = '0.5';
+                    }
+                    
+                    const timeObj = new Date(rotStartTs);
+                    const timeStr = timeObj.toLocaleTimeString(locale, { hour: '2-digit', minute:'2-digit' });
+                    
+                    let pills = rot.biomes.map(b => 
+                        `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.8em;">
+                            <img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt="" style="width: 14px; height: 14px;">
+                            ${t(b.final_name)}
+                        </span>`
+                    ).join('');
+
+                    const highlightStyle = isCurrent ? `color: ${highlightColor}; font-weight: bold;` : '';
+                    const dot = isCurrent ? `<i class="fa-solid fa-circle-play" style="margin-right: 4px;"></i>` : '';
+
+                    slot.innerHTML = `
+                        <div class="schedule-time" style="${highlightStyle}">${dot}${timeStr}</div>
+                        <div class="schedule-biomes">
+                            ${pills}
+                        </div>
+                    `;
+                    col.appendChild(slot);
+                });
+                
+                grid.appendChild(col);
+            }
+            
+            modalBody.appendChild(grid);
         }
 
         function populateMerchantModal(schedule, highlightColor) {
