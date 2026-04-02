@@ -118,7 +118,6 @@ document.addEventListener('home_loaded', () => {
             const events = res.events;
             const now = new Date();
             
-            // Set timeline bounds relative to midnight local time for precise grid alignment
             const startTs = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 365).getTime();
             
             const totalDays = 730;
@@ -220,7 +219,6 @@ document.addEventListener('home_loaded', () => {
                                 const r = parseInt(hex.substr(0, 2), 16);
                                 const g = parseInt(hex.substr(2, 2), 16);
                                 const b = parseInt(hex.substr(4, 2), 16);
-                                // Darken dynamically loaded colors by 20% for improved readability
                                 const darkR = Math.floor(r * 0.8);
                                 const darkG = Math.floor(g * 0.8);
                                 const darkB = Math.floor(b * 0.8);
@@ -280,17 +278,15 @@ document.addEventListener('home_loaded', () => {
                 
                 setTimeout(centerToday, 50);
 
-                // "Jump to Today" Button Logic
                 const btnToday = document.getElementById('btn-calendar-today');
                 if (btnToday) {
                     btnToday.onclick = () => {
                         wrapper.style.scrollBehavior = 'smooth';
                         centerToday();
-                        setTimeout(() => wrapper.style.scrollBehavior = 'auto', 500); // Reset after animation
+                        setTimeout(() => wrapper.style.scrollBehavior = 'auto', 500);
                     };
                 }
 
-                // Drag to Scroll Logic
                 let isDown = false;
                 let startX, scrollLeft;
 
@@ -298,9 +294,9 @@ document.addEventListener('home_loaded', () => {
 
                 const onMouseMove = (e) => {
                     if (!isDown) return;
-                    e.preventDefault(); // Prevent text highlighting while dragging
+                    e.preventDefault();
                     const x = e.pageX - wrapper.offsetLeft;
-                    const walk = (x - startX) * 1.5; // Drag speed multiplier
+                    const walk = (x - startX) * 1.5;
                     wrapper.scrollLeft = scrollLeft - walk;
                 };
 
@@ -321,7 +317,6 @@ document.addEventListener('home_loaded', () => {
                     window.addEventListener('mouseup', onMouseUp);
                 });
 
-                // Mouse Wheel Horizontal Scroll Logic
                 wrapper.addEventListener('wheel', (e) => {
                     if (e.deltaY !== 0) {
                         e.preventDefault();

@@ -129,7 +129,6 @@ def get_chaos_chest_data():
         st = ServerTime()
         now = datetime.now(UTC)
         
-        # Calculate current Tuesday to Tuesday interval
         real_base = st.first_fluxion + timedelta(hours=11)
         diff = (now - real_base).total_seconds()
         intervals = int(diff // (7 * 24 * 3600))
@@ -271,7 +270,6 @@ def get_yearly_calendar_data():
         
         events = []
 
-        # Weekly Buffs
         try:
             st = ServerTime()
             current_weekly = st.current_weekly_buffs
@@ -302,7 +300,6 @@ def get_yearly_calendar_data():
         except Exception as e:
             traceback.print_exc()
         
-        # Biome Icon Data Loading
         biomes_path = os.path.join(os.getcwd(), "web", "assets", "data", "biomes.json")
         try:
             with open(biomes_path, "r", encoding="utf-8") as f:
@@ -323,7 +320,6 @@ def get_yearly_calendar_data():
             "Fae Forest": "fae", "Candoria": "candy", "Geode Topside": "dunes", "The Lost Isles": "pirate"
         }
         
-        # Stampy (Every Friday for 48 hours)
         stampy_biomes = ['Desert Frontier', 'The Lost Isles', 'Geode Topside', 'Neon City', 'Dragonfire Peaks', 'Permafrost', 'Candoria', 'Cursed Vale', 'Forbidden Spires', 'Fae Forest', 'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands']
         base_stampy = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC) 
         diff = (start_date - base_stampy).total_seconds()
@@ -338,7 +334,6 @@ def get_yearly_calendar_data():
             s += timedelta(weeks=1)
             weeks_stampy += 1
             
-        # Wild Mana (Every Monday for 7 days)
         mana_biomes = ["Neon City", "Jurassic Jungle", "Dragonfire Peaks", "Forbidden Spires", "Sundered Uplands", "Medieval Highlands", "Permafrost", "Cursed Vale", "Desert Frontier", "Fae Forest", "Candoria"]
         base_mana = datetime(2023, 11, 20, 11, 0, 0, tzinfo=UTC)
         diff = (start_date - base_mana).total_seconds()
@@ -357,7 +352,6 @@ def get_yearly_calendar_data():
             s += timedelta(weeks=1)
             weeks_mana += 1
             
-        # Merchants
         def generate_merchant_events(base_date, interval_days, duration_days, m_type, name):
             diff = (start_date - base_date).total_seconds()
             intervals = int(diff // (interval_days * 24 * 3600))
@@ -401,9 +395,9 @@ def get_yearly_calendar_data():
                 s += st_temp.invasion_interval
                 check_cycle += 1
 
-        base_luxion = datetime(2023, 12, 1, 11, 0, 0, tzinfo=UTC) # Friday
-        base_corruxion = datetime(2023, 12, 8, 11, 0, 0, tzinfo=UTC) # Friday
-        base_fluxion = datetime(2023, 12, 5, 11, 0, 0, tzinfo=UTC) # Tuesday
+        base_luxion = datetime(2023, 12, 1, 11, 0, 0, tzinfo=UTC)
+        base_corruxion = datetime(2023, 12, 8, 11, 0, 0, tzinfo=UTC)
+        base_fluxion = datetime(2023, 12, 5, 11, 0, 0, tzinfo=UTC)
 
         generate_merchant_events(base_luxion, 14, 3, "luxion", "Luxion")
         generate_merchant_events(base_corruxion, 14, 3, "corruxion", "Corruxion")
@@ -434,8 +428,6 @@ def get_d15_rotation():
     start = now - timedelta(seconds=elapsed % system_interval)
 
     rotations = []
-    # Go back 1 day (8 rotations) to be safe for all timezones
-    # And go forward enough for a full week (56 rotations)
     for i in range(-8, 56):
         current_offset = consumed + i
         s = start + timedelta(seconds=i * system_interval)

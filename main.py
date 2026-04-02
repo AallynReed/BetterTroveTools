@@ -145,7 +145,6 @@ LOCALE_DIR = Path("web/assets/locale")
 
 @eel.expose
 def get_available_languages():
-    """Scans the locale directory and returns available languages with translation percentages."""
     LOCALE_DIR.mkdir(parents=True, exist_ok=True)
     languages = []
     
@@ -156,14 +155,11 @@ def get_available_languages():
                 keys = data.get("keys", {})
                 total_keys = len(keys)
                 
-                # Calculate completion percentage
                 if file_path.stem == "en_US":
-                    # English is the baseline, so it is always 100%
                     percent = 100
                 elif total_keys == 0:
                     percent = 0
                 else:
-                    # Count how many values are strictly empty strings
                     empty_keys = sum(1 for v in keys.values() if str(v).strip() == "")
                     percent = int(((total_keys - empty_keys) / total_keys) * 100)
 
@@ -175,14 +171,12 @@ def get_available_languages():
         except Exception as e:
             print(f"⚠️ Error reading locale file {file_path}: {e}")
             
-    # Sort languages alphabetically by name, but keep English at the top
     languages.sort(key=lambda x: (x["code"] != "en_US", x["name"]))
     
     return languages
 
 @eel.expose
 def add_missing_translation_keys(locale_code, missing_keys):
-    """Appends missing keys to the specified locale JSON file with blank values."""
     if not missing_keys:
         return {"success": True}
     
@@ -200,7 +194,7 @@ def add_missing_translation_keys(locale_code, missing_keys):
         added_count = 0
         for key in missing_keys:
             if key not in data["keys"]:
-                data["keys"][key] = ""  # Leave blank for translation
+                data["keys"][key] = ""
                 added_count += 1
                 
         if added_count > 0:
@@ -217,17 +211,14 @@ def add_missing_translation_keys(locale_code, missing_keys):
 def serve_cache(filename):
     cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
     
-    # Basic security to prevent directory traversal attacks
     if ".." in filename or "/" in filename or "\\" in filename:
         return bottle.HTTPError(403, "Forbidden")
         
-    # Serve the file and force the browser not to cache it locally
     response = bottle.static_file(filename, root=str(cache_dir))
     response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
     return response
 
 chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
-#C:\Users\IT\AppData\Roaming\Trove\ModManagerCache
 appdata_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'ModManagerCache', 'profile')
 
 print(f"Looking for Chromium at: {chromium_path}")

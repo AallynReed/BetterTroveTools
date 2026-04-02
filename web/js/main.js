@@ -1,4 +1,3 @@
-// Global Tooltip System
 const globalTooltip = document.createElement('div');
 globalTooltip.id = 'global-tooltip';
 globalTooltip.style.cssText = 'position: fixed; background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: none; z-index: 10010; display: none; color: #fff; font-size: 0.9em; line-height: 1.4; max-width: 450px;';
@@ -22,7 +21,6 @@ document.addEventListener('mouseover', (e) => {
     let target = e.target.closest('[title], [data-tooltip], [data-tooltip-text]');
     if (!target) return;
 
-    // Suppress default browser tooltip & support line breaks
     if (target.hasAttribute('title') && target.getAttribute('title').trim() !== "") {
         target.setAttribute('data-tooltip-text', target.getAttribute('title').replace(/\n/g, '<br>'));
         target.removeAttribute('title');
@@ -44,7 +42,7 @@ document.addEventListener('mouseover', (e) => {
 
 document.addEventListener('mousemove', (e) => {
     if (globalTooltip.style.display === 'block') {
-        if (e.buttons > 0) { globalTooltip.style.display = 'none'; return; } // Hide while dragging
+        if (e.buttons > 0) { globalTooltip.style.display = 'none'; return; }
         let x = e.clientX + 15;
         let y = e.clientY + 15;
         if (x + globalTooltip.offsetWidth > window.innerWidth) x = e.clientX - globalTooltip.offsetWidth - 15;
@@ -61,7 +59,6 @@ document.addEventListener('mouseout', (e) => {
 
 document.addEventListener('click', () => globalTooltip.style.display = 'none');
 
-// External Request Indicator
 let activeRequestList = [];
 let fullRequestLog = [];
 
@@ -71,7 +68,6 @@ function updateIndicator() {
     
     requestIndicator.style.display = 'block';
     
-    // Toggle the fading animation depending on if there are active requests
     const icon = requestIndicator.querySelector('i');
     if (icon) {
         if (activeRequestList.some(r => r.status === 'active')) icon.classList.add('fa-fade');
@@ -82,7 +78,6 @@ function updateIndicator() {
 
         let tooltipContent = '<h3>Recent Requests</h3><ul style="margin-bottom: 0;">';
         
-        // Reverse list to show the most recent requests at the top
         const reversedList = [...activeRequestList].reverse();
         const displayList = reversedList.slice(0, 10);
         
@@ -106,7 +101,6 @@ function updateIndicator() {
         
         requestIndicator.setAttribute('data-tooltip', tooltipContent);
         
-        // Dynamically update the tooltip if the user is actively hovering over it
         const globalTooltip = document.getElementById('global-tooltip');
         if (globalTooltip && globalTooltip.style.display === 'block' && requestIndicator.matches(':hover')) {
             globalTooltip.innerHTML = tooltipContent;
@@ -163,7 +157,7 @@ function renderRequestLog() {
 eel.expose(add_external_request, 'add_external_request');
 function add_external_request(label = "Python Backend Request", url = "") {
     const id = Math.random().toString(36).substring(2, 11);
-    if (!url) url = label; // Fallback if only one argument is provided
+    if (!url) url = label;
     const reqObj = { id, url, label, status: 'active', time: new Date() };
     activeRequestList.push(reqObj);
     fullRequestLog.push(reqObj);
@@ -178,7 +172,6 @@ function remove_external_request(id, success = true) {
     if (id) {
         reqObj = activeRequestList.find(r => r.id === id);
     } else {
-        // Fallback for Python scripts not passing back the ID
         reqObj = activeRequestList.find(r => r.status === 'active');
     }
     

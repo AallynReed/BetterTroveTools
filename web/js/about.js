@@ -69,7 +69,6 @@ document.addEventListener('about_loaded', async () => {
         }
     }
 
-    // Copy Debug Info Logic
     const btnCopyDebug = document.getElementById('btn-copy-debug');
     if (btnCopyDebug) {
         btnCopyDebug.addEventListener('click', () => {
@@ -86,7 +85,6 @@ document.addEventListener('about_loaded', async () => {
         });
     }
 
-    // Licenses Modal Logic
     const licensesBtn = document.getElementById('btn-licenses');
     const licensesModal = document.getElementById('licenses-modal');
     const closeLicensesBtn = document.getElementById('close-licenses');
@@ -99,7 +97,6 @@ document.addEventListener('about_loaded', async () => {
         });
     }
 
-    // App License Modal Logic
     const appLicenseBtn = document.getElementById('btn-app-license');
     const appLicenseModal = document.getElementById('app-license-modal');
     const closeAppLicenseBtn = document.getElementById('close-app-license');
@@ -126,7 +123,6 @@ document.addEventListener('about_loaded', async () => {
         });
     }
 
-    // Fetch Contributors
     async function loadContributors() {
         const container = document.getElementById('contributors-container');
         if (!container) return;
@@ -157,7 +153,6 @@ document.addEventListener('about_loaded', async () => {
     }
     loadContributors();
 
-    // Changelog Modal Logic
     const changelogBtn = document.getElementById('btn-changelog');
     const modal = document.getElementById('changelog-modal');
     const closeBtn = document.getElementById('close-changelog');
@@ -235,7 +230,6 @@ document.addEventListener('about_loaded', async () => {
                     const commitMsg = c.commit.message.split('\n')[0];
                     let formattedMsg = commitMsg;
                     
-                    // Parse conventional commit prefixes (e.g., "feat:", "fix(ui):")
                     const prefixMatch = commitMsg.match(/^([a-zA-Z]+)(?:\([^)]+\))?:/);
                     if (prefixMatch) {
                         const fullPrefix = prefixMatch[0];
