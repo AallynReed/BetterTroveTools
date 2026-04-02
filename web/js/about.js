@@ -19,9 +19,11 @@ document.addEventListener('about_loaded', async () => {
     const versionDisplay = document.getElementById('app-version-display') || document.getElementById('app-version');
     const authorDisplay = document.getElementById('app-author-display') || document.getElementById('app-author');
     const descEl = document.getElementById('app-description');
+    const sysInfoEl = document.getElementById('app-system-info');
 
     let appVersion = "...";
     let appAuthor = "Aallyn Reed";
+    let sysInfoStr = "";
 
     try {
         if (window.eel && window.eel.get_app_metadata) {
@@ -39,6 +41,18 @@ document.addEventListener('about_loaded', async () => {
         console.warn("Could not load app metadata from backend:", e);
     }
 
+    try {
+        if (window.eel && window.eel.get_system_info) {
+            const sysInfo = await eel.get_system_info()();
+            if (!sysInfo.error) {
+                sysInfoStr = `\nOS: ${sysInfo.os} ${sysInfo.os_release} (${sysInfo.architecture})\nProcessor: ${sysInfo.processor}`;
+                if (sysInfoEl) sysInfoEl.innerText = `${sysInfo.os} ${sysInfo.os_release} | ${sysInfo.processor}`;
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to get extended system info:", e);
+    }
+
     if (versionDisplay) {
         if (versionDisplay.id === 'app-version') {
             versionDisplay.innerText = appVersion; 
@@ -54,6 +68,94 @@ document.addEventListener('about_loaded', async () => {
             authorDisplay.innerHTML = t("Created by {name}").replace("{name}", `<strong>${appAuthor}</strong>`);
         }
     }
+
+    // Copy Debug Info Logic
+    const btnCopyDebug = document.getElementById('btn-copy-debug');
+    if (btnCopyDebug) {
+        btnCopyDebug.addEventListener('click', () => {
+            const debugInfo = `App Name: Better Trove Tools\nApp Version: ${appVersion}\nUser Agent: ${navigator.userAgent}\nLanguage: ${navigator.language}${sysInfoStr}`;
+            navigator.clipboard.writeText(debugInfo).then(() => {
+                const icon = btnCopyDebug.querySelector('i');
+                icon.className = 'fa-solid fa-check';
+                icon.style.color = '#4ade80';
+                setTimeout(() => {
+                    icon.className = 'fa-regular fa-clipboard';
+                    icon.style.color = '';
+                }, 2000);
+            });
+        });
+    }
+
+    // Licenses Modal Logic
+    const licensesBtn = document.getElementById('btn-licenses');
+    const licensesModal = document.getElementById('licenses-modal');
+    const closeLicensesBtn = document.getElementById('close-licenses');
+
+    if (licensesBtn && licensesModal && closeLicensesBtn) {
+        licensesBtn.addEventListener('click', () => licensesModal.style.display = 'flex');
+        closeLicensesBtn.addEventListener('click', () => licensesModal.style.display = 'none');
+        licensesModal.addEventListener('click', (e) => {
+            if (e.target === licensesModal) licensesModal.style.display = 'none';
+        });
+    }
+
+    // App License Modal Logic
+    const appLicenseBtn = document.getElementById('btn-app-license');
+    const appLicenseModal = document.getElementById('app-license-modal');
+    const closeAppLicenseBtn = document.getElementById('close-app-license');
+    const appLicenseText = document.getElementById('app-license-text');
+
+    if (appLicenseBtn && appLicenseModal && closeAppLicenseBtn) {
+        appLicenseBtn.addEventListener('click', async () => {
+            appLicenseModal.style.display = 'flex';
+            if (!appLicenseText.innerText || appLicenseText.innerText === "") {
+                appLicenseText.innerText = t("Loading license...");
+                try {
+                    if (window.eel && window.eel.get_app_license) {
+                        appLicenseText.innerText = await eel.get_app_license()();
+                    }
+                } catch (e) {
+                    appLicenseText.innerText = t("Failed to load license.");
+                    console.warn(e);
+                }
+            }
+        });
+        closeAppLicenseBtn.addEventListener('click', () => appLicenseModal.style.display = 'none');
+        appLicenseModal.addEventListener('click', (e) => {
+            if (e.target === appLicenseModal) appLicenseModal.style.display = 'none';
+        });
+    }
+
+    // Fetch Contributors
+    async function loadContributors() {
+        const container = document.getElementById('contributors-container');
+        if (!container) return;
+        try {
+            const res = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/contributors');
+            const contributors = await res.json();
+            if (Array.isArray(contributors)) {
+                container.innerHTML = '';
+                contributors.forEach(c => {
+                    const a = document.createElement('a');
+                    a.href = c.html_url;
+                    a.target = '_blank';
+                    a.title = `${c.login} (${c.contributions} contributions)`;
+                    a.className = 'contributor-avatar';
+                    
+                    const img = document.createElement('img');
+                    img.src = c.avatar_url;
+                    img.alt = c.login;
+                    
+                    a.appendChild(img);
+                    container.appendChild(a);
+                });
+            }
+        } catch (e) {
+            console.error("Failed to load contributors:", e);
+            container.innerHTML = '<span class="special-thanks">Failed to load contributors.</span>';
+        }
+    }
+    loadContributors();
 
     // Changelog Modal Logic
     const changelogBtn = document.getElementById('btn-changelog');

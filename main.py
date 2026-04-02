@@ -7,13 +7,14 @@ import time
 import winreg
 from pathlib import Path
 
-import eel
 import bottle
+import eel
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
+import backend.about
 import backend.calculators
 import backend.file_manager
 import backend.gem_builds
