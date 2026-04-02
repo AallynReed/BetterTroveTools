@@ -102,7 +102,7 @@ function updateIndicator() {
         if (activeRequestList.length > 10) {
             tooltipContent += `<li><i>...and ${activeRequestList.length - 10} more</i></li>`;
         }
-        tooltipContent += '</ul>';
+        tooltipContent += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">Total requests made: ${fullRequestLog.length}</div>`;
         
         requestIndicator.setAttribute('data-tooltip', tooltipContent);
         
@@ -112,11 +112,14 @@ function updateIndicator() {
             globalTooltip.innerHTML = tooltipContent;
         }
     } else {
-        requestIndicator.setAttribute('data-tooltip', 'No active external requests');
+        const emptyText = fullRequestLog.length > 0 
+            ? `No active requests.<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">Total requests made: ${fullRequestLog.length}</div>` 
+            : 'No external requests made yet.';
+        requestIndicator.setAttribute('data-tooltip', emptyText);
         
         const globalTooltip = document.getElementById('global-tooltip');
         if (globalTooltip && globalTooltip.style.display === 'block' && requestIndicator.matches(':hover')) {
-            globalTooltip.innerHTML = 'No active external requests';
+            globalTooltip.innerHTML = emptyText;
         }
     }
 }
@@ -185,7 +188,7 @@ function remove_external_request(id, success = true) {
         setTimeout(() => {
             activeRequestList = activeRequestList.filter(r => r !== reqObj);
             updateIndicator();
-        }, 30000);
+        }, 60000);
         if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
     }
 }
@@ -220,7 +223,7 @@ window.fetch = async function(...args) {
             setTimeout(() => {
                 activeRequestList = activeRequestList.filter(r => r !== reqObj);
                 updateIndicator();
-            }, 30000);
+            }, 60000);
             if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
         }
     }
@@ -251,7 +254,7 @@ XMLHttpRequest.prototype.send = function(...args) {
             setTimeout(() => {
                 activeRequestList = activeRequestList.filter(r => r !== reqObj);
                 updateIndicator();
-            }, 30000);
+            }, 60000);
             if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
             this.removeEventListener('loadend', onComplete);
             this.removeEventListener('error', onComplete);
