@@ -186,6 +186,7 @@ document.addEventListener('home_loaded', () => {
                 { id: 'luxion', name: 'Luxion', color: 'luxion', icon: 'fa-dragon' },
                 { id: 'corruxion', name: 'Corruxion', color: 'corruxion', icon: 'fa-dragon' },
                 { id: 'fluxion', name: 'Fluxion', color: 'fluxion', icon: 'fa-scale-balanced' },
+                { id: 'invasion', name: "Luxion's Fast Trials", color: 'invasion', icon: 'fa-meteor' },
                 { id: 'mana', name: 'Wild Mana', color: 'mana', icon: 'fa-flask' },
                 { id: 'stampy', name: 'Stampy', color: 'stampy', icon: 'fa-paw' }
             ];
@@ -248,6 +249,9 @@ document.addEventListener('home_loaded', () => {
                         }
                         else if (track.id === 'luxion' || track.id === 'corruxion') {
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;
+                        }
+                        else if (track.id === 'invasion') {
+                            iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-meteor"></i></div>`;
                         }
 
                         let showText = "";
@@ -498,7 +502,8 @@ document.addEventListener('home_loaded', () => {
             const configs = [
                 { id: 'luxion', name: 'Luxion', color: '#fbc02d', icon: 'fa-dragon' },
                 { id: 'corruxion', name: 'Corruxion', color: '#9c27b0', icon: 'fa-dragon' },
-                { id: 'fluxion', name: 'Fluxion', color: '#4fc3f7', icon: 'fa-scale-balanced' }
+                { id: 'fluxion', name: 'Fluxion', color: '#4fc3f7', icon: 'fa-scale-balanced' },
+                { id: 'invasion', name: "Luxion's Fast Trials", color: '#ff5252', icon: 'fa-meteor' }
             ];
             
             configs.forEach(conf => {
@@ -525,7 +530,8 @@ document.addEventListener('home_loaded', () => {
                     document.querySelector('#d15-modal .modal-content').style.width = '90%';
                     
                     if(schedules && schedules.success && schedules[conf.id]) {
-                        populateMerchantModal(schedules[conf.id], conf.color);
+                        const actionType = (conf.id === 'invasion' || conf.id === 'fluxion') ? 'event' : 'merchant';
+                        populateMerchantModal(schedules[conf.id], conf.color, actionType);
                     } else {
                         document.getElementById('d15-modal-body').innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">${t("Schedule data unavailable.")}</div>`;
                     }
@@ -872,7 +878,7 @@ document.addEventListener('home_loaded', () => {
             modalBody.appendChild(grid);
         }
 
-        function populateMerchantModal(schedule, highlightColor) {
+        function populateMerchantModal(schedule, highlightColor, actionType = 'merchant') {
             const modalBody = document.getElementById('d15-modal-body');
             if (!modalBody) return;
             
@@ -884,24 +890,32 @@ document.addEventListener('home_loaded', () => {
                 const startStr = new Date(rot.start * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                 const endStr = new Date(rot.end * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                 
-                let timeText = t("Arrives in {time}").replace("{time}", getCountdown(rot.start, false));
+                let arriveStr = actionType === 'event' ? t("Starts in {time}") : t("Arrives in {time}");
+                let leaveStr = actionType === 'event' ? t("Ends in {time}") : t("Leaves in {time}");
+                let nextStr = actionType === 'event' ? t('Next Event') : t('Next Arrival');
+                let futureStr = actionType === 'event' ? t("Event +{num}") : t("Arrival +{num}");
+
+                let timeText = arriveStr.replace("{time}", getCountdown(rot.start, false));
                 if (rot.start * 1000 < Date.now()) {
-                    timeText = t("Leaves in {time}").replace("{time}", getCountdown(rot.end, false));
+                    timeText = leaveStr.replace("{time}", getCountdown(rot.end, false));
                 }
 
                 const phaseLabel = rot.name ? `<div style="font-weight: bold; color: ${highlightColor}; margin-bottom: 2px;">${t(rot.name)}</div>` : '';
+
+                let iconStart = actionType === 'event' ? 'fa-play' : 'fa-plane-arrival';
+                let iconEnd = actionType === 'event' ? 'fa-stop' : 'fa-plane-departure';
 
                 const row = document.createElement('div');
                 row.className = 'modal-rotation-row';
                 row.innerHTML = `
                     <div class="modal-time-col" style="min-width: 150px;">
-                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? t('Next Arrival') : t("Arrival +{num}").replace("{num}", index + 1)}</div>
+                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? nextStr : futureStr.replace("{num}", index + 1)}</div>
                         <div style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${timeText}</div>
                     </div>
                     <div class="modal-biomes-col" style="flex-direction: column; justify-content: center; gap: 4px;">
                         ${phaseLabel}
-                        <div style="font-size: 0.9em; color: #eee;"><i class="fa-solid fa-plane-arrival"></i> ${startStr}</div>
-                        <div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid fa-plane-departure"></i> ${endStr}</div>
+                        <div style="font-size: 0.9em; color: #eee;"><i class="fa-solid ${iconStart}"></i> ${startStr}</div>
+                        <div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid ${iconEnd}"></i> ${endStr}</div>
                     </div>
                 `;
                 modalBody.appendChild(row);

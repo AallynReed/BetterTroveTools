@@ -65,6 +65,9 @@ def get_current_server_data():
         flux_active = st.is_fluxion()
         flux_state = "Voting" if st.is_fluxion_voting() else ("Selling" if st.is_fluxion_selling() else "Away")
         flux_time = st.until_end_fluxion() if flux_active else st.until_next_fluxion()
+        
+        inv_active = st.is_invasion()
+        inv_time = st.until_end_invasion() if inv_active else st.until_next_invasion()
 
         merchants = {
             "luxion": {
@@ -82,6 +85,11 @@ def get_current_server_data():
                 "state": flux_state,
                 "time_str": format_timedelta(flux_time),
                 "action": "Ends in" if flux_active else "Starts in"
+            },
+            "invasion": {
+                "active": inv_active,
+                "time_str": format_timedelta(inv_time),
+                "action": "Ends in" if inv_active else "Starts in"
             }
         }
 
@@ -102,15 +110,20 @@ def get_merchant_schedules():
         st = ServerTime()
         now = datetime.now(UTC)
         
-        def generate_mock_schedule(offset_days, interval_days, duration_days):
+        def generate_dragon_schedule(base_date):
             schedule = []
-            start = now + timedelta(days=offset_days)
+            real_base = base_date + timedelta(hours=11)
+            diff = (now - real_base).total_seconds()
+            intervals = int(diff // (14 * 24 * 3600))
+            s = real_base + timedelta(days=intervals * 14)
+            if s + timedelta(days=3) < now:
+                s += timedelta(days=14)
             for i in range(8):
-                s = start + timedelta(days=i * interval_days)
-                e = s + timedelta(days=duration_days)
+                curr_s = s + timedelta(days=i * 14)
+                curr_e = curr_s + timedelta(days=3)
                 schedule.append({
-                    "start": int(s.timestamp()),
-                    "end": int(e.timestamp())
+                    "start": int(curr_s.timestamp()),
+                    "end": int(curr_e.timestamp())
                 })
             return schedule
 
@@ -134,11 +147,28 @@ def get_merchant_schedules():
                 })
             return schedule
 
+        def generate_invasion_schedule():
+            schedule = []
+            completed, _ = st._get_current_invasion_cycle()
+            check_cycle = completed
+            while len(schedule) < 8:
+                inv_start = st.first_invasion + check_cycle * st.invasion_interval
+                if st._get_week_index(inv_start) == 3:
+                    inv_end = inv_start + st.invasion_duration
+                    if inv_end > now:
+                        schedule.append({
+                            "start": int(inv_start.timestamp()),
+                            "end": int(inv_end.timestamp())
+                        })
+                check_cycle += 1
+            return schedule
+
         return {
             "success": True,
-            "luxion": generate_mock_schedule(2, 14, 3),
-            "corruxion": generate_mock_schedule(9, 14, 3),
-            "fluxion": generate_fluxion_schedule()
+            "luxion": generate_dragon_schedule(st.first_luxion),
+            "corruxion": generate_dragon_schedule(st.first_corruxion),
+            "fluxion": generate_fluxion_schedule(),
+            "invasion": generate_invasion_schedule()
         }
     except Exception as e:
         traceback.print_exc()
@@ -225,7 +255,7 @@ def get_yearly_calendar_data():
         
         # Stampy (Every Friday for 48 hours)
         stampy_biomes = ['Desert Frontier', 'The Lost Isles', 'Geode Topside', 'Neon City', 'Dragonfire Peaks', 'Permafrost', 'Candoria', 'Cursed Vale', 'Forbidden Spires', 'Fae Forest', 'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands']
-        base_stampy = datetime(2023, 9, 29, 11, 0, 0, tzinfo=UTC) 
+        base_stampy = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC) 
         diff = (start_date - base_stampy).total_seconds()
         weeks_stampy = int(diff // (7 * 24 * 3600))
         s = base_stampy + timedelta(weeks=weeks_stampy)
@@ -284,6 +314,18 @@ def get_yearly_calendar_data():
                 if e_sell > start_date and s_sell < end_date:
                     events.append({"type": "fluxion", "start": int(s_sell.timestamp()), "end": int(e_sell.timestamp()), "name": "Fluxion (Selling)", "color": "02679e"})
                 s += timedelta(days=interval_days)
+                
+        def generate_invasion_events():
+            st_temp = ServerTime()
+            diff = (start_date - st_temp.first_invasion).total_seconds()
+            check_cycle = int(diff // st_temp.invasion_interval.total_seconds())
+            s = st_temp.first_invasion + check_cycle * st_temp.invasion_interval
+            while s < end_date:
+                e = s + st_temp.invasion_duration
+                if e > start_date and st_temp._get_week_index(s) == 3:
+                    events.append({"type": "invasion", "start": int(s.timestamp()), "end": int(e.timestamp()), "name": "Luxion's Fast Trials"})
+                s += st_temp.invasion_interval
+                check_cycle += 1
 
         base_luxion = datetime(2023, 12, 1, 11, 0, 0, tzinfo=UTC) # Friday
         base_corruxion = datetime(2023, 12, 8, 11, 0, 0, tzinfo=UTC) # Friday
@@ -292,6 +334,7 @@ def get_yearly_calendar_data():
         generate_merchant_events(base_luxion, 14, 3, "luxion", "Luxion")
         generate_merchant_events(base_corruxion, 14, 3, "corruxion", "Corruxion")
         generate_fluxion_events(base_fluxion, 14)
+        generate_invasion_events()
 
         return {"success": True, "events": events}
     except Exception as e:

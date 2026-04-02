@@ -21,9 +21,15 @@ class ServerTime:
         self.dragon_interval = timedelta(days=14)
         self.fluxion_interval = timedelta(days=7)
         self.first_week_buff = datetime(2020, 3, 23, tzinfo=UTC)
-        self.first_luxion = datetime(2024, 3, 1, tzinfo=UTC)
-        self.first_corruxion = datetime(2024, 3, 8, tzinfo=UTC)
+        self.first_luxion = datetime(2024, 3, 8, tzinfo=UTC)
+        self.first_corruxion = datetime(2024, 3, 1, tzinfo=UTC)
         self.first_fluxion = datetime(2023, 7, 18, tzinfo=UTC)
+        
+        # Invasions (Baseline: March 24, 2026, 20:00 real-world UTC)
+        # We subtract trove_time so the baseline aligns with the shifted self.now property
+        self.invasion_interval = timedelta(hours=27)
+        self.invasion_duration = timedelta(hours=3)
+        self.first_invasion = datetime(2026, 3, 24, 20, 0, tzinfo=UTC) - self.trove_time
 
     def __str__(self):
         return self.now.strftime("%a, %b %d\t\t%H:%M")
@@ -31,6 +37,12 @@ class ServerTime:
     @property
     def now(self):
         return datetime.now(UTC) - self.trove_time
+
+    def _get_week_index(self, target_time):
+        """Helper to find the 4-week cycle index (0, 1, 2, or 3) for a given time."""
+        week_length = 60 * 60 * 24 * 7
+        weeks = (target_time.timestamp() - self.first_week_buff.timestamp()) // week_length
+        return int(weeks % 4)
 
     # Daily
     @property
@@ -49,12 +61,8 @@ class ServerTime:
 
     @property
     def current_weekly_buffs(self):
-        week_length = 60 * 60 * 24 * 7
-        weeks = (self.now.timestamp() - self.first_week_buff.timestamp()) // week_length
-        time_split = weeks / 4
-        time_find = (time_split - int(time_split)) * 4
         buffs = self.weekly_buffs
-        return buffs.get(str(int(time_find)), {})
+        return buffs.get(str(self._get_week_index(self.now)), {})
 
     # Dragons
     def _calculate_dragon(self, first):
@@ -123,3 +131,58 @@ class ServerTime:
 
     def until_end_fluxion(self):
         return self.end_fluxion() - self.now
+
+    # Invasions
+    def _get_current_invasion_cycle(self):
+        """Calculates the raw 27-hour cycle we are currently in, regardless of week."""
+        delta = self.now - self.first_invasion
+        completed, current = divmod(
+            int(delta.total_seconds()), int(self.invasion_interval.total_seconds())
+        )
+        return completed, current
+
+    def is_invasion(self):
+        """Returns True if within a 3-hour invasion window AND it is Fast Invasions week."""
+        if self._get_week_index(self.now) != 3:
+            return False
+            
+        completed, current_seconds = self._get_current_invasion_cycle()
+        return current_seconds < self.invasion_duration.total_seconds()
+
+    def next_invasion(self):
+        """Finds the next 27-hour invasion block that occurs during week index 3."""
+        completed, _ = self._get_current_invasion_cycle()
+        check_cycle = completed + 1
+        
+        while True:
+            inv_start = self.first_invasion + check_cycle * self.invasion_interval
+            if self._get_week_index(inv_start) == 3:
+                return inv_start
+            check_cycle += 1
+
+    def until_next_invasion(self):
+        return self.next_invasion() - self.now
+
+    def previous_invasion(self):
+        """Finds the most recent 27-hour invasion block that occurred during week index 3."""
+        completed, _ = self._get_current_invasion_cycle()
+        
+        check_cycle = completed
+        if self.is_invasion():
+            check_cycle -= 1
+            
+        while True:
+            inv_start = self.first_invasion + check_cycle * self.invasion_interval
+            if self._get_week_index(inv_start) == 3:
+                return inv_start
+            check_cycle -= 1
+
+    def end_invasion(self):
+        if self.is_invasion():
+            completed, _ = self._get_current_invasion_cycle()
+            return self.first_invasion + completed * self.invasion_interval + self.invasion_duration
+        else:
+            return self.next_invasion() + self.invasion_duration
+
+    def until_end_invasion(self):
+        return self.end_invasion() - self.now
