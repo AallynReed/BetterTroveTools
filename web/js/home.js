@@ -1117,9 +1117,12 @@ document.addEventListener('home_loaded', () => {
 
                 const thumb = video.thumbnail_url;
                 const publishedStr = getTimeAgo(video.published_at, t);
+                
+                const verifiedChannels = ['Trove'];
+                const verifiedBadge = verifiedChannels.includes(video.channel) ? ' <i class="fa-solid fa-circle-check" style="color: #5ec6ff;" title="Verified"></i>' : '';
 
                 card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">${publishedStr}</span></div></div>
-                                  <div class="stream-info"><div class="stream-title">${video.title}</div><div class="stream-user"><i class="fa-brands fa-youtube" style="color:#FF0000;"></i> ${video.channel}</div></div>`;
+                                  <div class="stream-info"><div class="stream-title">${video.title}</div><div class="stream-user"><i class="fa-brands fa-youtube" style="color:#FF0000;"></i> ${video.channel}${verifiedBadge}</div></div>`;
                 carousel.appendChild(card);
             });
         } else {
