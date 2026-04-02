@@ -25,9 +25,34 @@ document.addEventListener('home_loaded', () => {
     document.addEventListener('change', window._homeLangListener);
 
     function refreshAllData() {
+        fetchYoutubeVideos();
         fetchStreams();
         fetchServerData();
         fetchEvents();
+    }
+
+    function getTimeAgo(dateString, t) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffSeconds = Math.floor(diffTime / 1000);
+        const diffMinutes = Math.floor(diffSeconds / 60);
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+    
+        if (diffDays > 7) {
+            return date.toLocaleDateString(window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US', { month: 'short', day: 'numeric' });
+        }
+        if (diffDays > 0) {
+            return t('{count} days ago').replace('{count}', diffDays);
+        }
+        if (diffHours > 0) {
+            return t('{count} hours ago').replace('{count}', diffHours);
+        }
+        if (diffMinutes > 0) {
+            return t('{count} minutes ago').replace('{count}', diffMinutes);
+        }
+        return t('Just now');
     }
 
     function getCountdown(timestamp, showLeft = true) {
@@ -59,6 +84,34 @@ document.addEventListener('home_loaded', () => {
 
         if (showLeft) return t("{time} left").replace("{time}", timeStr);
         return timeStr;
+    }
+
+    const mediaTabs = document.querySelectorAll('.media-tab');
+    const youtubeCarousel = document.getElementById('youtube-carousel');
+    const twitchCarousel = document.getElementById('streams-carousel');
+    const scrollLeftBtn = document.getElementById('btn-scroll-left');
+    const scrollRightBtn = document.getElementById('btn-scroll-right');
+
+    mediaTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            mediaTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const activeTab = tab.dataset.tab;
+            if (activeTab === 'youtube') {
+                youtubeCarousel.style.display = 'flex';
+                twitchCarousel.style.display = 'none';
+            } else {
+                youtubeCarousel.style.display = 'none';
+                twitchCarousel.style.display = 'flex';
+            }
+            youtubeCarousel.scrollLeft = 0;
+            twitchCarousel.scrollLeft = 0;
+        });
+    });
+
+    if (scrollLeftBtn && scrollRightBtn) {
+        scrollLeftBtn.onclick = () => document.querySelector('.streams-carousel:not([style*="display: none"])')?.scrollBy({ left: -260, behavior: 'smooth' });
+        scrollRightBtn.onclick = () => document.querySelector('.streams-carousel:not([style*="display: none"])')?.scrollBy({ left: 260, behavior: 'smooth' });
     }
 
     const rotationModal = document.getElementById('d15-modal');
@@ -1025,11 +1078,60 @@ document.addEventListener('home_loaded', () => {
         eel.get_trovesaurus_events()();
     }
 
+    eel.expose(receive_youtube_videos, 'receive_youtube_videos');
+    function receive_youtube_videos(response) {
+        const wrapper = document.getElementById('carousel-wrapper');
+        const carousel = document.getElementById('youtube-carousel');
+        const loading = document.getElementById('media-loading');
+        const btnLeft = document.getElementById('btn-scroll-left');
+        const btnRight = document.getElementById('btn-scroll-right');
+        
+        if (loading) loading.style.display = 'none';
+        if (wrapper) wrapper.style.display = 'flex';
+        if (!carousel) return;
+        
+        carousel.innerHTML = '';
+
+        if (response && response.success) {
+            if (!response.data || response.data.length === 0) {
+                carousel.innerHTML = `
+                    <div style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
+                        <i class="fa-brands fa-youtube" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
+                        <span style="font-size: 14px;">${t("No Trove videos found right now. Check back later!")}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            if (btnLeft) btnLeft.style.display = 'flex';
+            if (btnRight) btnRight.style.display = 'flex';
+
+            response.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'stream-card';
+                card.style.cursor = 'pointer';
+                
+                card.onclick = () => {
+                    eel.open_url_in_browser(video.url)();
+                };
+
+                const thumb = video.thumbnail_url;
+                const publishedStr = getTimeAgo(video.published_at, t);
+
+                card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">${publishedStr}</span></div></div>
+                                  <div class="stream-info"><div class="stream-title">${video.title}</div><div class="stream-user"><i class="fa-brands fa-youtube" style="color:#FF0000;"></i> ${video.channel}</div></div>`;
+                carousel.appendChild(card);
+            });
+        } else {
+            console.error("YouTube video fetch error:", response?.error);
+        }
+    }
+
     eel.expose(receive_twitch_streams, 'receive_twitch_streams');
     function receive_twitch_streams(response) {
         const wrapper = document.getElementById('carousel-wrapper');
         const carousel = document.getElementById('streams-carousel');
-        const loading = document.getElementById('streams-loading');
+        const loading = document.getElementById('media-loading');
         const btnLeft = document.getElementById('btn-scroll-left');
         const btnRight = document.getElementById('btn-scroll-right');
         
@@ -1047,8 +1149,6 @@ document.addEventListener('home_loaded', () => {
                         <span style="font-size: 14px;">${t("No Trove streams are live right now. Check back later!")}</span>
                     </div>
                 `;
-                if (btnLeft) btnLeft.style.display = 'none';
-                if (btnRight) btnRight.style.display = 'none';
                 return;
             }
 
@@ -1069,14 +1169,13 @@ document.addEventListener('home_loaded', () => {
                                   <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
                 carousel.appendChild(card);
             });
-            
-            if (btnLeft && btnRight) {
-                btnLeft.onclick = () => carousel.scrollBy({ left: -260, behavior: 'smooth' });
-                btnRight.onclick = () => carousel.scrollBy({ left: 260, behavior: 'smooth' });
-            }
         } else {
             console.error("Stream fetch error:", response?.error);
         }
+    }
+
+    function fetchYoutubeVideos() {
+        eel.get_youtube_videos()();
     }
 
     function fetchStreams() {
