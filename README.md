@@ -10,22 +10,27 @@ Better Trove Tools is a comprehensive, offline-capable suite of utilities design
 ## 🚀 Features
 
 ### 🎮 Player Utilities
-* 🏠 **Home Dashboard:** Stay up-to-date with live Trove server data including daily and weekly buffs, merchant statuses (Luxion, Corruxion, Fluxion), active Trovesaurus events, and top live Twitch streams.
+* 🏠 **Home Dashboard:** Stay up-to-date with live Trove server data including daily and weekly buffs, merchant statuses (Luxion, Corruxion, Fluxion), active Trovesaurus events, top live Twitch streams, and an interactive **Yearly Rotation Calendar**.
 * 💎 **Gem Simulator:** Build, level up, and augment virtual gems to optimize your character's stats without spending in-game resources. Includes features for sparking and flaring.
-* 🌌 **Star Chart:** Explore and plan your Star Chart constellations, calculate aggregated stats, and share your builds with generated codes.
+* 📊 **Gem Builds Optimizer:** Calculate the absolute mathematical best gem allocations for your specific class and setup. Integrates with Star Chart builds and allows 1-click build copying.
+* 🌌 **Star Chart:** Explore and plan your Star Chart constellations, calculate aggregated stats, and save, load, or share your builds with generated Base64 codes.
 * 🧮 **Calculators:** Compute and optimize your in-game stats with dedicated calculators for Power Rank, Mastery, and Magic Find.
 * 🐾 **Ally Codex:** Browse and filter a comprehensive collection of Trove allies. Search by specific stats, abilities, categories, and more.
 
 ### 🛠️ Modding & Technical
-* 🧩 **Mod Manager:** Easily enable, disable, install, and update your Trove mods. Includes conflict detection and Trovesaurus integration.
-* 📂 **Game File Extractor:** High-performance file manager to parse Trove's `.tfi` and `.tfa` archives to mass-extract game assets directly to your disk. Includes a built-in tracker to detect and extract only changed or updated files after game patches.
+* 🧩 **Local Mod Manager:** Easily enable, disable, and update your local Trove mods. Includes conflict detection and tools to auto-fix broken UI configs or mod names.
+* 🦕 **Trovesaurus Browser:** Browse, search, and 1-click install mods directly from Trovesaurus without leaving the app. Supports `btt://` deep linking.
+* 📂 **Game File Manager:** High-performance file manager to parse Trove's `.tfi` and `.tfa` archives to mass-extract game assets directly to your disk. Includes a built-in **Update Tracker** to detect and extract only changed or updated files after game patches.
 * 🧰 **Modder Tools:** 
   * Compile your files into the `.tmod` format quickly and easily.
   * Extract existing `.tmod` files to inspect or modify their contents.
-  * Auto-fix missing or incorrect mod configurations and names.
+  * **Project Manager:** Manage persistent mod projects with versioning, auto-structuring, and live in-game testing via overrides.
 
 ### ⚡ General
-* 🔌 **Offline Capable:** Designed to run locally on your machine with a localized interface, fetching data from the web only when you need updates or Trovesaurus integration.
+* 🌍 **Multi-Language Support (i18n):** Fully localized interface with support for multiple languages dynamically loaded.
+* 🔄 **Auto-Updates:** Built-in GitHub release checker to ensure you are always running the latest version.
+* ⚙️ **Custom Game Paths:** Support for managing multiple game installations (Live, PTS, Custom).
+* 🔌 **Offline Capable & Transparent:** Designed to run locally on your machine, with a built-in external request tracker so you know exactly what network calls are being made to Trovesaurus or Twitch APIs.
 
 ## ⚠️ Disclaimer
 
