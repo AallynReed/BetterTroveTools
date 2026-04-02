@@ -1168,8 +1168,12 @@ document.addEventListener('home_loaded', () => {
                 };
 
                 const thumb = stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248');
+                
+                const verifiedTwitchChannels = ['trovegame'];
+                const verifiedBadge = verifiedTwitchChannels.includes(stream.user_login.toLowerCase()) ? ' <i class="fa-solid fa-circle-check" style="color: #5ec6ff;" title="Verified"></i>' : '';
+
                 card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">🔴 ${stream.viewer_count.toLocaleString()}</span></div></div>
-                                  <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}</div></div>`;
+                                  <div class="stream-info"><div class="stream-title">${stream.title}</div><div class="stream-user"><i class="fa-brands fa-twitch" style="color:#9146FF;"></i> ${stream.user_name}${verifiedBadge}</div></div>`;
                 carousel.appendChild(card);
             });
         } else {
