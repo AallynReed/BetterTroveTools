@@ -25,11 +25,10 @@ class ServerTime:
         self.first_corruxion = datetime(2024, 3, 1, tzinfo=UTC)
         self.first_fluxion = datetime(2023, 7, 18, tzinfo=UTC)
         
-        # Invasions (Baseline: March 24, 2026, 20:00 real-world UTC)
-        # We subtract trove_time so the baseline aligns with the shifted self.now property
+        # Invasions (Baseline: 9 AM UTC-11)
         self.invasion_interval = timedelta(hours=27)
         self.invasion_duration = timedelta(hours=3)
-        self.first_invasion = datetime(2026, 3, 24, 20, 0, tzinfo=UTC) - self.trove_time
+        self.first_invasion = datetime(2026, 3, 24, 9, tzinfo=UTC)
 
     def __str__(self):
         return self.now.strftime("%a, %b %d\t\t%H:%M")
@@ -141,22 +140,28 @@ class ServerTime:
         )
         return completed, current
 
+    def _is_invasion_week(self, target_time):
+        """Checks if the target_time falls in the 1-week active period of the 4-week cycle."""
+        delta = target_time - self.first_invasion
+        cycle_seconds = 28 * 24 * 3600
+        active_seconds = 6 * 24 * 3600
+        return (delta.total_seconds() % cycle_seconds) < active_seconds
+
     def is_invasion(self):
-        """Returns True if within a 3-hour invasion window AND it is Fast Invasions week."""
-        if self._get_week_index(self.now) != 3:
-            return False
-            
+        """Returns True if within a 3-hour invasion window during the active week."""
         completed, current_seconds = self._get_current_invasion_cycle()
+        inv_start = self.first_invasion + completed * self.invasion_interval
+        if not self._is_invasion_week(inv_start):
+            return False
         return current_seconds < self.invasion_duration.total_seconds()
 
     def next_invasion(self):
-        """Finds the next 27-hour invasion block that occurs during week index 3."""
+        """Finds the next 27-hour invasion block."""
         completed, _ = self._get_current_invasion_cycle()
         check_cycle = completed + 1
-        
         while True:
             inv_start = self.first_invasion + check_cycle * self.invasion_interval
-            if self._get_week_index(inv_start) == 3:
+            if self._is_invasion_week(inv_start):
                 return inv_start
             check_cycle += 1
 
@@ -164,16 +169,15 @@ class ServerTime:
         return self.next_invasion() - self.now
 
     def previous_invasion(self):
-        """Finds the most recent 27-hour invasion block that occurred during week index 3."""
+        """Finds the most recent 27-hour invasion block."""
         completed, _ = self._get_current_invasion_cycle()
         
         check_cycle = completed
         if self.is_invasion():
             check_cycle -= 1
-            
         while True:
             inv_start = self.first_invasion + check_cycle * self.invasion_interval
-            if self._get_week_index(inv_start) == 3:
+            if self._is_invasion_week(inv_start):
                 return inv_start
             check_cycle -= 1
 

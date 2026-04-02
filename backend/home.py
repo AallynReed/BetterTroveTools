@@ -129,10 +129,10 @@ def get_merchant_schedules():
 
         def generate_fluxion_schedule():
             schedule = []
-            base_date = st.first_fluxion
-            diff = (now - base_date).total_seconds()
+            real_base = st.first_fluxion + timedelta(hours=11)
+            diff = (now - real_base).total_seconds()
             intervals = int(diff // (7 * 24 * 3600))
-            s = base_date + timedelta(days=intervals * 7)
+            s = real_base + timedelta(days=intervals * 7)
             if s + timedelta(days=3) < now:
                 s += timedelta(days=7)
                 intervals += 1
@@ -153,12 +153,14 @@ def get_merchant_schedules():
             check_cycle = completed
             while len(schedule) < 8:
                 inv_start = st.first_invasion + check_cycle * st.invasion_interval
-                if st._get_week_index(inv_start) == 3:
+                if st._is_invasion_week(inv_start):
                     inv_end = inv_start + st.invasion_duration
-                    if inv_end > now:
+                    if inv_end > st.now:
+                        real_s = inv_start + timedelta(hours=11)
+                        real_e = inv_end + timedelta(hours=11)
                         schedule.append({
-                            "start": int(inv_start.timestamp()),
-                            "end": int(inv_end.timestamp())
+                            "start": int(real_s.timestamp()),
+                            "end": int(real_e.timestamp())
                         })
                 check_cycle += 1
             return schedule
@@ -317,13 +319,17 @@ def get_yearly_calendar_data():
                 
         def generate_invasion_events():
             st_temp = ServerTime()
-            diff = (start_date - st_temp.first_invasion).total_seconds()
+            trove_start_date = start_date - timedelta(hours=11)
+            trove_end_date = end_date - timedelta(hours=11)
+            diff = (trove_start_date - st_temp.first_invasion).total_seconds()
             check_cycle = int(diff // st_temp.invasion_interval.total_seconds())
             s = st_temp.first_invasion + check_cycle * st_temp.invasion_interval
-            while s < end_date:
+            while s < trove_end_date:
                 e = s + st_temp.invasion_duration
-                if e > start_date and st_temp._get_week_index(s) == 3:
-                    events.append({"type": "invasion", "start": int(s.timestamp()), "end": int(e.timestamp()), "name": "Luxion's Fast Trials"})
+                if e > trove_start_date and st_temp._is_invasion_week(s):
+                    real_s = s + timedelta(hours=11)
+                    real_e = e + timedelta(hours=11)
+                    events.append({"type": "invasion", "start": int(real_s.timestamp()), "end": int(real_e.timestamp()), "name": "Luxion's Fast Trials"})
                 s += st_temp.invasion_interval
                 check_cycle += 1
 
