@@ -342,18 +342,20 @@ document.addEventListener('home_loaded', () => {
         const loading = document.getElementById('buffs-loading');
         
         try {
-            const [serverData, d15Data, manaData, merchantSchedules, stampyData] = await Promise.all([
+            const [serverData, d15Data, manaData, merchantSchedules, stampyData, chaosChestData] = await Promise.all([
                 eel.get_current_server_data()(),
                 eel.get_d15_rotation()(),
                 eel.get_wild_mana_rotation()(),
                 eel.get_merchant_schedules()(),
-                eel.get_stampy_rotation()()
+                eel.get_stampy_rotation()(),
+                eel.get_chaos_chest_data()()
             ]);
 
             if (loading) loading.style.display = 'none';
 
             if (serverData && serverData.success) {
                 renderBuffs(serverData.daily, serverData.weekly);
+                renderChaosChest(chaosChestData);
                 renderRotations(serverData.merchants, d15Data, manaData, stampyData, merchantSchedules);
             }
         } catch (e) { console.error(e); }
@@ -492,6 +494,55 @@ document.addEventListener('home_loaded', () => {
             });
 
             return card;
+        }
+
+        function renderChaosChest(ccResp) {
+            if (!buffsGrid || !ccResp || !ccResp.success) return;
+            
+            const card = document.createElement('div');
+            card.className = 'merchant-card'; 
+            card.style.setProperty('--merchant-color', '#ab47bc'); 
+            card.style.cursor = 'default';
+            
+            let name = "Chaos Chest";
+            let iconUrl = "https://trovesaurus.com/data/catalog/item_chaos_box.png";
+            let isUnknown = true;
+            let start = 0;
+            let end = 0;
+            let identifier = null;
+            
+            if (ccResp.data) {
+                name = ccResp.data.name || name;
+                if (ccResp.data.blueprint) {
+                    iconUrl = `https://trovesaurus.com/data/catalog/${ccResp.data.blueprint.toLowerCase()}.png`;
+                    isUnknown = false;
+                }
+                end = ccResp.data.end;
+                identifier = ccResp.data.identifier;
+            } else if (ccResp.fallback_times) {
+                end = ccResp.fallback_times.end;
+            } else { return; }
+            
+            if (identifier) {
+                card.classList.add('hover-card');
+                card.style.cursor = 'pointer';
+                card.title = t("{name} (Click to view on Trovesaurus)").replace("{name}", t(name));
+                card.onclick = () => {
+                    eel.open_url_in_browser(`https://trovesaurus.com/${identifier}`)();
+                };
+            }
+            
+            const timeText = t("Changes in {time}").replace("{time}", `<b>${getCountdown(end, false)}</b>`);
+            const unknownIcon = isUnknown ? `<i class="fa-solid fa-triangle-exclamation" style="color: #fbc02d; font-size: 0.8em; margin-left: 8px; cursor: help;" data-tooltip="${t("We don't know the item yet")}"></i>` : '';
+            
+            card.innerHTML = `
+                <div class="merchant-icon" style="background: transparent;"><img src="${iconUrl}" style="width: 40px; height: 40px; object-fit: contain;" onerror="this.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
+                <div class="merchant-info" style="width: 100%;">
+                    <div class="merchant-name" style="color: #ab47bc;">${t(name)}${unknownIcon}</div>
+                    <div class="merchant-time"><i class="fa-regular fa-clock"></i> ${timeText}</div>
+                </div>`;
+            
+            buffsGrid.appendChild(card);
         }
 
         function renderRotations(merchants, d15, mana, stampy, schedules) {
