@@ -14,6 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Optional
 
+import eel
 from aiohttp import ClientSession
 from binary_reader import BinaryReader
 from pydantic import BaseModel
@@ -548,32 +549,45 @@ class TroveMod:
         
         url = f"https://trovesaurus.com/client/downloadfile.php?fileid={latest_file.file_id}"
         
-        async with ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.read()
-                    
-                    base_ext = f".{latest_file.type.value}" 
-                    
-                    stem = self.mod_path.name
-                    if stem.endswith(".disabled"):
-                        stem = stem[:-9]
-                    if stem.endswith(".tmod"):
-                        stem = stem[:-5]
-                    elif stem.endswith(".zip"):
-                        stem = stem[:-4]
+        req_id = None
+        try:
+            req_id = eel.add_external_request(f"Updating Mod: {self.name}", url)()
+        except Exception:
+            pass
+            
+        try:
+            async with ClientSession() as session:
+                async with session.get(url) as response:
+                    if req_id:
+                        eel.remove_external_request(req_id, response.status == 200)()
+                    if response.status == 200:
+                        data = await response.read()
                         
-                    final_ext = f"{base_ext}.disabled" if not self.enabled else base_ext
-                    
-                    new_path = self.mod_path.parent / f"{stem}{final_ext}"
-                    
-                    if self.mod_path != new_path and self.mod_path.exists():
-                        self.mod_path.unlink()
+                        base_ext = f".{latest_file.type.value}" 
                         
-                    new_path.write_bytes(data)
-                    self.mod_path = new_path
-                    return True
-                    
+                        stem = self.mod_path.name
+                        if stem.endswith(".disabled"):
+                            stem = stem[:-9]
+                        if stem.endswith(".tmod"):
+                            stem = stem[:-5]
+                        elif stem.endswith(".zip"):
+                            stem = stem[:-4]
+                            
+                        final_ext = f"{base_ext}.disabled" if not self.enabled else base_ext
+                        
+                        new_path = self.mod_path.parent / f"{stem}{final_ext}"
+                        
+                        if self.mod_path != new_path and self.mod_path.exists():
+                            self.mod_path.unlink()
+                            
+                        new_path.write_bytes(data)
+                        self.mod_path = new_path
+                        return True
+        except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
+            print(f"Failed to update mod {self.name}: {e}")
+            
         return False
 
     def ensure_config(self):
@@ -757,14 +771,24 @@ class TroveModList:
             except (json.JSONDecodeError, AttributeError):
                 pass
 
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Fetching Master Mod List", "https://trovesaurus.com/api/mods-all")()
+        except Exception:
+            pass
+
         try:
             async with session.get("https://trovesaurus.com/api/mods-all", timeout=15) as response:
+                if req_id:
+                    eel.remove_external_request(req_id, response.status == 200)()
                 if response.status == 200:
                     data = await response.json()
                     wrapper = {"timestamp": time.time(), "data": data}
                     cache_file.write_text(json.dumps(wrapper), encoding="utf-8")
                     return data
         except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
             print(f"Failed to fetch mods-all data: {e}")
             
         if cache_file.exists():
@@ -795,6 +819,11 @@ class TroveModList:
             hash_batches = list(chunks(all_hashes, 200)) 
 
             for batch in hash_batches:
+                req_id = None
+                try:
+                    req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
+                except Exception:
+                    pass
                 try:
                     payload = {"hashes": ",".join(batch)}
                     async with session.post(
@@ -802,10 +831,14 @@ class TroveModList:
                         data=payload,
                         timeout=10,
                     ) as response:
+                        if req_id:
+                            eel.remove_external_request(req_id, response.status == 200)()
                         if response.status == 200:
                             batch_results = await response.json()
                             hash_to_id.update(batch_results)
                 except Exception as e:
+                    if req_id:
+                        eel.remove_external_request(req_id, False)()
                     print(f"Failed to fetch hash batch: {e}")
 
             for mod in self.mods:

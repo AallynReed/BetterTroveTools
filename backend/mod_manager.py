@@ -1,11 +1,14 @@
-import eel
-import json
-from pathlib import Path
-from models.trove.mod import TroveModList, TroveGamePath
-from utils.functions import BasePath
 import asyncio
-import aiohttp
+import json
 import os
+from pathlib import Path
+
+import aiohttp
+import eel
+
+from models.trove.mod import TroveGamePath, TroveModList
+from utils.functions import BasePath
+
 
 @eel.expose
 def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
@@ -122,8 +125,15 @@ def get_mod_urls(game_path_str):
                 
                 for batch in hash_batches:
                     payload = {"hashes": ",".join(batch)}
+                    req_id = None
+                    try:
+                        req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
+                    except Exception:
+                        pass
                     try:
                         async with session.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10) as resp:
+                            if req_id:
+                                eel.remove_external_request(req_id, resp.status == 200)()
                             if resp.status == 200:
                                 batch_results = await resp.json()
                                 for h, mod_id in batch_results.items():
@@ -131,6 +141,8 @@ def get_mod_urls(game_path_str):
                                     if path:
                                         urls[path] = f"https://trovesaurus.com/mod={mod_id}"
                     except Exception as e:
+                        if req_id:
+                            eel.remove_external_request(req_id, False)()
                         print(f"Failed hash batch: {e}")
             return urls
             

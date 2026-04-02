@@ -16,6 +16,9 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
+    <div id="external-request-indicator" style="position: fixed; top: 15px; right: 20px; z-index: 10001; display: block; color: var(--text-main, #fff); background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); cursor: pointer;" data-tooltip="No active external requests">
+        <i class="fa-solid fa-wifi"></i>
+    </div>
 
     <nav id="sidebar">
         <div class="sidebar-header">
@@ -120,6 +123,21 @@
     <main id="view-container">
         <h1 style="padding: 40px; color: #666;" data-i18n>Select a tool from the menu.</h1>
     </main>
+
+    <!-- External Request Log Modal -->
+    <div id="request-log-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center;">
+        <div style="background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+            <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color, #444c5e); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: var(--text-main, #fff); font-size: 1.2em;"><i class="fa-solid fa-list"></i> <span data-i18n>External Request Log</span></h2>
+                <div>
+                    <button id="copy-request-log-btn" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em; margin-right: 15px;" title="Copy entire log"><i class="fa-regular fa-copy"></i></button>
+                    <button id="close-request-log-btn" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em;"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="request-log-content" style="padding: 20px; overflow-y: auto; flex: 1; color: var(--text-muted, #a3adc2); font-family: monospace; font-size: 0.9em;">
+            </div>
+        </div>
+    </div>
 
     <script src="js/i18n.js"></script>
     <script src="js/main.js"></script>

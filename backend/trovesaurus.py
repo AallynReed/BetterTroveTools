@@ -29,15 +29,26 @@ async def _get_cached_api(session, endpoint, cache_filename, expiry=900):
         except (json.JSONDecodeError, AttributeError):
             pass
 
+    req_id = None
+    try:
+        label = f"Fetching {cache_filename.split('.')[0].replace('_', ' ').title()} from Trovesaurus"
+        req_id = eel.add_external_request(label, endpoint)()
+    except Exception:
+        pass
+
     try:
         headers = {"User-Agent": "TroveManager/1.0"}
         async with session.get(endpoint, headers=headers, timeout=15) as response:
+            if req_id:
+                eel.remove_external_request(req_id, response.status == 200)()
             if response.status == 200:
                 data = await response.json(content_type=None)
                 wrapper = {"timestamp": time.time(), "data": data}
                 cache_file.write_text(json.dumps(wrapper), encoding="utf-8")
                 return data
     except Exception as e:
+        if req_id:
+            eel.remove_external_request(req_id, False)()
         print(f"Failed to fetch {endpoint}: {e}")
 
     if cache_file.exists():
@@ -64,11 +75,20 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
 
 async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str):
     async with aiohttp.ClientSession() as session:
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Pinging Trovesaurus", "https://trovesaurus.com/api/ping")()
+        except Exception:
+            pass
         try:
             async with session.head("https://trovesaurus.com/api/ping", timeout=5) as test_resp:
+                if req_id:
+                    eel.remove_external_request(req_id, test_resp.status < 500)()
                 if test_resp.status >= 500:
                     return {"success": False, "error": "Trovesaurus is currently experiencing server issues."}
         except Exception:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
             return {"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."}
 
         mods_all = await _get_cached_api(session, "https://trovesaurus.com/api/mods-all", "mods_all.json")
@@ -143,12 +163,21 @@ async def _async_get_trovesaurus_mods(page, query, category, sort, game_path_str
                         
                         for batch in hash_batches:
                             payload = {"hashes": ",".join(batch)}
+                            req_id = None
+                            try:
+                                req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
+                            except Exception:
+                                pass
                             try:
                                 async with session.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10) as resp:
+                                    if req_id:
+                                        eel.remove_external_request(req_id, resp.status == 200)()
                                     if resp.status == 200:
                                         batch_results = await resp.json()
                                         hash_to_id.update(batch_results)
                             except Exception as e:
+                                if req_id:
+                                    eel.remove_external_request(req_id, False)()
                                 print(f"Failed hash batch: {e}")
                                 
                         mods_all_dict = {str(m.get("id")): m for m in mods_all if isinstance(m, dict) and "id" in m}
@@ -232,11 +261,20 @@ async def _async_install_ts_mod(game_path_str, mod_id):
     if not game_path_str: return {"success": False, "error": "No game path provided."}
 
     async with aiohttp.ClientSession() as session:
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Pinging Trovesaurus", "https://trovesaurus.com/api/ping")()
+        except Exception:
+            pass
         try:
             async with session.head("https://trovesaurus.com/api/ping", timeout=5) as test_resp:
+                if req_id:
+                    eel.remove_external_request(req_id, test_resp.status < 500)()
                 if test_resp.status >= 500:
                     return {"success": False, "error": "Trovesaurus is currently experiencing server issues."}
         except Exception:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
             return {"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."}
 
         mods_all = await _get_cached_api(session, "https://trovesaurus.com/api/mods-all", "mods_all.json")
@@ -257,11 +295,18 @@ async def _async_install_ts_mod(game_path_str, mod_id):
         
         file_id = latest_file.get("fileid")
         ext = f".{latest_file.get('format', 'tmod')}"
-
+        
         url = f"https://trovesaurus.com/client/downloadfile.php?fileid={file_id}"
         
+        req_id = None
+        try:
+            req_id = eel.add_external_request(f"Downloading Mod {mod_id}", url)()
+        except Exception:
+            pass
         try:
             async with session.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"}) as resp:
+                if req_id:
+                    eel.remove_external_request(req_id, resp.status == 200)()
                 if resp.status != 200:
                     return {"success": False, "error": f"Download failed. Status: {resp.status}"}
                 
@@ -276,6 +321,8 @@ async def _async_install_ts_mod(game_path_str, mod_id):
                 
                 return {"success": True}
         except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
             return {"success": False, "error": "Failed to connect to Trovesaurus to download the mod file."}
 
 @eel.expose

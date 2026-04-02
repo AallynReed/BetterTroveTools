@@ -24,12 +24,21 @@ import threading
 @eel.expose
 def get_twitch_streams():
     def fetch_task():
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Fetching Twitch Streams", "https://trovesaurus.aallyn.net/twitch_streams")()
+        except Exception:
+            pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.aallyn.net/twitch_streams", headers=headers, timeout=10)
             response.raise_for_status()
+            if req_id:
+                eel.remove_external_request(req_id, True)()
             eel.receive_twitch_streams({"success": True, "data": response.json()})
         except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
             traceback.print_exc()
             eel.receive_twitch_streams({"success": False, "error": str(e)})
             
@@ -38,14 +47,23 @@ def get_twitch_streams():
 @eel.expose
 def get_trovesaurus_events():
     def fetch_task():
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Fetching Trovesaurus Events", "https://trovesaurus.com/calendar/feed")()
+        except Exception:
+            pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=3)
             response.raise_for_status()
+            if req_id:
+                eel.remove_external_request(req_id, True)()
             events = response.json()
             events.sort(key=lambda x: int(x['startdate']))
             eel.receive_events_data({"success": True, "data": events})
         except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
             traceback.print_exc()
             eel.receive_events_data({"success": False, "error": str(e)})
             
@@ -126,10 +144,19 @@ def get_chaos_chest_data():
     except Exception:
         pass
 
+    req_id = None
+    try:
+        req_id = eel.add_external_request("Fetching Chaos Chest Data", "https://trovesaurus.com/api/chaos-chest")()
+    except Exception:
+        pass
+
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
         resp = requests.get("https://trovesaurus.com/api/chaos-chest", headers=headers, timeout=3)
         
+        if req_id:
+            eel.remove_external_request(req_id, resp.status_code == 200)()
+            
         if resp.status_code == 200:
             data = resp.json()
             now_ts = datetime.now(UTC).timestamp()
@@ -138,6 +165,8 @@ def get_chaos_chest_data():
                 
         return {"success": True, "data": None, "fallback_times": fallback_times}
     except Exception as e:
+        if req_id:
+            eel.remove_external_request(req_id, False)()
         if fallback_times:
             return {"success": True, "data": None, "fallback_times": fallback_times}
         return {"success": False, "error": str(e)}

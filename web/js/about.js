@@ -131,7 +131,7 @@ document.addEventListener('about_loaded', async () => {
         const container = document.getElementById('contributors-container');
         if (!container) return;
         try {
-            const res = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/contributors');
+            const res = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/contributors', { bttLabel: t('Fetching Contributors') });
             const contributors = await res.json();
             if (Array.isArray(contributors)) {
                 container.innerHTML = '';
@@ -186,10 +186,10 @@ document.addEventListener('about_loaded', async () => {
     async function loadChangelog() {
         const modalBody = document.getElementById('changelog-body');
         try {
-            const tagsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/tags');
+            const tagsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/tags', { bttLabel: t('Fetching Changelog Tags') });
             const tags = await tagsRes.json();
             
-            const commitsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/commits?per_page=100');
+            const commitsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/commits?per_page=100', { bttLabel: t('Fetching Changelog Commits') });
             const commits = await commitsRes.json();
             
             if (commits.message && commits.message.includes("API rate limit exceeded")) {
