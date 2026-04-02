@@ -185,7 +185,7 @@ document.addEventListener('home_loaded', () => {
                 { id: 'luxion', name: 'Luxion', color: 'luxion', icon: 'fa-dragon' },
                 { id: 'corruxion', name: 'Corruxion', color: 'corruxion', icon: 'fa-dragon' },
                 { id: 'fluxion', name: 'Fluxion', color: 'fluxion', icon: 'fa-scale-balanced' },
-                { id: 'invasion', name: "Luxion's Fast Trials", color: 'invasion', icon: 'fa-meteor' },
+                // { id: 'invasion', name: "Luxion's Fast Trials", color: 'invasion', icon: 'fa-meteor' },
                 { id: 'mana', name: 'Wild Mana', color: 'mana', icon: 'fa-flask' },
                 { id: 'stampy', name: 'Stampy', color: 'stampy', icon: 'fa-paw' }
             ];
@@ -549,7 +549,7 @@ document.addEventListener('home_loaded', () => {
                 { id: 'luxion', name: 'Luxion', color: '#fbc02d', icon: 'fa-dragon' },
                 { id: 'corruxion', name: 'Corruxion', color: '#9c27b0', icon: 'fa-dragon' },
                 { id: 'fluxion', name: 'Fluxion', color: '#4fc3f7', icon: 'fa-scale-balanced' },
-                { id: 'invasion', name: "Luxion's Fast Trials", color: '#ff5252', icon: 'fa-meteor' }
+                // { id: 'invasion', name: "Luxion's Fast Trials", color: '#ff5252', icon: 'fa-meteor' }
             ];
             
             configs.forEach(conf => {
