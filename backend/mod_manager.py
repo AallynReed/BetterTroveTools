@@ -1,10 +1,9 @@
-import asyncio
 import json
 import os
 from pathlib import Path
 
-import aiohttp
 import eel
+import requests
 
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
@@ -113,40 +112,38 @@ def get_mod_urls(game_path_str):
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
         
-        async def fetch_urls():
-            hash_to_path = {getattr(mod, 'hash').lower(): str(mod.mod_path) for mod in mod_list if getattr(mod, 'hash', None)}
-            if not hash_to_path:
-                return {}
-                
-            urls = {}
-            async with aiohttp.ClientSession() as session:
-                hashes_list = list(hash_to_path.keys())
-                hash_batches = [hashes_list[i:i + 200] for i in range(0, len(hashes_list), 200)]
-                
-                for batch in hash_batches:
-                    payload = {"hashes": ",".join(batch)}
-                    req_id = None
-                    try:
-                        req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
-                    except Exception:
-                        pass
-                    try:
-                        async with session.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10) as resp:
-                            if req_id:
-                                eel.remove_external_request(req_id, resp.status == 200)()
-                            if resp.status == 200:
-                                batch_results = await resp.json()
-                                for h, mod_id in batch_results.items():
-                                    path = hash_to_path.get(h.lower())
-                                    if path:
-                                        urls[path] = f"https://trovesaurus.com/mod={mod_id}"
-                    except Exception as e:
-                        if req_id:
-                            eel.remove_external_request(req_id, False)()
-                        print(f"Failed hash batch: {e}")
-            return urls
+        hash_to_path = {getattr(mod, 'hash').lower(): str(mod.mod_path) for mod in mod_list if getattr(mod, 'hash', None)}
+        if not hash_to_path:
+            return {"success": True, "urls": {}}
             
-        urls = asyncio.run(fetch_urls())
+        urls = {}
+        hashes_list = list(hash_to_path.keys())
+        hash_batches = [hashes_list[i:i + 200] for i in range(0, len(hashes_list), 200)]
+        
+        for batch in hash_batches:
+            payload = {"hashes": ",".join(batch)}
+            req_id = None
+            try:
+                req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
+            except Exception:
+                pass
+            try:
+                resp = requests.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10)
+                if req_id:
+                    eel.remove_external_request(req_id, resp.status_code == 200)()
+                    req_id = None
+                if resp.status_code == 200:
+                    batch_results = resp.json()
+                    for h, mod_id in batch_results.items():
+                        path = hash_to_path.get(h.lower())
+                        if path:
+                            urls[path] = f"https://trovesaurus.com/mod={mod_id}"
+            except Exception as e:
+                if req_id:
+                    eel.remove_external_request(req_id, False)()
+                    req_id = None
+                print(f"Failed hash batch: {e}")
+
         return {"success": True, "urls": urls}
         
     except Exception as e:
@@ -159,7 +156,7 @@ def check_mod_updates(game_path_str):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
-        asyncio.run(mod_list.update_trovesaurus_data())
+        mod_list.update_trovesaurus_data()
         
         updates_available = {}
         for mod in mod_list:
@@ -178,11 +175,11 @@ def perform_mod_update(game_path_str, mod_path_str):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
-        asyncio.run(mod_list.update_trovesaurus_data()) 
+        mod_list.update_trovesaurus_data() 
         
         for mod in mod_list:
             if str(mod.mod_path) == mod_path_str:
-                success = asyncio.run(mod.update())
+                success = mod.update()
                 return {"success": success}
                 
         return {"success": False, "error": "Mod not found in the list."}

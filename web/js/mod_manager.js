@@ -194,8 +194,8 @@ document.addEventListener('mod_manager_loaded', async () => {
             
             modGrid.innerHTML = html;
             applyFilters();
-            getModUrls(gamePath);
-            checkForUpdates(gamePath);
+            await getModUrls(gamePath);
+            await checkForUpdates(gamePath);
         } else {
             modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error loading mods: {error}").replace("{error}", response.error)}</div>`;
         }

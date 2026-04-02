@@ -17,6 +17,24 @@ from datetime import datetime
 import re
 import subprocess
 
+import threading
+
+def _run_async(coro):
+    result = []
+    error = []
+    def _thread_target():
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            result.append(loop.run_until_complete(coro))
+        except Exception as e:
+            error.append(e)
+    t = threading.Thread(target=_thread_target)
+    t.start()
+    t.join()
+    if error:
+        raise error[0]
+    return result[0] if result else None
 
 @eel.expose
 def get_detected_game_paths():
@@ -52,7 +70,7 @@ def get_detected_game_paths():
 @eel.expose
 def load_entire_game_tree(game_path_str):
     try:
-        tree = asyncio.run(_build_full_tree_async(game_path_str))
+        tree = _run_async(_build_full_tree_async(game_path_str))
         cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / "temp_tree.json"
@@ -161,7 +179,7 @@ def extract_file_to_disk(tfi_path_str, archive_index, offset, size, default_file
         return {"success": False, "canceled": True}
         
     try:
-        asyncio.run(_extract_and_save_async(tfi_path_str, archive_index, offset, size, save_path_str))
+        _run_async(_extract_and_save_async(tfi_path_str, archive_index, offset, size, save_path_str))
         return {"success": True, "saved_to": save_path_str}
         
     except Exception as e:
@@ -199,7 +217,7 @@ def ask_extraction_directory():
 @eel.expose
 def mass_extract_files(dest_dir, files_to_extract):
     try:
-        asyncio.run(_mass_extract_async(dest_dir, files_to_extract))
+        _run_async(_mass_extract_async(dest_dir, files_to_extract))
         return {"success": True}
     except Exception as e:
         import traceback
@@ -278,7 +296,7 @@ def get_tracking_status(tracking_dir_str):
 @eel.expose
 def build_baseline_cache(game_path_str, tracking_dir_str):
     try:
-        asyncio.run(_build_baseline_async(game_path_str, tracking_dir_str))
+        _run_async(_build_baseline_async(game_path_str, tracking_dir_str))
         return {"success": True}
     except Exception as e:
         import traceback
@@ -337,7 +355,7 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
 @eel.expose
 def scan_and_extract_updates(game_path_str, tracking_dir_str, run_catalog=False):
     try:
-        result = asyncio.run(_scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog))
+        result = _run_async(_scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog))
         return {"success": True, "details": result}
     except Exception as e:
         import traceback

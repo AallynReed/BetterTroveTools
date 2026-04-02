@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import base64
 import io
 import json
@@ -15,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 import eel
-from aiohttp import ClientSession
+import requests
 from binary_reader import BinaryReader
 from pydantic import BaseModel
 from toml import dumps
@@ -539,7 +538,7 @@ class TroveMod:
                 return self.hash != latest_file.hash
         return False
 
-    async def update(self):
+    def update(self):
         if not self.has_update:
             return False
 
@@ -556,33 +555,32 @@ class TroveMod:
             pass
             
         try:
-            async with ClientSession() as session:
-                async with session.get(url) as response:
-                    if req_id:
-                        eel.remove_external_request(req_id, response.status == 200)()
-                    if response.status == 200:
-                        data = await response.read()
-                        
-                        base_ext = f".{latest_file.type.value}" 
-                        
-                        stem = self.mod_path.name
-                        if stem.endswith(".disabled"):
-                            stem = stem[:-9]
-                        if stem.endswith(".tmod"):
-                            stem = stem[:-5]
-                        elif stem.endswith(".zip"):
-                            stem = stem[:-4]
-                            
-                        final_ext = f"{base_ext}.disabled" if not self.enabled else base_ext
-                        
-                        new_path = self.mod_path.parent / f"{stem}{final_ext}"
-                        
-                        if self.mod_path != new_path and self.mod_path.exists():
-                            self.mod_path.unlink()
-                            
-                        new_path.write_bytes(data)
-                        self.mod_path = new_path
-                        return True
+            response = requests.get(url)
+            if req_id:
+                eel.remove_external_request(req_id, response.status_code == 200)()
+            if response.status_code == 200:
+                data = response.content
+                
+                base_ext = f".{latest_file.type.value}" 
+                
+                stem = self.mod_path.name
+                if stem.endswith(".disabled"):
+                    stem = stem[:-9]
+                if stem.endswith(".tmod"):
+                    stem = stem[:-5]
+                elif stem.endswith(".zip"):
+                    stem = stem[:-4]
+                    
+                final_ext = f"{base_ext}.disabled" if not self.enabled else base_ext
+                
+                new_path = self.mod_path.parent / f"{stem}{final_ext}"
+                
+                if self.mod_path != new_path and self.mod_path.exists():
+                    self.mod_path.unlink()
+                    
+                new_path.write_bytes(data)
+                self.mod_path = new_path
+                return True
         except Exception as e:
             if req_id:
                 eel.remove_external_request(req_id, False)()
@@ -757,7 +755,7 @@ class TroveModList:
     def __len__(self):
         return self.count
     
-    async def _get_cached_mods_all(self, session: ClientSession) -> dict:
+    def _get_cached_mods_all(self) -> dict:
         appdata = Path(os.getenv("APPDATA"))
         cache_dir = appdata.joinpath("Trove", "ModManagerCache")
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -778,17 +776,19 @@ class TroveModList:
             pass
 
         try:
-            async with session.get("https://trovesaurus.com/api/mods-all", timeout=15) as response:
-                if req_id:
-                    eel.remove_external_request(req_id, response.status == 200)()
-                if response.status == 200:
-                    data = await response.json()
-                    wrapper = {"timestamp": time.time(), "data": data}
-                    cache_file.write_text(json.dumps(wrapper), encoding="utf-8")
-                    return data
+            response = requests.get("https://trovesaurus.com/api/mods-all", timeout=15)
+            if req_id:
+                eel.remove_external_request(req_id, response.status_code == 200)()
+                req_id = None
+            if response.status_code == 200:
+                data = response.json()
+                wrapper = {"timestamp": time.time(), "data": data}
+                cache_file.write_text(json.dumps(wrapper), encoding="utf-8")
+                return data
         except Exception as e:
             if req_id:
                 eel.remove_external_request(req_id, False)()
+                req_id = None
             print(f"Failed to fetch mods-all data: {e}")
             
         if cache_file.exists():
@@ -801,67 +801,67 @@ class TroveModList:
                 pass
         return {}
 
-    async def update_trovesaurus_data(self):
+    def update_trovesaurus_data(self):
         all_hashes = self.all_hashes
         if not all_hashes:
             return
 
-        async with ClientSession() as session:
-            mods_all_data = await self._get_cached_mods_all(session)
-            if not mods_all_data:
-                print("Could not retrieve master mod list.")
-                return
+        mods_all_data = self._get_cached_mods_all()
+        if not mods_all_data:
+            print("Could not retrieve master mod list.")
+            return
 
-            if isinstance(mods_all_data, list):
-                mods_all_data = {str(m.get("id")): m for m in mods_all_data if isinstance(m, dict) and "id" in m}
+        if isinstance(mods_all_data, list):
+            mods_all_data = {str(m.get("id")): m for m in mods_all_data if isinstance(m, dict) and "id" in m}
 
-            hash_to_id = {}
-            hash_batches = list(chunks(all_hashes, 200)) 
+        hash_to_id = {}
+        hash_batches = list(chunks(all_hashes, 200)) 
 
-            for batch in hash_batches:
-                req_id = None
-                try:
-                    req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
-                except Exception:
-                    pass
-                try:
-                    payload = {"hashes": ",".join(batch)}
-                    async with session.post(
-                        "https://trovesaurus.com/api/mods-hashes-to-mods",
-                        data=payload,
-                        timeout=10,
-                    ) as response:
-                        if req_id:
-                            eel.remove_external_request(req_id, response.status == 200)()
-                        if response.status == 200:
-                            batch_results = await response.json()
-                            hash_to_id.update(batch_results)
-                except Exception as e:
-                    if req_id:
-                        eel.remove_external_request(req_id, False)()
-                    print(f"Failed to fetch hash batch: {e}")
+        for batch in hash_batches:
+            req_id = None
+            try:
+                req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
+            except Exception:
+                pass
+            try:
+                payload = {"hashes": ",".join(batch)}
+                response = requests.post(
+                    "https://trovesaurus.com/api/mods-hashes-to-mods",
+                    data=payload,
+                    timeout=10,
+                )
+                if req_id:
+                    eel.remove_external_request(req_id, response.status_code == 200)()
+                    req_id = None
+                if response.status_code == 200:
+                    batch_results = response.json()
+                    hash_to_id.update(batch_results)
+            except Exception as e:
+                if req_id:
+                    eel.remove_external_request(req_id, False)()
+                    req_id = None
+                print(f"Failed to fetch hash batch: {e}")
 
-            for mod in self.mods:
-                mod_id = hash_to_id.get(mod.hash)
+        for mod in self.mods:
+            mod_id = hash_to_id.get(mod.hash)
+            if mod_id is not None:
+                raw_mod_data = mods_all_data.get(str(mod_id))
                 
-                if mod_id is not None:
-                    raw_mod_data = mods_all_data.get(str(mod_id))
-                    
-                    if raw_mod_data:
-                        try:
-                            parsed_mod = Mod(**raw_mod_data)
-                            parsed_mod.installed = True
-                            
-                            for file in parsed_mod.file_objs:
-                                if file.hash == mod.hash:
-                                    parsed_mod.installed_file = file
-                                    parsed_mod.installed_version = file.version
-                                    break
-                                    
-                            mod.trovesaurus_data = parsed_mod
-                            
-                        except Exception as e:
-                            print(f"Failed to validate Trovesaurus data for {mod.name}: {e}")
+                if raw_mod_data:
+                    try:
+                        parsed_mod = Mod(**raw_mod_data)
+                        parsed_mod.installed = True
+                        
+                        for file in parsed_mod.file_objs:
+                            if file.hash == mod.hash:
+                                parsed_mod.installed_file = file
+                                parsed_mod.installed_version = file.version
+                                break
+                                
+                        mod.trovesaurus_data = parsed_mod
+                        
+                    except Exception as e:
+                        print(f"Failed to validate Trovesaurus data for {mod.name}: {e}")
 
     @property
     def all_hashes(self):
