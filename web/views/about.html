@@ -14,6 +14,9 @@
             <div class="section-title"><i class="fa-solid fa-users"></i> <span data-i18n>Community & Support</span></div>
             <p data-i18n>Better Trove Tools is built for the community. If you encounter bugs, have suggestions, or just want to chat with other modders, join our Discord.</p>
             <div class="link-buttons">
+                <button id="btn-changelog" class="about-link changelog">
+                    <i class="fa-solid fa-list-ul"></i> <span data-i18n>View Changelog</span>
+                </button>
                 <a href="https://github.com/AallynReed/BetterTroveTools" target="_blank" class="about-link github">
                     <i class="fa-brands fa-github"></i> <span data-i18n>GitHub Repository</span>
                 </a>
@@ -35,5 +38,18 @@
     <div class="credits-footer">
         <p id="app-author-display"></p>
         <p class="special-thanks" data-i18n>Special thanks to Trovesaurus and all project contributors.</p>
+    </div>
+
+    <!-- Changelog Modal -->
+    <div id="changelog-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 data-i18n>Changelog</h2>
+                <button id="close-changelog" class="close-btn"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="changelog-body">
+                <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Loading commits...</span></div>
+            </div>
+        </div>
     </div>
 </div>

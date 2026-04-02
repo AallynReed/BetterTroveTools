@@ -86,6 +86,7 @@
     transition: all 0.2s;
 }
 
+.about-link.changelog { background: #02679e; cursor: pointer; border: none; font-family: inherit; font-size: 1em; }
 .about-link.github { background: #333; }
 .about-link.discord { background: #5865F2; }
 .about-link:hover { transform: translateY(-2px); filter: brightness(1.2); }
@@ -127,3 +128,143 @@
     font-style: italic;
     margin-top: 5px;
 }
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+    background: var(--bg-panel, #1d232b);
+    border: 1px solid var(--border-color, #444c5e);
+    border-radius: 12px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color, #444c5e);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.2);
+}
+
+.modal-header h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.5em;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted, #a3adc2);
+    font-size: 1.5em;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: #fff;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.version-group {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+.version-title {
+    font-size: 1.2em;
+    color: var(--accent-blue, #5ec6ff);
+    margin-top: 0;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.commit-item {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+}
+
+.commit-item:last-child {
+    margin-bottom: 0;
+}
+
+.commit-hash {
+    font-family: monospace;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 4px 8px;
+    border-radius: 4px;
+    color: #a3adc2;
+    text-decoration: none;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.commit-hash:hover {
+    color: #fff;
+    background: var(--accent-blue, #5ec6ff);
+}
+
+.commit-message {
+    color: #fff;
+    flex: 1;
+    word-break: break-word;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.loading-spinner {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1.2em;
+    padding: 40px;
+}
+
+/* Commit Prefix Styles */
+.commit-prefix {
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    margin-right: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+.commit-prefix.prefix-feat { background: rgba(40, 167, 69, 0.2); color: #4ade80; }
+.commit-prefix.prefix-fix { background: rgba(220, 53, 69, 0.2); color: #ff7b72; }
+.commit-prefix.prefix-chore { background: rgba(108, 117, 125, 0.2); color: #a8a29e; }
+.commit-prefix.prefix-docs { background: rgba(23, 162, 184, 0.2); color: #38bdf8; }
+.commit-prefix.prefix-refactor { background: rgba(111, 66, 193, 0.2); color: #c084fc; }
+.commit-prefix.prefix-style { background: rgba(253, 126, 20, 0.2); color: #fb923c; }
+.commit-prefix.prefix-test { background: rgba(255, 193, 7, 0.2); color: #fbbf24; }
+.commit-prefix.prefix-perf { background: rgba(232, 62, 140, 0.2); color: #f472b6; }
