@@ -104,6 +104,45 @@ def get_current_server_data():
         return {"success": False, "error": str(e)}
 
 @eel.expose
+def get_chaos_chest_data():
+    fallback_times = None
+    try:
+        from utils.trove.server_time import ServerTime
+        st = ServerTime()
+        now = datetime.now(UTC)
+        
+        # Calculate current Tuesday to Tuesday interval
+        real_base = st.first_fluxion + timedelta(hours=11)
+        diff = (now - real_base).total_seconds()
+        intervals = int(diff // (7 * 24 * 3600))
+        
+        curr_s = real_base + timedelta(days=intervals * 7)
+        curr_e = curr_s + timedelta(days=7)
+        
+        fallback_times = {
+            "start": int(curr_s.timestamp()),
+            "end": int(curr_e.timestamp())
+        }
+    except Exception:
+        pass
+
+    try:
+        headers = {"User-Agent": "BetterTroveTools/1.0"}
+        resp = requests.get("https://trovesaurus.com/api/chaos-chest", headers=headers, timeout=3)
+        
+        if resp.status_code == 200:
+            data = resp.json()
+            now_ts = datetime.now(UTC).timestamp()
+            if data.get("start", 0) <= now_ts <= data.get("end", 0):
+                return {"success": True, "data": data, "fallback_times": fallback_times}
+                
+        return {"success": True, "data": None, "fallback_times": fallback_times}
+    except Exception as e:
+        if fallback_times:
+            return {"success": True, "data": None, "fallback_times": fallback_times}
+        return {"success": False, "error": str(e)}
+
+@eel.expose
 def get_merchant_schedules():
     try:
         from utils.trove.server_time import ServerTime
