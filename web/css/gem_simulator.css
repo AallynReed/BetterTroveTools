@@ -126,7 +126,6 @@
     width: 32px; height: 32px;
     position: relative;
     border-radius: 50%;
-    overflow: hidden;
 }
 
 .item-tier-bg, .item-gem-img {
@@ -338,3 +337,23 @@
     transition: filter 0.2s;
 }
 .danger-btn:hover { filter: brightness(1.2); }
+
+.gem-tooltip {
+    position: fixed;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 10px;
+    pointer-events: none;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    width: 220px;
+    font-size: 0.9em;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.gem-tooltip-title { font-weight: bold; color: var(--accent-blue); margin-bottom: 5px; text-align: center; }
+.gem-tooltip-row { display: flex; justify-content: space-between; }
+.gem-tooltip-stat { font-weight: bold; color: #fff; }
+.gem-tooltip-muted { color: var(--text-muted); }

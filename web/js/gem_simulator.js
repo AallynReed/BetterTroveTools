@@ -141,6 +141,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
     }
 
     function render() {
+        hideGemTooltip();
         renderEquipped();
         renderInventory();
         renderSelected();
@@ -713,6 +714,62 @@ document.addEventListener('gem_simulator_loaded', async () => {
         trashContainer.appendChild(label);
     }
 
+    function showGemTooltip(e, item) {
+        const tooltip = document.getElementById('gem-tooltip');
+        if (!tooltip) return;
+        
+        let statsHtml = '';
+        (item.stats || []).forEach((stat, i) => {
+            const statValueData = item.stat_values[i] || {};
+            const statTypeName = Object.keys(statValueData)[0] || `Stat ${i + 1}`;
+            const statValue = statValueData[statTypeName];
+            const augPct = ((stat.augmentation_progress || 0) * 100).toFixed(1);
+            statsHtml += `
+                <div class="gem-tooltip-row">
+                    <span class="gem-tooltip-muted">${t(statTypeName)} (${augPct}%)</span>
+                    <span class="gem-tooltip-stat">${statValue !== undefined ? statValue.toFixed(2) : '0.00'}</span>
+                </div>
+            `;
+        });
+
+        tooltip.innerHTML = `
+            <div class="gem-tooltip-title">${item.gem_name ? t(item.gem_name) : `(${t("Unnamed Gem")})`}</div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">${t("Power Rank:")}</span> <span class="gem-tooltip-stat">${item.power_rank}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">${t("Level:")}</span> <span class="gem-tooltip-stat">${item.level}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">${t("Type:")}</span> <span class="gem-tooltip-stat">${getTypeDisplayName(item.type)}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">${t("Tier:")}</span> <span class="gem-tooltip-stat">${getTierDisplayName(item.tier)}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">${t("Quality:")}</span> <span class="gem-tooltip-stat">${item.quality !== undefined ? (item.quality * 100).toFixed(1) + '%' : '0.0%'}</span></div>
+            <hr style="border-color: var(--border-color); margin: 5px 0; width: 100%;">
+            ${statsHtml}
+        `;
+        
+        tooltip.style.display = 'flex';
+        moveGemTooltip(e);
+    }
+
+    function moveGemTooltip(e) {
+        const tooltip = document.getElementById('gem-tooltip');
+        if (!tooltip || tooltip.style.display === 'none') return;
+        
+        let x = e.clientX + 15;
+        let y = e.clientY + 15;
+        
+        if (x + tooltip.offsetWidth > window.innerWidth) {
+            x = e.clientX - tooltip.offsetWidth - 15;
+        }
+        if (y + tooltip.offsetHeight > window.innerHeight) {
+            y = e.clientY - tooltip.offsetHeight - 15;
+        }
+        
+        tooltip.style.left = `${x}px`;
+        tooltip.style.top = `${y}px`;
+    }
+
+    function hideGemTooltip() {
+        const tooltip = document.getElementById('gem-tooltip');
+        if (tooltip) tooltip.style.display = 'none';
+    }
+
     function createItem(item, fromPane, fromIdx) {
         const itemEl = document.createElement('div');
         itemEl.className = 'item';
@@ -755,6 +812,9 @@ document.addEventListener('gem_simulator_loaded', async () => {
         itemEl.dataset.fromPane = fromPane;
         itemEl.dataset.fromIdx = fromIdx;
         itemEl.ondragstart = handleDragStart;
+        itemEl.onmouseenter = (e) => showGemTooltip(e, item);
+        itemEl.onmousemove = moveGemTooltip;
+        itemEl.onmouseleave = hideGemTooltip;
         itemEl.onclick = () => {
             selected = item;
             selectedSource = { pane: fromPane, idx: fromIdx };
@@ -764,6 +824,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
     }
 
     function handleDragStart(e) {
+        hideGemTooltip();
         let target = e.target;
         while (target && !target.classList.contains('item')) target = target.parentElement;
         if (!target) return;
