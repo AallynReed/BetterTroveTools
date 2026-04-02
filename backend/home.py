@@ -26,7 +26,7 @@ def get_twitch_streams():
     def fetch_task():
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get("https://trovesaurus.aallyn.xyz/twitch_streams", headers=headers, timeout=10)
+            response = requests.get("https://trovesaurus.aallyn.net/twitch_streams", headers=headers, timeout=10)
             response.raise_for_status()
             eel.receive_twitch_streams({"success": True, "data": response.json()})
         except Exception as e:

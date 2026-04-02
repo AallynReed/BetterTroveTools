@@ -7,7 +7,7 @@ import os
 @eel.expose
 def sync_allies_data():
     try:
-        response = requests.get("https://trovesaurus.aallyn.xyz/allies", timeout=3)
+        response = requests.get("https://trovesaurus.aallyn.net/allies", timeout=3)
         response.raise_for_status()
         
         file_path = os.path.join(os.getcwd(), "web", "assets", "data", "allies.json")
