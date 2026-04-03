@@ -7,6 +7,7 @@ import time
 import winreg
 from pathlib import Path
 
+import requests
 import bottle
 import eel
 
@@ -217,6 +218,24 @@ def serve_cache(filename):
     response = bottle.static_file(filename, root=str(cache_dir))
     response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
     return response
+
+@bottle.route('/proxy/bilibili_image')
+def proxy_bilibili_image():
+    url = bottle.request.query.get('url')
+    if not url or "hdslb.com" not in url:
+        return bottle.HTTPError(403, "Forbidden")
+        
+    try:
+        headers = {
+            "Referer": "https://www.bilibili.com/",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
+        resp = requests.get(url, headers=headers, timeout=5)
+        bottle.response.set_header("Cache-Control", "max-age=86400")
+        bottle.response.content_type = resp.headers.get('content-type', 'image/jpeg')
+        return resp.content
+    except Exception as e:
+        return bottle.HTTPError(500, str(e))
 
 chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
 appdata_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'ModManagerCache', 'profile')

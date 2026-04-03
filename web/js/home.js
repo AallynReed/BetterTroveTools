@@ -2,6 +2,43 @@ document.addEventListener('home_loaded', () => {
     console.log("Home Dashboard initialized!");
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     
+    let _currentMediaLocale = null;
+
+    const mediaTabs = document.querySelectorAll('.media-tab');
+    const youtubeCarousel = document.getElementById('youtube-carousel');
+    const twitchCarousel = document.getElementById('streams-carousel');
+    const bilibiliCarousel = document.getElementById('bilibili-carousel');
+    const scrollLeftBtn = document.getElementById('btn-scroll-left');
+    const scrollRightBtn = document.getElementById('btn-scroll-right');
+
+    mediaTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            mediaTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            const activeTab = tab.dataset.tab;
+            
+            if (youtubeCarousel) youtubeCarousel.style.display = 'none';
+            if (twitchCarousel) twitchCarousel.style.display = 'none';
+            if (bilibiliCarousel) bilibiliCarousel.style.display = 'none';
+            
+            if (activeTab === 'youtube' && youtubeCarousel) {
+                youtubeCarousel.style.display = 'flex';
+                youtubeCarousel.scrollLeft = 0;
+            } else if (activeTab === 'bilibili' && bilibiliCarousel) {
+                bilibiliCarousel.style.display = 'flex';
+                bilibiliCarousel.scrollLeft = 0;
+            } else if (twitchCarousel) {
+                twitchCarousel.style.display = 'flex';
+                twitchCarousel.scrollLeft = 0;
+            }
+        });
+    });
+
+    if (scrollLeftBtn && scrollRightBtn) {
+        scrollLeftBtn.onclick = () => document.querySelector('.streams-carousel:not([style*="display: none"])')?.scrollBy({ left: -260, behavior: 'smooth' });
+        scrollRightBtn.onclick = () => document.querySelector('.streams-carousel:not([style*="display: none"])')?.scrollBy({ left: 260, behavior: 'smooth' });
+    }
+
     refreshAllData();
 
     const autoRefresh = setInterval(() => {
@@ -25,8 +62,26 @@ document.addEventListener('home_loaded', () => {
     document.addEventListener('change', window._homeLangListener);
 
     function refreshAllData() {
+        const isChinese = window.I18nManager && window.I18nManager.currentLocale === 'zh_CN';
+        const currentLocale = window.I18nManager ? window.I18nManager.currentLocale : null;
+        const localeChanged = _currentMediaLocale !== currentLocale;
+        _currentMediaLocale = currentLocale;
+
+        const bilibiliTab = document.querySelector('.media-tab[data-tab="bilibili"]');
+        if (bilibiliTab) {
+            bilibiliTab.style.display = isChinese ? 'flex' : 'none';
+            if (isChinese && localeChanged) {
+                bilibiliTab.click();
+            } else if (!isChinese && bilibiliTab.classList.contains('active')) {
+                document.querySelector('.media-tab[data-tab="youtube"]')?.click();
+            }
+        }
+
         fetchYoutubeVideos();
         fetchStreams();
+        if (isChinese) {
+            fetchBilibiliVideos();
+        }
         fetchServerData();
         fetchEvents();
     }
@@ -84,34 +139,6 @@ document.addEventListener('home_loaded', () => {
 
         if (showLeft) return t("{time} left").replace("{time}", timeStr);
         return timeStr;
-    }
-
-    const mediaTabs = document.querySelectorAll('.media-tab');
-    const youtubeCarousel = document.getElementById('youtube-carousel');
-    const twitchCarousel = document.getElementById('streams-carousel');
-    const scrollLeftBtn = document.getElementById('btn-scroll-left');
-    const scrollRightBtn = document.getElementById('btn-scroll-right');
-
-    mediaTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            mediaTabs.forEach(t => t.classList.remove('active'));
-            tab.classList.add('active');
-            const activeTab = tab.dataset.tab;
-            if (activeTab === 'youtube') {
-                youtubeCarousel.style.display = 'flex';
-                twitchCarousel.style.display = 'none';
-            } else {
-                youtubeCarousel.style.display = 'none';
-                twitchCarousel.style.display = 'flex';
-            }
-            youtubeCarousel.scrollLeft = 0;
-            twitchCarousel.scrollLeft = 0;
-        });
-    });
-
-    if (scrollLeftBtn && scrollRightBtn) {
-        scrollLeftBtn.onclick = () => document.querySelector('.streams-carousel:not([style*="display: none"])')?.scrollBy({ left: -260, behavior: 'smooth' });
-        scrollRightBtn.onclick = () => document.querySelector('.streams-carousel:not([style*="display: none"])')?.scrollBy({ left: 260, behavior: 'smooth' });
     }
 
     const rotationModal = document.getElementById('d15-modal');
@@ -1181,8 +1208,66 @@ document.addEventListener('home_loaded', () => {
         }
     }
 
+    eel.expose(receive_bilibili_videos, 'receive_bilibili_videos');
+    function receive_bilibili_videos(response) {
+        const wrapper = document.getElementById('carousel-wrapper');
+        const carousel = document.getElementById('bilibili-carousel');
+        const loading = document.getElementById('media-loading');
+        const btnLeft = document.getElementById('btn-scroll-left');
+        const btnRight = document.getElementById('btn-scroll-right');
+        
+        if (loading && document.querySelector('.media-tab.active')?.dataset.tab === 'bilibili') {
+            loading.style.display = 'none';
+        }
+        if (wrapper) wrapper.style.display = 'flex';
+        if (!carousel) return;
+        
+        carousel.innerHTML = '';
+
+        if (response && response.success) {
+            if (!response.data || response.data.length === 0) {
+                carousel.innerHTML = `
+                    <div style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
+                        <i class="fa-brands fa-bilibili" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
+                        <span style="font-size: 14px;">${t("No Trove videos found right now. Check back later!")}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            if (btnLeft) btnLeft.style.display = 'flex';
+            if (btnRight) btnRight.style.display = 'flex';
+
+            response.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).forEach(video => {
+                const card = document.createElement('div');
+                card.className = 'stream-card';
+                card.style.cursor = 'pointer';
+                
+                card.onclick = () => {
+                    eel.open_url_in_browser(video.url)();
+                };
+
+                const thumb = `/proxy/bilibili_image?url=${encodeURIComponent(video.thumbnail_url)}`;
+                const publishedStr = getTimeAgo(video.published_at, t);
+                
+                const verifiedChannels = [];
+                const verifiedBadge = verifiedChannels.includes(video.channel) ? ' <i class="fa-solid fa-circle-check" style="color: #5ec6ff;" title="Verified"></i>' : '';
+
+                card.innerHTML = `<div class="stream-thumb"><img src="${thumb}" alt=""><div class="stream-badges"><span class="badge viewers">${publishedStr}</span></div></div>
+                                  <div class="stream-info"><div class="stream-title">${video.title}</div><div class="stream-user"><i class="fa-brands fa-bilibili" style="color:#00A1D6;"></i> ${video.channel}${verifiedBadge}</div></div>`;
+                carousel.appendChild(card);
+            });
+        } else {
+            console.error("Bilibili video fetch error:", response?.error);
+        }
+    }
+
     function fetchYoutubeVideos() {
         eel.get_youtube_videos()();
+    }
+
+    function fetchBilibiliVideos() {
+        eel.get_bilibili_videos()();
     }
 
     function fetchStreams() {

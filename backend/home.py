@@ -68,6 +68,29 @@ def get_youtube_videos():
     threading.Thread(target=fetch_task, daemon=True).start()
 
 @eel.expose
+def get_bilibili_videos():
+    def fetch_task():
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Fetching BiliBili Videos", "https://trovesaurus.aallyn.net/bilibili_videos")()
+        except Exception:
+            pass
+        try:
+            headers = {"User-Agent": "BetterTroveTools/1.0"}
+            response = requests.get("https://trovesaurus.aallyn.net/bilibili_videos", headers=headers, timeout=10)
+            response.raise_for_status()
+            if req_id:
+                eel.remove_external_request(req_id, True)()
+            eel.receive_bilibili_videos({"success": True, "data": response.json()})
+        except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
+            traceback.print_exc()
+            eel.receive_bilibili_videos({"success": False, "error": str(e)})
+            
+    threading.Thread(target=fetch_task, daemon=True).start()
+
+@eel.expose
 def get_trovesaurus_events():
     def fetch_task():
         req_id = None
