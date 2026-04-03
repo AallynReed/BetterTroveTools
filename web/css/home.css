@@ -632,9 +632,16 @@
     z-index: 4;
     pointer-events: none;
 }
-.event-luxion { background: #c89b27; color: #000; text-shadow: none; }
+.calendar-tracks i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 2px;
+    position: relative;
+}
+.event-luxion { background: #c89b27; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);  }
 .event-corruxion { background: #7a1e8a; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-.event-fluxion { background: #3a9cbd; color: #000; text-shadow: none; }
+.event-fluxion { background: #3a9cbd; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .event-invasion { background: #ff5252; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
 .event-mana { background: #3e5a63; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
 .event-stampy { background: #6b513d; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }

@@ -336,7 +336,15 @@ document.addEventListener('home_loaded', () => {
                         }
 
                         let showText = "";
-                        if (track.id === 'weekly_buff' && widthPx > 40) showText = t(ev.name);
+                        if (track.id === 'weekly_buff' && widthPx > 40) {
+                            showText = t(ev.name);
+                        } else if (track.id === 'dragon_merchants' && widthPx > 40) {
+                            let text = "";
+                            if (ev.type === 'luxion') text = t("Luxion");
+                            else if (ev.type === 'corruxion') text = t("Corruxion");
+                            else if (ev.type === 'fluxion') text = ev.name.includes('Voting') ? t("Voting") : t("Selling");
+                            showText = `<span style="font-weight: normal; text-transform: uppercase; margin-left: 4px;">${text}</span>`;
+                        }
 
                         const encodedTooltip = tooltipText.replace(/"/g, '&quot;');
 
