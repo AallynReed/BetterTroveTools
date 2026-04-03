@@ -425,6 +425,30 @@ def get_yearly_calendar_data():
                     events.append({"type": "fluxion", "start": int(s_sell.timestamp()), "end": int(e_sell.timestamp()), "name": "Fluxion (Selling)", "color": "02679e"})
                 s += timedelta(days=interval_days)
                 
+        def generate_gardening_events():
+            st_temp = ServerTime()
+            base_gardening = st_temp.first_gardening + timedelta(hours=11)
+            
+            diff_2 = (start_date - base_gardening).total_seconds()
+            cycles_2 = int(diff_2 // (2 * 24 * 3600))
+            s_2 = base_gardening + timedelta(days=cycles_2 * 2)
+            while s_2 < end_date:
+                h_start = s_2 + timedelta(days=1)
+                h_end = s_2 + timedelta(days=2)
+                if h_end > start_date and h_start < end_date:
+                    events.append({"type": "gardening_2", "start": int(h_start.timestamp()), "end": int(h_end.timestamp()), "name": "2-day plants", "color": "8bc34a"})
+                s_2 += timedelta(days=2)
+                
+            diff_3 = (start_date - base_gardening).total_seconds()
+            cycles_3 = int(diff_3 // (3 * 24 * 3600))
+            s_3 = base_gardening + timedelta(days=cycles_3 * 3)
+            while s_3 < end_date:
+                h_start = s_3 + timedelta(days=2)
+                h_end = s_3 + timedelta(days=3)
+                if h_end > start_date and h_start < end_date:
+                    events.append({"type": "gardening_3", "start": int(h_start.timestamp()), "end": int(h_end.timestamp()), "name": "3-day plants", "color": "4caf50"})
+                s_3 += timedelta(days=3)
+                
         def generate_invasion_events():
             st_temp = ServerTime()
             trove_start_date = start_date - timedelta(hours=11)
@@ -448,9 +472,73 @@ def get_yearly_calendar_data():
         generate_merchant_events(base_luxion, 14, 3, "luxion", "Luxion")
         generate_merchant_events(base_corruxion, 14, 3, "corruxion", "Corruxion")
         generate_fluxion_events(base_fluxion, 14)
+        generate_gardening_events()
         generate_invasion_events()
 
         return {"success": True, "events": events}
+    except Exception as e:
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def get_gardening_rotation():
+    try:
+        from utils.trove.server_time import ServerTime
+        st = ServerTime()
+        now = datetime.now(UTC)
+        
+        base_date = st.first_gardening + timedelta(hours=11)
+        rotations = []
+        
+        now_ts = now.timestamp()
+        diff_2 = (now - base_date).total_seconds()
+        cycles_2 = int(diff_2 // (2 * 24 * 3600))
+        current_2_s = base_date + timedelta(days=cycles_2 * 2)
+        h2_start = current_2_s + timedelta(days=1)
+        h2_end = current_2_s + timedelta(days=2)
+        
+        two_day = {
+            "name": "2-day plants",
+            "active": h2_start.timestamp() <= now_ts < h2_end.timestamp(),
+            "start": int(h2_start.timestamp()),
+            "end": int(h2_end.timestamp())
+        }
+        
+        diff_3 = (now - base_date).total_seconds()
+        cycles_3 = int(diff_3 // (3 * 24 * 3600))
+        current_3_s = base_date + timedelta(days=cycles_3 * 3)
+        h3_start = current_3_s + timedelta(days=2)
+        h3_end = current_3_s + timedelta(days=3)
+        
+        three_day = {
+            "name": "3-day plants",
+            "active": h3_start.timestamp() <= now_ts < h3_end.timestamp(),
+            "start": int(h3_start.timestamp()),
+            "end": int(h3_end.timestamp())
+        }
+        
+        future_events = []
+        for i in range(0, 8):
+            s = current_2_s + timedelta(days=i * 2)
+            h_start = s + timedelta(days=1)
+            h_end = s + timedelta(days=2)
+            if h_start.timestamp() > now_ts:
+                future_events.append({"name": "2-day plants", "start": int(h_start.timestamp()), "end": int(h_end.timestamp())})
+                
+            s = current_3_s + timedelta(days=i * 3)
+            h_start = s + timedelta(days=2)
+            h_end = s + timedelta(days=3)
+            if h_start.timestamp() > now_ts:
+                future_events.append({"name": "3-day plants", "start": int(h_start.timestamp()), "end": int(h_end.timestamp())})
+                
+        future_events.sort(key=lambda x: x["start"])
+        
+        return {
+            "success": True,
+            "two_day": two_day,
+            "three_day": three_day,
+            "future": future_events[:10]
+        }
     except Exception as e:
         traceback.print_exc()
         return {"success": False, "error": str(e)}

@@ -24,6 +24,7 @@ class ServerTime:
         self.first_luxion = datetime(2024, 3, 1, tzinfo=UTC)
         self.first_corruxion = datetime(2024, 3, 8, tzinfo=UTC)
         self.first_fluxion = datetime(2023, 7, 18, tzinfo=UTC)
+        self.first_gardening = datetime(2025, 5, 23, tzinfo=UTC)
         
         # Invasions (Baseline: 9 AM UTC-11)
         self.invasion_interval = timedelta(hours=27)

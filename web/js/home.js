@@ -207,8 +207,8 @@ document.addEventListener('home_loaded', () => {
             
             let html = `<div class="calendar-timeline-wrapper" id="timeline-wrapper">`;
             
-            const todayPx = 365 * dayWidth;
-            html += `<div class="calendar-today-line" style="left: ${todayPx + labelWidth + 20}px;"></div>`;
+            const todayPx = ((now.getTime() - startTs) / 86400000) * dayWidth;
+            html += `<div class="calendar-today-line" style="left: ${todayPx + labelWidth}px;"></div>`;
             
             html += `<div class="calendar-timeline-header" style="width: ${totalWidth}px; flex-direction: column;">`;
             
@@ -266,6 +266,8 @@ document.addEventListener('home_loaded', () => {
                 { id: 'corruxion', name: 'Corruxion', color: 'corruxion', icon: 'fa-dragon' },
                 { id: 'fluxion', name: 'Fluxion', color: 'fluxion', icon: 'fa-scale-balanced' },
                 // { id: 'invasion', name: "Luxion's Fast Trials", color: 'invasion', icon: 'fa-meteor' },
+                { id: 'gardening_2', name: '2-day plants', color: 'gardening', icon: 'fa-seedling' },
+                { id: 'gardening_3', name: '3-day plants', color: 'gardening', icon: 'fa-seedling' },
                 { id: 'mana', name: 'Wild Mana', color: 'mana', icon: 'fa-flask' },
                 { id: 'stampy', name: 'Stampy', color: 'stampy', icon: 'fa-paw' }
             ];
@@ -325,6 +327,9 @@ document.addEventListener('home_loaded', () => {
                             const iconClass = isVoting ? 'fa-check-to-slot' : 'fa-sack-dollar';
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid ${iconClass}"></i></div>`;
                         }
+                        else if (track.id.startsWith('gardening')) {
+                            iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-seedling"></i></div>`;
+                        }
                         else if (track.id === 'luxion' || track.id === 'corruxion') {
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;
                         }
@@ -353,7 +358,7 @@ document.addEventListener('home_loaded', () => {
             const wrapper = document.getElementById('timeline-wrapper');
             if (wrapper) {
                 const centerToday = () => {
-                    wrapper.scrollLeft = todayPx + labelWidth - (wrapper.clientWidth / 2) + 20;
+                    wrapper.scrollLeft = todayPx + labelWidth - (wrapper.clientWidth / 2);
                 };
                 
                 setTimeout(centerToday, 50);
@@ -417,13 +422,14 @@ document.addEventListener('home_loaded', () => {
         const loading = document.getElementById('buffs-loading');
         
         try {
-            const [serverData, d15Data, manaData, merchantSchedules, stampyData, chaosChestData] = await Promise.all([
+            const [serverData, d15Data, manaData, merchantSchedules, stampyData, chaosChestData, gardeningData] = await Promise.all([
                 eel.get_current_server_data()(),
                 eel.get_d15_rotation()(),
                 eel.get_wild_mana_rotation()(),
                 eel.get_merchant_schedules()(),
                 eel.get_stampy_rotation()(),
-                eel.get_chaos_chest_data()()
+                eel.get_chaos_chest_data()(),
+                eel.get_gardening_rotation()()
             ]);
 
             if (loading) loading.style.display = 'none';
@@ -431,7 +437,7 @@ document.addEventListener('home_loaded', () => {
             if (serverData && serverData.success) {
                 renderBuffs(serverData.daily, serverData.weekly);
                 renderChaosChest(chaosChestData);
-                renderRotations(serverData.merchants, d15Data, manaData, stampyData, merchantSchedules);
+                renderRotations(serverData.merchants, d15Data, manaData, stampyData, merchantSchedules, gardeningData);
             }
         } catch (e) { console.error(e); }
 
@@ -620,7 +626,7 @@ document.addEventListener('home_loaded', () => {
             buffsGrid.appendChild(card);
         }
 
-        function renderRotations(merchants, d15, mana, stampy, schedules) {
+        function renderRotations(merchants, d15, mana, stampy, schedules, gardening) {
             if (!merchantsGrid) return;
             merchantsGrid.style.display = 'flex';
             merchantsGrid.innerHTML = '';
@@ -769,6 +775,66 @@ document.addEventListener('home_loaded', () => {
                 merchantsGrid.appendChild(card);
             }
 
+            if (gardening && gardening.success) {
+                const two = gardening.two_day;
+                const three = gardening.three_day;
+                
+                let activeNames = [];
+                if (two.active) activeNames.push("2-day plants");
+                if (three.active) activeNames.push("3-day plants");
+                
+                const isActive = activeNames.length > 0;
+                
+                const card = document.createElement('div');
+                card.className = `merchant-card hover-card ${isActive ? '' : 'inactive'}`; 
+                
+                let gardeningColor = '#8bc34a';
+                if (activeNames.length === 1 && activeNames[0].includes('3')) gardeningColor = '#4caf50';
+                if (activeNames.length === 2) gardeningColor = '#ff9800'; 
+                
+                card.style.setProperty('--merchant-color', gardeningColor);
+                card.style.cursor = 'pointer';
+                card.title = t("Click to see upcoming rotations");
+                
+                const statusText = isActive ? t('HARVEST') : t('GROWING');
+                let titleStr = "";
+                let timeHtml = "";
+                
+                if (isActive) {
+                    titleStr = activeNames.map(n => t(n)).join(" &amp; ");
+                    let endTs = two.active && three.active ? Math.min(two.end, three.end) : (two.active ? two.end : three.end);
+                    timeHtml = t("Ends in {time}").replace("{time}", `<b>${getCountdown(endTs, false)}</b>`);
+                } else {
+                    titleStr = t("Gardening Cycles");
+                    let soonerStart = Math.min(two.start, three.start);
+                    let nextName = soonerStart === two.start ? "2-day plants" : "3-day plants";
+                    
+                    if (two.start === three.start) {
+                        timeHtml = `${t("2-day plants")} &amp; ${t("3-day plants")} - ` + t("Starts in {time}").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`);
+                    } else {
+                        timeHtml = `${t(nextName)} - ` + t("Starts in {time}").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`);
+                    }
+                }
+
+                card.innerHTML = `
+                    <div class="merchant-icon"><i class="fa-solid fa-seedling"></i></div>
+                    <div class="merchant-info" style="width: 100%;">
+                        <div class="merchant-name">${titleStr} <span class="merchant-status-badge">${statusText}</span></div>
+                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> ${timeHtml}</div>
+                    </div>`;
+                
+                card.addEventListener('click', () => {
+                    const modalTitle = document.querySelector('#d15-modal .modal-header h3');
+                    modalTitle.innerHTML = `<i class="fa-solid fa-seedling" style="color: ${gardeningColor};"></i> ${t("Upcoming Gardening Cycles")}`;
+                    document.querySelector('#d15-modal .modal-content').style.maxWidth = '600px';
+                    document.querySelector('#d15-modal .modal-content').style.width = '90%';
+                    populateGardeningModal(gardening.future, gardeningColor);
+                    if(rotationModal) rotationModal.style.display = 'flex';
+                });
+
+                merchantsGrid.appendChild(card);
+            }
+
             if (mana && mana.success && mana.current) {
                 const card = document.createElement('div');
                 card.className = `merchant-card hover-card`; 
@@ -805,6 +871,41 @@ document.addEventListener('home_loaded', () => {
 
                 merchantsGrid.appendChild(card);
             }
+        }
+        
+        function populateGardeningModal(futureRotations, highlightColor) {
+            const modalBody = document.getElementById('d15-modal-body');
+            if (!modalBody) return;
+            
+            modalBody.innerHTML = '';
+            futureRotations.forEach((rot, index) => {
+                const isNext = index === 0;
+                
+                const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+                const startStr = new Date(rot.start * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                const endStr = new Date(rot.end * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                
+                let timeText = t("Starts in {time}").replace("{time}", getCountdown(rot.start, false));
+                if (rot.start * 1000 < Date.now()) {
+                    timeText = t("Ends in {time}").replace("{time}", getCountdown(rot.end, false));
+                }
+                const phaseColor = rot.name.includes('3') ? '#4caf50' : '#8bc34a';
+                
+                const row = document.createElement('div');
+                row.className = 'modal-rotation-row';
+                row.innerHTML = `
+                    <div class="modal-time-col" style="min-width: 150px;">
+                        <div style="font-weight: bold; color: ${isNext ? highlightColor : '#fff'};">${isNext ? t('Next Cycle') : t("Cycle +{num}").replace("{num}", index + 1)}</div>
+                        <div style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${timeText}</div>
+                    </div>
+                    <div class="modal-biomes-col" style="flex-direction: column; justify-content: center; gap: 4px;">
+                        <div style="font-weight: bold; color: ${phaseColor}; margin-bottom: 2px;">${t(rot.name)}</div>
+                        <div style="font-size: 0.9em; color: #eee;"><i class="fa-solid fa-play"></i> ${startStr}</div>
+                        <div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid fa-stop"></i> ${endStr}</div>
+                    </div>
+                `;
+                modalBody.appendChild(row);
+            });
         }
         
         function populateBiomeModal(futureRotations, highlightColor, isArrival = false) {
