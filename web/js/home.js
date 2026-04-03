@@ -262,9 +262,7 @@ document.addEventListener('home_loaded', () => {
             
             const tracks = [
                 { id: 'weekly_buff', name: 'Weekly Buffs', color: 'weekly', icon: 'fa-bolt' },
-                { id: 'luxion', name: 'Luxion', color: 'luxion', icon: 'fa-dragon' },
-                { id: 'corruxion', name: 'Corruxion', color: 'corruxion', icon: 'fa-dragon' },
-                { id: 'fluxion', name: 'Fluxion', color: 'fluxion', icon: 'fa-scale-balanced' },
+                { id: 'dragon_merchants', types: ['luxion', 'corruxion', 'fluxion'], name: 'Dragon Merchants', color: 'luxion', icon: 'fa-dragon' },
                 // { id: 'invasion', name: "Luxion's Fast Trials", color: 'invasion', icon: 'fa-meteor' },
                 { id: 'gardening_2', name: '2-day plants', color: 'gardening', icon: 'fa-seedling' },
                 { id: 'gardening_3', name: '3-day plants', color: 'gardening', icon: 'fa-seedling' },
@@ -280,7 +278,7 @@ document.addEventListener('home_loaded', () => {
                                 <i class="fa-solid ${track.icon}" style="margin-right: 8px; opacity: 0.8;"></i> ${t(track.name)}
                             </div>`;
                 
-                const trackEvents = events.filter(e => e.type === track.id);
+                const trackEvents = events.filter(e => track.types ? track.types.includes(e.type) : e.type === track.id);
                 trackEvents.forEach(ev => {
                     const eStartTs = ev.start * 1000;
                     const eEndTs = ev.end * 1000;
@@ -322,18 +320,18 @@ document.addEventListener('home_loaded', () => {
                                 ev.icons.map(ic => `<img src="/assets/images/biomes/${ic}.png" onerror="this.style.display='none'" style="width: 14px; height: 14px; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.5));">`).join('') +
                                 `</div>`;
                         }
-                        else if (track.id === 'fluxion') {
+                        else if (ev.type === 'fluxion') {
                             const isVoting = ev.name.includes('Voting');
                             const iconClass = isVoting ? 'fa-check-to-slot' : 'fa-sack-dollar';
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid ${iconClass}"></i></div>`;
                         }
-                        else if (track.id.startsWith('gardening')) {
+                        else if (ev.type.startsWith('gardening')) {
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-seedling"></i></div>`;
                         }
-                        else if (track.id === 'luxion' || track.id === 'corruxion') {
+                        else if (ev.type === 'luxion' || ev.type === 'corruxion') {
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;
                         }
-                        else if (track.id === 'invasion') {
+                        else if (ev.type === 'invasion') {
                             iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-meteor"></i></div>`;
                         }
 
@@ -342,7 +340,8 @@ document.addEventListener('home_loaded', () => {
 
                         const encodedTooltip = tooltipText.replace(/"/g, '&quot;');
 
-                        html += `<div class="calendar-event event-${track.color}" 
+                        const eventColorClass = track.types ? ev.type : track.color;
+                        html += `<div class="calendar-event event-${eventColorClass}" 
                                       style="left: ${leftPx + labelWidth}px; width: ${widthPx}px; top: 6px; ${customStyle}"
                                       data-tooltip="${encodedTooltip}">
                                       ${iconsHtml}${showText}
