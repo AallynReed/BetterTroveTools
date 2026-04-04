@@ -4,47 +4,78 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </head>
-<div class="allies-container">
+<div id="allies-vue-app" class="allies-container" v-cloak>
     <div class="page-header">
-        <h1><i class="fa-solid fa-paw" style="color: #ff9800;"></i> <span data-i18n>Ally Codex</span></h1>
-        <div class="subtitle" data-i18n>Search and discover companions by name, stats, or abilities.</div>
+        <h1><i class="fa-solid fa-paw" style="color: #ff9800;"></i> {{ t('Ally Codex') }}</h1>
+        <div class="subtitle">{{ t('Search and discover companions by name, stats, or abilities.') }}</div>
     </div>
 
     <div class="search-section">
         <div class="search-bar-wrapper">
             <div style="position: relative; flex: 1;">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="ally-search-input" data-i18n-placeholder="Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...">
+                <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\nability:\ndesc:\ncategory:\n\nExample: author:&quot;Trove Team&quot; ability:jump')" :placeholder="t(`Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...`)" id="ally-search-input">
             </div>
-            <button id="btn-reset-ally-filters" class="btn-reset-filters" data-i18n-title="Clear All Filters">
+            <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
         
         <div class="filters-row">
             <div class="filter-group" style="flex: 0.5;">
-                <label for="ally-category-select" data-i18n>Category</label>
-                <select id="ally-category-select" class="custom-select">
-                    <option value="All" data-i18n>All Categories</option>
-                    </select>
+                <label>{{ t('Category') }}</label>
+                <custom-vue-select v-model="selectedCategory" :options="categoryOptions"></custom-vue-select>
             </div>
             
             <div class="filter-group select2-wrapper">
-                <label for="ally-stat-select" data-i18n>Required Stats</label>
-                <select id="ally-stat-select" class="custom-select" multiple="multiple" style="width: 100%;">
-                    </select>
+                <label>{{ t('Required Stats') }}</label>
+                <select2 v-model="selectedStats" :options="statsList" :placeholder="t('Select one or more stats...')"></select2>
             </div>
 
             <div class="filter-group select2-wrapper">
-                <label for="ally-ability-select" data-i18n>Required Abilities</label>
-                <select id="ally-ability-select" class="custom-select" multiple="multiple" style="width: 100%;">
-                    </select>
+                <label>{{ t('Required Abilities') }}</label>
+                <select2 v-model="selectedAbilities" :options="abilitiesList" :placeholder="t('Select one or more abilities...')"></select2>
             </div>
         </div>
 
-        <div class="search-stats" id="search-stats-display" data-i18n>Loading allies...</div>
+        <div class="search-stats">
+            <span v-if="isLoading">{{ t('Loading allies...') }}</span>
+            <span v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" style="color: #ff9800; font-weight: bold;">{{ t('Minimum 3 characters to search...') }}</span>
+            <span v-else>{{ t('Showing {count} of {total} allies').replace('{count}', filteredAllies.length).replace('{total}', alliesData.length) }}</span>
+        </div>
     </div>
 
-    <div class="allies-grid" id="allies-grid">
+    <div class="allies-grid">
+        <div v-for="(ally, idx) in filteredAllies" :key="ally.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
+            <div class="ally-header">
+                <div class="ally-icon">
+                    <img :src="ally.imagePath" @error="$event.target.src='/assets/images/default_ally.png'; $event.target.onerror=null;" alt="">
+                </div>
+                <div class="ally-title-area">
+                    <div class="ally-name">{{ t(ally.name) }}</div>
+                    <div class="ally-category">{{ t(ally.category || 'Unknown') }}</div>
+                    <div v-if="ally.designer" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
+                        <i class="fa-solid fa-pen-nib"></i> {{ ally.designer }}
+                    </div>
+                </div>
+            </div>
+            <div class="ally-body">
+                <div class="ally-desc">"{{ t(ally.desc) }}"</div>
+                
+                <ul v-if="ally.rawStats.length > 0" class="ally-stats-list">
+                    <li v-for="(stat, sIdx) in ally.rawStats" :key="'s-'+sIdx" v-html="formatStat(stat)"></li>
+                </ul>
+                
+                <template v-if="ally.extractedAbilities.length > 0">
+                    <div v-for="(ability, aIdx) in ally.extractedAbilities" :key="'a-'+aIdx" class="ally-ability" v-html="formatAbility(ability)"></div>
+                </template>
+            </div>
+            
+            <div v-if="ally.powerrank || ally.mastery || ally.mastery_geode" class="ally-footer">
+                <span v-if="parseInt(ally.powerrank) > 0" class="footer-stat"><i class="fa-solid fa-star" style="color: #fbc02d;"></i> {{ t('Power Rank') }} {{ parseInt(ally.powerrank) }}</span>
+                <span v-if="parseInt(ally.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery {val}').replace('{val}', parseInt(ally.mastery)) }}</span>
+                <span v-if="parseInt(ally.mastery_geode) > 0" class="footer-stat"><i class="fa-solid fa-gem" style="color: #00bcd4;"></i> {{ t('Geode Mastery {val}').replace('{val}', parseInt(ally.mastery_geode)) }}</span>
+            </div>
         </div>
+    </div>
 </div>

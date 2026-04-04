@@ -1,3 +1,7 @@
+[v-cloak] {
+    display: none !important;
+}
+
 .allies-container {
     padding: 30px;
     animation: fadeIn 0.4s ease-out;
