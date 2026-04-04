@@ -3,12 +3,30 @@ document.addEventListener("gem_builds_loaded", () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
     let currentPage = 0;
     let cachedBuilds = [];
-    const itemsPerPage = 24;
+    const itemsPerPage = 15;
     let isCalculating = false;
 
     const tbody = document.getElementById("gb-results-body");
     const starChartInput = document.getElementById("gb-star-chart");
     const starChartSummary = document.getElementById("gb-star-chart-summary");
+
+    function updateClassIcon(selectId, iconId) {
+        const select = document.getElementById(selectId);
+        const icon = document.getElementById(iconId);
+        if (select && icon && select.options.length > 0) {
+            const opt = select.options[select.selectedIndex];
+            if (opt && opt.dataset.icon) {
+                icon.dataset.retried = ""; 
+                icon.src = `assets/images/classes/${opt.dataset.icon}.png`;
+                icon.onerror = function() {
+                    if (!this.dataset.retried) {
+                        this.dataset.retried = "true";
+                        this.src = `assets/images/icons/${opt.dataset.icon}.png`;
+                    }
+                };
+            }
+        }
+    }
 
     function debounce(func, wait) {
         let timeout;
@@ -93,8 +111,15 @@ document.addEventListener("gem_builds_loaded", () => {
                 
                 for (let i = 0; i < classesData.length; i++) {
                     const cls = classesData[i];
-                    classSelect.add(new Option(t(cls.name), cls.value));
-                    subclassSelect.add(new Option(t(cls.name), cls.value));
+                    const iconName = cls.name.toLowerCase().replace(/ /g, '_');
+                    
+                    const optClass = new Option(t(cls.name), cls.value);
+                    optClass.dataset.icon = iconName;
+                    classSelect.add(optClass);
+                    
+                    const optSub = new Option(t(cls.name), cls.value);
+                    optSub.dataset.icon = iconName;
+                    subclassSelect.add(optSub);
                 }
                 
                 if (classSelect.value === subclassSelect.value) {
@@ -105,6 +130,9 @@ document.addEventListener("gem_builds_loaded", () => {
                         }
                     }
                 }
+                
+                updateClassIcon("gb-class", "gb-class-icon");
+                updateClassIcon("gb-subclass", "gb-subclass-icon");
             }
 
             if (foodSelect && foodsData) {
@@ -161,6 +189,8 @@ document.addEventListener("gem_builds_loaded", () => {
                     }
                 }
             }
+            updateClassIcon("gb-class", "gb-class-icon");
+            updateClassIcon("gb-subclass", "gb-subclass-icon");
         });
 
         subclassSelect.addEventListener("change", () => {
@@ -172,6 +202,8 @@ document.addEventListener("gem_builds_loaded", () => {
                     }
                 }
             }
+            updateClassIcon("gb-class", "gb-class-icon");
+            updateClassIcon("gb-subclass", "gb-subclass-icon");
         });
     }
 
@@ -329,24 +361,39 @@ document.addEventListener("gem_builds_loaded", () => {
         pageItems.forEach(build => {
             const isBest = build.rank === 1;
             const deviation = isBest ? 
-                `<span style="color: var(--accent-blue);">${t("Best")}</span>` : 
-                `-${(((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3)}%`;
+                `<span style="color: var(--accent-blue); font-weight: bold;">${t("Best")}</span>` : 
+                `<span style="color: #e57373;">-${(((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3)}%</span>`;
 
             const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
 
+            const tooltipHtml = `
+                <div style="min-width: 220px;">
+                    <h3>${t("Build #{rank} Details").replace("{rank}", build.rank)}</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="margin-bottom: 4px;"><strong>${t("Light")}:</strong> <span style="float: right; color: #fff;">${build.light.toLocaleString()}</span></li>
+                        <li style="margin-bottom: 4px;"><strong>${t("Base Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.base_dmg).toLocaleString()}</span></li>
+                        <li style="margin-bottom: 4px;"><strong>${t("Bonus Dmg")}:</strong> <span style="float: right; color: #fff;">${build.bonus_dmg.toFixed(2)}%${classBonusText}</span></li>
+                        <li style="margin-bottom: 4px;"><strong>${t("Crit Dmg")}:</strong> <span style="float: right; color: #fff;">${build.crit_dmg.toFixed(1)}%</span></li>
+                        <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 8px 0;">
+                        <li style="margin-bottom: 4px;"><strong>${t("Total Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.total_dmg).toLocaleString()}</span></li>
+                        <li style="margin-bottom: 4px;"><strong>${t("Coefficient")}:</strong> <span style="float: right; color: var(--accent-orange); font-weight: bold;">${build.coefficient.toLocaleString()}</span></li>
+                    </ul>
+                </div>
+            `.replace(/"/g, '&quot;');
+
             tableHTML += `
-                <tr style="${isBest ? 'background: rgba(94, 198, 255, 0.1);' : ''}">
-                    <td>${build.rank}</td>
-                    <td class="build-layout-cell" data-layout="${build.layout}" style="font-family: monospace; color: var(--accent-orange); cursor: pointer;" title="Click to copy">
+                <tr style="${isBest ? 'background: rgba(94, 198, 255, 0.1);' : ''}" data-tooltip="${tooltipHtml}">
+                    <td class="text-center">${build.rank}</td>
+                    <td class="build-layout-cell text-left" data-layout="${build.layout}" style="font-family: monospace; color: var(--accent-orange); cursor: pointer;" title="Click to copy">
                         ${build.layout}
                     </td>
-                    <td>${build.light.toLocaleString()}</td>
-                    <td>${Math.round(build.base_dmg).toLocaleString()}</td>
-                    <td>${build.bonus_dmg.toFixed(2)}%${classBonusText}</td>
-                    <td>${Math.round(build.total_dmg).toLocaleString()}</td>
-                    <td>${build.crit_dmg.toFixed(1)}%</td>
-                    <td style="font-weight: bold; color: #fff;">${build.coefficient.toLocaleString()}</td>
-                    <td>${deviation}</td>
+                    <td class="text-right">${build.light.toLocaleString()}</td>
+                    <td class="text-right">${Math.round(build.base_dmg).toLocaleString()}</td>
+                    <td class="text-right">${build.bonus_dmg.toFixed(2)}%${classBonusText}</td>
+                    <td class="text-right">${Math.round(build.total_dmg).toLocaleString()}</td>
+                    <td class="text-right">${build.crit_dmg.toFixed(1)}%</td>
+                    <td class="text-right sort-col" style="font-weight: bold; color: #fff;">${build.coefficient.toLocaleString()}</td>
+                    <td class="text-right">${deviation}</td>
                 </tr>
             `;
         });
@@ -366,6 +413,29 @@ document.addEventListener("gem_builds_loaded", () => {
                     console.error("Failed to copy:", err);
                 }
             });
+        });
+    }
+
+    const btnExport = document.getElementById("btn-export-csv");
+    if (btnExport) {
+        btnExport.addEventListener("click", () => {
+            if (!cachedBuilds || cachedBuilds.length === 0) {
+                if(window.showToast) window.showToast(t("No builds available to export."), true);
+                return;
+            }
+            
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
+            cachedBuilds.forEach(b => {
+                csvContent += `${b.rank},${b.layout},${b.light},${Math.round(b.base_dmg)},${b.bonus_dmg.toFixed(2)},${Math.round(b.total_dmg)},${b.crit_dmg.toFixed(1)},${b.coefficient}\n`;
+            });
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csvContent));
+            link.setAttribute("download", "gem_builds_export.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
     }
 });

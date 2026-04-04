@@ -9,118 +9,132 @@
 
     <div class="gem-builds-grid">
         
-        <div class="card config-panel">
-            <h3 data-i18n>Configuration</h3>
-            
-            <div class="input-group">
-                <label data-i18n>Class</label>
-                <select id="gb-class"></select>
-            </div>
-
-            <div class="input-group">
-                <label data-i18n>Subclass</label>
-                <select id="gb-subclass"></select>
-            </div>
-
-            <div class="input-group">
-                <label data-i18n>Build Type</label>
-                <select id="gb-build-type">
-                    <option value="Light" data-i18n>Light</option>
-                    <option value="Farm" data-i18n>Farm</option>
-                    <option value="Health" data-i18n>Health</option>
-                </select>
-            </div>
-
-            <div class="input-group">
-                <label data-i18n>Ally</label>
-                <select id="gb-ally"></select>
-            </div>
-
-            <div class="input-group">
-                <label data-i18n>Food</label>
-                <select id="gb-food"></select>
-            </div>
-
-            <div class="input-row">
+        <div class="config-panel-wrapper">
+            <div class="card config-panel">
+            <div class="config-section">
+                <h4 data-i18n>Character</h4>
                 <div class="input-group">
-                    <label data-i18n>Base Light</label>
-                    <input type="number" id="gb-light" value="0">
+                    <label data-i18n>Class</label>
+                    <div class="select-with-icon">
+                        <img id="gb-class-icon" class="select-icon" src="" alt="">
+                        <select id="gb-class" style="flex: 1;"></select>
+                    </div>
                 </div>
+    
                 <div class="input-group">
-                    <label><span data-i18n>Gear Crit Dmg Rolls:</span> <span id="gb-cd-count-display" style="color: var(--accent-orange); font-weight: bold;">3</span></label>
-                    <input type="range" id="gb-cd-count" min="0" max="3" value="3" step="1" style="width: 100%; cursor: pointer;">
+                    <label data-i18n>Subclass</label>
+                    <div class="select-with-icon">
+                        <img id="gb-subclass-icon" class="select-icon" src="" alt="">
+                        <select id="gb-subclass" style="flex: 1;"></select>
+                    </div>
                 </div>
             </div>
 
-            <hr class="divider">
-
-            <div class="toggles-grid">
-                <label class="toggle-container" data-i18n-title="Simulates Berserker Battler Gem ability being active">
-                    <input type="checkbox" id="gb-berserker">
-                    <span class="checkmark"></span>
-                    <span data-i18n>Berserker Battler</span>
-                </label>
-
-                <label class="toggle-container" data-i18n-title="Simulates Litany light buff being active">
-                    <input type="checkbox" id="gb-litany">
-                    <span class="checkmark"></span>
-                    <span data-i18n>Enlightened (Litany)</span>
-                </label>
-
-                <label class="toggle-container" data-i18n-title="Adds the passive stats from your selected subclass.">
-                    <input type="checkbox" id="gb-subclass-active">
-                    <span class="checkmark"></span>
-                    <span data-i18n>Subclass Active</span>
-                </label>
-
-                <label class="toggle-container" data-i18n-title="Removes the damage stat from your face gear slot.">
-                    <input type="checkbox" id="gb-no-face">
-                    <span class="checkmark"></span>
-                    <span data-i18n>No Face Stats</span>
-                </label>
+            <div class="config-section">
+                <h4 data-i18n>Build & Gear</h4>
+                <div class="input-group">
+                    <label data-i18n>Build Type</label>
+                    <select id="gb-build-type">
+                        <option value="Light" data-i18n>Light</option>
+                        <option value="Farm" data-i18n>Farm</option>
+                        <option value="Health" data-i18n>Health</option>
+                    </select>
+                </div>
+    
+                <div class="input-group">
+                    <label data-i18n>Ally</label>
+                    <select id="gb-ally"></select>
+                </div>
+    
+                <div class="input-group">
+                    <label data-i18n>Food</label>
+                    <select id="gb-food"></select>
+                </div>
+    
+                <div class="input-row">
+                    <div class="input-group">
+                        <label data-i18n>Base Light</label>
+                        <input type="number" id="gb-light" value="0">
+                    </div>
+                    <div class="input-group">
+                        <label><span data-i18n>Gear Crit Dmg Rolls:</span> <span id="gb-cd-count-display" style="color: var(--accent-orange); font-weight: bold;">3</span></label>
+                        <input type="range" id="gb-cd-count" min="0" max="3" value="3" step="1" style="width: 100%; cursor: pointer;">
+                    </div>
+                </div>
             </div>
 
-            <hr class="divider">
-
-            <div class="input-group">
-                <label data-i18n>Star Chart Build Code (Base64)</label>
-                <input type="text" id="gb-star-chart" data-i18n-placeholder="e.g. Y29tYmF0LmEkY29t...">
+            <div class="config-section">
+                <h4 data-i18n>Modifiers</h4>
+                <div class="toggles-grid">
+                    <label class="toggle-container" data-i18n-title="Simulates Berserker Battler Gem ability being active">
+                        <input type="checkbox" id="gb-berserker">
+                        <span class="checkmark"></span>
+                        <span data-i18n>Berserker Battler</span>
+                    </label>
+    
+                    <label class="toggle-container" data-i18n-title="Simulates Litany light buff being active">
+                        <input type="checkbox" id="gb-litany">
+                        <span class="checkmark"></span>
+                        <span data-i18n>Enlightened (Litany)</span>
+                    </label>
+    
+                    <label class="toggle-container" data-i18n-title="Adds the passive stats from your selected subclass.">
+                        <input type="checkbox" id="gb-subclass-active">
+                        <span class="checkmark"></span>
+                        <span data-i18n>Subclass Active</span>
+                    </label>
+    
+                    <label class="toggle-container" data-i18n-title="Removes the damage stat from your face gear slot.">
+                        <input type="checkbox" id="gb-no-face">
+                        <span class="checkmark"></span>
+                        <span data-i18n>No Face Stats</span>
+                    </label>
+                </div>
             </div>
-            
-            <div id="gb-star-chart-summary" class="star-chart-summary" style="display: none;"></div>
+
+            <div class="config-section">
+                <h4 data-i18n>Star Chart</h4>
+                <div class="input-group">
+                    <label data-i18n>Star Chart Build Code (Base64)</label>
+                    <input type="text" id="gb-star-chart" data-i18n-placeholder="e.g. Y29tYmF0LmEkY29t...">
+                </div>
+                
+                <div id="gb-star-chart-summary" class="star-chart-summary" style="display: none;"></div>
+            </div>
+            </div>
         </div>
 
         <div class="card results-panel">
-            <div class="results-header">
-                <h3 data-i18n>Top Builds</h3>
+            <div class="table-responsive">
+                <table class="btt-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center">#</th>
+                            <th class="text-left" data-i18n>Build</th>
+                            <th class="text-right" data-i18n>Light</th>
+                            <th class="text-right" data-i18n>Base Dmg</th>
+                            <th class="text-right" data-i18n>Bonus Dmg</th>
+                            <th class="text-right" data-i18n>Total Dmg</th>
+                            <th class="text-right" data-i18n>Crit Dmg</th>
+                            <th class="text-right sort-col" data-i18n>Coefficient</th>
+                            <th class="text-right" data-i18n>Diff.</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gb-results-body">
+                        <tr>
+                            <td colspan="9" class="text-center text-muted" data-i18n>Initializing Engine...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination-container">
+                <button id="btn-export-csv" class="btn-icon" data-i18n-title="Export to CSV" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(94, 198, 255, 0.3);"><i class="fa-solid fa-file-csv"></i> <span data-i18n>Export</span></button>
                 <div class="pagination">
                     <button id="gb-prev" class="btn-icon"><i class="fa-solid fa-chevron-left"></i></button>
                     <span id="gb-page-info"><span data-i18n>Page</span> <span id="gb-page-current">1</span> / <span id="gb-page-max">1</span></span>
                     <button id="gb-next" class="btn-icon"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="btt-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th data-i18n>Build</th>
-                            <th data-i18n>Light</th>
-                            <th data-i18n>Base Dmg</th>
-                            <th data-i18n>Bonus Dmg</th>
-                            <th data-i18n>Total Dmg</th>
-                            <th data-i18n>Crit Dmg</th>
-                            <th data-i18n>Coefficient</th>
-                            <th data-i18n>Diff.</th>
-                        </tr>
-                    </thead>
-                    <tbody id="gb-results-body">
-                        <tr>
-                            <td colspan="9" class="text-center text-muted" data-i18n>Click Calculate to generate builds.</td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
 
