@@ -18,7 +18,7 @@ def format_timedelta(td):
         return f"{days}d {hours}h"
     return f"{hours}h {minutes}m"
 
-import threading
+import gevent
 
 
 @eel.expose
@@ -42,7 +42,7 @@ def get_twitch_streams():
             traceback.print_exc()
             eel.receive_twitch_streams({"success": False, "error": str(e)})
             
-    threading.Thread(target=fetch_task, daemon=True).start()
+    gevent.spawn(fetch_task)
 
 @eel.expose
 def get_youtube_videos():
@@ -65,7 +65,7 @@ def get_youtube_videos():
             traceback.print_exc()
             eel.receive_youtube_videos({"success": False, "error": str(e)})
             
-    threading.Thread(target=fetch_task, daemon=True).start()
+    gevent.spawn(fetch_task)
 
 @eel.expose
 def get_bilibili_videos():
@@ -88,7 +88,7 @@ def get_bilibili_videos():
             traceback.print_exc()
             eel.receive_bilibili_videos({"success": False, "error": str(e)})
             
-    threading.Thread(target=fetch_task, daemon=True).start()
+    gevent.spawn(fetch_task)
 
 @eel.expose
 def get_trovesaurus_events():
@@ -113,7 +113,7 @@ def get_trovesaurus_events():
             traceback.print_exc()
             eel.receive_events_data({"success": False, "error": str(e)})
             
-    threading.Thread(target=fetch_task, daemon=True).start()
+    gevent.spawn(fetch_task)
 
 @eel.expose
 def get_current_server_data():

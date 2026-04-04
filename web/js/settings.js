@@ -19,6 +19,17 @@ document.addEventListener('settings_loaded', async () => {
 
     const settings = await eel.get_settings()();
 
+    const accentColorPicker = document.getElementById('setting-accent-color');
+    if (accentColorPicker) {
+        accentColorPicker.value = settings.accent_color || '#5ec6ff';
+        accentColorPicker.addEventListener('change', async (e) => {
+            const currentSettings = await eel.get_settings()();
+            currentSettings.accent_color = e.target.value;
+            await eel.save_settings(currentSettings)();
+            document.documentElement.style.setProperty('--accent-blue', e.target.value);
+        });
+    }
+
     const communityContentToggle = document.getElementById('setting-show-community-content');
     if (communityContentToggle) {
         communityContentToggle.checked = settings.show_community_content !== false;

@@ -474,3 +474,15 @@ span.flatpickr-weekday {
 .flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus {
     background: rgba(255, 255, 255, 0.05) !important;
 }
+
+/* Command Palette */
+.cmd-result-item {
+    padding: 12px 20px; display: flex; align-items: center; gap: 15px;
+    color: var(--text-main); cursor: pointer; border-left: 3px solid transparent;
+}
+.cmd-result-item.active, .cmd-result-item:hover {
+    background: rgba(94, 198, 255, 0.1); border-left-color: var(--accent-blue); color: #fff;
+}
+.cmd-result-icon { width: 24px; text-align: center; color: var(--text-muted); font-size: 1.1em; }
+.cmd-result-item.active .cmd-result-icon { color: var(--accent-blue); }
+.cmd-result-item:hover .cmd-result-icon { color: var(--accent-blue); }

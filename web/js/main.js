@@ -452,8 +452,10 @@ window.applyCustomDropdowns = function() {
         function updateOptions() {
             if (select.disabled) {
                 wrapper.classList.add('disabled');
+                trigger.tabIndex = -1;
             } else {
                 wrapper.classList.remove('disabled');
+                trigger.tabIndex = 0;
             }
 
             triggerText.innerHTML = select.options[select.selectedIndex]?.innerHTML || '';
@@ -520,6 +522,31 @@ window.applyCustomDropdowns = function() {
             }
             select._customDropdownPatched = true;
         }
+
+        trigger.addEventListener('keydown', (e) => {
+            if (select.disabled) return;
+            const isOpen = wrapper.classList.contains('open');
+            
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                trigger.click();
+            } else if (e.key === 'Escape') {
+                wrapper.classList.remove('open');
+            } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                let newIndex = select.selectedIndex;
+                if (e.key === 'ArrowDown' && newIndex < select.options.length - 1) newIndex++;
+                if (e.key === 'ArrowUp' && newIndex > 0) newIndex--;
+                if (newIndex !== select.selectedIndex) {
+                    select.selectedIndex = newIndex;
+                    select.dispatchEvent(new Event('change'));
+                    if (isOpen) {
+                        const selectedOpt = optionsContainer.children[newIndex];
+                        if(selectedOpt) optionsContainer.scrollTop = selectedOpt.offsetTop - (optionsContainer.offsetHeight / 2) + (selectedOpt.offsetHeight / 2);
+                    }
+                }
+            }
+        });
 
         trigger.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -599,6 +626,78 @@ document.addEventListener('trovesaurus_loaded', () => {
 });
 
 document.addEventListener('DOMContentLoaded', async () => {
+    
+    eel.get_settings()().then(settings => {
+        if (settings && settings.accent_color) {
+            document.documentElement.style.setProperty('--accent-blue', settings.accent_color);
+        }
+    });
+
+    // Command Palette Logic
+    const cmdOverlay = document.getElementById('command-palette-overlay');
+    const cmdInput = document.getElementById('cmd-input');
+    const cmdResults = document.getElementById('cmd-results');
+    
+    const commands = [
+        { id: 'home', title: 'Home', icon: 'fa-house' },
+        { id: 'trovesaurus', title: 'Trovesaurus', icon: 'fa-dragon' },
+        { id: 'mod_manager', title: 'Mod Manager', icon: 'fa-cubes' },
+        { id: 'file_manager', title: 'Game File Manager', icon: 'fa-folder-tree' },
+        { id: 'modder_tools', title: 'Modder Tools', icon: 'fa-toolbox' },
+        { id: 'star_chart', title: 'Star Chart', icon: 'fa-star' },
+        { id: 'gem_builds', title: 'Gem Builds', icon: 'fa-dice-five' },
+        { id: 'gem_simulator', title: 'Gem Simulator', icon: 'fa-gem' },
+        { id: 'calculators', title: 'Calculators', icon: 'fa-calculator' },
+        { id: 'allies', title: 'Ally Codex', icon: 'fa-paw' },
+        { id: 'settings', title: 'Settings', icon: 'fa-gear' },
+        { id: 'about', title: 'About', icon: 'fa-circle-info' }
+    ];
+
+    let activeCmdIndex = 0;
+
+    function renderCmdResults(filter = "") {
+        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const filtered = commands.filter(c => t(c.title).toLowerCase().includes(filter.toLowerCase()) || c.id.toLowerCase().includes(filter.toLowerCase()));
+        
+        if (filtered.length === 0) {
+            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No results found.</div>`;
+            return;
+        }
+        
+        if (activeCmdIndex >= filtered.length) activeCmdIndex = 0;
+        
+        cmdResults.innerHTML = filtered.map((c, i) => `
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}">
+                <div class="cmd-result-icon"><i class="fa-solid ${c.icon}"></i></div>
+                <div>${t(c.title)}</div>
+            </div>
+        `).join('');
+
+        const activeEl = cmdResults.querySelector('.cmd-result-item.active');
+        if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            if (cmdOverlay.style.display === 'flex') { cmdOverlay.style.display = 'none'; } 
+            else { cmdOverlay.style.display = 'flex'; cmdInput.value = ''; activeCmdIndex = 0; renderCmdResults(); cmdInput.focus(); }
+        } else if (e.key === 'Escape' && cmdOverlay.style.display === 'flex') { cmdOverlay.style.display = 'none'; } 
+        else if (cmdOverlay.style.display === 'flex') {
+            if (e.key === 'ArrowDown') { e.preventDefault(); activeCmdIndex++; renderCmdResults(cmdInput.value); } 
+            else if (e.key === 'ArrowUp') { e.preventDefault(); activeCmdIndex = Math.max(0, activeCmdIndex - 1); renderCmdResults(cmdInput.value); } 
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                const activeEl = cmdResults.querySelector('.cmd-result-item.active');
+                if (activeEl) { window.loadView(activeEl.getAttribute('data-target')); cmdOverlay.style.display = 'none'; }
+            }
+        }
+    });
+
+    cmdInput.addEventListener('input', (e) => { activeCmdIndex = 0; renderCmdResults(e.target.value); });
+    cmdResults.addEventListener('click', (e) => { const item = e.target.closest('.cmd-result-item'); if (item) { window.loadView(item.getAttribute('data-target')); cmdOverlay.style.display = 'none'; } });
+    cmdOverlay.addEventListener('click', (e) => { if (e.target === cmdOverlay) cmdOverlay.style.display = 'none'; });
+
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;

@@ -1,11 +1,11 @@
 import json
 import math
 import os
-import threading
 import time
 import webbrowser
 from pathlib import Path
 
+import gevent
 import eel
 import requests
 
@@ -241,7 +241,7 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
         except Exception as e:
             eel.receive_trovesaurus_mods({"success": False, "error": str(e)})
             
-    threading.Thread(target=task, daemon=True).start()
+    gevent.spawn(task)
 
 
 @eel.expose
@@ -327,7 +327,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
         except Exception as e:
             eel.receive_install_result({"success": False, "error": str(e), "mod_id": mod_id})
             
-    threading.Thread(target=task, daemon=True).start()
+    gevent.spawn(task)
 
 @eel.expose
 def open_url_in_browser(url):
