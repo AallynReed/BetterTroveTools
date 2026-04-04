@@ -1,563 +1,560 @@
 document.addEventListener('star_chart_loaded', async () => {
-    console.log("Star Chart initialized!");
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    
-    const wrapper = document.getElementById('chart-wrapper');
-    const summaryPanel = document.getElementById('summary-content');
-    
-    const codeInput = document.getElementById('build-code-input');
-    const btnCopyCode = document.getElementById('btn-copy-code');
-    const btnLoadCode = document.getElementById('btn-load-code');
-
-    const templateControlsWrapper = document.createElement('div');
-    templateControlsWrapper.style.display = 'flex';
-    templateControlsWrapper.style.gap = '5px';
-    templateControlsWrapper.style.marginTop = '10px';
-    templateControlsWrapper.style.marginBottom = '15px';
-    templateControlsWrapper.style.paddingBottom = '15px';
-    templateControlsWrapper.style.borderBottom = '1px dashed var(--border-color)';
-
-    const templateSelect = document.createElement('select');
-    templateSelect.className = 'btt-select';
-    templateSelect.style.padding = '8px';
-    templateSelect.style.background = 'var(--bg-dark, #111)';
-    templateSelect.style.color = '#fff';
-    templateSelect.style.border = '1px solid var(--border-color, #333)';
-    templateSelect.style.borderRadius = '4px';
-    templateSelect.style.width = '150px';
-
-    const btnSaveTemplate = document.createElement('button');
-    btnSaveTemplate.className = 'primary-btn';
-    btnSaveTemplate.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> ${t("Save")}`;
-
-    const btnDeleteTemplate = document.createElement('button');
-    btnDeleteTemplate.className = 'danger-btn';
-    btnDeleteTemplate.innerHTML = '<i class="fa-solid fa-trash"></i>';
-    btnDeleteTemplate.style.display = 'none';
-    
-    templateControlsWrapper.appendChild(templateSelect);
-    templateControlsWrapper.appendChild(btnSaveTemplate);
-    templateControlsWrapper.appendChild(btnDeleteTemplate);
-    
-    const shareControls = document.querySelector('.build-share-controls');
-    if (shareControls) {
-        shareControls.insertAdjacentElement('afterend', templateControlsWrapper);
+    console.log("Star Chart Vue initialized!");
+    if (typeof Vue === 'undefined') {
+        console.error("Vue.js failed to load!");
+        return;
     }
 
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+
     const COLORS = {
         Combat: { minor: "#FF8F00", major: "#D84315" },
         Gathering: { minor: "#00695C", major: "#558B2F" },
         Pve: { minor: "#6A1B9A", major: "#283593" }
     };
 
-    let nodeMap = {};
-    let selectedPaths = new Set();
-    let currentAggregatedData = null;
+    const app = createApp({
+        setup() {
+            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    const response = await eel.get_calculated_star_chart()();
-    
-    if (!response.success) {
-        wrapper.innerHTML = `<div style="color: #ff4444; text-align: center;">${t("Error loading chart data: {error}").replace("{error}", response.error)}</div>`;
-        return;
-    }
+            const isLoading = ref(true);
+            const origin = ref([500, 500]);
+            
+            const nodeMap = reactive({});
+            const selectedPaths = reactive(new Set());
+            const linesList = ref([]);
+            const nodesList = ref([]);
 
-    const data = response.data;
-    const origin = response.origin;
+            const buildCode = ref("");
+            const codeInputFocused = ref(false);
 
-    wrapper.classList.remove('placeholder-box');
-    wrapper.innerHTML = "";
-    svg.setAttribute("id", "chart-svg");
-    svg.setAttribute("viewBox", "0 0 1000 1000");
-    wrapper.appendChild(svg);
+            const templates = ref({});
+            const selectedTemplate = ref("");
 
-    function registerNode(star, constellName, parentPath) {
-        star.parentPath = parentPath;
-        star.constellName = constellName;
-        nodeMap[star.Path] = star;
-        if (star.Stars) {
-            star.Stars.forEach(child => registerNode(child, constellName, star.Path));
-        }
-    }
+            const modal = reactive({ show: false, title: '', msg: '', showInput: false, inputValue: '', action: null });
+            const modalInputRef = ref(null);
 
-    function drawLine(p1, p2, pathId) {
-        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-        line.setAttribute("x1", p1[0]);
-        line.setAttribute("y1", p1[1]);
-        line.setAttribute("x2", p2[0]);
-        line.setAttribute("y2", p2[1]);
-        line.setAttribute("stroke", "#333");
-        line.setAttribute("stroke-width", "3");
-        line.setAttribute("id", "line-" + pathId.replace(/\./g, "-"));
-        svg.appendChild(line);
-    }
+            const tooltip = reactive({ show: false, node: null, x: 0, y: 0 });
 
-    function drawStarNode(star, constellName) {
-        if (star.Stars && star.Stars.length > 0) {
-            star.Stars.forEach(child => {
-                if (star.Coords && child.Coords) drawLine(star.Coords, child.Coords, child.Path);
-                drawStarNode(child, constellName);
+            // --- Template Selection ---
+            const templateOptions = computed(() => {
+                const opts = [];
+                for (let name in templates.value) {
+                    opts.push([name, name]);
+                }
+                return opts;
             });
-        }
 
-        if (!star.Coords) return;
+            // --- Stats ---
+            const overwrites = computed(() => {
+                let ow = new Set();
+                selectedPaths.forEach(p => {
+                    let node = nodeMap[p];
+                    if (node && node.Overwrites) node.Overwrites.forEach(o => ow.add(o));
+                });
+                return ow;
+            });
 
-        let shape;
-        const isRoot = star.Type === "Root";
+            const activePaths = computed(() => {
+                return Array.from(selectedPaths).filter(p => !overwrites.value.has(p));
+            });
 
-        if (isRoot) {
-            shape = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            const size = 16;
-            const [cx, cy] = star.Coords;
-            shape.setAttribute("points", `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`);
-            shape.setAttribute("fill", "var(--bg-dark, #111)");
-            shape.setAttribute("stroke", COLORS[constellName].major);
-            shape.setAttribute("stroke-width", "4");
-            shape.classList.add("star-node", "root-node");
-        } else {
-            const isMajor = star.Type === "Major";
-            shape = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            shape.setAttribute("cx", star.Coords[0]);
-            shape.setAttribute("cy", star.Coords[1]);
-            shape.setAttribute("r", isMajor ? 14 : 9);
-            shape.setAttribute("fill", COLORS[constellName] ? COLORS[constellName][isMajor ? "major" : "minor"] : "#fff");
-            shape.setAttribute("stroke", "#111");
-            shape.setAttribute("stroke-width", "2");
-            shape.classList.add("star-node");
-        }
+            const summaryStats = computed(() => {
+                let statsObj = {};
+                activePaths.value.forEach(path => {
+                    let node = nodeMap[path];
+                    if (node && node.Stats) {
+                        node.Stats.forEach(stat => {
+                            let key = stat.name + (stat.percentage ? "_pct" : "_flat");
+                            if (!statsObj[key]) statsObj[key] = { name: stat.name, percentage: stat.percentage, value: 0 };
+                            statsObj[key].value += stat.value;
+                        });
+                    }
+                });
+                return Object.values(statsObj);
+            });
 
-        shape.setAttribute("id", "node-" + star.Path.replace(/\./g, "-"));
+            const summaryAbilities = computed(() => {
+                let abs = [];
+                activePaths.value.forEach(path => {
+                    let node = nodeMap[path];
+                    if (node && node.Abilities) abs.push(...node.Abilities);
+                });
+                return abs;
+            });
 
-        let clickTimer = null;
+            const summaryObtainables = computed(() => {
+                let obsMap = {};
+                activePaths.value.forEach(path => {
+                    let node = nodeMap[path];
+                    if (node && node.Obtainables) {
+                        node.Obtainables.forEach(o => obsMap[o] = (obsMap[o] || 0) + 1);
+                    }
+                });
+                return Object.entries(obsMap).map(([name, count]) => ({ name, count }));
+            });
 
-        shape.addEventListener("click", (e) => {
-            if (isRoot) {
+            const hasAnySelection = computed(() => {
+                let has = false;
+                selectedPaths.forEach(path => {
+                    if (nodeMap[path]) has = true;
+                });
+                return has;
+            });
+
+            const selectedNodeCount = computed(() => selectedPaths.size);
+
+            // --- Build SVG Elements ---
+            const renderNodes = computed(() => {
+                return nodesList.value.map(node => {
+                    const isSelected = selectedPaths.has(node.Path);
+                    const isOverwritten = overwrites.value.has(node.Path);
+                    
+                    let rootActive = false;
+                    if (node.Type === 'Root') {
+                        // Check if any selected node is in this constellation
+                        for (let p of selectedPaths) {
+                            if (nodeMap[p] && nodeMap[p].constellName === node.constellName) {
+                                rootActive = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    return {
+                        ...node,
+                        selected: isSelected,
+                        overwritten: isOverwritten,
+                        rootActive: rootActive
+                    };
+                });
+            });
+
+            const lines = computed(() => {
+                return linesList.value.map(line => {
+                    const isSelected = selectedPaths.has(line.pathId);
+                    return {
+                        ...line,
+                        selected: isSelected
+                    };
+                });
+            });
+
+            // --- Graph Traversal ---
+            function registerNode(star, constellName, parentPath) {
+                star.parentPath = parentPath;
+                star.constellName = constellName;
+                nodeMap[star.Path] = star;
+                
+                const isRoot = star.Type === 'Root';
+                const isMajor = star.Type === 'Major';
+
+                if (star.Coords) {
+                    let nodeData = {
+                        id: 'node-' + star.Path.replace(/\./g, "-"),
+                        Path: star.Path,
+                        Type: star.Type,
+                        Name: star.Name,
+                        Constellation: star.Constellation,
+                        Description: star.Description,
+                        Stats: star.Stats,
+                        Abilities: star.Abilities,
+                        Obtainables: star.Obtainables,
+                        Overwrites: star.Overwrites,
+                        constellName: constellName
+                    };
+
+                    if (isRoot) {
+                        const size = 16;
+                        const [cx, cy] = star.Coords;
+                        nodeData.points = `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`;
+                        nodeData.stroke = COLORS[constellName].major;
+                    } else {
+                        nodeData.cx = star.Coords[0];
+                        nodeData.cy = star.Coords[1];
+                        nodeData.r = isMajor ? 14 : 9;
+                        nodeData.fill = COLORS[constellName] ? COLORS[constellName][isMajor ? "major" : "minor"] : "#fff";
+                    }
+                    nodesList.value.push(nodeData);
+                }
+
+                if (star.Stars && star.Stars.length > 0) {
+                    star.Stars.forEach(child => {
+                        if (star.Coords && child.Coords) {
+                            linesList.value.push({
+                                id: 'line-' + child.Path.replace(/\./g, "-"),
+                                pathId: child.Path,
+                                x1: star.Coords[0], y1: star.Coords[1],
+                                x2: child.Coords[0], y2: child.Coords[1]
+                            });
+                        }
+                        registerNode(child, constellName, star.Path);
+                    });
+                }
+            }
+
+            // --- Interactions ---
+            const getAncestorsToSelect = (path, newNodes = []) => {
+                if (!path || selectedPaths.has(path)) return newNodes;
+                newNodes.push(path);
+                const node = nodeMap[path];
+                if (node && node.parentPath && nodeMap[node.parentPath].Type !== "Root") {
+                    return getAncestorsToSelect(node.parentPath, newNodes);
+                }
+                return newNodes;
+            };
+
+            const deselectNodeAndChildren = (path) => {
+                if (!path) return;
+                selectedPaths.delete(path);
+                Object.values(nodeMap).forEach(child => {
+                    if (child.parentPath === path) deselectNodeAndChildren(child.Path);
+                });
+            };
+
+            const selectAllDescendants = (rootPath) => {
+                const rootNode = nodeMap[rootPath];
+                if (!rootNode) return;
+                let limitHit = false;
+                Object.values(nodeMap).forEach(node => {
+                    if (node.constellName === rootNode.constellName && node.Type !== "Root") {
+                        if (!selectedPaths.has(node.Path)) {
+                            if (selectedPaths.size >= 40) { limitHit = true; return; }
+                            selectedPaths.add(node.Path);
+                        }
+                    }
+                });
+                if (limitHit) window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
+            };
+
+            let clickTimer = null;
+            const onRootClick = (node, e) => {
                 if (e.detail === 1) {
                     clickTimer = setTimeout(() => {
-                        deselectNodeAndChildren(star.Path);
-                        updateChartVisuals();
-                        calculateStats();
+                        deselectNodeAndChildren(node.Path);
                     }, 250);
                 } else if (e.detail === 2) {
                     clearTimeout(clickTimer);
-                    selectAllDescendants(star.Path);
-                    updateChartVisuals();
-                    calculateStats();
+                    selectAllDescendants(node.Path);
                 }
-                return;
-            }
-            
-            if (selectedPaths.has(star.Path)) {
-                deselectNodeAndChildren(star.Path);
-            } else {
-                const nodesToAdd = getAncestorsToSelect(star.Path, []);
-                if (selectedPaths.size + nodesToAdd.length > 40) {
-                    window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
-                    return;
-                }
-                nodesToAdd.forEach(p => selectedPaths.add(p));
-            }
-            
-            updateChartVisuals();
-            calculateStats();
-        });
+            };
 
-        let tooltipHtml = `<h3>${t(star.Name || star.Constellation)}</h3>`;
-        tooltipHtml += `<span class="type">${t("{type} Node").replace("{type}", t(star.Type))}</span>`;
-        if (star.Description) tooltipHtml += `<p>${t(star.Description)}</p><hr/>`;
-        if (star.Stats && star.Stats.length > 0) {
-            tooltipHtml += `<ul>`;
-            star.Stats.forEach(s => tooltipHtml += `<li><strong>${t(s.name)}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`);
-            tooltipHtml += `</ul>`;
-        }
-        if (star.Abilities && star.Abilities.length > 0) {
-            if(star.Stats && star.Stats.length > 0) tooltipHtml += `<hr/>`;
-            tooltipHtml += `<ul>`;
-            star.Abilities.forEach(a => tooltipHtml += `<li>${t(a)}</li>`);
-            tooltipHtml += `</ul>`;
-        }
-        shape.setAttribute("data-tooltip", tooltipHtml.replace(/"/g, '&quot;'));
-
-        svg.appendChild(shape);
-    }
-
-    function getAncestorsToSelect(path, newNodes = []) {
-        if (!path || selectedPaths.has(path)) return newNodes;
-        newNodes.push(path);
-        const node = nodeMap[path];
-        if (node && node.parentPath && nodeMap[node.parentPath].Type !== "Root") {
-            return getAncestorsToSelect(node.parentPath, newNodes);
-        }
-        return newNodes;
-    }
-
-    function deselectNodeAndChildren(path) {
-        if (!path) return;
-        selectedPaths.delete(path);
-        Object.values(nodeMap).forEach(child => {
-            if (child.parentPath === path) deselectNodeAndChildren(child.Path);
-        });
-    }
-
-    function selectAllDescendants(rootPath) {
-        const rootNode = nodeMap[rootPath];
-        if (!rootNode) return;
-
-        let limitHit = false;
-
-        Object.values(nodeMap).forEach(node => {
-            if (node.constellName === rootNode.constellName && node.Type !== "Root") {
-                if (!selectedPaths.has(node.Path)) {
-                    if (selectedPaths.size >= 40) {
-                        limitHit = true;
+            const onNodeClick = (node) => {
+                if (selectedPaths.has(node.Path)) {
+                    deselectNodeAndChildren(node.Path);
+                } else {
+                    const nodesToAdd = getAncestorsToSelect(node.Path, []);
+                    if (selectedPaths.size + nodesToAdd.length > 40) {
+                        window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
                         return;
                     }
-                    selectedPaths.add(node.Path);
+                    nodesToAdd.forEach(p => selectedPaths.add(p));
                 }
-            }
-        });
+            };
 
-        if (limitHit) {
-            window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
-        }
-    }
+            // --- Code & Templates ---
+            const normalizeCode = (code) => {
+                if (!code) return "";
+                try { return atob(code).split('$').sort().join('$'); } catch(e) { return code; }
+            };
 
-    function updateChartVisuals() {
-        let overwrites = new Set();
-        selectedPaths.forEach(p => {
-            let node = nodeMap[p];
-            if (node.Overwrites) node.Overwrites.forEach(ow => overwrites.add(ow));
-        });
+            watch(selectedPaths, () => {
+                if (!codeInputFocused.value) {
+                    const pathsArray = Array.from(selectedPaths);
+                    buildCode.value = pathsArray.length > 0 ? btoa(pathsArray.join('$')) : "";
+                }
+                updateTemplateDropdown();
+            }, { deep: true });
 
-        document.querySelectorAll('.star-node, line').forEach(el => {
-            el.classList.remove('node-selected', 'node-overwritten', 'root-active', 'line-selected');
-        });
-
-        let activeConstellations = new Set();
-
-        selectedPaths.forEach(path => {
-            const nodeId = "node-" + path.replace(/\./g, "-");
-            const nodeEl = document.getElementById(nodeId);
-            const lineId = "line-" + path.replace(/\./g, "-");
-            const lineEl = document.getElementById(lineId);
-
-            if (nodeEl) {
-                nodeEl.classList.add('node-selected');
-                if (overwrites.has(path)) nodeEl.classList.add('node-overwritten');
-            }
-            if (lineEl) lineEl.classList.add('line-selected');
-
-            if (nodeMap[path]) activeConstellations.add(nodeMap[path].constellName);
-        });
-
-        const hasAnySelection = activeConstellations.size > 0;
-        if (hasAnySelection) {
-            document.getElementById('center-anchor').classList.add('root-active');
-        }
-        activeConstellations.forEach(constell => {
-            const rootPath = data[constell].Path;
-            const rootNodeEl = document.getElementById("node-" + rootPath.replace(/\./g, "-"));
-            if (rootNodeEl) rootNodeEl.classList.add('root-active');
-        });
-    }
-
-    function calculateStats() {
-        let overwrites = new Set();
-        selectedPaths.forEach(path => {
-            if (nodeMap[path] && nodeMap[path].Overwrites) {
-                nodeMap[path].Overwrites.forEach(ow => overwrites.add(ow));
-            }
-        });
-
-        let activePaths = Array.from(selectedPaths).filter(p => !overwrites.has(p));
-
-        let finalStats = {};
-        let finalAbilities = [];
-        let finalObtainables = [];
-
-        activePaths.forEach(path => {
-            let node = nodeMap[path];
-            if (node.Stats) {
-                node.Stats.forEach(stat => {
-                    let key = stat.name + (stat.percentage ? "_pct" : "_flat");
-                    if (!finalStats[key]) {
-                        finalStats[key] = { name: stat.name, percentage: stat.percentage, value: 0 };
+            const updateTemplateDropdown = () => {
+                let matchedTemplate = "";
+                const currentCode = buildCode.value.trim();
+                const normalizedCurrent = normalizeCode(currentCode);
+                
+                for (let name in templates.value) {
+                    if (normalizeCode(templates.value[name]) === normalizedCurrent && currentCode !== "") {
+                        matchedTemplate = name;
+                        break;
                     }
-                    finalStats[key].value += stat.value;
+                }
+                selectedTemplate.value = matchedTemplate;
+            };
+
+            const loadCode = (silentArg) => {
+                const isSilent = silentArg === true;
+                const code = buildCode.value.trim();
+                if (!code) return;
+                try {
+                    const paths = atob(code).split('$');
+                    
+                    let hasValid = false;
+                    paths.forEach(p => {
+                        if (nodeMap[p] && nodeMap[p].Type !== "Root") hasValid = true;
+                    });
+                    
+                    if (!hasValid) {
+                        if (!isSilent) window.showToast(t("No valid nodes found in build code."), true);
+                        return;
+                    }
+
+                    selectedPaths.clear();
+                    let loaded = 0, skipped = 0;
+
+                    paths.forEach(p => {
+                        if (nodeMap[p] && nodeMap[p].Type !== "Root") {
+                            if (selectedPaths.size < 40) {
+                                selectedPaths.add(p);
+                                loaded++;
+                            } else {
+                                skipped++;
+                            }
+                        }
+                    });
+                    
+                    if (!isSilent) {
+                        if (skipped > 0) window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max 40 limit).").replace("{loaded}", loaded).replace("{skipped}", skipped), true);
+                        else if (loaded > 0) window.showToast(t("Successfully loaded {loaded} nodes!").replace("{loaded}", loaded));
+                    }
+                } catch (e) {
+                    if (!isSilent) window.showToast(t("Invalid build code format."), true);
+                }
+            };
+
+            watch(buildCode, (newVal) => {
+                if (codeInputFocused.value && newVal) {
+                    loadCode(true);
+                }
+            });
+
+            const copyCode = () => {
+                const code = buildCode.value;
+                if (!code) { window.showToast(t("No nodes selected to copy."), true); return; }
+                navigator.clipboard.writeText(code).then(() => window.showToast(t("Build code copied to clipboard!"))).catch(err => window.showToast(t("Failed to copy: {error}").replace("{error}", err), true));
+            };
+
+            watch(selectedTemplate, (newVal) => {
+                if (newVal && templates.value[newVal]) {
+                    buildCode.value = templates.value[newVal];
+                    loadCode();
+                }
+            });
+
+            const fetchTemplates = async () => {
+                templates.value = await eel.get_star_chart_templates()();
+                updateTemplateDropdown();
+            };
+
+            const saveTemplate = () => {
+                const code = buildCode.value.trim();
+                if (!code) { window.showToast(t("No active build to save."), true); return; }
+                modal.action = 'save';
+                modal.title = t('Save Template');
+                modal.msg = t('Enter a name for your build:');
+                modal.showInput = true;
+                modal.inputValue = '';
+                modal.show = true;
+                nextTick(() => { if (modalInputRef.value) modalInputRef.value.focus(); });
+            };
+
+            const deleteTemplate = () => {
+                const name = selectedTemplate.value;
+                if (!name) return;
+                modal.action = 'delete';
+                modal.title = t('Delete Template');
+                modal.msg = t("Are you sure you want to delete '{name}'?").replace("{name}", name);
+                modal.showInput = false;
+                modal.show = true;
+            };
+
+            const confirmModal = async () => {
+                if (modal.action === 'save') {
+                    const name = modal.inputValue.trim();
+                    if (!name) return window.showToast(t("Please enter a name."), true);
+                    const code = buildCode.value.trim();
+                    const res = await eel.save_star_chart_template(name, code)();
+                    if (res.success) {
+                        window.showToast(t("Template '{name}' saved!").replace("{name}", name));
+                        await fetchTemplates();
+                        selectedTemplate.value = name;
+                    } else window.showToast(t("Error saving template."), true);
+                } else if (modal.action === 'delete') {
+                    const name = selectedTemplate.value;
+                    const res = await eel.delete_star_chart_template(name)();
+                    if (res.success) {
+                        window.showToast(t("Template '{name}' deleted!").replace("{name}", name));
+                        await fetchTemplates();
+                        selectedTemplate.value = '';
+                    } else window.showToast(t("Error deleting template."), true);
+                }
+                modal.show = false;
+            };
+
+            // --- Tooltips ---
+            const showTooltip = (e, node) => {
+                tooltip.node = node;
+                tooltip.show = true;
+                moveTooltip(e);
+            };
+            const moveTooltip = (e) => {
+                if (!tooltip.show) return;
+                let x = e.clientX + 15, y = e.clientY + 15;
+                const ttEl = document.getElementById('star-tooltip');
+                if (ttEl) {
+                    if (x + ttEl.offsetWidth > window.innerWidth) x = e.clientX - ttEl.offsetWidth - 15;
+                    if (y + ttEl.offsetHeight > window.innerHeight) y = e.clientY - ttEl.offsetHeight - 15;
+                }
+                tooltip.x = x; tooltip.y = y;
+            };
+            const hideTooltip = () => { tooltip.show = false; tooltip.node = null; };
+
+            const showContextMenu = (e, node) => {
+                if (!window.ContextMenu) return;
+                const items = [];
+
+                if (node.Type === 'Root') {
+                    items.push({
+                        label: 'Select Constellation',
+                        icon: 'fa-check-double',
+                        action: () => selectAllDescendants(node.Path)
+                    });
+                    items.push({
+                        label: 'Deselect Constellation',
+                        icon: 'fa-ban',
+                        action: () => deselectNodeAndChildren(node.Path)
+                    });
+                } else {
+                    const isSelected = selectedPaths.has(node.Path);
+                    items.push({
+                        label: isSelected ? 'Deselect Node' : 'Select Node',
+                        icon: isSelected ? 'fa-minus' : 'fa-plus',
+                        action: () => onNodeClick(node)
+                    });
+                }
+
+                items.push({ separator: true });
+                items.push({
+                    label: 'Copy Name',
+                    icon: 'fa-copy',
+                    action: () => navigator.clipboard.writeText(t(node.Name || node.Constellation)).then(() => { if (window.showToast) window.showToast(t("Copied to clipboard!")); })
                 });
-            }
-            if (node.Abilities) finalAbilities.push(...node.Abilities);
-            if (node.Obtainables) finalObtainables.push(...node.Obtainables);
-        });
 
-        currentAggregatedData = {
-            paths: Array.from(selectedPaths),
-            stats: Object.values(finalStats),
-            abilities: finalAbilities,
-            obtainables: finalObtainables
-        };
+                window.ContextMenu.show(e, items);
+            };
 
-        if (document.activeElement !== codeInput) {
-            if (currentAggregatedData.paths.length > 0) {
-                codeInput.value = btoa(currentAggregatedData.paths.join('$'));
-            } else {
-                codeInput.value = "";
-            }
-        }
+            onMounted(async () => {
+                await fetchTemplates();
 
-        if (typeof updateTemplateDropdown === 'function') updateTemplateDropdown();
-
-        renderSummary(currentAggregatedData);
-    }
-
-    function renderSummary(aggData) {
-        if (aggData.paths.length === 0) {
-            summaryPanel.innerHTML = `<p class="file-meta">${t("Select nodes to calculate stats.")}</p>`;
-            return;
-        }
-
-        let html = `<div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">${t("Nodes Active: {count} / 40").replace("{count}", aggData.paths.length)}</div>`;
-        
-        if (aggData.stats.length > 0) {
-            html += `<div class="summary-section"><h4>${t("Aggregated Stats")}</h4><ul>`;
-            aggData.stats.forEach(s => {
-                html += `<li><strong>${t(s.name)}:</strong> +${s.value}${s.percentage ? "%" : ""}</li>`;
-            });
-            html += `</ul></div>`;
-        }
-
-        if (aggData.abilities.length > 0) {
-            html += `<div class="summary-section"><h4>${t("Active Abilities")}</h4><ul>`;
-            aggData.abilities.forEach(a => html += `<li>${t(a)}</li>`);
-            html += `</ul></div>`;
-        }
-
-        if (aggData.obtainables.length > 0) {
-            html += `<div class="summary-section"><h4>${t("Obtainables")}</h4><ul>`;
-            aggData.obtainables.forEach(o => html += `<li>${t(o)}</li>`);
-            html += `</ul></div>`;
-        }
-
-        summaryPanel.innerHTML = html;
-    }
-
-    btnCopyCode.addEventListener('click', () => {
-        const code = codeInput.value;
-        if (!code) {
-            window.showToast(t("No nodes selected to copy."), true);
-            return;
-        }
-        navigator.clipboard.writeText(code).then(() => {
-            window.showToast(t("Build code copied to clipboard!"));
-        }).catch(err => {
-            window.showToast(t("Failed to copy: {error}").replace("{error}", err), true);
-        });
-    });
-
-    btnLoadCode.addEventListener('click', () => {
-        const code = codeInput.value.trim();
-        if (!code) return;
-        
-        try {
-            const paths = atob(code).split('$');
-            selectedPaths.clear();
-            let loaded = 0;
-            let skipped = 0;
-
-            paths.forEach(p => {
-                if (nodeMap[p] && nodeMap[p].Type !== "Root") {
-                    if (selectedPaths.size < 40) {
-                        selectedPaths.add(p);
-                        loaded++;
-                    } else {
-                        skipped++;
-                    }
+                const response = await eel.get_calculated_star_chart()();
+                if (response.success) {
+                    const data = response.data;
+                    origin.value = response.origin;
+                    
+                    Object.keys(COLORS).forEach(constellName => {
+                        if (data[constellName]) {
+                            registerNode(data[constellName], constellName, null);
+                            if (data[constellName].Coords) {
+                                linesList.value.push({
+                                    id: 'line-' + data[constellName].Path + '_rootline',
+                                    pathId: data[constellName].Path + '_rootline',
+                                    x1: origin.value[0], y1: origin.value[1],
+                                    x2: data[constellName].Coords[0], y2: data[constellName].Coords[1]
+                                });
+                            }
+                        }
+                    });
+                    isLoading.value = false;
+                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                } else {
+                    window.showToast(t("Error loading chart data: {error}").replace("{error}", response.error), true);
                 }
             });
 
-            updateChartVisuals();
-            calculateStats();
-            
-            if (skipped > 0) {
-                window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max 40 limit).").replace("{loaded}", loaded).replace("{skipped}", skipped), true);
-            } else if (loaded > 0) {
-                window.showToast(t("Successfully loaded {loaded} nodes!").replace("{loaded}", loaded));
-            } else {
-                window.showToast(t("No valid nodes found in build code."), true);
-            }
-        } catch (e) {
-            window.showToast(t("Invalid build code format."), true);
+            return {
+                t, isLoading, origin, lines, renderNodes,
+                selectedNodeCount, summaryStats, summaryAbilities, summaryObtainables, hasAnySelection,
+                onRootClick, onNodeClick,
+                buildCode, codeInputFocused, loadCode, copyCode,
+                selectedTemplate, templateOptions, saveTemplate, deleteTemplate,
+                modal, modalInputRef, confirmModal,
+                tooltip, showTooltip, moveTooltip, hideTooltip, showContextMenu
+            };
         }
     });
 
-    codeInput.addEventListener('focus', () => codeInput.dataset.focused = "true");
-    codeInput.addEventListener('blur', () => codeInput.dataset.focused = "false");
-    codeInput.addEventListener('input', () => {
-        if (typeof updateTemplateDropdown === 'function') updateTemplateDropdown();
-    });
+    if (window._starChartApp) window._starChartApp.unmount();
+    window._starChartApp = app;
 
-    let templates = {};
-
-    function normalizeCode(code) {
-        if (!code) return "";
-        try {
-            return atob(code).split('$').sort().join('$');
-        } catch(e) {
-            return code;
-        }
+    // Use our custom-vue-select from Gem Simulator if available, else fallback (it's declared globally or we can redefine it)
+    if (window.CustomVueSelect) {
+        app.component('custom-vue-select', window.CustomVueSelect);
+    } else {
+        // Redefine the CustomVueSelect component since it's only in gem_simulator right now.
+        // Wait, it's better to just use standard select since we call window.applyCustomDropdowns(),
+        // OR define CustomVueSelect here too.
+        app.component('custom-vue-select', {
+            props: ['modelValue', 'options', 'disabled'],
+            setup(props, { emit }) {
+                const isOpen = ref(false);
+                const isDropUp = ref(false);
+                const maxH = ref(250);
+                const wrapperRef = ref(null);
+                const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+                const currentLabel = computed(() => {
+                    if (props.modelValue === "") return `-- ${t('Templates')} --`;
+                    const found = props.options.find(opt => opt[1] === props.modelValue);
+                    return found ? t(found[0]) : `-- ${t('Templates')} --`;
+                });
+                const toggle = () => {
+                    if (props.disabled) return;
+                    isOpen.value = !isOpen.value;
+                    if (isOpen.value && wrapperRef.value) {
+                        const rect = wrapperRef.value.getBoundingClientRect();
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+                        if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                            isDropUp.value = true;
+                            maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
+                        } else {
+                            isDropUp.value = false;
+                            maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
+                        }
+                    }
+                };
+                const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
+                const handleKey = (e) => {
+                    if (props.disabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                    else if (e.key === 'Escape') isOpen.value = false;
+                    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!props.options || props.options.length === 0) return;
+                        let currentIdx = props.options.findIndex(opt => opt[1] === props.modelValue);
+                        if (props.modelValue === '') currentIdx = -1;
+                        if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
+                        if (e.key === 'ArrowUp' && currentIdx > -1) currentIdx--;
+                        if (currentIdx === -1) selectOpt('');
+                        else selectOpt(props.options[currentIdx][1]);
+                    }
+                };
+                onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+                return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+            },
+            template: `
+                <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
+                    <div class="custom-select-trigger">
+                        <span class="custom-select-trigger-text">{{ currentLabel }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+                        <div class="custom-select-option" :class="{ selected: modelValue === '' }" @click.stop="selectOpt('')">-- {{ t('Templates') }} --</div>
+                        <div v-for="opt in options" :key="opt[0]" class="custom-select-option" :class="{ selected: modelValue === opt[1] }" @click.stop="selectOpt(opt[1])">
+                            {{ t(opt[0]) }}
+                        </div>
+                    </div>
+                </div>
+            `
+        });
     }
 
-    function updateTemplateDropdown() {
-        let matchedTemplate = "";
-        const currentCode = codeInput.value.trim();
-        const normalizedCurrent = normalizeCode(currentCode);
-        
-        for (let name in templates) {
-            if (normalizeCode(templates[name]) === normalizedCurrent && currentCode !== "") {
-                matchedTemplate = name;
-                break;
-            }
-        }
-        templateSelect.value = matchedTemplate;
-        btnDeleteTemplate.style.display = matchedTemplate ? 'inline-block' : 'none';
-    }
-
-    async function loadTemplates() {
-        templates = await eel.get_star_chart_templates()();
-        
-        templateSelect.innerHTML = `<option value="">-- ${t("Templates")} --</option>`;
-        for (let name in templates) {
-            let opt = document.createElement('option');
-            opt.value = name;
-            opt.innerText = name;
-            templateSelect.appendChild(opt);
-        }
-        
-        updateTemplateDropdown();
-    }
-
-    templateSelect.addEventListener('change', () => {
-        btnDeleteTemplate.style.display = templateSelect.value ? 'inline-block' : 'none';
-        if (templateSelect.value && templates[templateSelect.value]) {
-            codeInput.value = templates[templateSelect.value];
-            btnLoadCode.click();
-        }
-    });
-
-    const oldModal = document.getElementById('st-modal-overlay');
-    if (oldModal) oldModal.remove();
-
-    const modalOverlay = document.createElement('div');
-    modalOverlay.id = 'st-modal-overlay';
-    modalOverlay.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:9999; justify-content:center; align-items:center;";
-    modalOverlay.innerHTML = `
-        <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-            <h3 id="st-modal-title" style="margin-top:0; color:var(--text-main, #fff);"></h3>
-            <p id="st-modal-msg" style="color:var(--text-muted, #aaa); margin-bottom:15px; font-size:14px;"></p>
-            <input type="text" id="st-modal-input" style="width:calc(100% - 22px); margin-bottom:15px; display:none; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px;" placeholder="${t("Template Name")}" />
-            <div style="display:flex; gap:10px; justify-content:center;">
-                <button id="st-modal-confirm" class="primary-btn" style="flex:1;">${t("Confirm")}</button>
-                <button id="st-modal-cancel" class="secondary-btn" style="flex:1;">${t("Cancel")}</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modalOverlay);
-
-    const stModalTitle = document.getElementById('st-modal-title');
-    const stModalMsg = document.getElementById('st-modal-msg');
-    const stModalInput = document.getElementById('st-modal-input');
-    const stModalConfirm = document.getElementById('st-modal-confirm');
-    const stModalCancel = document.getElementById('st-modal-cancel');
-
-    let currentModalAction = null;
-
-    function openModal(action, title, msg, showInput = false) {
-        currentModalAction = action;
-        stModalTitle.innerText = title;
-        stModalMsg.innerText = msg;
-        stModalInput.style.display = showInput ? 'block' : 'none';
-        stModalInput.value = '';
-        modalOverlay.style.display = 'flex';
-        if (showInput) stModalInput.focus();
-    }
-
-    stModalCancel.addEventListener('click', () => {
-        modalOverlay.style.display = 'none';
-    });
-
-    stModalConfirm.addEventListener('click', async () => {
-        if (currentModalAction === 'save') {
-            const name = stModalInput.value.trim();
-            if (!name) {
-                if (window.showToast) window.showToast(t("Please enter a name."), true);
-                return;
-            }
-            const code = codeInput.value.trim();
-            if (!code) {
-                if (window.showToast) window.showToast(t("No active build to save."), true);
-                modalOverlay.style.display = 'none';
-                return;
-            }
-            const res = await eel.save_star_chart_template(name, code)();
-            if (res.success) {
-                if (window.showToast) window.showToast(t("Template '{name}' saved!").replace("{name}", name));
-                await loadTemplates();
-                templateSelect.value = name;
-                btnDeleteTemplate.style.display = 'inline-block';
-            } else {
-                if (window.showToast) window.showToast(t("Error saving template."), true);
-            }
-        } else if (currentModalAction === 'delete') {
-            const name = templateSelect.value;
-            if (!name) return;
-            const res = await eel.delete_star_chart_template(name)();
-            if (res.success) {
-                if (window.showToast) window.showToast(t("Template '{name}' deleted!").replace("{name}", name));
-                await loadTemplates();
-            } else {
-                if (window.showToast) window.showToast(t("Error deleting template."), true);
-            }
-        }
-        modalOverlay.style.display = 'none';
-    });
-
-    btnSaveTemplate.addEventListener('click', () => {
-        const code = codeInput.value.trim();
-        if (!code) {
-            if (window.showToast) window.showToast(t("No active build to save."), true);
-            return;
-        }
-        openModal('save', t('Save Template'), t('Enter a name for your build:'), true);
-    });
-
-    btnDeleteTemplate.addEventListener('click', () => {
-        const name = templateSelect.value;
-        if (!name) return;
-        openModal('delete', t('Delete Template'), t("Are you sure you want to delete '{name}'?").replace("{name}", name), false);
-    });
-
-    loadTemplates();
-
-
-    const centerNode = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    centerNode.setAttribute("cx", origin[0]);
-    centerNode.setAttribute("cy", origin[1]);
-    centerNode.setAttribute("r", 20);
-    centerNode.setAttribute("fill", "var(--bg-panel)");
-    centerNode.setAttribute("stroke", "var(--border-color)");
-    centerNode.setAttribute("stroke-width", "4");
-    centerNode.setAttribute("id", "center-anchor");
-    centerNode.classList.add("root-node");
-    svg.appendChild(centerNode);
-
-    Object.keys(COLORS).forEach(constellName => {
-        if (data[constellName]) {
-            registerNode(data[constellName], constellName, null);
-            if (data[constellName].Coords) {
-                drawLine(origin, data[constellName].Coords, data[constellName].Path + "_rootline");
-                drawStarNode(data[constellName], constellName);
-            }
-        }
-    });
+    app.mount('#star-chart-vue-app');
 });
