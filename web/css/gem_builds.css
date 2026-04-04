@@ -1,3 +1,7 @@
+[v-cloak] {
+    display: none !important;
+}
+
 .view-container { padding: 20px; }
 .header h2 { font-size: 2.5rem; margin-bottom: 5px; }
 .header p { color: var(--text-muted); margin-bottom: 30px; }
