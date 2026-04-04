@@ -12,8 +12,13 @@
 
     <div class="search-section">
         <div class="search-bar-wrapper">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="ally-search-input" data-i18n-placeholder="Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...">
+            <div style="position: relative; flex: 1;">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="ally-search-input" data-i18n-placeholder="Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...">
+            </div>
+            <button id="btn-reset-ally-filters" class="btn-reset-filters" data-i18n-title="Clear All Filters">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         </div>
         
         <div class="filters-row">

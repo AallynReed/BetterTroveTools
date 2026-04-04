@@ -120,6 +120,19 @@ document.addEventListener('allies_loaded', async () => {
             statsDisplay.innerText = t("Error loading data.");
         });
 
+    const resetBtn = document.getElementById('btn-reset-ally-filters');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            categorySelect.value = 'All';
+            if (window.jQuery && $.fn.select2) {
+                $('#ally-stat-select').val(null).trigger('change');
+                $('#ally-ability-select').val(null).trigger('change');
+            }
+            applyFilters();
+        });
+    }
+
     function applyFilters() {
         const textQuery = searchInput.value.toLowerCase().trim();
         const catQuery = categorySelect.value;
@@ -178,9 +191,10 @@ document.addEventListener('allies_loaded', async () => {
         if (!activeStatHighlights) activeStatHighlights = [];
         if (!activeAbilityHighlights) activeAbilityHighlights = [];
 
-        alliesToRender.forEach(ally => {
+        alliesToRender.forEach((ally, idx) => {
             const card = document.createElement('div');
             card.className = 'ally-card';
+            card.style.animationDelay = `${Math.min(idx * 0.03, 0.3)}s`; // Stagger animation, cap at 0.3s so it doesn't take forever
 
             let statsHtml = '';
             if (ally.rawStats.length > 0) {
@@ -202,6 +216,23 @@ document.addEventListener('allies_loaded', async () => {
             let imgSource = ally.image || ally.blueprint;
             let imagePath = imgSource.startsWith('http') ? imgSource : `https://trovesaurus.com/data/catalog/${imgSource}.png`;
 
+            let footerHtml = '';
+            const pr = parseInt(ally.powerrank) || 0;
+            const mast = parseInt(ally.mastery) || 0;
+            const geodeMast = parseInt(ally.mastery_geode) || 0;
+
+            if (pr > 0) {
+                footerHtml += `<span class="footer-stat"><i class="fa-solid fa-star" style="color: #fbc02d;"></i> ${t("Power Rank")} ${pr}</span>`;
+            }
+            if (mast > 0) {
+                footerHtml += `<span class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> ${t("Mastery {val}").replace("{val}", mast)}</span>`;
+            }
+            if (geodeMast > 0) {
+                footerHtml += `<span class="footer-stat"><i class="fa-solid fa-gem" style="color: #00bcd4;"></i> ${t("Geode Mastery {val}").replace("{val}", geodeMast)}</span>`;
+            }
+            
+            const footerContainer = footerHtml ? `<div class="ally-footer">${footerHtml}</div>` : '';
+
             card.innerHTML = `
                 <div class="ally-header">
                     <div class="ally-icon">
@@ -217,10 +248,7 @@ document.addEventListener('allies_loaded', async () => {
                     ${statsHtml}
                     ${abilitiesHtml}
                 </div>
-                <div class="ally-footer">
-                    <span class="footer-stat"><i class="fa-solid fa-star" style="color: #fbc02d;"></i> PR ${ally.powerrank}</span>
-                    <span class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> ${t("Mastery {val}").replace("{val}", ally.mastery)}</span>
-                </div>
+                ${footerContainer}
             `;
 
             grid.appendChild(card);
