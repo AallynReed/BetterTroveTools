@@ -669,20 +669,40 @@ document.addEventListener('contextmenu', (e) => {
 });
 
 window.executePendingSearch = function() {
-    if (window.pendingSearch) {
-        const searchInput = document.getElementById('ts-search-input');
-        const searchBtn = document.getElementById('btn-ts-search');
-        if (searchInput && searchBtn) {
-            searchInput.value = window.pendingSearch;
-            searchBtn.click();
-            window.pendingSearch = null;
-        }
-    }
-}
+    if (!window.pendingSearch) return;
+    
+    let handled = false;
 
-document.addEventListener('trovesaurus_loaded', () => {
-    window.executePendingSearch();
-});
+    // Trovesaurus
+    const tsInput = document.getElementById('ts-search-input');
+    if (tsInput) {
+        tsInput.value = window.pendingSearch;
+        document.getElementById('btn-ts-search')?.click();
+        handled = true;
+    }
+
+    // Local Mod Manager
+    const modInput = document.getElementById('mod-search-input');
+    if (modInput) {
+        modInput.value = window.pendingSearch;
+        modInput.dispatchEvent(new Event('input', { bubbles: true }));
+        handled = true;
+    }
+
+    // Ally Codex
+    const allyInput = document.getElementById('ally-search-input');
+    if (allyInput) {
+        allyInput.value = window.pendingSearch;
+        allyInput.dispatchEvent(new Event('input', { bubbles: true }));
+        handled = true;
+    }
+
+    if (handled) window.pendingSearch = null;
+};
+
+document.addEventListener('trovesaurus_loaded', () => window.executePendingSearch());
+document.addEventListener('mod_manager_loaded', () => window.executePendingSearch());
+document.addEventListener('allies_loaded', () => setTimeout(() => window.executePendingSearch(), 100));
 
 document.addEventListener('DOMContentLoaded', async () => {
     
@@ -716,17 +736,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderCmdResults(filter = "") {
         const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-        const filtered = commands.filter(c => t(c.title).toLowerCase().includes(filter.toLowerCase()) || c.id.toLowerCase().includes(filter.toLowerCase()));
-        
-        if (filtered.length === 0) {
-            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No results found.</div>`;
+        const query = filter.trim();
+        let displayCommands = [];
+
+        if (query.startsWith('@')) {
+            const sq = query.substring(1).trim();
+            if (sq) displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
+        } else if (query.startsWith('#')) {
+            const sq = query.substring(1).trim();
+            if (sq) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+        } else {
+            const sq = query.startsWith('>') ? query.substring(1).trim() : query;
+            displayCommands = commands.filter(c => t(c.title).toLowerCase().includes(sq.toLowerCase()) || c.id.toLowerCase().includes(sq.toLowerCase()));
+            
+            // Auto-fallback to deep searches if no tabs match your typing
+            if (sq.length >= 3 && displayCommands.length === 0) {
+                displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
+                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+                displayCommands.push({ id: 'trovesaurus', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', query: sq });
+            }
+        }
+
+        if (displayCommands.length === 0) {
+            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">${t("No results found.")}</div>`;
             return;
         }
         
-        if (activeCmdIndex >= filtered.length) activeCmdIndex = 0;
+        if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
-        cmdResults.innerHTML = filtered.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}">
+        cmdResults.innerHTML = displayCommands.map((c, i) => `
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -748,13 +787,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (e.key === 'Enter') {
                 e.preventDefault();
                 const activeEl = cmdResults.querySelector('.cmd-result-item.active');
-                if (activeEl) { window.loadView(activeEl.getAttribute('data-target')); cmdOverlay.style.display = 'none'; }
+                if (activeEl) { 
+                    const q = activeEl.getAttribute('data-query');
+                    if (q) window.pendingSearch = q;
+                    window.loadView(activeEl.getAttribute('data-target')); 
+                    cmdOverlay.style.display = 'none'; 
+                }
+            }
+        } else if ((e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'f')) && !e.target.matches('input, textarea')) {
+            // Universal Focus Search Hotkey
+            e.preventDefault();
+            const searchInputs = ['ts-search-input', 'mod-search-input', 'ally-search-input', 'tree-search'];
+            for (let id of searchInputs) {
+                const input = document.getElementById(id);
+                if (input && input.offsetParent !== null) {
+                    input.focus();
+                    input.select();
+                    break;
+                }
             }
         }
     });
 
     cmdInput.addEventListener('input', (e) => { activeCmdIndex = 0; renderCmdResults(e.target.value); });
-    cmdResults.addEventListener('click', (e) => { const item = e.target.closest('.cmd-result-item'); if (item) { window.loadView(item.getAttribute('data-target')); cmdOverlay.style.display = 'none'; } });
+    cmdResults.addEventListener('click', (e) => { 
+        const item = e.target.closest('.cmd-result-item'); 
+        if (item) { 
+            const q = item.getAttribute('data-query');
+            if (q) window.pendingSearch = q;
+            window.loadView(item.getAttribute('data-target')); 
+            cmdOverlay.style.display = 'none'; 
+        } 
+    });
     cmdOverlay.addEventListener('click', (e) => { if (e.target === cmdOverlay) cmdOverlay.style.display = 'none'; });
 
     const navButtons = document.querySelectorAll('.nav-btn');
