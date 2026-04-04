@@ -1,3 +1,7 @@
+[v-cloak] {
+    display: none !important;
+}
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .file-manager-container { padding: 40px; max-width: 1200px; margin: 0 auto; animation: fadeIn 0.3s ease; }
