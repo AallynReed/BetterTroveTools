@@ -1,19 +1,17 @@
 <head>
     <link rel="stylesheet" href="css/trovesaurus.css">
 </head>
-<div class="trovesaurus-container">
+<div id="trovesaurus-vue-app" class="trovesaurus-container" v-cloak>
     <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
         <div>
-            <h1><img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" style="width: 32px; vertical-align: middle; margin-right: 10px;"> <span data-i18n>Trovesaurus Mod Browser</span></h1>
-            <p style="color: var(--text-muted); margin-top: 5px;" data-i18n>Discover and install mods directly from the community.</p>
+            <h1><img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" style="width: 32px; vertical-align: middle; margin-right: 10px;"> <span>{{ t('Trovesaurus Mod Browser') }}</span></h1>
+            <p style="color: var(--text-muted); margin-top: 5px;">{{ t('Discover and install mods directly from the community.') }}</p>
         </div>
         
         <div style="display: flex; align-items: center; gap: 10px;">
-            <label for="ts-game-select" style="font-size: 13px; color: var(--text-muted); font-weight: bold;" data-i18n>Install to:</label>
+            <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('Install to:') }}</label>
             <div style="width: 250px;">
-                <select id="ts-game-select" style="width: 100%;">
-                    <option value="" data-i18n>Auto-detecting...</option>
-                </select>
+                <custom-vue-select v-model="selectedGame" :options="gameOptions"></custom-vue-select>
             </div>
         </div>
     </div>
@@ -21,57 +19,65 @@
     <div class="search-filter-bar" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
         <div class="search-wrapper" style="flex: 1; min-width: 250px;">
             <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="ts-search-input" data-i18n-placeholder="Search by name, author, or ID...">
+            <input type="text" id="ts-search-input" v-model="searchQuery" @keyup.enter="fetchMods(1)" :placeholder="t('Search by name, author, or ID...')">
         </div>
         
         <div style="width: 160px;">
-            <select id="ts-category-select" style="width: 100%;">
-                <option value="" data-i18n>All Categories</option>
-                <option value="ui" data-i18n>UI & HUD</option>
-                <option value="vfx" data-i18n>VFX</option>
-                <option value="mount" data-i18n>Mounts</option>
-                <option value="ally" data-i18n>Allies</option>
-                <option value="costume" data-i18n>Costumes</option>
-                <option value="dragon" data-i18n>Dragons</option>
-            </select>
+            <custom-vue-select v-model="selectedCategory" :options="categoryOptions"></custom-vue-select>
         </div>
 
         <div style="width: 180px;">
-            <select id="ts-sort-select" style="width: 100%;">
-                <option value="hot" selected data-i18n>Hot Mods (Default)</option>
-                <option value="likes_desc" data-i18n>Most Liked</option>
-                <option value="downloads_desc" data-i18n>Most Downloaded</option>
-                <option value="date_desc" data-i18n>Newest First</option>
-                <option value="date_asc" data-i18n>Oldest First</option>
-            </select>
+            <custom-vue-select v-model="selectedSort" :options="sortOptions"></custom-vue-select>
         </div>
         
-        <button id="btn-ts-search" class="primary-btn" style="background: var(--accent-blue);">
-            <i class="fa-solid fa-magnifying-glass"></i> <span data-i18n>Search</span>
+        <button id="btn-ts-search" class="primary-btn" style="background: var(--accent-blue);" @click="fetchMods(1)" :disabled="isLoading">
+            <i class="fa-solid fa-magnifying-glass"></i> <span>{{ t('Search') }}</span>
         </button>
     </div>
 
-    <div id="ts-mod-grid" class="mod-grid" style="margin-top: 20px;">
-        <div class="placeholder-box">
-            <i class="fa-solid fa-cloud-arrow-down" style="font-size: 32px; margin-bottom: 15px; display: block;"></i>
-            <span data-i18n>Ready to browse. Enter a search term or hit Search to load latest mods.</span>
-        </div>
+    <div id="ts-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+        <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Browsing Trovesaurus...') }}</div>
+        <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+        <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found matching your search.') }}</div>
+        <template v-else>
+            <div v-for="mod in mods" :key="mod.id" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
+                <div class="mod-image-container" style="cursor: pointer;" :title="t('Click to enlarge image')" @click="openImageModal(mod)">
+                    <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                </div>
+                <div class="mod-card-content">
+                    <h3 class="mod-title ts-mod-title" :title="t('{name} (Click to view on Trovesaurus)').replace('{name}', mod.name)" @click="openUrl(`https://trovesaurus.com/mod=${mod.id}`)">{{ mod.name }}</h3>
+                    <span class="mod-meta"><span :class="{ 'ts-mod-author': !!mod.author_id }" :title="mod.author_id ? t(`View {author}'s profile`).replace('{author}', mod.author) : ''" @click="mod.author_id && openUrl(`https://trovesaurus.com/user=${mod.author_id}`)">{{ mod.author }}</span></span>
+                    <div class="ts-mod-stats">
+                        <span class="ts-stat-item" :title="t('Downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ mod.downloads.toLocaleString() }}</span>
+                        <span class="ts-stat-item" :title="t('Likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ mod.likes.toLocaleString() }}</span>
+                    </div>
+                    <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click="installMod(mod)">
+                        <template v-if="mod.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Installing...') }}</template>
+                        <template v-else-if="mod.needs_update"><i class="fa-solid fa-rotate"></i> {{ t('Update') }}</template>
+                        <template v-else-if="mod.is_installed"><i class="fa-solid fa-check"></i> {{ t('Installed') }}</template>
+                        <template v-else><i class="fa-solid fa-download"></i> {{ t('Install') }}</template>
+                    </button>
+                </div>
+            </div>
+        </template>
     </div>
 
     <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
-        <button id="btn-ts-prev" class="primary-btn" disabled>
-            <i class="fa-solid fa-chevron-left"></i> <span data-i18n>Previous</span>
+        <button class="primary-btn" :disabled="currentPage <= 1 || isLoading" @click="fetchMods(currentPage - 1)">
+            <i class="fa-solid fa-chevron-left"></i> <span>{{ t('Previous') }}</span>
         </button>
-        <span id="ts-page-display" style="color: var(--text-main); font-weight: bold;"><span data-i18n>Page</span> <span id="ts-page-current">1</span> <span id="ts-page-max-container" style="display: none;"><span data-i18n>of</span> <span id="ts-page-max">1</span></span></span>
-        <button id="btn-ts-next" class="primary-btn" disabled>
-            <span data-i18n>Next</span> <i class="fa-solid fa-chevron-right"></i>
+        <span style="color: var(--text-main); font-weight: bold;"><span>{{ t('Page') }}</span> <span>{{ currentPage }}</span> <span>{{ t('of') }}</span> <span>{{ maxPages }}</span></span>
+        <button class="primary-btn" :disabled="currentPage >= maxPages || isLoading" @click="fetchMods(currentPage + 1)">
+            <span>{{ t('Next') }}</span> <i class="fa-solid fa-chevron-right"></i>
         </button>
     </div>
 
-    <div id="image-modal" class="image-modal">
-        <span class="close-modal">&times;</span>
-        <img class="modal-content" id="expanded-img">
-        <div id="modal-caption"></div>
-        <button id="modal-view-ts-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> <span data-i18n>View on Trovesaurus</span></button>
+    <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
+        <span class="close-modal" @click="closeImageModal">&times;</span>
+        <img class="modal-content" :src="modal.src" v-if="modal.src">
+        <div id="modal-caption">{{ modal.caption }}</div>
+        <button v-if="modal.modId" id="modal-view-ts-btn" @click="openUrl(`https://trovesaurus.com/mod=${modal.modId}`)">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('View on Trovesaurus') }}</span>
+        </button>
     </div>
 </div>

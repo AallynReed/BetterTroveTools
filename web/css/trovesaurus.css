@@ -1,3 +1,7 @@
+[v-cloak] {
+    display: none !important;
+}
+
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .trovesaurus-container { padding: 20px; height: 100%; display: flex; flex-direction: column; overflow-y: auto; }

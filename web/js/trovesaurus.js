@@ -1,322 +1,253 @@
-let ts_currentPage = 1;
-let ts_isLoading = false;
-
 document.addEventListener('trovesaurus_loaded', () => {
-    console.log("Trovesaurus Logic: Hooking into UI...");
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-
-    const searchBtn = document.getElementById('btn-ts-search');
-    const searchInput = document.getElementById('ts-search-input');
-    const categorySelect = document.getElementById('ts-category-select');
-    const sortSelect = document.getElementById('ts-sort-select');
-    const prevBtn = document.getElementById('btn-ts-prev');
-    const nextBtn = document.getElementById('btn-ts-next');
-
-    if (searchBtn) searchBtn.addEventListener('click', () => fetchTrovesaurusMods(1));
-    
-    if (searchInput) {
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') fetchTrovesaurusMods(1);
-        });
+    console.log("Trovesaurus Vue initialized!");
+    if (typeof Vue === 'undefined') {
+        console.error("Vue.js failed to load!");
+        return;
     }
 
-    if (categorySelect) categorySelect.addEventListener('change', () => fetchTrovesaurusMods(1));
-    if (sortSelect) sortSelect.addEventListener('change', () => fetchTrovesaurusMods(1));
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-    if (prevBtn) prevBtn.addEventListener('click', () => {
-        if (ts_currentPage > 1) {
-            fetchTrovesaurusMods(ts_currentPage - 1);
-            document.getElementById('view-container').scrollTo({top: 0, behavior: 'smooth'});
+    const app = createApp({
+        setup() {
+            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+
+            // State
+            const isLoading = ref(true);
+            const error = ref("");
+            const mods = ref([]);
+            
+            const currentPage = ref(1);
+            const maxPages = ref(1);
+
+            const searchQuery = ref("");
+            const selectedCategory = ref("");
+            const selectedSort = ref("hot");
+            
+            const games = ref([]);
+            const selectedGame = ref("");
+
+            const modal = reactive({ show: false, src: "", caption: "", modId: null });
+
+            // Dropdown Options
+            const categoryOptions = computed(() => [
+                [t('All Categories'), ''],
+                [t('UI & HUD'), 'ui'],
+                [t('VFX'), 'vfx'],
+                [t('Mounts'), 'mount'],
+                [t('Allies'), 'ally'],
+                [t('Costumes'), 'costume'],
+                [t('Dragons'), 'dragon']
+            ]);
+
+            const sortOptions = computed(() => [
+                [t('Hot Mods (Default)'), 'hot'],
+                [t('Most Liked'), 'likes_desc'],
+                [t('Most Downloaded'), 'downloads_desc'],
+                [t('Newest First'), 'date_desc'],
+                [t('Oldest First'), 'date_asc']
+            ]);
+
+            const gameOptions = computed(() => {
+                if (games.value.length === 0) return [[t('Auto-detecting...'), '']];
+                return games.value.map(g => [`${g.name} - ${g.path}`, g.path]);
+            });
+
+            // Fetch Data
+            const fetchMods = (page = 1) => {
+                if (isLoading.value && page !== 1) return;
+                isLoading.value = true;
+                error.value = "";
+                eel.get_trovesaurus_mods(page, searchQuery.value.trim(), selectedCategory.value, selectedSort.value, selectedGame.value)();
+                
+                const vc = document.getElementById('view-container');
+                if (vc && page !== currentPage.value) vc.scrollTo({top: 0, behavior: 'smooth'});
+            };
+
+            // Global eel callbacks hook into these
+            window._tsAppHandleMods = (response) => {
+                if (response && response.success) {
+                    mods.value = response.mods;
+                    currentPage.value = response.page;
+                    maxPages.value = response.max_pages;
+                    error.value = "";
+                } else {
+                    mods.value = [];
+                    error.value = response?.error || t('Unknown error occurred');
+                }
+                isLoading.value = false;
+            };
+
+            window._tsAppHandleInstall = (response) => {
+                const targetMod = mods.value.find(m => m.id === parseInt(response.mod_id));
+                if (!targetMod) return;
+
+                targetMod.is_installing = false;
+                if (response.success) {
+                    targetMod.is_installed = true;
+                    targetMod.needs_update = false;
+                    window.showToast(t("Installed"));
+                } else {
+                    window.showToast(t("Error: {error}").replace("{error}", response?.error || t('Unknown error occurred')), true);
+                }
+            };
+
+            const installMod = (mod) => {
+                if (mod.is_installing || (mod.is_installed && !mod.needs_update)) return;
+                if (!selectedGame.value) return window.showToast(t("Could not automatically detect your Trove installation folder! Please check your game install."), true);
+                
+                mod.is_installing = true;
+                eel.install_trovesaurus_mod(selectedGame.value, mod.id)();
+            };
+
+            // Context Menu & Interactions
+            const openUrl = (url) => eel.open_url_in_browser(url)();
+
+            const showContextMenu = (e, mod) => {
+                if (!window.ContextMenu) return;
+                let items = [];
+                
+                if (!mod.is_installed || mod.needs_update) {
+                    items.push({
+                        label: mod.needs_update ? 'Update Mod' : 'Install Mod',
+                        icon: mod.needs_update ? 'fa-rotate' : 'fa-download',
+                        action: () => installMod(mod)
+                    });
+                    items.push({ separator: true });
+                }
+                
+                items.push({ label: 'View on Trovesaurus', icon: 'fa-arrow-up-right-from-square', action: () => openUrl(`https://trovesaurus.com/mod=${mod.id}`) });
+                items.push({ label: 'Copy Mod Name', icon: 'fa-copy', action: () => navigator.clipboard.writeText(mod.name).then(() => window.showToast(t("Copied to clipboard!"))) });
+                
+                window.ContextMenu.show(e, items);
+            };
+
+            const openImageModal = (mod) => {
+                if (mod.image) {
+                    modal.src = mod.image;
+                    modal.caption = mod.name;
+                    modal.modId = mod.id;
+                    modal.show = true;
+                }
+            };
+            const closeImageModal = () => { modal.show = false; setTimeout(() => modal.src = "", 200); };
+
+            watch([selectedCategory, selectedSort], () => {
+                fetchMods(1);
+            });
+
+            // Initialization
+            onMounted(async () => {
+                const response = await eel.get_detected_game_paths()();
+                const settings = await eel.get_settings()();
+                
+                if (response.success && response.paths.length > 0) {
+                    games.value = response.paths;
+                    const lastPath = settings.last_game_path;
+                    
+                    if (lastPath && response.paths.some(p => p.path === lastPath)) selectedGame.value = lastPath;
+                    else {
+                        const liveInstall = response.paths.find(p => p.name.toLowerCase().includes('live'));
+                        selectedGame.value = liveInstall ? liveInstall.path : response.paths[0].path;
+                    }
+                }
+                
+                watch(selectedGame, async (newVal) => {
+                    if (!newVal) return;
+                    settings.last_game_path = newVal;
+                    await eel.save_settings(settings)();
+                    fetchMods(1);
+                });
+
+                fetchMods(1);
+                nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+            });
+
+            return {
+                t, isLoading, error, mods, currentPage, maxPages,
+                searchQuery, selectedCategory, selectedSort, selectedGame,
+                categoryOptions, sortOptions, gameOptions,
+                modal, openImageModal, closeImageModal,
+                fetchMods, installMod, openUrl, showContextMenu
+            };
         }
     });
 
-    if (nextBtn) nextBtn.addEventListener('click', () => {
-        fetchTrovesaurusMods(ts_currentPage + 1);
-        document.getElementById('view-container').scrollTo({top: 0, behavior: 'smooth'});
-    });
-
-    const modGrid = document.getElementById('ts-mod-grid');
-    const imageModal = document.getElementById('image-modal');
-    const modalImg = document.getElementById('expanded-img');
-    const modalCaption = document.getElementById('modal-caption');
-
-    const tsGameSelect = document.getElementById('ts-game-select');
-
-    if (modGrid) {
-        modGrid.addEventListener('contextmenu', (e) => {
-            const card = e.target.closest('.ts-mod-card');
-            if (card && window.ContextMenu) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const titleEl = card.querySelector('.ts-mod-title');
-                const modName = titleEl ? titleEl.innerText : null;
-                const installBtn = card.querySelector('.ts-install-btn');
-                const modId = installBtn ? installBtn.dataset.id : null;
-                
-                let menuItems = [];
-                
-                if (installBtn && !installBtn.disabled && !installBtn.classList.contains('installed')) {
-                    const isUpdate = installBtn.classList.contains('update');
-                    menuItems.push({
-                        label: isUpdate ? 'Update Mod' : 'Install Mod',
-                        icon: isUpdate ? 'fa-rotate' : 'fa-download',
-                        action: () => installBtn.click()
-                    });
-                    menuItems.push({ separator: true });
-                }
-                
-                if (modId) menuItems.push({ label: 'View on Trovesaurus', icon: 'fa-arrow-up-right-from-square', action: () => eel.open_url_in_browser(`https://trovesaurus.com/mod=${modId}`)() });
-                
-                if (modName) {
-                    menuItems.push({ label: 'Copy Mod Name', icon: 'fa-copy', action: () => navigator.clipboard.writeText(modName).then(() => window.showToast(t("Copied to clipboard!"))) });
-                }
-                
-                if (menuItems.length > 0) window.ContextMenu.show(e, menuItems);
-            }
-        });
-    }
-
-    if (tsGameSelect) {
-        tsGameSelect.addEventListener('change', async () => {
-            const settings = await eel.get_settings()();
-            settings.last_game_path = tsGameSelect.value;
-            await eel.save_settings(settings)();
-            fetchTrovesaurusMods(1);
-        });
-    }
-
-    if (modGrid) {
-        modGrid.addEventListener('click', (e) => {
-            const installBtn = e.target.closest('.ts-install-btn');
-            if (installBtn) {
-                handleTrovesaurusInstall(e);
-                return;
-            }
-
-            const imgContainer = e.target.closest('.mod-image-container');
-            if (imgContainer && imageModal) {
-                const previewImg = imgContainer.querySelector('img.mod-preview-img');
-                const card = imgContainer.closest('.ts-mod-card');
-                if (previewImg) {
-                    modalImg.src = previewImg.src;
-                    modalCaption.innerText = card.querySelector('.ts-mod-title').innerText;
-                    
-                    const modId = card.querySelector('.ts-install-btn')?.getAttribute('data-id');
-                    const viewBtn = document.getElementById('modal-view-ts-btn');
-                    if (viewBtn) {
-                        if (modId) {
-                            viewBtn.style.display = 'inline-flex';
-                            viewBtn.onclick = () => eel.open_url_in_browser(`https://trovesaurus.com/mod=${modId}`)();
+    // Reuse our custom dropdown component
+    if (window.CustomVueSelect) {
+        app.component('custom-vue-select', window.CustomVueSelect);
+    } else {
+        app.component('custom-vue-select', {
+            props: ['modelValue', 'options', 'disabled'],
+            setup(props, { emit }) {
+                const isOpen = ref(false);
+                const isDropUp = ref(false);
+                const maxH = ref(250);
+                const wrapperRef = ref(null);
+                const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+                const currentLabel = computed(() => {
+                    const found = props.options.find(opt => opt[1] === props.modelValue);
+                    return found ? found[0] : '';
+                });
+                const toggle = () => {
+                    if (props.disabled) return;
+                    isOpen.value = !isOpen.value;
+                    if (isOpen.value && wrapperRef.value) {
+                        const rect = wrapperRef.value.getBoundingClientRect();
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+                        if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                            isDropUp.value = true;
+                            maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
                         } else {
-                            viewBtn.style.display = 'none';
+                            isDropUp.value = false;
+                            maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
                         }
                     }
-
-                    imageModal.classList.add('active');
-                }
-            }
+                };
+                const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
+                const handleKey = (e) => {
+                    if (props.disabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                    else if (e.key === 'Escape') isOpen.value = false;
+                    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!props.options || props.options.length === 0) return;
+                        let currentIdx = props.options.findIndex(opt => opt[1] === props.modelValue);
+                        if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
+                        if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
+                        if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
+                    }
+                };
+                onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+                return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+            },
+            template: `
+                <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
+                    <div class="custom-select-trigger">
+                        <span class="custom-select-trigger-text">{{ currentLabel }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+                        <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: modelValue === opt[1] }" @click.stop="selectOpt(opt[1])">
+                            {{ opt[0] }}
+                        </div>
+                    </div>
+                </div>
+            `
         });
     }
-
-    if (imageModal) {
-        imageModal.addEventListener('click', (e) => {
-            if (e.target === imageModal || e.target.classList.contains('close-modal')) {
-                imageModal.classList.remove('active');
-                setTimeout(() => { modalImg.src = ""; }, 200);
-            }
-        });
-    }
-
-    fetchTrovesaurusMods(1);
+    
+    if (window._trovesaurusApp) window._trovesaurusApp.unmount();
+    window._trovesaurusApp = app;
+    app.mount('#trovesaurus-vue-app');
 });
-
-async function getActiveGamePath() {
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    const tsSelect = document.getElementById('ts-game-select');
-    
-    if (tsSelect && tsSelect.getAttribute('data-loaded')) {
-        return tsSelect.value;
-    }
-
-    const response = await eel.get_detected_game_paths()();
-    const settings = await eel.get_settings()();
-    const lastPath = settings.last_game_path;
-
-    if (response.success && response.paths.length > 0) {
-        if (tsSelect) {
-            tsSelect.innerHTML = response.paths.map(p => 
-                `<option value="${p.path}">${p.name}</option>`
-            ).join('');
-            
-            if (lastPath && response.paths.some(p => p.path === lastPath)) {
-                tsSelect.value = lastPath;
-            } else {
-                const liveInstall = response.paths.find(p => p.name.toLowerCase().includes('live'));
-                if (liveInstall) {
-                    tsSelect.value = liveInstall.path;
-                } else {
-                    tsSelect.value = response.paths[0].path;
-                }
-            }
-            
-            tsSelect.setAttribute('data-loaded', 'true');
-            return tsSelect.value;
-        }
-        
-        if (lastPath && response.paths.some(p => p.path === lastPath)) {
-            return lastPath;
-        }
-        const liveInstall = response.paths.find(p => p.name.toLowerCase().includes('live'));
-        return liveInstall ? liveInstall.path : response.paths[0].path;
-    }
-    if (tsSelect) tsSelect.innerHTML = `<option value="">${t("No installations found")}</option>`;
-    return null;
-}
-
-async function fetchTrovesaurusMods(page = 1) {
-    if (ts_isLoading) return;
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    
-    const grid = document.getElementById('ts-mod-grid');
-    const searchInput = document.getElementById('ts-search-input');
-    const catSelect = document.getElementById('ts-category-select');
-    const sortSelect = document.getElementById('ts-sort-select');
-
-    if (!grid) return;
-
-    ts_isLoading = true;
-    grid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Browsing Trovesaurus...")}</div>`;
-
-    const query = searchInput ? searchInput.value.trim() : "";
-    const category = catSelect ? catSelect.value : "";
-    const sort = sortSelect ? sortSelect.value : "hot";
-    
-    const gamePath = await getActiveGamePath() || "";
-
-    eel.get_trovesaurus_mods(page, query, category, sort, gamePath)();
-}
 
 eel.expose(receive_trovesaurus_mods, 'receive_trovesaurus_mods');
 function receive_trovesaurus_mods(response) {
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    const grid = document.getElementById('ts-mod-grid');
-    const prevBtn = document.getElementById('btn-ts-prev');
-    const nextBtn = document.getElementById('btn-ts-next');
-    
-    const pageCurrent = document.getElementById('ts-page-current');
-    const pageMaxContainer = document.getElementById('ts-page-max-container');
-    const pageMax = document.getElementById('ts-page-max');
-
-    if (!grid) return;
-
-    if (response && response.success) {
-        ts_currentPage = response.page;
-        renderTrovesaurusGrid(response.mods, grid);
-        
-        if (pageCurrent) pageCurrent.innerText = ts_currentPage;
-        if (pageMaxContainer && pageMax) {
-            pageMaxContainer.style.display = 'inline';
-            pageMax.innerText = response.max_pages;
-        }
-
-        if (prevBtn) prevBtn.disabled = ts_currentPage <= 1;
-        if (nextBtn) nextBtn.disabled = ts_currentPage >= response.max_pages;
-    } else {
-        grid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> ${response?.error || t('Unknown error occurred')}</div>`;
-    }
-
-    ts_isLoading = false;
-}
-
-function renderTrovesaurusGrid(mods, container) {
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    if (!mods || mods.length === 0) {
-        container.innerHTML = `<div class="placeholder-box">${t("No mods found matching your search.")}</div>`;
-        return;
-    }
-
-    container.innerHTML = mods.map(mod => {
-        const isInstalled = mod.is_installed;
-        const needsUpdate = mod.needs_update;
-        const img = mod.image || '/assets/images/no_preview.png';
-        
-        let btnClass = '';
-        let btnIcon = '<i class="fa-solid fa-download"></i>';
-        let btnText = t('Install');
-        let btnDisabled = '';
-
-        if (needsUpdate) {
-            btnClass = 'update';
-            btnIcon = '<i class="fa-solid fa-rotate"></i>';
-            btnText = t('Update');
-        } else if (isInstalled) {
-            btnClass = 'installed';
-            btnIcon = '<i class="fa-solid fa-check"></i>';
-            btnText = t('Installed');
-            btnDisabled = 'disabled';
-        }
-
-        return `
-            <div class="ts-mod-card">
-                <div class="mod-image-container" style="cursor: pointer;" title="${t("Click to enlarge image")}">
-                    <img src="${img}" class="mod-preview-img" loading="lazy" onerror="this.src='/assets/images/no_preview.png'">
-                </div>
-                <div class="mod-card-content">
-                    <h3 class="mod-title ts-mod-title" title="${t("{name} (Click to view on Trovesaurus)").replace("{name}", mod.name)}" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
-                    <span class="mod-meta"><span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="${t("View {author}'s profile").replace("{author}", mod.author)}" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
-                    <div class="ts-mod-stats">
-                        <span class="ts-stat-item" title="${t("Downloads")}"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> ${mod.downloads.toLocaleString()}</span>
-                        <span class="ts-stat-item" title="${t("Likes")}"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> ${mod.likes.toLocaleString()}</span>
-                    </div>
-                    <button class="ts-install-btn ${btnClass}" 
-                            data-id="${mod.id}" data-name="${mod.name}" ${btnDisabled}>
-                        ${btnIcon} ${btnText}
-                    </button>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-async function handleTrovesaurusInstall(e) {
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    const btn = e.target.closest('.ts-install-btn');
-    if (!btn || btn.disabled) return;
-
-    const modId = btn.getAttribute('data-id');
-    const modName = btn.getAttribute('data-name');
-    
-    const gamePath = await getActiveGamePath();
-
-    if (!gamePath) {
-        window.showToast(t("Could not automatically detect your Trove installation folder! Please check your game install."), true);
-        return;
-    }
-
-    btn.setAttribute('data-original-html', btn.innerHTML);
-    
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Installing...")}`;
-    btn.disabled = true;
-
-    eel.install_trovesaurus_mod(gamePath, modId)();
+    if (window._tsAppHandleMods) window._tsAppHandleMods(response);
 }
 
 eel.expose(receive_install_result, 'receive_install_result');
 function receive_install_result(response) {
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    const btn = document.querySelector(`.ts-install-btn[data-id="${response.mod_id}"]`);
-    if (!btn) return;
-
-    if (response && response.success) {
-        btn.innerHTML = `<i class="fa-solid fa-check"></i> ${t("Installed")}`;
-        btn.classList.remove('update');
-        btn.classList.add('installed');
-        btn.disabled = true;
-    } else {
-        window.showToast(t("Error: {error}").replace("{error}", response?.error || t('Unknown error occurred')), true);
-        const originalHTML = btn.getAttribute('data-original-html');
-        if (originalHTML) btn.innerHTML = originalHTML;
-        btn.disabled = false;
-    }
+    if (window._tsAppHandleInstall) window._tsAppHandleInstall(response);
 }
