@@ -1,265 +1,229 @@
 document.addEventListener('mod_manager_loaded', async () => {
-    console.log("Mod Manager view initialized!");
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-
-    const modSelect = document.getElementById('mod-game-select');
-    const refreshBtn = document.getElementById('btn-refresh-mods');
-    const modGrid = document.getElementById('mod-grid-container');
-    
-    const fixNamesBtn = document.getElementById('btn-fix-names');
-    const fixConfigsBtn = document.getElementById('btn-fix-configs');
-
-    const imageModal = document.getElementById('image-modal');
-    const modalImg = document.getElementById('expanded-img');
-    const modalCaption = document.getElementById('modal-caption');
-
-    const searchInput = document.getElementById('mod-search-input');
-    const filterStatus = document.getElementById('mod-filter-status');
-    const visibleCountDisp = document.getElementById('visible-count');
-    const totalCountDisp = document.getElementById('total-count');
-
-    function applyFilters() {
-        const searchTerm = searchInput.value.toLowerCase();
-        const statusLimit = filterStatus.value;
-        const cards = document.querySelectorAll('.mod-card');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-            const name = card.dataset.name.toLowerCase();
-            const author = card.dataset.author.toLowerCase();
-            const status = card.dataset.status;
-            const activeConflict = card.dataset.activeConflict === 'true';
-
-            const matchesSearch = name.includes(searchTerm) || author.includes(searchTerm);
-            
-            let matchesStatus = false;
-            if (statusLimit === 'all') {
-                matchesStatus = true;
-            } else if (statusLimit === 'conflicts') {
-                matchesStatus = activeConflict;
-            } else {
-                matchesStatus = status === statusLimit;
-            }
-
-            if (matchesSearch && matchesStatus) {
-                card.style.display = "flex";
-                visibleCount++;
-            } else {
-                card.style.display = "none";
-            }
-        });
-
-        if (visibleCountDisp) visibleCountDisp.innerText = visibleCount;
-        if (totalCountDisp) totalCountDisp.innerText = cards.length;
-
-        if (visibleCount === 0 && cards.length > 0) {
-            let noResultsMsg = modGrid.querySelector('.no-results-message');
-            if (!noResultsMsg) {
-                noResultsMsg = document.createElement('div');
-                noResultsMsg.className = 'placeholder-box no-results-message';
-                modGrid.appendChild(noResultsMsg);
-            }
-            noResultsMsg.style.display = 'block';
-            noResultsMsg.innerText = t("No mods match your current filters.");
-        } else {
-            const noResultsMsg = modGrid.querySelector('.no-results-message');
-            if (noResultsMsg) noResultsMsg.style.display = 'none';
-        }
+    console.log("Mod Manager Vue initialized!");
+    if (typeof Vue === 'undefined') {
+        console.error("Vue.js failed to load!");
+        return;
     }
 
-    if (searchInput) searchInput.addEventListener('input', applyFilters);
-    if (filterStatus) filterStatus.addEventListener('change', applyFilters);
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-    async function scanForGames() {
-        if (!modSelect) return;
-        modSelect.innerHTML = `<option value="">${t("Searching for Game Installs...")}</option>`;
-        const response = await eel.get_detected_game_paths()();
-        const settings = await eel.get_settings()();
-        modSelect.innerHTML = ""; 
-        
-        if (response.success && response.paths.length > 0) {
-            response.paths.forEach(game => {
-                let option = document.createElement('option');
-                option.value = game.path; 
-                option.textContent = `${game.name} - ${game.path}`;
-                modSelect.appendChild(option);
+    const app = createApp({
+        setup() {
+            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+
+            const installs = ref([]);
+            const selectedInstall = ref('');
+            
+            const mods = ref([]);
+            const isLoading = ref(false);
+            const statusText = ref(t('Scanning Mod Directory...'));
+            
+            const searchQuery = ref('');
+            const filterStatus = ref('all');
+
+            const isFixingNames = ref(false);
+            const isFixingConfigs = ref(false);
+
+            const modal = reactive({ show: false, src: '', caption: '' });
+
+            const installOptions = computed(() => {
+                if (installs.value.length === 0) return [[t('Searching for Game Installs...'), '']];
+                return installs.value.map(g => [`${g.name} - ${g.path}`, g.path]);
             });
-            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
-                modSelect.value = settings.last_game_path;
-            }
-            if (modSelect.value) loadMods(modSelect.value);
-        } else {
-            modSelect.innerHTML = `<option value="">${t("No installations found.")}</option>`;
-        }
-    }
-    
-    scanForGames();
-    
-    if (refreshBtn) refreshBtn.addEventListener('click', scanForGames);
 
-    if (modSelect) {
-        modSelect.addEventListener('change', async () => {
-            const settings = await eel.get_settings()();
-            settings.last_game_path = modSelect.value;
-            await eel.save_settings(settings)();
-            if (modSelect.value) loadMods(modSelect.value);
-        });
-    }
+            const statusOptions = computed(() => [
+                [t('All Mods'), 'all'],
+                [t('Enabled Only'), 'enabled'],
+                [t('Disabled Only'), 'disabled'],
+                [t('Active Conflicts (Red)'), 'conflicts']
+            ]);
 
-    async function loadMods(gamePath) {
-        if (!modGrid) return;
-        modGrid.innerHTML = `<div class="placeholder-box"><span data-i18n>Scanning Mod Directory...</span></div>`;
-        modGrid.className = "placeholder-box"; 
-        
-        const settings = await eel.get_settings()();
-        let statusText = t("Scanning Mod Directory...");
-        if (settings.auto_fix_names || settings.auto_fix_configs) {
-            let fixing = [];
-            if (settings.auto_fix_names) fixing.push(t("Names"));
-            if (settings.auto_fix_configs) fixing.push(t("Configs"));
-            statusText = t("Auto-fixing Mod {fixing}...").replace("{fixing}", fixing.join(" & "));
-        }
-        modGrid.innerHTML = `<div class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> ${statusText}</div>`;
-        
-        const response = await eel.get_installed_mods(gamePath, settings.auto_fix_names === true, settings.auto_fix_configs === true)();
-        
-        if (response.success) {
-            let modsData = [];
-            try {
-                const fetchRes = await fetch(response.cached_file + '?t=' + new Date().getTime());
-                const data = await fetchRes.json();
-                modsData = data.mods;
-            } catch (err) {
-                console.error("Failed to load mod cache:", err);
-                modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error reading mod data from cache.")}</div>`;
-                return;
-            }
+            const hasActiveConflict = (mod) => {
+                return mod.status === 'enabled' && mod.conflicts_with && mod.conflicts_with.some(c => c.enabled);
+            };
 
-            if (modsData.length === 0) {
-                modGrid.innerHTML = `<div class="placeholder-box">${t("No mods found in the selected directory.")}</div>`;
-                return;
-            }
+            const filteredMods = computed(() => {
+                const term = searchQuery.value.toLowerCase().trim();
+                const stat = filterStatus.value;
 
-            modGrid.className = "mod-grid";
-            if (totalCountDisp) totalCountDisp.innerText = modsData.length;
-            let html = "";
-            
-            modsData.forEach(mod => {
+                return mods.value.filter(mod => {
+                    const nameMatch = mod.name.toLowerCase().includes(term);
+                    const authorMatch = mod.author.toLowerCase().includes(term);
+                    if (term && !nameMatch && !authorMatch) return false;
+
+                    if (stat === 'enabled') return mod.status === 'enabled';
+                    if (stat === 'disabled') return mod.status === 'disabled';
+                    if (stat === 'conflicts') return hasActiveConflict(mod);
+                    return true;
+                });
+            });
+
+            const totalCount = computed(() => mods.value.length);
+            const visibleCount = computed(() => filteredMods.value.length);
+
+            const scanForGames = async () => {
+                const response = await eel.get_detected_game_paths()();
+                const settings = await eel.get_settings()();
+                if (response.success && response.paths.length > 0) {
+                    installs.value = response.paths;
+                    if (settings.last_game_path && installs.value.some(p => p.path === settings.last_game_path)) {
+                        selectedInstall.value = settings.last_game_path;
+                    } else {
+                        selectedInstall.value = installs.value[0].path;
+                    }
+                } else {
+                    installs.value = [];
+                    selectedInstall.value = '';
+                }
+            };
+
+            const loadMods = async () => {
+                if (!selectedInstall.value) return;
+                
+                isLoading.value = true;
+                mods.value = [];
+                
+                const settings = await eel.get_settings()();
+                let stText = t("Scanning Mod Directory...");
+                if (settings.auto_fix_names || settings.auto_fix_configs) {
+                    let fixing = [];
+                    if (settings.auto_fix_names) fixing.push(t("Names"));
+                    if (settings.auto_fix_configs) fixing.push(t("Configs"));
+                    stText = t("Auto-fixing Mod {fixing}...").replace("{fixing}", fixing.join(" & "));
+                }
+                statusText.value = stText;
+
+                const response = await eel.get_installed_mods(selectedInstall.value, settings.auto_fix_names === true, settings.auto_fix_configs === true)();
+                
+                if (response.success) {
+                    try {
+                        const fetchRes = await fetch(response.cached_file + '?t=' + new Date().getTime());
+                        const data = await fetchRes.json();
+                        mods.value = data.mods.map(m => ({ ...m, hasUpdate: false, tsUrl: null, isToggling: false, isUpdating: false }));
+                        
+                        getModUrls();
+                        checkForUpdates();
+                    } catch (err) {
+                        console.error("Failed to load mod cache:", err);
+                        statusText.value = t("Error reading mod data from cache.");
+                    }
+                } else {
+                    statusText.value = t("Error loading mods: {error}").replace("{error}", response.error);
+                }
+                isLoading.value = false;
+            };
+
+            const getModUrls = async () => {
+                if (!selectedInstall.value) return;
+                const response = await eel.get_mod_urls(selectedInstall.value)();
+                if (response.success && response.urls) {
+                    mods.value.forEach(mod => {
+                        if (response.urls[mod.path]) {
+                            mod.tsUrl = response.urls[mod.path];
+                        }
+                    });
+                }
+            };
+
+            const checkForUpdates = async () => {
+                if (!selectedInstall.value) return;
+                const response = await eel.check_mod_updates(selectedInstall.value)();
+                if (response.success && response.updates) {
+                    mods.value.forEach(mod => {
+                        if (response.updates[mod.path]) {
+                            mod.hasUpdate = true;
+                        }
+                    });
+                }
+            };
+
+            const toggleMod = async (mod) => {
+                if (mod.isToggling) return;
+                mod.isToggling = true;
+                const response = await eel.toggle_mod(selectedInstall.value, mod.path)();
+                if (response.success) {
+                mod.status = mod.status === 'enabled' ? 'disabled' : 'enabled';
+                if (response.new_path) mod.path = response.new_path;
+                
+                // Update conflicts in other mods
+                mods.value.forEach(m => {
+                    if (m !== mod && m.conflicts_with) {
+                        const conflict = m.conflicts_with.find(c => c.name === mod.name);
+                        if (conflict) conflict.enabled = (mod.status === 'enabled');
+                    }
+                });
+                
+                mod.isToggling = false;
+                } else {
+                    window.showToast(t("Failed to toggle mod: {error}").replace("{error}", response.error), true);
+                    mod.isToggling = false;
+                }
+            };
+
+            const updateMod = async (mod) => {
+                if (mod.isUpdating) return;
+                mod.isUpdating = true;
+                const response = await eel.perform_mod_update(selectedInstall.value, mod.path)();
+                if (response.success) {
+                mod.hasUpdate = false;
+                mod.isUpdating = false;
+                window.showToast(t("Mod '{name}' updated successfully!").replace("{name}", mod.name));
+                } else {
+                    window.showToast(t("Failed to update mod: {error}").replace("{error}", response.error), true);
+                    mod.isUpdating = false;
+                }
+            };
+
+            const fixNames = async () => {
+                if (!selectedInstall.value) return window.showToast(t("Select a game first."), true);
+                isFixingNames.value = true;
+                const response = await eel.fix_mod_names(selectedInstall.value)();
+                if (response.success) {
+                    window.showToast(t("Fixed {count} mod names!").replace("{count}", response.fixed_count));
+                    await loadMods();
+                } else {
+                    window.showToast(t("Error: {error}").replace("{error}", response.error), true);
+                }
+                isFixingNames.value = false;
+            };
+
+            const fixConfigs = async () => {
+                if (!selectedInstall.value) return window.showToast(t("Select a game first."), true);
+                isFixingConfigs.value = true;
+                const response = await eel.fix_mod_configs(selectedInstall.value)();
+                if (response.success) {
+                    window.showToast(t("Verified configs for {count} mods!").replace("{count}", response.configs_ensured));
+                    await loadMods();
+                } else {
+                    window.showToast(t("Error: {error}").replace("{error}", response.error), true);
+                }
+                isFixingConfigs.value = false;
+            };
+
+            const getConflictTitle = (mod) => {
+                const isCrit = hasActiveConflict(mod);
+                const names = mod.conflicts_with.map(c => `${c.name} (${c.enabled ? t('ENABLED') : t('Disabled')})`).join('\n• ');
+                const title = isCrit ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT');
+                return `${title}\n• ${names}`;
+            };
+
+            const openUrl = (url) => eel.open_url_in_browser(url)();
+
+            const showContextMenu = (e, mod) => {
+                if (!window.ContextMenu) return;
                 const isEnabled = mod.status === 'enabled';
-                const statusColor = isEnabled ? '#28a745' : '#666';
-                const btnText = isEnabled ? t('Disable') : t('Enable');
-                const btnClass = isEnabled ? 'active' : '';
-                const cardOpacity = isEnabled ? '1' : '0.6';
                 
-                const hasActiveConflict = isEnabled && mod.conflicts_with.some(c => c.enabled);
-
-                const imageHTML = mod.image 
-                    ? `<img src="data:image/png;base64,${mod.image}" alt="Preview" class="mod-preview-img" loading="lazy" style="max-height: 200px; object-fit: cover; width: 100%;">`
-                    : `<div class="mod-preview-img placeholder-img" style="height: 200px; display: flex; align-items: center; justify-content: center;">${t("No Preview")}</div>`;
+                let menuItems = [{
+                    label: isEnabled ? 'Disable Mod' : 'Enable Mod',
+                    icon: isEnabled ? 'fa-ban' : 'fa-check',
+                    action: () => toggleMod(mod)
+                }];
                 
-                let conflictBadge = '';
-                if (mod.has_conflicts) {
-                    const badgeClass = hasActiveConflict ? 'conflict-active' : 'conflict-inactive';
-                    const conflictNames = mod.conflicts_with.map(c => `${c.name} (${c.enabled ? t('ENABLED') : t('Disabled')})`).join('&#10;• ');
-                    
-                    const conflictTitle = hasActiveConflict ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT');
-                    const titleText = `${conflictTitle}&#10;• ${conflictNames}`;
-                    
-                    conflictBadge = `<span class="mod-conflict-inline ${badgeClass}" title="${titleText}"><i class="fa-solid fa-triangle-exclamation"></i></span>`;
-                }
-                
-                html += `
-                    <div class="mod-card" 
-                         data-name="${mod.name}" 
-                         data-author="${mod.author}" 
-                         data-status="${mod.status}"
-                         data-active-conflict="${hasActiveConflict}"
-                         style="opacity: ${cardOpacity}">
-                        <div class="mod-image-container">
-                            ${imageHTML}
-                            <span class="mod-badge" style="background: ${statusColor}">${t(mod.status.toUpperCase())}</span>
-                        </div>
-                        <div class="mod-card-content">
-                            <h3 class="mod-title" title="${mod.name}">${mod.name}</h3>
-                            <span class="mod-meta">${mod.author}</span>
-                            <div class="mod-card-footer">
-                                ${conflictBadge}
-                                <button class="update-mod-btn hidden" data-path="${mod.path}" title="${t("Update Available")}"><i class="fa-solid fa-download"></i></button>
-                                <button class="toggle-mod-btn ${btnClass}" data-path="${mod.path}">${btnText}</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            modGrid.innerHTML = html;
-            applyFilters();
-            await getModUrls(gamePath);
-            await checkForUpdates(gamePath);
-        } else {
-            modGrid.innerHTML = `<div class="placeholder-box" style="color: #ff5555;">${t("Error loading mods: {error}").replace("{error}", response.error)}</div>`;
-        }
-    }
-
-    async function getModUrls(gamePath) {
-        const response = await eel.get_mod_urls(gamePath)();
-        if (response.success && response.urls) {
-            document.querySelectorAll('.toggle-mod-btn').forEach(btn => {
-                const path = btn.getAttribute('data-path');
-                if (response.urls[path]) {
-                    const card = btn.closest('.mod-card');
-                    const titleEl = card ? card.querySelector('.mod-title') : null;
-                    if (titleEl && !titleEl.classList.contains('ts-mod-title')) {
-                        titleEl.classList.add('ts-mod-title');
-                        titleEl.title = t("{title} (Click to view on Trovesaurus)").replace("{title}", titleEl.innerText);
-                        titleEl.onclick = () => eel.open_url_in_browser(response.urls[path])();
-                    }
-                }
-            });
-        }
-    }
-
-    async function checkForUpdates(gamePath) {
-        const response = await eel.check_mod_updates(gamePath)();
-        if (response.success) {
-            const updates = response.updates || {};
-            
-            document.querySelectorAll('.update-mod-btn').forEach(btn => {
-                const path = btn.getAttribute('data-path');
-                if (updates[path]) {
-                    btn.classList.remove('hidden');
-                }
-            });
-        }
-    }
-
-    if (modGrid) {
-        modGrid.addEventListener('contextmenu', (e) => {
-            const card = e.target.closest('.mod-card');
-            if (card && window.ContextMenu) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const modName = card.dataset.name;
-                const isEnabled = card.dataset.status === 'enabled';
-                
-                const toggleBtn = card.querySelector('.toggle-mod-btn');
-                const updateBtn = card.querySelector('.update-mod-btn');
-                const hasUpdate = updateBtn && !updateBtn.classList.contains('hidden');
-                
-                let menuItems = [
-                    {
-                        label: isEnabled ? 'Disable Mod' : 'Enable Mod',
-                        icon: isEnabled ? 'fa-ban' : 'fa-check',
-                        action: () => toggleBtn.click()
-                    }
-                ];
-                
-                if (hasUpdate) {
+                if (mod.hasUpdate) {
                     menuItems.push({
                         label: 'Install Update',
                         icon: 'fa-cloud-arrow-down',
-                        action: () => updateBtn.click()
+                        action: () => updateMod(mod)
                     });
                 }
                 
@@ -267,91 +231,116 @@ document.addEventListener('mod_manager_loaded', async () => {
                 menuItems.push({
                     label: 'Copy Mod Name',
                     icon: 'fa-copy',
-                    action: () => {
-                        navigator.clipboard.writeText(modName).then(() => window.showToast(t("Copied to clipboard!")));
-                    }
+                    action: () => navigator.clipboard.writeText(mod.name).then(() => window.showToast(t("Copied to clipboard!")))
                 });
                 
                 window.ContextMenu.show(e, menuItems);
-            }
-        });
+            };
 
-        modGrid.addEventListener('click', async (e) => {
-            const toggleBtn = e.target.closest('.toggle-mod-btn');
-            if (toggleBtn) {
-                const currentPath = toggleBtn.getAttribute('data-path');
-                const gamePath = modSelect.value;
-                toggleBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Working...")}`;
-                toggleBtn.disabled = true;
-
-                const response = await eel.toggle_mod(gamePath, currentPath)();
-                if (response.success) loadMods(gamePath);
-                else {
-                    window.showToast(t("Failed to toggle mod: {error}").replace("{error}", response.error), true);
-                    loadMods(gamePath);
+            const openImageModal = (mod) => {
+                if (mod.image) {
+                    modal.src = 'data:image/png;base64,' + mod.image;
+                    modal.caption = mod.name;
+                    modal.show = true;
                 }
-                return;
-            }
+            };
 
-            const updateBtn = e.target.closest('.update-mod-btn');
-            if (updateBtn) {
-                const currentPath = updateBtn.getAttribute('data-path');
-                const gamePath = modSelect.value;
-                
-                updateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-                updateBtn.disabled = true;
-                updateBtn.style.animation = "pulse 1s infinite";
+            const closeImageModal = () => {
+                modal.show = false;
+                setTimeout(() => { modal.src = ''; }, 200);
+            };
 
-                const response = await eel.perform_mod_update(gamePath, currentPath)();
-                
-                if (response.success) {
-                    loadMods(gamePath);
-                } else {
-                    window.showToast(t("Failed to update mod: {error}").replace("{error}", response.error), true);
-                    updateBtn.innerHTML = '<i class="fa-solid fa-download"></i>';
-                    updateBtn.disabled = false;
-                    updateBtn.style.animation = "none";
-                }
-                return;
-            }
+            watch(selectedInstall, async (newVal) => {
+                if (!newVal) return;
+                const settings = await eel.get_settings()();
+                settings.last_game_path = newVal;
+                await eel.save_settings(settings)();
+                await loadMods();
+            });
 
-            const previewImg = e.target.closest('img.mod-preview-img');
-            if (previewImg && imageModal) {
-                const card = previewImg.closest('.mod-card');
-                modalImg.src = previewImg.src;
-                modalCaption.innerText = card.querySelector('.mod-title').innerText;
-                imageModal.classList.add('active');
-            }
+            onMounted(async () => {
+                await scanForGames();
+                nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+            });
+
+            return {
+                t, installs, selectedInstall, installOptions,
+                mods, filteredMods, isLoading, statusText,
+                searchQuery, filterStatus, statusOptions,
+                totalCount, visibleCount,
+                isFixingNames, isFixingConfigs, modal,
+                scanForGames, toggleMod, updateMod, fixNames, fixConfigs,
+                hasActiveConflict, getConflictTitle, openUrl, showContextMenu,
+                openImageModal, closeImageModal
+            };
+        }
+    });
+
+    if (window.CustomVueSelect) {
+        app.component('custom-vue-select', window.CustomVueSelect);
+    } else {
+        app.component('custom-vue-select', {
+            props: ['modelValue', 'options', 'disabled'],
+            setup(props, { emit }) {
+                const isOpen = ref(false);
+                const isDropUp = ref(false);
+                const maxH = ref(250);
+                const wrapperRef = ref(null);
+                const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+                const currentLabel = computed(() => {
+                    const found = props.options.find(opt => opt[1] === props.modelValue);
+                    return found ? found[0] : '';
+                });
+                const toggle = () => {
+                    if (props.disabled) return;
+                    isOpen.value = !isOpen.value;
+                    if (isOpen.value && wrapperRef.value) {
+                        const rect = wrapperRef.value.getBoundingClientRect();
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+                        if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                            isDropUp.value = true;
+                            maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
+                        } else {
+                            isDropUp.value = false;
+                            maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
+                        }
+                    }
+                };
+                const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
+                const handleKey = (e) => {
+                    if (props.disabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                    else if (e.key === 'Escape') isOpen.value = false;
+                    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!props.options || props.options.length === 0) return;
+                        let currentIdx = props.options.findIndex(opt => opt[1] === props.modelValue);
+                        if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
+                        if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
+                        if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
+                    }
+                };
+                onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+                return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+            },
+            template: `
+                <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
+                    <div class="custom-select-trigger">
+                        <span class="custom-select-trigger-text">{{ currentLabel }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+                        <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: modelValue === opt[1] }" @click.stop="selectOpt(opt[1])">
+                            {{ opt[0] }}
+                        </div>
+                    </div>
+                </div>
+            `
         });
     }
 
-    if (imageModal) {
-        imageModal.addEventListener('click', (e) => {
-            if (e.target === imageModal || e.target.classList.contains('close-modal')) {
-                imageModal.classList.remove('active');
-                setTimeout(() => { modalImg.src = ""; }, 200);
-            }
-        });
-    }
-
-    const runUtility = async (btn, eelFunc, successMsg) => {
-        const gamePath = modSelect.value;
-        if (!gamePath) return window.showToast(t("Select a game first."), true);
-        
-        const originalText = btn.innerHTML;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Processing...")}`;
-        btn.disabled = true;
-
-        const response = await eelFunc(gamePath)();
-        if (response.success) {
-            window.showToast(successMsg(response));
-            loadMods(gamePath);
-        } else window.showToast(t("Error: {error}").replace("{error}", response.error), true);
-
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    };
-
-    if (fixNamesBtn) fixNamesBtn.addEventListener('click', () => runUtility(fixNamesBtn, eel.fix_mod_names, r => t("Fixed {count} mod names!").replace("{count}", r.fixed_count)));
-    if (fixConfigsBtn) fixConfigsBtn.addEventListener('click', () => runUtility(fixConfigsBtn, eel.fix_mod_configs, r => t("Verified configs for {count} mods!").replace("{count}", r.configs_ensured)));
+    if (window._modManagerApp) window._modManagerApp.unmount();
+    window._modManagerApp = app;
+    app.mount('#mod-manager-vue-app');
 });
