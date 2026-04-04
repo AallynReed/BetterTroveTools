@@ -74,6 +74,23 @@ document.addEventListener('calculators_loaded', () => {
         document.getElementById('mastery-mf').innerText = `+${troveMF}`;
     }
 
+    const btnResetMastery = document.getElementById('btn-reset-mastery');
+    if (btnResetMastery) {
+        btnResetMastery.addEventListener('click', () => {
+            const troveSlider = document.getElementById('trove-slider');
+            const troveNum = document.getElementById('trove-number');
+            const geodeSlider = document.getElementById('geode-slider');
+            const geodeNum = document.getElementById('geode-number');
+            
+            if (troveSlider) troveSlider.value = 900;
+            if (troveNum) troveNum.value = 900;
+            if (geodeSlider) geodeSlider.value = 100;
+            if (geodeNum) geodeNum.value = 100;
+            
+            calculateMastery();
+        });
+    }
+
     initMasteryCalculator();
 
     let mfData = [];
@@ -262,6 +279,26 @@ document.addEventListener('calculators_loaded', () => {
         if(displayBreakdown) displayBreakdown.innerText = breakdownText;
     }
 
+    const btnResetMF = document.getElementById('btn-reset-mf');
+    if (btnResetMF) {
+        btnResetMF.addEventListener('click', () => {
+            mfData.forEach((item, index) => {
+                const rangeInput = document.querySelector(`.calc-slider.mf-input[data-index="${index}"]`);
+                const numInput = document.querySelector(`.calc-number-input.mf-input-sync[data-index="${index}"]`);
+                const checkInput = document.querySelector(`input[type="checkbox"].mf-input[data-index="${index}"]`);
+                
+                if (item.type === 'switch' || item.type === 'patron_switch') {
+                    if (checkInput) checkInput.checked = item.default_checked !== undefined ? item.default_checked : true;
+                } else {
+                    const defVal = item.default !== undefined ? item.default : (item.value || 0);
+                    if (rangeInput) rangeInput.value = defVal;
+                    if (numInput) numInput.value = defVal;
+                }
+            });
+            calculateMF();
+        });
+    }
+
     let prData = [];
 
     fetch('/assets/data/stats/power_rank.json')
@@ -440,5 +477,25 @@ document.addEventListener('calculators_loaded', () => {
 
         const displayTotal = document.getElementById('pr-total-display');
         if (displayTotal) displayTotal.innerText = totalPR.toLocaleString();
+    }
+
+    const btnResetPR = document.getElementById('btn-reset-pr');
+    if (btnResetPR) {
+        btnResetPR.addEventListener('click', () => {
+            prData.forEach((item, index) => {
+                const rangeInput = document.querySelector(`.calc-slider.pr-input[data-index="${index}"]`);
+                const numInput = document.querySelector(`.calc-number-input.pr-input-sync[data-index="${index}"]`);
+                const checkInput = document.querySelector(`input[type="checkbox"].pr-input[data-index="${index}"]`);
+                
+                if (item.type === 'switch') {
+                    if (checkInput) checkInput.checked = true;
+                } else {
+                    const defVal = item.default !== undefined ? item.default : (item.value || 0);
+                    if (rangeInput) rangeInput.value = defVal;
+                    if (numInput) numInput.value = defVal;
+                }
+            });
+            calculatePR();
+        });
     }
 });
