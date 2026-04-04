@@ -6,25 +6,27 @@
         <h1 data-i18n>Welcome to Better Trove Tools</h1>
     </div>
 
-    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
-        <h2 style="margin: 0;"><i class="fa-solid fa-video" style="color: #FF0000;"></i> <span data-i18n>Community Content</span></h2>
-        <div class="media-tabs">
-            <button class="media-tab" data-tab="bilibili" style="display: none;"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
-                <button class="media-tab active" data-tab="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
-            <button class="media-tab" data-tab="twitch"><i class="fa-brands fa-twitch"></i> Twitch</button>
+    <div id="community-content-wrapper">
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;"><i class="fa-solid fa-video" style="color: #FF0000;"></i> <span data-i18n>Community Content</span></h2>
+            <div class="media-tabs">
+                <button class="media-tab" data-tab="bilibili" style="display: none;"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
+                    <button class="media-tab active" data-tab="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
+                <button class="media-tab" data-tab="twitch"><i class="fa-brands fa-twitch"></i> Twitch</button>
+            </div>
         </div>
-    </div>
-    
-    <div id="media-loading" class="loading-box">
-        <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Fetching Content...</span>
-    </div>
-    
-    <div class="carousel-wrapper" id="carousel-wrapper" style="display: none;">
-        <button id="btn-scroll-left" class="carousel-btn left"><i class="fa-solid fa-chevron-left"></i></button>
-        <div class="streams-carousel" id="bilibili-carousel" style="display: none;"></div>
-        <div class="streams-carousel" id="youtube-carousel"></div>
-        <div class="streams-carousel" id="streams-carousel" style="display: none;"></div>
-        <button id="btn-scroll-right" class="carousel-btn right"><i class="fa-solid fa-chevron-right"></i></button>
+        
+        <div id="media-loading" class="loading-box">
+            <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Fetching Content...</span>
+        </div>
+        
+        <div class="carousel-wrapper" id="carousel-wrapper" style="display: none;">
+            <button id="btn-scroll-left" class="carousel-btn left"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="streams-carousel" id="bilibili-carousel" style="display: none;"></div>
+            <div class="streams-carousel" id="youtube-carousel"></div>
+            <div class="streams-carousel" id="streams-carousel" style="display: none;"></div>
+            <button id="btn-scroll-right" class="carousel-btn right"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
     </div>
 
     <div class="split-layout">

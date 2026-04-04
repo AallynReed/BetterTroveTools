@@ -7,40 +7,65 @@
         <p style="color: var(--text-muted); margin-top: 5px;" data-i18n>Manage your application preferences and custom game installations.</p>
     </div>
     
-    <div class="settings-section">
-        <h3 data-i18n>Mod Manager Preferences</h3>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
-            <div>
-                <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Names</div>
-                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically rename mod files to match their internal titles when loading mods.</div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="setting-auto-fix-names">
-                <span class="slider round"></span>
-            </label>
+    <div class="tabs-container">
+        <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="tab-general"><i class="fa-solid fa-sliders"></i> <span data-i18n>General</span></button>
+            <button class="tab-btn" data-tab="tab-directories"><i class="fa-solid fa-folder-tree"></i> <span data-i18n>Directories</span></button>
         </div>
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
-            <div>
-                <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Configs</div>
-                <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically create and fix missing UI config files.</div>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="setting-auto-fix-configs">
-                <span class="slider round"></span>
-            </label>
-        </div>
-    </div>
 
-    <div class="settings-section">
-        <h3 data-i18n>Custom Game Directories</h3>
-        <p class="settings-help-text" data-i18n>Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.</p>
-        
-        <div id="custom-dirs-list" class="custom-dirs-list">
+        <div class="tab-content active" id="tab-general">
+            <div class="settings-section">
+                <h3 data-i18n>Home Page Preferences</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Show Community Content</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Display Twitch streams and YouTube/BiliBili videos on the home page.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-show-community-content">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3 data-i18n>Mod Manager Preferences</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Names</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically rename mod files to match their internal titles when loading mods.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-auto-fix-names">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Configs</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically create and fix missing UI config files.</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="setting-auto-fix-configs">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
         </div>
-        
-        <button class="primary-btn" id="btn-open-add-dir-modal" style="margin-top: 15px;">
-            <i class="fa-solid fa-folder-plus"></i> <span data-i18n>Add Custom Directory</span>
-        </button>
+
+        <div class="tab-content" id="tab-directories">
+            <div class="settings-section">
+                <h3 data-i18n>Custom Game Directories</h3>
+                <p class="settings-help-text" data-i18n>Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.</p>
+                
+                <div id="custom-dirs-list" class="custom-dirs-list">
+                </div>
+                
+                <button class="primary-btn" id="btn-open-add-dir-modal" style="margin-top: 15px;">
+                    <i class="fa-solid fa-folder-plus"></i> <span data-i18n>Add Custom Directory</span>
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -86,4 +111,4 @@
             </div>
         </div>
     </div>
-</div>
+</div

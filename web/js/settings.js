@@ -2,9 +2,34 @@ document.addEventListener('settings_loaded', async () => {
     console.log("Settings view initialized!");
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
+    const tabButtons = document.querySelectorAll('.settings-container .tab-btn');
+    const tabContents = document.querySelectorAll('.settings-container .tab-content');
+
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabButtons.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(btn.getAttribute('data-tab')).classList.add('active');
+        });
+    });
+
     await refreshCustomDirsList();
 
     const settings = await eel.get_settings()();
+
+    const communityContentToggle = document.getElementById('setting-show-community-content');
+    if (communityContentToggle) {
+        communityContentToggle.checked = settings.show_community_content !== false;
+        
+        communityContentToggle.addEventListener('change', async (e) => {
+            const currentSettings = await eel.get_settings()();
+            currentSettings.show_community_content = e.target.checked;
+            await eel.save_settings(currentSettings)();
+        });
+    }
+
     const autoFixToggle = document.getElementById('setting-auto-fix-names');
     
     if (autoFixToggle) {

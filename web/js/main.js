@@ -418,6 +418,170 @@ function handle_deep_link(url) {
     }
 }
 
+window.applyCustomDropdowns = function() {
+    // Target ALL standard dropdowns (ignores multi-selects and Select2)
+    document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)').forEach(select => {
+        if (select.parentElement.classList.contains('custom-select-wrapper')) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'custom-select-wrapper';
+        if (select.disabled) wrapper.classList.add('disabled');
+        
+        if (select.style.width) wrapper.style.width = select.style.width;
+        if (select.style.maxWidth) wrapper.style.maxWidth = select.style.maxWidth;
+        if (select.style.flex) wrapper.style.flex = select.style.flex;
+        
+        select.parentNode.insertBefore(wrapper, select);
+        wrapper.appendChild(select);
+        select.style.display = 'none';
+
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger';
+        
+        const triggerText = document.createElement('span');
+        triggerText.className = 'custom-select-trigger-text';
+        trigger.appendChild(triggerText);
+        
+        const triggerIcon = document.createElement('i');
+        triggerIcon.className = 'fa-solid fa-chevron-down';
+        trigger.appendChild(triggerIcon);
+
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'custom-select-options';
+
+        function updateOptions() {
+            if (select.disabled) {
+                wrapper.classList.add('disabled');
+            } else {
+                wrapper.classList.remove('disabled');
+            }
+
+            triggerText.innerHTML = select.options[select.selectedIndex]?.innerHTML || '';
+            
+            // Try to selectively update to preserve scroll focus during fast mutation updates
+            if (optionsContainer.children.length === select.options.length) {
+                Array.from(select.options).forEach((opt, index) => {
+                    const optDiv = optionsContainer.children[index];
+                    if (optDiv.innerHTML !== opt.innerHTML) optDiv.innerHTML = opt.innerHTML;
+                    if (opt.selected) optDiv.classList.add('selected');
+                    else optDiv.classList.remove('selected');
+                });
+                return;
+            }
+
+            // Fallback full rebuild
+            optionsContainer.innerHTML = '';
+            Array.from(select.options).forEach((opt, index) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = 'custom-select-option' + (opt.selected ? ' selected' : '');
+                optDiv.innerHTML = opt.innerHTML;
+                optDiv.dataset.value = opt.value;
+                optDiv.dataset.index = index;
+
+                optDiv.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    select.selectedIndex = index;
+                    select.dispatchEvent(new Event('change'));
+                    wrapper.classList.remove('open');
+                });
+                optionsContainer.appendChild(optDiv);
+            });
+        }
+
+        updateOptions();
+
+        const observer = new MutationObserver(() => updateOptions());
+        observer.observe(select, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
+        
+        select.addEventListener('change', () => updateOptions());
+
+        // Intercept background JS property changes so the custom UI syncs instantly
+        if (!select._customDropdownPatched) {
+            const originalValueSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
+            if (originalValueSetter) {
+                Object.defineProperty(select, 'value', {
+                    set: function(val) {
+                        originalValueSetter.call(this, val);
+                        updateOptions();
+                    },
+                    get: function() { return Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').get.call(this); }
+                });
+            }
+            
+            const originalIndexSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex')?.set;
+            if (originalIndexSetter) {
+                Object.defineProperty(select, 'selectedIndex', {
+                    set: function(val) {
+                        originalIndexSetter.call(this, val);
+                        updateOptions();
+                    },
+                    get: function() { return Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex').get.call(this); }
+                });
+            }
+            select._customDropdownPatched = true;
+        }
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (select.disabled) return;
+            const isOpen = wrapper.classList.contains('open');
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+            if (!isOpen) {
+                const rect = trigger.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                
+                if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                    wrapper.classList.add('drop-up');
+                    optionsContainer.style.maxHeight = Math.max(100, Math.min(spaceAbove - 20, 250)) + 'px';
+                } else {
+                    wrapper.classList.remove('drop-up');
+                    optionsContainer.style.maxHeight = Math.max(100, Math.min(spaceBelow - 20, 250)) + 'px';
+                }
+
+                wrapper.classList.add('open');
+                const selectedOpt = optionsContainer.querySelector('.selected');
+                if(selectedOpt) optionsContainer.scrollTop = selectedOpt.offsetTop - (optionsContainer.offsetHeight / 2) + (selectedOpt.offsetHeight / 2);
+            }
+        });
+
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(optionsContainer);
+    });
+
+    if (!window._customDropdownListenerAttached) {
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+        });
+        window._customDropdownListenerAttached = true;
+    }
+};
+
+// Watch the document globally to instantly transform any dynamically injected dropdowns!
+if (!window._globalDropdownObserverAttached) {
+    const globalDropdownObserver = new MutationObserver((mutations) => {
+        let shouldApply = false;
+        for (let mut of mutations) {
+            if (mut.addedNodes.length) {
+                for (let node of mut.addedNodes) {
+                    if (node.nodeType === 1) {
+                        if (node.tagName === 'SELECT' && !node.multiple && !node.classList.contains('select2-hidden-accessible') && !node.classList.contains('flatpickr-monthDropdown-months')) {
+                            shouldApply = true; break;
+                        }
+                        if (node.querySelector && node.querySelector('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)')) {
+                            shouldApply = true; break;
+                        }
+                    }
+                }
+            }
+            if (shouldApply) break;
+        }
+        if (shouldApply) window.applyCustomDropdowns();
+    });
+    globalDropdownObserver.observe(document.body, { childList: true, subtree: true });
+    window._globalDropdownObserverAttached = true;
+};
+
 window.executePendingSearch = function() {
     if (window.pendingSearch) {
         const searchInput = document.getElementById('ts-search-input');
@@ -462,6 +626,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.I18nManager) {
                 await window.I18nManager.translatePage();
             }
+            
+            window.applyCustomDropdowns();
 
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
@@ -481,6 +647,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    const langSelect = document.getElementById('global-language-select');
+    if (langSelect && window.I18nManager) {
+        langSelect.addEventListener('change', async (e) => {
+            await window.I18nManager.setLocale(e.target.value);
+            await window.I18nManager.translatePage(); // Translates static shell (sidebar, etc)
+            const currentView = document.querySelector('.nav-btn.active')?.getAttribute('data-target');
+            if (currentView) window.loadView(currentView); // Reloads active view to translate dynamic JS content
+        });
+    }
+
     const dateEl = document.getElementById('server-time-date');
     const clockEl = document.getElementById('server-time-clock');
 
@@ -494,10 +670,178 @@ document.addEventListener('DOMContentLoaded', async () => {
         const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
         dateEl.textContent = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
         clockEl.textContent = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const modalList = document.getElementById('st-timezones-list');
+        const modal = document.getElementById('server-time-modal');
+        
+        if (modal && modal.style.display === 'flex' && modalList) {
+
+            let html = '';
+            window.globalTimezones.forEach(tz => {
+                let timeStr, dateStr;
+                try {
+                    if (tz.id === 'trove') {
+                        timeStr = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        dateStr = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+                    } else if (tz.id === 'local') {
+                        timeStr = now.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        dateStr = now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+                    } else {
+                        timeStr = now.toLocaleTimeString(locale, { timeZone: tz.id, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                        dateStr = now.toLocaleDateString(locale, { timeZone: tz.id, weekday: 'short', month: 'short', day: 'numeric' });
+                    }
+                } catch(e) {
+                    timeStr = "--:--:--";
+                    dateStr = "---";
+                }
+
+                const isMain = tz.id === 'trove';
+                
+                html += `
+                    <div class="tz-row ${isMain ? 'highlight' : ''}">
+                        <div class="tz-name">${t(tz.name)}</div>
+                        <div style="text-align: right;">
+                            <div class="tz-time">${timeStr}</div>
+                            <div class="tz-date">${dateStr}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            modalList.innerHTML = html;
+        }
     }
+    
+    window.globalTimezones = [
+        { id: 'trove', name: 'Trove Server (Reset)' },
+        { id: 'local', name: 'Local Time' },
+        { id: 'UTC', name: 'UTC' },
+        { id: 'America/Sao_Paulo', name: 'Brazil (Brasília)' },
+        { id: 'America/New_York', name: 'US Eastern' },
+        { id: 'America/Los_Angeles', name: 'US Pacific' },
+        { id: 'Europe/Lisbon', name: 'Portugal / UK' },
+        { id: 'Europe/Paris', name: 'Central Europe (FR, DE, ES)' },
+        { id: 'Europe/Moscow', name: 'Russia (Moscow)' },
+        { id: 'Asia/Shanghai', name: 'China (Beijing)' },
+        { id: 'Asia/Tokyo', name: 'Japan & South Korea' },
+        { id: 'Australia/Sydney', name: 'Australia (Sydney)' }
+    ];
 
     updateServerTime();
     setInterval(updateServerTime, 1000);
+    
+    const convInput = document.getElementById('st-converter-input');
+    const convTz = document.getElementById('st-converter-tz');
+    const convResult = document.getElementById('st-converter-result');
+    const discordFormat = document.getElementById('st-discord-format');
+    const btnCopyDiscord = document.getElementById('st-btn-copy-discord');
+    let currentUnixSeconds = 0;
+
+    if (convTz) {
+        window.globalTimezones.forEach(tz => {
+            const opt = document.createElement('option');
+            opt.value = tz.id;
+            opt.textContent = t(tz.name);
+            convTz.appendChild(opt);
+        });
+        convTz.value = 'local';
+    }
+
+    if (convInput) {
+        const nowLocal = new Date();
+        nowLocal.setMinutes(nowLocal.getMinutes() - nowLocal.getTimezoneOffset());
+        convInput.value = nowLocal.toISOString().slice(0, 16);
+        
+        if (window.flatpickr) {
+            flatpickr(convInput, {
+                enableTime: true,
+                dateFormat: "Y-m-d\\TH:i",
+                time_24hr: true,
+                onChange: doTimeConversion
+            });
+        }
+    }
+
+    function doTimeConversion() {
+        if (!convInput || !convInput.value) return;
+        const d = new Date(convInput.value);
+        if (isNaN(d)) return;
+        
+        const zone = convTz.value;
+        let unixSec = 0;
+        
+        if (zone === 'local') unixSec = Math.floor(d.getTime() / 1000);
+        else if (zone === 'trove') unixSec = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()) / 1000) + 11 * 3600;
+        else if (zone === 'UTC') unixSec = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()) / 1000);
+        else {
+            const utcDate = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()));
+            const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, timeZoneName: 'shortOffset' }).formatToParts(utcDate);
+            const offsetPart = parts.find(p => p.type === 'timeZoneName')?.value;
+            let offsetMs = 0;
+            if (offsetPart && offsetPart.startsWith('GMT')) {
+                if (offsetPart === 'GMT') offsetMs = 0;
+                else {
+                    const match = offsetPart.match(/GMT([+-]\d+)(?::(\d+))?/);
+                    if (match) offsetMs = (parseInt(match[1]) * 3600 + (parseInt(match[1]) < 0 ? -parseInt(match[2]||0) : parseInt(match[2]||0)) * 60) * 1000;
+                }
+            }
+            unixSec = Math.floor((utcDate.getTime() - offsetMs) / 1000);
+        }
+        currentUnixSeconds = unixSec;
+        const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+        try { convResult.textContent = new Intl.DateTimeFormat(locale, { timeZone: 'Pacific/Midway', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(unixSec * 1000)); } catch(e) { convResult.textContent = "Error"; }
+
+        if (discordFormat) {
+            try {
+                const targetDate = new Date(unixSec * 1000);
+                const diffMin = (targetDate.getTime() - Date.now()) / 60000;
+                
+                let fmt_R = "";
+                try {
+                    const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+                    if (Math.abs(diffMin) < 60) fmt_R = rtf.format(Math.round(diffMin), 'minute');
+                    else if (Math.abs(diffMin) < 1440) fmt_R = rtf.format(Math.round(diffMin / 60), 'hour');
+                    else if (Math.abs(diffMin) < 43200) fmt_R = rtf.format(Math.round(diffMin / 1440), 'day');
+                    else fmt_R = rtf.format(Math.round(diffMin / 43200), 'month');
+                } catch(e) { fmt_R = "relative"; }
+
+                Array.from(discordFormat.options).forEach(opt => {
+                    const val = opt.value;
+                    let preview = "";
+                    if (val === 't') preview = targetDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+                    else if (val === 'T') preview = targetDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    else if (val === 'd') preview = targetDate.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
+                    else if (val === 'D') preview = targetDate.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+                    else if (val === 'f') preview = targetDate.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    else if (val === 'F') preview = targetDate.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    else if (val === 'R') preview = fmt_R;
+
+                    if (val === 't') opt.textContent = t("Short Time") + ` (${preview})`;
+                    else if (val === 'T') opt.textContent = t("Long Time") + ` (${preview})`;
+                    else if (val === 'd') opt.textContent = t("Short Date") + ` (${preview})`;
+                    else if (val === 'D') opt.textContent = t("Long Date") + ` (${preview})`;
+                    else if (val === 'f') opt.textContent = t("Short D/T") + ` (${preview})`;
+                    else if (val === 'F') opt.textContent = t("Long D/T") + ` (${preview})`;
+                    else if (val === 'R') opt.textContent = t("Relative") + ` (${preview})`;
+                });
+            } catch(e) {}
+        }
+    }
+
+    if (convInput) convInput.addEventListener('input', doTimeConversion);
+    if (convTz) convTz.addEventListener('change', doTimeConversion);
+    if (btnCopyDiscord) btnCopyDiscord.addEventListener('click', () => {
+        navigator.clipboard.writeText(`<t:${currentUnixSeconds}:${discordFormat.value}>`).then(() => { if(window.showToast) window.showToast(t("Discord timestamp copied!")); });
+    });
+    setTimeout(doTimeConversion, 500);
+
+    const timeWrapper = document.getElementById('server-time-wrapper');
+    const timeModal = document.getElementById('server-time-modal');
+    const closeTimeBtn = document.getElementById('close-server-time-btn');
+    if (timeWrapper && timeModal) {
+        timeWrapper.addEventListener('click', () => { timeModal.style.display = 'flex'; updateServerTime(); });
+        if (closeTimeBtn) closeTimeBtn.addEventListener('click', () => timeModal.style.display = 'none');
+        timeModal.addEventListener('click', (e) => { if (e.target === timeModal) timeModal.style.display = 'none'; });
+    }
 
     const startupUrl = await eel.get_startup_url()();
     if (startupUrl) {
@@ -505,4 +849,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         window.loadView('home');
     }
+    
+    window.applyCustomDropdowns();
 });

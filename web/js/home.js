@@ -61,26 +61,36 @@ document.addEventListener('home_loaded', () => {
     };
     document.addEventListener('change', window._homeLangListener);
 
-    function refreshAllData() {
+    async function refreshAllData() {
         const isChinese = window.I18nManager && window.I18nManager.currentLocale === 'zh_CN';
         const currentLocale = window.I18nManager ? window.I18nManager.currentLocale : null;
         const localeChanged = _currentMediaLocale !== currentLocale;
         _currentMediaLocale = currentLocale;
 
-        const bilibiliTab = document.querySelector('.media-tab[data-tab="bilibili"]');
-        if (bilibiliTab) {
-            bilibiliTab.style.display = isChinese ? 'flex' : 'none';
-            if (isChinese && localeChanged) {
-                bilibiliTab.click();
-            } else if (!isChinese && bilibiliTab.classList.contains('active')) {
-                document.querySelector('.media-tab[data-tab="youtube"]')?.click();
-            }
+        const settings = await eel.get_settings()();
+        const showCommunityContent = settings.show_community_content !== false; // defaults to true
+
+        const communityWrapper = document.getElementById('community-content-wrapper');
+        if (communityWrapper) {
+            communityWrapper.style.display = showCommunityContent ? 'block' : 'none';
         }
 
-        fetchYoutubeVideos();
-        fetchStreams();
-        if (isChinese) {
-            fetchBilibiliVideos();
+        if (showCommunityContent) {
+            const bilibiliTab = document.querySelector('.media-tab[data-tab="bilibili"]');
+            if (bilibiliTab) {
+                bilibiliTab.style.display = isChinese ? 'flex' : 'none';
+                if (isChinese && localeChanged) {
+                    bilibiliTab.click();
+                } else if (!isChinese && bilibiliTab.classList.contains('active')) {
+                    document.querySelector('.media-tab[data-tab="youtube"]')?.click();
+                }
+            }
+
+            fetchYoutubeVideos();
+            fetchStreams();
+            if (isChinese) {
+                fetchBilibiliVideos();
+            }
         }
         fetchServerData();
         fetchEvents();
