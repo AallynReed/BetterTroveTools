@@ -812,6 +812,35 @@ document.addEventListener('gem_simulator_loaded', async () => {
         itemEl.dataset.fromPane = fromPane;
         itemEl.dataset.fromIdx = fromIdx;
         itemEl.ondragstart = handleDragStart;
+        
+        itemEl.oncontextmenu = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.ContextMenu) {
+                window.ContextMenu.show(e, [
+                    {
+                        label: 'Select Gem',
+                        icon: 'fa-hand-pointer',
+                        action: () => itemEl.click()
+                    },
+                    { separator: true },
+                    {
+                        label: 'Trash Gem',
+                        icon: 'fa-trash',
+                        danger: true,
+                        action: () => {
+                            showConfirmModal(t("Trash Gem"), t("Are you sure you want to permanently delete this gem?"), () => {
+                                if (fromPane === 'inventory') inventory[fromIdx] = null;
+                                else if (fromPane === 'equipped') equipped[fromIdx] = null;
+                                if (selected && selected.id === item.id) { selected = null; selectedSource = null; }
+                                render();
+                            });
+                        }
+                    }
+                ]);
+            }
+        };
+
         itemEl.onmouseenter = (e) => showGemTooltip(e, item);
         itemEl.onmousemove = moveGemTooltip;
         itemEl.onmouseleave = hideGemTooltip;

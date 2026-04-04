@@ -41,6 +41,42 @@ document.addEventListener('trovesaurus_loaded', () => {
     const modalCaption = document.getElementById('modal-caption');
 
     const tsGameSelect = document.getElementById('ts-game-select');
+
+    if (modGrid) {
+        modGrid.addEventListener('contextmenu', (e) => {
+            const card = e.target.closest('.ts-mod-card');
+            if (card && window.ContextMenu) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const titleEl = card.querySelector('.ts-mod-title');
+                const modName = titleEl ? titleEl.innerText : null;
+                const installBtn = card.querySelector('.ts-install-btn');
+                const modId = installBtn ? installBtn.dataset.id : null;
+                
+                let menuItems = [];
+                
+                if (installBtn && !installBtn.disabled && !installBtn.classList.contains('installed')) {
+                    const isUpdate = installBtn.classList.contains('update');
+                    menuItems.push({
+                        label: isUpdate ? 'Update Mod' : 'Install Mod',
+                        icon: isUpdate ? 'fa-rotate' : 'fa-download',
+                        action: () => installBtn.click()
+                    });
+                    menuItems.push({ separator: true });
+                }
+                
+                if (modId) menuItems.push({ label: 'View on Trovesaurus', icon: 'fa-arrow-up-right-from-square', action: () => eel.open_url_in_browser(`https://trovesaurus.com/mod=${modId}`)() });
+                
+                if (modName) {
+                    menuItems.push({ label: 'Copy Mod Name', icon: 'fa-copy', action: () => navigator.clipboard.writeText(modName).then(() => window.showToast(t("Copied to clipboard!"))) });
+                }
+                
+                if (menuItems.length > 0) window.ContextMenu.show(e, menuItems);
+            }
+        });
+    }
+
     if (tsGameSelect) {
         tsGameSelect.addEventListener('change', async () => {
             const settings = await eel.get_settings()();

@@ -486,3 +486,31 @@ span.flatpickr-weekday {
 .cmd-result-icon { width: 24px; text-align: center; color: var(--text-muted); font-size: 1.1em; }
 .cmd-result-item.active .cmd-result-icon { color: var(--accent-blue); }
 .cmd-result-item:hover .cmd-result-icon { color: var(--accent-blue); }
+
+/* Custom Context Menu */
+.context-menu {
+    position: fixed;
+    background: var(--bg-panel, #1d232b);
+    border: 1px solid var(--accent-blue, #5ec6ff);
+    border-radius: 6px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+    z-index: 100000;
+    min-width: 180px;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+    animation: fadeIn 0.1s ease-out;
+}
+.context-menu-item {
+    padding: 10px 15px; color: var(--text-main); font-size: 0.9em;
+    cursor: pointer; display: flex; align-items: center; gap: 10px;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.context-menu-item:hover { background: rgba(94, 198, 255, 0.1); color: #fff; }
+.context-menu-item.danger { color: #ff5555; }
+.context-menu-item.danger:hover { background: rgba(255, 85, 85, 0.1); color: #ff5555; }
+.context-menu-separator {
+    height: 1px;
+    background: var(--border-color, #444c5e);
+    margin: 4px 0;
+}

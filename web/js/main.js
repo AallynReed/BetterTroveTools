@@ -609,6 +609,63 @@ if (!window._globalDropdownObserverAttached) {
     window._globalDropdownObserverAttached = true;
 };
 
+window.ContextMenu = {
+    show: function(e, items) {
+        e.preventDefault();
+        const contextMenuEl = document.getElementById('custom-context-menu');
+        if (!contextMenuEl) return;
+        
+        contextMenuEl.innerHTML = '';
+        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        
+        items.forEach(item => {
+            if (item.separator) {
+                const sep = document.createElement('div');
+                sep.className = 'context-menu-separator';
+                contextMenuEl.appendChild(sep);
+                return;
+            }
+            const el = document.createElement('div');
+            el.className = 'context-menu-item' + (item.danger ? ' danger' : '');
+            el.innerHTML = `${item.icon ? `<i class="fa-solid ${item.icon}" style="width: 16px; text-align: center;"></i>` : ''} <span>${t(item.label)}</span>`;
+            el.onclick = () => {
+                window.ContextMenu.hide();
+                if (item.action) item.action();
+            };
+            contextMenuEl.appendChild(el);
+        });
+
+        contextMenuEl.style.display = 'flex';
+        let x = e.clientX;
+        let y = e.clientY;
+        if (x + contextMenuEl.offsetWidth > window.innerWidth) x -= contextMenuEl.offsetWidth;
+        if (y + contextMenuEl.offsetHeight > window.innerHeight) y -= contextMenuEl.offsetHeight;
+        contextMenuEl.style.left = x + 'px';
+        contextMenuEl.style.top = y + 'px';
+    },
+    hide: function() {
+        const contextMenuEl = document.getElementById('custom-context-menu');
+        if (contextMenuEl) contextMenuEl.style.display = 'none';
+    }
+};
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('#custom-context-menu')) {
+        if (window.ContextMenu) window.ContextMenu.hide();
+    }
+});
+
+document.addEventListener('contextmenu', (e) => {
+    // Allow native right-click in text fields or when text is highlighted for copying
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (window.getSelection().toString().length > 0) return; 
+    
+    // Prevent the default browser context menu globally
+    e.preventDefault();
+    
+    if (window.ContextMenu) window.ContextMenu.hide();
+});
+
 window.executePendingSearch = function() {
     if (window.pendingSearch) {
         const searchInput = document.getElementById('ts-search-input');
@@ -640,7 +697,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const commands = [
         { id: 'home', title: 'Home', icon: 'fa-house' },
-        { id: 'trovesaurus', title: 'Trovesaurus', icon: 'fa-dragon' },
+        { id: 'trovesaurus', title: 'Trovesaurus', imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png' },
         { id: 'mod_manager', title: 'Mod Manager', icon: 'fa-cubes' },
         { id: 'file_manager', title: 'Game File Manager', icon: 'fa-folder-tree' },
         { id: 'modder_tools', title: 'Modder Tools', icon: 'fa-toolbox' },
@@ -668,7 +725,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         cmdResults.innerHTML = filtered.map((c, i) => `
             <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}">
-                <div class="cmd-result-icon"><i class="fa-solid ${c.icon}"></i></div>
+                <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
         `).join('');

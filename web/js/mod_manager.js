@@ -234,6 +234,48 @@ document.addEventListener('mod_manager_loaded', async () => {
     }
 
     if (modGrid) {
+        modGrid.addEventListener('contextmenu', (e) => {
+            const card = e.target.closest('.mod-card');
+            if (card && window.ContextMenu) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const modName = card.dataset.name;
+                const isEnabled = card.dataset.status === 'enabled';
+                
+                const toggleBtn = card.querySelector('.toggle-mod-btn');
+                const updateBtn = card.querySelector('.update-mod-btn');
+                const hasUpdate = updateBtn && !updateBtn.classList.contains('hidden');
+                
+                let menuItems = [
+                    {
+                        label: isEnabled ? 'Disable Mod' : 'Enable Mod',
+                        icon: isEnabled ? 'fa-ban' : 'fa-check',
+                        action: () => toggleBtn.click()
+                    }
+                ];
+                
+                if (hasUpdate) {
+                    menuItems.push({
+                        label: 'Install Update',
+                        icon: 'fa-cloud-arrow-down',
+                        action: () => updateBtn.click()
+                    });
+                }
+                
+                menuItems.push({ separator: true });
+                menuItems.push({
+                    label: 'Copy Mod Name',
+                    icon: 'fa-copy',
+                    action: () => {
+                        navigator.clipboard.writeText(modName).then(() => window.showToast(t("Copied to clipboard!")));
+                    }
+                });
+                
+                window.ContextMenu.show(e, menuItems);
+            }
+        });
+
         modGrid.addEventListener('click', async (e) => {
             const toggleBtn = e.target.closest('.toggle-mod-btn');
             if (toggleBtn) {
