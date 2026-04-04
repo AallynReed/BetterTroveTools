@@ -3772,12 +3772,12 @@
         "designer": "Trove Team",
         "file": "Pets",
         "filename": "collections/pet/dreambro_bunny",
-        "mastery": "0",
+        "mastery": "20",
         "mastery_geode": "0",
         "name": "Bungh",
         "powerrank": "0",
         "tooltip": "",
-        "updated_at": 1774089442
+        "updated_at": 1775245356
     },
     "dreambro_dragonfire": {
         "blueprint": "2023/allies/dreambro_dragonfire/c_c_dreambro_dragonfire_ui",
@@ -5074,12 +5074,12 @@
         "designer": "Trove Team",
         "file": "Pets",
         "filename": "collections/pet/froleek_bunny",
-        "mastery": "0",
+        "mastery": "20",
         "mastery_geode": "0",
         "name": "Krol-Doh",
         "powerrank": "0",
         "tooltip": "",
-        "updated_at": 1774089442
+        "updated_at": 1775245356
     },
     "froleek_capybara": {
         "blueprint": "2025/allies/froleek_capybara/c_c_froleek_capybara_ui",
