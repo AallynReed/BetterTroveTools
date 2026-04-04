@@ -4,12 +4,10 @@
 .file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
 .placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
 
-.search-filter-bar { display: flex; gap: 15px; align-items: center; background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
-.search-wrapper { position: relative; flex-grow: 1; }
+.search-filter-bar { background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+.search-wrapper { position: relative; }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
 
-#ts-category-select, #ts-sort-select { padding: 10px; background: #111; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer; min-width: 150px; outline: none; transition: border-color 0.2s; }
-#ts-category-select:focus, #ts-sort-select:focus { border-color: var(--accent-blue); }
 #ts-search-input { width: 100%; padding: 10px 10px 10px 35px; background: #111; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); outline: none; transition: border-color 0.2s; }
 #ts-search-input:focus { border-color: var(--accent-blue); }
 
@@ -19,8 +17,28 @@
 
 .mod-image-container { position: relative; width: 100%; aspect-ratio: 400 / 230; background: #151515; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .ts-mod-card .mod-image-container { max-height: 150px; }
-.mod-preview-img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: pointer; transition: filter 0.2s; }
+.mod-preview-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s; }
 .mod-preview-img:hover { filter: brightness(1.15); }
+.mod-image-container::after {
+    content: '\f00e';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    opacity: 0;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
+}
+.mod-image-container:hover::after {
+    opacity: 1;
+}
 
 .mod-card-content { display: flex; flex-direction: column; padding: 12px; flex-grow: 1; gap: 6px; }
 
@@ -33,13 +51,7 @@
 
 .ts-mod-stats { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); background: rgba(0, 0, 0, 0.2); padding: 8px 12px; border-radius: 4px; margin-top: auto; border: 1px solid rgba(255, 255, 255, 0.03); }
 .ts-stat-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
-.ts-stat-item i.fa-heart { color: #ff4444; }
-.ts-stat-item i.fa-download { color: #4CAF50; }
 
-.ts-mod-title { cursor: pointer; }
-.ts-mod-title:hover { color: var(--accent-blue); text-decoration: underline; }
-.ts-mod-author { cursor: pointer; transition: color 0.2s; }
-.ts-mod-author:hover { color: var(--accent-blue); text-decoration: underline; }
 
 .ts-install-btn { background: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; color: #28a745; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; transition: all 0.2s; width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 6px; }
 .ts-install-btn:hover { background: #28a745; color: white; }
@@ -57,3 +69,5 @@
 .close-modal { position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
 .close-modal:hover { color: var(--accent-blue); }
 #modal-caption { margin-top: 15px; color: #ccc; font-size: 18px; font-weight: bold; text-align: center; }
+#modal-view-ts-btn { background: rgba(94, 198, 255, 0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue); margin-top: 15px; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+#modal-view-ts-btn:hover { background: var(--accent-blue); color: #111; }

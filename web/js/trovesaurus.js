@@ -24,11 +24,15 @@ document.addEventListener('trovesaurus_loaded', () => {
     if (sortSelect) sortSelect.addEventListener('change', () => fetchTrovesaurusMods(1));
 
     if (prevBtn) prevBtn.addEventListener('click', () => {
-        if (ts_currentPage > 1) fetchTrovesaurusMods(ts_currentPage - 1);
+        if (ts_currentPage > 1) {
+            fetchTrovesaurusMods(ts_currentPage - 1);
+            document.getElementById('view-container').scrollTo({top: 0, behavior: 'smooth'});
+        }
     });
 
     if (nextBtn) nextBtn.addEventListener('click', () => {
         fetchTrovesaurusMods(ts_currentPage + 1);
+        document.getElementById('view-container').scrollTo({top: 0, behavior: 'smooth'});
     });
 
     const modGrid = document.getElementById('ts-mod-grid');
@@ -54,12 +58,27 @@ document.addEventListener('trovesaurus_loaded', () => {
                 return;
             }
 
-            const previewImg = e.target.closest('img.mod-preview-img');
-            if (previewImg && imageModal) {
-                const card = previewImg.closest('.ts-mod-card');
-                modalImg.src = previewImg.src;
-                modalCaption.innerText = card.querySelector('.ts-mod-title').innerText;
-                imageModal.classList.add('active');
+            const imgContainer = e.target.closest('.mod-image-container');
+            if (imgContainer && imageModal) {
+                const previewImg = imgContainer.querySelector('img.mod-preview-img');
+                const card = imgContainer.closest('.ts-mod-card');
+                if (previewImg) {
+                    modalImg.src = previewImg.src;
+                    modalCaption.innerText = card.querySelector('.ts-mod-title').innerText;
+                    
+                    const modId = card.querySelector('.ts-install-btn')?.getAttribute('data-id');
+                    const viewBtn = document.getElementById('modal-view-ts-btn');
+                    if (viewBtn) {
+                        if (modId) {
+                            viewBtn.style.display = 'inline-flex';
+                            viewBtn.onclick = () => eel.open_url_in_browser(`https://trovesaurus.com/mod=${modId}`)();
+                        } else {
+                            viewBtn.style.display = 'none';
+                        }
+                    }
+
+                    imageModal.classList.add('active');
+                }
             }
         });
     }
@@ -201,18 +220,18 @@ function renderTrovesaurusGrid(mods, container) {
             btnText = t('Installed');
             btnDisabled = 'disabled';
         }
-        
+
         return `
             <div class="ts-mod-card">
-                <div class="mod-image-container">
+                <div class="mod-image-container" style="cursor: pointer;" title="${t("Click to enlarge image")}">
                     <img src="${img}" class="mod-preview-img" loading="lazy" onerror="this.src='/assets/images/no_preview.png'">
                 </div>
                 <div class="mod-card-content">
                     <h3 class="mod-title ts-mod-title" title="${t("{name} (Click to view on Trovesaurus)").replace("{name}", mod.name)}" onclick="eel.open_url_in_browser('https://trovesaurus.com/mod=${mod.id}')()">${mod.name}</h3>
                     <span class="mod-meta"><span class="${mod.author_id ? 'ts-mod-author' : ''}" ${mod.author_id ? `title="${t("View {author}'s profile").replace("{author}", mod.author)}" onclick="eel.open_url_in_browser('https://trovesaurus.com/user=${mod.author_id}')()"` : ''}>${mod.author}</span></span>
                     <div class="ts-mod-stats">
-                        <span class="ts-stat-item"><i class="fa-solid fa-download"></i> ${mod.downloads}</span>
-                        <span class="ts-stat-item"><i class="fa-solid fa-heart"></i> ${mod.likes}</span>
+                        <span class="ts-stat-item" title="${t("Downloads")}"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> ${mod.downloads.toLocaleString()}</span>
+                        <span class="ts-stat-item" title="${t("Likes")}"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> ${mod.likes.toLocaleString()}</span>
                     </div>
                     <button class="ts-install-btn ${btnClass}" 
                             data-id="${mod.id}" data-name="${mod.name}" ${btnDisabled}>
