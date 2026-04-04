@@ -248,6 +248,11 @@
 .calc-switch input:checked + .slider-toggle { background-color: #5ec6ff; border-color: #5ec6ff; }
 .calc-switch input:checked + .slider-toggle:before { transform: translateX(22px); background-color: #fff; }
 
+.calc-switch input:checked + .slider-toggle.pr-slider-toggle { 
+    background-color: #fbc02d !important; 
+    border-color: #fbc02d !important; 
+}
+
 @keyframes fadeIn { 
     from { opacity: 0; transform: translateY(5px); } 
     to { opacity: 1; transform: translateY(0); } 

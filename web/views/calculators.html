@@ -1,107 +1,149 @@
 <head>
     <link rel="stylesheet" href="css/calculators.css">
 </head>
-<div class="calculators-container">
+<div id="calculators-vue-app" class="calculators-container">
     <div class="page-header">
-        <h1><i class="fa-solid fa-calculator" style="color: #5ec6ff;"></i> <span data-i18n>Calculators</span></h1>
-        <div class="subtitle" data-i18n>Optimize your Power Rank, Mastery, and Magic Find.</div>
+        <h1><i class="fa-solid fa-calculator" style="color: #5ec6ff;"></i> {{ t('Calculators') }}</h1>
+        <div class="subtitle">{{ t('Optimize your Power Rank, Mastery, and Magic Find.') }}</div>
     </div>
 
     <div class="tabs-wrapper">
         <div class="tab-buttons">
-            <button class="tab-btn active" data-tab="pr-tab">
-                <i class="fa-solid fa-star" style="color: #fbc02d;"></i> <span data-i18n>Power Rank</span>
+            <button :class="['tab-btn', { active: activeTab === 'pr-tab' }]" @click="activeTab = 'pr-tab'">
+                <i class="fa-solid fa-star" style="color: #fbc02d;"></i> {{ t('Power Rank') }}
             </button>
-            <button class="tab-btn" data-tab="mastery-tab">
-                <i class="fa-solid fa-crown" style="color: #ff9800;"></i> <span data-i18n>Mastery</span>
+            <button :class="['tab-btn', { active: activeTab === 'mastery-tab' }]" @click="activeTab = 'mastery-tab'">
+                <i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery') }}
             </button>
-            <button class="tab-btn" data-tab="mf-tab">
-                <i class="fa-solid fa-gem" style="color: #5ec6ff;"></i> <span data-i18n>Magic Find</span>
+            <button :class="['tab-btn', { active: activeTab === 'mf-tab' }]" @click="activeTab = 'mf-tab'">
+                <i class="fa-solid fa-gem" style="color: #5ec6ff;"></i> {{ t('Magic Find') }}
             </button>
         </div>
 
-        <div class="tab-content active" id="pr-tab">
+        <!-- POWER RANK TAB -->
+        <div class="tab-content" :class="{ active: activeTab === 'pr-tab' }">
             <div class="mf-header" style="border-color: #fbc02d;">
                 <div class="mf-total-box">
-                    <span class="mf-total-label" data-i18n>Total Power Rank</span>
-                    <span class="mf-total-value" id="pr-total-display" style="color: #fbc02d; text-shadow: 0 0 20px rgba(251, 192, 45, 0.4);">0</span>
+                    <span class="mf-total-label">{{ t('Total Power Rank') }}</span>
+                    <span class="mf-total-value" style="color: #fbc02d; text-shadow: 0 0 20px rgba(251, 192, 45, 0.4);">{{ totalPR.toLocaleString() }}</span>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" id="btn-reset-pr"><i class="fa-solid fa-rotate-left"></i> <span data-i18n>Reset Defaults</span></button>
+                    <button class="btn-reset" @click="resetPr"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
                 </div>
             </div>
-            <div class="mf-calculator-grid" id="pr-inputs-container"></div>
+            
+            <div class="mf-calculator-grid">
+                <div class="calc-item" v-for="(item, index) in prData" :key="'pr-'+index">
+                    <div class="calc-item-header">
+                        <span>{{ t(item.name) }}</span>
+                        <span class="calc-item-badge patron">{{ getPrBadgeText(item) }}</span>
+                    </div>
+                    <div>
+                        <label v-if="item.type === 'switch'" class="calc-switch">
+                            <input type="checkbox" v-model="item.currentValue">
+                            <span class="slider-toggle pr-slider-toggle"></span>
+                        </label>
+                        <div v-else class="calc-slider-wrapper">
+                            <input type="range" class="calc-slider" :min="item.type.includes('mastery') ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: #fbc02d;">
+                            <input type="number" class="calc-number-input" :min="item.type.includes('mastery') ? 1 : 0" :max="item.type === 'pr_mastery' ? 2000 : (item.type === 'pr_geode_mastery' ? 200 : item.value)" v-model.number="item.currentValue" @change="clampPrValue(item)">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="tab-content" id="mastery-tab">
+        <!-- MASTERY TAB -->
+        <div class="tab-content" :class="{ active: activeTab === 'mastery-tab' }">
             <div class="mf-header" style="border-color: #ff9800;">
                 <div class="mf-total-box">
-                    <span class="mf-total-label" data-i18n>Total Mastery Power Rank</span>
-                    <span class="mf-total-value" id="mastery-pr-display" style="color: #ff9800; text-shadow: 0 0 20px rgba(255, 152, 0, 0.4);">0</span>
+                    <span class="mf-total-label">{{ t('Total Mastery Power Rank') }}</span>
+                    <span class="mf-total-value" style="color: #ff9800; text-shadow: 0 0 20px rgba(255, 152, 0, 0.4);">{{ masteryPR.toLocaleString() }}</span>
                 </div>
                 
                 <div class="mastery-stats-grid">
                     <div class="mastery-stat-box">
-                        <span class="stat-val" id="mastery-dmg">+0%</span>
-                        <span class="stat-label"><i class="fa-solid fa-burst"></i> <span data-i18n>Damage</span></span>
+                        <span class="stat-val">{{ masteryDmg }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-burst"></i> {{ t('Damage') }}</span>
                     </div>
                     <div class="mastery-stat-box">
-                        <span class="stat-val" id="mastery-hp">+0%</span>
-                        <span class="stat-label"><i class="fa-solid fa-heart"></i> <span data-i18n>Health</span></span>
+                        <span class="stat-val">{{ masteryHp }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-heart"></i> {{ t('Health') }}</span>
                     </div>
                     <div class="mastery-stat-box">
-                        <span class="stat-val" id="mastery-light" style="color: #00bcd4;">+0</span>
-                        <span class="stat-label"><i class="fa-solid fa-sun"></i> <span data-i18n>Light</span></span>
+                        <span class="stat-val" style="color: #00bcd4;">{{ masteryLight }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-sun"></i> {{ t('Light') }}</span>
                     </div>
                     <div class="mastery-stat-box">
-                        <span class="stat-val" id="mastery-mf">+0</span>
-                        <span class="stat-label"><i class="fa-solid fa-gem"></i> <span data-i18n>Magic Find</span></span>
+                        <span class="stat-val">{{ masteryMf }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-gem"></i> {{ t('Magic Find') }}</span>
                     </div>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" id="btn-reset-mastery"><i class="fa-solid fa-rotate-left"></i> <span data-i18n>Reset Defaults</span></button>
+                    <button class="btn-reset" @click="resetMastery"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
                 </div>
             </div>
 
             <div class="mf-calculator-grid">
                 <div class="calc-item" style="border-left: 4px solid #fbc02d;">
                     <div class="calc-item-header">
-                        <span><i class="fa-solid fa-crown" style="color: #fbc02d;"></i> <span data-i18n>Trove Mastery</span></span>
-                        <span class="calc-item-badge" style="background: rgba(251, 192, 45, 0.1); color: #fbc02d;" data-i18n>Soft Cap: 1000</span>
+                        <span><i class="fa-solid fa-crown" style="color: #fbc02d;"></i> {{ t('Trove Mastery') }}</span>
+                        <span class="calc-item-badge" style="background: rgba(251, 192, 45, 0.1); color: #fbc02d;">{{ t('Soft Cap: 1000') }}</span>
                     </div>
                     <div class="calc-slider-wrapper">
-                        <input type="range" class="calc-slider mastery-input" id="trove-slider" min="0" max="1100" value="900" style="accent-color: #fbc02d;">
-                        <input type="number" class="calc-number-input mastery-input-sync" id="trove-number" min="0" max="2000" value="900">
+                        <input type="range" class="calc-slider" min="0" max="1100" v-model.number="troveMastery" style="accent-color: #fbc02d;">
+                        <input type="number" class="calc-number-input" min="0" max="2000" v-model.number="troveMastery" @change="clampMastery">
                     </div>
                 </div>
 
                 <div class="calc-item" style="border-left: 4px solid #00bcd4;">
                     <div class="calc-item-header">
-                        <span><i class="fa-solid fa-gem" style="color: #00bcd4;"></i> <span data-i18n>Geode Mastery</span></span>
-                        <span class="calc-item-badge" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4;" data-i18n>Soft Cap: 100</span>
+                        <span><i class="fa-solid fa-gem" style="color: #00bcd4;"></i> {{ t('Geode Mastery') }}</span>
+                        <span class="calc-item-badge" style="background: rgba(0, 188, 212, 0.1); color: #00bcd4;">{{ t('Soft Cap: 100') }}</span>
                     </div>
                     <div class="calc-slider-wrapper">
-                        <input type="range" class="calc-slider mastery-input" id="geode-slider" min="0" max="150" value="100" style="accent-color: #00bcd4;">
-                        <input type="number" class="calc-number-input mastery-input-sync" id="geode-number" min="0" max="200" value="100">
+                        <input type="range" class="calc-slider" min="0" max="150" v-model.number="geodeMastery" style="accent-color: #00bcd4;">
+                        <input type="number" class="calc-number-input" min="0" max="200" v-model.number="geodeMastery" @change="clampMastery">
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="tab-content" id="mf-tab">
+        <!-- MAGIC FIND TAB -->
+        <div class="tab-content" :class="{ active: activeTab === 'mf-tab' }">
             <div class="mf-header">
                 <div class="mf-total-box">
-                    <span class="mf-total-label" data-i18n>Total Magic Find</span>
-                    <span class="mf-total-value" id="mf-total-display">0</span>
+                    <span class="mf-total-label">{{ t('Total Magic Find') }}</span>
+                    <span class="mf-total-value">{{ mfStats.total.toLocaleString() }}</span>
                 </div>
-                <div class="mf-breakdown" id="mf-breakdown-display">
-                    Base MF: 0 | Bonus Multiplier: 0%
+                <div class="mf-breakdown">
+                    {{ t('Base MF: {base} | Bonus Multiplier: +{bonus}%').replace('{base}', mfStats.flat.toLocaleString()).replace('{bonus}', mfStats.bonus) }}
+                    <template v-if="mfStats.patron > 1">{{ t(' | Patron: x{multiplier}').replace('{multiplier}', mfStats.patron) }}</template>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" id="btn-reset-mf"><i class="fa-solid fa-rotate-left"></i> <span data-i18n>Reset Defaults</span></button>
+                    <button class="btn-reset" @click="resetMf"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
                 </div>
             </div>
-            <div class="mf-calculator-grid" id="mf-inputs-container"></div>
+            
+            <div class="mf-calculator-grid">
+                <div class="calc-item" v-for="(item, index) in mfData" :key="'mf-'+index">
+                    <div class="calc-item-header">
+                        <span>{{ t(item.name) }}</span>
+                        <span :class="['calc-item-badge', { 'patron': item.type === 'patron_switch', 'bonus': item.percentage && item.type !== 'patron_switch' }]">
+                            {{ getMfBadgeText(item) }}
+                        </span>
+                    </div>
+                    <div>
+                        <label v-if="item.type === 'switch' || item.type === 'patron_switch'" class="calc-switch">
+                            <input type="checkbox" v-model="item.currentValue">
+                            <span class="slider-toggle"></span>
+                        </label>
+                        <div v-else class="calc-slider-wrapper">
+                            <input type="range" class="calc-slider" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: #5ec6ff;">
+                            <input type="number" class="calc-number-input" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" @change="clampMfValue(item)">
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
