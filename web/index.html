@@ -21,8 +21,40 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
-    <div id="external-request-indicator" style="position: fixed; top: 15px; right: 20px; z-index: 10001; display: block; color: var(--text-main, #fff); background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); cursor: pointer;" data-tooltip="No external requests made yet.">
-        <i class="fa-solid fa-wifi"></i>
+    <div id="network-tracker-vue-app" v-cloak>
+        <div id="external-request-indicator" style="position: fixed; top: 15px; right: 20px; z-index: 10001; display: block; color: var(--text-main, #fff); background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); cursor: pointer;" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true">
+            <i class="fa-solid fa-wifi" :class="{ 'fa-fade': hasActive }"></i>
+        </div>
+        <div id="request-log-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center;" :style="{ display: networkState.isModalOpen ? 'flex' : 'none' }" @click.self="networkState.isModalOpen = false">
+            <div style="background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.7);">
+                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color, #444c5e); display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: var(--text-main, #fff); font-size: 1.2em;"><i class="fa-solid fa-list"></i> <span>{{ t('External Request Log') }}</span></h2>
+                    <div>
+                        <button @click="copyLog" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em; margin-right: 15px;" :title="t('Copy entire log')"><i class="fa-regular fa-copy"></i></button>
+                        <button @click="networkState.isModalOpen = false" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em;"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div id="request-log-content" style="padding: 20px; overflow-y: auto; flex: 1; color: var(--text-muted, #a3adc2); font-family: monospace; font-size: 0.9em;">
+                    <div v-if="networkState.fullLog.length === 0" style="text-align: center; padding: 20px;">{{ t('No requests made yet.') }}</div>
+                    <ul v-else style="list-style: none; padding: 0; margin: 0;">
+                        <li v-for="req in reversedLog" :key="req.id || req.time.getTime()" style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <span style="color: #666;">[{{ formatTime(req.time) }}]</span> 
+                            <span v-if="req.status === 'active'" style="color: #5ec6ff;" :title="t('Active')"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                            <span v-else-if="req.status === 'error'" style="color: #ff5555;" :title="t('Failed')"><i class="fa-solid fa-xmark"></i></span>
+                            <span v-else style="color: #4ade80;" :title="t('Done')"><i class="fa-solid fa-check"></i></span>
+                            
+                            <template v-if="req.label === req.url">
+                                <span class="clickable-log-url" style="color: var(--text-muted, rgba(255,255,255,0.6)); word-break: break-word; cursor: pointer;" @click="copyUrl(req.url)" :title="t('Click to copy URL')">{{ req.label }}</span>
+                            </template>
+                            <template v-else>
+                                <span style="color: var(--text-main, #fff); word-break: break-word;">{{ req.label }}</span>
+                                <br><span class="clickable-log-url" style="font-size: 0.85em; color: var(--text-muted, rgba(255,255,255,0.6)); margin-left: 20px; display: inline-block; word-break: break-all; cursor: pointer;" @click="copyUrl(req.url)" :title="t('Click to copy URL')">↳ {{ req.url }}</span>
+                            </template>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 
     <nav id="sidebar">
@@ -129,20 +161,6 @@
     <main id="view-container">
         <h1 style="padding: 40px; color: #666;" data-i18n>Select a tool from the menu.</h1>
     </main>
-
-    <div id="request-log-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center;">
-        <div style="background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.7);">
-            <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color, #444c5e); display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; color: var(--text-main, #fff); font-size: 1.2em;"><i class="fa-solid fa-list"></i> <span data-i18n>External Request Log</span></h2>
-                <div>
-                    <button id="copy-request-log-btn" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em; margin-right: 15px;" title="Copy entire log"><i class="fa-regular fa-copy"></i></button>
-                    <button id="close-request-log-btn" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em;"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-            </div>
-            <div id="request-log-content" style="padding: 20px; overflow-y: auto; flex: 1; color: var(--text-muted, #a3adc2); font-family: monospace; font-size: 0.9em;">
-            </div>
-        </div>
-    </div>
 
     <div id="server-time-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
         <div style="background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: fadeIn 0.2s ease-out;">

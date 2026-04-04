@@ -59,110 +59,103 @@ document.addEventListener('mouseout', (e) => {
 
 document.addEventListener('click', () => globalTooltip.style.display = 'none');
 
-let activeRequestList = [];
-let fullRequestLog = [];
+const networkState = Vue.reactive({
+    activeRequests: [],
+    fullLog: [],
+    isModalOpen: false
+});
 
-function updateIndicator() {
-    const requestIndicator = document.getElementById('external-request-indicator');
-    if (!requestIndicator) return;
-    
-    requestIndicator.style.display = 'block';
-    
-    const icon = requestIndicator.querySelector('i');
-    if (icon) {
-        if (activeRequestList.some(r => r.status === 'active')) icon.classList.add('fa-fade');
-        else icon.classList.remove('fa-fade');
-    }
+const networkTrackerApp = Vue.createApp({
+    setup() {
+        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    if (activeRequestList.length > 0) {
+        const hasActive = Vue.computed(() => networkState.activeRequests.some(r => r.status === 'active'));
 
-        let tooltipContent = '<h3>Recent Requests</h3><ul style="margin-bottom: 0;">';
-        
-        const reversedList = [...activeRequestList].reverse();
-        const displayList = reversedList.slice(0, 10);
-        
-        displayList.forEach(req => {
-            let labelStr = req.label || req.url;
-            if (labelStr.length > 40) labelStr = labelStr.substring(0, 37) + '...';
-            const safeLabel = labelStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            let statusHtml = '';
-            if (req.status === 'active') statusHtml = '<span style="color: #5ec6ff;" title="Active"><i class="fa-solid fa-circle-notch fa-spin"></i></span> ';
-            else if (req.status === 'error') statusHtml = '<span style="color: #ff5555;" title="Failed"><i class="fa-solid fa-xmark"></i></span> ';
-            else statusHtml = '<span style="color: #4ade80;" title="Done"><i class="fa-solid fa-check"></i></span> ';
-            
-            tooltipContent += `<li>${statusHtml}${safeLabel}</li>`;
+        const tooltipContent = Vue.computed(() => {
+            if (networkState.activeRequests.length > 0) {
+                let content = `<h3>${t('Recent Requests')}</h3><ul style="margin-bottom: 0;">`;
+                const reversedList = [...networkState.activeRequests].reverse();
+                const displayList = reversedList.slice(0, 10);
+                
+                displayList.forEach(req => {
+                    let labelStr = req.label || req.url;
+                    if (labelStr.length > 40) labelStr = labelStr.substring(0, 37) + '...';
+                    const safeLabel = labelStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    
+                    let statusHtml = '';
+                    if (req.status === 'active') statusHtml = `<span style="color: #5ec6ff;" title="${t('Active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
+                    else if (req.status === 'error') statusHtml = `<span style="color: #ff5555;" title="${t('Failed')}"><i class="fa-solid fa-xmark"></i></span> `;
+                    else statusHtml = `<span style="color: #4ade80;" title="${t('Done')}"><i class="fa-solid fa-check"></i></span> `;
+                    
+                    content += `<li>${statusHtml}${safeLabel}</li>`;
+                });
+                
+                if (networkState.activeRequests.length > 10) {
+                    content += `<li><i>...${t('and {count} more').replace('{count}', networkState.activeRequests.length - 10)}</i></li>`;
+                }
+                content += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('Total requests made:')} ${networkState.fullLog.length}</div>`;
+                return content;
+            } else {
+                return networkState.fullLog.length > 0 
+                    ? `${t('No active requests.')}<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('Total requests made:')} ${networkState.fullLog.length}</div>` 
+                    : t('No external requests made yet.');
+            }
         });
-        
-        if (activeRequestList.length > 10) {
-            tooltipContent += `<li><i>...and ${activeRequestList.length - 10} more</i></li>`;
-        }
-        tooltipContent += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">Total requests made: ${fullRequestLog.length}</div>`;
-        
-        requestIndicator.setAttribute('data-tooltip', tooltipContent);
-        
-        const globalTooltip = document.getElementById('global-tooltip');
-        if (globalTooltip && globalTooltip.style.display === 'block' && requestIndicator.matches(':hover')) {
-            globalTooltip.innerHTML = tooltipContent;
-        }
-    } else {
-        const emptyText = fullRequestLog.length > 0 
-            ? `No active requests.<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">Total requests made: ${fullRequestLog.length}</div>` 
-            : 'No external requests made yet.';
-        requestIndicator.setAttribute('data-tooltip', emptyText);
-        
-        const globalTooltip = document.getElementById('global-tooltip');
-        if (globalTooltip && globalTooltip.style.display === 'block' && requestIndicator.matches(':hover')) {
-            globalTooltip.innerHTML = emptyText;
-        }
+
+        Vue.watch(tooltipContent, (newContent) => {
+            const indicator = document.getElementById('external-request-indicator');
+            const globalTooltip = document.getElementById('global-tooltip');
+            if (indicator && globalTooltip && globalTooltip.style.display === 'block' && indicator.matches(':hover')) {
+                globalTooltip.innerHTML = newContent;
+            }
+        });
+
+        const reversedLog = Vue.computed(() => [...networkState.fullLog].reverse());
+
+        const copyLog = () => {
+            if (networkState.fullLog.length === 0) {
+                window.showToast(t('No requests to copy!'), true);
+                return;
+            }
+            let logText = `--- ${t('External Request Log')} ---\n\n`;
+            reversedLog.value.forEach(req => {
+                const timeStr = req.time ? req.time.toLocaleTimeString() : 'Unknown Time';
+                const statusStr = req.status.toUpperCase();
+                logText += `[${timeStr}] [${statusStr}] ${req.label || req.url}\n`;
+                if (req.label && req.label !== req.url) {
+                    logText += `  -> URL: ${req.url}\n`;
+                }
+            });
+            navigator.clipboard.writeText(logText).then(() => {
+                window.showToast(t('Entire request log copied to clipboard!'));
+            });
+        };
+
+        const copyUrl = (url) => {
+            navigator.clipboard.writeText(url).then(() => {
+                window.showToast(t('URL copied to clipboard!'));
+            });
+        };
+
+        const formatTime = (time) => time ? time.toLocaleTimeString() : '';
+
+        return {
+            t, networkState, hasActive, tooltipContent, reversedLog, copyLog, copyUrl, formatTime
+        };
     }
-}
+});
 
-function renderRequestLog() {
-    const logContent = document.getElementById('request-log-content');
-    if (!logContent) return;
-
-    if (fullRequestLog.length === 0) {
-        logContent.innerHTML = '<div style="text-align: center; padding: 20px;">No requests made yet.</div>';
-        return;
-    }
-
-    let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
-    [...fullRequestLog].reverse().forEach(req => {
-        let statusHtml = '';
-        if (req.status === 'active') statusHtml = '<span style="color: #5ec6ff;" title="Active"><i class="fa-solid fa-circle-notch fa-spin"></i></span> ';
-        else if (req.status === 'error') statusHtml = '<span style="color: #ff5555;" title="Failed"><i class="fa-solid fa-xmark"></i></span> ';
-        else statusHtml = '<span style="color: #4ade80;" title="Done"><i class="fa-solid fa-check"></i></span> ';
-        
-        const timeStr = req.time ? req.time.toLocaleTimeString() : '';
-        const safeLabel = (req.label || req.url).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        const safeUrl = (req.url || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        
-        let labelHtml = `<span style="color: var(--text-main, #fff); word-break: break-word;">${safeLabel}</span>`;
-        if (req.label === req.url) {
-            labelHtml = `<span class="clickable-log-url" data-url="${safeUrl}" style="color: var(--text-muted, rgba(255,255,255,0.6)); word-break: break-word; cursor: pointer;" onclick="navigator.clipboard.writeText(this.getAttribute('data-url')); window.showToast('URL copied to clipboard!');" title="Click to copy URL">${safeLabel}</span>`;
-        }
-        
-        let urlHtml = '';
-        if (req.label && req.label !== req.url) {
-            urlHtml = `<br><span class="clickable-log-url" data-url="${safeUrl}" style="font-size: 0.85em; color: var(--text-muted, rgba(255,255,255,0.6)); margin-left: 20px; display: inline-block; word-break: break-all; cursor: pointer;" onclick="navigator.clipboard.writeText(this.getAttribute('data-url')); window.showToast('URL copied to clipboard!');" title="Click to copy URL">↳ ${safeUrl}</span>`;
-        }
-        
-        html += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);"><span style="color: #666;">[${timeStr}]</span> ${statusHtml} ${labelHtml}${urlHtml}</li>`;
-    });
-    html += '</ul>';
-    logContent.innerHTML = html;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    networkTrackerApp.mount('#network-tracker-vue-app');
+});
 
 eel.expose(add_external_request, 'add_external_request');
 function add_external_request(label = "Python Backend Request", url = "") {
     const id = Math.random().toString(36).substring(2, 11);
     if (!url) url = label;
     const reqObj = { id, url, label, status: 'active', time: new Date() };
-    activeRequestList.push(reqObj);
-    fullRequestLog.push(reqObj);
-    updateIndicator();
-    if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
+    networkState.activeRequests.push(reqObj);
+    networkState.fullLog.push(reqObj);
     return id;
 }
 
@@ -170,19 +163,16 @@ eel.expose(remove_external_request, 'remove_external_request');
 function remove_external_request(id, success = true) {
     let reqObj = null;
     if (id) {
-        reqObj = activeRequestList.find(r => r.id === id);
+        reqObj = networkState.activeRequests.find(r => r.id === id);
     } else {
-        reqObj = activeRequestList.find(r => r.status === 'active');
+        reqObj = networkState.activeRequests.find(r => r.status === 'active');
     }
     
     if (reqObj) {
         reqObj.status = success ? 'completed' : 'error';
-        updateIndicator();
         setTimeout(() => {
-            activeRequestList = activeRequestList.filter(r => r !== reqObj);
-            updateIndicator();
+            networkState.activeRequests = networkState.activeRequests.filter(r => r !== reqObj);
         }, 60000);
-        if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
     }
 }
 
@@ -198,10 +188,8 @@ window.fetch = async function(...args) {
             try { label = `Fetching data from ${new URL(url).hostname}`; } catch(e) {}
         }
         reqObj = { url: url, label: label, status: 'active', time: new Date() };
-        activeRequestList.push(reqObj);
-        fullRequestLog.push(reqObj);
-        updateIndicator();
-        if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
+        networkState.activeRequests.push(reqObj);
+        networkState.fullLog.push(reqObj);
     }
     try {
         const response = await originalFetch.apply(this, args);
@@ -212,12 +200,9 @@ window.fetch = async function(...args) {
         throw e;
     } finally {
         if (reqObj) {
-            updateIndicator();
             setTimeout(() => {
-                activeRequestList = activeRequestList.filter(r => r !== reqObj);
-                updateIndicator();
+                networkState.activeRequests = networkState.activeRequests.filter(r => r !== reqObj);
             }, 60000);
-            if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
         }
     }
 };
@@ -237,18 +222,13 @@ XMLHttpRequest.prototype.send = function(...args) {
             try { label = `Contacting ${new URL(this._requestUrl).hostname}`; } catch(e) {}
         }
         const reqObj = { url: this._requestUrl, label: label, status: 'active', time: new Date() };
-        activeRequestList.push(reqObj);
-        fullRequestLog.push(reqObj);
-        updateIndicator();
-        if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
+        networkState.activeRequests.push(reqObj);
+        networkState.fullLog.push(reqObj);
         const onComplete = (e) => {
             reqObj.status = (e.type === 'error' || e.type === 'abort' || this.status >= 400) ? 'error' : 'completed';
-            updateIndicator();
             setTimeout(() => {
-                activeRequestList = activeRequestList.filter(r => r !== reqObj);
-                updateIndicator();
+                networkState.activeRequests = networkState.activeRequests.filter(r => r !== reqObj);
             }, 60000);
-            if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
             this.removeEventListener('loadend', onComplete);
             this.removeEventListener('error', onComplete);
             this.removeEventListener('abort', onComplete);
@@ -262,43 +242,6 @@ XMLHttpRequest.prototype.send = function(...args) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    
-    const requestIndicator = document.getElementById('external-request-indicator');
-    const logModal = document.getElementById('request-log-modal');
-    const closeLogBtn = document.getElementById('close-request-log-btn');
-    const copyLogBtn = document.getElementById('copy-request-log-btn');
-
-    if (requestIndicator && logModal) {
-        requestIndicator.addEventListener('click', () => {
-            logModal.style.display = 'flex';
-            renderRequestLog();
-        });
-        if (closeLogBtn) closeLogBtn.addEventListener('click', () => logModal.style.display = 'none');
-        logModal.addEventListener('click', (e) => {
-            if (e.target === logModal) logModal.style.display = 'none';
-        });
-    }
-
-    if (copyLogBtn) {
-        copyLogBtn.addEventListener('click', () => {
-            if (fullRequestLog.length === 0) {
-                window.showToast('No requests to copy!', true);
-                return;
-            }
-            let logText = '--- External Request Log ---\n\n';
-            [...fullRequestLog].reverse().forEach(req => {
-                const timeStr = req.time ? req.time.toLocaleTimeString() : 'Unknown Time';
-                const statusStr = req.status.toUpperCase();
-                logText += `[${timeStr}] [${statusStr}] ${req.label || req.url}\n`;
-                if (req.label && req.label !== req.url) {
-                    logText += `  -> URL: ${req.url}\n`;
-                }
-            });
-            navigator.clipboard.writeText(logText).then(() => {
-                window.showToast('Entire request log copied to clipboard!');
-            });
-        });
-    }
 
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";
@@ -794,7 +737,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     cmdOverlay.style.display = 'none'; 
                 }
             }
-        } else if ((e.key === '/' || (e.ctrlKey && e.key.toLowerCase() === 'f')) && !e.target.matches('input, textarea')) {
+        } else if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f')) && !e.target.matches('input, textarea')) {
             // Universal Focus Search Hotkey
             e.preventDefault();
             const searchInputs = ['ts-search-input', 'mod-search-input', 'ally-search-input', 'tree-search'];
@@ -803,6 +746,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (input && input.offsetParent !== null) {
                     input.focus();
                     input.select();
+                    
+                    const originalBoxShadow = input.style.boxShadow;
+                    input.style.boxShadow = '0 0 15px var(--accent-blue, #5ec6ff)';
+                    setTimeout(() => input.style.boxShadow = originalBoxShadow, 400);
                     break;
                 }
             }
