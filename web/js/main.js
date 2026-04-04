@@ -421,6 +421,7 @@ function handle_deep_link(url) {
 window.applyCustomDropdowns = function() {
     // Target ALL standard dropdowns (ignores multi-selects and Select2)
     document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)').forEach(select => {
+        if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
 
         const wrapper = document.createElement('div');
@@ -483,7 +484,7 @@ window.applyCustomDropdowns = function() {
                 optDiv.addEventListener('click', (e) => {
                     e.stopPropagation();
                     select.selectedIndex = index;
-                    select.dispatchEvent(new Event('change'));
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
                     wrapper.classList.remove('open');
                 });
                 optionsContainer.appendChild(optDiv);
@@ -539,7 +540,7 @@ window.applyCustomDropdowns = function() {
                 if (e.key === 'ArrowUp' && newIndex > 0) newIndex--;
                 if (newIndex !== select.selectedIndex) {
                     select.selectedIndex = newIndex;
-                    select.dispatchEvent(new Event('change'));
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
                     if (isOpen) {
                         const selectedOpt = optionsContainer.children[newIndex];
                         if(selectedOpt) optionsContainer.scrollTop = selectedOpt.offsetTop - (optionsContainer.offsetHeight / 2) + (selectedOpt.offsetHeight / 2);
@@ -628,7 +629,8 @@ window.ContextMenu = {
             const el = document.createElement('div');
             el.className = 'context-menu-item' + (item.danger ? ' danger' : '');
             el.innerHTML = `${item.icon ? `<i class="fa-solid ${item.icon}" style="width: 16px; text-align: center;"></i>` : ''} <span>${t(item.label)}</span>`;
-            el.onclick = () => {
+            el.onclick = (ev) => {
+                if (ev) ev.stopPropagation();
                 window.ContextMenu.hide();
                 if (item.action) item.action();
             };
