@@ -51,13 +51,13 @@
 
 .tab-btn.active {
     color: #fff;
-    border-bottom: 3px solid #5ec6ff;
+    border-bottom: 3px solid var(--accent-blue);
     background: rgba(255, 255, 255, 0.03);
 }
 
 .tab-btn[data-tab="pr-tab"].active { border-bottom-color: #fbc02d; }
 .tab-btn[data-tab="mastery-tab"].active { border-bottom-color: #ff9800; }
-.tab-btn[data-tab="mf-tab"].active { border-bottom-color: #5ec6ff; }
+.tab-btn[data-tab="mf-tab"].active { border-bottom-color: var(--accent-blue); }
 
 .tab-content {
     display: none;
@@ -95,8 +95,8 @@
 .mf-total-value { 
     font-size: 3.5em; 
     font-weight: 900; 
-    color: #5ec6ff; 
-    text-shadow: 0 0 20px rgba(94, 198, 255, 0.4); 
+    color: var(--accent-blue); 
+    text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.4); 
     line-height: 1;
 }
 
@@ -200,8 +200,8 @@
 }
 
 .calc-item-badge {
-    background: rgba(94, 198, 255, 0.1);
-    color: #5ec6ff;
+    background: rgba(var(--accent-rgb), 0.1);
+    color: var(--accent-blue);
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 0.8em;
@@ -218,7 +218,7 @@
 }
 
 .calc-slider-wrapper { display: flex; gap: 12px; align-items: center; }
-.calc-slider { flex: 1; accent-color: #5ec6ff; cursor: pointer; }
+.calc-slider { flex: 1; accent-color: var(--accent-blue); cursor: pointer; }
 .calc-number-input {
     width: 65px;
     background: rgba(0,0,0,0.4);
@@ -231,7 +231,7 @@
     font-size: 1.1em;
 }
 
-.calc-number-input:focus { outline: none; border-color: #5ec6ff; }
+.calc-number-input:focus { outline: none; border-color: var(--accent-blue); }
 
 .calc-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
 .calc-switch input { opacity: 0; width: 0; height: 0; }
@@ -245,8 +245,13 @@
     left: 3px; bottom: 3px; background-color: #a3adc2;
     transition: .3s; border-radius: 50%;
 }
-.calc-switch input:checked + .slider-toggle { background-color: #5ec6ff; border-color: #5ec6ff; }
+.calc-switch input:checked + .slider-toggle { background-color: var(--accent-blue); border-color: var(--accent-blue); }
 .calc-switch input:checked + .slider-toggle:before { transform: translateX(22px); background-color: #fff; }
+
+.calc-switch input:checked + .slider-toggle.pr-slider-toggle { 
+    background-color: #fbc02d !important; 
+    border-color: #fbc02d !important; 
+}
 
 @keyframes fadeIn { 
     from { opacity: 0; transform: translateY(5px); } 

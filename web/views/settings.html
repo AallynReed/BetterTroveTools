@@ -1,125 +1,144 @@
 <head>
     <link rel="stylesheet" href="css/settings.css">
 </head>
-<div class="settings-container">
+<div id="settings-vue-app" class="settings-container" v-cloak>
     <div class="settings-header">
-        <h2 data-i18n>Settings</h2>
-        <p style="color: var(--text-muted); margin-top: 5px;" data-i18n>Manage your application preferences and custom game installations.</p>
+        <h2>{{ t('Settings') }}</h2>
+        <p style="color: var(--text-muted); margin-top: 5px;">{{ t('Manage your application preferences and custom game installations.') }}</p>
     </div>
     
     <div class="tabs-container">
         <div class="tab-buttons">
-            <button class="tab-btn active" data-tab="tab-general"><i class="fa-solid fa-sliders"></i> <span data-i18n>General</span></button>
-            <button class="tab-btn" data-tab="tab-directories"><i class="fa-solid fa-folder-tree"></i> <span data-i18n>Directories</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('General') }}</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('Directories') }}</span></button>
         </div>
 
-        <div class="tab-content active" id="tab-general">
+        <div class="tab-content" :class="{ active: activeTab === 'general' }">
             <div class="settings-section">
-                <h3 data-i18n>Appearance</h3>
+                <h3>{{ t('Appearance') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>App Accent Color</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Customize the main accent color of the application.</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('App Accent Color') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Customize the main accent color of the application.') }}</div>
                     </div>
-                    <input type="color" id="setting-accent-color" value="#5ec6ff" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
+                    <input type="color" v-model="settings.accent_color" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
                 </div>
             </div>
             
             <div class="settings-section">
-                <h3 data-i18n>Home Page Preferences</h3>
+                <h3>{{ t('Home Page Preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Show Community Content</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Display Twitch streams and YouTube/BiliBili videos on the home page.</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Community Content') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Display Twitch streams and YouTube/BiliBili videos on the home page.') }}</div>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" id="setting-show-community-content">
+                        <input type="checkbox" v-model="settings.show_community_content" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
             </div>
             
             <div class="settings-section">
-                <h3 data-i18n>Mod Manager Preferences</h3>
+                <h3>{{ t('Mod Manager Preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Names</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically rename mod files to match their internal titles when loading mods.</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Auto-Fix Mod Names') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Automatically rename mod files to match their internal titles when loading mods.') }}</div>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" id="setting-auto-fix-names">
+                        <input type="checkbox" v-model="settings.auto_fix_names" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;" data-i18n>Auto-Fix Mod Configs</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;" data-i18n>Automatically create and fix missing UI config files.</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Auto-Fix Mod Configs') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Automatically create and fix missing UI config files.') }}</div>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" id="setting-auto-fix-configs">
+                        <input type="checkbox" v-model="settings.auto_fix_configs" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
             </div>
         </div>
 
-        <div class="tab-content" id="tab-directories">
+        <div class="tab-content" :class="{ active: activeTab === 'directories' }">
             <div class="settings-section">
-                <h3 data-i18n>Custom Game Directories</h3>
-                <p class="settings-help-text" data-i18n>Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.</p>
+                <h3>{{ t('Custom Game Directories') }}</h3>
+                <p class="settings-help-text">{{ t('Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.') }}</p>
                 
-                <div id="custom-dirs-list" class="custom-dirs-list">
+                <div class="custom-dirs-list">
+                    <div v-if="customDirs.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('No custom directories added.') }}</div>
+                    <div v-else v-for="(dir, idx) in customDirs" :key="idx" class="custom-dir-item">
+                        <div style="display: flex; flex-direction: column; overflow: hidden; margin-right: 15px;">
+                            <span style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--text-main);">{{ dir.name }}</span>
+                            <span class="dir-path" :title="dir.path">{{ dir.path }}</span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="primary-btn edit-dir-btn" style="padding: 6px 10px;" @click="openEditModal(dir)"><i class="fa-solid fa-pen"></i></button>
+                            <button class="danger-btn remove-dir-btn" @click="removeDir(dir.path)"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
                 </div>
                 
-                <button class="primary-btn" id="btn-open-add-dir-modal" style="margin-top: 15px;">
-                    <i class="fa-solid fa-folder-plus"></i> <span data-i18n>Add Custom Directory</span>
+                <button class="primary-btn" @click="openAddModal" style="margin-top: 15px;">
+                    <i class="fa-solid fa-folder-plus"></i> <span>{{ t('Add Custom Directory') }}</span>
                 </button>
             </div>
         </div>
     </div>
-</div>
 
-<div id="add-dir-modal" class="settings-modal-overlay">
+    <div class="settings-modal-overlay" :class="{ active: modals.add }">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
-            <h2 data-i18n>Add Custom Directory</h2>
-            <button class="settings-close-modal" id="btn-close-add-dir-modal"><i class="fa-solid fa-xmark"></i></button>
+                <h2>{{ t('Add Custom Directory') }}</h2>
+                <button class="settings-close-modal" @click="modals.add = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;" data-i18n>Display Name</label>
-                <input type="text" id="add-dir-name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" data-i18n-placeholder="e.g. PTS Server">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('Display Name') }}</label>
+                    <input type="text" v-model="addForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('e.g. PTS Server')">
             </div>
             <div style="margin-bottom: 20px;">
-                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;" data-i18n>Folder Path</label>
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('Folder Path') }}</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="add-dir-path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" data-i18n-placeholder="No folder selected">
-                    <button class="primary-btn" id="btn-browse-dir"><i class="fa-solid fa-folder-open"></i> <span data-i18n>Browse</span></button>
+                        <input type="text" v-model="addForm.path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" :placeholder="t('No folder selected')">
+                        <button class="primary-btn" @click="browseDir" :disabled="isBrowsing">
+                            <template v-if="!isBrowsing"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></template>
+                            <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
+                        </button>
                 </div>
             </div>
             <div style="display: flex; justify-content: flex-end;">
-                <button class="primary-btn" id="btn-save-dir" disabled style="opacity: 0.5; cursor: not-allowed;" data-i18n>Save Directory</button>
+                    <button class="primary-btn" @click="saveNewDir" :disabled="!addForm.path || isSaving" :style="{ opacity: (!addForm.path || isSaving) ? 0.5 : 1 }">
+                        <template v-if="!isSaving">{{ t('Save Directory') }}</template>
+                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Saving...') }}</template>
+                    </button>
             </div>
         </div>
     </div>
 </div>
 
-<div id="edit-dir-modal" class="settings-modal-overlay">
+    <div class="settings-modal-overlay" :class="{ active: modals.edit }">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
-            <h2 data-i18n>Edit Directory Name</h2>
-            <button class="settings-close-modal" id="btn-close-edit-dir-modal"><i class="fa-solid fa-xmark"></i></button>
+                <h2>{{ t('Edit Directory Name') }}</h2>
+                <button class="settings-close-modal" @click="modals.edit = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;" data-i18n>Display Name</label>
-                <input type="text" id="edit-dir-name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" data-i18n-placeholder="e.g. PTS Server">
-                <input type="hidden" id="edit-dir-path">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('Display Name') }}</label>
+                    <input type="text" v-model="editForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('e.g. PTS Server')">
             </div>
             <div style="display: flex; justify-content: flex-end;">
-                <button class="primary-btn" id="btn-save-edit-dir" data-i18n>Save Name</button>
+                    <button class="primary-btn" @click="saveEditDir" :disabled="isSaving" :style="{ opacity: isSaving ? 0.5 : 1 }">
+                        <template v-if="!isSaving">{{ t('Save Name') }}</template>
+                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Saving...') }}</template>
+                    </button>
             </div>
         </div>
     </div>
-</div
+    </div>
+</div>

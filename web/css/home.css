@@ -1,3 +1,7 @@
+[v-cloak] {
+    display: none !important;
+}
+
 .home-container {
     padding: 30px;
     animation: fadeIn 0.4s ease-out;
@@ -569,7 +573,7 @@
     padding: 4px 0;
 }
 .calendar-day-col.is-today { background: rgba(255, 255, 255, 0.05); }
-.calendar-day-col.is-today .calendar-day-num { color: #5ec6ff; font-weight: bold; }
+.calendar-day-col.is-today .calendar-day-num { color: var(--accent-blue); font-weight: bold; }
 .calendar-tracks {
     position: relative;
     display: flex;
@@ -628,7 +632,7 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: rgba(94, 198, 255, 0.5);
+    background: rgba(var(--accent-rgb), 0.5);
     z-index: 4;
     pointer-events: none;
 }

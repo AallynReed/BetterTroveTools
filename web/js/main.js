@@ -59,110 +59,103 @@ document.addEventListener('mouseout', (e) => {
 
 document.addEventListener('click', () => globalTooltip.style.display = 'none');
 
-let activeRequestList = [];
-let fullRequestLog = [];
+const networkState = Vue.reactive({
+    activeRequests: [],
+    fullLog: [],
+    isModalOpen: false
+});
 
-function updateIndicator() {
-    const requestIndicator = document.getElementById('external-request-indicator');
-    if (!requestIndicator) return;
-    
-    requestIndicator.style.display = 'block';
-    
-    const icon = requestIndicator.querySelector('i');
-    if (icon) {
-        if (activeRequestList.some(r => r.status === 'active')) icon.classList.add('fa-fade');
-        else icon.classList.remove('fa-fade');
-    }
+const networkTrackerApp = Vue.createApp({
+    setup() {
+        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    if (activeRequestList.length > 0) {
+        const hasActive = Vue.computed(() => networkState.activeRequests.some(r => r.status === 'active'));
 
-        let tooltipContent = '<h3>Recent Requests</h3><ul style="margin-bottom: 0;">';
-        
-        const reversedList = [...activeRequestList].reverse();
-        const displayList = reversedList.slice(0, 10);
-        
-        displayList.forEach(req => {
-            let labelStr = req.label || req.url;
-            if (labelStr.length > 40) labelStr = labelStr.substring(0, 37) + '...';
-            const safeLabel = labelStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            
-            let statusHtml = '';
-            if (req.status === 'active') statusHtml = '<span style="color: #5ec6ff;" title="Active"><i class="fa-solid fa-circle-notch fa-spin"></i></span> ';
-            else if (req.status === 'error') statusHtml = '<span style="color: #ff5555;" title="Failed"><i class="fa-solid fa-xmark"></i></span> ';
-            else statusHtml = '<span style="color: #4ade80;" title="Done"><i class="fa-solid fa-check"></i></span> ';
-            
-            tooltipContent += `<li>${statusHtml}${safeLabel}</li>`;
+        const tooltipContent = Vue.computed(() => {
+            if (networkState.activeRequests.length > 0) {
+                let content = `<h3>${t('Recent Requests')}</h3><ul style="margin-bottom: 0;">`;
+                const reversedList = [...networkState.activeRequests].reverse();
+                const displayList = reversedList.slice(0, 10);
+                
+                displayList.forEach(req => {
+                    let labelStr = req.label || req.url;
+                    if (labelStr.length > 40) labelStr = labelStr.substring(0, 37) + '...';
+                    const safeLabel = labelStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    
+                    let statusHtml = '';
+                    if (req.status === 'active') statusHtml = `<span style="color: var(--accent-blue);" title="${t('Active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
+                    else if (req.status === 'error') statusHtml = `<span style="color: #ff5555;" title="${t('Failed')}"><i class="fa-solid fa-xmark"></i></span> `;
+                    else statusHtml = `<span style="color: #4ade80;" title="${t('Done')}"><i class="fa-solid fa-check"></i></span> `;
+                    
+                    content += `<li>${statusHtml}${safeLabel}</li>`;
+                });
+                
+                if (networkState.activeRequests.length > 10) {
+                    content += `<li><i>...${t('and {count} more').replace('{count}', networkState.activeRequests.length - 10)}</i></li>`;
+                }
+                content += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('Total requests made:')} ${networkState.fullLog.length}</div>`;
+                return content;
+            } else {
+                return networkState.fullLog.length > 0 
+                    ? `${t('No active requests.')}<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('Total requests made:')} ${networkState.fullLog.length}</div>` 
+                    : t('No external requests made yet.');
+            }
         });
-        
-        if (activeRequestList.length > 10) {
-            tooltipContent += `<li><i>...and ${activeRequestList.length - 10} more</i></li>`;
-        }
-        tooltipContent += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">Total requests made: ${fullRequestLog.length}</div>`;
-        
-        requestIndicator.setAttribute('data-tooltip', tooltipContent);
-        
-        const globalTooltip = document.getElementById('global-tooltip');
-        if (globalTooltip && globalTooltip.style.display === 'block' && requestIndicator.matches(':hover')) {
-            globalTooltip.innerHTML = tooltipContent;
-        }
-    } else {
-        const emptyText = fullRequestLog.length > 0 
-            ? `No active requests.<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">Total requests made: ${fullRequestLog.length}</div>` 
-            : 'No external requests made yet.';
-        requestIndicator.setAttribute('data-tooltip', emptyText);
-        
-        const globalTooltip = document.getElementById('global-tooltip');
-        if (globalTooltip && globalTooltip.style.display === 'block' && requestIndicator.matches(':hover')) {
-            globalTooltip.innerHTML = emptyText;
-        }
+
+        Vue.watch(tooltipContent, (newContent) => {
+            const indicator = document.getElementById('external-request-indicator');
+            const globalTooltip = document.getElementById('global-tooltip');
+            if (indicator && globalTooltip && globalTooltip.style.display === 'block' && indicator.matches(':hover')) {
+                globalTooltip.innerHTML = newContent;
+            }
+        });
+
+        const reversedLog = Vue.computed(() => [...networkState.fullLog].reverse());
+
+        const copyLog = () => {
+            if (networkState.fullLog.length === 0) {
+                window.showToast(t('No requests to copy!'), true);
+                return;
+            }
+            let logText = `--- ${t('External Request Log')} ---\n\n`;
+            reversedLog.value.forEach(req => {
+                const timeStr = req.time ? req.time.toLocaleTimeString() : 'Unknown Time';
+                const statusStr = req.status.toUpperCase();
+                logText += `[${timeStr}] [${statusStr}] ${req.label || req.url}\n`;
+                if (req.label && req.label !== req.url) {
+                    logText += `  -> URL: ${req.url}\n`;
+                }
+            });
+            navigator.clipboard.writeText(logText).then(() => {
+                window.showToast(t('Entire request log copied to clipboard!'));
+            });
+        };
+
+        const copyUrl = (url) => {
+            navigator.clipboard.writeText(url).then(() => {
+                window.showToast(t('URL copied to clipboard!'));
+            });
+        };
+
+        const formatTime = (time) => time ? time.toLocaleTimeString() : '';
+
+        return {
+            t, networkState, hasActive, tooltipContent, reversedLog, copyLog, copyUrl, formatTime
+        };
     }
-}
+});
 
-function renderRequestLog() {
-    const logContent = document.getElementById('request-log-content');
-    if (!logContent) return;
-
-    if (fullRequestLog.length === 0) {
-        logContent.innerHTML = '<div style="text-align: center; padding: 20px;">No requests made yet.</div>';
-        return;
-    }
-
-    let html = '<ul style="list-style: none; padding: 0; margin: 0;">';
-    [...fullRequestLog].reverse().forEach(req => {
-        let statusHtml = '';
-        if (req.status === 'active') statusHtml = '<span style="color: #5ec6ff;" title="Active"><i class="fa-solid fa-circle-notch fa-spin"></i></span> ';
-        else if (req.status === 'error') statusHtml = '<span style="color: #ff5555;" title="Failed"><i class="fa-solid fa-xmark"></i></span> ';
-        else statusHtml = '<span style="color: #4ade80;" title="Done"><i class="fa-solid fa-check"></i></span> ';
-        
-        const timeStr = req.time ? req.time.toLocaleTimeString() : '';
-        const safeLabel = (req.label || req.url).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        const safeUrl = (req.url || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-        
-        let labelHtml = `<span style="color: var(--text-main, #fff); word-break: break-word;">${safeLabel}</span>`;
-        if (req.label === req.url) {
-            labelHtml = `<span class="clickable-log-url" data-url="${safeUrl}" style="color: var(--text-muted, rgba(255,255,255,0.6)); word-break: break-word; cursor: pointer;" onclick="navigator.clipboard.writeText(this.getAttribute('data-url')); window.showToast('URL copied to clipboard!');" title="Click to copy URL">${safeLabel}</span>`;
-        }
-        
-        let urlHtml = '';
-        if (req.label && req.label !== req.url) {
-            urlHtml = `<br><span class="clickable-log-url" data-url="${safeUrl}" style="font-size: 0.85em; color: var(--text-muted, rgba(255,255,255,0.6)); margin-left: 20px; display: inline-block; word-break: break-all; cursor: pointer;" onclick="navigator.clipboard.writeText(this.getAttribute('data-url')); window.showToast('URL copied to clipboard!');" title="Click to copy URL">↳ ${safeUrl}</span>`;
-        }
-        
-        html += `<li style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);"><span style="color: #666;">[${timeStr}]</span> ${statusHtml} ${labelHtml}${urlHtml}</li>`;
-    });
-    html += '</ul>';
-    logContent.innerHTML = html;
-}
+document.addEventListener('DOMContentLoaded', () => {
+    networkTrackerApp.mount('#network-tracker-vue-app');
+});
 
 eel.expose(add_external_request, 'add_external_request');
 function add_external_request(label = "Python Backend Request", url = "") {
     const id = Math.random().toString(36).substring(2, 11);
     if (!url) url = label;
     const reqObj = { id, url, label, status: 'active', time: new Date() };
-    activeRequestList.push(reqObj);
-    fullRequestLog.push(reqObj);
-    updateIndicator();
-    if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
+    networkState.activeRequests.push(reqObj);
+    networkState.fullLog.push(reqObj);
     return id;
 }
 
@@ -170,19 +163,16 @@ eel.expose(remove_external_request, 'remove_external_request');
 function remove_external_request(id, success = true) {
     let reqObj = null;
     if (id) {
-        reqObj = activeRequestList.find(r => r.id === id);
+        reqObj = networkState.activeRequests.find(r => r.id === id);
     } else {
-        reqObj = activeRequestList.find(r => r.status === 'active');
+        reqObj = networkState.activeRequests.find(r => r.status === 'active');
     }
     
     if (reqObj) {
         reqObj.status = success ? 'completed' : 'error';
-        updateIndicator();
         setTimeout(() => {
-            activeRequestList = activeRequestList.filter(r => r !== reqObj);
-            updateIndicator();
+            networkState.activeRequests = networkState.activeRequests.filter(r => r !== reqObj);
         }, 60000);
-        if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
     }
 }
 
@@ -198,10 +188,8 @@ window.fetch = async function(...args) {
             try { label = `Fetching data from ${new URL(url).hostname}`; } catch(e) {}
         }
         reqObj = { url: url, label: label, status: 'active', time: new Date() };
-        activeRequestList.push(reqObj);
-        fullRequestLog.push(reqObj);
-        updateIndicator();
-        if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
+        networkState.activeRequests.push(reqObj);
+        networkState.fullLog.push(reqObj);
     }
     try {
         const response = await originalFetch.apply(this, args);
@@ -212,12 +200,9 @@ window.fetch = async function(...args) {
         throw e;
     } finally {
         if (reqObj) {
-            updateIndicator();
             setTimeout(() => {
-                activeRequestList = activeRequestList.filter(r => r !== reqObj);
-                updateIndicator();
+                networkState.activeRequests = networkState.activeRequests.filter(r => r !== reqObj);
             }, 60000);
-            if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
         }
     }
 };
@@ -237,18 +222,13 @@ XMLHttpRequest.prototype.send = function(...args) {
             try { label = `Contacting ${new URL(this._requestUrl).hostname}`; } catch(e) {}
         }
         const reqObj = { url: this._requestUrl, label: label, status: 'active', time: new Date() };
-        activeRequestList.push(reqObj);
-        fullRequestLog.push(reqObj);
-        updateIndicator();
-        if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
+        networkState.activeRequests.push(reqObj);
+        networkState.fullLog.push(reqObj);
         const onComplete = (e) => {
             reqObj.status = (e.type === 'error' || e.type === 'abort' || this.status >= 400) ? 'error' : 'completed';
-            updateIndicator();
             setTimeout(() => {
-                activeRequestList = activeRequestList.filter(r => r !== reqObj);
-                updateIndicator();
+                networkState.activeRequests = networkState.activeRequests.filter(r => r !== reqObj);
             }, 60000);
-            if (document.getElementById('request-log-modal')?.style.display === 'flex') renderRequestLog();
             this.removeEventListener('loadend', onComplete);
             this.removeEventListener('error', onComplete);
             this.removeEventListener('abort', onComplete);
@@ -262,43 +242,6 @@ XMLHttpRequest.prototype.send = function(...args) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    
-    const requestIndicator = document.getElementById('external-request-indicator');
-    const logModal = document.getElementById('request-log-modal');
-    const closeLogBtn = document.getElementById('close-request-log-btn');
-    const copyLogBtn = document.getElementById('copy-request-log-btn');
-
-    if (requestIndicator && logModal) {
-        requestIndicator.addEventListener('click', () => {
-            logModal.style.display = 'flex';
-            renderRequestLog();
-        });
-        if (closeLogBtn) closeLogBtn.addEventListener('click', () => logModal.style.display = 'none');
-        logModal.addEventListener('click', (e) => {
-            if (e.target === logModal) logModal.style.display = 'none';
-        });
-    }
-
-    if (copyLogBtn) {
-        copyLogBtn.addEventListener('click', () => {
-            if (fullRequestLog.length === 0) {
-                window.showToast('No requests to copy!', true);
-                return;
-            }
-            let logText = '--- External Request Log ---\n\n';
-            [...fullRequestLog].reverse().forEach(req => {
-                const timeStr = req.time ? req.time.toLocaleTimeString() : 'Unknown Time';
-                const statusStr = req.status.toUpperCase();
-                logText += `[${timeStr}] [${statusStr}] ${req.label || req.url}\n`;
-                if (req.label && req.label !== req.url) {
-                    logText += `  -> URL: ${req.url}\n`;
-                }
-            });
-            navigator.clipboard.writeText(logText).then(() => {
-                window.showToast('Entire request log copied to clipboard!');
-            });
-        });
-    }
 
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";
@@ -419,8 +362,8 @@ function handle_deep_link(url) {
 }
 
 window.applyCustomDropdowns = function() {
-    // Target ALL standard dropdowns (ignores multi-selects and Select2)
     document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)').forEach(select => {
+        if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
 
         const wrapper = document.createElement('div');
@@ -460,7 +403,6 @@ window.applyCustomDropdowns = function() {
 
             triggerText.innerHTML = select.options[select.selectedIndex]?.innerHTML || '';
             
-            // Try to selectively update to preserve scroll focus during fast mutation updates
             if (optionsContainer.children.length === select.options.length) {
                 Array.from(select.options).forEach((opt, index) => {
                     const optDiv = optionsContainer.children[index];
@@ -471,7 +413,6 @@ window.applyCustomDropdowns = function() {
                 return;
             }
 
-            // Fallback full rebuild
             optionsContainer.innerHTML = '';
             Array.from(select.options).forEach((opt, index) => {
                 const optDiv = document.createElement('div');
@@ -483,7 +424,7 @@ window.applyCustomDropdowns = function() {
                 optDiv.addEventListener('click', (e) => {
                     e.stopPropagation();
                     select.selectedIndex = index;
-                    select.dispatchEvent(new Event('change'));
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
                     wrapper.classList.remove('open');
                 });
                 optionsContainer.appendChild(optDiv);
@@ -497,7 +438,6 @@ window.applyCustomDropdowns = function() {
         
         select.addEventListener('change', () => updateOptions());
 
-        // Intercept background JS property changes so the custom UI syncs instantly
         if (!select._customDropdownPatched) {
             const originalValueSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
             if (originalValueSetter) {
@@ -539,7 +479,7 @@ window.applyCustomDropdowns = function() {
                 if (e.key === 'ArrowUp' && newIndex > 0) newIndex--;
                 if (newIndex !== select.selectedIndex) {
                     select.selectedIndex = newIndex;
-                    select.dispatchEvent(new Event('change'));
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
                     if (isOpen) {
                         const selectedOpt = optionsContainer.children[newIndex];
                         if(selectedOpt) optionsContainer.scrollTop = selectedOpt.offsetTop - (optionsContainer.offsetHeight / 2) + (selectedOpt.offsetHeight / 2);
@@ -584,29 +524,80 @@ window.applyCustomDropdowns = function() {
     }
 };
 
-// Watch the document globally to instantly transform any dynamically injected dropdowns!
-if (!window._globalDropdownObserverAttached) {
-    const globalDropdownObserver = new MutationObserver((mutations) => {
-        let shouldApply = false;
-        for (let mut of mutations) {
-            if (mut.addedNodes.length) {
-                for (let node of mut.addedNodes) {
-                    if (node.nodeType === 1) {
-                        if (node.tagName === 'SELECT' && !node.multiple && !node.classList.contains('select2-hidden-accessible') && !node.classList.contains('flatpickr-monthDropdown-months')) {
-                            shouldApply = true; break;
-                        }
-                        if (node.querySelector && node.querySelector('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)')) {
-                            shouldApply = true; break;
-                        }
-                    }
+window.CustomVueSelect = {
+    props: ['modelValue', 'options', 'disabled'],
+    setup(props, { emit }) {
+        const isOpen = Vue.ref(false);
+        const isDropUp = Vue.ref(false);
+        const maxH = Vue.ref(250);
+        const wrapperRef = Vue.ref(null);
+        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const currentLabel = Vue.computed(() => {
+            const found = props.options ? props.options.find(opt => String(opt[1]) === String(props.modelValue)) : null;
+            return found ? t(found[0]) : '';
+        });
+        const toggle = () => {
+            if (props.disabled) return;
+            isOpen.value = !isOpen.value;
+            if (isOpen.value && wrapperRef.value) {
+                const rect = wrapperRef.value.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                    isDropUp.value = true;
+                    maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
+                } else {
+                    isDropUp.value = false;
+                    maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
                 }
             }
-            if (shouldApply) break;
-        }
-        if (shouldApply) window.applyCustomDropdowns();
-    });
-    globalDropdownObserver.observe(document.body, { childList: true, subtree: true });
-    window._globalDropdownObserverAttached = true;
+        };
+        const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
+        const handleKey = (e) => {
+            if (props.disabled) return;
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            else if (e.key === 'Escape') isOpen.value = false;
+            else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!props.options || props.options.length === 0) return;
+                let currentIdx = props.options.findIndex(opt => String(opt[1]) === String(props.modelValue));
+                if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
+                if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
+                if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
+            }
+        };
+        Vue.onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+        return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+    },
+    template: `
+        <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
+            <div class="custom-select-trigger">
+                <span class="custom-select-trigger-text">{{ currentLabel }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+                <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: String(modelValue) === String(opt[1]) }" @click.stop="selectOpt(opt[1])">
+                    {{ t(opt[0]) }}
+                </div>
+            </div>
+        </div>
+    `
+};
+
+window.Select2Component = {
+    props: ['options', 'modelValue', 'placeholder'],
+    template: '<select multiple style="width: 100%;"></select>',
+    mounted() {
+        const vm = this;
+        $(this.$el).select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark" })
+        .val(this.modelValue).trigger('change')
+        .on('change', function() { vm.$emit('update:modelValue', $(this).val() || []); });
+    },
+    watch: {
+        modelValue(value) { if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change'); },
+        options(newOptions) { $(this.$el).empty().select2({ data: newOptions, placeholder: this.placeholder, allowClear: true, theme: "btt-dark" }).val(this.modelValue).trigger('change'); }
+    },
+    unmounted() { $(this.$el).select2('destroy'); }
 };
 
 window.ContextMenu = {
@@ -628,7 +619,8 @@ window.ContextMenu = {
             const el = document.createElement('div');
             el.className = 'context-menu-item' + (item.danger ? ' danger' : '');
             el.innerHTML = `${item.icon ? `<i class="fa-solid ${item.icon}" style="width: 16px; text-align: center;"></i>` : ''} <span>${t(item.label)}</span>`;
-            el.onclick = () => {
+            el.onclick = (ev) => {
+                if (ev) ev.stopPropagation();
                 window.ContextMenu.hide();
                 if (item.action) item.action();
             };
@@ -656,41 +648,62 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('contextmenu', (e) => {
-    // Allow native right-click in text fields or when text is highlighted for copying
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (window.getSelection().toString().length > 0) return; 
     
-    // Prevent the default browser context menu globally
     e.preventDefault();
     
     if (window.ContextMenu) window.ContextMenu.hide();
 });
 
 window.executePendingSearch = function() {
-    if (window.pendingSearch) {
-        const searchInput = document.getElementById('ts-search-input');
-        const searchBtn = document.getElementById('btn-ts-search');
-        if (searchInput && searchBtn) {
-            searchInput.value = window.pendingSearch;
-            searchBtn.click();
-            window.pendingSearch = null;
-        }
-    }
-}
+    if (!window.pendingSearch) return;
+    
+    let handled = false;
 
-document.addEventListener('trovesaurus_loaded', () => {
-    window.executePendingSearch();
-});
+    const tsInput = document.getElementById('ts-search-input');
+    if (tsInput) {
+        tsInput.value = window.pendingSearch;
+        document.getElementById('btn-ts-search')?.click();
+        handled = true;
+    }
+
+    const modInput = document.getElementById('mod-search-input');
+    if (modInput) {
+        modInput.value = window.pendingSearch;
+        modInput.dispatchEvent(new Event('input', { bubbles: true }));
+        handled = true;
+    }
+
+    const allyInput = document.getElementById('ally-search-input');
+    if (allyInput) {
+        allyInput.value = window.pendingSearch;
+        allyInput.dispatchEvent(new Event('input', { bubbles: true }));
+        handled = true;
+    }
+
+    if (handled) window.pendingSearch = null;
+};
+
+document.addEventListener('trovesaurus_loaded', () => window.executePendingSearch());
+document.addEventListener('mod_manager_loaded', () => window.executePendingSearch());
+document.addEventListener('allies_loaded', () => setTimeout(() => window.executePendingSearch(), 100));
 
 document.addEventListener('DOMContentLoaded', async () => {
     
     eel.get_settings()().then(settings => {
         if (settings && settings.accent_color) {
             document.documentElement.style.setProperty('--accent-blue', settings.accent_color);
+            const hex = settings.accent_color.replace('#', '');
+            if (hex.length === 6) {
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+            }
         }
     });
 
-    // Command Palette Logic
     const cmdOverlay = document.getElementById('command-palette-overlay');
     const cmdInput = document.getElementById('cmd-input');
     const cmdResults = document.getElementById('cmd-results');
@@ -714,17 +727,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function renderCmdResults(filter = "") {
         const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-        const filtered = commands.filter(c => t(c.title).toLowerCase().includes(filter.toLowerCase()) || c.id.toLowerCase().includes(filter.toLowerCase()));
-        
-        if (filtered.length === 0) {
-            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">No results found.</div>`;
+        const query = filter.trim();
+        let displayCommands = [];
+
+        if (query.startsWith('@')) {
+            const sq = query.substring(1).trim();
+            if (sq) displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
+        } else if (query.startsWith('#')) {
+            const sq = query.substring(1).trim();
+            if (sq) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+        } else {
+            const sq = query.startsWith('>') ? query.substring(1).trim() : query;
+            displayCommands = commands.filter(c => t(c.title).toLowerCase().includes(sq.toLowerCase()) || c.id.toLowerCase().includes(sq.toLowerCase()));
+            
+            if (sq.length >= 3 && displayCommands.length === 0) {
+                displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
+                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+                displayCommands.push({ id: 'trovesaurus', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', query: sq });
+            }
+        }
+
+        if (displayCommands.length === 0) {
+            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">${t("No results found.")}</div>`;
             return;
         }
         
-        if (activeCmdIndex >= filtered.length) activeCmdIndex = 0;
+        if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
-        cmdResults.innerHTML = filtered.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}">
+        cmdResults.innerHTML = displayCommands.map((c, i) => `
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -746,13 +777,41 @@ document.addEventListener('DOMContentLoaded', async () => {
             else if (e.key === 'Enter') {
                 e.preventDefault();
                 const activeEl = cmdResults.querySelector('.cmd-result-item.active');
-                if (activeEl) { window.loadView(activeEl.getAttribute('data-target')); cmdOverlay.style.display = 'none'; }
+                if (activeEl) { 
+                    const q = activeEl.getAttribute('data-query');
+                    if (q) window.pendingSearch = q;
+                    window.loadView(activeEl.getAttribute('data-target')); 
+                    cmdOverlay.style.display = 'none'; 
+                }
+            }
+        } else if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f')) && !e.target.matches('input, textarea')) {
+            e.preventDefault();
+            const searchInputs = ['ts-search-input', 'mod-search-input', 'ally-search-input', 'tree-search'];
+            for (let id of searchInputs) {
+                const input = document.getElementById(id);
+                if (input && input.offsetParent !== null) {
+                    input.focus();
+                    input.select();
+                    
+                    const originalBoxShadow = input.style.boxShadow;
+                    input.style.boxShadow = '0 0 15px var(--accent-blue, #5ec6ff)';
+                    setTimeout(() => input.style.boxShadow = originalBoxShadow, 400);
+                    break;
+                }
             }
         }
     });
 
     cmdInput.addEventListener('input', (e) => { activeCmdIndex = 0; renderCmdResults(e.target.value); });
-    cmdResults.addEventListener('click', (e) => { const item = e.target.closest('.cmd-result-item'); if (item) { window.loadView(item.getAttribute('data-target')); cmdOverlay.style.display = 'none'; } });
+    cmdResults.addEventListener('click', (e) => { 
+        const item = e.target.closest('.cmd-result-item'); 
+        if (item) { 
+            const q = item.getAttribute('data-query');
+            if (q) window.pendingSearch = q;
+            window.loadView(item.getAttribute('data-target')); 
+            cmdOverlay.style.display = 'none'; 
+        } 
+    });
     cmdOverlay.addEventListener('click', (e) => { if (e.target === cmdOverlay) cmdOverlay.style.display = 'none'; });
 
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -807,9 +866,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (langSelect && window.I18nManager) {
         langSelect.addEventListener('change', async (e) => {
             await window.I18nManager.setLocale(e.target.value);
-            await window.I18nManager.translatePage(); // Translates static shell (sidebar, etc)
+            await window.I18nManager.translatePage();
             const currentView = document.querySelector('.nav-btn.active')?.getAttribute('data-target');
-            if (currentView) window.loadView(currentView); // Reloads active view to translate dynamic JS content
+            if (currentView) window.loadView(currentView);
         });
     }
 

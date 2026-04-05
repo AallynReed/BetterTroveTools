@@ -30,7 +30,6 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                 ] 
             })
             
-        # SAVE TO APPDATA INSTEAD OF PROGRAM FILES
         cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / "installed_mods.json"
@@ -38,7 +37,6 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump({"mods": result_mods}, f)
             
-        # Tell JS to fetch from the custom Bottle route we just made
         return {"success": True, "cached_file": "/api/cache/installed_mods.json"}
         
     except Exception as e:

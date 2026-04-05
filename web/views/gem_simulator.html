@@ -1,11 +1,53 @@
 <head>
     <link rel="stylesheet" href="css/gem_simulator.css">
 </head>
-<div class="gem-sim-container">
+<div id="gem-simulator-vue-app" class="gem-sim-container" v-cloak>
     <div class="gem-sim-column left-column">
         <div class="column-header" data-i18n>Equipped Gems & Stats</div>
         <div class="column-scroll-area">
-            <div id="equipped"></div>
+            <div id="equipped">
+                <div v-for="(row, rowIdx) in equippedRows" :key="row.elementId">
+                    <div class="equipped-row-label" :style="{ color: row.color }">{{ row.elementName }}</div>
+                    <div class="equipped-row" :style="{ border: '1px dashed ' + row.color }">
+                        <template v-for="(slot, slotIdx) in row.slots" :key="'eq-'+slot.idx">
+                            <div class="slot" :data-has-item="!!equipped[slot.idx]" @dragover.prevent @drop="onDropEquipped($event, row.elementId, slot.typeRestriction, slot.idx)">
+                                <div v-if="equipped[slot.idx]" class="item" draggable="true" @dragstart="onDragStart($event, 'equipped', slot.idx)" @click="selectGem(equipped[slot.idx], 'equipped', slot.idx)" @contextmenu.prevent.stop="showContextMenu($event, equipped[slot.idx], 'equipped', slot.idx)" @mouseenter="showTooltip($event, equipped[slot.idx])" @mousemove="moveTooltip" @mouseleave="hideTooltip">
+                                    <div class="item-img-holder">
+                                        <img class="item-tier-bg" :src="gemTierBgUrl(equipped[slot.idx])">
+                                        <img class="item-gem-img" :src="gemImageUrl(equipped[slot.idx])">
+                                        <div class="item-lv">Lv.{{ equipped[slot.idx].level }}</div>
+                                        <div class="item-power">{{ equipped[slot.idx].power_rank }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div v-if="slotIdx === 1" class="slot-vertical-separator" :style="{ borderColor: row.color }"></div>
+                        </template>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <div class="primordial-toggles-row">
+                        <label v-for="element in elementsList" :key="element.id" class="primordial-toggle-label">
+                            <input type="checkbox" class="primordial-toggle-checkbox" v-model="primordialToggles[element.id]">
+                            <span class="primordial-toggle-slider" :style="{ background: primordialToggles[element.id] ? element.color : '#333' }"></span>
+                            <span :style="{ color: element.color }">{{ element.name }}</span>
+                        </label>
+                    </div>
+
+                    <div class="selected-stats-square" style="width: 100%; max-width: 100%; box-sizing: border-box;">
+                        <div style="text-align:center; font-weight:bold; font-size:1.1em; margin-bottom:10px; color:var(--accent-blue);">
+                            {{ t("Total Power Rank: {pr}").replace("{pr}", totalPRBuffed) }}
+                        </div>
+                        <hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">
+                            <div v-for="stat in sortedStatTotals" :key="stat.name">
+                                <span style="color:var(--text-muted);">{{ t(stat.name) }}</span><br>
+                                <b>{{ formatStat(stat.value) }}</b>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
@@ -14,61 +56,173 @@
         <div class="column-scroll-area">
             <div class="gem-form" id="gem-creator-panel">
                 <div class="gem-form-row">
-                    <label><span data-i18n>Type</span><select id="gem-type"></select></label>
-                    <label><span data-i18n>Tier</span><select id="gem-tier"></select></label>
+                    <label><span>{{ t('Type') }}</span><custom-vue-select v-model="creatorParams.type" :options="formattedObj(lookups.types)"></custom-vue-select></label>
+                    <label><span>{{ t('Tier') }}</span><custom-vue-select v-model="creatorParams.tier" :options="formattedObj(lookups.tiers)"></custom-vue-select></label>
                 </div>
                 <div class="gem-form-row">
-                    <label><span data-i18n>Element</span><select id="gem-element"></select></label>
-                    <label id="gem-restriction-label"><span data-i18n>Restriction</span><select id="gem-restriction"></select></label>
+                    <label><span>{{ t('Element') }}</span><custom-vue-select v-model="creatorParams.element" :options="formattedObj(lookups.elements)"></custom-vue-select></label>
+                    <label><span>{{ t('Restriction') }}</span><custom-vue-select v-model="creatorParams.restriction" :options="formattedObj(lookups.restrictions)" :disabled="creatorParams.type !== 1"></custom-vue-select></label>
                 </div>
                 <div class="gem-form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
                     <label style="flex:1;">
                         <span data-i18n>Level</span>
                         <div style="display: flex; align-items: center; margin-top: 6px;">
-                            <input type="range" id="gem-level-slider" min="1" max="35" value="1" style="flex:1;">
-                            <span id="gem-level-value" style="width:30px;text-align:right;">1</span>
+                            <input type="range" v-model.number="creatorParams.level" min="1" max="35" style="flex:1; accent-color: var(--accent-blue);">
+                            <span style="width:30px;text-align:right;">{{ creatorParams.level }}</span>
                         </div>
                     </label>
                     <div style="flex:1; display: flex; flex-direction: column; justify-content: flex-end;">
                         <label style="display:flex; align-items:center; margin-bottom: 6px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" id="gem-augment-null" checked style="margin-right:6px;">
-                            <span style="font-size: 0.9em; color: var(--text-muted);" data-i18n>Random Augment</span>
+                            <input type="checkbox" v-model="creatorParams.augmentNull" style="margin-right:6px;">
+                            <span style="font-size: 0.9em; color: var(--text-muted);">{{ t('Random Augment') }}</span>
                         </label>
                         <div style="display: flex; align-items: center;">
-                            <input type="range" id="gem-augment-slider" min="0" max="100" value="0" style="flex:1;" disabled>
-                            <span id="gem-augment-value" style="width:30px;text-align:right; color:var(--text-muted);">—</span>
+                            <input type="range" v-model.number="creatorParams.augment" min="0" max="100" style="flex:1; accent-color: var(--accent-blue);" :disabled="creatorParams.augmentNull">
+                            <span style="width:30px;text-align:right;" :style="{ color: creatorParams.augmentNull ? 'var(--text-muted)' : 'var(--text-main)' }">{{ creatorParams.augmentNull ? '—' : creatorParams.augment }}</span>
                         </div>
                     </div>
                 </div>
-                <button id="btn-generate-gem" class="primary-btn" style="width: 100%; margin-top: 10px;" data-i18n>Generate Random Gem</button>
+                <button @click="generateGem" class="primary-btn" style="width: 100%; margin-top: 10px;" :disabled="isGenerating">
+                    <template v-if="!isGenerating">{{ t('Generate Random Gem') }}</template>
+                    <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
+                </button>
             </div>
             
             <hr class="panel-divider">
             
-            <div id="selected">
-                <div class="placeholder-text" data-i18n>Select a gem to view details</div>
+            <div v-if="!selected">
+                <div class="placeholder-text">{{ t('Select a gem to view details') }}</div>
+            </div>
+            <div v-else>
+                <div style="text-align: center; font-weight: bold; font-size: 1.2em; margin-bottom: 15px;">
+                    {{ selected.gem_name ? t(selected.gem_name) : `(${t('Unnamed Gem')})` }}
+                </div>
+
+                <div class="selected-container">
+                    <div class="big-slot" draggable="true" @dragstart="onDragStart($event, 'selected', 0)">
+                        <div class="big-slot-inner-holder">
+                            <img class="big-slot-tier-bg" :src="gemTierBgUrl(selected)">
+                            <img class="big-slot-gem-img" :src="gemImageUrl(selected)">
+                            <div class="big-slot-lv">Lv.{{ selected.level }}</div>
+                            <div class="big-slot-power">{{ selected.power_rank }}</div>
+                        </div>
+                    </div>
+
+                    <div class="selected-stats-square" style="flex: 1;">
+                        <div style="font-size: 0.9em; line-height: 1.6;">
+                            <div><span style="color:var(--text-muted)">{{ t('Power:') }}</span> <b>{{ selected.power_rank }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('Level:') }}</span> <b>{{ selected.level }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('Type:') }}</span> <b>{{ getTypeDisplayName(selected.type) }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('Tier:') }}</span> <b>{{ getTierDisplayName(selected.tier) }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('Quality:') }}</span> <b>{{ (selected.quality * 100).toFixed(1) }}%</b></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stat-list-column">
+                    <div v-for="(stat, idx) in selected.stats" :key="'stat-'+idx" class="stat-vert-square" :class="{ 'stat-vert-square-selected': selectedStatIdx === idx }" @click="selectedStatIdx = idx">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <div class="stat-label" style="margin: 0;">
+                                <b>{{ getStatValue(selected, idx).toFixed(2) }}</b> <span style="color:var(--text-muted); font-size:0.9em; font-weight:normal;">{{ t(getStatName(selected, idx)) }}</span>
+                            </div>
+                            <div class="stat-augment-pct" style="position: relative; right: 0; top: 0; margin: 0;">{{ ((stat.augmentation_progress || 0) * 100).toFixed(1) }}%</div>
+                        </div>
+                        
+                        <div class="container-chip-row">
+                            <div v-for="(container, cIdx) in stat.containers" :key="'cont-'+idx+'-'+cIdx" class="container-chip-vert">
+                                <div class="container-chip-val">{{ (container.real_value * 100).toFixed(0) }}%</div>
+                                <div class="container-chip-bar-wrap">
+                                    <div class="container-chip-bar" :style="{ background: getBarColor(container.value), width: (container.value * 100).toFixed(1) + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-row">
+                    <div class="action-group" style="display: flex;">
+                        <div v-for="aug in augmentOptions" :key="aug.key" class="action-square" :class="{ selected: selectedActionKey === aug.key }" @click="selectedActionKey = aug.key">
+                            <img :src="aug.img">
+                        </div>
+                        <div class="action-separator"></div>
+                        <div v-for="mod in modifierOptions" :key="mod.key" class="action-square" :class="{ selected: selectedActionKey === mod.key }" @click="selectedActionKey = mod.key">
+                            <img :src="mod.img">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gem-actions-row">
+                    <button class="gem-action-btn" :disabled="selected.is_max_level || isLevelingUp" @click="levelUpSelected">
+                        <template v-if="isLevelingUp"><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
+                        <template v-else-if="selected.is_max_level">{{ t('Max Level') }}</template>
+                        <template v-else>{{ t('Level Up') }}</template>
+                    </button>
+                    
+                    <button class="gem-action-btn" :disabled="!selectedActionKey || isActioning" @click="doSelectedAction">
+                        <template v-if="isActioning"><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
+                        <template v-else>{{ t(actionButtonText) }}</template>
+                    </button>
+                </div>
+
+                <button v-if="!isSelectedInStorage" class="save-gem-btn" style="margin-top: 10px;" @click="saveSelectedToInventory">{{ t('Add to Inventory') }}</button>
             </div>
             
-            <div id="trash-slot-container"></div>
+            <div id="trash-slot-container">
+                <div class="trash-slot" :title="t('Click to delete selected gem, or drag a gem here')" @click="trashSelected" @dragover.prevent @drop="onDropTrash">
+                    <svg viewBox="0 0 24 24" class="trash-icon"><path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6Z"/></svg>
+                </div>
+                <div class="trash-label">{{ t('Trash') }}</div>
+            </div>
         </div>
     </div>
     
     <div class="gem-sim-column right-column">
         <div class="column-header" data-i18n>Inventory</div>
         <div class="column-scroll-area">
-            <div class="slots right-slots" id="inventory"></div>
+            <div class="slots right-slots">
+                <div v-for="(item, idx) in inventory" :key="'inv-'+idx" class="slot" :data-has-item="!!item" @dragover.prevent @drop="onDropInventory($event, idx)">
+                    <div v-if="item" class="item" draggable="true" @dragstart="onDragStart($event, 'inventory', idx)" @click="selectGem(item, 'inventory', idx)" @contextmenu.prevent.stop="showContextMenu($event, item, 'inventory', idx)" @mouseenter="showTooltip($event, item)" @mousemove="moveTooltip" @mouseleave="hideTooltip">
+                        <div class="item-img-holder">
+                            <img class="item-tier-bg" :src="gemTierBgUrl(item)">
+                            <img class="item-gem-img" :src="gemImageUrl(item)">
+                            <div class="item-lv">Lv.{{ item.level }}</div>
+                            <div class="item-power">{{ item.power_rank }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="primary-btn" style="width: 100%; margin-top: 20px;" :disabled="isSyncing" @click="syncGems">
+                <template v-if="!isSyncing">{{ t('Sync Inventory Bases') }}</template>
+                <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
+            </button>
         </div>
     </div>
-</div>
 
-<div id="custom-confirm-modal" class="modal-overlay">
-    <div class="modal-content">
-        <h3 id="modal-title" data-i18n>Delete Gem?</h3>
-        <p id="modal-message" data-i18n>Are you sure you want to permanently delete this gem?</p>
-        <div class="modal-actions">
-            <button id="modal-cancel-btn" class="secondary-btn" data-i18n>Cancel</button>
-            <button id="modal-confirm-btn" class="danger-btn" data-i18n>Delete</button>
+    <div id="custom-confirm-modal" class="modal-overlay" v-show="confirmModal.show" style="display: flex;">
+        <div class="modal-content">
+            <h3>{{ confirmModal.title }}</h3>
+            <p>{{ confirmModal.message }}</p>
+            <div class="modal-actions">
+                <button class="secondary-btn" @click="confirmModal.show = false">{{ t('Cancel') }}</button>
+                <button class="danger-btn" @click="executeConfirm">{{ t('Delete') }}</button>
+            </div>
         </div>
     </div>
+
+    <div id="gem-tooltip" class="gem-tooltip" v-show="tooltip.show" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+        <template v-if="tooltip.item">
+            <div class="gem-tooltip-title">{{ tooltip.item.gem_name ? t(tooltip.item.gem_name) : `(${t('Unnamed Gem')})` }}</div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Power Rank:') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.power_rank }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Level:') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.level }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Type:') }}</span> <span class="gem-tooltip-stat">{{ getTypeDisplayName(tooltip.item.type) }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Tier:') }}</span> <span class="gem-tooltip-stat">{{ getTierDisplayName(tooltip.item.tier) }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Quality:') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.quality !== undefined ? (tooltip.item.quality * 100).toFixed(1) + '%' : '0.0%' }}</span></div>
+            <hr style="border-color: var(--border-color); margin: 5px 0; width: 100%;">
+            <div v-for="(stat, i) in tooltip.item.stats" :key="'tt-stat-'+i" class="gem-tooltip-row">
+                <span class="gem-tooltip-muted">{{ t(getStatName(tooltip.item, i)) }} ({{ ((stat.augmentation_progress || 0) * 100).toFixed(1) }}%)</span>
+                <span class="gem-tooltip-stat">{{ getStatValue(tooltip.item, i) !== undefined ? getStatValue(tooltip.item, i).toFixed(2) : '0.00' }}</span>
+            </div>
+        </template>
+    </div>
 </div>
-<div id="gem-tooltip" class="gem-tooltip" style="display: none;"></div>

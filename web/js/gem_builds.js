@@ -1,410 +1,89 @@
 document.addEventListener("gem_builds_loaded", () => {
     console.log("Gem Builds Engine initialized!");
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-    let currentPage = 0;
-    let cachedBuilds = [];
-    const itemsPerPage = 15;
-    let isCalculating = false;
-
-    const tbody = document.getElementById("gb-results-body");
-    const starChartInput = document.getElementById("gb-star-chart");
-    const starChartSummary = document.getElementById("gb-star-chart-summary");
-
-    function updateClassIcon(selectId, iconId) {
-        const select = document.getElementById(selectId);
-        const icon = document.getElementById(iconId);
-        if (select && icon && select.options.length > 0) {
-            const opt = select.options[select.selectedIndex];
-            if (opt && opt.dataset.icon) {
-                icon.dataset.retried = ""; 
-                icon.src = `assets/images/classes/${opt.dataset.icon}.png`;
-                icon.onerror = function() {
-                    if (!this.dataset.retried) {
-                        this.dataset.retried = "true";
-                        this.src = `assets/images/icons/${opt.dataset.icon}.png`;
-                    }
-                };
-            }
-        }
+    if (typeof Vue === 'undefined') {
+        console.error("Vue.js failed to load!");
+        return;
     }
 
-    function debounce(func, wait) {
-        let timeout;
-        return function(...args) {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => func.apply(this, args), wait);
-        };
-    }
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-    function updateLightInputState() {
-        const buildType = document.getElementById("gb-build-type")?.value;
-        const lightInput = document.getElementById("gb-light");
-        
-        if (lightInput) {
-            const wrapper = lightInput.parentElement;
-            if (buildType === "Farm") {
-                lightInput.disabled = false;
-                if (wrapper) wrapper.style.opacity = "1";
-            } else {
-                lightInput.disabled = true;
-                if (wrapper) wrapper.style.opacity = "0.5";
-            }
-        }
-    }
+    const app = createApp({
+        setup() {
+            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    async function triggerCalculation() {
-        if (isCalculating) return;
-        isCalculating = true;
+            const config = reactive({
+                character: "Boomeranger",
+                subclass: "Knight",
+                build_type: "Light",
+                ally: "boot_clown",
+                food: "",
+                light: 0,
+                critical_damage_count: 3,
+                berserker_battler: false,
+                litany: false,
+                subclass_active: false,
+                no_face: false,
+                star_chart: "",
+                scTemplate: ""
+            });
 
-        const config = {
-            character: document.getElementById("gb-class")?.value || "boomeranger",
-            subclass: document.getElementById("gb-subclass")?.value || "knight",
-            build_type: document.getElementById("gb-build-type")?.value || "Light",
-            ally: document.getElementById("gb-ally")?.value || "boot_clown",
-            food: document.getElementById("gb-food")?.value || "",
-            light: parseInt(document.getElementById("gb-light")?.value) || 0,
-            critical_damage_count: parseInt(document.getElementById("gb-cd-count")?.value) || 3,
-            berserker_battler: document.getElementById("gb-berserker")?.checked || false,
-            litany: document.getElementById("gb-litany")?.checked || false,
-            subclass_active: document.getElementById("gb-subclass-active")?.checked || false,
-            no_face: document.getElementById("gb-no-face")?.checked || false,
-            star_chart: document.getElementById("gb-star-chart")?.value.trim() || null
-        };
+            const classesData = ref([]);
+            const foodsData = ref({});
+            const alliesData = ref({});
+            const starChartTemplates = ref({});
+            const starChartSummary = ref(null);
 
-        if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Crunching Math...")}</td></tr>`;
-        }
+            const cachedBuilds = ref([]);
+            const currentPage = ref(0);
+            const itemsPerPage = 15;
+            const isCalculating = ref(false);
 
-        try {
-            const results = await eel.calculate_gem_builds(config)();
-            cachedBuilds = results;
-            currentPage = 0;
-            renderTable();
-        } catch (err) {
-            console.error("Gem Builds Engine Error:", err);
-            if (tbody) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="color: #ff4444;">${t("Calculation failed. Check console.")}</td></tr>`;
-            }
-        } finally {
-            isCalculating = false;
-        }
-    }
-
-    const debouncedCalc = debounce(triggerCalculation, 300);
-
-    async function loadConfigData() {
-        try {
-            const [classesData, foodsData, alliesData] = await Promise.all([
-                eel.get_trove_classes()(),
-                eel.get_food_data()(),
-                eel.get_ally_data()()
-            ]);
-            
-            const classSelect = document.getElementById("gb-class");
-            const subclassSelect = document.getElementById("gb-subclass");
-            const foodSelect = document.getElementById("gb-food");
-            const allySelect = document.getElementById("gb-ally");
-
-            if (classSelect && subclassSelect && classesData) {
-                classSelect.options.length = 0;
-                subclassSelect.options.length = 0;
-                
-                for (let i = 0; i < classesData.length; i++) {
-                    const cls = classesData[i];
-                    const iconName = cls.name.toLowerCase().replace(/ /g, '_');
-                    
-                    const optClass = new Option(t(cls.name), cls.value);
-                    optClass.dataset.icon = iconName;
-                    classSelect.add(optClass);
-                    
-                    const optSub = new Option(t(cls.name), cls.value);
-                    optSub.dataset.icon = iconName;
-                    subclassSelect.add(optSub);
+            const classIcon = computed(() => {
+                const cls = classesData.value.find(c => c.value === config.character);
+                return cls ? `assets/images/classes/${cls.name.toLowerCase().replace(/ /g, '_')}.png` : '';
+            });
+            const subclassIcon = computed(() => {
+                const cls = classesData.value.find(c => c.value === config.subclass);
+                return cls ? `assets/images/classes/${cls.name.toLowerCase().replace(/ /g, '_')}.png` : '';
+            });
+            const onImageError = (e) => {
+                if (!e.target.dataset.retried) {
+                    e.target.dataset.retried = "true";
+                    e.target.src = e.target.src.replace('/classes/', '/icons/');
                 }
-                
-                if (classSelect.value === subclassSelect.value) {
-                    for (let i = 0; i < subclassSelect.options.length; i++) {
-                        if (subclassSelect.options[i].value !== classSelect.value) {
-                            subclassSelect.selectedIndex = i;
-                            break;
-                        }
-                    }
-                }
-                
-                updateClassIcon("gb-class", "gb-class-icon");
-                updateClassIcon("gb-subclass", "gb-subclass-icon");
-            }
+            };
 
-            if (foodSelect && foodsData) {
-                foodSelect.options.length = 0;
-                foodSelect.add(new Option(t("None"), ""));
-                for (const [key, data] of Object.entries(foodsData)) {
-                    foodSelect.add(new Option(t(data.qualified_name || key), key));
-                }
-            }
+            const bestCoeff = computed(() => cachedBuilds.value.length > 0 ? cachedBuilds.value[0].coefficient : 1);
+            const maxPages = computed(() => Math.ceil(cachedBuilds.value.length / itemsPerPage) || 1);
+            const paginatedBuilds = computed(() => {
+                const start = currentPage.value * itemsPerPage;
+                return cachedBuilds.value.slice(start, start + itemsPerPage);
+            });
 
-            if (allySelect && alliesData) {
-                allySelect.options.length = 0;
-                allySelect.add(new Option(t("None (Auto-Optimal)"), "boot_clown"));
-                for (const [key, data] of Object.entries(alliesData)) {
-                    allySelect.add(new Option(t(data.qualified_name || key), key));
-                }
-            }
-            
-            console.log("Gem Builds: All dropdowns populated successfully!");
+            const nextPage = () => { if (currentPage.value < maxPages.value - 1) currentPage.value++; };
+            const prevPage = () => { if (currentPage.value > 0) currentPage.value--; };
 
-            triggerCalculation();
+            const getTooltipHtml = (build) => {
+                const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
+                return `
+                    <div style="min-width: 220px;">
+                        <h3>${t("Build #{rank} Details").replace("{rank}", build.rank)}</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin-bottom: 4px;"><strong>${t("Light")}:</strong> <span style="float: right; color: #fff;">${build.light.toLocaleString()}</span></li>
+                            <li style="margin-bottom: 4px;"><strong>${t("Base Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.base_dmg).toLocaleString()}</span></li>
+                            <li style="margin-bottom: 4px;"><strong>${t("Bonus Dmg")}:</strong> <span style="float: right; color: #fff;">${build.bonus_dmg.toFixed(2)}%${classBonusText}</span></li>
+                            <li style="margin-bottom: 4px;"><strong>${t("Crit Dmg")}:</strong> <span style="float: right; color: #fff;">${build.crit_dmg.toFixed(1)}%</span></li>
+                            <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 8px 0;">
+                            <li style="margin-bottom: 4px;"><strong>${t("Total Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.total_dmg).toLocaleString()}</span></li>
+                            <li style="margin-bottom: 4px;"><strong>${t("Coefficient")}:</strong> <span style="float: right; color: var(--accent-orange); font-weight: bold;">${build.coefficient.toLocaleString()}</span></li>
+                        </ul>
+                    </div>
+                `.replace(/"/g, '&quot;');
+            };
 
-        } catch (err) {
-            console.error("Gem Builds: Failed to load config data from Python:", err);
-            const classSelect = document.getElementById("gb-class");
-            if (classSelect) {
-                classSelect.options.length = 0;
-                classSelect.add(new Option(t("Error Loading Data"), "error"));
-            }
-        }
-    }
-
-    const lightInput = document.getElementById("gb-light");
-    if (lightInput) {
-        const label = lightInput.previousElementSibling;
-        if (label && label.tagName === "LABEL" && !label.querySelector('.fa-circle-info')) {
-            label.innerHTML += ` <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" title="${t("Base Light optimization is only active for 'Farm' builds.")}"></i>`;
-        }
-    }
-    updateLightInputState();
-
-    loadConfigData();
-
-    const classSelect = document.getElementById("gb-class");
-    const subclassSelect = document.getElementById("gb-subclass");
-
-    if (classSelect && subclassSelect) {
-        classSelect.addEventListener("change", () => {
-            if (classSelect.value === subclassSelect.value) {
-                for (let i = 0; i < subclassSelect.options.length; i++) {
-                    if (subclassSelect.options[i].value !== classSelect.value) {
-                        subclassSelect.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
-            updateClassIcon("gb-class", "gb-class-icon");
-            updateClassIcon("gb-subclass", "gb-subclass-icon");
-        });
-
-        subclassSelect.addEventListener("change", () => {
-            if (subclassSelect.value === classSelect.value) {
-                for (let i = 0; i < classSelect.options.length; i++) {
-                    if (classSelect.options[i].value !== subclassSelect.value) {
-                        classSelect.selectedIndex = i;
-                        break;
-                    }
-                }
-            }
-            updateClassIcon("gb-class", "gb-class-icon");
-            updateClassIcon("gb-subclass", "gb-subclass-icon");
-        });
-    }
-
-    const buildTypeSelect = document.getElementById("gb-build-type");
-    if (buildTypeSelect) {
-        buildTypeSelect.addEventListener("change", updateLightInputState);
-    }
-
-    const instantChangeElements = [
-        "gb-class", "gb-subclass", "gb-build-type", "gb-ally", "gb-food",
-        "gb-berserker", "gb-litany", "gb-subclass-active", "gb-no-face"
-    ];
-    
-    instantChangeElements.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.addEventListener("change", triggerCalculation);
-    });
-
-    if(lightInput) lightInput.addEventListener("input", debouncedCalc);
-
-    const cdCountInput = document.getElementById("gb-cd-count");
-    const cdCountDisplay = document.getElementById("gb-cd-count-display");
-    if (cdCountInput) {
-        cdCountInput.addEventListener("input", (e) => {
-            if (cdCountDisplay) cdCountDisplay.innerText = e.target.value;
-            debouncedCalc();
-        });
-    }
-
-    if (starChartInput && starChartSummary) {
-        const scTemplateSelect = document.createElement("select");
-        scTemplateSelect.className = 'btt-select';
-        scTemplateSelect.style.padding = '8px';
-        scTemplateSelect.style.background = 'var(--bg-dark, #111)';
-        scTemplateSelect.style.color = '#fff';
-        scTemplateSelect.style.border = '1px solid var(--border-color, #333)';
-        scTemplateSelect.style.borderRadius = '4px';
-        scTemplateSelect.style.width = '100%';
-        scTemplateSelect.style.marginBottom = '8px';
-        scTemplateSelect.innerHTML = `<option value="">${t("-- Load Saved Star Chart --")}</option>`;
-
-        starChartInput.parentElement.insertBefore(scTemplateSelect, starChartInput);
-
-        eel.get_star_chart_templates()().then(templates => {
-            for (let name in templates) {
-                let opt = document.createElement('option');
-                opt.value = templates[name];
-                opt.innerText = name;
-                scTemplateSelect.appendChild(opt);
-            }
-        });
-
-        scTemplateSelect.addEventListener("change", () => {
-            starChartInput.value = scTemplateSelect.value;
-            starChartInput.dispatchEvent(new Event("input"));
-        });
-
-        starChartInput.addEventListener("input", async () => {
-            const code = starChartInput.value.trim();
-            
-            let matched = false;
-            for (let i = 0; i < scTemplateSelect.options.length; i++) {
-                if (scTemplateSelect.options[i].value === code && code !== "") {
-                    scTemplateSelect.selectedIndex = i;
-                    matched = true;
-                    break;
-                }
-            }
-            if (!matched) scTemplateSelect.value = "";
-
-            if (!code) {
-                starChartSummary.style.display = "none";
-                debouncedCalc();
-                return;
-            }
-
-            try {
-                const decoded = atob(code);
-                const paths = decoded.split('$');
-                
-                const parsedData = await eel.parse_star_chart_code(code)();
-                
-                let statsHtml = "";
-                if (parsedData && parsedData.stats) {
-                    for (const [statName, values] of Object.entries(parsedData.stats)) {
-                        let valStr = [];
-                        if (values.flat > 0) valStr.push(`+${values.flat}`);
-                        if (values.pct > 0) valStr.push(`+${values.pct}%`);
-                        
-                        if (valStr.length > 0) {
-                            statsHtml += `<li><strong>${t(statName)}:</strong> <span style="color: var(--accent-orange);">${valStr.join(" / ")}</span></li>`;
-                        }
-                    }
-                }
-
-                starChartSummary.innerHTML = `
-                    <h4><i class="fa-solid fa-chart-network"></i> ${t("Star Chart Loaded")}</h4>
-                    <ul style="margin-bottom: 8px;">
-                        <li>${t("{count} Nodes Detected").replace("{count}", `<strong>${paths.length}</strong>`)}</li>
-                    </ul>
-                    ${statsHtml ? `<hr class="divider" style="margin: 8px 0;"><ul style="list-style-type: none; padding-left: 0;">${statsHtml}</ul>` : ""}
-                `;
-                starChartSummary.style.display = "block";
-                
-                debouncedCalc();
-            } catch (e) {
-                starChartSummary.style.display = "block";
-                starChartSummary.innerHTML = `<span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> ${t("Invalid Base64 Build Code")}</span>`;
-            }
-        });
-    }
-
-    const btnPrev = document.getElementById("gb-prev");
-    const btnNext = document.getElementById("gb-next");
-
-    if (btnPrev) {
-        btnPrev.addEventListener("click", () => {
-            if (currentPage > 0) {
-                currentPage--;
-                renderTable();
-            }
-        });
-    }
-
-    if (btnNext) {
-        btnNext.addEventListener("click", () => {
-            const maxPages = Math.ceil(cachedBuilds.length / itemsPerPage);
-            if (currentPage < maxPages - 1) {
-                currentPage++;
-                renderTable();
-            }
-        });
-    }
-
-    function renderTable() {
-        if (!tbody) return;
-        
-        if (cachedBuilds.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">${t("No builds generated. Check your config.")}</td></tr>`;
-            return;
-        }
-
-        const maxPages = Math.ceil(cachedBuilds.length / itemsPerPage);
-        
-        const pageCurrent = document.getElementById('gb-page-current');
-        const pageMax = document.getElementById('gb-page-max');
-        if (pageCurrent) pageCurrent.innerText = currentPage + 1;
-        if (pageMax) pageMax.innerText = maxPages;
-
-        const startIdx = currentPage * itemsPerPage;
-        const pageItems = cachedBuilds.slice(startIdx, startIdx + itemsPerPage);
-        const bestCoeff = cachedBuilds[0].coefficient;
-
-        let tableHTML = "";
-        pageItems.forEach(build => {
-            const isBest = build.rank === 1;
-            const deviation = isBest ? 
-                `<span style="color: var(--accent-blue); font-weight: bold;">${t("Best")}</span>` : 
-                `<span style="color: #e57373;">-${(((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3)}%</span>`;
-
-            const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
-
-            const tooltipHtml = `
-                <div style="min-width: 220px;">
-                    <h3>${t("Build #{rank} Details").replace("{rank}", build.rank)}</h3>
-                    <ul style="list-style: none; padding: 0; margin: 0;">
-                        <li style="margin-bottom: 4px;"><strong>${t("Light")}:</strong> <span style="float: right; color: #fff;">${build.light.toLocaleString()}</span></li>
-                        <li style="margin-bottom: 4px;"><strong>${t("Base Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.base_dmg).toLocaleString()}</span></li>
-                        <li style="margin-bottom: 4px;"><strong>${t("Bonus Dmg")}:</strong> <span style="float: right; color: #fff;">${build.bonus_dmg.toFixed(2)}%${classBonusText}</span></li>
-                        <li style="margin-bottom: 4px;"><strong>${t("Crit Dmg")}:</strong> <span style="float: right; color: #fff;">${build.crit_dmg.toFixed(1)}%</span></li>
-                        <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 8px 0;">
-                        <li style="margin-bottom: 4px;"><strong>${t("Total Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.total_dmg).toLocaleString()}</span></li>
-                        <li style="margin-bottom: 4px;"><strong>${t("Coefficient")}:</strong> <span style="float: right; color: var(--accent-orange); font-weight: bold;">${build.coefficient.toLocaleString()}</span></li>
-                    </ul>
-                </div>
-            `.replace(/"/g, '&quot;');
-
-            tableHTML += `
-                <tr style="${isBest ? 'background: rgba(94, 198, 255, 0.1);' : ''}" data-tooltip="${tooltipHtml}">
-                    <td class="text-center">${build.rank}</td>
-                    <td class="build-layout-cell text-left" data-layout="${build.layout}" style="font-family: monospace; color: var(--accent-orange); cursor: pointer;" title="Click to copy">
-                        ${build.layout}
-                    </td>
-                    <td class="text-right">${build.light.toLocaleString()}</td>
-                    <td class="text-right">${Math.round(build.base_dmg).toLocaleString()}</td>
-                    <td class="text-right">${build.bonus_dmg.toFixed(2)}%${classBonusText}</td>
-                    <td class="text-right">${Math.round(build.total_dmg).toLocaleString()}</td>
-                    <td class="text-right">${build.crit_dmg.toFixed(1)}%</td>
-                    <td class="text-right sort-col" style="font-weight: bold; color: #fff;">${build.coefficient.toLocaleString()}</td>
-                    <td class="text-right">${deviation}</td>
-                </tr>
-            `;
-        });
-        
-        tbody.innerHTML = tableHTML;
-
-        document.querySelectorAll('.build-layout-cell').forEach(cell => {
-            cell.addEventListener('click', async (e) => {
-                const layoutText = e.target.getAttribute('data-layout');
+            const copyLayout = async (layout, e) => {
                 try {
-                    await navigator.clipboard.writeText(layoutText);
+                    await navigator.clipboard.writeText(layout);
                     const originalColor = e.target.style.color;
                     e.target.style.color = "#4CAF50";
                     setTimeout(() => e.target.style.color = originalColor, 500);
@@ -412,30 +91,169 @@ document.addEventListener("gem_builds_loaded", () => {
                 } catch (err) {
                     console.error("Failed to copy:", err);
                 }
-            });
-        });
-    }
+            };
 
-    const btnExport = document.getElementById("btn-export-csv");
-    if (btnExport) {
-        btnExport.addEventListener("click", () => {
-            if (!cachedBuilds || cachedBuilds.length === 0) {
-                if(window.showToast) window.showToast(t("No builds available to export."), true);
-                return;
-            }
-            
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
-            cachedBuilds.forEach(b => {
-                csvContent += `${b.rank},${b.layout},${b.light},${Math.round(b.base_dmg)},${b.bonus_dmg.toFixed(2)},${Math.round(b.total_dmg)},${b.crit_dmg.toFixed(1)},${b.coefficient}\n`;
+            const exportCsv = () => {
+                if (!cachedBuilds.value || cachedBuilds.value.length === 0) {
+                    if(window.showToast) window.showToast(t("No builds available to export."), true);
+                    return;
+                }
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                csvContent += "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
+                cachedBuilds.value.forEach(b => {
+                    csvContent += `${b.rank},${b.layout},${b.light},${Math.round(b.base_dmg)},${b.bonus_dmg.toFixed(2)},${Math.round(b.total_dmg)},${b.crit_dmg.toFixed(1)},${b.coefficient}\n`;
+                });
+                const link = document.createElement("a");
+                link.setAttribute("href", encodeURI(csvContent));
+                link.setAttribute("download", "gem_builds_export.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const showContextMenu = (e, build) => {
+                if (!window.ContextMenu) return;
+                window.ContextMenu.show(e, [
+                    {
+                        label: 'Copy Build Layout',
+                        icon: 'fa-copy',
+                        action: () => navigator.clipboard.writeText(build.layout).then(() => { if(window.showToast) window.showToast(t("Copied Build Layout to clipboard!")); })
+                    },
+                    {
+                        label: 'Copy Coefficient',
+                        icon: 'fa-hashtag',
+                        action: () => navigator.clipboard.writeText(build.coefficient.toString()).then(() => { if(window.showToast) window.showToast(t("Copied Coefficient to clipboard!")); })
+                    },
+                    {
+                        label: 'Copy All Stats',
+                        icon: 'fa-clipboard-list',
+                        action: () => {
+                            const classBonusText = build.class_bonus ? ` + ${build.class_bonus}%` : "";
+                            const statsText = [
+                                `${t("Build Rank")}: #${build.rank}`,
+                                `${t("Build")}: ${build.layout}`,
+                                `${t("Light")}: ${build.light.toLocaleString()}`,
+                                `${t("Base Dmg")}: ${Math.round(build.base_dmg).toLocaleString()}`,
+                                `${t("Bonus Dmg")}: ${build.bonus_dmg.toFixed(2)}%${classBonusText}`,
+                                `${t("Crit Dmg")}: ${build.crit_dmg.toFixed(1)}%`,
+                                `${t("Total Dmg")}: ${Math.round(build.total_dmg).toLocaleString()}`,
+                                `${t("Coefficient")}: ${build.coefficient.toLocaleString()}`
+                            ].join('\n');
+                            navigator.clipboard.writeText(statsText).then(() => { if(window.showToast) window.showToast(t("Copied All Stats to clipboard!")); });
+                        }
+                    },
+                    { separator: true },
+                    { label: 'Export All to CSV', icon: 'fa-file-csv', action: exportCsv }
+                ]);
+            };
+
+            let calcTimeout;
+            const triggerCalculation = () => {
+                clearTimeout(calcTimeout);
+                calcTimeout = setTimeout(async () => {
+                    if (isCalculating.value) return;
+                    isCalculating.value = true;
+                    try {
+                        const pyConfig = {
+                            character: config.character,
+                            subclass: config.subclass,
+                            build_type: config.build_type,
+                            ally: config.ally,
+                            food: config.food,
+                            light: config.light,
+                            critical_damage_count: config.critical_damage_count,
+                            berserker_battler: config.berserker_battler,
+                            litany: config.litany,
+                            subclass_active: config.subclass_active,
+                            no_face: config.no_face,
+                            star_chart: config.star_chart
+                        };
+                        const results = await eel.calculate_gem_builds(pyConfig)();
+                        cachedBuilds.value = results || [];
+                        currentPage.value = 0;
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        isCalculating.value = false;
+                    }
+                }, 300);
+            };
+
+            watch(() => config.character, (newVal) => {
+                if (newVal === config.subclass) {
+                    const other = classesData.value.find(c => c.value !== newVal);
+                    if (other) config.subclass = other.value;
+                }
             });
-            
-            const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csvContent));
-            link.setAttribute("download", "gem_builds_export.csv");
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        });
-    }
+
+            watch(() => config.subclass, (newVal) => {
+                if (newVal === config.character) {
+                    const other = classesData.value.find(c => c.value !== newVal);
+                    if (other) config.character = other.value;
+                }
+            });
+
+            watch(() => config.star_chart, async (newVal) => {
+                let matched = false;
+                for (const [name, code] of Object.entries(starChartTemplates.value)) {
+                    if (code === newVal && newVal !== "") {
+                        config.scTemplate = code;
+                        matched = true;
+                        break;
+                    }
+                }
+                if (!matched) config.scTemplate = "";
+
+                if (!newVal) {
+                    starChartSummary.value = null;
+                    return;
+                }
+
+                try {
+                    const decoded = atob(newVal);
+                    const paths = decoded.split('$');
+                    const parsedData = await eel.parse_star_chart_code(newVal)();
+                    starChartSummary.value = { pathsCount: paths.length, stats: parsedData?.stats || {}, error: false };
+                } catch(e) {
+                    starChartSummary.value = { error: true };
+                }
+            });
+
+            watch(config, () => {
+                triggerCalculation();
+            }, { deep: true });
+
+            onMounted(async () => {
+                try {
+                    const [cData, fData, aData, scData] = await Promise.all([
+                        eel.get_trove_classes()(),
+                        eel.get_food_data()(),
+                        eel.get_ally_data()(),
+                        eel.get_star_chart_templates()()
+                    ]);
+                    if (cData) classesData.value = cData;
+                    if (fData) foodsData.value = fData;
+                    if (aData) alliesData.value = aData;
+                    if (scData) starChartTemplates.value = scData;
+                    
+                    triggerCalculation();
+                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                } catch(e) {
+                    console.error("Config load error:", e);
+                }
+            });
+
+            return {
+                t, config, classesData, foodsData, alliesData, starChartTemplates, starChartSummary,
+                classIcon, subclassIcon, onImageError,
+                cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff,
+                nextPage, prevPage, getTooltipHtml, copyLayout, exportCsv, showContextMenu
+            };
+        }
+    });
+
+    if (window._gemBuildsApp) window._gemBuildsApp.unmount();
+    window._gemBuildsApp = app;
+    
+    app.mount('#gem-builds-vue-app');
 });

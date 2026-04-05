@@ -1,31 +1,46 @@
 <head>
     <link rel="stylesheet" href="css/home.css">
 </head>
-<div class="home-container">
+<div id="home-vue-app" class="home-container" v-cloak>
     <div class="home-header">
-        <h1 data-i18n>Welcome to Better Trove Tools</h1>
+        <h1>{{ t('Welcome to Better Trove Tools') }}</h1>
     </div>
 
-    <div id="community-content-wrapper">
+    <div v-show="settings.show_community_content">
         <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;"><i class="fa-solid fa-video" style="color: #FF0000;"></i> <span data-i18n>Community Content</span></h2>
+            <h2 style="margin: 0;"><i class="fa-solid fa-video" style="color: #FF0000;"></i> <span>{{ t('Community Content') }}</span></h2>
             <div class="media-tabs">
-                <button class="media-tab" data-tab="bilibili" style="display: none;"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
-                    <button class="media-tab active" data-tab="youtube"><i class="fa-brands fa-youtube"></i> YouTube</button>
-                <button class="media-tab" data-tab="twitch"><i class="fa-brands fa-twitch"></i> Twitch</button>
+                <button v-if="isChinese" class="media-tab" :class="{ active: mediaTab === 'bilibili' }" @click="mediaTab = 'bilibili'"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
+                <button class="media-tab" :class="{ active: mediaTab === 'youtube' }" @click="mediaTab = 'youtube'"><i class="fa-brands fa-youtube"></i> YouTube</button>
+                <button class="media-tab" :class="{ active: mediaTab === 'twitch' }" @click="mediaTab = 'twitch'"><i class="fa-brands fa-twitch"></i> Twitch</button>
             </div>
         </div>
         
-        <div id="media-loading" class="loading-box">
-            <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Fetching Content...</span>
+        <div v-if="mediaData[mediaTab].loading" class="loading-box">
+            <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Content...') }}</span>
         </div>
         
-        <div class="carousel-wrapper" id="carousel-wrapper" style="display: none;">
-            <button id="btn-scroll-left" class="carousel-btn left"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="streams-carousel" id="bilibili-carousel" style="display: none;"></div>
-            <div class="streams-carousel" id="youtube-carousel"></div>
-            <div class="streams-carousel" id="streams-carousel" style="display: none;"></div>
-            <button id="btn-scroll-right" class="carousel-btn right"><i class="fa-solid fa-chevron-right"></i></button>
+        <div v-else class="carousel-wrapper">
+            <button class="carousel-btn left" @click="scrollCarousel(-260)"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="streams-carousel" ref="carouselRef">
+                <div v-if="mediaData[mediaTab].data.length === 0" style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
+                    <i :class="['fa-brands', `fa-${mediaTab}`]" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
+                    <span style="font-size: 14px;">{{ t('No Trove streams are live right now. Check back later!') }}</span>
+                </div>
+                <template v-else>
+                    <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" style="cursor: pointer;" @click="openUrl(item.url)">
+                        <div class="stream-thumb">
+                            <img :src="item.thumb" alt="">
+                            <div class="stream-badges"><span class="badge viewers" v-html="item.badgeHtml"></span></div>
+                        </div>
+                        <div class="stream-info">
+                            <div class="stream-title">{{ item.title }}</div>
+                            <div class="stream-user"><i :class="['fa-brands', `fa-${mediaTab}`]" :style="{ color: item.iconColor }"></i> {{ item.channel }}<span v-if="item.verified" style="color: #5ec6ff;" :title="t('Verified')"> <i class="fa-solid fa-circle-check"></i></span></div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <button class="carousel-btn right" @click="scrollCarousel(260)"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
     </div>
 
@@ -34,51 +49,199 @@
         <div class="split-column">
             
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-bolt" style="color: #fbc02d;"></i> <span data-i18n>Server Buffs & Chaos Chest</span></h2>
+                <h2><i class="fa-solid fa-calendar-days" style="color: var(--accent-blue);"></i> <span>{{ t('Events') }}</span></h2>
             </div>
-            <div id="buffs-loading" class="loading-box">
-                <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Fetching Server Data...</span>
+            <div v-if="serverData.loading" class="loading-box">
+                <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Server Data...') }}</span>
             </div>
-            <div class="buffs-grid" id="buffs-grid" style="display: none;"></div>
+            <div v-else class="buffs-grid" style="display: grid;">
+                <div v-if="serverData.daily" class="buff-card hover-card" :style="{ '--buff-color': '#' + serverData.daily.color }" style="cursor: pointer;" :title="t('Click to see schedule')" @click="openBuffSchedule('daily')">
+                    <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.daily.banner}') center/cover` }">
+                        <img v-if="serverData.daily.icon" :src="serverData.daily.icon" alt="">
+                        <span>{{ serverData.daily.emoji || '' }} {{ t('Daily: {name}').replace('{name}', t(serverData.daily.name)) }}</span>
+                    </div>
+                    <div class="buff-content">
+                        <div class="buff-split-container">
+                            <div class="buff-column normal-buffs">
+                                <div class="buff-column-title"><i class="fa-solid fa-crown" style="opacity: 0.5;"></i> {{ t('Free') }}</div>
+                                <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.normal_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
+                            </div>
+                            <div class="buff-column patron-buffs">
+                                <div class="buff-column-title"><i class="fa-solid fa-crown"></i> {{ t('Patron') }}</div>
+                                <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.premium_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="serverData.weekly" class="buff-card hover-card" :style="{ '--buff-color': '#' + serverData.weekly.color }" style="cursor: pointer;" :title="t('Click to see schedule')" @click="openBuffSchedule('weekly')">
+                    <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.weekly.banner}') center/cover` }">
+                        <img v-if="serverData.weekly.icon" :src="serverData.weekly.icon" alt="">
+                        <span>{{ serverData.weekly.emoji || '' }} {{ t('Weekly: {name}').replace('{name}', t(serverData.weekly.name)) }}</span>
+                    </div>
+                    <div class="buff-content" style="padding: 15px;">
+                        <ul class="buff-list"><li v-for="(b, i) in serverData.weekly.buffs" :key="i">{{ t(b) }}</li></ul>
+                    </div>
+                </div>
+
+                <div v-if="chaosChestCard" class="merchant-card" :class="{ 'hover-card': chaosChestCard.identifier }" style="--merchant-color: #ab47bc;" :style="{ cursor: chaosChestCard.identifier ? 'pointer' : 'default' }" :title="chaosChestCard.identifier ? t('{name} (Click to view on Trovesaurus)').replace('{name}', t(chaosChestCard.name)) : ''" @click="chaosChestCard.identifier && openUrl(`https://trovesaurus.com/${chaosChestCard.identifier}`)">
+                    <div class="merchant-icon" style="background: transparent;"><img :src="chaosChestCard.iconUrl" style="width: 40px; height: 40px; object-fit: contain;" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
+                    <div class="merchant-info" style="width: 100%;">
+                        <div class="merchant-name" style="color: #ab47bc;">{{ t(chaosChestCard.name) }} <i v-if="chaosChestCard.unknown" class="fa-solid fa-triangle-exclamation" style="color: #fbc02d; font-size: 0.8em; margin-left: 8px; cursor: help;" :title="t(`We don't know the item yet`)"></i></div>
+                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="chaosChestCard.timeHtml"></span></div>
+                    </div>
+                </div>
+            </div>
 
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i> <span data-i18n>Events</span></h2>
+                <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i> <span>{{ t('Events') }}</span></h2>
             </div>
-            <div id="events-loading" class="loading-box">
-                <i class="fa-solid fa-spinner fa-spin"></i> <span data-i18n>Loading Trovesaurus Calendar...</span>
+            <div v-if="events.loading" class="loading-box">
+                <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trovesaurus Calendar...') }}</span>
             </div>
-            <div id="events-list" class="events-list" style="display: none;"></div>
+            <div v-else-if="events.error" style="text-align: center; padding: 20px; color: #ff5555; background: rgba(255, 85, 85, 0.1); border: 1px solid rgba(255, 85, 85, 0.3); border-radius: 10px; width: 100%;">
+                <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                <span style="font-size: 14px;">{{ t('Failed to fetch events from Trovesaurus.') }}</span>
+            </div>
+            <div v-else class="events-list" style="display: flex;">
+                <div v-for="event in mappedEvents" :key="event.id || event.name" class="event-card" style="cursor: pointer;" @click="openUrl(event.url)">
+                    <div class="event-image"><img :src="event.img" alt=""></div>
+                    <div class="event-main">
+                        <div class="event-name-row"><span class="event-name">{{ t(event.name) }}</span><span class="event-category">{{ t(event.category) }}</span></div>
+                        <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> {{ event.startStr }} - {{ event.endStr }}</span>
+                        <span style="margin-left: 15px; font-weight: bold;" :style="{ color: event.statusColor }"><i class="fa-solid fa-hourglass-half" :style="{ animation: event.statusColor === '#ff5555' ? 'pulse-opacity 2s infinite ease-in-out' : 'none' }"></i> {{ event.statusText }}</span></div>
+                    </div>
+                    <div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                </div>
+            </div>
 
         </div>
 
         <div class="split-column">
             <div class="section-header" style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0;"><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> <span data-i18n>Rotations</span></h2>
-                <button id="btn-open-yearly-calendar" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" title="View Yearly Calendar"><i class="fa-regular fa-calendar-days"></i> <span data-i18n>Calendar</span></button>
+                <h2 style="margin: 0;"><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> <span>{{ t('Rotations') }}</span></h2>
+                <button @click="calendarModal.show = true; loadYearlyCalendar()" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('View Yearly Calendar')"><i class="fa-regular fa-calendar-days"></i> <span>{{ t('Calendar') }}</span></button>
             </div>
-            <div id="merchants-grid" class="merchants-grid" style="display: none;"></div>
+            
+            <div v-if="!serverData.loading" class="merchants-grid" style="display: flex;">
+                <div v-for="m in merchantCards" :key="m.id" class="merchant-card hover-card" :class="{ inactive: !m.active }" :style="{ '--merchant-color': m.color, cursor: 'pointer' }" :title="t('Click to see upcoming schedule')" @click="openMerchantSchedule(m)">
+                    <div class="merchant-icon"><i class="fa-solid" :class="m.iconClass"></i></div>
+                    <div class="merchant-info" style="width: 100%;">
+                        <div class="merchant-name">{{ m.name }} <span class="merchant-status-badge">{{ t(m.statusText) }}</span></div>
+                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="m.timeHtml"></span></div>
+                        <div v-if="m.biomes" style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span v-for="b in m.biomes" :key="b.name" class="biome-pill" :title="t('Biome: {name}').replace('{name}', t(b.name))">
+                                <img :src="`/assets/images/biomes/${b.icon}.png`" @error="$event.target.style.display='none'" alt="">
+                                {{ t(b.final_name) }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
-</div>
 
-<div id="yearly-calendar-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-overlay" v-show="calendarModal.show" style="display: flex;" @click.self="calendarModal.show = false">
     <div class="modal-content" style="max-width: 95%; width: 1200px;">
         <div class="modal-header">
-            <h3><i class="fa-regular fa-calendar-days" style="color: #5ec6ff;"></i> <span data-i18n>Yearly Rotation Calendar</span> <button id="btn-calendar-today" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" data-i18n-title="Jump to Today"><i class="fa-solid fa-location-crosshairs"></i></button></h3>
-            <button class="modal-close" id="yearly-modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+                <h3><i class="fa-regular fa-calendar-days" style="color: var(--accent-blue);"></i> <span>{{ t('Yearly Rotation Calendar') }}</span> <button @click="centerCalendarToday" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('Jump to Today')"><i class="fa-solid fa-location-crosshairs"></i></button></h3>
+                <button class="modal-close" @click="calendarModal.show = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="modal-body" id="yearly-calendar-body" style="padding: 0;"></div>
+            <div class="modal-body" style="padding: 0;">
+                <div v-if="calendarModal.isLoading" style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Calculating predictions...') }}</div>
+                <div v-else-if="calendarModal.error" style="padding: 40px; text-align: center; color: #ff5555;">{{ t('Error loading calendar data.') }}</div>
+                
+                <div v-else class="calendar-timeline-wrapper" :class="{ draggable: true, dragging: isDraggingTimeline }" id="timeline-wrapper" ref="timelineWrapperRef" @mousedown="startDrag" @mousemove="onDrag" @mouseup="stopDrag" @mouseleave="stopDrag" @wheel.prevent="onWheel">
+                    <div class="calendar-today-line" :style="{ left: (calendarData.todayPx + 140) + 'px' }"></div>
+                    
+                    <div class="calendar-timeline-header" :style="{ width: calendarData.totalWidth + 'px', flexDirection: 'column' }">
+                        <div class="calendar-months-row" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+                            <div class="calendar-track-label" style="min-width: 140px; width: 140px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>
+                            <div v-for="(m, i) in calendarData.months" :key="'m'+i" class="calendar-month-col" :style="{ width: (m.days * 40) + 'px' }">
+                                <div class="calendar-month-label" style="left: 140px;">{{ m.name }} {{ m.year }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="calendar-days-row" style="display: flex;">
+                            <div class="calendar-track-label" style="min-width: 140px; width: 140px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>
+                            <div v-for="(d, i) in calendarData.days" :key="'d'+i" class="calendar-day-col" :class="{ 'is-today': d.isToday }">
+                                <div class="calendar-day-weekday">{{ d.weekday }}</div>
+                                <div class="calendar-day-num">{{ d.num }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-tracks" :style="{ width: calendarData.totalWidth + 'px' }">
+                        <div v-for="track in calendarData.tracks" :key="track.id" class="calendar-track" style="width: 100%;">
+                            <div class="calendar-track-label" style="min-width: 140px; width: 140px;">
+                                <i class="fa-solid" :class="track.icon" style="margin-right: 8px; opacity: 0.8;"></i> {{ t(track.name) }}
+                            </div>
+                            <div v-for="(ev, j) in track.events" :key="j" class="calendar-event" :class="`event-${ev.colorClass}`" :style="ev.style" :data-tooltip="ev.tooltip" v-html="ev.htmlContent">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
     </div>
 </div>
 
-<div id="d15-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
+    <div class="modal-overlay" v-show="rotationModal.show" style="display: flex;" @click.self="rotationModal.show = false">
+    <div class="modal-content" :style="{ maxWidth: rotationModal.type === 'd15' ? '95%' : '600px', width: rotationModal.type === 'd15' ? 'max-content' : '90%' }">
         <div class="modal-header">
-            <h3><i class="fa-solid fa-leaf" style="color: #4caf50;"></i> <span data-i18n>Upcoming D15 Biomes</span></h3>
-            <button class="modal-close" id="modal-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            <div style="display: flex; align-items: center;">
+                <h3 style="margin: 0;" v-html="rotationModal.titleHtml"></h3>
+                <template v-if="rotationModal.type === 'd15'">
+                    <button @click="rotationModal.d15ShowFinalName = !rotationModal.d15ShowFinalName" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('Toggle Biome Names')"><i class="fa-solid fa-font"></i></button>
+                    <button @click="rotationModal.d15AllExpanded = !rotationModal.d15AllExpanded" style="margin-left: 5px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('Expand/Collapse All')"><i class="fa-solid" :class="rotationModal.d15AllExpanded ? 'fa-compress' : 'fa-expand'"></i></button>
+                </template>
+            </div>
+            <button class="modal-close" @click="rotationModal.show = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div class="modal-body" id="d15-modal-body">
+            <div class="modal-body">
+                <template v-if="rotationModal.type === 'list'">
+                    <div v-for="(row, idx) in rotationModal.list" :key="idx" class="modal-rotation-row" :style="row.style">
+                        <div class="modal-time-col" :style="row.timeColStyle">
+                            <div style="font-weight: bold;" :style="{ color: row.isNext ? rotationModal.color : '#fff' }">{{ row.titleLabel }}</div>
+                            <div v-if="row.isActive" style="font-size: 0.85em;" :style="{ color: rotationModal.color }">{{ t('ACTIVE NOW') }}</div>
+                            <div v-else style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> <span v-html="row.timeText"></span></div>
+                        </div>
+                        <div class="modal-biomes-col" :style="row.contentColStyle" v-html="row.contentHtml"></div>
+                    </div>
+                </template>
+                
+                <template v-if="rotationModal.type === 'd15'">
+                    <div class="weekly-schedule-grid">
+                        <div class="schedule-row schedule-header-row">
+                            <div class="schedule-time-col"></div>
+                            <div v-for="(col, i) in rotationModal.d15Cols" :key="'d15h'+i" class="schedule-day-header" style="cursor: pointer;" :title="t('Click to toggle column')" @click="col.expanded = !col.expanded">
+                                {{ col.label }}
+                            </div>
+                        </div>
+                        
+                        <div v-for="(row, r) in rotationModal.d15Rows" :key="'d15r'+r" class="schedule-row">
+                            <div class="schedule-time-col" style="cursor: pointer;" :title="t('Click to toggle row')" @click="row.expanded = !row.expanded">
+                                <span style="writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;">{{ row.timeStr }}</span>
+                            </div>
+                            
+                            <div v-for="(slot, i) in row.slots" :key="'d15s'+i" class="schedule-slot" :style="{ visibility: slot.empty ? 'hidden' : 'visible', opacity: (slot.hasPassed && i === 0) ? '0.5' : '1', borderColor: slot.isCurrent ? rotationModal.color : '', boxShadow: slot.isCurrent ? `inset 0 0 10px rgba(0,0,0,0.5), 0 0 8px -2px ${rotationModal.color}` : '', cursor: 'pointer' }" @click="slot.expanded = !slot.expanded">
+                                <template v-if="!slot.empty">
+                                    <div class="schedule-biomes-collapsed" :style="{ display: (slot.expanded || slot.isCurrent || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'none' : 'flex', flexDirection: 'row', gap: '6px' }" v-html="slot.collapsedHtml"></div>
+                                    <div class="schedule-biomes-expanded" :style="{ display: (slot.expanded || slot.isCurrent || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'flex' : 'none', flexDirection: 'column', gap: '4px' }">
+                                        <span v-for="(b, bIdx) in slot.rot.biomes" :key="'b'+bIdx" class="biome-pill modal-pill" :title="t('Biome: {name}').replace('{name}', t(b.name))" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.7em;">
+                                            <img :src="`/assets/images/biomes/${b.icon}.png`" @error="$event.target.style.display='none'" alt="" style="width: 14px; height: 14px;">
+                                            <span class="biome-name-text">{{ rotationModal.d15ShowFinalName ? t(b.final_name) : t(b.name) }}</span>
+                                        </span>
+                                    </div>
+                                    <div style="text-align: center; margin-top: auto; opacity: 0.4; padding-top: 4px;">
+                                        <i class="fa-solid expand-icon" :class="(slot.expanded || slot.isCurrent || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
     </div>
+</div>
 </div>

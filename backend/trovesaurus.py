@@ -77,19 +77,19 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
                 if req_id:
                     eel.remove_external_request(req_id, test_resp.status_code < 500)()
                 if test_resp.status_code >= 500:
-                    eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus is currently experiencing server issues."})
+                    eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus is currently experiencing server issues."})()
                     return
             except Exception:
                 if req_id:
                     eel.remove_external_request(req_id, False)()
-                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."})
+                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."})()
                 return
 
             mods_all = _get_cached_api("https://trovesaurus.com/api/mods-all", "mods_all.json")
             mods_hot = _get_cached_api("https://trovesaurus.com/api/mods-hot", "mods_hot.json")
 
             if not mods_all:
-                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."})
+                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."})()
                 return
 
             if isinstance(mods_all, dict):
@@ -156,24 +156,24 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
                             hash_to_id = {}
                             hash_batches = [local_hashes[i:i + 200] for i in range(0, len(local_hashes), 200)]
                             
-                            for batch in hash_batches:
-                                payload = {"hashes": ",".join(batch)}
-                                req_id = None
-                                try:
-                                    req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
-                                except Exception:
-                                    pass
-                                try:
-                                    resp = requests.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10)
-                                    if req_id:
-                                        eel.remove_external_request(req_id, resp.status_code == 200)()
-                                    if resp.status_code == 200:
-                                        batch_results = resp.json()
-                                        hash_to_id.update(batch_results)
-                                except Exception as e:
-                                    if req_id:
-                                        eel.remove_external_request(req_id, False)()
-                                    print(f"Failed hash batch: {e}")
+                        for batch in hash_batches:
+                            payload = {"hashes": ",".join(batch)}
+                            req_id = None
+                            try:
+                                req_id = eel.add_external_request("Fetching Mod Hashes", "https://trovesaurus.com/api/mods-hashes-to-mods")()
+                            except Exception:
+                                pass
+                            try:
+                                resp = requests.post("https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10)
+                                if req_id:
+                                    eel.remove_external_request(req_id, resp.status_code == 200)()
+                                if resp.status_code == 200:
+                                    batch_results = resp.json()
+                                    hash_to_id.update(batch_results)
+                            except Exception as e:
+                                if req_id:
+                                    eel.remove_external_request(req_id, False)()
+                                print(f"Failed hash batch: {e}")
                                     
                             mods_all_dict = {str(m.get("id")): m for m in mods_all if isinstance(m, dict) and "id" in m}
                             
@@ -237,9 +237,9 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
                     "needs_update": needs_update
                 })
 
-            eel.receive_trovesaurus_mods({"success": True, "mods": result, "page": safe_page, "max_pages": max_pages})
+            eel.receive_trovesaurus_mods({"success": True, "mods": result, "page": safe_page, "max_pages": max_pages})()
         except Exception as e:
-            eel.receive_trovesaurus_mods({"success": False, "error": str(e)})
+            eel.receive_trovesaurus_mods({"success": False, "error": str(e)})()
             
     gevent.spawn(task)
 
@@ -249,7 +249,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
     def task():
         try:
             if not game_path_str: 
-                eel.receive_install_result({"success": False, "error": "No game path provided.", "mod_id": mod_id})
+                eel.receive_install_result({"success": False, "error": "No game path provided.", "mod_id": mod_id})()
                 return
 
             req_id = None
@@ -262,12 +262,12 @@ def install_trovesaurus_mod(game_path_str, mod_id):
                 if req_id:
                     eel.remove_external_request(req_id, test_resp.status_code < 500)()
                 if test_resp.status_code >= 500:
-                    eel.receive_install_result({"success": False, "error": "Trovesaurus is currently experiencing server issues.", "mod_id": mod_id})
+                    eel.receive_install_result({"success": False, "error": "Trovesaurus is currently experiencing server issues.", "mod_id": mod_id})()
                     return
             except Exception:
                 if req_id:
                     eel.remove_external_request(req_id, False)()
-                eel.receive_install_result({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection.", "mod_id": mod_id})
+                eel.receive_install_result({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection.", "mod_id": mod_id})()
                 return
 
             mods_all = _get_cached_api("https://trovesaurus.com/api/mods-all", "mods_all.json")
@@ -275,17 +275,17 @@ def install_trovesaurus_mod(game_path_str, mod_id):
             if isinstance(mods_all, list):
                 mods_all = {str(m.get("id")): m for m in mods_all if isinstance(m, dict)}
             elif not mods_all:
-                eel.receive_install_result({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection.", "mod_id": mod_id})
+                eel.receive_install_result({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection.", "mod_id": mod_id})()
                 return
 
             mod_data = mods_all.get(str(mod_id))
             if not mod_data: 
-                eel.receive_install_result({"success": False, "error": "Mod no longer exists.", "mod_id": mod_id})
+                eel.receive_install_result({"success": False, "error": "Mod no longer exists.", "mod_id": mod_id})()
                 return
 
             downloads = mod_data.get("downloads", [])
             if not downloads: 
-                eel.receive_install_result({"success": False, "error": "This mod has no files uploaded.", "mod_id": mod_id})
+                eel.receive_install_result({"success": False, "error": "This mod has no files uploaded.", "mod_id": mod_id})()
                 return
 
             downloads.sort(key=lambda f: -int(f.get("fileid", 0)))
@@ -307,7 +307,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
                     eel.remove_external_request(req_id, resp.status_code == 200)()
                     req_id = None
                 if resp.status_code != 200:
-                    eel.receive_install_result({"success": False, "error": f"Download failed. Status: {resp.status_code}", "mod_id": mod_id})
+                    eel.receive_install_result({"success": False, "error": f"Download failed. Status: {resp.status_code}", "mod_id": mod_id})()
                     return
                 
                 data = resp.content
@@ -319,13 +319,13 @@ def install_trovesaurus_mod(game_path_str, mod_id):
                 out_path.parent.mkdir(parents=True, exist_ok=True)
                 out_path.write_bytes(data)
                 
-                eel.receive_install_result({"success": True, "mod_id": mod_id})
+                eel.receive_install_result({"success": True, "mod_id": mod_id})()
             except Exception as e:
                 if req_id:
                     eel.remove_external_request(req_id, False)()
-                eel.receive_install_result({"success": False, "error": "Failed to connect to Trovesaurus to download the mod file.", "mod_id": mod_id})
+                eel.receive_install_result({"success": False, "error": "Failed to connect to Trovesaurus to download the mod file.", "mod_id": mod_id})()
         except Exception as e:
-            eel.receive_install_result({"success": False, "error": str(e), "mod_id": mod_id})
+            eel.receive_install_result({"success": False, "error": str(e), "mod_id": mod_id})()
             
     gevent.spawn(task)
 

@@ -31,7 +31,8 @@ def _run_async(coro):
             error.append(e)
     t = threading.Thread(target=_thread_target)
     t.start()
-    t.join()
+    while t.is_alive():
+        eel.sleep(0.05)
     if error:
         raise error[0]
     return result[0] if result else None
@@ -265,7 +266,7 @@ async def _mass_extract_async(dest_dir_str, file_list):
                         rate = processed_count / elapsed
                     if rate > 0:
                         eta_secs = int((total_files - processed_count) / rate)
-                    eel.update_progress_ui(processed_count, total_files, f["filepath"], "Extracting...", eta_secs, int(elapsed))
+                    eel.update_progress_ui(processed_count, total_files, f["filepath"], "Extracting...", eta_secs, int(elapsed))()
                     eel.sleep(0.001)
 
 @eel.expose

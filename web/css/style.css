@@ -4,7 +4,8 @@
     --bg-hover: #2d2d30;
     --text-main: #e0e0e0;
     --text-muted: #888888;
-    --accent-blue: #007acc;
+    --accent-blue: #5ec6ff;
+    --accent-rgb: 94, 198, 255;
     --accent-hover: #0098ff;
     --border-color: #333333;
 }
@@ -162,7 +163,6 @@ body {
     align-items: center;
 }
 
-/* Custom Dropdown System */
 .custom-select-wrapper {
     position: relative;
     user-select: none;
@@ -243,8 +243,8 @@ body {
     color: #fff;
 }
 .custom-select-option.selected {
-    background: rgba(94, 198, 255, 0.15);
-    color: var(--accent-blue, #5ec6ff);
+    background: rgba(var(--accent-rgb), 0.15);
+    color: var(--accent-blue);
     font-weight: bold;
 }
 
@@ -365,7 +365,6 @@ body {
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* Server Time Modal Styles */
 .tz-row {
     display: flex;
     justify-content: space-between;
@@ -376,9 +375,9 @@ body {
     border-radius: 6px;
 }
 .tz-row.highlight {
-    background: rgba(94, 198, 255, 0.1);
+    background: rgba(var(--accent-rgb), 0.1);
     border-color: var(--accent-blue);
-    box-shadow: 0 0 10px rgba(94, 198, 255, 0.2);
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.2);
 }
 .tz-name {
     font-weight: 600;
@@ -434,7 +433,6 @@ body {
     background: transparent;
 }
 
-/* Flatpickr Theme Overrides */
 .flatpickr-calendar {
     background: var(--bg-panel, #1d232b) !important;
     border: 1px solid var(--border-color, #444c5e) !important;
@@ -458,7 +456,7 @@ span.flatpickr-weekday {
     background: var(--accent-blue, #5ec6ff) !important;
     border-color: var(--accent-blue, #5ec6ff) !important;
     color: #fff !important;
-    box-shadow: 0 0 10px rgba(94, 198, 255, 0.4) !important;
+    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4) !important;
 }
 
 .flatpickr-day.today {
@@ -475,19 +473,17 @@ span.flatpickr-weekday {
     background: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Command Palette */
 .cmd-result-item {
     padding: 12px 20px; display: flex; align-items: center; gap: 15px;
     color: var(--text-main); cursor: pointer; border-left: 3px solid transparent;
 }
 .cmd-result-item.active, .cmd-result-item:hover {
-    background: rgba(94, 198, 255, 0.1); border-left-color: var(--accent-blue); color: #fff;
+    background: rgba(var(--accent-rgb), 0.1); border-left-color: var(--accent-blue); color: #fff;
 }
 .cmd-result-icon { width: 24px; text-align: center; color: var(--text-muted); font-size: 1.1em; }
 .cmd-result-item.active .cmd-result-icon { color: var(--accent-blue); }
 .cmd-result-item:hover .cmd-result-icon { color: var(--accent-blue); }
 
-/* Custom Context Menu */
 .context-menu {
     position: fixed;
     background: var(--bg-panel, #1d232b);
@@ -506,7 +502,7 @@ span.flatpickr-weekday {
     cursor: pointer; display: flex; align-items: center; gap: 10px;
     transition: background 0.15s ease, color 0.15s ease;
 }
-.context-menu-item:hover { background: rgba(94, 198, 255, 0.1); color: #fff; }
+.context-menu-item:hover { background: rgba(var(--accent-rgb), 0.1); color: #fff; }
 .context-menu-item.danger { color: #ff5555; }
 .context-menu-item.danger:hover { background: rgba(255, 85, 85, 0.1); color: #ff5555; }
 .context-menu-separator {

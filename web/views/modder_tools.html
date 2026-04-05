@@ -1,68 +1,66 @@
 <head>
     <link rel="stylesheet" href="css/modder_tools.css">
 </head>
-<div class="modder-tools-container">
+<div id="modder-tools-vue-app" class="modder-tools-container" v-cloak>
     <div class="modder-tools-header">
-        <h2><i class="fa-solid fa-toolbox"></i> <span data-i18n>Modder Tools</span></h2>
-        <p class="help-text" style="margin-top: 5px;" data-i18n>Create new TMods or extract existing ones for modification.</p>
+        <h2><i class="fa-solid fa-toolbox"></i> <span>{{ t('Modder Tools') }}</span></h2>
+        <p class="help-text" style="margin-top: 5px;">{{ t('Create new TMods or extract existing ones for modification.') }}</p>
     </div>
 
     <div class="tabs-container">
         <div class="tab-buttons">
-            <button class="tab-btn active" data-tab="build-tab">
-                <i class="fa-solid fa-hammer"></i> <span data-i18n>Build TMod</span>
+            <button class="tab-btn" :class="{ active: activeTab === 'build' }" @click="activeTab = 'build'">
+                <i class="fa-solid fa-hammer"></i> <span>{{ t('Build TMod') }}</span>
             </button>
-            <button class="tab-btn" data-tab="extract-tab">
-                <i class="fa-solid fa-box-open"></i> <span data-i18n>Extract TMod</span>
+            <button class="tab-btn" :class="{ active: activeTab === 'extract' }" @click="activeTab = 'extract'">
+                <i class="fa-solid fa-box-open"></i> <span>{{ t('Extract TMod') }}</span>
             </button>
-            <button class="tab-btn" data-tab="projects-tab">
-                <i class="fa-solid fa-diagram-project"></i> <span data-i18n>Projects</span>
+            <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'">
+                <i class="fa-solid fa-diagram-project"></i> <span>{{ t('Projects') }}</span>
             </button>
-            <button class="tab-btn" data-tab="software-tab">
-                <i class="fa-solid fa-computer"></i> <span data-i18n>Software</span>
+            <button class="tab-btn" :class="{ active: activeTab === 'software' }" @click="activeTab = 'software'">
+                <i class="fa-solid fa-computer"></i> <span>{{ t('Software') }}</span>
             </button>
         </div>
 
-        <div class="tab-content active" id="build-tab">
+        <div class="tab-content" :class="{ active: activeTab === 'build' }">
             <div class="tool-panel">
                 <div class="build-split-layout">
                     <div class="build-left-col">
                         <div class="form-group">
-                            <label data-i18n>Mod Preview</label>
-                            <div class="mod-preview-picker" id="preview-picker-container" data-i18n-title="Click to select preview image">
-                                <img id="build-mod-preview" src="assets/images/no_preview.png" alt="Mod Preview">
+                            <label>{{ t('Mod Preview') }}</label>
+                            <div class="mod-preview-picker" :title="t('Click to select preview image')" @click="$refs.buildPreviewInput.click()">
+                                <img :src="build.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
-                                    <span data-i18n>Change Image</span>
+                                    <span>{{ t('Change Image') }}</span>
                                 </div>
-                                <button type="button" class="remove-preview-btn" id="btn-remove-build-preview" title="Remove Preview" style="display: none;">
+                                <button type="button" class="remove-preview-btn" v-show="build.preview" @click.stop="build.preview = ''; build.previewName = ''" :title="t('Remove Preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
-                                <input type="file" id="build-preview-input" accept="image/png, image/jpeg" style="display: none;">
+                                <input type="file" ref="buildPreviewInput" @change="onBuildPreviewChange" accept="image/png, image/jpeg" style="display: none;">
                             </div>
                         </div>
                     </div>
                     
                     <div class="build-right-col">
                         <div class="form-group">
-                            <label data-i18n>Target Game Installation</label>
-                            <select id="build-game-select">
-                                <option value="" data-i18n>Searching...</option>
-                            </select>
+                            <label>{{ t('Target Game Installation') }}</label>
+                            <custom-vue-select v-model="selectedGamePath" :options="gameOptions"></custom-vue-select>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group" style="flex: 2;">
-                                <label data-i18n>Mod Title</label>
-                                <input type="text" id="build-mod-title" data-i18n-placeholder="My Awesome Mod">
+                                <label>{{ t('Mod Title') }}</label>
+                                <input type="text" v-model="build.title" :placeholder="t('My Awesome Mod')">
                             </div>
                             <div class="form-group" style="flex: 2;">
-                                <label data-i18n>Authors</label>
-                                <input type="text" id="build-mod-author" data-i18n-placeholder="Author 1, Author 2">
+                                <label>{{ t('Authors') }}</label>
+                                <input type="text" v-model="build.author" :placeholder="t('Author 1, Author 2')">
                             </div>
                             <div class="form-group" style="flex: 1;">
-                                <label data-i18n>Version</label>
-                                <input type="text" id="build-mod-version" value="1.0">
+                                <label>{{ t('Version') }}</label>
+                                <input type="text" v-model="build.version">
                             </div>
                         </div>
 
@@ -74,119 +72,115 @@
 
                 <div class="form-group">
                     <div class="form-group">
-                        <label data-i18n>Notes</label>
-                        <textarea id="build-mod-notes" rows="3" maxlength="220" data-i18n-placeholder="Enter mod description or notes..."></textarea>
+                        <label>{{ t('Notes') }}</label>
+                        <textarea v-model="build.notes" rows="3" maxlength="220" :placeholder="t('Enter mod description or notes...')"></textarea>
                     </div>
                     <div class="form-group">
-                            <label data-i18n>Tags</label>
-                            <select id="build-mod-tags" multiple="multiple" style="width: 100%;">
-                                <option value="Allies">Allies</option>
-                                <option value="Banners">Banners</option>
-                                <option value="Boats and Sails">Boats and Sails</option>
-                                <option value="Cosmetics">Cosmetics</option>
-                                <option value="Costumes">Costumes</option>
-                                <option value="Dragons">Dragons</option>
-                                <option value="Fishing">Fishing</option>
-                                <option value="GUI">GUI</option>
-                                <option value="Helmets">Helmets</option>
-                                <option value="Language">Language</option>
-                                <option value="Mag Riders">Mag Riders</option>
-                                <option value="Mounts">Mounts</option>
-                                <option value="NPCs">NPCs</option>
-                                <option value="Utility">Utility</option>
-                                <option value="Waypoint">Waypoint</option>
-                                <option value="Wings">Wings</option>
-                            </select>
-                        </div>
+                        <label>{{ t('Tags') }}</label>
+                        <select2 v-model="build.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                    </div>
                     <div class="input-row" style="margin-bottom: 10px;">
-                        <button class="primary-btn" id="btn-detect-overrides"><i class="fa-solid fa-magnifying-glass"></i> <span data-i18n>Detect Overrides</span></button>
-                        <button class="primary-btn" id="btn-add-file"><i class="fa-solid fa-file-circle-plus"></i> <span data-i18n>Add File</span></button>
-                        <button class="primary-btn" id="btn-auto-structure" style="background: var(--accent-blue);"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n>Auto-Fix file locations</span></button>
+                        <button class="primary-btn" @click="detectBuildOverrides" :disabled="isWorking.detectingOverrides"><i class="fa-solid" :class="isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('Detect Overrides') }}</span></button>
+                        <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('Add File') }}</span></button>
+                        <button class="primary-btn" @click="autoStructureBuild" :disabled="isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('Auto-Fix file locations') }}</span></button>
                     </div>
                     <div class="table-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
-                        <table id="build-files-table" style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                             <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                 <tr>
-                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);" data-i18n>File</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('File') }}</th>
                                     <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 40px;"></th>
                                 </tr>
                             </thead>
-                            <tbody id="build-files-list">
-                                </tbody>
+                            <tbody>
+                                <tr v-for="file in build.files" :key="file.path">
+                                    <td :title="'Source: ' + file.path" style="color: var(--text-main); font-size: 13px; word-break: break-all;">
+                                        <div>{{ file.internal_path }}</div>
+                                        <div style="color: var(--text-muted); font-size: 11px;">{{ file.path }}</div>
+                                    </td>
+                                    <td style="text-align: right;"><button class="icon-btn-small danger" :title="t('Remove File')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
+                                </tr>
+                                <tr v-if="build.files.length === 0">
+                                    <td colspan="2" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files added.') }}</td>
+                                </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
 
-                <button class="primary-btn execute-btn" id="btn-build-tmod"><i class="fa-solid fa-hammer"></i> <span data-i18n>Build TMod</span></button>
+                <button class="primary-btn execute-btn" @click="buildTMod" :disabled="isWorking.buildingTMod">
+                    <template v-if="isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling TMod...') }}</template>
+                    <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Build TMod') }}</span></template>
+                </button>
             </div>
         </div>
 
-        <div class="tab-content" id="extract-tab">
+        <div class="tab-content" :class="{ active: activeTab === 'extract' }">
             <div class="tool-panel">
-                <h3 data-i18n>Extract an existing TMod</h3>
-                <p class="help-text" data-i18n>Select a .tmod archive to unpack its contents into a folder for editing.</p>
+                <h3>{{ t('Extract an existing TMod') }}</h3>
+                <p class="help-text">{{ t('Select a .tmod archive to unpack its contents into a folder for editing.') }}</p>
                 
                 <div class="form-group">
-                    <label data-i18n>Source TMod File</label>
+                    <label>{{ t('Source TMod File') }}</label>
                     <div class="input-row">
-                        <input type="text" id="extract-source-file" data-i18n-placeholder="Select a .tmod file..." readonly>
-                        <button class="primary-btn" id="btn-browse-extract-source"><i class="fa-solid fa-file-archive"></i> <span data-i18n>Browse</span></button>
+                        <input type="text" v-model="extract.source" :placeholder="t('Select a .tmod file...')" readonly>
+                        <button class="primary-btn" @click="browseExtractSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('Browse') }}</span></button>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label data-i18n>Destination Folder</label>
+                    <label>{{ t('Destination Folder') }}</label>
                     <div class="input-row">
-                        <input type="text" id="extract-dest-dir" data-i18n-placeholder="Select where to extract the files..." readonly>
-                        <button class="primary-btn" id="btn-browse-extract-dest"><i class="fa-solid fa-folder-open"></i> <span data-i18n>Browse</span></button>
+                        <input type="text" v-model="extract.dest" :placeholder="t('Select where to extract the files...')" readonly>
+                        <button class="primary-btn" @click="browseExtractDest"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
                     </div>
                 </div>
 
-                <button class="primary-btn execute-btn" id="btn-extract-tmod"><i class="fa-solid fa-box-open"></i> <span data-i18n>Extract TMod</span></button>
+                <button class="primary-btn execute-btn" @click="extractTMod" :disabled="isWorking.extracting">
+                    <template v-if="isWorking.extracting"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Extracting...') }}</template>
+                    <template v-else><i class="fa-solid fa-box-open"></i> <span>{{ t('Extract TMod') }}</span></template>
+                </button>
             </div>
         </div>
 
-        <div class="tab-content" id="projects-tab">
+        <div class="tab-content" :class="{ active: activeTab === 'projects' }">
             <div class="tool-panel">
-                <h3 data-i18n>Mod Project Manager</h3>
-                <p class="help-text" data-i18n>Manage persistent mod projects, versioning, and live game testing.</p>
-                
+                <h3>{{ t('Mod Project Manager') }}</h3>
+                <p class="help-text">{{ t('Manage persistent mod projects, versioning, and live game testing.') }}</p>
+
                 <div class="form-group" style="background: var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <label data-i18n>Project Folder</label>
+                    <label>{{ t('Project Folder') }}</label>
                     <div class="input-row">
-                        <input type="text" id="project-dir-input" data-i18n-placeholder="Select or create a project folder..." readonly>
-                        <button class="primary-btn" id="btn-browse-project"><i class="fa-solid fa-folder-open"></i> <span data-i18n>Browse</span></button>
+                        <input type="text" v-model="project.dir" :placeholder="t('Select or create a project folder...')" readonly>
+                        <button class="primary-btn" @click="browseProject"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
                     </div>
                 </div>
 
-                <div id="project-workspace" style="display: none; margin-top: 20px;">
+                <div v-show="project.dir" style="margin-top: 20px;">
                     <div class="build-split-layout">
                         <div class="build-left-col">
-                            <div class="mod-preview-picker" id="project-preview-container">
-                                <img id="project-mod-preview" src="assets/images/no_preview.png" alt="Project Preview">
+                            <div class="mod-preview-picker" @click="$refs.projectPreviewInput.click()">
+                                <img :src="project.preview || 'assets/images/no_preview.png'" alt="Project Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
-                                    <span data-i18n>Change Image</span>
+                                    <span>{{ t('Change Image') }}</span>
                                 </div>
-                                <button type="button" class="remove-preview-btn" id="btn-remove-project-preview" title="Remove Preview" style="display: none;">
+                                <button type="button" class="remove-preview-btn" v-show="project.preview" @click.stop="project.preview = ''; project.previewName = ''" :title="t('Remove Preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
-                                <input type="file" id="project-preview-input" accept="image/png, image/jpeg" style="display: none;">
+                                <input type="file" ref="projectPreviewInput" @change="onProjectPreviewChange" accept="image/png, image/jpeg" style="display: none;">
                             </div>
                             
                             <div class="form-group" style="margin-top: 15px;">
-                                <label data-i18n>Target Game Installation</label>
-                                <select id="project-game-select">
-                                    <option value="" data-i18n>Searching...</option>
-                                </select>
+                                <label>{{ t('Target Game Installation') }}</label>
+                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions"></custom-vue-select>
                             </div>
 
                             <div class="form-group">
-                                <label data-i18n>Active Version Workspace</label>
+                                <label>{{ t('Active Version Workspace') }}</label>
                                 <div class="input-row">
-                                    <select id="project-version-select" style="flex: 1;">
-                                        </select>
-                                    <button class="icon-btn-small" id="btn-new-version" data-i18n-title="Create New Version Folder"><i class="fa-solid fa-plus"></i></button>
+                                    <custom-vue-select v-model="project.activeVersion" :options="project.versions.map(v => [`Version ${v}`, v])" style="flex: 1;"></custom-vue-select>
+                                    <button class="icon-btn-small" @click="newVersion" :title="t('Create New Version Folder')"><i class="fa-solid fa-plus"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -194,34 +188,23 @@
                         <div class="build-right-col">
                             <div class="form-row">
                                 <div class="form-group" style="flex: 2;">
-                                    <label data-i18n>Project Title</label>
-                                    <input type="text" id="project-mod-title">
+                                    <label>{{ t('Project Title') }}</label>
+                                    <input type="text" v-model="project.title">
                                 </div>
                                 <div class="form-group" style="flex: 2;">
-                                    <label data-i18n>Authors</label>
-                                    <input type="text" id="project-mod-author">
+                                    <label>{{ t('Authors') }}</label>
+                                    <input type="text" v-model="project.author">
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label data-i18n>Notes</label>
-                                <textarea id="project-mod-notes" rows="2" maxlength="220"></textarea>
+                                <label>{{ t('Notes') }}</label>
+                                <textarea v-model="project.notes" rows="2" maxlength="220"></textarea>
                             </div>
 
                             <div class="form-group">
-                                <label data-i18n>Tags</label>
-                                <select id="project-mod-tags" multiple="multiple" style="width: 100%;">
-                                    <option value="Allies">Allies</option>
-                                    <option value="Banners">Banners</option>
-                                    <option value="Cosmetics">Cosmetics</option>
-                                    <option value="Costumes">Costumes</option>
-                                    <option value="Dragons">Dragons</option>
-                                    <option value="GUI">GUI</option>
-                                    <option value="Helmets">Helmets</option>
-                                    <option value="Mounts">Mounts</option>
-                                    <option value="Utility">Utility</option>
-                                    <option value="VFX">VFX</option>
-                                </select>
+                                <label>{{ t('Tags') }}</label>
+                                <select2 v-model="project.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
                             </div>
                         </div>
                     </div>
@@ -230,21 +213,24 @@
 
                     <div class="form-group">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <label style="margin: 0;" data-i18n>Version Files (ignores '__' prefix)</label>
+                            <label style="margin: 0;">{{ t("Version Files (ignores '__' prefix)") }}</label>
                             <div style="display: flex; gap: 10px;">
-                                <button class="icon-btn-small" id="btn-refresh-project-files" data-i18n-title="Refresh Files"><i class="fa-solid fa-rotate-right"></i></button>
-                                <button class="primary-btn" id="btn-project-auto-structure" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid fa-wand-magic-sparkles"></i> <span data-i18n>Structure Relative to Game</span></button>
+                                <button class="icon-btn-small" @click="refreshProjectFiles" :title="t('Refresh Files')"><i class="fa-solid" :class="isWorking.refreshProjectFiles ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i></button>
+                                <button class="primary-btn" @click="autoStructureProject" :disabled="isWorking.autoStructuringProject" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid" :class="isWorking.autoStructuringProject ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('Structure Relative to Game') }}</span></button>
                             </div>
                         </div>
                         <div class="table-container" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
                             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                                 <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                     <tr>
-                                        <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);" data-i18n>Relative Path</th>
+                                        <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">{{ t('Relative Path') }}</th>
                                     </tr>
                                 </thead>
-                                <tbody id="project-files-list">
-                                    <tr><td style="padding: 10px; text-align: center; color: var(--text-muted);" data-i18n>No files loaded.</td></tr>
+                                <tbody>
+                                    <tr v-if="project.files.length === 0"><td style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files found in this version folder.') }}</td></tr>
+                                    <tr v-else v-for="f in project.files" :key="f.rel_path">
+                                        <td style="padding: 8px 10px; color: var(--text-main); font-family: monospace;">{{ f.rel_path }}</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -252,26 +238,47 @@
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
                         <div style="display: flex; gap: 10px;">
-                            <button class="primary-btn" id="btn-save-project"><i class="fa-solid fa-floppy-disk"></i> <span data-i18n>Save Metadata</span></button>
-                            <button class="primary-btn" id="btn-compile-project" style="background: var(--accent-blue);"><i class="fa-solid fa-hammer"></i> <span data-i18n>Compile Active Version</span></button>
+                            <button class="primary-btn" @click="saveProject"><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('Save Metadata') }}</span></button>
+                            <button class="primary-btn" @click="compileProject" :disabled="isWorking.compilingProject" style="background: var(--accent-blue);">
+                                <template v-if="isWorking.compilingProject"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling...') }}</template>
+                                <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Compile Active Version') }}</span></template>
+                            </button>
                         </div>
                         
                         <div style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px dashed var(--border-color);">
-                            <button class="primary-btn" id="btn-place-overrides" style="background: #28a745;"><i class="fa-solid fa-play"></i> <span data-i18n>Test in Game</span></button>
-                            <button class="primary-btn" id="btn-remove-overrides" style="background: #dc3545;" disabled><i class="fa-solid fa-stop"></i> <span data-i18n>Remove Overrides</span></button>
+                            <button class="primary-btn" @click="placeOverrides" :disabled="isWorking.placingOverrides" style="background: #28a745;">
+                                <template v-if="isWorking.placingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Placing...') }}</template>
+                                <template v-else><i class="fa-solid fa-play"></i> <span>{{ t('Test in Game') }}</span></template>
+                            </button>
+                            <button class="primary-btn" @click="removeOverrides" :disabled="project.activeOverrides.length === 0 || isWorking.removingOverrides" style="background: #dc3545;">
+                                <template v-if="isWorking.removingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Removing...') }}</template>
+                                <template v-else><i class="fa-solid fa-stop"></i> <span>{{ t('Remove Overrides') }}</span></template>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="tab-content" id="software-tab">
+        <div class="tab-content" :class="{ active: activeTab === 'software' }">
             <div class="tool-panel">
-                <h3 data-i18n>Recommended Modding Software</h3>
-                <p class="help-text" data-i18n>Tools and software used for creating Trove mods.</p>
+                <h3>{{ t('Recommended Modding Software') }}</h3>
+                <p class="help-text">{{ t('Tools and software used for creating Trove mods.') }}</p>
                 
-                <div id="software-list-container" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
-                    </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
+                    <template v-for="(catData, catKey) in softwareCategories" :key="catKey">
+                        <h4 style="margin-top: 20px; margin-bottom: 10px; color: var(--text-main); text-transform: capitalize; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; width: 100%;">
+                            <i class="fa-solid" :class="catData.icon" style="color: var(--text-muted); margin-right: 5px;"></i> {{ t(catKey) }}
+                        </h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 10px; width: 100%;">
+                            <a v-for="sw in catData.software" :key="sw.name" :href="sw.url" target="_blank" class="software-badge" :title="t(sw.description)">
+                                <i class="fa-solid" :class="catData.icon"></i>
+                                <span class="software-name">{{ sw.name }}</span>
+                                <span class="sw-price-tag" :class="sw.free ? 'free' : 'paid'">{{ sw.free ? t('Free') : t('Paid') }}</span>
+                            </a>
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
     </div>

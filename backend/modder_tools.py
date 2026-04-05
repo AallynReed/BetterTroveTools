@@ -178,14 +178,12 @@ def auto_structure_workspace(workspace_dir_str, game_path_str):
                     return int(result & ((1 << 32) - 1))
                 shift += 7
 
-        # 1. Dynamically parse ALL index.tfi files to build the master dictionary on the fly
         for d in valid_dirs:
             dir_path = game_path / d
             if not dir_path.exists():
                 continue
                 
             for tfi_path in dir_path.rglob("index.tfi"):
-                # Get the relative path of this specific index.tfi from the game root (e.g. ui/managed)
                 tfi_rel_dir = tfi_path.parent.relative_to(game_path)
                 
                 try:
@@ -193,23 +191,20 @@ def auto_structure_workspace(workspace_dir_str, game_path_str):
                     while reader.pos() < reader.size():
                         name_len = _local_read_leb128(reader)
                         internal_path = reader.read_str(name_len)
-                        _ = _local_read_leb128(reader) # archive
-                        _ = _local_read_leb128(reader) # offset
-                        _ = _local_read_leb128(reader) # size
-                        _ = _local_read_leb128(reader) # hash
+                        _ = _local_read_leb128(reader)
+                        _ = _local_read_leb128(reader)
+                        _ = _local_read_leb128(reader)
+                        _ = _local_read_leb128(reader)
                         
-                        # Combine the relative TFI directory with the file's internal path
                         full_rel_path = (tfi_rel_dir / internal_path).as_posix()
                             
                         filename = Path(full_rel_path).name.lower()
-                        # Prevents edge case overwrites if two files share a name
                         if filename not in file_map:
                             file_map[filename] = full_rel_path
                 except Exception as e:
                     print(f"Failed to parse {tfi_path}: {e}")
                     continue
 
-        # 2. Scan valid directories in the workspace for loose files to move
         moved_files = []
         ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
         
@@ -219,27 +214,22 @@ def auto_structure_workspace(workspace_dir_str, game_path_str):
                 continue
                 
             for file_path in target_dir.rglob("*"):
-                # Ignore non-files and specifically blocked extensions
                 if not file_path.is_file() or file_path.suffix.lower() in ignored_extensions:
                     continue
                     
-                # Skip if the file is already inside an 'override' folder anywhere in its path
                 if 'override' in [p.lower() for p in file_path.parts]:
                     continue
                     
                 filename = file_path.name.lower()
                 
-                # If we found a match in the dynamically built game dictionary
                 if filename in file_map:
                     expected_full = file_map[filename]
                     parts = expected_full.split('/')
-                    # Inject the override directory just before the filename
                     parts.insert(-1, "override")
                     new_rel_path = "/".join(parts)
                     
                     new_path = workspace / new_rel_path
                     
-                    # Move it to the proper override location
                     if file_path.resolve() != new_path.resolve():
                         new_path.parent.mkdir(parents=True, exist_ok=True)
                         shutil.move(str(file_path), str(new_path))
@@ -276,6 +266,8 @@ def build_tmod(payload):
         mod = TMod()
         
         title = payload.get("title", "").strip()
+        if title.lower().endswith(".tmod"):
+            title = title[:-5].strip()
         if not title:
             return {"success": False, "error": "Mod title is required."}
 
@@ -360,7 +352,6 @@ def load_mod_project(project_path_str):
 
         project_file = project_path / "project.json"
         
-        # Scan for existing version folders automatically
         versions = []
         for item in project_path.iterdir():
             if item.is_dir() and item.name.startswith("v"):
@@ -375,7 +366,6 @@ def load_mod_project(project_path_str):
             data["versions"] = sorted(list(set(versions + data.get("versions", []))))
             return {"success": True, "data": data}
         else:
-            # Default template for a new project
             default_data = {
                 "title": project_path.name,
                 "author": "",
@@ -442,10 +432,8 @@ def get_project_files(project_path_str, version):
             return {"success": True, "files": []}
             
         files = []
-        # Glob everything, but ignore folders/files starting with __
         for file_path in target_dir.rglob("*"):
             if file_path.is_file():
-                # Check if any part of the path starts with __ (e.g. __backup/file.png or __wip.swf)
                 if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
                     continue
                     
@@ -456,7 +444,6 @@ def get_project_files(project_path_str, version):
                     "abs_path": str(file_path)
                 })
                 
-        # Sort alphabetically by relative path
         files.sort(key=lambda x: x["rel_path"])
         return {"success": True, "files": files}
     except Exception as e:
@@ -484,7 +471,6 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
                     return int(result & ((1 << 32) - 1))
                 shift += 7
 
-        # Build Master Map from index.tfi
         for d in valid_dirs:
             dir_path = game_path / d
             if not dir_path.exists(): continue
@@ -496,10 +482,10 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
                     while reader.pos() < reader.size():
                         name_len = _local_read_leb128(reader)
                         internal_path = reader.read_str(name_len)
-                        _ = _local_read_leb128(reader) # archive
-                        _ = _local_read_leb128(reader) # offset
-                        _ = _local_read_leb128(reader) # size
-                        _ = _local_read_leb128(reader) # hash
+                        _ = _local_read_leb128(reader)
+                        _ = _local_read_leb128(reader)
+                        _ = _local_read_leb128(reader)
+                        _ = _local_read_leb128(reader)
                         
                         full_rel_path = (tfi_rel_dir / internal_path).as_posix()
                         filename = Path(full_rel_path).name.lower()
@@ -512,7 +498,6 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
         ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
         
         for file_path in list(target_dir.rglob("*")):
-            # Ignore non-files, ignored extensions, and our __ ignore prefix
             if not file_path.is_file() or file_path.suffix.lower() in ignored_extensions:
                 continue
             if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
@@ -521,7 +506,6 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
             filename = file_path.name.lower()
             
             if filename in file_map:
-                # We DO NOT inject 'override' here. We want 1:1 game path logic.
                 expected_full = file_map[filename]
                 new_path = target_dir / expected_full
                 
@@ -549,13 +533,11 @@ def place_project_overrides(project_path_str, version, game_path_str):
         
         for file_path in target_dir.rglob("*"):
             if file_path.is_file():
-                # Ignore files/folders starting with __
                 if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
                     continue
                     
                 rel_path = file_path.relative_to(target_dir)
                 
-                # Transform path: e.g., ui/managed/file.swf -> ui/managed/override/file.swf
                 parts = list(rel_path.parts)
                 parts.insert(-1, "override")
                 game_override_path = game_path.joinpath(*parts)
@@ -580,7 +562,6 @@ def remove_project_overrides(placed_files):
                 file_path.unlink()
                 removed_count += 1
                 
-                # Optional: Clean up the override folder if it is now empty
                 try:
                     if not any(file_path.parent.iterdir()):
                         file_path.parent.rmdir()
@@ -608,6 +589,8 @@ def compile_project(project_path_str, version, game_path_str):
             return {"success": False, "error": "Mod notes cannot exceed 220 characters. Please edit the notes and try again."}
 
         title = meta.get("title", "Untitled Project").strip()
+        if title.lower().endswith(".tmod"):
+            title = title[:-5].strip()
         author = meta.get("author", "Unknown").strip()
         notes = meta.get("notes", "").strip()
         tags = meta.get("tags", [])
@@ -620,7 +603,6 @@ def compile_project(project_path_str, version, game_path_str):
         mod = TMod()
         mod.name = title
         mod.author = author
-        # Automatically use the folder's version number
         mod.add_property("modVersion", version.strip())
         mod.notes = notes
         for tag in tags:
@@ -643,11 +625,9 @@ def compile_project(project_path_str, version, game_path_str):
         
         for file_path in target_dir.rglob("*"):
             if file_path.is_file() and file_path.suffix.lower() not in ignored_extensions:
-                # Ignore __ files (backups, WIPs, etc.)
                 if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
                     continue
                 
-                # The relative path is already the correct internal Trove path thanks to auto-structure
                 rel_path = file_path.relative_to(target_dir)
                 f_bytes = file_path.read_bytes()
                 mod.add_file(TroveModFile(Path(rel_path.as_posix()), f_bytes))
@@ -661,7 +641,6 @@ def compile_project(project_path_str, version, game_path_str):
         
         save_path = out_dir / f"{title}.tmod"
         
-        # Overwrite safely for fast project iteration
         if save_path.exists():
             save_path.unlink(missing_ok=True)
 
