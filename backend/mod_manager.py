@@ -63,6 +63,31 @@ def toggle_mod(game_path_str, mod_path_str):
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
+
+@eel.expose
+def delete_mod(game_path_str, mod_path_str):
+    try:
+        trove_path = TroveGamePath(Path(game_path_str))
+        mods_dir = trove_path.path.joinpath("mods").resolve()
+        mod_path = Path(mod_path_str).resolve()
+
+        # Only allow deleting files from the selected install's mods directory.
+        if not str(mod_path).lower().startswith(str(mods_dir).lower()):
+            return {"success": False, "error": "Refusing to delete file outside mods directory."}
+
+        if not mod_path.exists():
+            return {"success": False, "error": "Mod file does not exist."}
+
+        if not mod_path.is_file():
+            return {"success": False, "error": "Target path is not a file."}
+
+        mod_path.unlink()
+        return {"success": True}
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
     
 @eel.expose
 def fix_mod_names(game_path_str):

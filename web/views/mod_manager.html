@@ -35,7 +35,7 @@
         </div>
         
         <div class="mod-count-display">
-            <span>{{ t('Showing {visible} / {total} mods').replace('{visible}', visibleCount).replace('{total}', totalCount) }}</span>
+            <span>{{ t('Showing {shown} of {filtered} filtered mods ({total} total)').replace('{shown}', shownCount).replace('{filtered}', filteredCount).replace('{total}', totalCount) }}</span>
         </div>
     </div>
 
@@ -44,19 +44,25 @@
     <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found in the selected directory.') }}</div>
     <div v-else-if="filteredMods.length === 0" class="placeholder-box no-results-message">{{ t('No mods match your current filters.') }}</div>
     <div v-else class="mod-grid">
-        <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)">
+        <div v-for="mod in paginatedMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled' }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)">
             <div class="mod-image-container">
                 <img v-if="mod.image" :src="'data:image/png;base64,' + mod.image" alt="Preview" class="mod-preview-img" loading="lazy" style="max-height: 200px; object-fit: cover; width: 100%;" @click="openImageModal(mod)">
                 <div v-else class="mod-preview-img placeholder-img" style="height: 200px; display: flex; align-items: center; justify-content: center;">{{ t('No Preview') }}</div>
-                <span class="mod-badge" :style="{ background: mod.status === 'enabled' ? '#28a745' : '#666' }">{{ t(mod.status.toUpperCase()) }}</span>
             </div>
             <div class="mod-card-content">
                 <h3 class="mod-title" :class="{ 'ts-mod-title': mod.tsUrl }" :title="mod.tsUrl ? t('{title} (Click to view on Trovesaurus)').replace('{title}', mod.name) : mod.name" @click="mod.tsUrl && openUrl(mod.tsUrl)">{{ mod.name }}</h3>
                 <span class="mod-meta">{{ mod.author }}</span>
+                <span class="mod-status-pill" :class="mod.status === 'enabled' ? 'enabled' : 'disabled'">
+                    <i class="fa-solid" :class="mod.status === 'enabled' ? 'fa-circle-check' : 'fa-circle-pause'"></i>
+                    {{ mod.status === 'enabled' ? t('Enabled') : t('Disabled') }}
+                </span>
                 <div class="mod-card-footer">
                     <span v-if="mod.has_conflicts" class="mod-conflict-inline" :class="hasActiveConflict(mod) ? 'conflict-active' : 'conflict-inactive'" :title="getConflictTitle(mod)"><i class="fa-solid fa-triangle-exclamation"></i></span>
                     <button v-if="mod.hasUpdate" class="update-mod-btn" :title="t('Update Available')" @click="updateMod(mod)" :disabled="mod.isUpdating">
                         <i class="fa-solid" :class="mod.isUpdating ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                    </button>
+                    <button class="delete-mod-btn" :title="t('Delete Mod')" @click="deleteMod(mod)" :disabled="mod.isDeleting">
+                        <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
                     </button>
                     <button class="toggle-mod-btn" :class="{ active: mod.status === 'enabled' }" @click="toggleMod(mod)" :disabled="mod.isToggling">
                         <template v-if="mod.isToggling"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Working...') }}</template>
@@ -65,6 +71,16 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div v-if="!isLoading && filteredMods.length > 0" class="pagination-controls">
+        <button class="primary-btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+            <i class="fa-solid fa-chevron-left"></i> <span>{{ t('Previous') }}</span>
+        </button>
+        <span class="pagination-info"><span>{{ t('Page') }}</span> <span>{{ currentPage }}</span> <span>{{ t('of') }}</span> <span>{{ maxPages }}</span></span>
+        <button class="primary-btn" :disabled="currentPage >= maxPages" @click="goToPage(currentPage + 1)">
+            <span>{{ t('Next') }}</span> <i class="fa-solid fa-chevron-right"></i>
+        </button>
     </div>
 
     <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">

@@ -77,8 +77,15 @@ document.addEventListener('trovesaurus_loaded', () => {
             };
 
             window._tsAppHandleInstall = (response) => {
-                const targetMod = mods.value.find(m => m.id === parseInt(response.mod_id));
-                if (!targetMod) return;
+                const responseId = String(response?.mod_id ?? "").trim();
+                const targetMod = mods.value.find(m => String(m.id ?? "").trim() === responseId);
+                if (!targetMod) {
+                    // Keep UI from getting stuck if ID typing differs unexpectedly.
+                    mods.value.forEach(m => {
+                        m.is_installing = false;
+                    });
+                    return;
+                }
 
                 targetMod.is_installing = false;
                 if (response.success) {

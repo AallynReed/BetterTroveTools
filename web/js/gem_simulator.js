@@ -124,7 +124,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 let total = 0;
                 equipped.value.filter(Boolean).forEach(gem => {
                     const buffActive = primordialToggles[gem.element];
-                    total += buffActive ? gem.power_rank * 1.10 : gem.power_rank;
+                    const pr = Number(gem.power_rank) || 0;
+                    total += buffActive ? pr * 1.10 : pr;
                 });
                 return Math.round(total);
             });
@@ -450,7 +451,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
             return {
                 t, lookups, formattedObj, formatGemName,
-                inventory, equipped, equippedRows, elementsList, primordialToggles, statTotalsBuffed, sortedStatTotals, formatStat,
+                inventory, equipped, equippedRows, elementsList, primordialToggles, statTotalsBuffed, sortedStatTotals, totalPRBuffed, formatStat,
                 selected, selectedSource, isSelectedInStorage, selectGem, getStatName, getStatValue, getBarColor, getTierDisplayName, getTypeDisplayName,
                 gemTierBgUrl, gemImageUrl,
                 creatorParams, isGenerating, generateGem,

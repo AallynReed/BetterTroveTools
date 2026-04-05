@@ -4,7 +4,7 @@
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.file-manager-container { padding: 40px; max-width: 1200px; margin: 0 auto; animation: fadeIn 0.3s ease; }
+.file-manager-container { padding: 32px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; animation: fadeIn 0.3s ease; }
 .file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
 .placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
 
@@ -77,6 +77,15 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 
 #btn-collapse-all { background: #444; color: #ccc; border: 1px solid var(--border-color); }
 #btn-collapse-all:hover { background: #555; color: #fff; }
+
+.file-controls { flex-wrap: wrap; align-items: center; }
+.file-controls .custom-select-wrapper { flex: 1 1 360px; min-width: 260px; }
+
+@media (max-width: 900px) {
+    .file-manager-container { padding: 20px; }
+    .tab-buttons { flex-wrap: wrap; }
+    .search-container { flex-wrap: wrap; }
+}
 
 .image-modal {
     display: none; 

@@ -20,6 +20,8 @@ document.addEventListener('mod_manager_loaded', async () => {
             
             const searchQuery = ref('');
             const filterStatus = ref('all');
+            const currentPage = ref(1);
+            const pageSize = ref(24);
 
             const isFixingNames = ref(false);
             const isFixingConfigs = ref(false);
@@ -58,8 +60,25 @@ document.addEventListener('mod_manager_loaded', async () => {
                 });
             });
 
+            const maxPages = computed(() => Math.max(1, Math.ceil(filteredMods.value.length / pageSize.value)));
+
+            const paginatedMods = computed(() => {
+                const start = (currentPage.value - 1) * pageSize.value;
+                return filteredMods.value.slice(start, start + pageSize.value);
+            });
+
             const totalCount = computed(() => mods.value.length);
-            const visibleCount = computed(() => filteredMods.value.length);
+            const filteredCount = computed(() => filteredMods.value.length);
+            const shownCount = computed(() => paginatedMods.value.length);
+
+            const goToPage = (page) => {
+                const safePage = Math.max(1, Math.min(page, maxPages.value));
+                if (safePage === currentPage.value) return;
+                currentPage.value = safePage;
+
+                const vc = document.getElementById('view-container');
+                if (vc) vc.scrollTo({ top: 0, behavior: 'smooth' });
+            };
 
             const scanForGames = async () => {
                 const response = await eel.get_detected_game_paths()();
@@ -99,7 +118,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                     try {
                         const fetchRes = await fetch(response.cached_file + '?t=' + new Date().getTime());
                         const data = await fetchRes.json();
-                        mods.value = data.mods.map(m => ({ ...m, hasUpdate: false, tsUrl: null, isToggling: false, isUpdating: false }));
+                        mods.value = data.mods.map(m => ({ ...m, hasUpdate: false, tsUrl: null, isToggling: false, isUpdating: false, isDeleting: false }));
+                        currentPage.value = 1;
                         
                         getModUrls();
                         checkForUpdates();
@@ -173,6 +193,35 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            const deleteMod = async (mod) => {
+                if (mod.isDeleting) return;
+
+                const confirmed = window.confirm(
+                    t("Are you sure you want to permanently delete '{name}'?").replace("{name}", mod.name)
+                );
+                if (!confirmed) return;
+
+                mod.isDeleting = true;
+                const response = await eel.delete_mod(selectedInstall.value, mod.path)();
+
+                if (response.success) {
+                    const oldPath = mod.path;
+                    mods.value = mods.value.filter(m => m.path !== oldPath);
+
+                    // Remove stale conflict references pointing to the deleted mod.
+                    mods.value.forEach(m => {
+                        if (Array.isArray(m.conflicts_with)) {
+                            m.conflicts_with = m.conflicts_with.filter(c => c.name !== mod.name);
+                        }
+                    });
+
+                    window.showToast(t("Deleted '{name}'").replace("{name}", mod.name));
+                } else {
+                    mod.isDeleting = false;
+                    window.showToast(t("Failed to delete mod: {error}").replace("{error}", response.error || t("Unknown error occurred")), true);
+                }
+            };
+
             const fixNames = async () => {
                 if (!selectedInstall.value) return window.showToast(t("Select a game first."), true);
                 isFixingNames.value = true;
@@ -228,6 +277,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                 
                 menuItems.push({ separator: true });
                 menuItems.push({
+                    label: 'Delete Mod',
+                    icon: 'fa-trash',
+                    danger: true,
+                    action: () => deleteMod(mod)
+                });
+                menuItems.push({ separator: true });
+                menuItems.push({
                     label: 'Copy Mod Name',
                     icon: 'fa-copy',
                     action: () => navigator.clipboard.writeText(mod.name).then(() => window.showToast(t("Copied to clipboard!")))
@@ -257,6 +313,15 @@ document.addEventListener('mod_manager_loaded', async () => {
                 await loadMods();
             });
 
+            watch([searchQuery, filterStatus], () => {
+                currentPage.value = 1;
+            });
+
+            watch(filteredMods, () => {
+                if (currentPage.value > maxPages.value) currentPage.value = maxPages.value;
+                if (currentPage.value < 1) currentPage.value = 1;
+            });
+
             onMounted(async () => {
                 await scanForGames();
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -264,11 +329,11 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             return {
                 t, installs, selectedInstall, installOptions,
-                mods, filteredMods, isLoading, statusText,
+                mods, filteredMods, paginatedMods, isLoading, statusText,
                 searchQuery, filterStatus, statusOptions,
-                totalCount, visibleCount,
+                totalCount, filteredCount, shownCount, currentPage, maxPages,
                 isFixingNames, isFixingConfigs, modal,
-                scanForGames, toggleMod, updateMod, fixNames, fixConfigs,
+                scanForGames, goToPage, toggleMod, updateMod, deleteMod, fixNames, fixConfigs,
                 hasActiveConflict, getConflictTitle, openUrl, showContextMenu,
                 openImageModal, closeImageModal
             };
