@@ -155,8 +155,8 @@
 }
 
 .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice {
-    background-color: rgba(94, 198, 255, 0.15);
-    border: 1px solid #5ec6ff;
+    background-color: rgba(var(--accent-rgb), 0.15);
+    border: 1px solid var(--accent-blue);
     color: #fff;
     border-radius: 6px;
     margin-top: 6px;
@@ -338,13 +338,13 @@
 }
 
 .ally-stats-list li strong {
-    color: #5ec6ff;
+    color: var(--accent-blue);
 }
 
 .ally-ability {
     background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(94, 198, 255, 0.15);
-    border-left: 3px solid #5ec6ff;
+    border: 1px solid rgba(var(--accent-rgb), 0.15);
+    border-left: 3px solid var(--accent-blue);
     padding: 10px 12px;
     border-radius: 4px;
     font-size: 0.85em;
@@ -365,7 +365,7 @@
     right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: rgba(94, 198, 255, 0.08);
+    color: rgba(var(--accent-rgb), 0.08);
     font-size: 1.8em;
     pointer-events: none;
 }

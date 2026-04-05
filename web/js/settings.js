@@ -46,6 +46,13 @@ document.addEventListener('settings_loaded', async () => {
 
             const saveGeneralSettings = async () => {
                 document.documentElement.style.setProperty('--accent-blue', settings.accent_color);
+                const hex = settings.accent_color.replace('#', '');
+                if (hex.length === 6) {
+                    const r = parseInt(hex.substring(0, 2), 16);
+                    const g = parseInt(hex.substring(2, 4), 16);
+                    const b = parseInt(hex.substring(4, 6), 16);
+                    document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+                }
                 const currentSettings = await eel.get_settings()();
                 Object.assign(currentSettings, settings);
                 await eel.save_settings(currentSettings)();

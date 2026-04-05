@@ -73,5 +73,5 @@
 .close-modal { position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
 .close-modal:hover { color: var(--accent-blue); }
 #modal-caption { margin-top: 15px; color: #ccc; font-size: 18px; font-weight: bold; text-align: center; }
-#modal-view-ts-btn { background: rgba(94, 198, 255, 0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue); margin-top: 15px; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+#modal-view-ts-btn { background: rgba(var(--accent-rgb), 0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue); margin-top: 15px; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 #modal-view-ts-btn:hover { background: var(--accent-blue); color: #111; }

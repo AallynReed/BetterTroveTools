@@ -18,7 +18,7 @@
     width: 80px;
     height: 80px;
     margin-bottom: 20px;
-    filter: drop-shadow(0 0 15px rgba(94, 198, 255, 0.4));
+    filter: drop-shadow(0 0 15px rgba(var(--accent-rgb), 0.4));
 }
 
 .about-header-hero h1 {

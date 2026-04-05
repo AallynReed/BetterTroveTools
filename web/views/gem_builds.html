@@ -164,7 +164,7 @@
                         <tr v-else-if="cachedBuilds.length === 0">
                             <td colspan="9" class="text-center text-muted">{{ t('No builds generated. Check your config.') }}</td>
                         </tr>
-                        <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :style="{ background: build.rank === 1 ? 'rgba(94, 198, 255, 0.1)' : '' }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
+                        <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :style="{ background: build.rank === 1 ? 'rgba(var(--accent-rgb), 0.1)' : '' }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
                             <td class="text-center">{{ build.rank }}</td>
                             <td class="build-layout-cell text-left" style="font-family: monospace; color: var(--accent-orange); cursor: pointer;" :title="t('Click to copy')" @click="copyLayout(build.layout, $event)">
                                 {{ build.layout }}
@@ -187,7 +187,7 @@
             </div>
             
             <div class="pagination-container">
-                <button class="btn-icon" :title="t('Export to CSV')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(94, 198, 255, 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('Export') }}</span></button>
+                <button class="btn-icon" :title="t('Export to CSV')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('Export') }}</span></button>
                 <div class="pagination">
                     <button class="btn-icon" @click="prevPage" :disabled="currentPage === 0"><i class="fa-solid fa-chevron-left"></i></button>
                     <span><span>{{ t('Page') }}</span> <span>{{ currentPage + 1 }}</span> / <span>{{ maxPages }}</span></span>

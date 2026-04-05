@@ -83,7 +83,7 @@ const networkTrackerApp = Vue.createApp({
                     const safeLabel = labelStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     
                     let statusHtml = '';
-                    if (req.status === 'active') statusHtml = `<span style="color: #5ec6ff;" title="${t('Active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
+                    if (req.status === 'active') statusHtml = `<span style="color: var(--accent-blue);" title="${t('Active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
                     else if (req.status === 'error') statusHtml = `<span style="color: #ff5555;" title="${t('Failed')}"><i class="fa-solid fa-xmark"></i></span> `;
                     else statusHtml = `<span style="color: #4ade80;" title="${t('Done')}"><i class="fa-solid fa-check"></i></span> `;
                     
@@ -652,6 +652,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     eel.get_settings()().then(settings => {
         if (settings && settings.accent_color) {
             document.documentElement.style.setProperty('--accent-blue', settings.accent_color);
+            const hex = settings.accent_color.replace('#', '');
+            if (hex.length === 6) {
+                const r = parseInt(hex.substring(0, 2), 16);
+                const g = parseInt(hex.substring(2, 4), 16);
+                const b = parseInt(hex.substring(4, 6), 16);
+                document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+            }
         }
     });
 

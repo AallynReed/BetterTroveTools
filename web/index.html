@@ -39,7 +39,7 @@
                     <ul v-else style="list-style: none; padding: 0; margin: 0;">
                         <li v-for="req in reversedLog" :key="req.id || req.time.getTime()" style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
                             <span style="color: #666;">[{{ formatTime(req.time) }}]</span> 
-                            <span v-if="req.status === 'active'" style="color: #5ec6ff;" :title="t('Active')"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                            <span v-if="req.status === 'active'" style="color: var(--accent-blue);" :title="t('Active')"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
                             <span v-else-if="req.status === 'error'" style="color: #ff5555;" :title="t('Failed')"><i class="fa-solid fa-xmark"></i></span>
                             <span v-else style="color: #4ade80;" :title="t('Done')"><i class="fa-solid fa-check"></i></span>
                             

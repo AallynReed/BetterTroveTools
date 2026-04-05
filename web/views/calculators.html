@@ -3,7 +3,7 @@
 </head>
 <div id="calculators-vue-app" class="calculators-container">
     <div class="page-header">
-        <h1><i class="fa-solid fa-calculator" style="color: #5ec6ff;"></i> {{ t('Calculators') }}</h1>
+        <h1><i class="fa-solid fa-calculator" style="color: var(--accent-blue);"></i> {{ t('Calculators') }}</h1>
         <div class="subtitle">{{ t('Optimize your Power Rank, Mastery, and Magic Find.') }}</div>
     </div>
 
@@ -16,7 +16,7 @@
                 <i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery') }}
             </button>
             <button :class="['tab-btn', { active: activeTab === 'mf-tab' }]" @click="activeTab = 'mf-tab'">
-                <i class="fa-solid fa-gem" style="color: #5ec6ff;"></i> {{ t('Magic Find') }}
+                <i class="fa-solid fa-gem" style="color: var(--accent-blue);"></i> {{ t('Magic Find') }}
             </button>
         </div>
 
@@ -44,7 +44,7 @@
                             <span class="slider-toggle pr-slider-toggle"></span>
                         </label>
                         <div v-else class="calc-slider-wrapper">
-                            <input type="range" class="calc-slider" :min="item.type.includes('mastery') ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: #fbc02d;">
+                        <input type="range" class="calc-slider" :min="item.type.includes('mastery') ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: #fbc02d;">
                             <input type="number" class="calc-number-input" :min="item.type.includes('mastery') ? 1 : 0" :max="item.type === 'pr_mastery' ? 2000 : (item.type === 'pr_geode_mastery' ? 200 : item.value)" v-model.number="item.currentValue" @change="clampPrValue(item)">
                         </div>
                     </div>
@@ -138,7 +138,7 @@
                             <span class="slider-toggle"></span>
                         </label>
                         <div v-else class="calc-slider-wrapper">
-                            <input type="range" class="calc-slider" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: #5ec6ff;">
+                        <input type="range" class="calc-slider" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: var(--accent-blue);">
                             <input type="number" class="calc-number-input" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" @change="clampMfValue(item)">
                         </div>
                     </div>

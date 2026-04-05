@@ -478,7 +478,7 @@ document.addEventListener('home_loaded', () => {
                                     }
                                 }
                                 
-                                let tooltipText = `<div style="font-weight: bold; color: #5ec6ff; margin-bottom: 5px; font-size: 1.1em;">${t(ev.name)}</div>`;
+                                let tooltipText = `<div style="font-weight: bold; color: var(--accent-blue); margin-bottom: 5px; font-size: 1.1em;">${t(ev.name)}</div>`;
                                 if (ev.biome_names && ev.biome_names.length > 0) tooltipText += `<div style="margin-bottom: 5px; color: #fff;">${ev.biome_names.map(b => '• ' + t(b)).join('<br>')}</div>`;
                                 tooltipText += `<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 4px;"><i class="fa-regular fa-clock"></i> ${new Date(eStartTs).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} - ${new Date(eEndTs).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</div>`;
                                 
