@@ -1,829 +1,519 @@
 document.addEventListener('modder_tools_loaded', () => {
-    console.log("Modder Tools view initialized!");
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            tabButtons.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
-            btn.classList.add('active');
-            
-            const targetId = btn.getAttribute('data-tab');
-            const targetContent = document.getElementById(targetId);
-            if (targetContent) {
-                targetContent.classList.add('active');
-            }
-        });
-    });
-
-    if (typeof jQuery !== 'undefined' && $.fn.select2) {
-        $('#build-mod-tags').select2({
-            placeholder: t("Select categories..."),
-            width: '100%'
-        });
-        $('#project-mod-tags').select2({
-            placeholder: t("Select categories..."),
-            width: '100%'
-        });
+    console.log("Modder Tools Vue initialized!");
+    if (typeof Vue === 'undefined') {
+        console.error("Vue.js failed to load!");
+        return;
     }
 
-    const buildGameSelect = document.getElementById('build-game-select');
-    const projectGameSelect = document.getElementById('project-game-select');
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
-    async function scanForGames() {
-        if (buildGameSelect) buildGameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
-        if (projectGameSelect) projectGameSelect.innerHTML = `<option value="">${t("Searching...")}</option>`;
-        
-        const response = await eel.get_detected_game_paths()();
-        const settings = await eel.get_settings()();
-        
-        if (buildGameSelect) buildGameSelect.innerHTML = ""; 
-        if (projectGameSelect) projectGameSelect.innerHTML = "";
-        
-        if (response.success && response.paths.length > 0) {
-            response.paths.forEach(game => {
-                let option = document.createElement('option');
-                option.value = game.path; 
-                option.textContent = `${game.name} - ${game.path}`;
-                
-                if (buildGameSelect) buildGameSelect.appendChild(option.cloneNode(true));
-                if (projectGameSelect) projectGameSelect.appendChild(option.cloneNode(true));
+    // Vue wrapper for Select2 (jQuery)
+    const Select2Component = {
+        props: ['options', 'modelValue', 'placeholder'],
+        template: '<select multiple style="width: 100%;"></select>',
+        mounted() {
+            const vm = this;
+            $(this.$el).select2({
+                data: this.options,
+                placeholder: this.placeholder,
+                allowClear: true
+            })
+            .val(this.modelValue).trigger('change')
+            .on('change', function() {
+                vm.$emit('update:modelValue', $(this).val() || []);
             });
-            
-            if (settings.last_game_path && response.paths.some(p => p.path === settings.last_game_path)) {
-                if (buildGameSelect) buildGameSelect.value = settings.last_game_path;
-                if (projectGameSelect) projectGameSelect.value = settings.last_game_path;
+        },
+        watch: {
+            modelValue(value) {
+                if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) {
+                    $(this.$el).val(value).trigger('change');
+                }
+            },
+            options(newOptions) {
+                $(this.$el).empty().select2({
+                    data: newOptions,
+                    placeholder: this.placeholder,
+                    allowClear: true
+                }).val(this.modelValue).trigger('change');
             }
-        } else {
-            const noGamesStr = `<option value="">${t("No installations found.")}</option>`;
-            if (buildGameSelect) buildGameSelect.innerHTML = noGamesStr;
-            if (projectGameSelect) projectGameSelect.innerHTML = noGamesStr;
+        },
+        unmounted() {
+            $(this.$el).select2('destroy');
         }
-    }
-    scanForGames();
+    };
 
-    if (buildGameSelect) {
-        buildGameSelect.addEventListener('change', async () => {
-            const settings = await eel.get_settings()();
-            settings.last_game_path = buildGameSelect.value;
-            if (projectGameSelect) projectGameSelect.value = buildGameSelect.value;
-            await eel.save_settings(settings)();
-        });
-    }
+    const app = createApp({
+        setup() {
+            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    if (projectGameSelect) {
-        projectGameSelect.addEventListener('change', async () => {
-            const settings = await eel.get_settings()();
-            settings.last_game_path = projectGameSelect.value;
-            if (buildGameSelect) buildGameSelect.value = projectGameSelect.value;
-            await eel.save_settings(settings)();
-        });
-    }
-
-    const previewContainer = document.getElementById('preview-picker-container');
-    const previewInput = document.getElementById('build-preview-input');
-    const previewImg = document.getElementById('build-mod-preview');
-    const btnRemoveBuildPreview = document.getElementById('btn-remove-build-preview');
-
-    if (previewContainer && previewInput) {
-        previewContainer.addEventListener('click', () => previewInput.click());
-        previewInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    previewImg.src = event.target.result;
-                    if (btnRemoveBuildPreview) btnRemoveBuildPreview.style.display = 'flex';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
-    if (btnRemoveBuildPreview) {
-        btnRemoveBuildPreview.addEventListener('click', (e) => {
-            e.stopPropagation();
-            previewImg.src = "assets/images/no_preview.png";
-            previewInput.value = "";
-            btnRemoveBuildPreview.style.display = 'none';
-        });
-    }
-
-    const btnAddFile = document.getElementById('btn-add-file');
-    const btnDetectOverrides = document.getElementById('btn-detect-overrides');
-    const btnAutoStructure = document.getElementById('btn-auto-structure');
-    const filesList = document.getElementById('build-files-list');
-
-    if (btnAddFile) {
-        btnAddFile.addEventListener('click', async () => {
-            const gamePath = buildGameSelect ? buildGameSelect.value : "";
-            if (!gamePath) {
-                window.showToast(t("Please select a Target Game Installation first."), true);
-                return;
-            }
+            const activeTab = ref('build');
             
-            try {
-                const result = await eel.ask_add_files(gamePath)();
-                if (result && result.success) {
-                    if (result.rejected && result.rejected.length > 0) {
-                        window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
-                    }
-
-                    if (result.files && result.files.length > 0) {
-                        result.files.forEach(f => {
-                            const existing = Array.from(filesList.querySelectorAll('tr')).find(tr => tr.fileData && tr.fileData.path === f.path);
-                            if (existing) return;
-
-                            const tr = document.createElement('tr');
-                            tr.innerHTML = `
-                                <td title="Source: ${f.path}" style="color: var(--text-main); font-size: 13px; word-break: break-all;">
-                                    <div>${f.internal_path}</div>
-                                    <div style="color: var(--text-muted); font-size: 11px;">${f.path}</div>
-                                </td>
-                                <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="${t("Remove File")}"><i class="fa-solid fa-trash"></i></button></td>
-                            `;
-                            tr.fileData = { name: f.internal_path, path: f.path };
-                            filesList.appendChild(tr);
-                            tr.querySelector('.remove-file').addEventListener('click', () => tr.remove());
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Error adding files:", error);
-                window.showToast(t("An error occurred while adding files."), true);
-            }
-        });
-    }
-
-    if (btnAutoStructure) {
-        btnAutoStructure.addEventListener('click', async () => {
-            const gamePath = buildGameSelect.value;
-            if (!gamePath) {
-                window.showToast(t("Please select a Target Game Installation first."), true);
-                return;
-            }
+            const installs = ref([]);
+            const selectedGamePath = ref('');
             
-            const originalHtml = btnAutoStructure.innerHTML;
-            btnAutoStructure.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Structuring...")}`;
-            btnAutoStructure.disabled = true;
-            
-            try {
-                const result = await eel.auto_structure_workspace(gamePath, gamePath)();
-                if (result.success) {
-                    window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
-                } else {
-                    window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
-                }
-            } catch (err) {
-                console.error(err);
-                window.showToast(t("An unexpected error occurred while structuring files."), true);
-            } finally {
-                btnAutoStructure.innerHTML = originalHtml;
-                btnAutoStructure.disabled = false;
-            }
-        });
-    }
-
-    if (btnDetectOverrides) {
-        btnDetectOverrides.addEventListener('click', async () => {
-            const gamePath = buildGameSelect.value;
-            if (!gamePath) {
-                window.showToast(t("Please select a Target Game Installation first."), true);
-                return;
-            }
-            
-            const originalHtml = btnDetectOverrides.innerHTML;
-            btnDetectOverrides.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Detecting...")}`;
-            btnDetectOverrides.disabled = true;
-            
-            const currentRows = Array.from(filesList.querySelectorAll('tr'));
-            const pathsToCheck = [];
-            currentRows.forEach(tr => {
-                if (tr.fileData && tr.fileData.path) {
-                    if (tr.fileData.path.includes(':') || tr.fileData.path.startsWith('/')) {
-                        pathsToCheck.push(tr.fileData.path);
-                    }
-                }
+            const gameOptions = computed(() => {
+                if (installs.value.length === 0) return [[t('Searching...'), '']];
+                return installs.value.map(g => [`${g.name} - ${g.path}`, g.path]);
             });
 
-            if (pathsToCheck.length > 0) {
-                const missingResult = await eel.get_missing_files(pathsToCheck)();
-                if (missingResult.success && missingResult.missing) {
-                    currentRows.forEach(tr => {
-                        if (tr.fileData && tr.fileData.path && missingResult.missing.includes(tr.fileData.path)) {
-                            tr.remove();
-                        }
-                    });
-                }
-            }
-            
-            const result = await eel.detect_override_files(gamePath)();
-            if (result.success) {
-                let addedCount = 0;
-                result.files.forEach(f => {
-                    const existing = Array.from(filesList.querySelectorAll('tr')).find(tr => tr.fileData && tr.fileData.path === f.path);
-                    if (existing) return;
-                    
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td title="Source: ${f.path}" style="color: var(--text-main); font-size: 13px; word-break: break-all;">
-                            <div>${f.internal_path}</div>
-                            <div style="color: var(--text-muted); font-size: 11px;">${f.path}</div>
-                        </td>
-                        <td style="text-align: right;"><button class="icon-btn-small danger remove-file" title="${t("Remove File")}"><i class="fa-solid fa-trash"></i></button></td>
-                    `;
-                    tr.fileData = { name: f.internal_path, path: f.path };
-                    filesList.appendChild(tr);
-                    tr.querySelector('.remove-file').addEventListener('click', () => tr.remove());
-                    addedCount++;
-                });
-                if (addedCount === 0) {
-                    window.showToast(t("No new override files found in the source directory."), true);
+            const tagOptions = ref([
+                {id: 'Allies', text: 'Allies'}, {id: 'Banners', text: 'Banners'}, {id: 'Boats and Sails', text: 'Boats and Sails'},
+                {id: 'Cosmetics', text: 'Cosmetics'}, {id: 'Costumes', text: 'Costumes'}, {id: 'Dragons', text: 'Dragons'},
+                {id: 'Fishing', text: 'Fishing'}, {id: 'GUI', text: 'GUI'}, {id: 'Helmets', text: 'Helmets'},
+                {id: 'Language', text: 'Language'}, {id: 'Mag Riders', text: 'Mag Riders'}, {id: 'Mounts', text: 'Mounts'},
+                {id: 'NPCs', text: 'NPCs'}, {id: 'Utility', text: 'Utility'}, {id: 'Waypoint', text: 'Waypoint'},
+                {id: 'Wings', text: 'Wings'}, {id: 'VFX', text: 'VFX'}
+            ]);
+
+            const build = reactive({
+                title: '', author: '', version: '1.0', notes: '', tags: [], files: [],
+                preview: '', previewName: ''
+            });
+
+            const extract = reactive({
+                source: '', dest: ''
+            });
+
+            const project = reactive({
+                dir: '', title: '', author: '', notes: '', tags: [],
+                versions: [], activeVersion: '', files: [],
+                preview: '', previewName: '', activeOverrides: []
+            });
+
+            const softwareCategories = ref({});
+
+            const isWorking = reactive({
+                detectingOverrides: false,
+                autoStructuringBuild: false,
+                buildingTMod: false,
+                extracting: false,
+                refreshProjectFiles: false,
+                autoStructuringProject: false,
+                compilingProject: false,
+                placingOverrides: false,
+                removingOverrides: false
+            });
+
+            // --- Game Paths ---
+            const scanForGames = async () => {
+                const response = await eel.get_detected_game_paths()();
+                const settings = await eel.get_settings()();
+                if (response.success && response.paths.length > 0) {
+                    installs.value = response.paths;
+                    if (settings.last_game_path && installs.value.some(p => p.path === settings.last_game_path)) {
+                        selectedGamePath.value = settings.last_game_path;
+                    } else {
+                        selectedGamePath.value = installs.value[0].path;
+                    }
                 } else {
-                    window.showToast(t("{count} override file(s) successfully detected.").replace("{count}", addedCount));
+                    installs.value = [];
+                    selectedGamePath.value = '';
                 }
-            } else {
-                window.showToast(t("Error detecting overrides: {error}").replace("{error}", result.error), true);
-            }
-            
-            btnDetectOverrides.innerHTML = originalHtml;
-            btnDetectOverrides.disabled = false;
-        });
-    }
+            };
 
-    const btnBuildTMod = document.getElementById('btn-build-tmod');
-    if (btnBuildTMod) {
-        btnBuildTMod.addEventListener('click', async () => {
-            const titleInput = document.getElementById('build-mod-title');
-            const title = titleInput.value.trim();
-            const notes = document.getElementById('build-mod-notes').value.trim();
-            
-            const illegalChars = /[<>:"/\\|?*]/;
-            if (illegalChars.test(title)) {
-                window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
-                return;
-            }
+            watch(selectedGamePath, async (newVal) => {
+                if (!newVal) return;
+                const settings = await eel.get_settings()();
+                settings.last_game_path = newVal;
+                await eel.save_settings(settings)();
+            });
 
-            if (notes.length > 220) {
-                window.showToast(t("Mod notes cannot exceed 220 characters."), true);
-                return;
-            }
-
-            btnBuildTMod.disabled = true;
-            const originalText = btnBuildTMod.innerHTML;
-            btnBuildTMod.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Compiling TMod...")}`;
-            
-            try {
-                const gamePath = buildGameSelect.value;
-                const author = document.getElementById('build-mod-author').value.trim();
-                const version = document.getElementById('build-mod-version').value.trim();
-                const tags = $('#build-mod-tags').val() || [];
-
-                if (!gamePath) { window.showToast(t("Please select a target game installation."), true); return; }
-                if (!title) { window.showToast(t("Please enter a mod title."), true); return; }
-                if (!author) { window.showToast(t("Please enter a mod author."), true); return; }
-                if (!version) { window.showToast(t("Please enter a mod version."), true); return; }
-                if (!notes) { window.showToast(t("Please enter mod notes or a description."), true); return; }
-                if (tags.length === 0) { window.showToast(t("Please select at least one tag."), true); return; }
-                if (document.querySelectorAll('#build-files-list tr').length === 0) { window.showToast(t("Please add at least one file to your mod!"), true); return; }
-
-                let previewBase64 = null;
-                let previewName = "preview.png";
-                if (previewImg.src.startsWith('data:image') && !previewImg.src.includes('no_preview.png')) {
-                    previewBase64 = previewImg.src;
-                    if (previewInput.files && previewInput.files.length > 0) {
-                        previewName = previewInput.files[0].name;
-                    }
+            // --- Build TMod Methods ---
+            const onBuildPreviewChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        build.preview = event.target.result;
+                        build.previewName = file.name;
+                    };
+                    reader.readAsDataURL(file);
                 }
+            };
 
-                const currentRows = Array.from(document.querySelectorAll('#build-files-list tr'));
-                const pathsToCheck = [];
-                currentRows.forEach(tr => {
-                    if (tr.fileData && tr.fileData.path) {
-                        if (tr.fileData.path.includes(':') || tr.fileData.path.startsWith('/')) {
-                            pathsToCheck.push(tr.fileData.path);
-                        }
-                    }
-                });
-
+            const detectBuildOverrides = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                
+                isWorking.detectingOverrides = true;
+                
+                const pathsToCheck = build.files.map(f => f.path);
                 if (pathsToCheck.length > 0) {
                     const missingResult = await eel.get_missing_files(pathsToCheck)();
-                    if (missingResult.success && missingResult.missing && missingResult.missing.length > 0) {
-                        currentRows.forEach(tr => {
-                            if (tr.fileData && tr.fileData.path && missingResult.missing.includes(tr.fileData.path)) {
-                                tr.remove();
-                            }
-                        });
-                        window.showToast(t("Warning: {count} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.").replace("{count}", missingResult.missing.length), true);
-                        btnBuildTMod.disabled = false;
-                        btnBuildTMod.innerHTML = originalText;
-                        return;
+                    if (missingResult.success && missingResult.missing) {
+                        build.files = build.files.filter(f => !missingResult.missing.includes(f.path));
                     }
                 }
+                
+                const result = await eel.detect_override_files(selectedGamePath.value)();
+                if (result.success) {
+                    let addedCount = 0;
+                    result.files.forEach(f => {
+                        if (!build.files.find(existing => existing.path === f.path)) {
+                            build.files.push({ internal_path: f.internal_path, path: f.path });
+                            addedCount++;
+                        }
+                    });
+                    if (addedCount === 0) window.showToast(t("No new override files found in the source directory."), true);
+                    else window.showToast(t("{count} override file(s) successfully detected.").replace("{count}", addedCount));
+                } else {
+                    window.showToast(t("Error detecting overrides: {error}").replace("{error}", result.error), true);
+                }
+                isWorking.detectingOverrides = false;
+            };
 
-                const filesData = [];
-                const rows = document.querySelectorAll('#build-files-list tr');
-                for (let row of rows) {
-                    const fileData = row.fileData;
-                    if (fileData) {
-                        if (!fileData.fileObj && fileData.path) {
-                            filesData.push({ internal_path: fileData.name, abs_path: fileData.path });
-                        } else if (fileData.fileObj) {
-                            if (fileData.fileObj.path) {
-                                filesData.push({ internal_path: fileData.name, abs_path: fileData.fileObj.path });
-                            } else {
-                                const base64 = await new Promise((resolve) => {
-                                    const reader = new FileReader();
-                                    reader.onload = (e) => resolve(e.target.result);
-                                    reader.readAsDataURL(fileData.fileObj);
-                                });
-                                filesData.push({ internal_path: fileData.name, data: base64 });
-                            }
+            const addBuildFiles = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                try {
+                    const result = await eel.ask_add_files(selectedGamePath.value)();
+                    if (result && result.success) {
+                        if (result.rejected && result.rejected.length > 0) {
+                            window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
+                        }
+                        if (result.files && result.files.length > 0) {
+                            result.files.forEach(f => {
+                                if (!build.files.find(existing => existing.path === f.path)) {
+                                    build.files.push({ internal_path: f.internal_path, path: f.path });
+                                }
+                            });
                         }
                     }
+                } catch (e) {
+                    window.showToast(t("An error occurred while adding files."), true);
                 }
-
-                if (filesData.length === 0) { window.showToast(t("Please add at least one file to your mod!"), true); return; }
-
-                const payload = { gamePath, title, author, version, notes, tags, previewBase64, previewName, files: filesData };
-                const result = await eel.build_tmod(payload)();
-
-                if (result.success) {
-                    window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
-                } else {
-                    window.showToast(t("Failed to build TMod:\n{error}").replace("{error}", result.error), true);
-                }
-            } catch (err) {
-                console.error(err);
-                window.showToast(t("An unexpected error occurred while building the TMod."), true);
-            } finally {
-                btnBuildTMod.disabled = false;
-                btnBuildTMod.innerHTML = originalText;
-            }
-        });
-    }
-
-    const btnBrowseExtractSource = document.getElementById('btn-browse-extract-source');
-    const inputExtractSource = document.getElementById('extract-source-file');
-    
-    if (btnBrowseExtractSource) {
-        btnBrowseExtractSource.addEventListener('click', async () => {
-            const file = await eel.ask_tmod_file()();
-            if (file) inputExtractSource.value = file;
-        });
-    }
-
-    const btnBrowseExtractDest = document.getElementById('btn-browse-extract-dest');
-    const inputExtractDest = document.getElementById('extract-dest-dir');
-    
-    if (btnBrowseExtractDest) {
-        btnBrowseExtractDest.addEventListener('click', async () => {
-            const dir = await eel.ask_extract_destination()();
-            if (dir) inputExtractDest.value = dir;
-        });
-    }
-
-    const btnExtractTmod = document.getElementById('btn-extract-tmod');
-    if (btnExtractTmod) {
-        btnExtractTmod.addEventListener('click', async () => {
-            const sourceFile = inputExtractSource.value;
-            const destDir = inputExtractDest.value;
-            
-            if (!sourceFile) { window.showToast(t("Please select a Source TMod File."), true); return; }
-            if (!destDir) { window.showToast(t("Please select a Destination Folder."), true); return; }
-            
-            btnExtractTmod.disabled = true;
-            const originalText = btnExtractTmod.innerHTML;
-            btnExtractTmod.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Extracting...")}`;
-            
-            try {
-                const result = await eel.extract_tmod(sourceFile, destDir)();
-                if (result.success) {
-                    window.showToast(t("Successfully extracted {count} files to:\n{path}").replace("{count}", result.count).replace("{path}", destDir));
-                } else {
-                    window.showToast(t("Failed to extract TMod:\n{error}").replace("{error}", result.error), true);
-                }
-            } catch (err) {
-                console.error(err);
-                window.showToast(t("An unexpected error occurred during extraction."), true);
-            } finally {
-                btnExtractTmod.disabled = false;
-                btnExtractTmod.innerHTML = originalText;
-            }
-        });
-    }
-
-    async function loadModdingSoftware() {
-        const container = document.getElementById('software-list-container');
-        if (!container) return;
-
-        try {
-            const response = await fetch('assets/data/modding_software.json');
-            const data = await response.json();
-
-            const categoryIcons = {
-                'blueprints': 'fa-cube',
-                'vfx': 'fa-wand-magic-sparkles',
-                'ui': 'fa-layer-group',
-                'sound': 'fa-headphones',
-                'textures': 'fa-palette'
             };
 
-            container.innerHTML = '';
-            container.style.display = 'block';
+            const removeBuildFile = (file) => {
+                build.files = build.files.filter(f => f.path !== file.path);
+            };
 
-            for (const [categoryKey, categoryData] of Object.entries(data)) {
-                const catHeader = document.createElement('h4');
-                catHeader.style.marginTop = '20px';
-                catHeader.style.marginBottom = '10px';
-                catHeader.style.color = 'var(--text-main)';
-                catHeader.style.textTransform = 'capitalize';
-                catHeader.style.borderBottom = '1px solid var(--border-color)';
-                catHeader.style.paddingBottom = '5px';
-                catHeader.innerHTML = `<i class="fa-solid ${categoryIcons[categoryKey] || 'fa-laptop-code'}" style="color: var(--text-muted); margin-right: 5px;"></i> ${t(categoryKey)}`;
-                container.appendChild(catHeader);
+            const autoStructureBuild = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                isWorking.autoStructuringBuild = true;
+                try {
+                    const result = await eel.auto_structure_workspace(selectedGamePath.value, selectedGamePath.value)();
+                    if (result.success) window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
+                    else window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while structuring files."), true);
+                }
+                isWorking.autoStructuringBuild = false;
+            };
 
-                const badgeWrapper = document.createElement('div');
-                badgeWrapper.style.display = 'flex';
-                badgeWrapper.style.flexWrap = 'wrap';
-                badgeWrapper.style.gap = '10px';
+            const buildTMod = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a target game installation."), true);
+                const title = build.title.trim();
+                if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
+                if (build.notes.trim().length > 220) return window.showToast(t("Mod notes cannot exceed 220 characters."), true);
+                if (!title) return window.showToast(t("Please enter a mod title."), true);
+                if (!build.author.trim()) return window.showToast(t("Please enter a mod author."), true);
+                if (!build.version.trim()) return window.showToast(t("Please enter a mod version."), true);
+                if (!build.notes.trim()) return window.showToast(t("Please enter mod notes or a description."), true);
+                if (build.tags.length === 0) return window.showToast(t("Please select at least one tag."), true);
+                if (build.files.length === 0) return window.showToast(t("Please add at least one file to your mod!"), true);
 
-                categoryData.software.forEach(sw => {
-                    const badge = document.createElement('a');
-                    badge.className = 'software-badge';
-                    badge.href = sw.url;
-                    badge.target = '_blank';
-                    badge.title = t(sw.description);
-
-                    let priceTagHtml = '';
-                    if (sw.free) {
-                        priceTagHtml = `<span class="sw-price-tag free">${t("Free")}</span>`;
-                    } else {
-                        priceTagHtml = `<span class="sw-price-tag paid">${t("Paid")}</span>`;
+                isWorking.buildingTMod = true;
+                try {
+                    const pathsToCheck = build.files.map(f => f.path);
+                    if (pathsToCheck.length > 0) {
+                        const missingResult = await eel.get_missing_files(pathsToCheck)();
+                        if (missingResult.success && missingResult.missing && missingResult.missing.length > 0) {
+                            build.files = build.files.filter(f => !missingResult.missing.includes(f.path));
+                            window.showToast(t("Warning: {count} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.").replace("{count}", missingResult.missing.length), true);
+                            isWorking.buildingTMod = false;
+                            return;
+                        }
                     }
 
-                    badge.innerHTML = `
-                        <i class="fa-solid ${categoryIcons[categoryKey] || 'fa-laptop-code'}"></i>
-                        <span class="software-name">${sw.name}</span>
-                        ${priceTagHtml}
-                    `;
-                    badgeWrapper.appendChild(badge);
-                });
-                container.appendChild(badgeWrapper);
-            }
-        } catch (error) {
-            console.error("Failed to load modding software data:", error);
-            container.innerHTML = `<p class="help-text" style="color: #ff5555;">${t("Failed to load software list. Make sure the JSON file exists.")}</p>`;
-        }
-    }
-    loadModdingSoftware();
+                    const payload = {
+                        gamePath: selectedGamePath.value,
+                        title: title,
+                        author: build.author.trim(),
+                        version: build.version.trim(),
+                        notes: build.notes.trim(),
+                        tags: build.tags,
+                        previewBase64: build.preview || null,
+                        previewName: build.previewName || "preview.png",
+                        files: build.files.map(f => ({ internal_path: f.internal_path, abs_path: f.path }))
+                    };
 
-    const btnBrowseProject = document.getElementById('btn-browse-project');
-    const projectDirInput = document.getElementById('project-dir-input');
-    const projectWorkspace = document.getElementById('project-workspace');
-    const btnSaveProject = document.getElementById('btn-save-project');
-    const btnNewVersion = document.getElementById('btn-new-version');
-    const versionSelect = document.getElementById('project-version-select');
-    const btnCompileProject = document.getElementById('btn-compile-project');
-    
-    const projPreviewContainer = document.getElementById('project-preview-container');
-    const projPreviewInput = document.getElementById('project-preview-input');
-    const projPreviewImg = document.getElementById('project-mod-preview');
-    const btnRemoveProjectPreview = document.getElementById('btn-remove-project-preview');
+                    const result = await eel.build_tmod(payload)();
+                    if (result.success) window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
+                    else window.showToast(t("Failed to build TMod:\n{error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while building the TMod."), true);
+                }
+                isWorking.buildingTMod = false;
+            };
 
-    const btnRefreshProjectFiles = document.getElementById('btn-refresh-project-files');
-    const btnProjectAutoStructure = document.getElementById('btn-project-auto-structure');
-    const projectFilesList = document.getElementById('project-files-list');
+            // --- Extract TMod Methods ---
+            const browseExtractSource = async () => {
+                const file = await eel.ask_tmod_file()();
+                if (file) extract.source = file;
+            };
+            const browseExtractDest = async () => {
+                const dir = await eel.ask_extract_destination()();
+                if (dir) extract.dest = dir;
+            };
+            const extractTMod = async () => {
+                if (!extract.source) return window.showToast(t("Please select a Source TMod File."), true);
+                if (!extract.dest) return window.showToast(t("Please select a Destination Folder."), true);
+                
+                isWorking.extracting = true;
+                try {
+                    const result = await eel.extract_tmod(extract.source, extract.dest)();
+                    if (result.success) window.showToast(t("Successfully extracted {count} files to:\n{path}").replace("{count}", result.count).replace("{path}", extract.dest));
+                    else window.showToast(t("Failed to extract TMod:\n{error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred during extraction."), true);
+                }
+                isWorking.extracting = false;
+            };
 
-    const btnPlaceOverrides = document.getElementById('btn-place-overrides');
-    const btnRemoveOverrides = document.getElementById('btn-remove-overrides');
-    let activeOverrides = [];
+            // --- Project Methods ---
+            const onProjectPreviewChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        project.preview = event.target.result;
+                        project.previewName = file.name;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
 
-    if (projPreviewContainer && projPreviewInput) {
-        projPreviewContainer.addEventListener('click', () => projPreviewInput.click());
-        projPreviewInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    projPreviewImg.src = event.target.result;
-                    if (btnRemoveProjectPreview) btnRemoveProjectPreview.style.display = 'flex';
+            const refreshProjectFiles = async () => {
+                if (!project.dir || !project.activeVersion) return;
+                isWorking.refreshProjectFiles = true;
+                const result = await eel.get_project_files(project.dir, project.activeVersion)();
+                if (result.success) project.files = result.files;
+                isWorking.refreshProjectFiles = false;
+            };
+
+            watch(() => project.activeVersion, () => {
+                refreshProjectFiles();
+            });
+
+            const loadProjectData = async (dir) => {
+                const result = await eel.load_mod_project(dir)();
+                if (result.success) {
+                    project.title = result.data.title || '';
+                    project.author = result.data.author || '';
+                    project.notes = result.data.notes || '';
+                    project.tags = result.data.tags || [];
+                    project.preview = result.data.previewBase64 || '';
+                    project.previewName = result.data.previewName || '';
+                    
+                    project.versions = result.data.versions || ["1.0"];
+                    project.activeVersion = result.data.active_version || project.versions[0];
+                } else {
+                    window.showToast(t("Error loading project: {error}").replace("{error}", result.error), true);
+                }
+            };
+
+            const browseProject = async () => {
+                const dir = await eel.ask_mod_source_directory()();
+                if (dir) {
+                    project.dir = dir;
+                    await loadProjectData(dir);
+                }
+            };
+
+            const saveProject = async () => {
+                if (!project.dir) return;
+                if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
+
+                const payload = {
+                    title: project.title.trim(),
+                    author: project.author.trim(),
+                    notes: project.notes.trim(),
+                    tags: project.tags,
+                    active_version: project.activeVersion,
+                    previewBase64: project.preview || null,
+                    previewName: project.previewName || "preview.png"
                 };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
 
-    if (btnRemoveProjectPreview) {
-        btnRemoveProjectPreview.addEventListener('click', (e) => {
-            e.stopPropagation();
-            projPreviewImg.src = "assets/images/no_preview.png";
-            projPreviewInput.value = "";
-            btnRemoveProjectPreview.style.display = 'none';
-        });
-    }
-
-    async function refreshProjectFiles() {
-        const dir = projectDirInput.value;
-        const version = versionSelect.value;
-        if (!dir || !version) return;
-
-        projectFilesList.innerHTML = `<tr><td style="padding: 10px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> ${t("Loading files...")}</td></tr>`;
-        
-        const result = await eel.get_project_files(dir, version)();
-        if (result.success) {
-            projectFilesList.innerHTML = '';
-            if (result.files.length === 0) {
-                projectFilesList.innerHTML = `<tr><td style="padding: 10px; text-align: center; color: var(--text-muted);">${t("No files found in this version folder.")}</td></tr>`;
-            } else {
-                result.files.forEach(f => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td style="padding: 8px 10px; color: var(--text-main); font-family: monospace;">${f.rel_path}</td>`;
-                    projectFilesList.appendChild(tr);
-                });
-            }
-        } else {
-            projectFilesList.innerHTML = `<tr><td style="padding: 10px; text-align: center; color: #ff5555;">${t("Error loading files.")}</td></tr>`;
-        }
-    }
-
-    if (btnRefreshProjectFiles) {
-        btnRefreshProjectFiles.addEventListener('click', refreshProjectFiles);
-    }
-    if (versionSelect) {
-        versionSelect.addEventListener('change', refreshProjectFiles);
-    }
-
-    async function loadProjectData(folderPath) {
-        const result = await eel.load_mod_project(folderPath)();
-        if (result.success) {
-            projectWorkspace.style.display = 'block';
-            
-            document.getElementById('project-mod-title').value = result.data.title || '';
-            document.getElementById('project-mod-author').value = result.data.author || '';
-            document.getElementById('project-mod-notes').value = result.data.notes || '';
-            
-            if (result.data.tags) {
-                $('#project-mod-tags').val(result.data.tags).trigger('change');
-            } else {
-                $('#project-mod-tags').val(null).trigger('change');
-            }
-
-            if (result.data.previewBase64) {
-                projPreviewImg.src = result.data.previewBase64;
-                if (btnRemoveProjectPreview) btnRemoveProjectPreview.style.display = 'flex';
-            } else {
-                projPreviewImg.src = "assets/images/no_preview.png";
-                if (btnRemoveProjectPreview) btnRemoveProjectPreview.style.display = 'none';
-            }
-
-            versionSelect.innerHTML = '';
-            if (result.data.versions && result.data.versions.length > 0) {
-                result.data.versions.forEach(v => {
-                    const opt = document.createElement('option');
-                    opt.value = v;
-                    opt.textContent = `Version ${v}`;
-                    versionSelect.appendChild(opt);
-                });
-                versionSelect.value = result.data.active_version || result.data.versions[0];
-            } else {
-                const opt = document.createElement('option');
-                opt.value = "1.0";
-                opt.textContent = `Version 1.0 (Default)`;
-                versionSelect.appendChild(opt);
-            }
-            
-            await refreshProjectFiles();
-        } else {
-            window.showToast(t("Error loading project: {error}").replace("{error}", result.error), true);
-        }
-    }
-
-    if (btnBrowseProject) {
-        btnBrowseProject.addEventListener('click', async () => {
-            const dir = await eel.ask_mod_source_directory()();
-            if (dir) {
-                projectDirInput.value = dir;
-                await loadProjectData(dir);
-            }
-        });
-    }
-
-    if (btnSaveProject) {
-        btnSaveProject.addEventListener('click', async () => {
-            const dir = projectDirInput.value;
-            if (!dir) return;
-
-            const notes = document.getElementById('project-mod-notes').value.trim();
-            if (notes.length > 220) {
-                window.showToast(t("Project notes cannot exceed 220 characters."), true);
-                return;
-            }
-
-            const payload = {
-                title: document.getElementById('project-mod-title').value.trim(),
-                author: document.getElementById('project-mod-author').value.trim(),
-                notes: notes,
-                tags: $('#project-mod-tags').val() || [],
-                active_version: versionSelect.value
+                const result = await eel.save_mod_project(project.dir, payload)();
+                if (result.success) window.showToast(t("Project metadata saved successfully!"));
+                else window.showToast(t("Error saving project: {error}").replace("{error}", result.error), true);
             };
 
-            if (projPreviewImg.src.startsWith('data:image') && !projPreviewImg.src.includes('no_preview.png')) {
-                payload.previewBase64 = projPreviewImg.src;
-                if (projPreviewInput.files && projPreviewInput.files.length > 0) {
-                    payload.previewName = projPreviewInput.files[0].name;
-                }
-            } else {
-                payload.previewBase64 = null;
-            }
+            const newVersion = async () => {
+                if (!project.dir) return;
+                const nv = prompt(t("Enter new version number (e.g., 1.1):"));
+                if (!nv) return;
 
-            const result = await eel.save_mod_project(dir, payload)();
-            if (result.success) {
-                window.showToast(t("Project metadata saved successfully!"));
-            } else {
-                window.showToast(t("Error saving project: {error}").replace("{error}", result.error), true);
-            }
-        });
-    }
-
-    if (btnNewVersion) {
-        btnNewVersion.addEventListener('click', async () => {
-            const dir = projectDirInput.value;
-            if (!dir) return;
-
-            const newVersion = prompt(t("Enter new version number (e.g., 1.1):"));
-            if (!newVersion) return;
-
-            const result = await eel.create_project_version(dir, newVersion)();
-            if (result.success) {
-                window.showToast(t("New version folder created!"));
-                await loadProjectData(dir);
-                versionSelect.value = newVersion;
-            } else {
-                window.showToast(t("Error creating version: {error}").replace("{error}", result.error), true);
-            }
-        });
-    }
-
-    if (btnProjectAutoStructure) {
-        btnProjectAutoStructure.addEventListener('click', async () => {
-            const dir = projectDirInput.value;
-            const version = versionSelect.value;
-            const gamePath = projectGameSelect.value;
-            
-            if (!dir || !version || !gamePath) {
-                window.showToast(t("Ensure a project, version, and game path are selected."), true);
-                return;
-            }
-
-            const originalHtml = btnProjectAutoStructure.innerHTML;
-            btnProjectAutoStructure.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Structuring...")}`;
-            btnProjectAutoStructure.disabled = true;
-
-            try {
-                const result = await eel.auto_structure_project_version(dir, version, gamePath)();
+                const result = await eel.create_project_version(project.dir, nv)();
                 if (result.success) {
-                    window.showToast(t("Successfully structured {count} files!").replace("{count}", result.count));
-                    await refreshProjectFiles();
-                } else {
-                    window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
-                }
-            } catch (err) {
-                window.showToast(t("An unexpected error occurred."), true);
-            } finally {
-                btnProjectAutoStructure.innerHTML = originalHtml;
-                btnProjectAutoStructure.disabled = false;
-            }
-        });
-    }
-
-    if (btnCompileProject) {
-        btnCompileProject.addEventListener('click', async () => {
-            const dir = projectDirInput.value;
-            const version = versionSelect.value;
-            const gamePath = projectGameSelect.value;
-
-            if (!dir || !version || !gamePath) {
-                window.showToast(t("Ensure a project, version, and game path are selected."), true);
-                return;
-            }
-
-            const title = document.getElementById('project-mod-title').value.trim();
-            if (!title) {
-                window.showToast(t("Project title cannot be empty."), true);
-                return;
-            }
-
-            const notes = document.getElementById('project-mod-notes').value.trim();
-            if (notes.length > 220) {
-                window.showToast(t("Project notes cannot exceed 220 characters."), true);
-                return;
-            }
-
-            const payload = {
-                title: title,
-                author: document.getElementById('project-mod-author').value.trim(),
-                notes: notes,
-                tags: $('#project-mod-tags').val() || [],
-                active_version: version
+                    window.showToast(t("New version folder created!"));
+                    await loadProjectData(project.dir);
+                    project.activeVersion = nv;
+                } else window.showToast(t("Error creating version: {error}").replace("{error}", result.error), true);
             };
-            
-            if (projPreviewImg.src.startsWith('data:image') && !projPreviewImg.src.includes('no_preview.png')) {
-                payload.previewBase64 = projPreviewImg.src;
-                if (projPreviewInput.files && projPreviewInput.files.length > 0) {
-                    payload.previewName = projPreviewInput.files[0].name;
+
+            const autoStructureProject = async () => {
+                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                isWorking.autoStructuringProject = true;
+                try {
+                    const result = await eel.auto_structure_project_version(project.dir, project.activeVersion, selectedGamePath.value)();
+                    if (result.success) {
+                        window.showToast(t("Successfully structured {count} files!").replace("{count}", result.count));
+                        await refreshProjectFiles();
+                    } else window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred."), true);
                 }
-            } else {
-                payload.previewBase64 = null;
-            }
-            await eel.save_mod_project(dir, payload)();
+                isWorking.autoStructuringProject = false;
+            };
 
-            const originalHtml = btnCompileProject.innerHTML;
-            btnCompileProject.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Compiling...")}`;
-            btnCompileProject.disabled = true;
+            const compileProject = async () => {
+                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                if (!project.title.trim()) return window.showToast(t("Project title cannot be empty."), true);
+                if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
 
-            try {
-                const result = await eel.compile_project(dir, version, gamePath)();
-                if (result.success) {
-                    window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
-                } else {
-                    window.showToast(t("Failed to compile project:\n{error}").replace("{error}", result.error), true);
+                await saveProject(); // Auto save metadata before compiling
+                
+                isWorking.compilingProject = true;
+                try {
+                    const result = await eel.compile_project(project.dir, project.activeVersion, selectedGamePath.value)();
+                    if (result.success) window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
+                    else window.showToast(t("Failed to compile project:\n{error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while compiling the project."), true);
                 }
-            } catch (err) {
-                console.error(err);
-                window.showToast(t("An unexpected error occurred while compiling the project."), true);
-            } finally {
-                btnCompileProject.innerHTML = originalHtml;
-                btnCompileProject.disabled = false;
-            }
-        });
-    }
+                isWorking.compilingProject = false;
+            };
 
-    if (btnPlaceOverrides && btnRemoveOverrides) {
-        btnPlaceOverrides.addEventListener('click', async () => {
-            const dir = projectDirInput.value;
-            const version = versionSelect.value;
-            const gamePath = projectGameSelect.value;
-            
-            if (!dir || !version || !gamePath) {
-                window.showToast(t("Ensure a project, version, and game path are selected."), true);
-                return;
-            }
+            const placeOverrides = async () => {
+                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                isWorking.placingOverrides = true;
+                try {
+                    const result = await eel.place_project_overrides(project.dir, project.activeVersion, selectedGamePath.value)();
+                    if (result.success) {
+                        if (result.count === 0) window.showToast(t("No valid files found to test."));
+                        else {
+                            project.activeOverrides = result.placed_files;
+                            window.showToast(t("{count} files placed in game overrides for testing.").replace("{count}", result.count));
+                        }
+                    } else window.showToast(t("Error placing overrides: {error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred."), true);
+                }
+                isWorking.placingOverrides = false;
+            };
 
-            const originalHtml = btnPlaceOverrides.innerHTML;
-            btnPlaceOverrides.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Placing...")}`;
-            btnPlaceOverrides.disabled = true;
+            const removeOverrides = async () => {
+                if (project.activeOverrides.length === 0) return;
+                isWorking.removingOverrides = true;
+                try {
+                    const result = await eel.remove_project_overrides(project.activeOverrides)();
+                    if (result.success) {
+                        window.showToast(t("{count} override files successfully removed from game.").replace("{count}", result.count));
+                        project.activeOverrides = [];
+                    } else window.showToast(t("Error removing overrides: {error}").replace("{error}", result.error), true);
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred."), true);
+                }
+                isWorking.removingOverrides = false;
+            };
 
-            try {
-                const result = await eel.place_project_overrides(dir, version, gamePath)();
-                if (result.success) {
-                    if (result.count === 0) {
-                        window.showToast(t("No valid files found to test."));
-                        btnPlaceOverrides.disabled = false;
-                    } else {
-                        activeOverrides = result.placed_files;
-                        window.showToast(t("{count} files placed in game overrides for testing.").replace("{count}", result.count));
-                        btnRemoveOverrides.disabled = false;
+            // --- Software Tab ---
+            const loadModdingSoftware = async () => {
+                try {
+                    const response = await fetch('assets/data/modding_software.json');
+                    const data = await response.json();
+                    const categoryIcons = { 'blueprints': 'fa-cube', 'vfx': 'fa-wand-magic-sparkles', 'ui': 'fa-layer-group', 'sound': 'fa-headphones', 'textures': 'fa-palette' };
+                    
+                    for (const [cat, catData] of Object.entries(data)) {
+                        catData.icon = categoryIcons[cat] || 'fa-laptop-code';
                     }
-                } else {
-                    window.showToast(t("Error placing overrides: {error}").replace("{error}", result.error), true);
-                    btnPlaceOverrides.disabled = false;
-                }
-            } catch (err) {
-                window.showToast(t("An unexpected error occurred."), true);
-                btnPlaceOverrides.disabled = false;
-            } finally {
-                btnPlaceOverrides.innerHTML = originalHtml;
-            }
-        });
+                    softwareCategories.value = data;
+                } catch (e) { console.error("Failed to load software:", e); }
+            };
 
-        btnRemoveOverrides.addEventListener('click', async () => {
-            if (activeOverrides.length === 0) return;
+            onMounted(async () => {
+                await scanForGames();
+                await loadModdingSoftware();
+                nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+            });
 
-            const originalHtml = btnRemoveOverrides.innerHTML;
-            btnRemoveOverrides.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${t("Removing...")}`;
-            btnRemoveOverrides.disabled = true;
+            return {
+                t, activeTab, installs, selectedGamePath, gameOptions,
+                tagOptions, build, extract, project, softwareCategories, isWorking,
+                scanForGames, onBuildPreviewChange, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
+                browseExtractSource, browseExtractDest, extractTMod,
+                onProjectPreviewChange, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides
+            };
+        }
+    });
 
-            try {
-                const result = await eel.remove_project_overrides(activeOverrides)();
-                if (result.success) {
-                    window.showToast(t("{count} override files successfully removed from game.").replace("{count}", result.count));
-                    activeOverrides = [];
-                    btnPlaceOverrides.disabled = false;
-                } else {
-                    window.showToast(t("Error removing overrides: {error}").replace("{error}", result.error), true);
-                    btnRemoveOverrides.disabled = false;
-                }
-            } catch (err) {
-                window.showToast(t("An unexpected error occurred."), true);
-                btnRemoveOverrides.disabled = false;
-            } finally {
-                btnRemoveOverrides.innerHTML = originalHtml;
-            }
+    if (window.CustomVueSelect) {
+        app.component('custom-vue-select', window.CustomVueSelect);
+    } else {
+        app.component('custom-vue-select', {
+            props: ['modelValue', 'options', 'disabled'],
+            setup(props, { emit }) {
+                const isOpen = ref(false);
+                const isDropUp = ref(false);
+                const maxH = ref(250);
+                const wrapperRef = ref(null);
+                const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+                const currentLabel = computed(() => {
+                    const found = props.options.find(opt => opt[1] === props.modelValue);
+                    return found ? found[0] : '';
+                });
+                const toggle = () => {
+                    if (props.disabled) return;
+                    isOpen.value = !isOpen.value;
+                    if (isOpen.value && wrapperRef.value) {
+                        const rect = wrapperRef.value.getBoundingClientRect();
+                        const spaceBelow = window.innerHeight - rect.bottom;
+                        const spaceAbove = rect.top;
+                        if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                            isDropUp.value = true;
+                            maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
+                        } else {
+                            isDropUp.value = false;
+                            maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
+                        }
+                    }
+                };
+                const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
+                const handleKey = (e) => {
+                    if (props.disabled) return;
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+                    else if (e.key === 'Escape') isOpen.value = false;
+                    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (!props.options || props.options.length === 0) return;
+                        let currentIdx = props.options.findIndex(opt => opt[1] === props.modelValue);
+                        if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
+                        if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
+                        if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
+                    }
+                };
+                onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+                return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+            },
+            template: `
+                <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
+                    <div class="custom-select-trigger">
+                        <span class="custom-select-trigger-text">{{ currentLabel }}</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+                        <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: modelValue === opt[1] }" @click.stop="selectOpt(opt[1])">
+                            {{ opt[0] }}
+                        </div>
+                    </div>
+                </div>
+            `
         });
     }
+
+    app.component('select2', Select2Component);
+    
+    if (window._modderToolsApp) window._modderToolsApp.unmount();
+    window._modderToolsApp = app;
+    app.mount('#modder-tools-vue-app');
 });
