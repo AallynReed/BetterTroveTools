@@ -16,6 +16,7 @@ document.addEventListener('star_chart_loaded', async () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_star_chart';
             const unwrapResp = (resp, key = null, fallback = null) => {
                 if (key) {
                     if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
@@ -288,6 +289,12 @@ document.addEventListener('star_chart_loaded', async () => {
                     buildCode.value = pathsArray.length > 0 ? btoa(pathsArray.join('$')) : "";
                 }
                 updateTemplateDropdown();
+
+                if (window.AppSettings) {
+                    window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                        buildCode: buildCode.value || ""
+                    });
+                }
             }, { deep: true });
 
             const updateTemplateDropdown = () => {
@@ -496,6 +503,16 @@ document.addEventListener('star_chart_loaded', async () => {
                         }
                     });
                     isLoading.value = false;
+
+                    if (window.AppSettings) {
+                        await window.AppSettings.load();
+                        const savedState = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                        if (savedState && typeof savedState === 'object' && savedState.buildCode) {
+                            buildCode.value = savedState.buildCode;
+                            loadCode(true);
+                        }
+                    }
+
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 } else {
                     window.showToast(t("Error loading chart data: {error}").replace("{error}", response.error), true);

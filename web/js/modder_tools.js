@@ -10,6 +10,8 @@ document.addEventListener('modder_tools_loaded', () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_modder_tools';
+            let hydratingState = false;
 
             const activeTab = ref('build');
             
@@ -58,6 +60,20 @@ document.addEventListener('modder_tools_loaded', () => {
                 placingOverrides: false,
                 removingOverrides: false
             });
+
+            const applyStateSnapshot = (saved) => {
+                if (!saved || typeof saved !== 'object') return;
+                if (typeof saved.activeTab === 'string') activeTab.value = saved.activeTab;
+                if (typeof saved.selectedGamePath === 'string') selectedGamePath.value = saved.selectedGamePath;
+            };
+
+            const persistState = () => {
+                if (hydratingState || !window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    activeTab: activeTab.value,
+                    selectedGamePath: selectedGamePath.value
+                });
+            };
 
             const runQueuedModderOperation = async ({ label, operation, task }) => {
                 return window.JobQueue.run({
@@ -117,6 +133,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 settings.last_game_path = newVal;
                 await eel.save_settings(settings)();
             });
+
+            watch([activeTab, selectedGamePath], persistState, { deep: true });
 
             const onBuildPreviewChange = (e) => {
                 const file = e.target.files[0];
@@ -565,9 +583,16 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             onMounted(async () => {
+                hydratingState = true;
+                if (window.AppSettings) {
+                    await window.AppSettings.load();
+                    const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                    applyStateSnapshot(saved);
+                }
                 await scanForGames();
                 await loadModdingSoftware();
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                hydratingState = false;
             });
 
             return {

@@ -10,6 +10,8 @@ document.addEventListener('file_manager_loaded', () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_file_manager';
+            let hydratingState = false;
 
             const activeTab = ref('tab-explorer');
             
@@ -165,6 +167,28 @@ document.addEventListener('file_manager_loaded', () => {
             const readSettings = async () => {
                 const settingsResp = await eel.get_settings()();
                 return unwrapResponse(settingsResp, null, {}) || {};
+            };
+
+            const applyStateSnapshot = (saved) => {
+                if (!saved || typeof saved !== 'object') return;
+                if (typeof saved.activeTab === 'string') activeTab.value = saved.activeTab;
+                if (typeof saved.selectedInstall === 'string') selectedInstall.value = saved.selectedInstall;
+                if (typeof saved.selectedTrackerGame === 'string') selectedTrackerGame.value = saved.selectedTrackerGame;
+                if (typeof saved.selectedTrackingDir === 'string') selectedTrackingDir.value = saved.selectedTrackingDir;
+                if (saved.runCatalogMode !== undefined) runCatalogMode.value = !!saved.runCatalogMode;
+                if (saved.showTrackerAdvanced !== undefined) showTrackerAdvanced.value = !!saved.showTrackerAdvanced;
+            };
+
+            const persistState = () => {
+                if (hydratingState || !window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    activeTab: activeTab.value,
+                    selectedInstall: selectedInstall.value,
+                    selectedTrackerGame: selectedTrackerGame.value,
+                    selectedTrackingDir: selectedTrackingDir.value,
+                    runCatalogMode: runCatalogMode.value,
+                    showTrackerAdvanced: showTrackerAdvanced.value
+                });
             };
 
             const scanForGames = async () => {
@@ -671,6 +695,8 @@ document.addEventListener('file_manager_loaded', () => {
                 }
             });
 
+            watch([activeTab, selectedInstall, selectedTrackerGame, selectedTrackingDir, runCatalogMode, showTrackerAdvanced], persistState, { deep: true });
+
             const setActiveTab = (tabName) => {
                 if (tabName === activeTab.value) return;
                 if (isAnyOperationRunning.value) {
@@ -891,10 +917,17 @@ document.addEventListener('file_manager_loaded', () => {
             };
 
             onMounted(async () => {
+                hydratingState = true;
+                if (window.AppSettings) {
+                    await window.AppSettings.load();
+                    const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                    applyStateSnapshot(saved);
+                }
                 await scanForGames();
                 await loadTrackingDirectories();
                 document.addEventListener('keydown', onKeyDown);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                hydratingState = false;
             });
 
             onBeforeUnmount(() => {

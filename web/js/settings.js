@@ -5,11 +5,12 @@ document.addEventListener('settings_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, reactive, onMounted } = Vue;
+    const { createApp, ref, reactive, watch, onMounted } = Vue;
 
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_settings';
             const unwrap = (raw) => {
                 if (raw && typeof raw === 'object' && raw.success !== undefined && raw.data && typeof raw.data === 'object') {
                     return raw.data;
@@ -178,7 +179,28 @@ document.addEventListener('settings_loaded', async () => {
                 window.showToast(t('Onboarding tips have been reset. They will appear again in supported tools.'));
             };
 
-            onMounted(loadSettings);
+            const persistState = () => {
+                if (!window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    activeTab: activeTab.value
+                });
+            };
+
+            const restoreState = async () => {
+                if (!window.AppSettings) return;
+                await window.AppSettings.load();
+                const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                if (saved && typeof saved === 'object' && typeof saved.activeTab === 'string') {
+                    activeTab.value = saved.activeTab;
+                }
+            };
+
+            watch(activeTab, persistState);
+
+            onMounted(async () => {
+                await restoreState();
+                await loadSettings();
+            });
 
             return {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,

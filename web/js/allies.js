@@ -10,6 +10,8 @@ document.addEventListener('allies_loaded', async () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_allies';
+            let hydratingState = false;
 
             const isLoading = ref(true);
             const alliesData = ref([]);
@@ -35,6 +37,34 @@ document.addEventListener('allies_loaded', async () => {
                 selectedStat.value = '';
                 selectedAbility.value = '';
                 currentPage.value = 1;
+            };
+
+            const applyStateSnapshot = (saved) => {
+                if (!saved || typeof saved !== 'object') return;
+                if (typeof saved.searchQuery === 'string') searchQuery.value = saved.searchQuery;
+                if (typeof saved.selectedCategory === 'string') selectedCategory.value = saved.selectedCategory;
+                if (typeof saved.selectedStat === 'string') selectedStat.value = saved.selectedStat;
+                if (typeof saved.selectedAbility === 'string') selectedAbility.value = saved.selectedAbility;
+                if (saved.currentPage !== undefined) {
+                    const parsedPage = parseInt(saved.currentPage, 10);
+                    currentPage.value = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+                }
+                if (saved.pageSize !== undefined) {
+                    const parsedSize = parseInt(saved.pageSize, 10);
+                    pageSize.value = Number.isFinite(parsedSize) && parsedSize > 0 ? parsedSize : 36;
+                }
+            };
+
+            const persistState = () => {
+                if (hydratingState || !window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    searchQuery: searchQuery.value,
+                    selectedCategory: selectedCategory.value,
+                    selectedStat: selectedStat.value,
+                    selectedAbility: selectedAbility.value,
+                    currentPage: currentPage.value,
+                    pageSize: pageSize.value
+                });
             };
 
             const dismissOnboardingTips = () => {
@@ -180,6 +210,8 @@ document.addEventListener('allies_loaded', async () => {
                 if (currentPage.value > newTotal) currentPage.value = newTotal;
             });
 
+            watch([searchQuery, selectedCategory, selectedStat, selectedAbility, currentPage, pageSize], persistState, { deep: true });
+
             const setActiveResult = (index) => {
                 const cards = Array.from(document.querySelectorAll('#allies-vue-app .ally-card'));
                 cards.forEach(c => c.classList.remove('kbd-active-result'));
@@ -228,6 +260,12 @@ document.addEventListener('allies_loaded', async () => {
             };
 
             onMounted(async () => {
+                hydratingState = true;
+                if (window.AppSettings) {
+                    await window.AppSettings.load();
+                    const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                    applyStateSnapshot(saved);
+                }
                 try {
                     let data = null;
 
@@ -301,6 +339,7 @@ document.addEventListener('allies_loaded', async () => {
                 isLoading.value = false;
                 document.addEventListener('keydown', onKeyDown);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                hydratingState = false;
             });
 
             onBeforeUnmount(() => {

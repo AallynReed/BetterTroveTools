@@ -10,6 +10,7 @@ document.addEventListener("gem_builds_loaded", () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_gem_builds';
             const unwrapResp = (resp, key = null, fallback = null) => {
                 if (key) {
                     if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
@@ -34,6 +35,23 @@ document.addEventListener("gem_builds_loaded", () => {
                 star_chart: "",
                 scTemplate: ""
             });
+
+            let hydratingState = false;
+
+            const restoreState = async () => {
+                if (!window.AppSettings) return;
+                await window.AppSettings.load();
+                const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                if (!saved || typeof saved !== 'object') return;
+
+                hydratingState = true;
+                Object.keys(config).forEach((key) => {
+                    if (saved[key] !== undefined) {
+                        config[key] = saved[key];
+                    }
+                });
+                hydratingState = false;
+            };
 
             const classesData = ref([]);
             const foodsData = ref({});
@@ -230,11 +248,16 @@ document.addEventListener("gem_builds_loaded", () => {
             });
 
             watch(config, () => {
+                if (!hydratingState && window.AppSettings) {
+                    window.AppSettings.setPrefSync(PREF_STATE_KEY, JSON.parse(JSON.stringify(config)));
+                }
                 triggerCalculation();
             }, { deep: true });
 
             onMounted(async () => {
                 try {
+                    await restoreState();
+
                     const [cData, fData, aData, scData] = await Promise.all([
                         eel.get_trove_classes()(),
                         eel.get_food_data()(),

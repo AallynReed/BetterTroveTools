@@ -6,13 +6,15 @@ document.addEventListener('calculators_loaded', () => {
         return;
     }
 
-    const { createApp, ref, computed, onMounted } = Vue;
+    const { createApp, ref, computed, watch, onMounted } = Vue;
 
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_calculators';
 
             const activeTab = ref('pr-tab');
+            let hydratingState = false;
 
             const troveMastery = ref(900);
             const geodeMastery = ref(100);
@@ -124,6 +126,78 @@ document.addEventListener('calculators_loaded', () => {
                 let max = item.type === 'pr_mastery' ? 2000 : (item.type === 'pr_geode_mastery' ? 200 : item.value);
                 item.currentValue = Math.max(0, Math.min(parseInt(item.currentValue) || 0, max));
             };
+
+            const getStateKey = (item) => item.name || item.type;
+
+            const normalizeItemValue = (item, rawValue) => {
+                if (item.type && item.type.includes('switch')) return !!rawValue;
+                const numeric = parseInt(rawValue, 10);
+                return Number.isFinite(numeric) ? numeric : 0;
+            };
+
+            const buildStateSnapshot = () => {
+                const mfValues = {};
+                mfData.value.forEach((item) => {
+                    mfValues[getStateKey(item)] = item.currentValue;
+                });
+
+                const prValues = {};
+                prData.value.forEach((item) => {
+                    prValues[getStateKey(item)] = item.currentValue;
+                });
+
+                return {
+                    activeTab: activeTab.value,
+                    troveMastery: troveMastery.value,
+                    geodeMastery: geodeMastery.value,
+                    mfValues,
+                    prValues
+                };
+            };
+
+            const applyStateSnapshot = (saved) => {
+                if (!saved || typeof saved !== 'object') return;
+
+                if (typeof saved.activeTab === 'string') {
+                    activeTab.value = saved.activeTab;
+                }
+                if (saved.troveMastery !== undefined) {
+                    troveMastery.value = parseInt(saved.troveMastery, 10) || 0;
+                }
+                if (saved.geodeMastery !== undefined) {
+                    geodeMastery.value = parseInt(saved.geodeMastery, 10) || 0;
+                }
+                clampMastery();
+
+                if (saved.mfValues && typeof saved.mfValues === 'object') {
+                    mfData.value.forEach((item) => {
+                        const key = getStateKey(item);
+                        if (Object.prototype.hasOwnProperty.call(saved.mfValues, key)) {
+                            item.currentValue = normalizeItemValue(item, saved.mfValues[key]);
+                            if (!(item.type && item.type.includes('switch'))) {
+                                clampMfValue(item);
+                            }
+                        }
+                    });
+                }
+
+                if (saved.prValues && typeof saved.prValues === 'object') {
+                    prData.value.forEach((item) => {
+                        const key = getStateKey(item);
+                        if (Object.prototype.hasOwnProperty.call(saved.prValues, key)) {
+                            item.currentValue = normalizeItemValue(item, saved.prValues[key]);
+                            if (!(item.type && item.type.includes('switch'))) {
+                                clampPrValue(item);
+                            }
+                        }
+                    });
+                }
+            };
+
+            const persistState = () => {
+                if (hydratingState || !window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, buildStateSnapshot());
+            };
             
             const getPrBadgeText = (item) => {
                 let v = 0;
@@ -140,9 +214,18 @@ document.addEventListener('calculators_loaded', () => {
                 return t("+{val} PR").replace("{val}", v);
             };
 
-            onMounted(() => {
-                fetchMf();
-                fetchPr();
+            watch([activeTab, troveMastery, geodeMastery, mfData, prData], persistState, { deep: true });
+
+            onMounted(async () => {
+                hydratingState = true;
+                try {
+                    if (window.AppSettings) await window.AppSettings.load();
+                    await Promise.all([fetchMf(), fetchPr()]);
+                    const saved = window.AppSettings ? window.AppSettings.getPref(PREF_STATE_KEY, null) : null;
+                    applyStateSnapshot(saved);
+                } finally {
+                    hydratingState = false;
+                }
             });
 
             return {
