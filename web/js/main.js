@@ -358,23 +358,92 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    const normalizeVersionTag = (tag) => String(tag || '').trim().replace(/^v/i, '');
+
+    const parseVersion = (tag) => {
+        const normalized = normalizeVersionTag(tag);
+        const match = normalized.match(/^(\d+(?:\.\d+)*)(b)?$/i);
+        if (!match) return null;
+        const parts = match[1].split('.').map(n => parseInt(n, 10));
+        const isBeta = !!match[2];
+        return { normalized, parts, isBeta };
+    };
+
+    const compareVersionTags = (aTag, bTag) => {
+        const a = parseVersion(aTag);
+        const b = parseVersion(bTag);
+        if (!a || !b) return 0;
+
+        const maxLen = Math.max(a.parts.length, b.parts.length);
+        for (let i = 0; i < maxLen; i++) {
+            const av = a.parts[i] || 0;
+            const bv = b.parts[i] || 0;
+            if (av !== bv) return av - bv;
+        }
+
+        if (a.isBeta === b.isBeta) return 0;
+        return a.isBeta ? -1 : 1;
+    };
+
     try {
-        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases/latest', { bttLabel: t('Looking for updates') });
+        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('Looking for updates') });
         if (ghResponse.ok) {
-            const ghData = await ghResponse.json();
-            let latestVersion = ghData.tag_name;
-            
-            if (latestVersion && latestVersion.startsWith('v')) {
-                latestVersion = latestVersion.substring(1);
+            const releases = await ghResponse.json();
+            const validReleases = Array.isArray(releases)
+                ? releases.filter(r => r && !r.draft && parseVersion(r.tag_name))
+                : [];
+
+            let latestStable = null;
+            let latestPrerelease = null;
+
+            validReleases.forEach(release => {
+                if (release.prerelease) {
+                    if (!latestPrerelease || compareVersionTags(release.tag_name, latestPrerelease.tag_name) > 0) {
+                        latestPrerelease = release;
+                    }
+                } else {
+                    if (!latestStable || compareVersionTags(release.tag_name, latestStable.tag_name) > 0) {
+                        latestStable = release;
+                    }
+                }
+            });
+
+            const currentParsed = parseVersion(currentVersion);
+            const currentIsBeta = !!(currentParsed && currentParsed.isBeta);
+
+            let updateTarget = null;
+
+            if (currentParsed) {
+                if (currentIsBeta) {
+                    const prereleaseNewer = latestPrerelease && compareVersionTags(latestPrerelease.tag_name, currentVersion) > 0;
+                    const stableNewer = latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0;
+
+                    if (prereleaseNewer && stableNewer) {
+                        updateTarget = compareVersionTags(latestPrerelease.tag_name, latestStable.tag_name) >= 0
+                            ? latestPrerelease
+                            : latestStable;
+                    } else if (prereleaseNewer) {
+                        updateTarget = latestPrerelease;
+                    } else if (stableNewer) {
+                        updateTarget = latestStable;
+                    }
+                } else {
+                    if (latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0) {
+                        updateTarget = latestStable;
+                    }
+                }
             }
-            
-            if (latestVersion && currentVersion !== latestVersion) {
+
+            if (updateTarget) {
+                const latestVersion = normalizeVersionTag(updateTarget.tag_name);
                 const sidebar = document.getElementById('sidebar');
                 if (sidebar) {
+                    const existingUpdate = sidebar.querySelector('.app-update-container');
+                    if (existingUpdate) existingUpdate.remove();
                     const updateContainer = document.createElement('div');
                     updateContainer.className = 'app-update-container';
                     updateContainer.innerHTML = `
-                        <button class="nav-btn update-app-btn" title="${t("A new version is available! Click to download.")}" onclick="eel.open_url_in_browser('${ghData.html_url}')()">
+                        <button class="nav-btn update-app-btn" title="${t("A new version is available! Click to download.")}" onclick="eel.open_url_in_browser('${updateTarget.html_url}')()">
                             <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
                             <span class="nav-text">${t("Update v{version}").replace("{version}", latestVersion)}</span>
                         </button>
