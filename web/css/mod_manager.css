@@ -420,3 +420,33 @@
 .close-modal { position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
 .close-modal:hover { color: var(--accent-blue); }
 #modal-caption { margin-top: 15px; color: #ccc; font-size: 18px; font-weight: bold; text-align: center; }
+
+/* Concise module pass */
+.file-manager-container {
+    padding: 22px;
+}
+
+.file-manager-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+}
+
+.search-filter-bar,
+.batch-actions-bar {
+    padding: 12px;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.mod-grid {
+    gap: 12px;
+    grid-auto-rows: 248px;
+}
+
+.mod-card-content {
+    padding: 10px;
+}
+
+.pagination-controls {
+    gap: 10px;
+}

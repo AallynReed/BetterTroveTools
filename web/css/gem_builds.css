@@ -282,3 +282,36 @@ input[type="range"] {
         align-items: flex-start;
     }
 }
+
+/* Concise module pass */
+.view-container {
+    padding: 16px;
+}
+
+.header p {
+    margin-bottom: 16px;
+}
+
+.gem-builds-grid {
+    gap: 14px;
+}
+
+.card {
+    padding: 16px;
+}
+
+.config-section {
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.results-header,
+.results-toolbar {
+    margin-bottom: 10px;
+    gap: 8px;
+}
+
+.btt-table th,
+.btt-table td {
+    padding: 10px 12px;
+}

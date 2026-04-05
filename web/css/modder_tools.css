@@ -89,3 +89,32 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     .tab-buttons { flex-wrap: wrap; }
     .input-row { flex-wrap: wrap; }
 }
+
+/* Concise module pass */
+.modder-tools-container {
+    padding: 22px;
+}
+
+.modder-tools-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+}
+
+.tabs-container {
+    gap: 14px;
+}
+
+.tab-buttons,
+.form-row,
+.input-row,
+.build-split-layout {
+    gap: 10px;
+}
+
+.tool-panel {
+    padding: 18px;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}

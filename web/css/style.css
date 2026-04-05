@@ -1472,3 +1472,243 @@ span.flatpickr-weekday {
     background: rgba(var(--accent-rgb), 0.12);
     color: #fff;
 }
+
+/* Concise cross-app density layer (scoped to dynamic views only) */
+#view-container :is(
+    .home-container,
+    .allies-container,
+    .calculators-container,
+    .settings-container,
+    .star-chart-container,
+    .trovesaurus-container,
+    .file-manager-container,
+    .modder-tools-container,
+    .gem-sim-container,
+    .about-view-container,
+    .view-container
+) {
+    padding: 20px !important;
+}
+
+#view-container :is(
+    .home-header,
+    .page-header,
+    .settings-header,
+    .star-chart-header,
+    .file-manager-header,
+    .modder-tools-header,
+    .header,
+    .section-header
+) {
+    margin-bottom: 16px !important;
+    padding-bottom: 10px;
+}
+
+#view-container :is(
+    .tool-panel,
+    .settings-section,
+    .search-filter-bar,
+    .search-section,
+    .community-panel,
+    .buff-card,
+    .merchant-card,
+    .event-card,
+    .card,
+    .about-section,
+    .placeholder-box,
+    .results-panel
+) {
+    border-radius: 10px !important;
+}
+
+#view-container :is(
+    .tool-panel,
+    .settings-section,
+    .search-filter-bar,
+    .search-container,
+    .search-section,
+    .community-panel,
+    .card,
+    .about-section,
+    .results-panel
+) {
+    padding: 16px !important;
+}
+
+#view-container :is(
+    .file-controls,
+    .results-toolbar,
+    .calendar-toolbar,
+    .chart-toolbar,
+    .pagination-controls,
+    .tabs-header,
+    .media-tabs,
+    .build-share-controls,
+    .server-time-discord-row
+) {
+    gap: 10px !important;
+}
+
+#view-container :is(
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .tab-btn,
+    .icon-btn,
+    .custom-select-trigger,
+    .custom-dropdown,
+    input,
+    select,
+    textarea,
+    button
+) {
+    border-radius: 8px;
+}
+
+#view-container :is(
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .tab-btn,
+    .icon-btn,
+    .custom-select-trigger,
+    .custom-dropdown,
+    input,
+    select,
+    textarea
+) {
+    min-height: 36px;
+}
+
+#view-container :is(
+    .btt-table th,
+    .btt-table td,
+    th,
+    td
+) {
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+}
+
+#view-container :is(h1, h2, h3) {
+    line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+    #view-container :is(
+        .home-container,
+        .allies-container,
+        .calculators-container,
+        .settings-container,
+        .star-chart-container,
+        .trovesaurus-container,
+        .file-manager-container,
+        .modder-tools-container,
+        .gem-sim-container,
+        .about-view-container,
+        .view-container
+    ) {
+        padding: 14px !important;
+    }
+}
+
+/* Concise force layer for inline/high-specificity module styles */
+#view-container :is(
+    .section-header,
+    .home-header,
+    .page-header,
+    .settings-header,
+    .star-chart-header,
+    .file-manager-header,
+    .modder-tools-header,
+    .header
+) {
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
+}
+
+#view-container :is(
+    .tabs-container,
+    .tab-buttons,
+    .file-controls,
+    .search-container,
+    .search-filter-bar,
+    .search-bar-wrapper,
+    .filters-row,
+    .input-row,
+    .form-row,
+    .results-toolbar,
+    .pagination-controls,
+    .settings-action-row,
+    .media-tabs,
+    .chart-toolbar,
+    .chart-toolbar-hints,
+    .build-share-controls,
+    .compact-header
+) {
+    gap: 10px !important;
+}
+
+#view-container :is(
+    .search-section,
+    .search-filter-bar,
+    .search-container,
+    .results-toolbar,
+    .pagination-controls,
+    .file-controls,
+    .community-panel,
+    .tool-panel,
+    .settings-section,
+    .card,
+    .about-section,
+    .results-panel
+) {
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+}
+
+#view-container :is(
+    .tool-panel,
+    .settings-section,
+    .search-filter-bar,
+    .search-container,
+    .community-panel,
+    .card,
+    .about-section,
+    .results-panel,
+    .batch-actions-bar,
+    .config-section
+) {
+    padding: 14px !important;
+}
+
+#view-container :is(
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .tab-btn,
+    .custom-select-trigger,
+    .custom-dropdown,
+    input,
+    select,
+    textarea
+) {
+    min-height: 34px !important;
+}
+
+#view-container :is(
+    .allies-grid,
+    .mod-grid,
+    #ts-mod-grid,
+    .gem-builds-grid,
+    .mf-calculator-grid,
+    .mastery-stats-grid
+) {
+    gap: 12px !important;
+}
+
+#view-container :is(.btt-table th, .btt-table td, th, td) {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}

@@ -279,3 +279,56 @@
     from { opacity: 0; transform: translateY(15px); } 
     to { opacity: 1; transform: translateY(0); } 
 }
+
+/* Concise module pass */
+.allies-container {
+    padding: 22px;
+}
+
+.page-header,
+.search-section {
+    margin-bottom: 18px;
+}
+
+.search-bar-wrapper,
+.filters-row,
+.allies-grid {
+    gap: 12px;
+}
+
+#ally-search-input {
+    padding: 11px 12px 11px 38px;
+    font-size: 1em;
+}
+
+.ally-header {
+    padding: 12px;
+}
+
+.ally-card:hover {
+    transform: translateY(-3px);
+}
+
+.allies-pagination {
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.pagination-page-btn {
+    min-width: 36px;
+}
+
+.pagination-page-btn.active {
+    background: rgba(var(--accent-rgb), 0.2);
+    border-color: rgba(var(--accent-rgb), 0.6);
+    color: #fff;
+}
+
+.allies-pagination .secondary-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

@@ -5,7 +5,7 @@ document.addEventListener('allies_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick } = Vue;
+    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick, watch } = Vue;
 
     const app = createApp({
         setup() {
@@ -23,6 +23,8 @@ document.addEventListener('allies_loaded', async () => {
             const selectedCategory = ref('All');
             const selectedStat = ref('');
             const selectedAbility = ref('');
+            const currentPage = ref(1);
+            const pageSize = ref(36);
             const toursEnabled = window.BTT_ENABLE_ONBOARDING_TOURS !== false;
             const showOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref('onboarding_allies_v1', '') !== 'dismissed' : true));
             const showSearchShortcutHint = ref(window.AppSettings ? window.AppSettings.getPref('hint_allies_search_shortcuts_v1', '') !== 'dismissed' : true);
@@ -32,6 +34,7 @@ document.addEventListener('allies_loaded', async () => {
                 selectedCategory.value = 'All';
                 selectedStat.value = '';
                 selectedAbility.value = '';
+                currentPage.value = 1;
             };
 
             const dismissOnboardingTips = () => {
@@ -131,6 +134,52 @@ document.addEventListener('allies_loaded', async () => {
                 return result;
             });
 
+            const totalPages = computed(() => Math.max(1, Math.ceil(filteredAllies.value.length / pageSize.value)));
+
+            const paginatedAllies = computed(() => {
+                const start = (currentPage.value - 1) * pageSize.value;
+                const end = start + pageSize.value;
+                return filteredAllies.value.slice(start, end);
+            });
+
+            const visibleStart = computed(() => {
+                if (filteredAllies.value.length === 0) return 0;
+                return (currentPage.value - 1) * pageSize.value + 1;
+            });
+
+            const visibleEnd = computed(() => {
+                if (filteredAllies.value.length === 0) return 0;
+                return Math.min(currentPage.value * pageSize.value, filteredAllies.value.length);
+            });
+
+            const pageNumbers = computed(() => {
+                const total = totalPages.value;
+                const current = currentPage.value;
+                const pages = new Set([1, total, current - 1, current, current + 1]);
+                return Array.from(pages).filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+            });
+
+            const setPage = (page) => {
+                currentPage.value = Math.min(totalPages.value, Math.max(1, page));
+                activeResultIndex.value = -1;
+                nextTick(() => {
+                    const grid = document.querySelector('#allies-vue-app .allies-grid');
+                    if (grid) grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                });
+            };
+
+            const nextPage = () => setPage(currentPage.value + 1);
+            const prevPage = () => setPage(currentPage.value - 1);
+
+            watch([searchQuery, selectedCategory, selectedStat, selectedAbility], () => {
+                currentPage.value = 1;
+                activeResultIndex.value = -1;
+            });
+
+            watch(totalPages, (newTotal) => {
+                if (currentPage.value > newTotal) currentPage.value = newTotal;
+            });
+
             const setActiveResult = (index) => {
                 const cards = Array.from(document.querySelectorAll('#allies-vue-app .ally-card'));
                 cards.forEach(c => c.classList.remove('kbd-active-result'));
@@ -179,14 +228,18 @@ document.addEventListener('allies_loaded', async () => {
             };
 
             onMounted(async () => {
-                if (window.eel && eel.sync_allies_data) {
-                    try { await eel.sync_allies_data()(); } catch (e) {}
-                }
-
                 try {
-                    const cacheBuster = new Date().getTime();
-                    const response = await fetch(`/assets/data/allies.json?t=${cacheBuster}`);
-                    const data = await response.json();
+                    let data = null;
+
+                    if (window.eel && eel.get_allies_data) {
+                        const response = await eel.get_allies_data()();
+                        if (!response || response.success === false) {
+                            throw new Error(response?.error || 'Failed to retrieve allies data from backend');
+                        }
+                        data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                    } else {
+                        throw new Error('Backend allies endpoint is unavailable');
+                    }
 
                     const uniqueCategories = new Set();
                     const uniqueStats = new Set();
@@ -255,9 +308,11 @@ document.addEventListener('allies_loaded', async () => {
             });
 
             return {
-                t, isLoading, alliesData, filteredAllies,
+                t, isLoading, alliesData, filteredAllies, paginatedAllies,
                 searchQuery, selectedCategory, selectedStat, selectedAbility,
                 categoryOptions, statsOptions, abilitiesOptions,
+                currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
+                setPage, nextPage, prevPage,
                 resetFilters, formatStat, formatAbility,
                 highlightSearch, nextSearchResult, prevSearchResult,
                 focusSearchInput,

@@ -126,3 +126,35 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 .close-modal:hover { 
     color: var(--accent-blue); 
 }
+
+/* Concise module pass */
+.file-manager-container {
+    padding: 22px;
+}
+
+.file-manager-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+}
+
+.tabs-container {
+    gap: 14px;
+}
+
+.tab-buttons,
+.search-container,
+.file-controls {
+    gap: 10px;
+}
+
+.tool-panel {
+    padding: 18px;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.file-tree {
+    max-height: 64vh;
+}

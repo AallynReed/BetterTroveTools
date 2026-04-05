@@ -310,3 +310,26 @@
 .license-title a { color: var(--text-muted); transition: color 0.2s; }
 .license-title a:hover { color: #fff; }
 .license-desc { color: #fff; font-size: 0.9em; line-height: 1.4; }
+
+/* Concise module pass */
+.about-view-container {
+    padding: 32px 24px;
+}
+
+.about-header-hero {
+    margin-bottom: 30px;
+}
+
+.about-section {
+    padding: 22px;
+    gap: 10px;
+}
+
+.credits-footer {
+    margin-top: 34px;
+    padding-top: 18px;
+}
+
+.contributors-container {
+    gap: 10px;
+}

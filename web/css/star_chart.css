@@ -293,3 +293,27 @@
     justify-content: center;
     z-index: 10000;
 }
+
+/* Concise module pass */
+.star-chart-container {
+    padding: 24px;
+    max-width: 1320px;
+}
+
+.star-chart-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+}
+
+.chart-layout,
+.chart-toolbar,
+.chart-toolbar-hints,
+.build-share-controls {
+    gap: 10px;
+}
+
+#chart-wrapper {
+    padding: 14px;
+    padding-top: 38px;
+    min-height: 560px;
+}

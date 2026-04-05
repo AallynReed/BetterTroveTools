@@ -171,3 +171,28 @@
 @media (max-width: 900px) {
     #ts-mod-grid { grid-auto-rows: 300px; }
 }
+
+/* Concise module pass */
+.trovesaurus-container {
+    padding: 16px;
+}
+
+.file-manager-header {
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+}
+
+.search-filter-bar {
+    padding: 12px;
+    margin-bottom: 14px;
+}
+
+#ts-mod-grid {
+    gap: 12px;
+    padding: 10px 0;
+    grid-auto-rows: 288px;
+}
+
+.ts-card-content {
+    padding: 10px;
+}

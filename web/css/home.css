@@ -906,3 +906,30 @@
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse-opacity { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Concise module pass */
+.home-container {
+    padding: 20px;
+}
+
+.home-header {
+    margin-bottom: 18px;
+}
+
+.section-header,
+.community-header {
+    margin-bottom: 10px;
+}
+
+.community-panel {
+    padding: 12px;
+}
+
+.streams-carousel {
+    gap: 10px;
+}
+
+.stream-card {
+    min-width: 220px;
+    max-width: 220px;
+}
