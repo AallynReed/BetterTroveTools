@@ -349,9 +349,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.title = `${appName} v${currentVersion}`;
         const titleEl = document.getElementById('app-title');
         if (titleEl) {
+            const isBetaVersion = /b$/i.test(currentVersion);
+            const cleanVersion = isBetaVersion ? currentVersion.replace(/b$/i, '') : currentVersion;
             titleEl.innerHTML = `
                 <div class="app-name-text">${appName}</div>
-                <div class="app-version-text">v${currentVersion}</div>
+                <div class="app-version-text">v${cleanVersion}${isBetaVersion ? ' <span class="app-beta-pill">BETA</span>' : ''}</div>
             `;
         }
     }
