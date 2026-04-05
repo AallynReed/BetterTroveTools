@@ -244,8 +244,8 @@ body {
     color: #fff;
 }
 .custom-select-option.selected {
-    background: rgba(94, 198, 255, 0.15);
-    color: var(--accent-blue, #5ec6ff);
+    background: rgba(var(--accent-rgb), 0.15);
+    color: var(--accent-blue);
     font-weight: bold;
 }
 

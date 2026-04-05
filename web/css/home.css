@@ -573,7 +573,7 @@
     padding: 4px 0;
 }
 .calendar-day-col.is-today { background: rgba(255, 255, 255, 0.05); }
-.calendar-day-col.is-today .calendar-day-num { color: #5ec6ff; font-weight: bold; }
+.calendar-day-col.is-today .calendar-day-num { color: var(--accent-blue); font-weight: bold; }
 .calendar-tracks {
     position: relative;
     display: flex;

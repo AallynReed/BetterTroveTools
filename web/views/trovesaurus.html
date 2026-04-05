@@ -51,7 +51,7 @@
                         <span class="ts-stat-item" :title="t('Downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ mod.downloads.toLocaleString() }}</span>
                         <span class="ts-stat-item" :title="t('Likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ mod.likes.toLocaleString() }}</span>
                     </div>
-                    <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click="installMod(mod)">
+                    <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click.stop.prevent="installMod(mod)">
                         <template v-if="mod.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Installing...') }}</template>
                         <template v-else-if="mod.needs_update"><i class="fa-solid fa-rotate"></i> {{ t('Update') }}</template>
                         <template v-else-if="mod.is_installed"><i class="fa-solid fa-check"></i> {{ t('Installed') }}</template>

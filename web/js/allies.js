@@ -7,43 +7,6 @@ document.addEventListener('allies_loaded', async () => {
 
     const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
-    // Vue wrapper for Select2 (jQuery)
-    const Select2Component = {
-        props: ['options', 'modelValue', 'placeholder'],
-        template: '<select multiple style="width: 100%;"></select>',
-        mounted() {
-            const vm = this;
-            $(this.$el).select2({
-                data: this.options,
-                placeholder: this.placeholder,
-                allowClear: true,
-                theme: "btt-dark"
-            })
-            .val(this.modelValue).trigger('change')
-            .on('change', function() {
-                vm.$emit('update:modelValue', $(this).val() || []);
-            });
-        },
-        watch: {
-            modelValue(value) {
-                if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) {
-                    $(this.$el).val(value).trigger('change');
-                }
-            },
-            options(newOptions) {
-                $(this.$el).empty().select2({
-                    data: newOptions,
-                    placeholder: this.placeholder,
-                    allowClear: true,
-                    theme: "btt-dark"
-                }).val(this.modelValue).trigger('change');
-            }
-        },
-        unmounted() {
-            $(this.$el).select2('destroy');
-        }
-    };
-
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
@@ -217,17 +180,8 @@ document.addEventListener('allies_loaded', async () => {
         }
     });
 
-    // If we have the CustomVueSelect from the other modules globally defined, we use it
-    if (window.CustomVueSelect) {
-        app.component('custom-vue-select', window.CustomVueSelect);
-    } else {
-        // Minimal fallback in case it's missing
-        app.component('custom-vue-select', {
-            props: ['modelValue', 'options'],
-            template: `<select :value="modelValue" @change="$emit('update:modelValue', $event.target.value)" class="custom-dropdown" style="width:100%;"><option v-for="opt in options" :key="opt[1]" :value="opt[1]">{{ opt[0] }}</option></select>`
-        });
-    }
-    app.component('select2', Select2Component);
+    app.component('custom-vue-select', window.CustomVueSelect);
+    app.component('select2', window.Select2Component);
     
     if (window._alliesApp) window._alliesApp.unmount();
     window._alliesApp = app;

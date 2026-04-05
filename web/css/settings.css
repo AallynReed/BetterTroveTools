@@ -167,7 +167,7 @@
 }
 
 input:checked + .slider {
-    background-color: rgba(0, 122, 204, 0.2);
+    background-color: rgba(var(--accent-rgb), 0.2);
     border-color: var(--accent-blue);
 }
 

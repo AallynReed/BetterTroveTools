@@ -276,69 +276,7 @@ document.addEventListener('mod_manager_loaded', async () => {
         }
     });
 
-    if (window.CustomVueSelect) {
-        app.component('custom-vue-select', window.CustomVueSelect);
-    } else {
-        app.component('custom-vue-select', {
-            props: ['modelValue', 'options', 'disabled'],
-            setup(props, { emit }) {
-                const isOpen = ref(false);
-                const isDropUp = ref(false);
-                const maxH = ref(250);
-                const wrapperRef = ref(null);
-                const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-                const currentLabel = computed(() => {
-                    const found = props.options.find(opt => opt[1] === props.modelValue);
-                    return found ? found[0] : '';
-                });
-                const toggle = () => {
-                    if (props.disabled) return;
-                    isOpen.value = !isOpen.value;
-                    if (isOpen.value && wrapperRef.value) {
-                        const rect = wrapperRef.value.getBoundingClientRect();
-                        const spaceBelow = window.innerHeight - rect.bottom;
-                        const spaceAbove = rect.top;
-                        if (spaceBelow < 250 && spaceAbove > spaceBelow) {
-                            isDropUp.value = true;
-                            maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
-                        } else {
-                            isDropUp.value = false;
-                            maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
-                        }
-                    }
-                };
-                const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
-                const handleKey = (e) => {
-                    if (props.disabled) return;
-                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-                    else if (e.key === 'Escape') isOpen.value = false;
-                    else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                        e.preventDefault();
-                        if (!props.options || props.options.length === 0) return;
-                        let currentIdx = props.options.findIndex(opt => opt[1] === props.modelValue);
-                        if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
-                        if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
-                        if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
-                    }
-                };
-                onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
-                return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
-            },
-            template: `
-                <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
-                    <div class="custom-select-trigger">
-                        <span class="custom-select-trigger-text">{{ currentLabel }}</span>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </div>
-                    <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
-                        <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: modelValue === opt[1] }" @click.stop="selectOpt(opt[1])">
-                            {{ opt[0] }}
-                        </div>
-                    </div>
-                </div>
-            `
-        });
-    }
+    app.component('custom-vue-select', window.CustomVueSelect);
 
     if (window._modManagerApp) window._modManagerApp.unmount();
     window._modManagerApp = app;

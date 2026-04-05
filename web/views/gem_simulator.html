@@ -58,12 +58,12 @@
         <div class="column-scroll-area">
             <div class="gem-form" id="gem-creator-panel">
                 <div class="gem-form-row">
-                    <label><span>{{ t('Type') }}</span><custom-vue-select v-model="creatorParams.type" :options="sortedObj(lookups.types)"></custom-vue-select></label>
-                    <label><span>{{ t('Tier') }}</span><custom-vue-select v-model="creatorParams.tier" :options="sortedObj(lookups.tiers)"></custom-vue-select></label>
+                    <label><span>{{ t('Type') }}</span><custom-vue-select v-model="creatorParams.type" :options="formattedObj(lookups.types)"></custom-vue-select></label>
+                    <label><span>{{ t('Tier') }}</span><custom-vue-select v-model="creatorParams.tier" :options="formattedObj(lookups.tiers)"></custom-vue-select></label>
                 </div>
                 <div class="gem-form-row">
-                    <label><span>{{ t('Element') }}</span><custom-vue-select v-model="creatorParams.element" :options="sortedObj(lookups.elements)"></custom-vue-select></label>
-                    <label><span>{{ t('Restriction') }}</span><custom-vue-select v-model="creatorParams.restriction" :options="sortedObj(lookups.restrictions)" :disabled="creatorParams.type !== 1"></custom-vue-select></label>
+                    <label><span>{{ t('Element') }}</span><custom-vue-select v-model="creatorParams.element" :options="formattedObj(lookups.elements)"></custom-vue-select></label>
+                    <label><span>{{ t('Restriction') }}</span><custom-vue-select v-model="creatorParams.restriction" :options="formattedObj(lookups.restrictions)" :disabled="creatorParams.type !== 1"></custom-vue-select></label>
                 </div>
                 <div class="gem-form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
                     <label style="flex:1;">

@@ -9,90 +9,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
     const ELEMENT_COLORS = { Fire: '#e57373', Water: '#64b5f6', Air: '#fff59d', Cosmic: '#4db6ac' };
     const ELEMENT_DEFAULT_COLOR = '#888888';
 
-    const CustomVueSelect = {
-        props: ['modelValue', 'options', 'disabled'],
-        setup(props, { emit }) {
-            const isOpen = ref(false);
-            const isDropUp = ref(false);
-            const maxH = ref(250);
-            const wrapperRef = ref(null);
-            
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-            const formatGemName = (name) => String(name).split('_').join(' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-
-            const currentLabel = computed(() => {
-                if (props.modelValue === "") return `(${t('None')})`;
-                const found = props.options.find(opt => opt[1] === props.modelValue);
-                return found ? t(formatGemName(found[0])) : `(${t('None')})`;
-            });
-
-            const toggle = (e) => {
-                if (props.disabled) return;
-                isOpen.value = !isOpen.value;
-                if (isOpen.value && wrapperRef.value) {
-                    const rect = wrapperRef.value.getBoundingClientRect();
-                    const spaceBelow = window.innerHeight - rect.bottom;
-                    const spaceAbove = rect.top;
-                    if (spaceBelow < 250 && spaceAbove > spaceBelow) {
-                        isDropUp.value = true;
-                        maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
-                    } else {
-                        isDropUp.value = false;
-                        maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
-                    }
-                }
-            };
-
-            const selectOpt = (val) => {
-                emit('update:modelValue', val);
-                isOpen.value = false;
-            };
-
-            const handleKey = (e) => {
-                if (props.disabled) return;
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggle();
-                } else if (e.key === 'Escape') {
-                    isOpen.value = false;
-                } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (!props.options || props.options.length === 0) return;
-                    let currentIdx = props.options.findIndex(opt => opt[1] === props.modelValue);
-                    if (props.modelValue === '') currentIdx = -1;
-                    if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
-                    if (e.key === 'ArrowUp' && currentIdx > -1) currentIdx--;
-                    if (currentIdx === -1) selectOpt('');
-                    else selectOpt(props.options[currentIdx][1]);
-                }
-            };
-
-            onMounted(() => {
-                document.addEventListener('click', (e) => {
-                    if (wrapperRef.value && !wrapperRef.value.contains(e.target)) {
-                        isOpen.value = false;
-                    }
-                });
-            });
-
-            return { isOpen, isDropUp, maxH, wrapperRef, t, formatGemName, currentLabel, toggle, selectOpt, handleKey };
-        },
-        template: `
-            <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
-                <div class="custom-select-trigger">
-                    <span class="custom-select-trigger-text">{{ currentLabel }}</span>
-                    <i class="fa-solid fa-chevron-down"></i>
-                </div>
-                <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
-                    <div class="custom-select-option" :class="{ selected: modelValue === '' }" @click.stop="selectOpt('')">({{ t('None') }})</div>
-                    <div v-for="opt in options" :key="opt[0]" class="custom-select-option" :class="{ selected: modelValue === opt[1] }" @click.stop="selectOpt(opt[1])">
-                        {{ t(formatGemName(opt[0])) }}
-                    </div>
-                </div>
-            </div>
-        `
-    };
-
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
@@ -144,9 +60,11 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const gemTierBgUrl = (gem) => `assets/gems/gem_tiers/${gem.tier}.png`;
             const gemImageUrl = (gem) => `assets/gems/gem_types/${gem.type}/elements/${gem.element}.png`;
 
-            const sortedObj = (obj) => {
-                if (!obj) return [];
-                return Object.entries(obj).sort((a,b) => a[1]-b[1]);
+            const formattedObj = (obj) => {
+                if (!obj) return [[`(${t('None')})`, '']];
+                const opts = Object.entries(obj).sort((a,b) => a[1]-b[1]).map(([k, v]) => [formatGemName(k), v]);
+                opts.unshift([`(${t('None')})`, '']);
+                return opts;
             };
 
             const getStatName = (gem, idx) => Object.keys(gem.stat_values[idx])[0] || `Stat ${idx + 1}`;
@@ -537,7 +455,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             });
 
             return {
-                t, lookups, sortedObj, formatGemName,
+                t, lookups, formattedObj, formatGemName,
                 inventory, equipped, equippedRows, elementsList, primordialToggles, statTotalsBuffed, sortedStatTotals, formatStat,
                 selected, selectedSource, isSelectedInStorage, selectGem, getStatName, getStatValue, getBarColor, getTierDisplayName, getTypeDisplayName,
                 gemTierBgUrl, gemImageUrl,
@@ -555,6 +473,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
     if (window._gemSimApp) window._gemSimApp.unmount();
     window._gemSimApp = app;
     
-    app.component('custom-vue-select', CustomVueSelect);
+    app.component('custom-vue-select', window.CustomVueSelect);
     app.mount('#gem-simulator-vue-app');
 });

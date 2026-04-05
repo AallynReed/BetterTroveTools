@@ -528,29 +528,80 @@ window.applyCustomDropdowns = function() {
     }
 };
 
-// Watch the document globally to instantly transform any dynamically injected dropdowns!
-if (!window._globalDropdownObserverAttached) {
-    const globalDropdownObserver = new MutationObserver((mutations) => {
-        let shouldApply = false;
-        for (let mut of mutations) {
-            if (mut.addedNodes.length) {
-                for (let node of mut.addedNodes) {
-                    if (node.nodeType === 1) {
-                        if (node.tagName === 'SELECT' && !node.multiple && !node.classList.contains('select2-hidden-accessible') && !node.classList.contains('flatpickr-monthDropdown-months')) {
-                            shouldApply = true; break;
-                        }
-                        if (node.querySelector && node.querySelector('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)')) {
-                            shouldApply = true; break;
-                        }
-                    }
+window.CustomVueSelect = {
+    props: ['modelValue', 'options', 'disabled'],
+    setup(props, { emit }) {
+        const isOpen = Vue.ref(false);
+        const isDropUp = Vue.ref(false);
+        const maxH = Vue.ref(250);
+        const wrapperRef = Vue.ref(null);
+        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const currentLabel = Vue.computed(() => {
+            const found = props.options ? props.options.find(opt => String(opt[1]) === String(props.modelValue)) : null;
+            return found ? t(found[0]) : '';
+        });
+        const toggle = () => {
+            if (props.disabled) return;
+            isOpen.value = !isOpen.value;
+            if (isOpen.value && wrapperRef.value) {
+                const rect = wrapperRef.value.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom;
+                const spaceAbove = rect.top;
+                if (spaceBelow < 250 && spaceAbove > spaceBelow) {
+                    isDropUp.value = true;
+                    maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
+                } else {
+                    isDropUp.value = false;
+                    maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
                 }
             }
-            if (shouldApply) break;
-        }
-        if (shouldApply) window.applyCustomDropdowns();
-    });
-    globalDropdownObserver.observe(document.body, { childList: true, subtree: true });
-    window._globalDropdownObserverAttached = true;
+        };
+        const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
+        const handleKey = (e) => {
+            if (props.disabled) return;
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+            else if (e.key === 'Escape') isOpen.value = false;
+            else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (!props.options || props.options.length === 0) return;
+                let currentIdx = props.options.findIndex(opt => String(opt[1]) === String(props.modelValue));
+                if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
+                if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
+                if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
+            }
+        };
+        Vue.onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+        return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+    },
+    template: `
+        <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
+            <div class="custom-select-trigger">
+                <span class="custom-select-trigger-text">{{ currentLabel }}</span>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+                <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: String(modelValue) === String(opt[1]) }" @click.stop="selectOpt(opt[1])">
+                    {{ t(opt[0]) }}
+                </div>
+            </div>
+        </div>
+    `
+};
+
+window.Select2Component = {
+    props: ['options', 'modelValue', 'placeholder'],
+    template: '<select multiple style="width: 100%;"></select>',
+    mounted() {
+        const vm = this;
+        $(this.$el).select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark" })
+        .val(this.modelValue).trigger('change')
+        .on('change', function() { vm.$emit('update:modelValue', $(this).val() || []); });
+    },
+    watch: {
+        modelValue(value) { if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change'); },
+        options(newOptions) { $(this.$el).empty().select2({ data: newOptions, placeholder: this.placeholder, allowClear: true, theme: "btt-dark" }).val(this.modelValue).trigger('change'); }
+    },
+    unmounted() { $(this.$el).select2('destroy'); }
 };
 
 window.ContextMenu = {

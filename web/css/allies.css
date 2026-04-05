@@ -221,7 +221,7 @@
 }
 
 .select2-container--btt-dark .select2-search--dropdown .select2-search__field:focus {
-    border-color: #5ec6ff;
+    border-color: var(--accent-blue);
 }
 
 .select2-container--btt-dark .select2-results__option {
