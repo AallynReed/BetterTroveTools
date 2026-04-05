@@ -38,6 +38,13 @@
     font-size: 13px;
 }
 
+.settings-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .custom-dirs-list {
     display: flex;
     flex-direction: column;

@@ -5,7 +5,7 @@ document.addEventListener('file_manager_loaded', () => {
         return;
     }
     
-    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
 
     const app = createApp({
         setup() {
@@ -20,6 +20,10 @@ document.addEventListener('file_manager_loaded', () => {
             });
             const selectedInstall = ref('');
             const selectedTrackerGame = ref('');
+            const toursEnabled = window.BTT_ENABLE_ONBOARDING_TOURS !== false;
+            const showOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref('onboarding_file_manager_explorer_v1', '') !== 'dismissed' : true));
+            const showTrackerOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref('onboarding_file_manager_tracker_v1', '') !== 'dismissed' : true));
+            const showSearchShortcutHint = ref(window.AppSettings ? window.AppSettings.getPref('hint_file_manager_search_shortcuts_v1', '') !== 'dismissed' : true);
 
             const treeContainerRef = ref(null);
             const isTreeLoaded = ref(false);
@@ -40,9 +44,13 @@ document.addEventListener('file_manager_loaded', () => {
             const progress = reactive({
                 active: false,
                 percent: 0,
-                text: '',
-                filename: ''
+                filename: '',
+                elapsed: '',
+                eta: '',
+                status: '',
+                detailsOpen: false
             });
+            const activeJobId = ref(null);
 
             const trackingDirs = ref([]);
             const trackingDirOptions = computed(() => {
@@ -55,7 +63,12 @@ document.addEventListener('file_manager_loaded', () => {
             });
             const selectedTrackingDir = ref('');
             const runCatalogMode = ref(false);
+            const showTrackerAdvanced = ref(false);
+            const searchMatchIds = ref([]);
+            const activeSearchMatchIndex = ref(-1);
             const isTrackerWorking = computed(() => trackerStatus.isBuilding || trackerStatus.isScanning);
+            const isExplorerWorking = computed(() => isLoadingTree.value || isMassExtracting.value);
+            const isAnyOperationRunning = computed(() => isExplorerWorking.value || isTrackerWorking.value);
             
             const trackerStatus = reactive({
                 state: 'empty', // 'empty', 'none', 'baseline'
@@ -105,40 +118,102 @@ document.addEventListener('file_manager_loaded', () => {
             window._fmAppUpdateProgress = (current, total, filename, statusKey, etaSeconds, elapsedSeconds) => {
                 progress.percent = total > 0 ? Math.round((current / total) * 100) : 0;
                 progress.filename = filename || "";
-                const timeText = [];
-                if (statusKey) timeText.push(t(statusKey));
-                if (elapsedSeconds !== null && elapsedSeconds !== "") timeText.push(`${t("Elapsed:")} ${formatTime(elapsedSeconds)}`);
-                if (etaSeconds !== null && etaSeconds !== "") timeText.push(`${t("ETA:")} ${formatTime(etaSeconds)}`);
-                progress.text = `${progress.percent}% | ${timeText.join(' | ')}`;
+                progress.status = statusKey ? t(statusKey) : '';
+                progress.elapsed = (elapsedSeconds !== null && elapsedSeconds !== "") ? formatTime(elapsedSeconds) : '';
+                progress.eta = (etaSeconds !== null && etaSeconds !== "") ? formatTime(etaSeconds) : '';
+
+                if (activeJobId.value && window.JobQueue && window.JobQueue.patch) {
+                    window.JobQueue.patch(activeJobId.value, {
+                        meta: {
+                            progressPercent: progress.percent,
+                            current: progress.filename,
+                            status: progress.status,
+                            elapsed: progress.elapsed,
+                            eta: progress.eta
+                        }
+                    });
+                }
+            };
+
+            const runQueuedFileManagerOperation = async ({ label, operation, task }) => {
+                return window.JobQueue.run({
+                    label,
+                    task,
+                    retryTask: task,
+                    cancel: async () => {
+                        const cancelRaw = await eel.cancel_file_manager_operation(operation)();
+                        const cancelResp = window.normalizeApiResponse ? window.normalizeApiResponse(cancelRaw) : cancelRaw;
+                        if (!cancelResp || !cancelResp.success) {
+                            throw new Error(cancelResp?.error || t('Failed to send cancel request.'));
+                        }
+                    },
+                    onStart: (id) => {
+                        activeJobId.value = id;
+                    }
+                });
+            };
+
+            const unwrapResponse = (resp, key = null, fallback = null) => {
+                if (key) {
+                    if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
+                    if (resp && resp.data && Object.prototype.hasOwnProperty.call(resp.data, key)) return resp.data[key];
+                }
+                if (resp && resp.data !== undefined && resp.success !== undefined) return resp.data;
+                return resp ?? fallback;
+            };
+
+            const readSettings = async () => {
+                const settingsResp = await eel.get_settings()();
+                return unwrapResponse(settingsResp, null, {}) || {};
             };
 
             const scanForGames = async () => {
-                const response = await eel.get_detected_game_paths()();
-                const settings = await eel.get_settings()();
-                if (response.success && response.paths.length > 0) {
-                    installs.value = response.paths;
-                    if (settings.last_game_path && installs.value.some(p => p.path === settings.last_game_path)) {
-                        selectedInstall.value = settings.last_game_path;
-                        selectedTrackerGame.value = settings.last_game_path;
-                    } else {
-                        selectedInstall.value = installs.value[0].path;
-                        selectedTrackerGame.value = installs.value[0].path;
+                if (isAnyOperationRunning.value) {
+                    window.showToast(t('Please wait for the current operation to finish.'), true);
+                    return;
+                }
+                try {
+                    const response = await eel.get_detected_game_paths()();
+                    const settings = await readSettings();
+                    const paths = unwrapResponse(response, 'paths', []);
+                    const safePaths = Array.isArray(paths) ? paths : [];
+
+                    if (safePaths.length > 0) {
+                        installs.value = safePaths;
+                        if (settings.last_game_path && installs.value.some(p => p.path === settings.last_game_path)) {
+                            selectedInstall.value = settings.last_game_path;
+                            selectedTrackerGame.value = settings.last_game_path;
+                        } else {
+                            selectedInstall.value = installs.value[0].path;
+                            selectedTrackerGame.value = installs.value[0].path;
+                        }
+                        return;
                     }
-                } else {
+
                     installs.value = [];
+                    selectedInstall.value = '';
+                    selectedTrackerGame.value = '';
+                    if (response && response.error) {
+                        window.showToast(t('Game path detection failed: {error}').replace('{error}', response.error), true);
+                    }
+                } catch (error) {
+                    installs.value = [];
+                    selectedInstall.value = '';
+                    selectedTrackerGame.value = '';
+                    window.showToast(t('Game path detection failed.'), true);
                 }
             };
 
             watch(selectedInstall, async (newVal) => {
                 if (!newVal) return;
-                const settings = await eel.get_settings()();
+                const settings = await readSettings();
                 settings.last_game_path = newVal;
                 selectedTrackerGame.value = newVal;
                 await eel.save_settings(settings)();
             });
             watch(selectedTrackerGame, async (newVal) => {
                 if (!newVal) return;
-                const settings = await eel.get_settings()();
+                const settings = await readSettings();
                 settings.last_game_path = newVal;
                 selectedInstall.value = newVal;
                 await eel.save_settings(settings)();
@@ -146,6 +221,9 @@ document.addEventListener('file_manager_loaded', () => {
 
             const loadTree = async () => {
                 if (!selectedInstall.value) return window.showToast(t("Select a game first."), true);
+                if (isAnyOperationRunning.value && !isLoadingTree.value) {
+                    return window.showToast(t('Please wait for the current operation to finish.'), true);
+                }
                 isLoadingTree.value = true;
                 isTreeLoaded.value = false;
                 treePlaceholderText.value = t("Parsing") + " " + selectedInstall.value + "...";
@@ -160,9 +238,22 @@ document.addEventListener('file_manager_loaded', () => {
                 selectedFilesSize.value = 0;
 
                 try {
-                    const response = await eel.load_entire_game_tree(selectedInstall.value)();
+                    const response = await runQueuedFileManagerOperation({
+                        label: t('Load game archive tree'),
+                        operation: 'load_tree',
+                        task: () => eel.load_entire_game_tree(selectedInstall.value)()
+                    });
+                    if (response.cancelled) {
+                        treePlaceholderText.value = t('Archive loading cancelled.');
+                        window.showToast(t('Archive loading cancelled.'));
+                        return;
+                    }
                     if (response.success) {
-                        const fetchRes = await fetch('/api/cache/temp_tree.json?t=' + new Date().getTime());
+                        const cacheFile = response.cached_file || response?.data?.cached_file || '/api/cache/temp_tree.json';
+                        const fetchRes = await fetch(cacheFile + '?t=' + new Date().getTime());
+                        if (!fetchRes.ok) {
+                            throw new Error(t('Failed to read archive cache file.'));
+                        }
                         fullFileTree = await fetchRes.json();
                         
                         const cacheAllFiles = (node, currentPath = "") => {
@@ -186,14 +277,18 @@ document.addEventListener('file_manager_loaded', () => {
 
                         renderLazyTree(fullFileTree, treeContainerRef.value);
                         isTreeLoaded.value = true;
+                        treePlaceholderText.value = t("Select a game installation to view files.");
                     } else {
-                        treePlaceholderText.value = t("Error parsing game tree:") + " " + (response.error || "Unknown error");
+                        const errorMessage = response.error || t("Unknown error");
+                        treePlaceholderText.value = t("Error parsing game tree:") + " " + errorMessage;
+                        window.showToast(t("Error parsing game tree:") + " " + errorMessage, true);
                     }
                 } catch (error) {
-                    treePlaceholderText.value = t("Error loading parsed game files.");
+                    const errorMessage = String(error && error.message ? error.message : error || t('Unknown error'));
+                    treePlaceholderText.value = t("Error loading parsed game files:") + " " + errorMessage;
+                    window.showToast(t("Error loading parsed game files:") + " " + errorMessage, true);
                 } finally {
                     isLoadingTree.value = false;
-                    treePlaceholderText.value = t("Select a game installation to view files.");
                 }
             };
 
@@ -335,12 +430,25 @@ document.addEventListener('file_manager_loaded', () => {
             };
 
             const collapseAll = () => {
+                if (isAnyOperationRunning.value) return;
                 if (!treeContainerRef.value) return;
                 const openFolders = treeContainerRef.value.querySelectorAll('details.folder[open]');
                 openFolders.forEach(f => { f.open = false; });
                 isSearching.value = false;
                 searchQuery.value = "";
                 searchCountText.value = "";
+                searchMatchIds.value = [];
+                activeSearchMatchIndex.value = -1;
+            };
+
+            const clearSelectedFiles = () => {
+                if (treeContainerRef.value) {
+                    treeContainerRef.value.querySelectorAll('input[type="checkbox"]').forEach(b => {
+                        b.checked = false;
+                    });
+                }
+                selectedFilesCount.value = 0;
+                selectedFilesSize.value = 0;
             };
 
             const selectVisible = () => {
@@ -360,6 +468,51 @@ document.addEventListener('file_manager_loaded', () => {
                 debouncedSearch();
             };
 
+            const nextSearchMatch = () => moveSearchMatch(1);
+            const prevSearchMatch = () => moveSearchMatch(-1);
+
+            const focusSearchInput = () => {
+                const input = document.getElementById('tree-search');
+                if (!input) return;
+                input.focus();
+                input.select();
+            };
+
+            const dismissOnboardingTips = () => {
+                showOnboardingTips.value = false;
+                if (window.AppSettings) window.AppSettings.setPrefSync('onboarding_file_manager_explorer_v1', 'dismissed');
+            };
+
+            const dismissTrackerOnboardingTips = () => {
+                showTrackerOnboardingTips.value = false;
+                if (window.AppSettings) window.AppSettings.setPrefSync('onboarding_file_manager_tracker_v1', 'dismissed');
+            };
+
+            const setActiveSearchMatch = (nextIndex) => {
+                const ids = searchMatchIds.value;
+                if (!ids.length || !treeContainerRef.value) {
+                    activeSearchMatchIndex.value = -1;
+                    return;
+                }
+
+                treeContainerRef.value.querySelectorAll('.file-item.is-active-match').forEach((node) => {
+                    node.classList.remove('is-active-match');
+                });
+
+                const normalizedIndex = ((nextIndex % ids.length) + ids.length) % ids.length;
+                activeSearchMatchIndex.value = normalizedIndex;
+                const targetEl = document.getElementById(ids[normalizedIndex]);
+                if (!targetEl) return;
+                targetEl.classList.add('is-active-match');
+                targetEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            };
+
+            const moveSearchMatch = (delta) => {
+                if (!searchMatchIds.value.length) return;
+                const base = activeSearchMatchIndex.value >= 0 ? activeSearchMatchIndex.value : 0;
+                setActiveSearchMatch(base + delta);
+            };
+
             const debouncedSearch = () => {
                 clearTimeout(searchTimeout);
                 const term = searchQuery.value.toLowerCase().trim();
@@ -373,6 +526,8 @@ document.addEventListener('file_manager_loaded', () => {
 
                 if (term.length < 4) {
                     searchCountText.value = term.length > 0 ? t("Minimum 4 characters required...") : "";
+                    searchMatchIds.value = [];
+                    activeSearchMatchIndex.value = -1;
                     return;
                 }
 
@@ -412,13 +567,20 @@ document.addEventListener('file_manager_loaded', () => {
                         if (fileEl) fileEl.classList.add('is-match');
                     });
 
+                    searchMatchIds.value = matches.map(m => m.id).filter(id => !!document.getElementById(id));
+                    setActiveSearchMatch(0);
+
                     searchCountText.value = `${t("Found")} ${matches.length} ${t("matches")}`;
                 }, 300);
             };
 
             const massExtract = async () => {
                 if (!treeContainerRef.value) return;
-                const destDir = await eel.ask_extraction_directory()();
+                if (isAnyOperationRunning.value && !isMassExtracting.value) {
+                    return window.showToast(t('Please wait for the current operation to finish.'), true);
+                }
+                const destDirResp = await eel.ask_extraction_directory()();
+                const destDir = destDirResp?.value ?? destDirResp?.data?.value ?? destDirResp;
                 if (!destDir) return;
 
                 const filesToExtract = Array.from(treeContainerRef.value.querySelectorAll('.file-check:checked')).map(box => ({
@@ -433,25 +595,44 @@ document.addEventListener('file_manager_loaded', () => {
 
                 progress.active = true;
                 isMassExtracting.value = true;
-                progress.text = t("Starting extraction...");
                 progress.percent = 0;
 
-                const response = await eel.mass_extract_files(destDir, filesToExtract)();
+                let response;
+                try {
+                    response = await runQueuedFileManagerOperation({
+                        label: t('Extract selected game files'),
+                        operation: 'mass_extract',
+                        task: () => eel.mass_extract_files(destDir, filesToExtract)()
+                    });
+                } catch (e) {
+                    window.showToast(String(e || t('Extraction failed.')), true);
+                    progress.active = false;
+                    isMassExtracting.value = false;
+                    return;
+                }
+
+                if (response.cancelled) {
+                    window.showToast(t('Extraction cancelled.'));
+                    progress.active = false;
+                    isMassExtracting.value = false;
+                    activeJobId.value = null;
+                    return;
+                }
 
                 if (response.success) {
                     progress.text = t("Complete!");
                     progress.percent = 100;
                     setTimeout(() => {
-                        treeContainerRef.value.querySelectorAll('input[type="checkbox"]').forEach(b => b.checked = false);
-                        selectedFilesCount.value = 0;
-                        selectedFilesSize.value = 0;
+                        clearSelectedFiles();
                         progress.active = false;
                         isMassExtracting.value = false;
+                        activeJobId.value = null;
                     }, 2000);
                 } else {
                     window.showToast(t("Error during extraction: ") + (response.error || ""), true);
                     progress.active = false;
                     isMassExtracting.value = false;
+                    activeJobId.value = null;
                 }
             };
 
@@ -484,6 +665,21 @@ document.addEventListener('file_manager_loaded', () => {
                 checkTrackerStatus();
             });
 
+            watch(activeTab, (newTab) => {
+                if (newTab === 'tab-tracker') {
+                    clearSelectedFiles();
+                }
+            });
+
+            const setActiveTab = (tabName) => {
+                if (tabName === activeTab.value) return;
+                if (isAnyOperationRunning.value) {
+                    window.showToast(t('Cannot switch tabs while an operation is running.'), true);
+                    return;
+                }
+                activeTab.value = tabName;
+            };
+
             const checkTrackerStatus = async () => {
                 if (!selectedTrackingDir.value) {
                     trackerStatus.state = 'empty';
@@ -510,6 +706,7 @@ document.addEventListener('file_manager_loaded', () => {
             };
 
             const browseTrackerDir = async () => {
+                if (isAnyOperationRunning.value) return;
                 isBrowsingTracker.value = true;
                 const response = await eel.select_tracking_directory()();
                 if (response.success && response.path) {
@@ -522,6 +719,9 @@ document.addEventListener('file_manager_loaded', () => {
             };
 
             const saveTrackerDir = async () => {
+                if (isAnyOperationRunning.value) {
+                    return window.showToast(t('Please wait for the current operation to finish.'), true);
+                }
                 const name = newTrackerForm.name.trim();
                 const path = newTrackerForm.path.trim();
                 if (!name || !path) return window.showToast(t("Please provide both a name and a valid path."), true);
@@ -535,16 +735,36 @@ document.addEventListener('file_manager_loaded', () => {
             const buildBaseline = async () => {
                 const gamePath = selectedTrackerGame.value;
                 if (!gamePath || !selectedTrackingDir.value) return window.showToast(t("Ensure both a Game Installation and Tracking Directory are selected."), true);
+                if (isAnyOperationRunning.value && !trackerStatus.isBuilding) {
+                    return window.showToast(t('Please wait for the current operation to finish.'), true);
+                }
 
                 trackerStatus.isBuilding = true;
                 progress.active = true;
                 progress.percent = 0;
-                progress.text = t("Building Baseline Cache...");
                 
-                const response = await eel.build_baseline_cache(gamePath, selectedTrackingDir.value)();
+                let response;
+                try {
+                    response = await runQueuedFileManagerOperation({
+                        label: t('Build baseline cache'),
+                        operation: 'build_baseline',
+                        task: () => eel.build_baseline_cache(gamePath, selectedTrackingDir.value)()
+                    });
+                } catch (e) {
+                    progress.active = false;
+                    trackerStatus.isBuilding = false;
+                    window.showToast(String(e || t('Baseline build failed.')), true);
+                    return;
+                }
                 
                 progress.active = false;
                 trackerStatus.isBuilding = false;
+
+                if (response.cancelled) {
+                    window.showToast(t('Baseline build cancelled.'));
+                    activeJobId.value = null;
+                    return;
+                }
                 
                 if (response.success) {
                     window.showToast(t("Baseline built successfully!"));
@@ -552,24 +772,45 @@ document.addEventListener('file_manager_loaded', () => {
                 } else {
                     window.showToast(t("Error building baseline:") + " " + response.error, true);
                 }
+                activeJobId.value = null;
             };
 
             const scanUpdates = async () => {
                 const gamePath = selectedTrackerGame.value;
                 if (!gamePath || !selectedTrackingDir.value) return;
+                if (isAnyOperationRunning.value && !trackerStatus.isScanning) {
+                    return window.showToast(t('Please wait for the current operation to finish.'), true);
+                }
 
                 trackerStatus.isScanning = true;
                 progress.active = true;
                 progress.percent = 0;
-                progress.text = t("Scanning for Updates...");
                 
-                const response = await eel.scan_and_extract_updates(gamePath, selectedTrackingDir.value, runCatalogMode.value)();
+                let response;
+                try {
+                    response = await runQueuedFileManagerOperation({
+                        label: t('Scan and extract game updates'),
+                        operation: 'scan_updates',
+                        task: () => eel.scan_and_extract_updates(gamePath, selectedTrackingDir.value, runCatalogMode.value)()
+                    });
+                } catch (e) {
+                    progress.active = false;
+                    trackerStatus.isScanning = false;
+                    window.showToast(String(e || t('Update scan failed.')), true);
+                    return;
+                }
                 
                 progress.active = false;
                 trackerStatus.isScanning = false;
+
+                if (response.cancelled) {
+                    window.showToast(t('Update scan cancelled.'));
+                    activeJobId.value = null;
+                    return;
+                }
                 
                 if (response.success) {
-                    const d = response.details;
+                    const d = response.details || response.data?.details || { added: 0, changed: 0, removed: 0, folder: null };
                     if (d.added === 0 && d.changed === 0 && d.removed === 0) {
                         window.showToast(t("Scan complete. No game updates detected since the last baseline."));
                     } else {
@@ -579,23 +820,99 @@ document.addEventListener('file_manager_loaded', () => {
                 } else {
                     window.showToast(t("Error scanning for updates:") + " " + response.error, true);
                 }
+                activeJobId.value = null;
+            };
+
+            const cancelTrackerOperation = async () => {
+                if (!trackerStatus.isBuilding && !trackerStatus.isScanning) return;
+
+                if (activeJobId.value && window.JobQueue && window.JobQueue.cancelById) {
+                    window.JobQueue.cancelById(activeJobId.value);
+                    window.showToast(t('Cancelling operation...'));
+                    return;
+                }
+
+                const op = trackerStatus.isScanning ? 'scan_updates' : 'build_baseline';
+                try {
+                    await eel.cancel_file_manager_operation(op)();
+                    window.showToast(t('Cancelling operation...'));
+                } catch {
+                    window.showToast(t('Failed to send cancel request.'), true);
+                }
+            };
+
+            const dismissSearchShortcutHint = () => {
+                showSearchShortcutHint.value = false;
+                if (window.AppSettings) window.AppSettings.setPrefSync('hint_file_manager_search_shortcuts_v1', 'dismissed');
+            };
+
+            const isFileManagerVisible = () => {
+                const root = document.getElementById('file-manager-vue-app');
+                return !!(root && root.offsetParent !== null);
+            };
+
+            const onKeyDown = (e) => {
+                if (!isFileManagerVisible()) return;
+
+                const key = String(e.key || '').toLowerCase();
+                const isFind = (e.ctrlKey || e.metaKey) && key === 'f';
+                if (isFind && activeTab.value === 'tab-explorer') {
+                    e.preventDefault();
+                    focusSearchInput();
+                    return;
+                }
+
+                if (modals.addTracker) {
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        modals.addTracker = false;
+                        return;
+                    }
+                    if (e.key === 'Enter') {
+                        const targetTag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+                        if (targetTag !== 'textarea' && !isAnyOperationRunning.value) {
+                            e.preventDefault();
+                            saveTrackerDir();
+                        }
+                        return;
+                    }
+                }
+
+                const activeEl = document.activeElement;
+                if (activeTab.value === 'tab-explorer' && activeEl && activeEl.id === 'tree-search' && searchMatchIds.value.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        moveSearchMatch(1);
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        moveSearchMatch(-1);
+                    }
+                }
             };
 
             onMounted(async () => {
                 await scanForGames();
                 await loadTrackingDirectories();
+                document.addEventListener('keydown', onKeyDown);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
             });
 
+            onBeforeUnmount(() => {
+                document.removeEventListener('keydown', onKeyDown);
+            });
+
             return {
-                t, activeTab,
+                t, activeTab, setActiveTab,
                 installs, installOptions, selectedInstall, selectedTrackerGame, scanForGames,
                 treeContainerRef, isTreeLoaded, isLoadingTree, treePlaceholderText, loadTree,
-                searchQuery, searchCountText, isSearching, debouncedSearch, clearSearch,
+                searchQuery, searchCountText, isSearching, debouncedSearch, clearSearch, nextSearchMatch, prevSearchMatch,
+                focusSearchInput,
+                showSearchShortcutHint, dismissSearchShortcutHint,
+                showOnboardingTips, dismissOnboardingTips, showTrackerOnboardingTips, dismissTrackerOnboardingTips,
                 onTreeToggle, onTreeChange, collapseAll, selectVisible,
-                selectedFilesCount, selectedFilesSize, isMassExtracting, massExtract, progress,
-                trackingDirs, trackingDirOptions, selectedTrackingDir, runCatalogMode,
-                trackerStatus, trackerStatusColor, isTrackerWorking, buildBaseline, scanUpdates,
+                selectedFilesCount, selectedFilesSize, isMassExtracting, massExtract, clearSelectedFiles, progress,
+                trackingDirs, trackingDirOptions, selectedTrackingDir, runCatalogMode, showTrackerAdvanced,
+                trackerStatus, trackerStatusColor, isTrackerWorking, isAnyOperationRunning, isExplorerWorking, buildBaseline, scanUpdates, cancelTrackerOperation,
                 modals, newTrackerForm, isBrowsingTracker, browseTrackerDir, saveTrackerDir
             };
         }

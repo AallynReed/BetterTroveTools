@@ -260,7 +260,7 @@ max_ports_to_try = 10
 for current_port in range(start_port, start_port + max_ports_to_try):
     try:
         print(f"Attempting to launch UI on port {current_port}...")
-        eel.start('index.html', mode='chrome', size=(1600, 1000), port=current_port, cmdline_args=[
+        eel.start('index.html', mode='chrome', size=(1700, 1000), port=current_port, cmdline_args=[
             '--disable-infobars',
             '--no-default-browser-check',
             '--no-first-run',

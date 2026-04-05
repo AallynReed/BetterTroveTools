@@ -19,6 +19,9 @@
                                         <div class="item-power">{{ equipped[slot.idx].power_rank }}</div>
                                     </div>
                                 </div>
+                                <div v-else class="equipped-slot-placeholder" :title="t('Expected slot gem')">
+                                    <img :src="equippedPlaceholderUrl(row.elementId, slot.typeRestriction)" alt="" draggable="false">
+                                </div>
                             </div>
                             <div v-if="slotIdx === 1" class="slot-vertical-separator" :style="{ borderColor: row.color }"></div>
                         </template>
@@ -196,17 +199,6 @@
                 <template v-if="!isSyncing">{{ t('Sync Inventory Bases') }}</template>
                 <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
             </button>
-        </div>
-    </div>
-
-    <div id="custom-confirm-modal" class="modal-overlay" v-show="confirmModal.show" style="display: flex;">
-        <div class="modal-content">
-            <h3>{{ confirmModal.title }}</h3>
-            <p>{{ confirmModal.message }}</p>
-            <div class="modal-actions">
-                <button class="secondary-btn" @click="confirmModal.show = false">{{ t('Cancel') }}</button>
-                <button class="danger-btn" @click="executeConfirm">{{ t('Delete') }}</button>
-            </div>
         </div>
     </div>
 

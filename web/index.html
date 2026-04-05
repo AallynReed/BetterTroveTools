@@ -22,7 +22,7 @@
 </head>
 <body>
     <div id="network-tracker-vue-app" v-cloak>
-        <div id="external-request-indicator" style="position: fixed; top: 15px; right: 20px; z-index: 10001; display: block; color: var(--text-main, #fff); background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); cursor: pointer;" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true">
+        <div id="external-request-indicator" class="network-status-indicator" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true">
             <i class="fa-solid fa-wifi" :class="{ 'fa-fade': hasActive }"></i>
         </div>
         <div id="request-log-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center;" :style="{ display: networkState.isModalOpen ? 'flex' : 'none' }" @click.self="networkState.isModalOpen = false">
@@ -62,7 +62,10 @@
             <button id="burger-btn">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <h3 id="app-title">Better Trove Tools</h3>
+            <h3 id="app-title">
+                <span class="app-name-text">Better Trove Tools</span>
+                <span class="app-version-text">Desktop App</span>
+            </h3>
         </div>
         <ul class="menu">
             <li>
@@ -142,18 +145,24 @@
             </li>
         </ul>
         
-        <div class="sidebar-lang-container">
-            <i class="fa-solid fa-globe nav-icon" data-i18n-title="Language"></i>
-            <span class="nav-text lang-select-wrapper" style="width: 100%;">
-                <select id="global-language-select" class="custom-dropdown" style="width: 100%;">
+        <div class="sidebar-lang-container" role="group" aria-label="Language selector">
+            <div class="sidebar-lang-topline">
+                <div class="sidebar-lang-label" data-i18n>Language</div>
+                <i class="fa-solid fa-globe nav-icon" data-i18n-title="Language"></i>
+            </div>
+            <div class="lang-select-wrapper">
+                <select id="global-language-select" class="custom-dropdown sidebar-language-select">
                 </select>
-            </span>
+            </div>
         </div>
 
-        <div id="server-time-wrapper">
-            <div id="server-time-label" data-i18n>Server Time</div>
+        <div id="server-time-wrapper" role="button" tabindex="0" aria-haspopup="dialog" aria-controls="server-time-modal" aria-label="Open server time modal">
+            <div class="server-time-topline">
+                <div id="server-time-label" data-i18n>Server Time</div>
+            </div>
             <div id="server-time-date">--</div>
             <div id="server-time-clock">--:--:--</div>
+            <div class="server-time-hint" data-i18n>Click for time zones and converter</div>
         </div>
 
     </nav>
@@ -163,42 +172,64 @@
     </main>
 
     <div id="server-time-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
-        <div style="background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: fadeIn 0.2s ease-out;">
-            <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color, #444c5e); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); border-radius: 8px 8px 0 0;">
-                <h2 style="margin: 0; color: #fff; font-size: 1.2em;"><i class="fa-solid fa-globe" style="color: var(--accent-blue);"></i> <span data-i18n>Global Times</span></h2>
-                <button id="close-server-time-btn" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em; transition: color 0.2s;"><i class="fa-solid fa-xmark"></i></button>
+        <div class="server-time-modal-card">
+            <div class="server-time-modal-header">
+                <div>
+                    <h2 class="server-time-modal-title"><i class="fa-solid fa-globe" style="color: var(--accent-blue);"></i> <span data-i18n>Global Times</span></h2>
+                    <div class="server-time-modal-subtitle" data-i18n>Reference clocks, timezone comparison, and quick conversion tools.</div>
+                </div>
+                <div class="server-time-modal-actions">
+                    <button id="copy-server-time-btn" class="icon-btn" data-i18n-title="Copy current Trove time" aria-label="Copy current Trove time"><i class="fa-regular fa-copy"></i></button>
+                    <button id="close-server-time-btn" class="icon-btn" aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
+                </div>
             </div>
-            <div id="server-time-modal-content" style="padding: 20px; display: flex; flex-direction: column;">
-                <div id="st-timezones-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 40vh; overflow-y: auto; padding-right: 5px;"></div>
-                
-                <hr style="border: 0; border-top: 1px dashed var(--border-color, #444c5e); margin: 15px 0 10px 0;">
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <h3 style="margin: 0; color: var(--accent-blue, #5ec6ff); font-size: 1.1em;"><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n>Time Converter</span></h3>
+            <div id="server-time-modal-content" class="server-time-modal-content">
+                <div class="server-time-hero">
+                    <div class="server-time-hero-label" data-i18n>Current Trove Time</div>
+                    <div class="server-time-hero-time" id="st-hero-clock">--:--:--</div>
+                    <div class="server-time-hero-date" id="st-hero-date">---</div>
                 </div>
-                
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                    <input type="datetime-local" id="st-converter-input" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color, #444c5e); color: #fff; padding: 8px; border-radius: 4px; font-family: inherit; outline: none;">
-                    <select id="st-converter-tz" class="custom-dropdown" style="width: 100%; max-width: 250px;"></select>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
-                    <div>
-                        <div style="font-size: 0.8em; color: var(--text-muted, #a3adc2);" data-i18n>Trove Time</div>
-                        <div id="st-converter-result" style="font-weight: bold; color: #fff; font-size: 1.1em;">--</div>
-                    </div>
-                    <div style="display: flex; gap: 5px; align-items: center;">
-                        <select id="st-discord-format" class="custom-dropdown" style="width: 100%; max-width: 350px;">
-                            <option value="t">Short Time (16:20)</option>
-                            <option value="T">Long Time (16:20:30)</option>
-                            <option value="d">Short Date (20/04/2021)</option>
-                            <option value="D">Long Date (20 April 2021)</option>
-                            <option value="f" selected>Short D/T (20 Apr 2021 16:20)</option>
-                            <option value="F">Long D/T (Tue, 20 Apr 2021 16:20)</option>
-                            <option value="R">Relative (in 2 months)</option>
-                        </select>
-                        <button id="st-btn-copy-discord" class="primary-btn" style="padding: 6px 12px; font-size: 0.85em;" data-i18n-title="Copy Discord Timestamp"><i class="fa-brands fa-discord"></i></button>
-                    </div>
+
+                <div class="server-time-layout">
+                    <section class="server-time-panel">
+                        <div class="server-time-panel-header">
+                            <h3><i class="fa-solid fa-list"></i> <span data-i18n>Global Times</span></h3>
+                            <span class="server-time-panel-hint" data-i18n>Side-by-side for quick comparison</span>
+                        </div>
+                        <div id="st-timezones-list" class="server-time-zones"></div>
+                    </section>
+
+                    <section class="server-time-panel">
+                        <div class="server-time-panel-header">
+                            <h3><i class="fa-solid fa-clock-rotate-left"></i> <span data-i18n>Time Converter</span></h3>
+                            <span class="server-time-panel-hint" data-i18n>Convert to Trove time or copy a Discord timestamp</span>
+                        </div>
+
+                        <div class="server-time-converter-grid">
+                            <input type="datetime-local" id="st-converter-input" class="server-time-input">
+                            <select id="st-converter-tz" class="custom-dropdown server-time-select"></select>
+                        </div>
+
+                        <div class="server-time-converter-result">
+                            <div>
+                                <div class="server-time-result-label" data-i18n>Trove Time</div>
+                                <div id="st-converter-result" class="server-time-result-value">--</div>
+                            </div>
+                            <div class="server-time-discord-row">
+                                <select id="st-discord-format" class="custom-dropdown server-time-select server-time-select-wide">
+                                    <option value="t">Short Time (16:20)</option>
+                                    <option value="T">Long Time (16:20:30)</option>
+                                    <option value="d">Short Date (20/04/2021)</option>
+                                    <option value="D">Long Date (20 April 2021)</option>
+                                    <option value="f" selected>Short D/T (20 Apr 2021 16:20)</option>
+                                    <option value="F">Long D/T (Tue, 20 Apr 2021 16:20)</option>
+                                    <option value="R">Relative (in 2 months)</option>
+                                </select>
+                                <button id="st-btn-copy-normal" class="primary-btn server-time-copy-btn" data-i18n-title="Copy normal timestamp"><i class="fa-regular fa-clock"></i></button>
+                                <button id="st-btn-copy-discord" class="primary-btn server-time-copy-btn" data-i18n-title="Copy Discord Timestamp"><i class="fa-brands fa-discord"></i></button>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>
@@ -212,10 +243,39 @@
                 <div style="font-size: 0.7em; color: var(--text-muted, #a3adc2); background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-weight: bold;">ESC</div>
             </div>
             <div id="cmd-results" style="max-height: 400px; overflow-y: auto; padding: 10px 0;"></div>
+            <div class="shortcut-hint-row" style="padding: 10px 14px; border-top: 1px solid var(--border-color, #444c5e);">
+                <span class="shortcut-kbd">Ctrl/Cmd+K</span><span>Open</span>
+                <span class="shortcut-kbd">↑/↓</span><span>Navigate</span>
+                <span class="shortcut-kbd">Enter</span><span>Open</span>
+                <span class="shortcut-kbd">Esc</span><span>Close</span>
+            </div>
         </div>
     </div>
     
     <div id="custom-context-menu" class="context-menu" style="display: none;"></div>
+
+    <div id="global-confirm-overlay" style="display: none;" class="global-modal-overlay">
+        <div class="global-modal-card">
+            <h3 id="global-confirm-title">Confirm</h3>
+            <p id="global-confirm-message"></p>
+            <div class="global-modal-actions">
+                <button id="global-confirm-cancel" class="secondary-btn">Cancel</button>
+                <button id="global-confirm-ok" class="danger-btn">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="job-queue-toggle" class="job-queue-toggle" title="Jobs">
+        <i class="fa-solid fa-list-check"></i>
+        <span id="job-queue-badge" class="job-queue-badge" style="display:none;">0</span>
+    </button>
+    <div id="job-queue-panel" class="job-queue-panel" style="display:none;">
+        <div class="job-queue-header">
+            <strong>Jobs</strong>
+            <button id="job-queue-close" class="icon-btn-small"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="job-queue-list" class="job-queue-list"></div>
+    </div>
 
     <script src="js/i18n.js"></script>
     <script src="js/main.js"></script>

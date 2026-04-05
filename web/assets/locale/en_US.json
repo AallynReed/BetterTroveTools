@@ -2969,6 +2969,17 @@
         "Successfully auto-structured {count} files!": "",
         "Another one...": "",
         "Version {version}": "",
-        "Created by {name}": ""
+        "Created by {name}": "",
+        "Click for time zones and converter": "",
+        "Global Times": "",
+        "Reference clocks, timezone comparison, and quick conversion tools.": "",
+        "Current Trove Time": "",
+        "Side-by-side for quick comparison": "",
+        "Time Converter": "",
+        "Convert to Trove time or copy a Discord timestamp": "",
+        "Trove Time": "",
+        "Copy current Trove time": "",
+        "Copy normal timestamp": "",
+        "Copy Discord Timestamp": ""
     }
 }

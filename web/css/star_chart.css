@@ -18,14 +18,14 @@
 .chart-layout {
     display: flex;
     gap: 20px;
-    align-items: stretch;
+    align-items: flex-start;
 }
 
 #chart-wrapper {
     flex: 1;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     background-color: var(--bg-panel);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -33,6 +33,47 @@
     min-height: 600px;
     position: relative;
     overflow: visible;
+    padding-top: 42px;
+}
+
+.chart-toolbar {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+}
+
+.chart-toolbar-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chart-toolbar-hints {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.chart-hint-chip {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 3px 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
 #chart-svg {
@@ -59,6 +100,19 @@
     stroke-width: 4px;
 }
 
+.center-clear-anchor {
+    cursor: pointer;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.15s ease, stroke 0.2s ease, filter 0.2s ease;
+}
+
+.center-clear-anchor:hover {
+    transform: scale(1.08);
+    stroke: var(--accent-blue);
+    filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.45));
+}
+
 .node-selected {
     stroke: #fff !important;
     stroke-width: 3px;
@@ -73,6 +127,12 @@
     stroke: #fff !important;
     filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
     fill: rgba(255, 255, 255, 0.1);
+}
+
+.center-clear-anchor.root-active {
+    stroke: var(--accent-blue) !important;
+    filter: drop-shadow(0 0 12px rgba(var(--accent-rgb), 0.55));
+    fill: rgba(var(--accent-rgb), 0.12);
 }
 
 .line-selected {
@@ -97,6 +157,31 @@
     color: var(--text-main);
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
+}
+
+.build-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.build-meta-chip {
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    border-radius: 999px;
+    padding: 3px 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.build-meta-chip.active {
+    color: var(--accent-blue);
+    border-color: rgba(var(--accent-rgb), 0.4);
+    background: rgba(var(--accent-rgb), 0.12);
 }
 
 .build-share-controls {

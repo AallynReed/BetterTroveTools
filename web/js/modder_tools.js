@@ -59,25 +59,61 @@ document.addEventListener('modder_tools_loaded', () => {
                 removingOverrides: false
             });
 
+            const runQueuedModderOperation = async ({ label, operation, task }) => {
+                return window.JobQueue.run({
+                    label,
+                    task,
+                    retryTask: task,
+                    cancel: () => eel.cancel_modder_tools_operation(operation)()
+                });
+            };
+
+            const unwrapResponse = (resp, key = null, fallback = null) => {
+                if (key) {
+                    if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
+                    if (resp && resp.data && Object.prototype.hasOwnProperty.call(resp.data, key)) return resp.data[key];
+                }
+                if (resp && resp.data !== undefined && resp.success !== undefined) return resp.data;
+                return resp ?? fallback;
+            };
+
+            const readSettings = async () => {
+                const settingsResp = await eel.get_settings()();
+                return unwrapResponse(settingsResp, null, {}) || {};
+            };
+
             const scanForGames = async () => {
-                const response = await eel.get_detected_game_paths()();
-                const settings = await eel.get_settings()();
-                if (response.success && response.paths.length > 0) {
-                    installs.value = response.paths;
-                    if (settings.last_game_path && installs.value.some(p => p.path === settings.last_game_path)) {
-                        selectedGamePath.value = settings.last_game_path;
-                    } else {
-                        selectedGamePath.value = installs.value[0].path;
+                try {
+                    const response = await eel.get_detected_game_paths()();
+                    const settings = await readSettings();
+                    const paths = unwrapResponse(response, 'paths', []);
+                    const safePaths = Array.isArray(paths) ? paths : [];
+
+                    if (safePaths.length > 0) {
+                        installs.value = safePaths;
+                        if (settings.last_game_path && installs.value.some(p => p.path === settings.last_game_path)) {
+                            selectedGamePath.value = settings.last_game_path;
+                        } else {
+                            selectedGamePath.value = installs.value[0].path;
+                        }
+                        return;
                     }
-                } else {
+
                     installs.value = [];
                     selectedGamePath.value = '';
+                    if (response && response.error) {
+                        window.showToast(t('Game path detection failed: {error}').replace('{error}', response.error), true);
+                    }
+                } catch (error) {
+                    installs.value = [];
+                    selectedGamePath.value = '';
+                    window.showToast(t('Game path detection failed.'), true);
                 }
             };
 
             watch(selectedGamePath, async (newVal) => {
                 if (!newVal) return;
-                const settings = await eel.get_settings()();
+                const settings = await readSettings();
                 settings.last_game_path = newVal;
                 await eel.save_settings(settings)();
             });
@@ -107,7 +143,24 @@ document.addEventListener('modder_tools_loaded', () => {
                     }
                 }
                 
-                const result = await eel.detect_override_files(selectedGamePath.value)();
+                let result;
+                try {
+                    result = await runQueuedModderOperation({
+                        label: t('Detect override files'),
+                        operation: 'detect_overrides',
+                        task: () => eel.detect_override_files(selectedGamePath.value)()
+                    });
+                } catch (e) {
+                    window.showToast(String(e || t('Error detecting overrides.')), true);
+                    isWorking.detectingOverrides = false;
+                    return;
+                }
+
+                if (result.cancelled) {
+                    window.showToast(t('Override detection cancelled.'));
+                    isWorking.detectingOverrides = false;
+                    return;
+                }
                 if (result.success) {
                     let addedCount = 0;
                     result.files.forEach(f => {
@@ -147,13 +200,30 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const removeBuildFile = (file) => {
                 build.files = build.files.filter(f => f.path !== file.path);
+                window.showUndoToast(
+                    t('Removed file from build list.'),
+                    6,
+                    () => {
+                        if (!build.files.find(f => f.path === file.path)) {
+                            build.files.push(file);
+                        }
+                    }
+                );
             };
 
             const autoStructureBuild = async () => {
                 if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
                 isWorking.autoStructuringBuild = true;
                 try {
-                    const result = await eel.auto_structure_workspace(selectedGamePath.value, selectedGamePath.value)();
+                    const result = await runQueuedModderOperation({
+                        label: t('Auto-structure build workspace files'),
+                        operation: 'auto_structure_workspace',
+                        task: () => eel.auto_structure_workspace(selectedGamePath.value, selectedGamePath.value)()
+                    });
+                    if (result.cancelled) {
+                        window.showToast(t('Auto-structure cancelled.'));
+                        return;
+                    }
                     if (result.success) window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
                     else window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
                 } catch (e) {
@@ -199,7 +269,16 @@ document.addEventListener('modder_tools_loaded', () => {
                         files: build.files.map(f => ({ internal_path: f.internal_path, abs_path: f.path }))
                     };
 
-                    const result = await eel.build_tmod(payload)();
+                    const result = await runQueuedModderOperation({
+                        label: t("Build TMod '{name}'").replace('{name}', title),
+                        operation: 'build_tmod',
+                        task: () => eel.build_tmod(payload)()
+                    });
+                    if (result.cancelled) {
+                        window.showToast(t('Build cancelled.'));
+                        isWorking.buildingTMod = false;
+                        return;
+                    }
                     if (result.success) window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
                     else window.showToast(t("Failed to build TMod:\n{error}").replace("{error}", result.error), true);
                 } catch (e) {
@@ -209,11 +288,13 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const browseExtractSource = async () => {
-                const file = await eel.ask_tmod_file()();
+                const fileResp = await eel.ask_tmod_file()();
+                const file = fileResp?.value ?? fileResp?.data?.value ?? fileResp;
                 if (file) extract.source = file;
             };
             const browseExtractDest = async () => {
-                const dir = await eel.ask_extract_destination()();
+                const dirResp = await eel.ask_extract_destination()();
+                const dir = dirResp?.value ?? dirResp?.data?.value ?? dirResp;
                 if (dir) extract.dest = dir;
             };
             const extractTMod = async () => {
@@ -222,7 +303,16 @@ document.addEventListener('modder_tools_loaded', () => {
                 
                 isWorking.extracting = true;
                 try {
-                    const result = await eel.extract_tmod(extract.source, extract.dest)();
+                    const result = await runQueuedModderOperation({
+                        label: t('Extract TMod archive'),
+                        operation: 'extract_tmod',
+                        task: () => eel.extract_tmod(extract.source, extract.dest)()
+                    });
+                    if (result.cancelled) {
+                        window.showToast(t('Extraction cancelled.'));
+                        isWorking.extracting = false;
+                        return;
+                    }
                     if (result.success) window.showToast(t("Successfully extracted {count} files to:\n{path}").replace("{count}", result.count).replace("{path}", extract.dest));
                     else window.showToast(t("Failed to extract TMod:\n{error}").replace("{error}", result.error), true);
                 } catch (e) {
@@ -273,7 +363,8 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const browseProject = async () => {
-                const dir = await eel.ask_mod_source_directory()();
+                const dirResp = await eel.ask_mod_source_directory()();
+                const dir = dirResp?.value ?? dirResp?.data?.value ?? dirResp;
                 if (dir) {
                     project.dir = dir;
                     await loadProjectData(dir);
@@ -316,7 +407,15 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
                 isWorking.autoStructuringProject = true;
                 try {
-                    const result = await eel.auto_structure_project_version(project.dir, project.activeVersion, selectedGamePath.value)();
+                    const result = await runQueuedModderOperation({
+                        label: t('Auto-structure project version files'),
+                        operation: 'auto_structure_project',
+                        task: () => eel.auto_structure_project_version(project.dir, project.activeVersion, selectedGamePath.value)()
+                    });
+                    if (result.cancelled) {
+                        window.showToast(t('Project auto-structure cancelled.'));
+                        return;
+                    }
                     if (result.success) {
                         window.showToast(t("Successfully structured {count} files!").replace("{count}", result.count));
                         await refreshProjectFiles();
@@ -336,7 +435,16 @@ document.addEventListener('modder_tools_loaded', () => {
                 
                 isWorking.compilingProject = true;
                 try {
-                    const result = await eel.compile_project(project.dir, project.activeVersion, selectedGamePath.value)();
+                    const result = await runQueuedModderOperation({
+                        label: t("Compile project '{name}'").replace('{name}', project.title.trim() || t('Untitled')),
+                        operation: 'compile_project',
+                        task: () => eel.compile_project(project.dir, project.activeVersion, selectedGamePath.value)()
+                    });
+                    if (result.cancelled) {
+                        window.showToast(t('Project compile cancelled.'));
+                        isWorking.compilingProject = false;
+                        return;
+                    }
                     if (result.success) window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
                     else window.showToast(t("Failed to compile project:\n{error}").replace("{error}", result.error), true);
                 } catch (e) {
@@ -349,7 +457,16 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
                 isWorking.placingOverrides = true;
                 try {
-                    const result = await eel.place_project_overrides(project.dir, project.activeVersion, selectedGamePath.value)();
+                    const result = await runQueuedModderOperation({
+                        label: t('Place project overrides into game'),
+                        operation: 'place_overrides',
+                        task: () => eel.place_project_overrides(project.dir, project.activeVersion, selectedGamePath.value)()
+                    });
+                    if (result.cancelled) {
+                        window.showToast(t('Placing overrides cancelled.'));
+                        isWorking.placingOverrides = false;
+                        return;
+                    }
                     if (result.success) {
                         if (result.count === 0) window.showToast(t("No valid files found to test."));
                         else {
@@ -365,12 +482,68 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const removeOverrides = async () => {
                 if (project.activeOverrides.length === 0) return;
+                const confirmed = await window.showConfirmModal({
+                    title: t('Remove Overrides'),
+                    message: t('Remove all currently placed override files from the game?'),
+                    confirmLabel: t('Remove'),
+                    cancelLabel: t('Cancel'),
+                    danger: true
+                });
+                if (!confirmed) return;
+
                 isWorking.removingOverrides = true;
                 try {
-                    const result = await eel.remove_project_overrides(project.activeOverrides)();
+                    const removedSnapshot = [...project.activeOverrides];
+                    const result = await runQueuedModderOperation({
+                        label: t('Remove project overrides from game'),
+                        operation: 'remove_overrides',
+                        task: () => eel.remove_project_overrides(project.activeOverrides)()
+                    });
+                    if (result.cancelled) {
+                        if (result.undo_token) {
+                            window.showUndoToast(
+                                t('Removal cancelled. Restore removed files?'),
+                                10,
+                                async () => {
+                                    const undoResult = await eel.undo_remove_project_overrides(result.undo_token)();
+                                    if (!undoResult.success) {
+                                        window.showToast(t('Undo failed: {error}').replace('{error}', undoResult.error || t('Unknown error occurred')), true);
+                                        return;
+                                    }
+                                    project.activeOverrides = removedSnapshot;
+                                    window.showToast(t('Overrides restored.'));
+                                }
+                            );
+                        }
+                        window.showToast(t('Removing overrides cancelled.'));
+                        isWorking.removingOverrides = false;
+                        return;
+                    }
                     if (result.success) {
                         window.showToast(t("{count} override files successfully removed from game.").replace("{count}", result.count));
                         project.activeOverrides = [];
+
+                        if (result.undo_token) {
+                            window.showUndoToast(
+                                t('Overrides removed.'),
+                                10,
+                                async () => {
+                                    const undoResult = await eel.undo_remove_project_overrides(result.undo_token)();
+                                    if (!undoResult.success) {
+                                        window.showToast(t('Undo failed: {error}').replace('{error}', undoResult.error || t('Unknown error occurred')), true);
+                                        return;
+                                    }
+                                    if (undoResult.restored > 0) {
+                                        project.activeOverrides = removedSnapshot;
+                                    }
+                                    if (undoResult.conflicts && undoResult.conflicts.length > 0) {
+                                        window.showToast(t('Undo completed with conflicts for existing files.'), true);
+                                    } else {
+                                        window.showToast(t('Overrides restored.'));
+                                    }
+                                }
+                            );
+                        }
                     } else window.showToast(t("Error removing overrides: {error}").replace("{error}", result.error), true);
                 } catch (e) {
                     window.showToast(t("An unexpected error occurred."), true);

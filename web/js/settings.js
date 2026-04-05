@@ -10,6 +10,12 @@ document.addEventListener('settings_loaded', async () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const unwrap = (raw) => {
+                if (raw && typeof raw === 'object' && raw.success !== undefined && raw.data && typeof raw.data === 'object') {
+                    return raw.data;
+                }
+                return raw || {};
+            };
 
             const activeTab = ref('general');
             
@@ -17,7 +23,8 @@ document.addEventListener('settings_loaded', async () => {
                 accent_color: '#5ec6ff',
                 show_community_content: true,
                 auto_fix_names: false,
-                auto_fix_configs: false
+                auto_fix_configs: false,
+                show_mod_preview_on_info_side: true
             });
 
             const customDirs = ref([]);
@@ -34,12 +41,15 @@ document.addEventListener('settings_loaded', async () => {
             const isSaving = ref(false);
 
             const loadSettings = async () => {
-                const data = await eel.get_settings()();
+                const data = window.AppSettings
+                    ? await window.AppSettings.load(true)
+                    : unwrap(await eel.get_settings()());
                 if (data) {
                     settings.accent_color = data.accent_color || '#5ec6ff';
                     settings.show_community_content = data.show_community_content !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.auto_fix_configs = data.auto_fix_configs === true;
+                    settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     customDirs.value = data.custom_directories || [];
                 }
             };
@@ -53,9 +63,14 @@ document.addEventListener('settings_loaded', async () => {
                     const b = parseInt(hex.substring(4, 6), 16);
                     document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
                 }
-                const currentSettings = await eel.get_settings()();
+                const currentSettings = window.AppSettings
+                    ? await window.AppSettings.load()
+                    : unwrap(await eel.get_settings()());
                 Object.assign(currentSettings, settings);
                 await eel.save_settings(currentSettings)();
+                if (window.AppSettings) {
+                    window.AppSettings._cache = { ...currentSettings };
+                }
             };
 
             const openAddModal = () => {
@@ -83,10 +98,15 @@ document.addEventListener('settings_loaded', async () => {
                 const name = addForm.name.trim() || t("Custom Trove");
                 const exists = customDirs.value.some(d => d.path === addForm.path);
                 if (!exists) {
-                    const currentSettings = await eel.get_settings()();
+                    const currentSettings = window.AppSettings
+                        ? await window.AppSettings.load()
+                        : unwrap(await eel.get_settings()());
                     if (!currentSettings.custom_directories) currentSettings.custom_directories = [];
                     currentSettings.custom_directories.push({ name: name, path: addForm.path });
                     await eel.save_settings(currentSettings)();
+                    if (window.AppSettings) {
+                        window.AppSettings._cache = { ...currentSettings };
+                    }
                     await loadSettings();
                     modals.add = false;
                 } else {
@@ -96,9 +116,14 @@ document.addEventListener('settings_loaded', async () => {
             };
 
             const removeDir = async (path) => {
-                const currentSettings = await eel.get_settings()();
+                const currentSettings = window.AppSettings
+                    ? await window.AppSettings.load()
+                    : unwrap(await eel.get_settings()());
                 currentSettings.custom_directories = (currentSettings.custom_directories || []).filter(d => d.path !== path);
                 await eel.save_settings(currentSettings)();
+                if (window.AppSettings) {
+                    window.AppSettings._cache = { ...currentSettings };
+                }
                 await loadSettings();
             };
 
@@ -111,14 +136,46 @@ document.addEventListener('settings_loaded', async () => {
             const saveEditDir = async () => {
                 isSaving.value = true;
                 const newName = editForm.name.trim() || t("Custom Trove");
-                const currentSettings = await eel.get_settings()();
+                const currentSettings = window.AppSettings
+                    ? await window.AppSettings.load()
+                    : unwrap(await eel.get_settings()());
                 for (let d of currentSettings.custom_directories || []) {
                     if (d.path === editForm.path) { d.name = newName; break; }
                 }
                 await eel.save_settings(currentSettings)();
+                if (window.AppSettings) {
+                    window.AppSettings._cache = { ...currentSettings };
+                }
                 await loadSettings();
                 modals.edit = false;
                 isSaving.value = false;
+            };
+
+            const resetOnboardingTips = async () => {
+                let confirmed = true;
+                if (typeof window.showConfirmModal === 'function') {
+                    confirmed = await window.showConfirmModal({
+                        title: t('Reset Onboarding Tips'),
+                        message: t('Show tutorial hint chips again for supported tools?'),
+                        confirmLabel: t('Reset Tips'),
+                        cancelLabel: t('Cancel'),
+                        danger: false
+                    });
+                }
+                if (!confirmed) return;
+
+                if (window.AppSettings) {
+                    const settingsData = await window.AppSettings.load();
+                    const prefs = settingsData.ui_preferences || {};
+                    Object.keys(prefs).forEach((key) => {
+                        if (key.startsWith('onboarding_') || key.startsWith('hint_')) {
+                            delete prefs[key];
+                        }
+                    });
+                    settingsData.ui_preferences = prefs;
+                    await window.AppSettings.save();
+                }
+                window.showToast(t('Onboarding tips have been reset. They will appear again in supported tools.'));
             };
 
             onMounted(loadSettings);
@@ -126,7 +183,8 @@ document.addEventListener('settings_loaded', async () => {
             return {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, saveGeneralSettings,
-                openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir
+                openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
+                resetOnboardingTips
             };
         }
     });

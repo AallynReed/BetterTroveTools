@@ -16,9 +16,31 @@ document.addEventListener('star_chart_loaded', async () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const unwrapResp = (resp, key = null, fallback = null) => {
+                if (key) {
+                    if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
+                    if (resp && resp.data && Object.prototype.hasOwnProperty.call(resp.data, key)) return resp.data[key];
+                }
+                if (resp && resp.data !== undefined && resp.success !== undefined) return resp.data;
+                return resp ?? fallback;
+            };
 
             const isLoading = ref(true);
-            const origin = ref([500, 500]);
+            const CHART_Y_OFFSET = -40;
+            const CHART_SPACING_SCALE = 1.06;
+            const origin = ref([500, 460]);
+            const chartBaseOrigin = ref([500, 500]);
+
+            const withChartOffset = (coords) => {
+                if (!Array.isArray(coords) || coords.length < 2) return [500, 500 + CHART_Y_OFFSET];
+                const [baseX, baseY] = chartBaseOrigin.value;
+                const dx = coords[0] - baseX;
+                const dy = coords[1] - baseY;
+                return [
+                    baseX + (dx * CHART_SPACING_SCALE),
+                    baseY + (dy * CHART_SPACING_SCALE) + CHART_Y_OFFSET
+                ];
+            };
             
             const nodeMap = reactive({});
             const selectedPaths = reactive(new Set());
@@ -160,14 +182,15 @@ document.addEventListener('star_chart_loaded', async () => {
                     };
 
                     if (isRoot) {
-                        const size = 16;
-                        const [cx, cy] = star.Coords;
+                        const size = 14;
+                        const [cx, cy] = withChartOffset(star.Coords);
                         nodeData.points = `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`;
                         nodeData.stroke = COLORS[constellName].major;
                     } else {
-                        nodeData.cx = star.Coords[0];
-                        nodeData.cy = star.Coords[1];
-                        nodeData.r = isMajor ? 14 : 9;
+                        const [cx, cy] = withChartOffset(star.Coords);
+                        nodeData.cx = cx;
+                        nodeData.cy = cy;
+                        nodeData.r = isMajor ? 13 : 8;
                         nodeData.fill = COLORS[constellName] ? COLORS[constellName][isMajor ? "major" : "minor"] : "#fff";
                     }
                     nodesList.value.push(nodeData);
@@ -176,11 +199,13 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (star.Stars && star.Stars.length > 0) {
                     star.Stars.forEach(child => {
                         if (star.Coords && child.Coords) {
+                            const [x1, y1] = withChartOffset(star.Coords);
+                            const [x2, y2] = withChartOffset(child.Coords);
                             linesList.value.push({
                                 id: 'line-' + child.Path.replace(/\./g, "-"),
                                 pathId: child.Path,
-                                x1: star.Coords[0], y1: star.Coords[1],
-                                x2: child.Coords[0], y2: child.Coords[1]
+                                x1: x1, y1: y1,
+                                x2: x2, y2: y2
                             });
                         }
                         registerNode(child, constellName, star.Path);
@@ -244,6 +269,12 @@ document.addEventListener('star_chart_loaded', async () => {
                     }
                     nodesToAdd.forEach(p => selectedPaths.add(p));
                 }
+            };
+
+            const clearAllSelectedNodes = () => {
+                if (selectedPaths.size === 0) return;
+                selectedPaths.clear();
+                if (window.showToast) window.showToast(t('All active nodes cleared.'));
             };
 
             const normalizeCode = (code) => {
@@ -333,7 +364,8 @@ document.addEventListener('star_chart_loaded', async () => {
             });
 
             const fetchTemplates = async () => {
-                templates.value = await eel.get_star_chart_templates()();
+                const templatesResp = await eel.get_star_chart_templates()();
+                templates.value = unwrapResp(templatesResp, 'templates', {});
                 updateTemplateDropdown();
             };
 
@@ -400,6 +432,12 @@ document.addEventListener('star_chart_loaded', async () => {
             const hideTooltip = () => { tooltip.show = false; tooltip.node = null; };
 
             const showContextMenu = (e, node) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+                }
+                hideTooltip();
                 if (!window.ContextMenu) return;
                 const items = [];
 
@@ -438,18 +476,21 @@ document.addEventListener('star_chart_loaded', async () => {
 
                 const response = await eel.get_calculated_star_chart()();
                 if (response.success) {
-                    const data = response.data;
-                    origin.value = response.origin;
+                    const data = unwrapResp(response, null, {});
+                    const responseOrigin = response.origin || response.data?.origin || [500, 500];
+                    chartBaseOrigin.value = responseOrigin;
+                    origin.value = withChartOffset(responseOrigin);
                     
                     Object.keys(COLORS).forEach(constellName => {
                         if (data[constellName]) {
                             registerNode(data[constellName], constellName, null);
                             if (data[constellName].Coords) {
+                                const [rootX, rootY] = withChartOffset(data[constellName].Coords);
                                 linesList.value.push({
                                     id: 'line-' + data[constellName].Path + '_rootline',
                                     pathId: data[constellName].Path + '_rootline',
                                     x1: origin.value[0], y1: origin.value[1],
-                                    x2: data[constellName].Coords[0], y2: data[constellName].Coords[1]
+                                    x2: rootX, y2: rootY
                                 });
                             }
                         }
@@ -464,7 +505,7 @@ document.addEventListener('star_chart_loaded', async () => {
             return {
                 t, isLoading, origin, lines, renderNodes,
                 selectedNodeCount, summaryStats, summaryAbilities, summaryObtainables, hasAnySelection,
-                onRootClick, onNodeClick,
+                onRootClick, onNodeClick, clearAllSelectedNodes,
                 buildCode, codeInputFocused, loadCode, copyCode,
                 selectedTemplate, templateOptions, saveTemplate, deleteTemplate,
                 modal, modalInputRef, confirmModal,

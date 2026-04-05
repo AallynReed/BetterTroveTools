@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import eel
 import requests
+from backend.response import resp, standardize_response
 
 from utils.trove.server_time import ServerTime
 
@@ -22,6 +23,7 @@ import gevent
 
 
 @eel.expose
+@standardize_response
 def get_twitch_streams():
     def fetch_task():
         req_id = None
@@ -35,16 +37,18 @@ def get_twitch_streams():
             response.raise_for_status()
             if req_id:
                 eel.remove_external_request(req_id, True)()
-            eel.receive_twitch_streams({"success": True, "data": response.json()})
+            data = response.json()
+            eel.receive_twitch_streams(resp(True, data=data))
         except Exception as e:
             if req_id:
                 eel.remove_external_request(req_id, False)()
             traceback.print_exc()
-            eel.receive_twitch_streams({"success": False, "error": str(e)})
+            eel.receive_twitch_streams(resp(False, error=str(e), code="TWITCH_FETCH_FAILED"))
             
     gevent.spawn(fetch_task)
 
 @eel.expose
+@standardize_response
 def get_youtube_videos():
     def fetch_task():
         req_id = None
@@ -58,16 +62,18 @@ def get_youtube_videos():
             response.raise_for_status()
             if req_id:
                 eel.remove_external_request(req_id, True)()
-            eel.receive_youtube_videos({"success": True, "data": response.json()})
+            data = response.json()
+            eel.receive_youtube_videos(resp(True, data=data))
         except Exception as e:
             if req_id:
                 eel.remove_external_request(req_id, False)()
             traceback.print_exc()
-            eel.receive_youtube_videos({"success": False, "error": str(e)})
+            eel.receive_youtube_videos(resp(False, error=str(e), code="YOUTUBE_FETCH_FAILED"))
             
     gevent.spawn(fetch_task)
 
 @eel.expose
+@standardize_response
 def get_bilibili_videos():
     def fetch_task():
         req_id = None
@@ -81,16 +87,18 @@ def get_bilibili_videos():
             response.raise_for_status()
             if req_id:
                 eel.remove_external_request(req_id, True)()
-            eel.receive_bilibili_videos({"success": True, "data": response.json()})
+            data = response.json()
+            eel.receive_bilibili_videos(resp(True, data=data))
         except Exception as e:
             if req_id:
                 eel.remove_external_request(req_id, False)()
             traceback.print_exc()
-            eel.receive_bilibili_videos({"success": False, "error": str(e)})
+            eel.receive_bilibili_videos(resp(False, error=str(e), code="BILIBILI_FETCH_FAILED"))
             
     gevent.spawn(fetch_task)
 
 @eel.expose
+@standardize_response
 def get_trovesaurus_events():
     def fetch_task():
         req_id = None
@@ -106,16 +114,17 @@ def get_trovesaurus_events():
                 eel.remove_external_request(req_id, True)()
             events = response.json()
             events.sort(key=lambda x: int(x['startdate']))
-            eel.receive_events_data({"success": True, "data": events})
+            eel.receive_events_data(resp(True, data=events))
         except Exception as e:
             if req_id:
                 eel.remove_external_request(req_id, False)()
             traceback.print_exc()
-            eel.receive_events_data({"success": False, "error": str(e)})
+            eel.receive_events_data(resp(False, error=str(e), code="EVENTS_FETCH_FAILED"))
             
     gevent.spawn(fetch_task)
 
 @eel.expose
+@standardize_response
 def get_current_server_data():
     try:
         st = ServerTime()
@@ -157,17 +166,18 @@ def get_current_server_data():
             }
         }
 
-        return {
-            "success": True,
+        data = {
             "daily": st.current_daily_buffs,
             "weekly": st.current_weekly_buffs,
-            "merchants": merchants
+            "merchants": merchants,
         }
+        return resp(True, data=data, **data)
     except Exception as e:
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="CURRENT_SERVER_DATA_FAILED")
 
 @eel.expose
+@standardize_response
 def get_chaos_chest_data():
     fallback_times = None
     try:
@@ -197,26 +207,54 @@ def get_chaos_chest_data():
 
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
-        resp = requests.get("https://trovesaurus.com/api/chaos-chest", headers=headers, timeout=3)
+        response = requests.get("https://trovesaurus.com/api/chaos-chest", headers=headers, timeout=3)
         
         if req_id:
-            eel.remove_external_request(req_id, resp.status_code == 200)()
-            
-        if resp.status_code == 200:
-            data = resp.json()
-            now_ts = datetime.now(UTC).timestamp()
-            if data.get("start", 0) <= now_ts <= data.get("end", 0):
-                return {"success": True, "data": data, "fallback_times": fallback_times}
-                
-        return {"success": True, "data": None, "fallback_times": fallback_times}
+            eel.remove_external_request(req_id, response.status_code == 200)()
+
+        if response.status_code == 200:
+            payload = response.json()
+
+            # Defensive normalization in case the endpoint shape changes.
+            if isinstance(payload, dict) and isinstance(payload.get("data"), dict):
+                payload = payload["data"]
+            elif isinstance(payload, list):
+                payload = payload[0] if payload else {}
+
+            if isinstance(payload, dict):
+                name = payload.get("name")
+                start = payload.get("start")
+                end = payload.get("end")
+                identifier = payload.get("identifier")
+                blueprint = payload.get("blueprint")
+
+                if isinstance(blueprint, str):
+                    blueprint = blueprint.lower()
+                if isinstance(identifier, str):
+                    identifier = identifier.replace("\\", "/")
+
+                normalized = {
+                    "name": name,
+                    "start": int(start) if start is not None else None,
+                    "end": int(end) if end is not None else None,
+                    "identifier": identifier,
+                    "blueprint": blueprint,
+                }
+
+                required = ("name", "start", "end", "identifier", "blueprint")
+                if all(normalized.get(k) is not None for k in required):
+                    return resp(True, data=normalized, fallback_times=fallback_times)
+
+        return resp(True, data=None, fallback_times=fallback_times)
     except Exception as e:
         if req_id:
             eel.remove_external_request(req_id, False)()
         if fallback_times:
-            return {"success": True, "data": None, "fallback_times": fallback_times}
-        return {"success": False, "error": str(e)}
+            return resp(True, data=None, fallback_times=fallback_times)
+        return resp(False, error=str(e), code="CHAOS_CHEST_FETCH_FAILED")
 
 @eel.expose
+@standardize_response
 def get_merchant_schedules():
     try:
         from utils.trove.server_time import ServerTime
@@ -278,16 +316,16 @@ def get_merchant_schedules():
                 check_cycle += 1
             return schedule
 
-        return {
-            "success": True,
+        data = {
             "luxion": generate_dragon_schedule(st.first_luxion),
             "corruxion": generate_dragon_schedule(st.first_corruxion),
             "fluxion": generate_fluxion_schedule(),
-            "invasion": generate_invasion_schedule()
+            "invasion": generate_invasion_schedule(),
         }
+        return resp(True, data=data, **data)
     except Exception as e:
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="MERCHANT_SCHEDULES_FAILED")
 
 
 biome1 = [
@@ -308,6 +346,7 @@ biome3 = [
 ]
 
 @eel.expose
+@standardize_response
 def get_yearly_calendar_data():
     try:
         now = datetime.now(UTC)
@@ -475,12 +514,13 @@ def get_yearly_calendar_data():
         generate_gardening_events()
         generate_invasion_events()
 
-        return {"success": True, "events": events}
+        return resp(True, data={"events": events}, events=events)
     except Exception as e:
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="YEARLY_CALENDAR_FAILED")
 
 @eel.expose
+@standardize_response
 def get_gardening_rotation():
     try:
         from utils.trove.server_time import ServerTime
@@ -533,27 +573,28 @@ def get_gardening_rotation():
                 
         future_events.sort(key=lambda x: x["start"])
         
-        return {
-            "success": True,
+        data = {
             "two_day": two_day,
             "three_day": three_day,
-            "future": future_events[:10]
+            "future": future_events[:10],
         }
+        return resp(True, data=data, **data)
     except Exception as e:
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="GARDENING_ROTATION_FAILED")
 
 system_epoch = datetime.fromtimestamp(1718708400, UTC)
 system_interval = 60 * 60 * 3
 
 @eel.expose
+@standardize_response
 def get_d15_rotation():
     biomes_path = os.path.join(os.getcwd(), "web", "assets", "data", "biomes.json")
     try:
         with open(biomes_path, "r", encoding="utf-8") as f:
             subbiomes = json.load(f)
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="D15_ROTATION_BIOMES_FAILED")
 
     now = datetime.now(UTC)
     elapsed = (now - system_epoch).total_seconds()
@@ -585,21 +626,22 @@ def get_d15_rotation():
     now_ts = now.timestamp()
     current_rot = next((rot for rot in rotations if rot['start'] <= now_ts < rot['end']), None)
 
-    return {
-        "success": True,
+    data = {
         "current": current_rot,
-        "rotations": rotations
+        "rotations": rotations,
     }
+    return resp(True, data=data, **data)
 
 
 @eel.expose
+@standardize_response
 def get_wild_mana_rotation():
     biomes_path = os.path.join(os.getcwd(), "web", "assets", "data", "biomes.json")
     try:
         with open(biomes_path, "r", encoding="utf-8") as f:
             subbiomes = json.load(f)
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="WILD_MANA_BIOMES_FAILED")
 
     icon_map = {}
     for key, val in subbiomes.items():
@@ -657,21 +699,22 @@ def get_wild_mana_rotation():
         else:
             future_rots.append(rot_data)
 
-    return {
-        "success": True,
+    data = {
         "current": current_rot,
-        "future": future_rots
+        "future": future_rots,
     }
+    return resp(True, data=data, **data)
 
 
 @eel.expose
+@standardize_response
 def get_stampy_rotation():
     biomes_path = os.path.join(os.getcwd(), "web", "assets", "data", "biomes.json")
     try:
         with open(biomes_path, "r", encoding="utf-8") as f:
             subbiomes = json.load(f)
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="STAMPY_BIOMES_FAILED")
 
     icon_map = {}
     for key, val in subbiomes.items():
@@ -713,10 +756,10 @@ def get_stampy_rotation():
                 break
                 
     if not events:
-        return {"success": False, "error": "No valid Stampy events found"}
+        return resp(False, error="No valid Stampy events found", code="STAMPY_EVENTS_NOT_FOUND")
 
-    return {
-        "success": True,
+    data = {
         "current": events[0],
-        "future": events[1:]
+        "future": events[1:],
     }
+    return resp(True, data=data, **data)

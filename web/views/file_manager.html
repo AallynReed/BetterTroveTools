@@ -6,29 +6,26 @@
     
     <div class="tabs-container">
         <div class="tab-buttons" style="margin-bottom: 20px;">
-            <button class="tab-btn" :class="{ active: activeTab === 'tab-explorer' }" @click="activeTab = 'tab-explorer'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('File Explorer') }}</span></button>
-            <button class="tab-btn" :class="{ active: activeTab === 'tab-tracker' }" @click="activeTab = 'tab-tracker'"><i class="fa-solid fa-satellite-dish"></i> <span>{{ t('Update Tracker') }}</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'tab-explorer' }" @click="setActiveTab('tab-explorer')" :disabled="isAnyOperationRunning && activeTab !== 'tab-explorer'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('File Explorer') }}</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'tab-tracker' }" @click="setActiveTab('tab-tracker')" :disabled="isAnyOperationRunning && activeTab !== 'tab-tracker'"><i class="fa-solid fa-satellite-dish"></i> <span>{{ t('Update Tracker') }}</span></button>
         </div>
 
         <div v-show="activeTab === 'tab-explorer'" class="tab-content" :class="{ active: activeTab === 'tab-explorer' }">
-            <div class="file-manager-header" style="border-bottom: none; padding-bottom: 0;">
-                <h1>{{ t('Game File Manager') }}</h1>
-                <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
-                    <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
-                    
-                    <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')">
-                        <i class="fa-solid fa-rotate-right"></i>
-                    </button>
-                    <button @click="loadTree" class="primary-btn" :disabled="isLoadingTree || !selectedInstall">
-                        <i class="fa-solid fa-box-archive"></i> <span>{{ t('Load Archives') }}</span>
-                    </button>
-                    <button @click="collapseAll" class="primary-btn" :title="t('Collapse All Folders')">
-                        <i class="fa-solid fa-folder-minus"></i> <span>{{ t('Collapse') }}</span>
-                    </button>
-                    <button @click="selectVisible" class="primary-btn">
-                        <i class="fa-solid fa-check-double"></i> <span>{{ t('Select Visible') }}</span>
-                    </button>
-                </div>
+            <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
+                
+                <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')" :disabled="isAnyOperationRunning">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button @click="loadTree" class="primary-btn" :disabled="isAnyOperationRunning || isLoadingTree || !selectedInstall">
+                    <i class="fa-solid fa-box-archive"></i> <span>{{ t('Load Archives') }}</span>
+                </button>
+                <button @click="collapseAll" class="primary-btn" :title="t('Collapse All Folders')" :disabled="isAnyOperationRunning || !isTreeLoaded">
+                    <i class="fa-solid fa-folder-minus"></i> <span>{{ t('Collapse') }}</span>
+                </button>
+                <button @click="selectVisible" class="primary-btn" :disabled="isAnyOperationRunning || !isTreeLoaded">
+                    <i class="fa-solid fa-check-double"></i> <span>{{ t('Select Visible') }}</span>
+                </button>
             </div>
 
             <div class="search-container" style="margin-top: 20px;">
@@ -36,7 +33,30 @@
                     <input type="text" id="tree-search" v-model="searchQuery" @input="debouncedSearch" :placeholder="t('Search files (e.g. .swf, dragon, ui_...)')" />
                     <button @click="clearSearch" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
                 </div>
+                <button class="secondary-btn" @click="prevSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="secondary-btn" @click="nextSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-down"></i></button>
                 <span class="file-meta" style="font-size: 12px; color: var(--accent-blue); font-weight: bold;">{{ searchCountText }}</span>
+            </div>
+            <div v-if="showOnboardingTips" class="onboarding-tour">
+                <div class="onboarding-tour-header">
+                    <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('Quick Tour: File Explorer') }}</span>
+                    <button class="onboarding-dismiss" @click="dismissOnboardingTips">{{ t('Skip Tour') }}</button>
+                </div>
+                <ol class="onboarding-tour-steps">
+                    <li>{{ t('Choose install, then click Load Archives.') }}</li>
+                    <li>{{ t('Search starts at 4+ characters and opens matching paths.') }}</li>
+                    <li>{{ t('Use Select Visible to batch-select only current matches.') }}</li>
+                </ol>
+                <div class="onboarding-tour-actions">
+                    <button class="secondary-btn" @click="focusSearchInput"><i class="fa-solid fa-magnifying-glass"></i> {{ t('Show Me Search') }}</button>
+                    <button class="secondary-btn" @click="dismissOnboardingTips">{{ t('Done') }}</button>
+                </div>
+            </div>
+            <div v-if="showSearchShortcutHint" class="search-shortcut-hint">
+                <span>{{ t('Shortcuts: Ctrl/Cmd+F focus search, Arrow Up/Down navigate matches') }}</span>
+                <button class="search-shortcut-dismiss" @click="dismissSearchShortcutHint" :title="t('Hide this tip')" aria-label="Hide this tip">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
             </div>
             
             <div id="file-tree" ref="treeContainerRef" @toggle.capture="onTreeToggle" @change="onTreeChange" :class="{ searching: isSearching }"></div>
@@ -64,11 +84,34 @@
                     <label>{{ t('Tracking Directory (Where to save hashes and extracted patches)') }}</label>
                     <div class="input-row">
                         <custom-vue-select v-model="selectedTrackingDir" :options="trackingDirOptions" style="flex-grow: 1;"></custom-vue-select>
-                        <button @click="modals.addTracker = true" class="primary-btn"><i class="fa-solid fa-plus"></i> <span>{{ t('Add Path') }}</span></button>
+                        <button @click="modals.addTracker = true" class="primary-btn" :disabled="isAnyOperationRunning"><i class="fa-solid fa-plus"></i> <span>{{ t('Add Path') }}</span></button>
                     </div>
                 </div>
 
-                <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); width: max-content;">
+                <div class="form-group" style="margin-top: 15px;">
+                    <button class="secondary-btn" @click="showTrackerAdvanced = !showTrackerAdvanced" :disabled="isAnyOperationRunning">
+                        <i class="fa-solid" :class="showTrackerAdvanced ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                        {{ showTrackerAdvanced ? t('Hide Advanced') : t('Show Advanced') }}
+                    </button>
+                </div>
+
+                <div v-if="showTrackerOnboardingTips" class="onboarding-tour" style="margin-top: -5px; margin-bottom: 15px;">
+                    <div class="onboarding-tour-header">
+                        <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('Quick Tour: Update Tracker') }}</span>
+                        <button class="onboarding-dismiss" @click="dismissTrackerOnboardingTips">{{ t('Skip Tour') }}</button>
+                    </div>
+                    <ol class="onboarding-tour-steps">
+                        <li>{{ t('Add/select a tracking directory first.') }}</li>
+                        <li>{{ t('Build Baseline Cache once for that directory.') }}</li>
+                        <li>{{ t('After baseline exists, use Scan & Extract Updates.') }}</li>
+                    </ol>
+                    <div class="onboarding-tour-actions">
+                        <button class="secondary-btn" @click="showTrackerAdvanced = true"><i class="fa-solid fa-gears"></i> {{ t('Show Advanced') }}</button>
+                        <button class="secondary-btn" @click="dismissTrackerOnboardingTips">{{ t('Done') }}</button>
+                    </div>
+                </div>
+
+                <div v-show="showTrackerAdvanced" class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); width: max-content;">
                     <input type="checkbox" v-model="runCatalogMode" id="tracker-catalog-toggle" style="width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;">
                     <label for="tracker-catalog-toggle" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <span>{{ t('Run catalog mode') }}</span>
@@ -81,15 +124,19 @@
                     <p class="help-text" style="margin-top: 5px; white-space: pre-wrap;">{{ trackerStatus.subText }}</p>
                     
                     <div v-show="trackerStatus.state !== 'empty'" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-                        <button @click="buildBaseline" class="primary-btn" :disabled="isTrackerWorking" :style="trackerStatus.state === 'baseline' ? 'background-color: transparent; border: 1px solid var(--border-color); color: var(--text-muted);' : 'background-color: #e8b031; color: #111; border: none;'">
+                        <button @click="buildBaseline" class="primary-btn" :disabled="isAnyOperationRunning" :style="trackerStatus.state === 'baseline' ? 'background-color: transparent; border: 1px solid var(--border-color); color: var(--text-muted);' : 'background-color: #e8b031; color: #111; border: none;'">
                             <template v-if="trackerStatus.isBuilding"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Building Baseline Cache...') }}</template>
                             <template v-else-if="trackerStatus.state === 'baseline'"><i class="fa-solid fa-rotate-right"></i> {{ t('Force Rebuild Cache') }}</template>
                             <template v-else><i class="fa-solid fa-database"></i> {{ t('Build Baseline Cache') }}</template>
                         </button>
                         
-                        <button v-show="trackerStatus.state === 'baseline'" @click="scanUpdates" class="primary-btn" :disabled="isTrackerWorking" style="background-color: #28a745;">
+                        <button v-show="trackerStatus.state === 'baseline'" @click="scanUpdates" class="primary-btn" :disabled="isAnyOperationRunning" style="background-color: #28a745;">
                             <template v-if="trackerStatus.isScanning"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Scanning for Updates...') }}</template>
                             <template v-else><i class="fa-solid fa-satellite-dish"></i> {{ t('Scan & Extract Updates') }}</template>
+                        </button>
+
+                        <button v-if="trackerStatus.isBuilding || trackerStatus.isScanning" @click="cancelTrackerOperation" class="danger-btn">
+                            <i class="fa-solid fa-ban"></i> {{ t('Cancel Current Operation') }}
                         </button>
                     </div>
                 </div>
@@ -99,7 +146,7 @@
 
     <div class="image-modal" :class="{ active: modals.addTracker }" style="display: flex;" v-show="modals.addTracker">
     <div class="tool-panel" style="width: 450px; position: relative; padding-top: 35px;">
-            <span @click="modals.addTracker = false" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;">&times;</span>
+            <span @click="modals.addTracker = false" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;" :style="isAnyOperationRunning ? 'pointer-events: none; opacity: 0.5;' : ''">&times;</span>
             <h3 style="margin-top: 0; margin-bottom: 20px;">{{ t('Add Extraction Path') }}</h3>
         <div class="form-group">
                 <label>{{ t('Name') }}</label>
@@ -109,13 +156,13 @@
                 <label>{{ t('Directory') }}</label>
             <div class="input-row">
                     <input type="text" v-model="newTrackerForm.path" :placeholder="t('Select a folder...')" readonly />
-                    <button @click="browseTrackerDir" class="primary-btn" :disabled="isBrowsingTracker">
+                    <button @click="browseTrackerDir" class="primary-btn" :disabled="isBrowsingTracker || isAnyOperationRunning">
                         <template v-if="isBrowsingTracker"><i class="fa-solid fa-spinner fa-spin"></i></template>
                         <template v-else><i class="fa-solid fa-folder-open"></i> {{ t('Browse') }}</template>
                     </button>
             </div>
         </div>
-            <button @click="saveTrackerDir" class="primary-btn" style="width: 100%; margin-top: 10px; background: var(--accent-blue);" :disabled="!newTrackerForm.name || !newTrackerForm.path">{{ t('Save Path') }}</button>
+            <button @click="saveTrackerDir" class="primary-btn" style="width: 100%; margin-top: 10px; background: var(--accent-blue);" :disabled="!newTrackerForm.name || !newTrackerForm.path || isAnyOperationRunning">{{ t('Save Path') }}</button>
     </div>
 </div>
 
@@ -126,16 +173,28 @@
         </span>
     
         <div v-show="progress.active" class="progress-container">
-        <div class="progress-track">
+        <div class="progress-track" :aria-label="t('Extraction progress')" role="progressbar" :aria-valuenow="progress.percent" aria-valuemin="0" aria-valuemax="100">
                 <div class="progress-fill" :style="{ width: progress.percent + '%' }"></div>
+            <span class="progress-percent">{{ progress.percent }}%</span>
         </div>
-            <span class="progress-text">{{ progress.text }}</span>
-            <span class="progress-filename">{{ progress.filename }}</span>
+            <details style="width: 100%;">
+                <summary style="cursor: pointer; color: var(--text-muted); font-size: 12px;">{{ t('Details') }}</summary>
+                <div style="font-size: 12px; color: var(--text-main); display: grid; gap: 3px; margin-top: 6px;">
+                    <span v-if="progress.status">{{ t('Status:') }} {{ progress.status }}</span>
+                    <span v-if="progress.elapsed">{{ t('Elapsed:') }} {{ progress.elapsed }}</span>
+                    <span v-if="progress.eta">{{ t('ETA:') }} {{ progress.eta }}</span>
+                    <span v-if="progress.filename">{{ t('Current:') }} {{ progress.filename }}</span>
+                </div>
+            </details>
     </div>
 
-        <button v-show="!progress.active" @click="massExtract" class="primary-btn" :disabled="isMassExtracting">
+        <button v-show="!progress.active" @click="massExtract" class="primary-btn" :disabled="isAnyOperationRunning || isMassExtracting">
             <template v-if="isMassExtracting"><i class="fa-solid fa-spinner fa-spin"></i></template>
             <template v-else><i class="fa-solid fa-file-export"></i> {{ t('Extract Selected') }}</template>
+        </button>
+
+        <button v-show="!progress.active && selectedFilesCount > 0" @click="clearSelectedFiles" class="secondary-btn" :disabled="isAnyOperationRunning">
+            <i class="fa-solid fa-eraser"></i> {{ t('Clear Selection') }}
         </button>
     </div>
 </div>

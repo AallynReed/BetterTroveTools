@@ -29,8 +29,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
             const selectedStatIdx = ref(0);
             const selectedActionKey = ref(null);
-            
-            const confirmModal = reactive({ show: false, title: '', message: '', onConfirm: null });
+
             const tooltip = reactive({ show: false, item: null, x: 0, y: 0 });
             
             const isGenerating = ref(false);
@@ -58,6 +57,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
             const gemTierBgUrl = (gem) => `assets/gems/gem_tiers/${gem.tier}.png`;
             const gemImageUrl = (gem) => `assets/gems/gem_types/${gem.type}/elements/${gem.element}.png`;
+            const equippedPlaceholderUrl = (elementId, typeRestriction) => `assets/gems/gem_types/${typeRestriction}/elements/${elementId}.png`;
 
             const formattedObj = (obj) => {
                 if (!obj) return [[`(${t('None')})`, '']];
@@ -167,7 +167,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
             watch([inventory, equipped, primordialToggles], saveInventoryDebounced, { deep: true });
 
             const loadStorage = async () => {
-                const data = await eel.load_gem_storage()();
+                const storageResp = await eel.load_gem_storage()();
+                const data = storageResp?.gem_simulator ?? storageResp?.data ?? storageResp;
                 if (data) {
                     if (data.inventory && data.inventory.length > 0) inventory.value = data.inventory;
                     if (data.equipped && data.equipped.length > 0) equipped.value = data.equipped;
@@ -190,18 +191,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 selected.value = gem;
                 selectedSource.value = { pane, idx };
                 hideTooltip();
-            };
-
-            const showConfirm = (title, message, onConfirmCallback) => {
-                confirmModal.title = title;
-                confirmModal.message = message;
-                confirmModal.onConfirm = onConfirmCallback;
-                confirmModal.show = true;
-            };
-
-            const executeConfirm = () => {
-                if (confirmModal.onConfirm) confirmModal.onConfirm();
-                confirmModal.show = false;
             };
 
             const onDragStart = (e, pane, idx) => {
@@ -283,34 +272,48 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 }
             };
 
-            const onDropTrash = (e) => {
+            const onDropTrash = async (e) => {
                 const data = e.dataTransfer.getData('text/plain');
                 if (!data) return;
                 const { source, gem: draggedGem } = resolveDraggedGem(...Object.values(JSON.parse(data)));
                 if (!draggedGem) return;
 
-                showConfirm(t('Trash Gem'), t('Are you sure you want to permanently delete this gem?'), () => {
-                    if (source.pane === 'inventory') inventory.value[source.idx] = null;
-                    if (source.pane === 'equipped') equipped.value[source.idx] = null;
-                    if (selected.value && selected.value.id === draggedGem.id) {
-                        selected.value = null;
-                        selectedSource.value = null;
-                    }
-                    window.showToast(t('Gem deleted.'));
+                const confirmed = await window.showConfirmModal({
+                    title: t('Trash Gem'),
+                    message: t('Are you sure you want to permanently delete this gem?'),
+                    confirmLabel: t('Delete'),
+                    cancelLabel: t('Cancel'),
+                    danger: true
                 });
-            };
+                if (!confirmed) return;
 
-            const trashSelected = () => {
-                if (!selected.value) return window.showToast(t("No gem selected to trash."), true);
-                showConfirm(t("Trash Gem"), t("Are you sure you want to permanently delete the selected gem?"), () => {
-                    if (selectedSource.value) {
-                        if (selectedSource.value.pane === 'equipped') equipped.value[selectedSource.value.idx] = null;
-                        if (selectedSource.value.pane === 'inventory') inventory.value[selectedSource.value.idx] = null;
-                    }
+                if (source.pane === 'inventory') inventory.value[source.idx] = null;
+                if (source.pane === 'equipped') equipped.value[source.idx] = null;
+                if (selected.value && selected.value.id === draggedGem.id) {
                     selected.value = null;
                     selectedSource.value = null;
-                    window.showToast(t("Gem deleted."));
+                }
+                window.showToast(t('Gem deleted.'));
+            };
+
+            const trashSelected = async () => {
+                if (!selected.value) return window.showToast(t("No gem selected to trash."), true);
+                const confirmed = await window.showConfirmModal({
+                    title: t('Trash Gem'),
+                    message: t('Are you sure you want to permanently delete the selected gem?'),
+                    confirmLabel: t('Delete'),
+                    cancelLabel: t('Cancel'),
+                    danger: true
                 });
+                if (!confirmed) return;
+
+                if (selectedSource.value) {
+                    if (selectedSource.value.pane === 'equipped') equipped.value[selectedSource.value.idx] = null;
+                    if (selectedSource.value.pane === 'inventory') inventory.value[selectedSource.value.idx] = null;
+                }
+                selected.value = null;
+                selectedSource.value = null;
+                window.showToast(t("Gem deleted."));
             };
 
             const saveSelectedToInventory = () => {
@@ -324,12 +327,22 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 window.ContextMenu.show(e, [
                     { label: 'Select Gem', icon: 'fa-hand-pointer', action: () => selectGem(item, pane, idx) },
                     { separator: true },
-                    { label: 'Trash Gem', icon: 'fa-trash', danger: true, action: () => {
-                        showConfirm(t("Trash Gem"), t("Are you sure you want to permanently delete this gem?"), () => {
-                            if (pane === 'inventory') inventory.value[idx] = null;
-                            if (pane === 'equipped') equipped.value[idx] = null;
-                            if (selected.value && selected.value.id === item.id) { selected.value = null; selectedSource.value = null; }
+                    { label: 'Trash Gem', icon: 'fa-trash', danger: true, action: async () => {
+                        const confirmed = await window.showConfirmModal({
+                            title: t('Trash Gem'),
+                            message: t('Are you sure you want to permanently delete this gem?'),
+                            confirmLabel: t('Delete'),
+                            cancelLabel: t('Cancel'),
+                            danger: true
                         });
+                        if (!confirmed) return;
+                        if (pane === 'inventory') inventory.value[idx] = null;
+                        if (pane === 'equipped') equipped.value[idx] = null;
+                        if (selected.value && selected.value.id === item.id) {
+                            selected.value = null;
+                            selectedSource.value = null;
+                        }
+                        window.showToast(t('Gem deleted.'));
                     }}
                 ]);
             };
@@ -453,14 +466,14 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 t, lookups, formattedObj, formatGemName,
                 inventory, equipped, equippedRows, elementsList, primordialToggles, statTotalsBuffed, sortedStatTotals, totalPRBuffed, formatStat,
                 selected, selectedSource, isSelectedInStorage, selectGem, getStatName, getStatValue, getBarColor, getTierDisplayName, getTypeDisplayName,
-                gemTierBgUrl, gemImageUrl,
+                gemTierBgUrl, gemImageUrl, equippedPlaceholderUrl,
                 creatorParams, isGenerating, generateGem,
                 selectedStatIdx, selectedActionKey, augmentOptions, modifierOptions,
                 actionButtonText, isLevelingUp, isActioning, levelUpSelected, doSelectedAction,
                 onDragStart, onDropEquipped, onDropInventory, onDropTrash, trashSelected, saveSelectedToInventory,
                 showContextMenu, tooltip, showTooltip, moveTooltip, hideTooltip,
                 isSyncing, syncGems,
-                confirmModal, executeConfirm
+                
             };
         }
     });

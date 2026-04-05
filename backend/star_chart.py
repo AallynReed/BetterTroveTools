@@ -2,6 +2,7 @@ import json
 import os
 from math import cos, radians, sin
 from utils.helper import get_storage_file, read_storage, write_storage
+from backend.response import resp, standardize_response
 
 import eel
 
@@ -41,6 +42,7 @@ def rotate_branch(star, origin, angle, distance):
         rotate_branch(child, origin, angle, distance)
 
 @eel.expose
+@standardize_response
 def get_calculated_star_chart():
     try:
         json_path = os.path.join(os.getcwd(), "web", "assets", "data", "star_chart.json")
@@ -70,14 +72,15 @@ def get_calculated_star_chart():
             build_branch(back_rotate, position, distance, constell.get("Stars", []))
             rotate_branch(constell, origin, radians(branch_rotation), distance)
 
-        return {"success": True, "data": star_chart, "origin": origin}
+        return resp(True, data=star_chart, origin=origin)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="STAR_CHART_CALC_FAILED")
 
 
 @eel.expose
+@standardize_response
 def save_star_chart_template(name, base64_code):
     try:
         data = read_storage()
@@ -88,31 +91,34 @@ def save_star_chart_template(name, base64_code):
         data["star_chart_templates"][name] = base64_code
         write_storage(data)
         
-        return {"success": True}
+        return resp(True)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="STAR_CHART_SAVE_TEMPLATE_FAILED")
 
 @eel.expose
+@standardize_response
 def get_star_chart_templates():
     try:
         data = read_storage()
-        return data.get("star_chart_templates", {})
+        templates = data.get("star_chart_templates", {})
+        return resp(True, data=templates, templates=templates)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {}
+        return resp(False, data={}, templates={}, error=str(e), code="STAR_CHART_GET_TEMPLATES_FAILED")
 
 @eel.expose
+@standardize_response
 def delete_star_chart_template(name):
     try:
         data = read_storage()
         if "star_chart_templates" in data and name in data["star_chart_templates"]:
             del data["star_chart_templates"][name]
             write_storage(data)
-        return {"success": True}
+        return resp(True)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="STAR_CHART_DELETE_TEMPLATE_FAILED")

@@ -1,20 +1,91 @@
 import base64
+import os
 import re
 import json
 import shutil
+import uuid
 import tkinter as tk
 from datetime import UTC, datetime
 from pathlib import Path
 from tkinter import filedialog
 
 import eel
+
+from backend.response import standardize_response
 from binary_reader import BinaryReader
 
 from models.trove.directory import Directories
 from models.trove.mod import TMod, TroveModFile
 
 
+class OperationCancelled(Exception):
+    pass
+
+
+_MODDER_CANCEL_FLAGS = {
+    "extract_tmod": False,
+    "detect_overrides": False,
+    "auto_structure_workspace": False,
+    "build_tmod": False,
+    "auto_structure_project": False,
+    "place_overrides": False,
+    "remove_overrides": False,
+    "compile_project": False,
+}
+
+
+def _trash_root():
+    appdata = os.getenv("APPDATA")
+    base = Path(appdata) if appdata else Path.cwd()
+    root = base / "Trove" / "ModderToolsTrash"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _undo_manifest_path():
+    return _trash_root() / "undo_remove_overrides.json"
+
+
+def _read_undo_manifest():
+    path = _undo_manifest_path()
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _write_undo_manifest(data):
+    _undo_manifest_path().write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def _reset_cancel_flag(operation):
+    if operation in _MODDER_CANCEL_FLAGS:
+        _MODDER_CANCEL_FLAGS[operation] = False
+
+
+def _is_cancelled(operation):
+    return bool(_MODDER_CANCEL_FLAGS.get(operation, False))
+
+
+def _raise_if_cancelled(operation):
+    if _is_cancelled(operation):
+        raise OperationCancelled("Operation cancelled by user.")
+
+
 @eel.expose
+@standardize_response
+def cancel_modder_tools_operation(operation):
+    op = str(operation or "")
+    if op not in _MODDER_CANCEL_FLAGS:
+        return {"success": False, "error": "Unknown operation."}
+    _MODDER_CANCEL_FLAGS[op] = True
+    return {"success": True}
+
+
+@eel.expose
+@standardize_response
 def ask_mod_source_directory():
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -24,6 +95,7 @@ def ask_mod_source_directory():
     return folder_path
 
 @eel.expose
+@standardize_response
 def ask_tmod_file():
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -33,6 +105,7 @@ def ask_tmod_file():
     return file_path
 
 @eel.expose
+@standardize_response
 def ask_extract_destination():
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -42,6 +115,7 @@ def ask_extract_destination():
     return folder_path
 
 @eel.expose
+@standardize_response
 def ask_add_files(game_path_str=None):
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -100,8 +174,10 @@ def ask_add_files(game_path_str=None):
     return {"success": True, "files": files, "rejected": rejected}
 
 @eel.expose
+@standardize_response
 def extract_tmod(tmod_path_str, dest_path_str):
     try:
+        _reset_cancel_flag("extract_tmod")
         tmod_path = Path(tmod_path_str)
         dest_path = Path(dest_path_str)
         
@@ -115,6 +191,7 @@ def extract_tmod(tmod_path_str, dest_path_str):
         
         extracted_count = 0
         for file in mod.files:
+            _raise_if_cancelled("extract_tmod")
             out_path = dest_path / Path(file.trove_path.replace("\\", "/"))
             out_path.parent.mkdir(parents=True, exist_ok=True)
             
@@ -122,14 +199,18 @@ def extract_tmod(tmod_path_str, dest_path_str):
             extracted_count += 1
             
         return {"success": True, "count": extracted_count}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def detect_override_files(source_dir_str):
     try:
+        _reset_cancel_flag("detect_overrides")
         source_dir = Path(source_dir_str)
         if not source_dir.exists() or not source_dir.is_dir():
             return {"success": False, "error": "Invalid source directory."}
@@ -138,6 +219,7 @@ def detect_override_files(source_dir_str):
         files = []
         
         for file_path in source_dir.rglob("*"):
+            _raise_if_cancelled("detect_overrides")
             if file_path.is_file():
                 parts = file_path.relative_to(source_dir).parts
                 if "override" in [p.lower() for p in parts]:
@@ -153,12 +235,16 @@ def detect_override_files(source_dir_str):
                             })
                     
         return {"success": True, "files": files}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def auto_structure_workspace(workspace_dir_str, game_path_str):
     try:
+        _reset_cancel_flag("auto_structure_workspace")
         game_path = Path(game_path_str)
         workspace = Path(workspace_dir_str)
         
@@ -179,11 +265,13 @@ def auto_structure_workspace(workspace_dir_str, game_path_str):
                 shift += 7
 
         for d in valid_dirs:
+            _raise_if_cancelled("auto_structure_workspace")
             dir_path = game_path / d
             if not dir_path.exists():
                 continue
                 
             for tfi_path in dir_path.rglob("index.tfi"):
+                _raise_if_cancelled("auto_structure_workspace")
                 tfi_rel_dir = tfi_path.parent.relative_to(game_path)
                 
                 try:
@@ -209,11 +297,13 @@ def auto_structure_workspace(workspace_dir_str, game_path_str):
         ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
         
         for d in valid_dirs:
+            _raise_if_cancelled("auto_structure_workspace")
             target_dir = workspace / d
             if not target_dir.exists():
                 continue
                 
             for file_path in target_dir.rglob("*"):
+                _raise_if_cancelled("auto_structure_workspace")
                 if not file_path.is_file() or file_path.suffix.lower() in ignored_extensions:
                     continue
                     
@@ -236,12 +326,15 @@ def auto_structure_workspace(workspace_dir_str, game_path_str):
                         moved_files.append({"old": str(file_path), "new": str(new_path)})
                             
         return {"success": True, "count": len(moved_files)}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def get_missing_files(paths):
     try:
         missing = []
@@ -253,8 +346,10 @@ def get_missing_files(paths):
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def build_tmod(payload):
     try:
+        _reset_cancel_flag("build_tmod")
         game_path_str = payload.get("gamePath")
         if not game_path_str:
             return {"success": False, "error": "No game installation selected."}
@@ -316,6 +411,7 @@ def build_tmod(payload):
             mod.preview_path = preview_path
             
         for f in files:
+            _raise_if_cancelled("build_tmod")
             abs_path = f.get("abs_path")
             internal_path_str = f.get("internal_path", f.get("name", "unknown_file"))
             f_path = Path(internal_path_str)
@@ -337,6 +433,8 @@ def build_tmod(payload):
         save_path.write_bytes(tmod_bytes)
         
         return {"success": True, "path": str(save_path)}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
         
     except Exception as e:
         import traceback
@@ -344,6 +442,7 @@ def build_tmod(payload):
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def load_mod_project(project_path_str):
     try:
         project_path = Path(project_path_str)
@@ -381,6 +480,7 @@ def load_mod_project(project_path_str):
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def save_mod_project(project_path_str, payload):
     try:
         if len(payload.get("notes", "")) > 220:
@@ -400,6 +500,7 @@ def save_mod_project(project_path_str, payload):
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def create_project_version(project_path_str, new_version):
     try:
         project_path = Path(project_path_str)
@@ -425,6 +526,7 @@ def create_project_version(project_path_str, new_version):
         return {"success": False, "error": str(e)}
     
 @eel.expose
+@standardize_response
 def get_project_files(project_path_str, version):
     try:
         target_dir = Path(project_path_str) / f"v{version}"
@@ -450,8 +552,10 @@ def get_project_files(project_path_str, version):
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def auto_structure_project_version(project_path_str, version, game_path_str):
     try:
+        _reset_cancel_flag("auto_structure_project")
         game_path = Path(game_path_str)
         target_dir = Path(project_path_str) / f"v{version}"
         
@@ -472,10 +576,12 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
                 shift += 7
 
         for d in valid_dirs:
+            _raise_if_cancelled("auto_structure_project")
             dir_path = game_path / d
             if not dir_path.exists(): continue
                 
             for tfi_path in dir_path.rglob("index.tfi"):
+                _raise_if_cancelled("auto_structure_project")
                 tfi_rel_dir = tfi_path.parent.relative_to(game_path)
                 try:
                     reader = BinaryReader(tfi_path.read_bytes())
@@ -498,6 +604,7 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
         ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
         
         for file_path in list(target_dir.rglob("*")):
+            _raise_if_cancelled("auto_structure_project")
             if not file_path.is_file() or file_path.suffix.lower() in ignored_extensions:
                 continue
             if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
@@ -515,14 +622,18 @@ def auto_structure_project_version(project_path_str, version, game_path_str):
                     moved_files.append({"old": str(file_path), "new": str(new_path)})
                         
         return {"success": True, "count": len(moved_files)}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
     
 @eel.expose
+@standardize_response
 def place_project_overrides(project_path_str, version, game_path_str):
     try:
+        _reset_cancel_flag("place_overrides")
         game_path = Path(game_path_str)
         target_dir = Path(project_path_str) / f"v{version}"
         
@@ -532,6 +643,7 @@ def place_project_overrides(project_path_str, version, game_path_str):
         placed_files = []
         
         for file_path in target_dir.rglob("*"):
+            _raise_if_cancelled("place_overrides")
             if file_path.is_file():
                 if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
                     continue
@@ -547,19 +659,32 @@ def place_project_overrides(project_path_str, version, game_path_str):
                 placed_files.append(str(game_override_path))
                 
         return {"success": True, "placed_files": placed_files, "count": len(placed_files)}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
 @eel.expose
+@standardize_response
 def remove_project_overrides(placed_files):
     try:
+        _reset_cancel_flag("remove_overrides")
         removed_count = 0
+        moved_files = []
+        undo_token = uuid.uuid4().hex
+        backup_dir = _trash_root() / undo_token
+        backup_dir.mkdir(parents=True, exist_ok=True)
+
         for file_str in placed_files:
+            if _is_cancelled("remove_overrides"):
+                break
             file_path = Path(file_str)
             if file_path.exists() and file_path.is_file():
-                file_path.unlink()
+                backup_path = backup_dir / f"{removed_count}_{file_path.name}"
+                shutil.move(str(file_path), str(backup_path))
+                moved_files.append({"original": str(file_path), "backup": str(backup_path)})
                 removed_count += 1
                 
                 try:
@@ -567,14 +692,77 @@ def remove_project_overrides(placed_files):
                         file_path.parent.rmdir()
                 except Exception:
                     pass
-                    
-        return {"success": True, "count": removed_count}
+
+        manifest = _read_undo_manifest()
+        if moved_files:
+            manifest[undo_token] = {
+                "created_at": datetime.now(UTC).isoformat(),
+                "files": moved_files,
+            }
+            _write_undo_manifest(manifest)
+
+        if _is_cancelled("remove_overrides"):
+            return {
+                "success": False,
+                "cancelled": True,
+                "error": "Operation cancelled by user.",
+                "count": removed_count,
+                "undo_token": undo_token if moved_files else None,
+            }
+
+        return {"success": True, "count": removed_count, "undo_token": undo_token if moved_files else None}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+@eel.expose
+@standardize_response
+def undo_remove_project_overrides(undo_token):
+    try:
+        token = str(undo_token or "").strip()
+        if not token:
+            return {"success": False, "error": "Missing undo token."}
+
+        manifest = _read_undo_manifest()
+        entry = manifest.get(token)
+        if not entry:
+            return {"success": False, "error": "Undo token not found or expired."}
+
+        restored = 0
+        conflicts = []
+
+        for item in entry.get("files", []):
+            original = Path(item.get("original", ""))
+            backup = Path(item.get("backup", ""))
+            if not backup.exists() or not backup.is_file():
+                continue
+            if original.exists():
+                conflicts.append(str(original))
+                continue
+
+            original.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(backup), str(original))
+            restored += 1
+
+        token_dir = _trash_root() / token
+        if token_dir.exists():
+            try:
+                shutil.rmtree(token_dir)
+            except Exception:
+                pass
+
+        manifest.pop(token, None)
+        _write_undo_manifest(manifest)
+
+        return {"success": True, "restored": restored, "conflicts": conflicts}
     except Exception as e:
         return {"success": False, "error": str(e)}
     
 @eel.expose
+@standardize_response
 def compile_project(project_path_str, version, game_path_str):
     try:
+        _reset_cancel_flag("compile_project")
         project_path = Path(project_path_str)
         game_path = Path(game_path_str)
         target_dir = project_path / f"v{version}"
@@ -624,6 +812,7 @@ def compile_project(project_path_str, version, game_path_str):
         ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
         
         for file_path in target_dir.rglob("*"):
+            _raise_if_cancelled("compile_project")
             if file_path.is_file() and file_path.suffix.lower() not in ignored_extensions:
                 if any(part.startswith("__") for part in file_path.relative_to(target_dir).parts):
                     continue
@@ -649,6 +838,8 @@ def compile_project(project_path_str, version, game_path_str):
         save_path.write_bytes(tmod_bytes)
 
         return {"success": True, "path": str(save_path)}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
         
     except Exception as e:
         import traceback

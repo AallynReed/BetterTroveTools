@@ -85,6 +85,25 @@
     border-color: var(--slot-border-active, #88c0d0);
 }
 
+.equipped-slot-placeholder {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.25;
+    filter: grayscale(100%);
+    pointer-events: none;
+}
+
+.equipped-slot-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
 .equipped-row {
     display: flex;
     gap: 40px;

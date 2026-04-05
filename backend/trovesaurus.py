@@ -9,10 +9,23 @@ import gevent
 import eel
 import requests
 
+from backend.mod_manager import delete_mod
 from models.trove.mod import TroveModList
 from utils.registry import TroveGamePath
 
 _local_hash_cache = {}
+
+
+def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
+    payload = {
+        "success": success,
+        "code": code or ("OK" if success else "ERROR"),
+        "data": data if data is not None else {},
+        "error": error,
+        "meta": meta or {}
+    }
+    payload.update(legacy)
+    return payload
 
 def _get_cached_api(endpoint, cache_filename, expiry=900):
     appdata = Path(os.getenv("APPDATA"))
@@ -64,7 +77,7 @@ def _get_cached_api(endpoint, cache_filename, expiry=900):
 
 
 @eel.expose
-def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_str=""):
+def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_str="", request_token=None):
     def task():
         try:
             req_id = None
@@ -77,19 +90,19 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
                 if req_id:
                     eel.remove_external_request(req_id, test_resp.status_code < 500)()
                 if test_resp.status_code >= 500:
-                    eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus is currently experiencing server issues."})()
+                    eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus is currently experiencing server issues.", "request_token": request_token})()
                     return
             except Exception:
                 if req_id:
                     eel.remove_external_request(req_id, False)()
-                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."})()
+                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection.", "request_token": request_token})()
                 return
 
             mods_all = _get_cached_api("https://trovesaurus.com/api/mods-all", "mods_all.json")
             mods_hot = _get_cached_api("https://trovesaurus.com/api/mods-hot", "mods_hot.json")
 
             if not mods_all:
-                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection."})()
+                eel.receive_trovesaurus_mods({"success": False, "error": "Trovesaurus didn't respond, it may be down or you might not have an internet connection.", "request_token": request_token})()
                 return
 
             if isinstance(mods_all, dict):
@@ -237,9 +250,9 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
                     "needs_update": needs_update
                 })
 
-            eel.receive_trovesaurus_mods({"success": True, "mods": result, "page": safe_page, "max_pages": max_pages})()
+            eel.receive_trovesaurus_mods({"success": True, "mods": result, "page": safe_page, "max_pages": max_pages, "request_token": request_token})()
         except Exception as e:
-            eel.receive_trovesaurus_mods({"success": False, "error": str(e)})()
+            eel.receive_trovesaurus_mods({"success": False, "error": str(e), "request_token": request_token})()
             
     gevent.spawn(task)
 
@@ -329,6 +342,90 @@ def install_trovesaurus_mod(game_path_str, mod_id):
             
     gevent.spawn(task)
 
+
+@eel.expose
+def delete_trovesaurus_installed_mod(game_path_str, mod_id):
+    try:
+        if not game_path_str:
+            return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
+
+        trove_path = TroveGamePath(Path(game_path_str))
+        mod_list = TroveModList(path=trove_path, partial=True)
+
+        hash_to_path = {
+            getattr(mod, "hash").lower(): str(mod.mod_path)
+            for mod in mod_list
+            if getattr(mod, "hash", None)
+        }
+        if not hash_to_path:
+            return _resp(False, error="No installed mods were found.", code="NO_INSTALLED_MODS")
+
+        target_mod_id = str(mod_id)
+        matched_path = None
+
+        hashes_list = list(hash_to_path.keys())
+        hash_batches = [hashes_list[i : i + 200] for i in range(0, len(hashes_list), 200)]
+
+        for batch in hash_batches:
+            payload = {"hashes": ",".join(batch)}
+            req_id = None
+            try:
+                req_id = eel.add_external_request(
+                    "Resolving Installed Mod", "https://trovesaurus.com/api/mods-hashes-to-mods"
+                )()
+            except Exception:
+                pass
+
+            try:
+                resp = requests.post(
+                    "https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10
+                )
+                if req_id:
+                    eel.remove_external_request(req_id, resp.status_code == 200)()
+                    req_id = None
+                if resp.status_code != 200:
+                    continue
+
+                batch_results = resp.json()
+                for h, resolved_mod_id in batch_results.items():
+                    if str(resolved_mod_id) != target_mod_id:
+                        continue
+                    path = hash_to_path.get(str(h).lower())
+                    if path:
+                        matched_path = path
+                        break
+                if matched_path:
+                    break
+            except Exception:
+                if req_id:
+                    eel.remove_external_request(req_id, False)()
+                    req_id = None
+
+        if not matched_path:
+            return _resp(False, error="Could not find an installed file for this mod.", code="INSTALLED_FILE_NOT_FOUND")
+
+        return delete_mod(game_path_str, matched_path)
+    except Exception as e:
+        return _resp(False, error=str(e), code="DELETE_TROVESAURUS_MOD_FAILED")
+
 @eel.expose
 def open_url_in_browser(url):
     webbrowser.open(url)
+
+
+@eel.expose
+def clear_trovesaurus_cache():
+    try:
+        appdata = Path(os.getenv("APPDATA"))
+        cache_dir = appdata.joinpath("Trove", "ModManagerCache")
+        removed = []
+        for filename in ["mods_all.json", "mods_hot.json"]:
+            file_path = cache_dir / filename
+            if file_path.exists():
+                file_path.unlink()
+                removed.append(filename)
+
+        _local_hash_cache.clear()
+        return _resp(True, data={"removed": removed}, removed=removed)
+    except Exception as e:
+        return _resp(False, error=str(e), code="CACHE_CLEAR_FAILED")

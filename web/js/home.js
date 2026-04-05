@@ -5,7 +5,7 @@ document.addEventListener('home_loaded', () => {
         return;
     }
 
-    const { createApp, ref, reactive, computed, onMounted, onUnmounted } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
 
     const app = createApp({
         setup() {
@@ -37,9 +37,11 @@ document.addEventListener('home_loaded', () => {
             const schedulesCache = ref({});
 
             const events = reactive({ loading: true, error: false, data: [] });
+            const timeMode = ref('local');
             
             const calendarModal = reactive({ show: false, isLoading: true, error: false });
             const calendarData = reactive({ months: [], days: [], tracks: [], todayPx: 0, totalWidth: 0 });
+            const calendarViewFilter = ref('full');
             
             const rotationModal = reactive({
                 show: false, titleHtml: '', color: '', iconClass: '', type: 'list',
@@ -76,6 +78,25 @@ document.addEventListener('home_loaded', () => {
                 else parts.push(t("{count} minutes").replace("{count}", mins));
                 const timeStr = parts.join(" ");
                 return showLeft ? t("{time} left").replace("{time}", timeStr) : timeStr;
+            };
+
+            const toDisplayDate = (input) => {
+                const base = input instanceof Date ? new Date(input.getTime()) : new Date(input);
+                if (timeMode.value !== 'trove') return base;
+                const utcMs = base.getTime() + (base.getTimezoneOffset() * 60000);
+                return new Date(utcMs - (11 * 3600000));
+            };
+
+            const formatDisplayDate = (ts, options) => {
+                const locale = (window.I18nManager && window.I18nManager.currentLocale)
+                    ? window.I18nManager.currentLocale.replace('_', '-')
+                    : 'en-US';
+                return toDisplayDate(ts).toLocaleString(locale, options);
+            };
+
+            const displayDateKey = (input) => {
+                const d = toDisplayDate(input);
+                return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
             };
 
             window._homeAppHandleYoutube = (response) => {
@@ -125,16 +146,49 @@ document.addEventListener('home_loaded', () => {
                 return events.data.map(ev => {
                     const startTs = parseInt(ev.startdate);
                     const endTs = parseInt(ev.enddate);
-                    const locale = (window.I18nManager && window.I18nManager.currentLocale) ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
-                    
-                    const startStr = new Date(startTs * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-                    const endStr = new Date(endTs * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-                    
-                    let statusText = nowSec.value < startTs ? t("Starts in {time}").replace("{time}", getCountdown(startTs, false)) : (nowSec.value < endTs ? t("Ends in {time}").replace("{time}", getCountdown(endTs, false)) : t("Event Ended"));
-                    let statusColor = nowSec.value < startTs ? "#5ec6ff" : (nowSec.value < endTs ? "#ff5555" : "#a3adc2");
-                    
-                    return { ...ev, startStr, endStr, statusText, statusColor, img: ev.image || ev.icon || 'https://trovesaurus.com/images/logos/Sage_64.png' };
+                    const startStr = formatDisplayDate(startTs * 1000, { month: 'short', day: 'numeric' });
+                    const endStr = formatDisplayDate(endTs * 1000, { month: 'short', day: 'numeric' });
+
+                    let statusText = '';
+                    let statusClass = '';
+
+                    if (nowSec.value < startTs) {
+                        statusText = t("Starts in {time}").replace("{time}", getCountdown(startTs, false));
+                        statusClass = 'is-upcoming';
+                    } else if (nowSec.value < endTs) {
+                        statusText = t("Ends in {time}").replace("{time}", getCountdown(endTs, false));
+                        statusClass = 'is-active';
+                    } else {
+                        statusText = t("Ended");
+                        statusClass = 'is-ended';
+                    }
+
+                    return {
+                        ...ev,
+                        startStr,
+                        endStr,
+                        statusText,
+                        statusClass,
+                        img: ev.image || ev.icon || 'https://trovesaurus.com/images/logos/Sage_64.png'
+                    };
                 });
+            });
+
+            const filteredCalendarTracks = computed(() => {
+                const nowMs = nowSec.value * 1000;
+                const nextWindowEnd = nowMs + (24 * 3600 * 1000);
+
+                const filtered = calendarData.tracks.map((track) => {
+                    let eventsForTrack = track.events;
+                    if (calendarViewFilter.value === 'now') {
+                        eventsForTrack = track.events.filter((ev) => ev.startTs <= nowMs && ev.endTs > nowMs);
+                    } else if (calendarViewFilter.value === 'next') {
+                        eventsForTrack = track.events.filter((ev) => ev.startTs > nowMs && ev.startTs <= nextWindowEnd);
+                    }
+                    return { ...track, events: eventsForTrack };
+                }).filter((track) => track.events.length > 0);
+
+                return filtered;
             });
 
             const chaosChestCard = computed(() => {
@@ -307,8 +361,8 @@ document.addEventListener('home_loaded', () => {
                         const actionType = (card.id === 'invasion' || card.id === 'fluxion') ? 'event' : 'merchant';
                         sch.forEach((rot, index) => {
                             const isNext = index === 0;
-                            const startStr = new Date(rot.start * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-                            const endStr = new Date(rot.end * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                            const startStr = formatDisplayDate(rot.start * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                            const endStr = formatDisplayDate(rot.end * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             
                             let arriveStr = actionType === 'event' ? t("Starts in {time}") : t("Arrives in {time}");
                             let leaveStr = actionType === 'event' ? t("Ends in {time}") : t("Leaves in {time}");
@@ -351,8 +405,8 @@ document.addEventListener('home_loaded', () => {
                     if (gardening.value?.future) {
                         gardening.value.future.forEach((rot, index) => {
                             const isNext = index === 0;
-                            const startStr = new Date(rot.start * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-                            const endStr = new Date(rot.end * 1000).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                            const startStr = formatDisplayDate(rot.start * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+                            const endStr = formatDisplayDate(rot.end * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             let timeText = rot.start * 1000 < Date.now() ? t("Ends in {time}").replace("{time}", getCountdown(rot.end, false)) : t("Starts in {time}").replace("{time}", getCountdown(rot.start, false));
                             const phaseColor = rot.name.includes('3') ? '#4caf50' : '#8bc34a';
                             
@@ -376,14 +430,14 @@ document.addEventListener('home_loaded', () => {
                         const dayEndTs = dayStart.getTime() + 86400000;
                         const dayRots = rotations.filter(rot => (rot.start * 1000 < dayEndTs && rot.end * 1000 > dayStart.getTime())).sort((a,b) => a.start - b.start);
                         if (dayRots.length > maxRows) maxRows = dayRots.length;
-                        daysData.push({ label: i === 0 ? t("Today") : dayStart.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' }), rots: dayRots });
+                        daysData.push({ label: i === 0 ? t("Today") : formatDisplayDate(dayStart, { weekday: 'short', month: 'short', day: 'numeric' }), rots: dayRots });
                     }
                     
                     const rows = [];
                     for (let r = 0; r < maxRows; r++) {
                         let timeStr = "";
                         let baseRot = daysData[0].rots[r] || daysData[1].rots[r];
-                        if (baseRot) timeStr = new Date(baseRot.start * 1000).toLocaleTimeString(locale, { hour: '2-digit', minute:'2-digit' });
+                        if (baseRot) timeStr = formatDisplayDate(baseRot.start * 1000, { hour: '2-digit', minute:'2-digit' });
                         
                         const slots = daysData.map(day => {
                             const rot = day.rots[r];
@@ -408,6 +462,39 @@ document.addEventListener('home_loaded', () => {
             const isDraggingTimeline = ref(false);
             let dragStartX = 0, dragScrollLeft = 0;
 
+            const jumpToCalendarTarget = (target) => {
+                const wrapper = timelineWrapperRef.value;
+                if (!wrapper || !calendarData.tracks.length) return;
+
+                const nowMs = nowSec.value * 1000;
+                const allEvents = calendarData.tracks.flatMap((track) => track.events || []);
+                const matches = allEvents.filter((ev) => {
+                    if (target === 'weekly_buff') return ev.sourceTrack === 'weekly_buff';
+                    if (target === 'mana') return ev.sourceTrack === 'mana' || ev.sourceType === 'mana';
+                    if (target === 'stampy') return ev.sourceTrack === 'stampy' || ev.sourceType === 'stampy';
+                    if (target === 'd15') return ev.sourceTrack === 'd15' || ev.sourceType === 'd15';
+                    return ev.sourceType === target;
+                });
+
+                if (!matches.length) {
+                    window.showToast(t('No timeline entries found for this target right now.'), true);
+                    return;
+                }
+
+                const sorted = [...matches].sort((a, b) => {
+                    const aDelta = a.startTs >= nowMs ? a.startTs - nowMs : Math.abs(nowMs - a.startTs) + 999999999;
+                    const bDelta = b.startTs >= nowMs ? b.startTs - nowMs : Math.abs(nowMs - b.startTs) + 999999999;
+                    return aDelta - bDelta;
+                });
+
+                const pick = sorted[0];
+                wrapper.style.scrollBehavior = 'smooth';
+                wrapper.scrollLeft = Math.max(0, pick.leftPx - (wrapper.clientWidth * 0.35));
+                setTimeout(() => {
+                    if (timelineWrapperRef.value) timelineWrapperRef.value.style.scrollBehavior = 'auto';
+                }, 400);
+            };
+
             const loadYearlyCalendar = async () => {
                 calendarModal.isLoading = true;
                 calendarModal.error = false;
@@ -418,26 +505,37 @@ document.addEventListener('home_loaded', () => {
                     const evs = res.events;
                     const startTs = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 365).getTime();
                     const totalDays = 730;
-                    const dayWidth = 40; 
+                    const dayWidth = 40;
                     
                     calendarData.totalWidth = 140 + (totalDays * dayWidth);
-                    calendarData.todayPx = ((Date.now() - startTs) / 86400000) * dayWidth;
                     
                     let months = [], days = [], currentMonthKey = null, currentMonth = null;
                     const locale = (window.I18nManager && window.I18nManager.currentLocale) ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
+                    const todayKey = displayDateKey(Date.now());
+                    let todayIndex = 365;
 
                     for(let i=0; i<totalDays; i++) {
                         const d = new Date(startTs + (i * 86400000));
-                        const monthKey = d.getFullYear() + "-" + d.getMonth();
+                        const displayDate = toDisplayDate(d);
+                        const monthKey = displayDate.getFullYear() + "-" + displayDate.getMonth();
                         if (monthKey !== currentMonthKey) {
                             if (currentMonth) months.push(currentMonth);
                             currentMonthKey = monthKey;
-                            currentMonth = { name: d.toLocaleDateString(locale, { month: 'long' }), year: d.getFullYear(), days: 0 };
+                            currentMonth = { name: displayDate.toLocaleDateString(locale, { month: 'long' }), year: displayDate.getFullYear(), days: 0 };
                         }
                         currentMonth.days++;
-                        days.push({ isToday: i === 365, num: d.getDate(), weekday: d.toLocaleDateString(locale, { weekday: 'short' }) });
+                        const isToday = displayDateKey(d) === todayKey;
+                        if (isToday) todayIndex = i;
+                        days.push({
+                            isToday,
+                            num: displayDate.getDate(),
+                            weekday: displayDate.toLocaleDateString(locale, { weekday: 'short' })
+                        });
                     }
                     if (currentMonth) months.push(currentMonth);
+
+                    // Anchor the line to the center of the day column, not current clock time.
+                    calendarData.todayPx = (todayIndex * dayWidth) + (dayWidth / 2);
                     
                     calendarData.months = months;
                     calendarData.days = days;
@@ -445,6 +543,7 @@ document.addEventListener('home_loaded', () => {
                     const trackDefs = [
                         { id: 'weekly_buff', name: 'Weekly Buffs', color: 'weekly', icon: 'fa-bolt' },
                         { id: 'dragon_merchants', types: ['luxion', 'corruxion', 'fluxion'], name: 'Dragon Merchants', color: 'luxion', icon: 'fa-dragon' },
+                        { id: 'd15', name: 'D15 Biomes', color: 'gardening', icon: 'fa-leaf' },
                         { id: 'gardening_2', name: '2-day plants', color: 'gardening', icon: 'fa-seedling' },
                         { id: 'gardening_3', name: '3-day plants', color: 'gardening', icon: 'fa-seedling' },
                         { id: 'mana', name: 'Wild Mana', color: 'mana', icon: 'fa-flask' },
@@ -474,7 +573,7 @@ document.addEventListener('home_loaded', () => {
                                 
                                 let tooltipText = `<div style="font-weight: bold; color: var(--accent-blue); margin-bottom: 5px; font-size: 1.1em;">${t(ev.name)}</div>`;
                                 if (ev.biome_names && ev.biome_names.length > 0) tooltipText += `<div style="margin-bottom: 5px; color: #fff;">${ev.biome_names.map(b => '• ' + t(b)).join('<br>')}</div>`;
-                                tooltipText += `<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 4px;"><i class="fa-regular fa-clock"></i> ${new Date(eStartTs).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} - ${new Date(eEndTs).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</div>`;
+                                tooltipText += `<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 4px;"><i class="fa-regular fa-clock"></i> ${formatDisplayDate(eStartTs, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} - ${formatDisplayDate(eEndTs, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</div>`;
                                 
                                 let iconsHtml = "";
                                 if (ev.icons?.length > 0) iconsHtml = `<div style="display: flex; gap: 2px; align-items: center; margin-right: 4px;">${ev.icons.map(ic => `<img src="/assets/images/biomes/${ic}.png" onerror="this.style.display='none'" style="width: 14px; height: 14px; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.5));">`).join('')}</div>`;
@@ -488,28 +587,42 @@ document.addEventListener('home_loaded', () => {
                                 else if (track.id === 'dragon_merchants' && widthPx > 40) showText = `<span style="font-weight: normal; text-transform: uppercase; margin-left: 4px;">${ev.type === 'fluxion' ? (ev.name.includes('Voting') ? t("Voting") : t("Selling")) : t(ev.type.charAt(0).toUpperCase() + ev.type.slice(1))}</span>`;
                                 
                                 const fullStyle = `left: ${leftPx + 140}px; width: ${widthPx}px; top: 6px; ${customStyle}`;
-                                mapped.push({ style: fullStyle, tooltip: tooltipText.replace(/"/g, '&quot;'), colorClass: track.types ? ev.type : track.color, htmlContent: `${iconsHtml}${showText}` });
+                                mapped.push({
+                                    style: fullStyle,
+                                    tooltip: tooltipText.replace(/"/g, '&quot;'),
+                                    colorClass: track.types ? ev.type : track.color,
+                                    htmlContent: `${iconsHtml}${showText}`,
+                                    sourceType: ev.type,
+                                    sourceTrack: track.id,
+                                    startTs: eStartTs,
+                                    endTs: eEndTs,
+                                    leftPx: leftPx + 140
+                                });
                             }
                         });
                         return { ...track, events: mapped };
-                    });
+                    }).filter((track) => track.events.length > 0);
                     calendarModal.isLoading = false;
-                    setTimeout(centerCalendarToday, 50);
+                    setTimeout(() => centerCalendarToday(false), 50);
                 } catch(e) { calendarModal.error = true; calendarModal.isLoading = false; }
             };
 
-            const centerCalendarToday = () => {
+            const centerCalendarToday = (animate = true) => {
                 if (timelineWrapperRef.value) {
-                    timelineWrapperRef.value.style.scrollBehavior = 'smooth';
+                    timelineWrapperRef.value.style.scrollBehavior = animate ? 'smooth' : 'auto';
                     timelineWrapperRef.value.scrollLeft = calendarData.todayPx + 140 - (timelineWrapperRef.value.clientWidth / 2);
-                    setTimeout(() => timelineWrapperRef.value.style.scrollBehavior = 'auto', 500);
+                    if (animate) {
+                        setTimeout(() => timelineWrapperRef.value.style.scrollBehavior = 'auto', 500);
+                    }
                 }
             };
 
             const startDrag = (e) => { isDraggingTimeline.value = true; dragStartX = e.pageX - timelineWrapperRef.value.offsetLeft; dragScrollLeft = timelineWrapperRef.value.scrollLeft; };
             const onDrag = (e) => { if (!isDraggingTimeline.value) return; e.preventDefault(); timelineWrapperRef.value.scrollLeft = dragScrollLeft - ((e.pageX - timelineWrapperRef.value.offsetLeft) - dragStartX) * 1.5; };
             const stopDrag = () => { isDraggingTimeline.value = false; };
-            const onWheel = (e) => { if (e.deltaY !== 0) timelineWrapperRef.value.scrollLeft += e.deltaY; };
+            const onWheel = (e) => {
+                if (e.deltaY !== 0) timelineWrapperRef.value.scrollLeft += e.deltaY;
+            };
 
             onMounted(() => {
                 refreshAllData();
@@ -520,6 +633,12 @@ document.addEventListener('home_loaded', () => {
                     if (e.target && e.target.id === 'global-language-select') setTimeout(refreshAllData, 150);
                 };
                 document.addEventListener('change', window._homeLangListener);
+            });
+
+            watch(timeMode, async () => {
+                if (calendarModal.show) {
+                    await loadYearlyCalendar();
+                }
             });
 
             onUnmounted(() => {
@@ -533,7 +652,9 @@ document.addEventListener('home_loaded', () => {
                 serverData, events, mappedEvents, merchantCards, chaosChestCard,
                 scrollCarousel, openUrl, openBuffSchedule, openMerchantSchedule,
                 rotationModal, calendarModal, calendarData, loadYearlyCalendar, centerCalendarToday,
-                timelineWrapperRef, isDraggingTimeline, startDrag, onDrag, stopDrag, onWheel
+                timelineWrapperRef, isDraggingTimeline, startDrag, onDrag, stopDrag, onWheel,
+                filteredCalendarTracks, calendarViewFilter, jumpToCalendarTarget,
+                timeMode
             };
         }
     });

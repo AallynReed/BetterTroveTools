@@ -2,9 +2,11 @@ import eel
 import requests
 import json
 import os
+from backend.response import resp, standardize_response
 
 
 @eel.expose
+@standardize_response
 def sync_allies_data():
     req_id = None
     try:
@@ -24,9 +26,9 @@ def sync_allies_data():
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(response.json(), f, indent=4)
         print("✅ Allies data synced successfully!")
-        return {"success": True}
+        return resp(True)
     except Exception as e:
         if req_id:
             eel.remove_external_request(req_id, False)()
         print(f"Ally sync skipped/failed: {e}")
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="SYNC_ALLIES_FAILED")

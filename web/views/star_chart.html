@@ -1,31 +1,39 @@
 <head>
     <link rel="stylesheet" href="css/star_chart.css">
 </head>
-<div id="star-chart-vue-app" class="star-chart-container" v-cloak>
-    <div class="star-chart-header">
-        <h1>{{ t('Star Chart') }}</h1>
-        <p class="file-meta">{{ t('Interactive Constellation Map') }}</p>
-    </div>
-    
+<div id="star-chart-vue-app" class="star-chart-container" v-cloak>    
     <div class="chart-layout">
         <div id="chart-wrapper" :class="{ 'placeholder-box': isLoading }">
             <h3 v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Calculating Constellations...') }}</span></h3>
-            
-            <svg v-else id="chart-svg" viewBox="0 0 1000 1000">
+            <template v-else>
+            <div class="chart-toolbar">
+                <div class="chart-toolbar-title"><i class="fa-solid fa-star"></i> {{ t('Interactive Star Chart') }}</div>
+                <div class="chart-toolbar-hints">
+                    <span class="chart-hint-chip"><i class="fa-solid fa-computer-mouse"></i> {{ t('Click nodes to select path') }}</span>
+                    <span class="chart-hint-chip"><i class="fa-solid fa-circle-dot"></i> {{ t('Click center to clear all') }}</span>
+                </div>
+            </div>
+
+            <svg id="chart-svg" viewBox="0 0 1000 1000">
                 <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" stroke="#333" stroke-width="3" :class="{'line-selected': line.selected}" />
                 
-                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="20" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="root-node" :class="{'root-active': hasAnySelection}" />
+                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="t('Quick Clear: Remove all active nodes')" @click="clearAllSelectedNodes" />
 
                 <template v-for="node in renderNodes" :key="node.id">
-                    <polygon v-if="node.Type === 'Root'" :points="node.points" fill="var(--bg-dark, #111)" :stroke="node.stroke" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive}" @click="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                    <polygon v-if="node.Type === 'Root'" :points="node.points" fill="var(--bg-dark, #111)" :stroke="node.stroke" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                     
-                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :fill="node.fill" stroke="#111" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten}" @click="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :fill="node.fill" stroke="#111" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten}" @click.left="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                 </template>
             </svg>
+            </template>
         </div>
 
         <div id="build-summary-panel">
             <h3>{{ t('Current Build') }}</h3>
+            <div class="build-meta-row">
+                <span class="build-meta-chip"><i class="fa-solid fa-diagram-project"></i> {{ t('Nodes') }}: {{ selectedNodeCount }}/40</span>
+                <span class="build-meta-chip" :class="{ active: hasAnySelection }"><i class="fa-solid" :class="hasAnySelection ? 'fa-circle-check' : 'fa-circle' "></i> {{ hasAnySelection ? t('Active') : t('Empty') }}</span>
+            </div>
             
             <div class="build-share-controls">
                 <input type="text" id="build-code-input" v-model="buildCode" :placeholder="t('Paste build code here...')" autocomplete="off" spellcheck="false" @focus="codeInputFocused = true" @blur="codeInputFocused = false" />

@@ -10,6 +10,14 @@ document.addEventListener("gem_builds_loaded", () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const unwrapResp = (resp, key = null, fallback = null) => {
+                if (key) {
+                    if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
+                    if (resp && resp.data && Object.prototype.hasOwnProperty.call(resp.data, key)) return resp.data[key];
+                }
+                if (resp && resp.data !== undefined && resp.success !== undefined) return resp.data;
+                return resp ?? fallback;
+            };
 
             const config = reactive({
                 character: "Boomeranger",
@@ -169,7 +177,8 @@ document.addEventListener("gem_builds_loaded", () => {
                             star_chart: config.star_chart
                         };
                         const results = await eel.calculate_gem_builds(pyConfig)();
-                        cachedBuilds.value = results || [];
+                        const parsedResults = unwrapResp(results, 'builds', results);
+                        cachedBuilds.value = parsedResults || [];
                         currentPage.value = 0;
                     } catch (e) {
                         console.error(e);
@@ -213,7 +222,8 @@ document.addEventListener("gem_builds_loaded", () => {
                     const decoded = atob(newVal);
                     const paths = decoded.split('$');
                     const parsedData = await eel.parse_star_chart_code(newVal)();
-                    starChartSummary.value = { pathsCount: paths.length, stats: parsedData?.stats || {}, error: false };
+                    const parsed = unwrapResp(parsedData, null, {});
+                    starChartSummary.value = { pathsCount: paths.length, stats: parsed?.stats || {}, error: false };
                 } catch(e) {
                     starChartSummary.value = { error: true };
                 }
@@ -231,10 +241,15 @@ document.addEventListener("gem_builds_loaded", () => {
                         eel.get_ally_data()(),
                         eel.get_star_chart_templates()()
                     ]);
-                    if (cData) classesData.value = cData;
-                    if (fData) foodsData.value = fData;
-                    if (aData) alliesData.value = aData;
-                    if (scData) starChartTemplates.value = scData;
+                    const classes = unwrapResp(cData, 'classes', []);
+                    const foods = unwrapResp(fData, null, {});
+                    const allies = unwrapResp(aData, null, {});
+                    const templates = unwrapResp(scData, 'templates', {});
+
+                    if (classes) classesData.value = classes;
+                    if (foods) foodsData.value = foods;
+                    if (allies) alliesData.value = allies;
+                    if (templates) starChartTemplates.value = templates;
                     
                     triggerCalculation();
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });

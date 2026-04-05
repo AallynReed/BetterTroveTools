@@ -5,7 +5,7 @@ document.addEventListener('allies_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick } = Vue;
 
     const app = createApp({
         setup() {
@@ -15,29 +15,59 @@ document.addEventListener('allies_loaded', async () => {
             const alliesData = ref([]);
             
             const categoryOptions = ref([]);
-            const statsList = ref([]);
-            const abilitiesList = ref([]);
+            const statsOptions = ref([[t('All Stats'), '']]);
+            const abilitiesOptions = ref([[t('All Abilities'), '']]);
 
             const searchQuery = ref('');
+            const activeResultIndex = ref(-1);
             const selectedCategory = ref('All');
-            const selectedStats = ref([]);
-            const selectedAbilities = ref([]);
+            const selectedStat = ref('');
+            const selectedAbility = ref('');
+            const toursEnabled = window.BTT_ENABLE_ONBOARDING_TOURS !== false;
+            const showOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref('onboarding_allies_v1', '') !== 'dismissed' : true));
+            const showSearchShortcutHint = ref(window.AppSettings ? window.AppSettings.getPref('hint_allies_search_shortcuts_v1', '') !== 'dismissed' : true);
 
             const resetFilters = () => {
                 searchQuery.value = '';
                 selectedCategory.value = 'All';
-                selectedStats.value = [];
-                selectedAbilities.value = [];
+                selectedStat.value = '';
+                selectedAbility.value = '';
+            };
+
+            const dismissOnboardingTips = () => {
+                showOnboardingTips.value = false;
+                if (window.AppSettings) window.AppSettings.setPrefSync('onboarding_allies_v1', 'dismissed');
+            };
+
+            const dismissSearchShortcutHint = () => {
+                showSearchShortcutHint.value = false;
+                if (window.AppSettings) window.AppSettings.setPrefSync('hint_allies_search_shortcuts_v1', 'dismissed');
             };
 
             const formatStat = (statText) => {
-                const isHighlighted = selectedStats.value.some(h => statText.includes(h));
+                const isHighlighted = !!selectedStat.value && statText.includes(selectedStat.value);
                 return isHighlighted ? `<strong>${statText}</strong>` : statText;
             };
 
             const formatAbility = (abilityText) => {
-                const isHighlighted = selectedAbilities.value.includes(abilityText);
+                const isHighlighted = !!selectedAbility.value && selectedAbility.value === abilityText;
                 return isHighlighted ? `<strong>${abilityText}</strong>` : abilityText;
+            };
+
+            const escapeHtml = (text) => String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            const highlightSearch = (text) => {
+                const q = searchQuery.value.trim();
+                const safe = escapeHtml(text || '');
+                if (!q) return safe;
+                const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const re = new RegExp(`(${escaped})`, 'ig');
+                return safe.replace(re, '<mark>$1</mark>');
             };
 
             const filteredAllies = computed(() => {
@@ -67,7 +97,8 @@ document.addEventListener('allies_loaded', async () => {
                         if (generalSearch.length > 0) {
                             const matchGeneral = a.name.toLowerCase().includes(generalSearch) || 
                                                  (a.designer && a.designer.toLowerCase().includes(generalSearch)) ||
-                                                 a.extractedAbilities.some(ab => ab.toLowerCase().includes(generalSearch));
+                                                 a.extractedAbilities.some(ab => ab.toLowerCase().includes(generalSearch)) ||
+                                                 (window.fuzzyIncludes ? window.fuzzyIncludes(`${a.name || ''} ${a.designer || ''} ${(a.extractedAbilities || []).join(' ')}`, generalSearch, 4) : false);
                             if (!matchGeneral) return false;
                         }
                         return true;
@@ -78,10 +109,10 @@ document.addEventListener('allies_loaded', async () => {
                     result = result.filter(a => a.category === selectedCategory.value);
                 }
 
-                if (selectedStats.value.length > 0) {
-                    result = result.filter(a => selectedStats.value.every(s => a.parsedStats[s] !== undefined));
-                    
-                    const primary = selectedStats.value[0];
+                if (selectedStat.value) {
+                    result = result.filter(a => a.parsedStats[selectedStat.value] !== undefined);
+
+                    const primary = selectedStat.value;
                     result.sort((a, b) => {
                         const sA = a.parsedStats[primary];
                         const sB = b.parsedStats[primary];
@@ -93,12 +124,59 @@ document.addEventListener('allies_loaded', async () => {
                     result = [...result].sort((a, b) => a.name.localeCompare(b.name));
                 }
 
-                if (selectedAbilities.value.length > 0) {
-                    result = result.filter(a => selectedAbilities.value.every(ab => a.extractedAbilities.includes(ab)));
+                if (selectedAbility.value) {
+                    result = result.filter(a => a.extractedAbilities.includes(selectedAbility.value));
                 }
 
                 return result;
             });
+
+            const setActiveResult = (index) => {
+                const cards = Array.from(document.querySelectorAll('#allies-vue-app .ally-card'));
+                cards.forEach(c => c.classList.remove('kbd-active-result'));
+                if (!cards.length) {
+                    activeResultIndex.value = -1;
+                    return;
+                }
+                const normalized = ((index % cards.length) + cards.length) % cards.length;
+                activeResultIndex.value = normalized;
+                cards[normalized].classList.add('kbd-active-result');
+                cards[normalized].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            };
+
+            const nextSearchResult = () => setActiveResult(activeResultIndex.value + 1);
+            const prevSearchResult = () => setActiveResult(activeResultIndex.value - 1);
+
+            const focusSearchInput = () => {
+                const input = document.getElementById('ally-search-input');
+                if (!input) return;
+                input.focus();
+                input.select();
+            };
+
+            const onKeyDown = (e) => {
+                const root = document.getElementById('allies-vue-app');
+                if (!root || root.offsetParent === null) return;
+                if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'f') {
+                    const input = document.getElementById('ally-search-input');
+                    if (input) {
+                        e.preventDefault();
+                        input.focus();
+                        input.select();
+                    }
+                    return;
+                }
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.id === 'ally-search-input') {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        nextSearchResult();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        prevSearchResult();
+                    }
+                }
+            };
 
             onMounted(async () => {
                 if (window.eel && eel.sync_allies_data) {
@@ -160,28 +238,36 @@ document.addEventListener('allies_loaded', async () => {
                     Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
                     categoryOptions.value = catOpts;
 
-                    statsList.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
-                    abilitiesList.value = Array.from(uniqueAbilities).sort().map(a => ({ id: a, text: t(a) }));
+                    statsOptions.value = [[t('All Stats'), '']].concat(Array.from(uniqueStats).sort().map(s => [t(s), s]));
+                    abilitiesOptions.value = [[t('All Abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
 
                 } catch (err) {
                     console.error("Failed to load allies data:", err);
                 }
                 
                 isLoading.value = false;
+                document.addEventListener('keydown', onKeyDown);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+            });
+
+            onBeforeUnmount(() => {
+                document.removeEventListener('keydown', onKeyDown);
             });
 
             return {
                 t, isLoading, alliesData, filteredAllies,
-                searchQuery, selectedCategory, selectedStats, selectedAbilities,
-                categoryOptions, statsList, abilitiesList,
-                resetFilters, formatStat, formatAbility
+                searchQuery, selectedCategory, selectedStat, selectedAbility,
+                categoryOptions, statsOptions, abilitiesOptions,
+                resetFilters, formatStat, formatAbility,
+                highlightSearch, nextSearchResult, prevSearchResult,
+                focusSearchInput,
+                showSearchShortcutHint, dismissSearchShortcutHint,
+                showOnboardingTips, dismissOnboardingTips
             };
         }
     });
 
     app.component('custom-vue-select', window.CustomVueSelect);
-    app.component('select2', window.Select2Component);
     
     if (window._alliesApp) window._alliesApp.unmount();
     window._alliesApp = app;

@@ -4,7 +4,6 @@
 <div id="trovesaurus-vue-app" class="trovesaurus-container" v-cloak>
     <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
         <div>
-            <h1><img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" style="width: 32px; vertical-align: middle; margin-right: 10px;"> <span>{{ t('Trovesaurus Mod Browser') }}</span></h1>
             <p style="color: var(--text-muted); margin-top: 5px;">{{ t('Discover and install mods directly from the community.') }}</p>
         </div>
         
@@ -13,6 +12,14 @@
             <div style="width: 250px;">
                 <custom-vue-select v-model="selectedGame" :options="gameOptions"></custom-vue-select>
             </div>
+            <button class="primary-btn" @click="refreshMods" :disabled="isLoading || isRefreshing" :title="t('Refresh install state')">
+                <template v-if="isRefreshing"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                <template v-else><i class="fa-solid fa-arrows-rotate"></i></template>
+            </button>
+            <button class="primary-btn" @click="clearCache" :disabled="isClearingCache" :title="t('Clear Trovesaurus cache')">
+                <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                <template v-else><i class="fa-solid fa-broom"></i></template>
+            </button>
         </div>
     </div>
 
@@ -41,22 +48,36 @@
         <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found matching your search.') }}</div>
         <template v-else>
             <div v-for="mod in mods" :key="mod.id" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
-                <div class="mod-image-container" style="cursor: pointer;" :title="t('Click to enlarge image')" @click="openImageModal(mod)">
-                    <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
-                </div>
-                <div class="mod-card-content">
-                    <h3 class="mod-title ts-mod-title" :title="t('{name} (Click to view on Trovesaurus)').replace('{name}', mod.name)" @click="openUrl(`https://trovesaurus.com/mod=${mod.id}`)">{{ mod.name }}</h3>
-                    <span class="mod-meta"><span :class="{ 'ts-mod-author': !!mod.author_id }" :title="mod.author_id ? t(`View {author}'s profile`).replace('{author}', mod.author) : ''" @click="mod.author_id && openUrl(`https://trovesaurus.com/user=${mod.author_id}`)">{{ mod.author }}</span></span>
-                    <div class="ts-mod-stats">
-                        <span class="ts-stat-item" :title="t('Downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ mod.downloads.toLocaleString() }}</span>
-                        <span class="ts-stat-item" :title="t('Likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ mod.likes.toLocaleString() }}</span>
+                <div class="ts-card-content">
+                    <div class="ts-front-top">
+                        <a class="mod-title ts-mod-title" href="#" :title="t('Open in trovesaurus')" @click.prevent="openUrl(`https://trovesaurus.com/mod=${mod.id}`)">{{ mod.name }}</a>
+                        <button v-if="mod.is_installed" class="ts-card-delete-hover" :title="t('Delete Installed Mod')" @click.stop.prevent="deleteInstalledMod(mod)" :disabled="mod.is_deleting">
+                            <i class="fa-solid" :class="mod.is_deleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                        </button>
                     </div>
-                    <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click.stop.prevent="installMod(mod)">
-                        <template v-if="mod.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Installing...') }}</template>
-                        <template v-else-if="mod.needs_update"><i class="fa-solid fa-rotate"></i> {{ t('Update') }}</template>
-                        <template v-else-if="mod.is_installed"><i class="fa-solid fa-check"></i> {{ t('Installed') }}</template>
-                        <template v-else><i class="fa-solid fa-download"></i> {{ t('Install') }}</template>
+
+                    <span class="mod-meta">
+                        <a v-if="mod.author_id" class="ts-mod-author" href="#" :title="t(`View {author}'s profile`).replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/user=${mod.author_id}`)">{{ mod.author }}</a>
+                        <a v-else class="ts-mod-author" href="#" :title="t('Search mods by {author}').replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/search?query=${encodeURIComponent(mod.author || '')}`)">{{ mod.author }}</a>
+                    </span>
+
+                    <button class="ts-front-preview" @click="openImageModal(mod)" :title="t('Click to enlarge image')">
+                        <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
                     </button>
+
+                    <div class="ts-mod-stats">
+                        <span class="ts-stat-item" :title="t('Downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(mod.downloads) }}</span>
+                        <span class="ts-stat-item" :title="t('Likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ formatCount(mod.likes) }}</span>
+                    </div>
+
+                    <div class="ts-inline-actions">
+                        <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click.stop.prevent="installMod(mod)">
+                            <template v-if="mod.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Installing...') }}</template>
+                            <template v-else-if="mod.needs_update"><i class="fa-solid fa-rotate"></i> {{ t('Update') }}</template>
+                            <template v-else-if="mod.is_installed"><i class="fa-solid fa-check"></i> {{ t('Installed') }}</template>
+                            <template v-else><i class="fa-solid fa-download"></i> {{ t('Install') }}</template>
+                        </button>
+                    </div>
                 </div>
             </div>
         </template>

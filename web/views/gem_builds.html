@@ -2,17 +2,12 @@
     <link rel="stylesheet" href="css/gem_builds.css">
 </head>
 <div id="gem-builds-vue-app" class="view-container" v-cloak>
-    <div class="header">
-        <h2>{{ t('Gem') }} <span class="highlight-orange">{{ t('Builds') }}</span> {{ t('Optimizer') }}</h2>
-        <p>{{ t('Calculate the absolute mathematical best gem allocations for your setup.') }}</p>
-    </div>
-
     <div class="gem-builds-grid">
         
         <div class="config-panel-wrapper">
-            <div class="card config-panel">
+            <div class="card config-panel">c:\Users\Aallyn\AppData\Local\Packages\MicrosoftWindows.Client.Core_cw5n1h2txyewy\TempState\ScreenClip\{CBBCAF60-5C11-42F3-B966-B8E86C47074F}.png
             <div class="config-section">
-                <h4>{{ t('Character') }}</h4>
+                <h4><i class="fa-solid fa-user-astronaut"></i> {{ t('Character') }}</h4>
                 <div class="input-group">
                     <label>{{ t('Class') }}</label>
                     <div class="select-with-icon">
@@ -35,7 +30,7 @@
             </div>
 
             <div class="config-section">
-                <h4>{{ t('Build & Gear') }}</h4>
+                <h4><i class="fa-solid fa-shield-halved"></i> {{ t('Build & Gear') }}</h4>
                 <div class="input-group">
                     <label>{{ t('Build Type') }}</label>
                     <select v-model="config.build_type">
@@ -74,7 +69,7 @@
             </div>
 
             <div class="config-section">
-                <h4>{{ t('Modifiers') }}</h4>
+                <h4><i class="fa-solid fa-sliders"></i> {{ t('Modifiers') }}</h4>
                 <div class="toggles-grid">
                     <label class="toggle-container" :title="t('Simulates Berserker Battler Gem ability being active')">
                         <input type="checkbox" v-model="config.berserker_battler">
@@ -103,7 +98,7 @@
             </div>
 
             <div class="config-section">
-                <h4>{{ t('Star Chart') }}</h4>
+                <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart') }}</h4>
                 <div class="input-group">
                     <label>{{ t('Star Chart Build Code (Base64)') }}</label>
                     <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%; margin-bottom: 8px;">
@@ -142,6 +137,18 @@
         </div>
 
         <div class="card results-panel">
+            <div class="results-toolbar">
+                <div class="results-metrics">
+                    <span class="metric-chip"><i class="fa-solid fa-list-ol"></i> {{ t('Builds') }}: {{ cachedBuilds.length }}</span>
+                    <span class="metric-chip" v-if="cachedBuilds.length > 0"><i class="fa-solid fa-trophy"></i> {{ t('Best Coeff') }}: {{ bestCoeff.toLocaleString() }}</span>
+                    <span class="metric-chip"><i class="fa-solid fa-gem"></i> {{ t(config.build_type) }}</span>
+                </div>
+                <div class="results-state" :class="{ busy: isCalculating }">
+                    <i class="fa-solid" :class="isCalculating ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
+                    <span>{{ isCalculating ? t('Calculating...') : t('Ready') }}</span>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="btt-table">
                     <thead>
@@ -164,9 +171,9 @@
                         <tr v-else-if="cachedBuilds.length === 0">
                             <td colspan="9" class="text-center text-muted">{{ t('No builds generated. Check your config.') }}</td>
                         </tr>
-                        <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :style="{ background: build.rank === 1 ? 'rgba(var(--accent-rgb), 0.1)' : '' }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
+                        <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :class="{ 'row-best': build.rank === 1 }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
                             <td class="text-center">{{ build.rank }}</td>
-                            <td class="build-layout-cell text-left" style="font-family: monospace; color: var(--accent-orange); cursor: pointer;" :title="t('Click to copy')" @click="copyLayout(build.layout, $event)">
+                            <td class="build-layout-cell text-left" :title="t('Click to copy')" @click="copyLayout(build.layout, $event)">
                                 {{ build.layout }}
                             </td>
                             <td class="text-right">{{ build.light.toLocaleString() }}</td>

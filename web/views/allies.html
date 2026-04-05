@@ -1,24 +1,39 @@
 <head>
     <link rel="stylesheet" href="css/allies.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </head>
 <div id="allies-vue-app" class="allies-container" v-cloak>
-    <div class="page-header">
-        <h1><i class="fa-solid fa-paw" style="color: #ff9800;"></i> {{ t('Ally Codex') }}</h1>
-        <div class="subtitle">{{ t('Search and discover companions by name, stats, or abilities.') }}</div>
-    </div>
-
     <div class="search-section">
         <div class="search-bar-wrapper">
             <div style="position: relative; flex: 1;">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                 <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\nability:\ndesc:\ncategory:\n\nExample: author:&quot;Trove Team&quot; ability:jump')" :placeholder="t(`Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...`)" id="ally-search-input">
             </div>
+            <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
+            <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
             <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
+        </div>
+        <div v-if="showSearchShortcutHint" class="search-shortcut-hint">
+            <span>{{ t('Shortcuts: Ctrl/Cmd+F focus search, Arrow Up/Down navigate results') }}</span>
+            <button class="search-shortcut-dismiss" @click="dismissSearchShortcutHint" :title="t('Hide this tip')" aria-label="Hide this tip">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div v-if="showOnboardingTips" class="onboarding-tour" style="margin-top: 10px;">
+            <div class="onboarding-tour-header">
+                <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('Quick Tour: Ally Codex Search') }}</span>
+                <button class="onboarding-dismiss" @click="dismissOnboardingTips">{{ t('Skip Tour') }}</button>
+            </div>
+            <ol class="onboarding-tour-steps">
+                <li>{{ t('Start with name search, then refine with filters below.') }}</li>
+                <li>{{ t('Use operators like author:, ability:, desc:, category: for targeted queries.') }}</li>
+                <li>{{ t('Use Arrow Up/Down to jump between matching cards.') }}</li>
+            </ol>
+            <div class="onboarding-tour-actions">
+                <button class="secondary-btn" @click="focusSearchInput"><i class="fa-solid fa-magnifying-glass"></i> {{ t('Show Me Search') }}</button>
+                <button class="secondary-btn" @click="dismissOnboardingTips">{{ t('Done') }}</button>
+            </div>
         </div>
         
         <div class="filters-row">
@@ -27,14 +42,14 @@
                 <custom-vue-select v-model="selectedCategory" :options="categoryOptions"></custom-vue-select>
             </div>
             
-            <div class="filter-group select2-wrapper">
+            <div class="filter-group">
                 <label>{{ t('Required Stats') }}</label>
-                <select2 v-model="selectedStats" :options="statsList" :placeholder="t('Select one or more stats...')"></select2>
+                <custom-vue-select v-model="selectedStat" :options="statsOptions"></custom-vue-select>
             </div>
 
-            <div class="filter-group select2-wrapper">
+            <div class="filter-group">
                 <label>{{ t('Required Abilities') }}</label>
-                <select2 v-model="selectedAbilities" :options="abilitiesList" :placeholder="t('Select one or more abilities...')"></select2>
+                <custom-vue-select v-model="selectedAbility" :options="abilitiesOptions"></custom-vue-select>
             </div>
         </div>
 
@@ -52,15 +67,15 @@
                     <img :src="ally.imagePath" @error="$event.target.src='/assets/images/default_ally.png'; $event.target.onerror=null;" alt="">
                 </div>
                 <div class="ally-title-area">
-                    <div class="ally-name">{{ t(ally.name) }}</div>
+                    <div class="ally-name" v-html="highlightSearch(t(ally.name))"></div>
                     <div class="ally-category">{{ t(ally.category || 'Unknown') }}</div>
                     <div v-if="ally.designer" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
-                        <i class="fa-solid fa-pen-nib"></i> {{ ally.designer }}
+                        <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(ally.designer)"></span>
                     </div>
                 </div>
             </div>
             <div class="ally-body">
-                <div class="ally-desc">"{{ t(ally.desc) }}"</div>
+                <div class="ally-desc" v-html="'&quot;' + highlightSearch(t(ally.desc)) + '&quot;'"></div>
                 
                 <ul v-if="ally.rawStats.length > 0" class="ally-stats-list">
                     <li v-for="(stat, sIdx) in ally.rawStats" :key="'s-'+sIdx" v-html="formatStat(stat)"></li>
