@@ -39,7 +39,6 @@ def get_allies_data():
         response = requests.get(ALLIES_REMOTE_URL, timeout=5)
         response.raise_for_status()
         data = response.json()
-        _write_allies_file(data)
         if req_id:
             eel.remove_external_request(req_id, True)()
         return resp(True, data=data, source="remote")
