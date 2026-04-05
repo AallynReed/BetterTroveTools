@@ -8,7 +8,7 @@
 
 .gem-builds-grid {
     display: grid;
-    grid-template-columns: 350px 1fr;
+    grid-template-columns: 390px 1fr;
     gap: 20px;
     min-height: 700px;
 }
@@ -22,28 +22,65 @@
 }
 
 .config-panel-wrapper {
-    position: relative;
+    position: sticky;
+    top: 20px;
+    align-self: start;
     width: 100%;
 }
 
 .config-panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: relative;
+    max-height: calc(100vh - 88px);
     overflow-y: auto;
+}
+
+.config-panel-head {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.config-panel-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.config-panel-subtitle {
+    margin-top: 3px;
+    color: var(--text-muted);
+    font-size: 0.83rem;
+}
+
+.config-panel-live {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: 4px 10px;
+    color: var(--accent-orange);
+    border: 1px solid rgba(255, 166, 0, 0.35);
+    background: rgba(255, 166, 0, 0.1);
 }
 
 .card h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 
-.input-group { margin-bottom: 15px; }
-.input-group label { display: block; font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; }
+.input-group { margin-bottom: 12px; }
+.input-group label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
 .input-group select, .input-group input {
-    width: 100%; padding: 10px 15px;
+    width: 100%; padding: 9px 12px;
     background: var(--bg-dark); color: #fff;
     border: 1px solid var(--border-color); border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.input-group select:focus, .input-group input:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+    outline: none;
 }
 .input-row { display: flex; gap: 15px; }
 .input-row .input-group { flex: 1; }
@@ -68,28 +105,35 @@
 }
 
 .config-section {
-    background: rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.2);
     padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
 }
 .config-section h4 {
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     font-size: 0.85rem;
     color: var(--accent-blue);
     text-transform: uppercase;
     letter-spacing: 1px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding-bottom: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
 }
 .config-section:last-child { margin-bottom: 0; }
 
-.toggles-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.toggles-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 .toggle-container {
     display: flex; align-items: center; gap: 10px;
-    font-size: 0.9rem; cursor: pointer; user-select: none;
+    font-size: 0.88rem; cursor: pointer; user-select: none;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.02);
 }
 .toggle-container input { display: none; }
 .checkmark {
@@ -110,6 +154,46 @@
 
 .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 
+.results-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.results-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.metric-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+
+.results-state {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.results-state.busy {
+    color: var(--accent-orange);
+}
+
 .pagination-container { display: flex; justify-content: flex-end; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
 .pagination { display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-size: 0.95rem; }
 .btn-icon { background: none; border: none; color: var(--text-main); cursor: pointer; padding: 5px; transition: 0.2s; }
@@ -124,8 +208,18 @@
 .btt-table tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.015); }
 .btt-table tbody tr:hover { background: rgba(255,255,255,0.05); }
 
+.btt-table tbody tr.row-best {
+    background: rgba(var(--accent-rgb), 0.1);
+}
+
 .btt-table th.sort-col, .btt-table td.sort-col {
     background-color: rgba(255, 255, 255, 0.03);
+}
+
+.build-layout-cell {
+    font-family: monospace;
+    color: var(--accent-orange);
+    cursor: pointer;
 }
 
 .star-chart-summary {
@@ -166,4 +260,58 @@ input[type="range"] {
     padding: 0 !important;
     margin: 10px 0; 
     background: transparent; 
+}
+
+@media (max-width: 1200px) {
+    .gem-builds-grid {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .config-panel-wrapper {
+        position: static;
+    }
+
+    .config-panel {
+        position: static;
+        max-height: none;
+    }
+
+    .results-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* Concise module pass */
+.view-container {
+    padding: 16px;
+}
+
+.header p {
+    margin-bottom: 16px;
+}
+
+.gem-builds-grid {
+    gap: 14px;
+}
+
+.card {
+    padding: 16px;
+}
+
+.config-section {
+    padding: 12px;
+    margin-bottom: 10px;
+}
+
+.results-header,
+.results-toolbar {
+    margin-bottom: 10px;
+    gap: 8px;
+}
+
+.btt-table th,
+.btt-table td {
+    padding: 10px 12px;
 }

@@ -45,7 +45,10 @@ document.addEventListener('about_loaded', async () => {
 
             const loadAppLicense = async () => {
                 if (!appLicenseText.value) {
-                    try { appLicenseText.value = await eel.get_app_license()(); } 
+                    try {
+                        const licenseResp = await eel.get_app_license()();
+                        appLicenseText.value = licenseResp?.text ?? licenseResp?.data?.text ?? licenseResp?.value ?? licenseResp;
+                    } 
                     catch (e) { appLicenseText.value = t("Failed to load license."); }
                 }
             };

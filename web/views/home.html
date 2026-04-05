@@ -2,33 +2,29 @@
     <link rel="stylesheet" href="css/home.css">
 </head>
 <div id="home-vue-app" class="home-container" v-cloak>
-    <div class="home-header">
-        <h1>{{ t('Welcome to Better Trove Tools') }}</h1>
-    </div>
-
-    <div v-show="settings.show_community_content">
-        <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
-            <h2 style="margin: 0;"><i class="fa-solid fa-video" style="color: #FF0000;"></i> <span>{{ t('Community Content') }}</span></h2>
+    <div v-show="settings.show_community_content" class="community-panel">
+        <div class="section-header community-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 style="margin: 0;"><i class="fa-solid fa-video" style="color: var(--accent-blue);"></i> <span>{{ t('Community Content') }}</span></h2>
             <div class="media-tabs">
-                <button v-if="isChinese" class="media-tab" :class="{ active: mediaTab === 'bilibili' }" @click="mediaTab = 'bilibili'"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
-                <button class="media-tab" :class="{ active: mediaTab === 'youtube' }" @click="mediaTab = 'youtube'"><i class="fa-brands fa-youtube"></i> YouTube</button>
-                <button class="media-tab" :class="{ active: mediaTab === 'twitch' }" @click="mediaTab = 'twitch'"><i class="fa-brands fa-twitch"></i> Twitch</button>
+                <button v-if="isChinese" class="media-tab tab-bilibili" :class="{ active: mediaTab === 'bilibili' }" @click="mediaTab = 'bilibili'"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
+                <button class="media-tab tab-youtube" :class="{ active: mediaTab === 'youtube' }" @click="mediaTab = 'youtube'"><i class="fa-brands fa-youtube"></i> YouTube</button>
+                <button class="media-tab tab-twitch" :class="{ active: mediaTab === 'twitch' }" @click="mediaTab = 'twitch'"><i class="fa-brands fa-twitch"></i> Twitch</button>
             </div>
         </div>
         
-        <div v-if="mediaData[mediaTab].loading" class="loading-box">
+        <div v-if="mediaData[mediaTab].loading" class="loading-box community-loading-box">
             <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Content...') }}</span>
         </div>
         
-        <div v-else class="carousel-wrapper">
+        <div v-else class="carousel-wrapper community-carousel-wrapper">
             <button class="carousel-btn left" @click="scrollCarousel(-260)"><i class="fa-solid fa-chevron-left"></i></button>
             <div class="streams-carousel" ref="carouselRef">
-                <div v-if="mediaData[mediaTab].data.length === 0" style="width: 100%; text-align: center; padding: 30px; color: var(--text-muted);">
+                <div v-if="mediaData[mediaTab].data.length === 0" class="community-empty">
                     <i :class="['fa-brands', `fa-${mediaTab}`]" style="font-size: 32px; opacity: 0.4; margin-bottom: 15px; display: block;"></i>
                     <span style="font-size: 14px;">{{ t('No Trove streams are live right now. Check back later!') }}</span>
                 </div>
                 <template v-else>
-                    <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" style="cursor: pointer;" @click="openUrl(item.url)">
+                    <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" @click="openUrl(item.url)">
                         <div class="stream-thumb">
                             <img :src="item.thumb" alt="">
                             <div class="stream-badges"><span class="badge viewers" v-html="item.badgeHtml"></span></div>
@@ -49,13 +45,13 @@
         <div class="split-column">
             
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-calendar-days" style="color: var(--accent-blue);"></i> <span>{{ t('Events') }}</span></h2>
+                <h2><i class="fa-solid fa-bolt" style="color: var(--accent-blue);"></i> <span>{{ t('Live Rotations') }}</span></h2>
             </div>
             <div v-if="serverData.loading" class="loading-box">
                 <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Server Data...') }}</span>
             </div>
             <div v-else class="buffs-grid" style="display: grid;">
-                <div v-if="serverData.daily" class="buff-card hover-card" :style="{ '--buff-color': '#' + serverData.daily.color }" style="cursor: pointer;" :title="t('Click to see schedule')" @click="openBuffSchedule('daily')">
+                <div v-if="serverData.daily" class="buff-card" :style="{ '--buff-color': '#' + serverData.daily.color }">
                     <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.daily.banner}') center/cover` }">
                         <img v-if="serverData.daily.icon" :src="serverData.daily.icon" alt="">
                         <span>{{ serverData.daily.emoji || '' }} {{ t('Daily: {name}').replace('{name}', t(serverData.daily.name)) }}</span>
@@ -74,7 +70,7 @@
                     </div>
                 </div>
 
-                <div v-if="serverData.weekly" class="buff-card hover-card" :style="{ '--buff-color': '#' + serverData.weekly.color }" style="cursor: pointer;" :title="t('Click to see schedule')" @click="openBuffSchedule('weekly')">
+                <div v-if="serverData.weekly" class="buff-card" :style="{ '--buff-color': '#' + serverData.weekly.color }">
                     <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.weekly.banner}') center/cover` }">
                         <img v-if="serverData.weekly.icon" :src="serverData.weekly.icon" alt="">
                         <span>{{ serverData.weekly.emoji || '' }} {{ t('Weekly: {name}').replace('{name}', t(serverData.weekly.name)) }}</span>
@@ -94,7 +90,7 @@
             </div>
 
             <div class="section-header" style="margin-top: 40px;">
-                <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i> <span>{{ t('Events') }}</span></h2>
+                <h2><i class="fa-solid fa-calendar-days" style="color: #5ec6ff;"></i> <span>{{ t('Community Events') }}</span></h2>
             </div>
             <div v-if="events.loading" class="loading-box">
                 <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trovesaurus Calendar...') }}</span>
@@ -109,7 +105,7 @@
                     <div class="event-main">
                         <div class="event-name-row"><span class="event-name">{{ t(event.name) }}</span><span class="event-category">{{ t(event.category) }}</span></div>
                         <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> {{ event.startStr }} - {{ event.endStr }}</span>
-                        <span style="margin-left: 15px; font-weight: bold;" :style="{ color: event.statusColor }"><i class="fa-solid fa-hourglass-half" :style="{ animation: event.statusColor === '#ff5555' ? 'pulse-opacity 2s infinite ease-in-out' : 'none' }"></i> {{ event.statusText }}</span></div>
+                        <span class="event-status-pill" :class="event.statusClass"><i class="fa-solid fa-hourglass-half"></i> {{ event.statusText }}</span></div>
                     </div>
                     <div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
                 </div>
@@ -118,13 +114,20 @@
         </div>
 
         <div class="split-column">
-            <div class="section-header" style="margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="section-header" style="margin-top: 40px; display: flex; align-items: center;">
                 <h2 style="margin: 0;"><i class="fa-solid fa-rotate" style="color: #4caf50;"></i> <span>{{ t('Rotations') }}</span></h2>
-                <button @click="calendarModal.show = true; loadYearlyCalendar()" style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 6px; padding: 6px 12px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('View Yearly Calendar')"><i class="fa-regular fa-calendar-days"></i> <span>{{ t('Calendar') }}</span></button>
+            </div>
+
+            <div class="calendar-spotlight" @click="calendarModal.show = true; loadYearlyCalendar()" role="button" tabindex="0" @keydown.enter.prevent="calendarModal.show = true; loadYearlyCalendar()">
+                <div class="calendar-spotlight-copy">
+                    <div class="calendar-spotlight-title"><i class="fa-solid fa-calendar-week"></i> {{ t('Yearly Rotation Calendar') }}</div>
+                    <div class="calendar-spotlight-subtitle">{{ t('See the full merchant and buff timeline with quick filters and jumps.') }}</div>
+                </div>
+                <span class="calendar-spotlight-cta">{{ t('Open') }} <i class="fa-solid fa-arrow-right"></i></span>
             </div>
             
             <div v-if="!serverData.loading" class="merchants-grid" style="display: flex;">
-                <div v-for="m in merchantCards" :key="m.id" class="merchant-card hover-card" :class="{ inactive: !m.active }" :style="{ '--merchant-color': m.color, cursor: 'pointer' }" :title="t('Click to see upcoming schedule')" @click="openMerchantSchedule(m)">
+                <div v-for="m in merchantCards" :key="m.id" class="merchant-card" :class="{ inactive: !m.active, 'hover-card': m.type === 'd15' }" :style="{ '--merchant-color': m.color, cursor: m.type === 'd15' ? 'pointer' : 'default' }" :title="m.type === 'd15' ? t('Click to see upcoming schedule') : ''" @click="m.type === 'd15' && openMerchantSchedule(m)">
                     <div class="merchant-icon"><i class="fa-solid" :class="m.iconClass"></i></div>
                     <div class="merchant-info" style="width: 100%;">
                         <div class="merchant-name">{{ m.name }} <span class="merchant-status-badge">{{ t(m.statusText) }}</span></div>
@@ -145,14 +148,42 @@
     <div class="modal-overlay" v-show="calendarModal.show" style="display: flex;" @click.self="calendarModal.show = false">
     <div class="modal-content" style="max-width: 95%; width: 1200px;">
         <div class="modal-header">
-                <h3><i class="fa-regular fa-calendar-days" style="color: var(--accent-blue);"></i> <span>{{ t('Yearly Rotation Calendar') }}</span> <button @click="centerCalendarToday" style="margin-left: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('Jump to Today')"><i class="fa-solid fa-location-crosshairs"></i></button></h3>
+                <h3><i class="fa-regular fa-calendar-days" style="color: var(--accent-blue);"></i> <span>{{ t('Yearly Rotation Calendar') }}</span></h3>
                 <button class="modal-close" @click="calendarModal.show = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
             <div class="modal-body" style="padding: 0;">
-                <div v-if="calendarModal.isLoading" style="padding: 40px; text-align: center; color: var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Calculating predictions...') }}</div>
+                <div class="calendar-toolbar">
+                    <div class="calendar-toolbar-left">
+                        <button class="calendar-chip-btn" @click="centerCalendarToday(true)" :title="t('Jump to Today')"><i class="fa-solid fa-location-crosshairs"></i> {{ t('Today') }}</button>
+                        <button class="calendar-chip-btn" :class="{ active: calendarViewFilter === 'full' }" @click="calendarViewFilter = 'full'">{{ t('Full') }}</button>
+                        <button class="calendar-chip-btn" :class="{ active: calendarViewFilter === 'now' }" @click="calendarViewFilter = 'now'">{{ t('Now') }}</button>
+                        <button class="calendar-chip-btn" :class="{ active: calendarViewFilter === 'next' }" @click="calendarViewFilter = 'next'">{{ t('Next 24h') }}</button>
+                    </div>
+                    <div class="calendar-toolbar-right">
+                        <span class="calendar-helper-text">{{ t('Drag to pan timeline, mouse wheel to scroll horizontally') }}</span>
+                        <button class="calendar-chip-btn" :class="{ active: timeMode === 'local' }" @click="timeMode = 'local'">{{ t('Local Time') }}</button>
+                        <button class="calendar-chip-btn" :class="{ active: timeMode === 'trove' }" @click="timeMode = 'trove'">{{ t('Trove Time') }}</button>
+                    </div>
+                </div>
+
+                <div class="calendar-jump-row">
+                    <button class="calendar-chip-btn" @click="jumpToCalendarTarget('luxion')">Luxion</button>
+                    <button class="calendar-chip-btn" @click="jumpToCalendarTarget('corruxion')">Corruxion</button>
+                    <button class="calendar-chip-btn" @click="jumpToCalendarTarget('fluxion')">Fluxion</button>
+                    <button class="calendar-chip-btn" @click="jumpToCalendarTarget('mana')">{{ t('Mana') }}</button>
+                    <button class="calendar-chip-btn" @click="jumpToCalendarTarget('stampy')">Stampy</button>
+                </div>
+
+                <div v-if="calendarModal.isLoading" class="calendar-skeleton-wrap">
+                    <div class="calendar-skeleton-row" v-for="n in 6" :key="'cal-skeleton-'+n">
+                        <div class="calendar-skeleton-label"></div>
+                        <div class="calendar-skeleton-track"></div>
+                    </div>
+                </div>
                 <div v-else-if="calendarModal.error" style="padding: 40px; text-align: center; color: #ff5555;">{{ t('Error loading calendar data.') }}</div>
                 
                 <div v-else class="calendar-timeline-wrapper" :class="{ draggable: true, dragging: isDraggingTimeline }" id="timeline-wrapper" ref="timelineWrapperRef" @mousedown="startDrag" @mousemove="onDrag" @mouseup="stopDrag" @mouseleave="stopDrag" @wheel.prevent="onWheel">
+                    <div class="calendar-today-band" :style="{ left: (calendarData.todayPx + 136) + 'px' }"></div>
                     <div class="calendar-today-line" :style="{ left: (calendarData.todayPx + 140) + 'px' }"></div>
                     
                     <div class="calendar-timeline-header" :style="{ width: calendarData.totalWidth + 'px', flexDirection: 'column' }">
@@ -173,12 +204,15 @@
                     </div>
                     
                     <div class="calendar-tracks" :style="{ width: calendarData.totalWidth + 'px' }">
-                        <div v-for="track in calendarData.tracks" :key="track.id" class="calendar-track" style="width: 100%;">
+                        <div v-for="track in filteredCalendarTracks" :key="track.id" class="calendar-track" style="width: 100%;">
                             <div class="calendar-track-label" style="min-width: 140px; width: 140px;">
                                 <i class="fa-solid" :class="track.icon" style="margin-right: 8px; opacity: 0.8;"></i> {{ t(track.name) }}
                             </div>
                             <div v-for="(ev, j) in track.events" :key="j" class="calendar-event" :class="`event-${ev.colorClass}`" :style="ev.style" :data-tooltip="ev.tooltip" v-html="ev.htmlContent">
                             </div>
+                        </div>
+                        <div v-if="filteredCalendarTracks.length === 0" class="calendar-empty-state">
+                            <i class="fa-regular fa-calendar-xmark"></i> {{ t('No entries match this filter right now.') }}
                         </div>
                     </div>
                 </div>

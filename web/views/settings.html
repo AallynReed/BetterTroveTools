@@ -2,11 +2,6 @@
     <link rel="stylesheet" href="css/settings.css">
 </head>
 <div id="settings-vue-app" class="settings-container" v-cloak>
-    <div class="settings-header">
-        <h2>{{ t('Settings') }}</h2>
-        <p style="color: var(--text-muted); margin-top: 5px;">{{ t('Manage your application preferences and custom game installations.') }}</p>
-    </div>
-    
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('General') }}</span></button>
@@ -60,6 +55,27 @@
                         <input type="checkbox" v-model="settings.auto_fix_configs" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Mod Preview on Info Side') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('When enabled, mod cards show preview thumbnails on the front. Disable to keep previews behind the action-side Preview button.') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.show_mod_preview_on_info_side" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>{{ t('UX Preferences') }}</h3>
+                <div class="settings-action-row" style="margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Reset Onboarding Tips') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Show first-time tutorial hint chips again across supported tools.') }}</div>
+                    </div>
+                    <button class="secondary-btn" @click="resetOnboardingTips"><i class="fa-solid fa-rotate-left"></i> <span>{{ t('Reset Tips') }}</span></button>
                 </div>
             </div>
         </div>

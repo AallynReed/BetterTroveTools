@@ -2,25 +2,31 @@ import os
 import platform
 
 import eel
+from backend.response import resp, standardize_response
 
 
 @eel.expose
+@standardize_response
 def get_system_info():
     try:
-        return {
+        data = {
             "os": platform.system(),
             "os_release": platform.release(),
             "os_version": platform.version(),
             "architecture": platform.machine(),
-            "processor": platform.processor()
+            "processor": platform.processor(),
         }
+        return resp(True, data=data, **data)
     except Exception as e:
-        return {"error": str(e)}
+        return resp(False, error=str(e), code="SYSTEM_INFO_FAILED")
 
 @eel.expose
+@standardize_response
 def get_app_license():
     for filename in ["LICENSE.md", "LICENSE", "license", "license.txt"]:
         if os.path.exists(filename):
             with open(filename, "r", encoding="utf-8") as f:
-                return f.read()
-    return "License file not found."
+                text = f.read()
+                return resp(True, data={"text": text}, text=text)
+    text = "License file not found."
+    return resp(False, data={"text": text}, error=text, code="LICENSE_NOT_FOUND", text=text)

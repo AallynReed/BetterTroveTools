@@ -1,6 +1,7 @@
 import eel
 from utils.gem_engine import GemOptimizerEngine
 from models.trove.builds import BuildConfig
+from backend.response import resp, standardize_response
 
 gem_engine = None
 try:
@@ -10,50 +11,64 @@ except Exception as e:
     print(f"CRITICAL ERROR loading Gem Engine: {e}")
 
 @eel.expose
+@standardize_response
 def get_trove_classes():
     if not gem_engine:
-        return []
+        return resp(False, data=[], error="Gem engine unavailable.", code="ENGINE_NOT_READY")
     try:
-        return [{"name": name, "value": cls.name.value} for name, cls in gem_engine.classes.items()]
+        classes = [{"name": name, "value": cls.name.value} for name, cls in gem_engine.classes.items()]
+        return resp(True, data=classes, classes=classes)
     except Exception as e:
         print(f"Error serving classes: {e}")
-        return []
+        return resp(False, data=[], classes=[], error=str(e), code="GET_CLASSES_FAILED")
 
 @eel.expose
+@standardize_response
 def get_food_data():
     if not gem_engine:
-        return {}
+        return resp(False, data={}, error="Gem engine unavailable.", code="ENGINE_NOT_READY")
     try:
-        return gem_engine.foods
+        foods = gem_engine.foods
+        return resp(True, data=foods, **foods)
     except Exception as e:
         print(f"Error serving foods: {e}")
-        return {}
+        return resp(False, data={}, error=str(e), code="GET_FOODS_FAILED")
 
 @eel.expose
+@standardize_response
 def get_ally_data():
     if not gem_engine:
-        return {}
+        return resp(False, data={}, error="Gem engine unavailable.", code="ENGINE_NOT_READY")
     try:
-        return gem_engine.allies
+        allies = gem_engine.allies
+        return resp(True, data=allies, **allies)
     except Exception as e:
         print(f"Error serving allies: {e}")
-        return {}
+        return resp(False, data={}, error=str(e), code="GET_ALLIES_FAILED")
 
 @eel.expose
+@standardize_response
 def calculate_gem_builds(config_dict):
     if not gem_engine:
-        raise Exception("Engine failed to initialize. Check console for path errors.")
+        return resp(False, error="Engine failed to initialize. Check console for path errors.", code="ENGINE_NOT_READY")
     try:
         config = BuildConfig(**config_dict)
-        return gem_engine.calculate_builds(config)
+        builds = gem_engine.calculate_builds(config)
+        if isinstance(builds, dict):
+            return resp(True, data=builds, **builds)
+        return resp(True, data={"builds": builds}, builds=builds)
     except Exception as e:
         print(f"Math Error: {e}")
-        raise e
+        return resp(False, error=str(e), code="CALCULATE_GEM_BUILDS_FAILED")
     
 @eel.expose
+@standardize_response
 def parse_star_chart_code(base64_code):
     try:
-        return gem_engine.star_parser.parse_build_code(base64_code)
+        parsed = gem_engine.star_parser.parse_build_code(base64_code)
+        if isinstance(parsed, dict):
+            return resp(True, data=parsed, **parsed)
+        return resp(True, data={"result": parsed}, result=parsed)
     except Exception as e:
         print(f"Error parsing star chart for UI: {e}")
-        return {"stats": {}, "abilities": []}
+        return resp(False, data={"stats": {}, "abilities": []}, stats={}, abilities=[], error=str(e), code="PARSE_STAR_CHART_CODE_FAILED")

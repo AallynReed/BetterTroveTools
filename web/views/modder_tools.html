@@ -2,11 +2,6 @@
     <link rel="stylesheet" href="css/modder_tools.css">
 </head>
 <div id="modder-tools-vue-app" class="modder-tools-container" v-cloak>
-    <div class="modder-tools-header">
-        <h2><i class="fa-solid fa-toolbox"></i> <span>{{ t('Modder Tools') }}</span></h2>
-        <p class="help-text" style="margin-top: 5px;">{{ t('Create new TMods or extract existing ones for modification.') }}</p>
-    </div>
-
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'build' }" @click="activeTab = 'build'">

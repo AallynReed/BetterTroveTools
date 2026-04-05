@@ -1,5 +1,7 @@
 import shutil
+
 import eel
+from backend.response import resp, standardize_response
 import asyncio
 from pathlib import Path
 import os
@@ -19,6 +21,34 @@ import subprocess
 
 import threading
 
+
+class OperationCancelled(Exception):
+    pass
+
+
+_FILE_MANAGER_CANCEL_FLAGS = {
+    "load_tree": threading.Event(),
+    "mass_extract": threading.Event(),
+    "build_baseline": threading.Event(),
+    "scan_updates": threading.Event(),
+}
+
+
+def _reset_cancel_flag(operation):
+    event = _FILE_MANAGER_CANCEL_FLAGS.get(operation)
+    if event:
+        event.clear()
+
+
+def _is_cancelled(operation):
+    event = _FILE_MANAGER_CANCEL_FLAGS.get(operation)
+    return event.is_set() if event else False
+
+
+def _raise_if_cancelled(operation):
+    if _is_cancelled(operation):
+        raise OperationCancelled("Operation cancelled by user.")
+
 def _run_async(coro):
     result = []
     error = []
@@ -37,40 +67,67 @@ def _run_async(coro):
         raise error[0]
     return result[0] if result else None
 
+
 @eel.expose
+@standardize_response
+def cancel_file_manager_operation(operation):
+    event = _FILE_MANAGER_CANCEL_FLAGS.get(str(operation or ""))
+    if not event:
+        return {"success": False, "error": "Unknown operation."}
+    event.set()
+    return {"success": True}
+
+@eel.expose
+@standardize_response
 def get_detected_game_paths():
     paths = []
     try:
-        for game in get_trove_locations():
+        seen_paths = set()
+
+        def _add_path(name, path, is_steam=False, is_glyph=False):
+            normalized = str(path or "").strip()
+            if not normalized:
+                return
+            key = normalized.lower()
+            if key in seen_paths:
+                return
+            seen_paths.add(key)
             paths.append({
-                "name": game.name,
-                "path": str(game.path),
-                "is_steam": game.is_steam,
-                "is_glyph": game.is_glyph
+                "name": name,
+                "path": normalized,
+                "is_steam": bool(is_steam),
+                "is_glyph": bool(is_glyph),
             })
+
+        for game in get_trove_locations():
+            _add_path(game.name, str(game.path), game.is_steam, game.is_glyph)
             
         settings = get_settings()
         for custom_dir in settings.get("custom_directories", []):
             name = custom_dir.get("name", "Unknown") if isinstance(custom_dir, dict) else Path(str(custom_dir)).name
             path = custom_dir.get("path", "") if isinstance(custom_dir, dict) else str(custom_dir)
+
+            _add_path(f"(Custom) {name}", path, False, False)
+
+        # Fallback to the saved install if registry auto-detection returns nothing.
+        last_game_path = settings.get("last_game_path")
+        if isinstance(last_game_path, str) and last_game_path.strip():
+            saved_path = Path(last_game_path)
+            if saved_path.exists() and (saved_path / "Trove.exe").exists():
+                _add_path("(Saved) Last Used", str(saved_path), False, False)
             
-            paths.append({
-                "name": f"(Custom) {name}",
-                "path": path,
-                "is_steam": False,
-                "is_glyph": False
-            })
-            
-        return {"success": True, "paths": paths}
+        return resp(True, data={"paths": paths}, paths=paths)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return {"success": False, "error": str(e)}
+        return resp(False, error=str(e), code="DETECT_GAME_PATHS_FAILED", data={"paths": []}, paths=[])
     
 
 @eel.expose
+@standardize_response
 def load_entire_game_tree(game_path_str):
     try:
+        _reset_cancel_flag("load_tree")
         tree = _run_async(_build_full_tree_async(game_path_str))
         cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
         cache_dir.mkdir(parents=True, exist_ok=True)
@@ -80,6 +137,8 @@ def load_entire_game_tree(game_path_str):
             json.dump(tree, f)
 
         return {"success": True, "cached_file": "/api/cache/temp_tree.json"}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -94,6 +153,7 @@ async def _build_full_tree_async(game_path_str):
     master_tree = {"type": "folder", "children": {}, "files": []}
 
     for tfi_path in game_path.rglob("index.tfi"):
+        _raise_if_cancelled("load_tree")
         relative_dir = tfi_path.parent.relative_to(game_path)
         base_parts = list(relative_dir.parts)
 
@@ -101,6 +161,7 @@ async def _build_full_tree_async(game_path_str):
         files_from_index = await index.files_list
         
         for file_data in files_from_index:
+            _raise_if_cancelled("load_tree")
             internal_path = file_data["name"].replace('\\', '/')
             internal_parts = internal_path.split('/')
             full_parts = base_parts + internal_parts
@@ -141,6 +202,7 @@ async def _build_full_tree_async(game_path_str):
     return master_tree
 
 @eel.expose
+@standardize_response
 def browse_for_game_dir():
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -161,6 +223,7 @@ def browse_for_game_dir():
         return {"success": False, "error": "Trove.exe was not found in the selected directory."}
     
 @eel.expose
+@standardize_response
 def extract_file_to_disk(tfi_path_str, archive_index, offset, size, default_file_name):
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -207,6 +270,7 @@ async def _extract_and_save_async(tfi_path_str, archive_index, offset, size, sav
         out_file.write(file_bytes)
 
 @eel.expose
+@standardize_response
 def ask_extraction_directory():
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -216,10 +280,14 @@ def ask_extraction_directory():
     return folder_path
 
 @eel.expose
+@standardize_response
 def mass_extract_files(dest_dir, files_to_extract):
     try:
+        _reset_cancel_flag("mass_extract")
         _run_async(_mass_extract_async(dest_dir, files_to_extract))
         return {"success": True}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -236,16 +304,19 @@ async def _mass_extract_async(dest_dir_str, file_list):
         groups[f["tfi"]][f["archive"]].append(f)
 
     for tfi_path_str, archives in groups.items():
+        _raise_if_cancelled("mass_extract")
         tfi_path = Path(tfi_path_str)
         index = TFIndex(tfi_path)
         
         for archive_idx, files in archives.items():
+            _raise_if_cancelled("mass_extract")
             tfa_name = f"archive{archive_idx}.tfa"
             tfa_path = tfi_path.parent / tfa_name
             
             archive = TFArchive(index, tfa_path)
             
             for f in files:
+                _raise_if_cancelled("mass_extract")
                 file_obj = TroveFile(offset=f["offset"], size=f["size"], archive=archive)
                 file_bytes = await file_obj.content
                 
@@ -270,6 +341,7 @@ async def _mass_extract_async(dest_dir_str, file_list):
                     eel.sleep(0.001)
 
 @eel.expose
+@standardize_response
 def select_tracking_directory():
     root = tk.Tk()
     root.attributes('-topmost', True)
@@ -279,6 +351,7 @@ def select_tracking_directory():
     return {"success": True, "path": folder_path} if folder_path else {"success": False}
 
 @eel.expose
+@standardize_response
 def get_tracking_status(tracking_dir_str):
     data_path = Path(tracking_dir_str) / "extraction_data.json"
     if data_path.exists():
@@ -295,10 +368,14 @@ def get_tracking_status(tracking_dir_str):
     return {"exists": False}
 
 @eel.expose
+@standardize_response
 def build_baseline_cache(game_path_str, tracking_dir_str):
     try:
+        _reset_cancel_flag("build_baseline")
         _run_async(_build_baseline_async(game_path_str, tracking_dir_str))
         return {"success": True}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -320,6 +397,7 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
     start_time = time.time()
     
     for i, tfi_path in enumerate(tfi_files):
+        _raise_if_cancelled("build_baseline")
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
         elapsed = time.time() - start_time
         
@@ -341,6 +419,7 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
             
         files = await index.files_list
         for f in files:
+            _raise_if_cancelled("build_baseline")
             arch_id = f["archive_index"]
             if arch_id in archives_dict:
                 archive = archives_dict[arch_id]
@@ -354,10 +433,14 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
 
 
 @eel.expose
+@standardize_response
 def scan_and_extract_updates(game_path_str, tracking_dir_str, run_catalog=False):
     try:
+        _reset_cancel_flag("scan_updates")
         result = _run_async(_scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog))
         return {"success": True, "details": result}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -390,6 +473,7 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
     start_time = time.time()
     
     for i, tfi_path in enumerate(tfi_files):
+        _raise_if_cancelled("scan_updates")
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
         tfi_dir = tfi_path.parent.relative_to(game_path) 
         
@@ -429,6 +513,7 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         current_tfi_files = set()
         
         for f in files:
+            _raise_if_cancelled("scan_updates")
             arch_id = f["archive_index"]
             if arch_id in archives_dict:
                 archive = archives_dict[arch_id]
@@ -460,6 +545,7 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
         
         async def extract_list(file_list, subfolder_name):
             for file_obj, full_clean_path, status in file_list:
+                _raise_if_cancelled("scan_updates")
                 out_path = update_folder / subfolder_name / full_clean_path
                 out_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(out_path, "wb") as out:
@@ -483,27 +569,48 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                         else:
                             blueprints_to_catalog.add(bp_name)
         
-            if blueprints_to_catalog:                
+            if blueprints_to_catalog:
                 trove_exe = game_path / "Trove.exe"
                 active_processes = []
                 cpu_limit = max(1, (os.cpu_count() or 4) - 1)
+
+                async def _wait_for_active_processes(processes):
+                    while True:
+                        _raise_if_cancelled("scan_updates")
+                        remaining = [p for p in processes if p.poll() is None]
+                        if not remaining:
+                            return
+                        await asyncio.sleep(0.1)
+
+                def _terminate_active_processes(processes):
+                    for p in processes:
+                        try:
+                            if p.poll() is None:
+                                p.terminate()
+                        except Exception:
+                            pass
                 
-                for bp in blueprints_to_catalog:
-                    cmd = f'"{trove_exe}" -tool catalog -filter "{bp}" -dimension "256"'
-                    
-                    startupinfo = None
-                    if os.name == 'nt':
-                        startupinfo = subprocess.STARTUPINFO()
-                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                try:
+                    for bp in blueprints_to_catalog:
+                        _raise_if_cancelled("scan_updates")
+                        cmd = f'"{trove_exe}" -tool catalog -filter "{bp}" -dimension "256"'
                         
-                    proc = subprocess.Popen(cmd, cwd=str(game_path), startupinfo=startupinfo)
-                    active_processes.append(proc)
+                        startupinfo = None
+                        if os.name == 'nt':
+                            startupinfo = subprocess.STARTUPINFO()
+                            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                            
+                        proc = subprocess.Popen(cmd, cwd=str(game_path), startupinfo=startupinfo)
+                        active_processes.append(proc)
+                        
+                        if len(active_processes) >= cpu_limit:
+                            await _wait_for_active_processes(active_processes)
+                            active_processes = []
                     
-                    if len(active_processes) >= cpu_limit:
-                        for p in active_processes: p.wait()
-                        active_processes = []
-                
-                for p in active_processes: p.wait()
+                    await _wait_for_active_processes(active_processes)
+                except OperationCancelled:
+                    _terminate_active_processes(active_processes)
+                    raise
                 
                 game_catalog_dir = game_path / "catalog"
                 if game_catalog_dir.exists():
@@ -550,6 +657,7 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
     }
 
 @eel.expose
+@standardize_response
 def get_tracking_directories():
     data = read_storage()
     dirs = data.get("tracking_directories", [])
@@ -570,6 +678,7 @@ def get_tracking_directories():
     return {"success": True, "directories": valid_dirs, "last_used": last_used}
 
 @eel.expose
+@standardize_response
 def save_tracking_directory(name, path_str):
     data = read_storage()
     dirs = data.get("tracking_directories", [])
@@ -592,6 +701,7 @@ def save_tracking_directory(name, path_str):
     return {"success": True}
 
 @eel.expose
+@standardize_response
 def set_last_tracking_directory(path_str):
     data = read_storage()
     dirs = data.get("tracking_directories", [])

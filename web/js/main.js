@@ -17,6 +17,103 @@ tooltipStyle.innerHTML = `
 `;
 document.head.appendChild(tooltipStyle);
 
+// Feature flags
+window.BTT_ENABLE_ONBOARDING_TOURS = false;
+
+window.AppSettings = {
+    _cache: null,
+    _saveTimer: null,
+    _loadPromise: null,
+
+    _unwrap(raw) {
+        if (raw && typeof raw === 'object' && raw.success !== undefined && raw.data && typeof raw.data === 'object') {
+            return { ...raw.data };
+        }
+        return raw && typeof raw === 'object' ? { ...raw } : {};
+    },
+
+    async load(force = false) {
+        if (!force && this._cache) return this._cache;
+        if (!force && this._loadPromise) return this._loadPromise;
+
+        this._loadPromise = (async () => {
+            try {
+                const raw = await eel.get_settings()();
+                const settings = this._unwrap(raw);
+                if (!settings.ui_preferences || typeof settings.ui_preferences !== 'object') {
+                    settings.ui_preferences = {};
+                }
+                this._cache = settings;
+            } catch {
+                this._cache = { custom_directories: [], ui_preferences: {} };
+            }
+            return this._cache;
+        })();
+
+        return this._loadPromise;
+    },
+
+    get(key, fallback = undefined) {
+        if (!this._cache || this._cache[key] === undefined) return fallback;
+        return this._cache[key];
+    },
+
+    getPref(key, fallback = undefined) {
+        const prefs = (this._cache && this._cache.ui_preferences) ? this._cache.ui_preferences : {};
+        return Object.prototype.hasOwnProperty.call(prefs, key) ? prefs[key] : fallback;
+    },
+
+    async set(key, value) {
+        await this.load();
+        this._cache[key] = value;
+        return this.save();
+    },
+
+    setPrefSync(key, value) {
+        if (!this._cache) this._cache = { custom_directories: [], ui_preferences: {} };
+        if (!this._cache.ui_preferences || typeof this._cache.ui_preferences !== 'object') {
+            this._cache.ui_preferences = {};
+        }
+        this._cache.ui_preferences[key] = value;
+        this.scheduleSave();
+    },
+
+    removePrefSync(key) {
+        if (!this._cache || !this._cache.ui_preferences) return;
+        delete this._cache.ui_preferences[key];
+        this.scheduleSave();
+    },
+
+    scheduleSave(delayMs = 120) {
+        clearTimeout(this._saveTimer);
+        this._saveTimer = setTimeout(() => {
+            this.save();
+        }, delayMs);
+    },
+
+    async save() {
+        await this.load();
+        if (!this._cache.ui_preferences || typeof this._cache.ui_preferences !== 'object') {
+            this._cache.ui_preferences = {};
+        }
+        try {
+            const latestRaw = await eel.get_settings()();
+            const latest = this._unwrap(latestRaw);
+            const merged = {
+                ...latest,
+                ...this._cache,
+                ui_preferences: {
+                    ...(latest.ui_preferences || {}),
+                    ...(this._cache.ui_preferences || {})
+                }
+            };
+            this._cache = merged;
+            await eel.save_settings(merged)();
+        } catch {}
+        return this._cache;
+    }
+};
+
 document.addEventListener('mouseover', (e) => {
     let target = e.target.closest('[title], [data-tooltip], [data-tooltip-text]');
     if (!target) return;
@@ -147,6 +244,7 @@ const networkTrackerApp = Vue.createApp({
 
 document.addEventListener('DOMContentLoaded', () => {
     networkTrackerApp.mount('#network-tracker-vue-app');
+    if (window.initJobQueueUi) window.initJobQueueUi();
 });
 
 eel.expose(add_external_request, 'add_external_request');
@@ -288,48 +386,504 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-document.addEventListener('keydown', function(e) {
-    const blockedKeys = ['F12', 'F5', 'F11'];
-    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+// document.addEventListener('keydown', function(e) {
+//     const blockedKeys = ['F12', 'F5', 'F11'];
+//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-    if (blockedKeys.includes(e.key)) e.preventDefault();
-    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-});
+//     if (blockedKeys.includes(e.key)) e.preventDefault();
+//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+// });
 
-document.addEventListener('contextmenu', (e) => e.preventDefault());
+// document.addEventListener('contextmenu', (e) => e.preventDefault());
 
-window.showToast = function(message, isError = false) {
+window.showToast = function(message, isError = false, options = {}) {
+    let toastHost = document.getElementById('global-toast-host');
+    if (!toastHost) {
+        toastHost = document.createElement('div');
+        toastHost.id = 'global-toast-host';
+        toastHost.style.position = 'fixed';
+        toastHost.style.left = '50%';
+        toastHost.style.bottom = '20px';
+        toastHost.style.transform = 'translateX(-50%)';
+        toastHost.style.display = 'flex';
+        toastHost.style.flexDirection = 'column-reverse';
+        toastHost.style.alignItems = 'center';
+        toastHost.style.gap = '10px';
+        toastHost.style.maxWidth = 'min(92vw, 640px)';
+        toastHost.style.width = 'max-content';
+        toastHost.style.zIndex = '10020';
+        toastHost.style.pointerEvents = 'none';
+        document.body.appendChild(toastHost);
+    }
+
     const toast = document.createElement('div');
-    toast.style.position = 'fixed';
-    toast.style.bottom = '20px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
     toast.style.backgroundColor = isError ? '#ff5555' : '#28a745';
     toast.style.color = 'white';
-    toast.style.padding = '12px 24px';
-    toast.style.borderRadius = '6px';
+    toast.style.padding = '12px 16px';
+    toast.style.borderRadius = '8px';
     toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-    toast.style.zIndex = '10020';
     toast.style.fontSize = '14px';
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s ease';
     toast.style.whiteSpace = 'pre-wrap';
-    toast.style.textAlign = 'center';
-    
-    toast.innerText = message;
-    
-    document.body.appendChild(toast);
+    toast.style.textAlign = 'left';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '12px';
+    toast.style.pointerEvents = 'auto';
+    toast.style.maxWidth = '100%';
+    toast.style.width = 'fit-content';
+    toast.style.margin = '0 auto';
 
-    setTimeout(() => {
-        toast.style.opacity = '1';
-    }, 10);
+    const messageEl = document.createElement('div');
+    messageEl.innerText = message;
+    toast.appendChild(messageEl);
 
+    if (options.actionLabel && typeof options.onAction === 'function') {
+        const actionBtn = document.createElement('button');
+        actionBtn.innerText = options.actionLabel;
+        actionBtn.style.background = 'rgba(0,0,0,0.2)';
+        actionBtn.style.color = '#fff';
+        actionBtn.style.border = '1px solid rgba(255,255,255,0.4)';
+        actionBtn.style.padding = '4px 10px';
+        actionBtn.style.borderRadius = '6px';
+        actionBtn.style.cursor = 'pointer';
+        actionBtn.onclick = async () => {
+            try {
+                await options.onAction();
+            } finally {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }
+        };
+        toast.appendChild(actionBtn);
+    }
+
+        toastHost.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '1'; }, 10);
+
+    const timeoutMs = typeof options.durationMs === 'number' ? options.durationMs : 3000;
     setTimeout(() => {
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    }, timeoutMs);
+};
+
+window.showUndoToast = function(message, seconds, onUndo) {
+    window.showToast(message, false, {
+        actionLabel: 'Undo',
+        onAction: onUndo,
+        durationMs: Math.max(1000, Number(seconds || 8) * 1000)
+    });
+};
+
+window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = true }) {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('global-confirm-overlay');
+        const titleEl = document.getElementById('global-confirm-title');
+        const messageEl = document.getElementById('global-confirm-message');
+        const cancelBtn = document.getElementById('global-confirm-cancel');
+        const okBtn = document.getElementById('global-confirm-ok');
+        if (!overlay || !titleEl || !messageEl || !cancelBtn || !okBtn) return resolve(false);
+
+        titleEl.textContent = title || 'Confirm';
+        messageEl.textContent = message || '';
+        cancelBtn.textContent = cancelLabel;
+        okBtn.textContent = confirmLabel;
+        okBtn.className = danger ? 'danger-btn' : 'primary-btn';
+        overlay.style.display = 'flex';
+
+        const onKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                cleanup();
+                resolve(false);
+                return;
+            }
+            if (e.key === 'Enter') {
+                const targetTag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
+                if (targetTag === 'textarea') return;
+                e.preventDefault();
+                cleanup();
+                resolve(true);
+            }
+        };
+        document.addEventListener('keydown', onKeyDown, true);
+
+        const cleanup = () => {
+            overlay.style.display = 'none';
+            cancelBtn.onclick = null;
+            okBtn.onclick = null;
+            overlay.onclick = null;
+            document.removeEventListener('keydown', onKeyDown, true);
+        };
+
+        cancelBtn.onclick = () => {
+            cleanup();
+            resolve(false);
+        };
+        okBtn.onclick = () => {
+            cleanup();
+            resolve(true);
+        };
+        overlay.onclick = (e) => {
+            if (e.target === overlay) {
+                cleanup();
+                resolve(false);
+            }
+        };
+    });
+};
+
+window.normalizeApiResponse = function(resp) {
+    if (!resp || typeof resp !== 'object') return { success: false, code: 'INVALID_RESPONSE', data: {}, error: 'Invalid response', meta: {} };
+    return {
+        success: !!resp.success,
+        code: resp.code || (resp.success ? 'OK' : 'ERROR'),
+        data: resp.data || {},
+        error: resp.error || null,
+        meta: resp.meta || {},
+        raw: resp
+    };
+};
+
+window.callBackend = async function(eelCallPromise, fallbackError = 'Operation failed') {
+    try {
+        const raw = await eelCallPromise;
+        const normalized = window.normalizeApiResponse(raw);
+
+        // Legacy compatibility bridge for endpoints not migrated yet.
+        if (!('data' in (raw || {}))) {
+            normalized.data = {
+                ...(raw || {}),
+                ...(normalized.data || {})
+            };
+        }
+        return normalized;
+    } catch (err) {
+        return { success: false, code: 'EXCEPTION', data: {}, error: String(err || fallbackError), meta: {}, raw: null };
+    }
+};
+
+window.createRequestGuard = function() {
+    let activeToken = 0;
+    return {
+        next() {
+            activeToken += 1;
+            return activeToken;
+        },
+        isCurrent(token) {
+            return token === activeToken;
+        }
+    };
+};
+
+window.fuzzyMatchScore = function(haystack, needle) {
+    const h = String(haystack || '').toLowerCase();
+    const n = String(needle || '').toLowerCase().trim();
+    if (!n) return 1;
+    if (h.includes(n)) return 100 + n.length;
+
+    let hi = 0;
+    let score = 0;
+    let streak = 0;
+    for (let ni = 0; ni < n.length; ni++) {
+        const ch = n[ni];
+        let found = false;
+        while (hi < h.length) {
+            if (h[hi] === ch) {
+                found = true;
+                streak += 1;
+                score += 1 + streak;
+                hi += 1;
+                break;
+            }
+            streak = 0;
+            hi += 1;
+        }
+        if (!found) return 0;
+    }
+    return score;
+};
+
+window.fuzzyIncludes = function(haystack, needle, minScore = 3) {
+    return window.fuzzyMatchScore(haystack, needle) >= minScore;
+};
+
+window.JobQueue = (() => {
+    const PREF_KEY = 'job_queue_history_v1';
+    const PATCH_EMIT_INTERVAL_MS = 120;
+    let jobs = [];
+    const listeners = [];
+    const runtimeHandlers = {};
+    let patchEmitTimer = null;
+
+    const loadHistory = () => {
+        if (window.AppSettings) {
+            const parsed = window.AppSettings.getPref(PREF_KEY, []);
+            jobs = Array.isArray(parsed) ? parsed : [];
+            return;
+        }
+        jobs = [];
+    };
+    const saveHistory = () => {
+        if (!window.AppSettings) return;
+        window.AppSettings.setPrefSync(PREF_KEY, jobs.slice(0, 200));
+    };
+    const emit = () => listeners.forEach(fn => fn([...jobs]));
+
+    const update = (id, patch, options = {}) => {
+        const { persist = true, emitNow = true } = options;
+        const idx = jobs.findIndex(j => j.id === id);
+        if (idx < 0) return;
+        jobs[idx] = { ...jobs[idx], ...patch, updatedAt: Date.now() };
+        if (persist) saveHistory();
+        if (emitNow) emit();
+    };
+
+    const queuePatchEmit = () => {
+        if (patchEmitTimer) return;
+        patchEmitTimer = setTimeout(() => {
+            patchEmitTimer = null;
+            emit();
+        }, PATCH_EMIT_INTERVAL_MS);
+    };
+
+    const add = (job) => {
+        jobs.unshift(job);
+        saveHistory();
+        emit();
+    };
+
+    const run = async ({ label, task, retryTask, cancel, onStart, meta }) => {
+        const id = Math.random().toString(36).slice(2, 11);
+        const job = {
+            id,
+            label,
+            status: 'running',
+            error: null,
+            meta: meta || {},
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            canRetry: typeof retryTask === 'function',
+            canCancel: typeof cancel === 'function'
+        };
+        add(job);
+        runtimeHandlers[id] = { retryTask, cancel };
+        if (typeof onStart === 'function') {
+            try { onStart(id); } catch {}
+        }
+
+        try {
+            const result = await task();
+            const current = jobs.find(j => j.id === id);
+            if (current && current.status === 'cancelling') {
+                update(id, { status: 'cancelled' });
+            } else if (current && current.status !== 'cancelled') {
+                update(id, { status: 'completed' });
+            }
+            return result;
+        } catch (e) {
+            const current = jobs.find(j => j.id === id);
+            if (current && current.status === 'cancelling') {
+                update(id, { status: 'cancelled', error: null });
+            } else if (current && current.status !== 'cancelled') {
+                update(id, { status: 'error', error: String(e) });
+            }
+            throw e;
+        }
+    };
+
+    const retry = async (id, task) => {
+        update(id, { status: 'running', error: null });
+        try {
+            const result = await task();
+            const current = jobs.find(j => j.id === id);
+            if (current && current.status !== 'cancelled') {
+                update(id, { status: 'completed' });
+            }
+            return result;
+        } catch (e) {
+            const current = jobs.find(j => j.id === id);
+            if (current && current.status !== 'cancelled') {
+                update(id, { status: 'error', error: String(e) });
+            }
+            throw e;
+        }
+    };
+
+    const cancelJob = (id, cancel) => {
+        update(id, { status: 'cancelling', error: null });
+        if (typeof cancel === 'function') {
+            try {
+                const maybePromise = cancel();
+                if (maybePromise && typeof maybePromise.then === 'function') {
+                    maybePromise.catch((err) => {
+                        const current = jobs.find(j => j.id === id);
+                        if (current && current.status === 'cancelling') {
+                            update(id, { status: 'running', error: null });
+                        }
+                        if (window.showToast) {
+                            window.showToast(String(err || 'Failed to cancel operation.'), true);
+                        }
+                    });
+                }
+            } catch (err) {
+                const current = jobs.find(j => j.id === id);
+                if (current && current.status === 'cancelling') {
+                    update(id, { status: 'running', error: null });
+                }
+                if (window.showToast) {
+                    window.showToast(String(err || 'Failed to cancel operation.'), true);
+                }
+            }
+        }
+    };
+
+    const retryById = async (id) => {
+        const handlers = runtimeHandlers[id];
+        if (!handlers || typeof handlers.retryTask !== 'function') return;
+        return retry(id, handlers.retryTask);
+    };
+
+    const cancelById = (id) => {
+        const handlers = runtimeHandlers[id];
+        if (!handlers || typeof handlers.cancel !== 'function') {
+            update(id, { status: 'cancelled', error: null });
+            return;
+        }
+        cancelJob(id, handlers.cancel);
+    };
+
+    const subscribe = (listener) => {
+        listeners.push(listener);
+        listener([...jobs]);
+        return () => {
+            const idx = listeners.indexOf(listener);
+            if (idx >= 0) listeners.splice(idx, 1);
+        };
+    };
+
+    const patch = (id, patchData) => {
+        const patchObj = { ...(patchData || {}) };
+        if (patchObj.meta && typeof patchObj.meta === 'object') {
+            const current = jobs.find(j => j.id === id);
+            patchObj.meta = { ...(current?.meta || {}), ...patchObj.meta };
+        }
+        update(id, patchObj, { persist: false, emitNow: false });
+        queuePatchEmit();
+    };
+
+    loadHistory();
+    const syncFromSettings = () => {
+        loadHistory();
+        emit();
+    };
+
+    return { run, retry, cancelJob, retryById, cancelById, subscribe, patch, syncFromSettings, getJobs: () => [...jobs] };
+})();
+
+window.initJobQueueUi = function() {
+    const toggle = document.getElementById('job-queue-toggle');
+    const close = document.getElementById('job-queue-close');
+    const panel = document.getElementById('job-queue-panel');
+    const list = document.getElementById('job-queue-list');
+    const badge = document.getElementById('job-queue-badge');
+    if (!toggle || !close || !panel || !list || !badge) return;
+
+    toggle.onclick = () => {
+        panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    };
+    close.onclick = () => { panel.style.display = 'none'; };
+
+    window.JobQueue.subscribe((jobs) => {
+        const runningCount = jobs.filter(j => j.status === 'running' || j.status === 'cancelling').length;
+        if (runningCount > 0) {
+            badge.style.display = 'inline-block';
+            badge.textContent = String(runningCount);
+        } else {
+            badge.style.display = 'none';
+        }
+
+        if (jobs.length === 0) {
+            list.innerHTML = '<div class="job-item"><div class="job-label">No jobs yet.</div></div>';
+            return;
+        }
+
+        list.innerHTML = jobs.map(j => {
+            const err = j.error ? `<div class="job-error">${j.error}</div>` : '';
+            const statusText = j.status === 'cancelling' ? 'cancelling...' : j.status;
+            const hasProgress = Number.isFinite(Number(j.meta?.progressPercent));
+            const clampedProgress = hasProgress ? Math.max(0, Math.min(100, Number(j.meta.progressPercent))) : 0;
+            const progressBar = hasProgress
+                ? `
+                    <div class="job-progress-track" role="progressbar" aria-valuenow="${clampedProgress}" aria-valuemin="0" aria-valuemax="100" aria-label="Job progress">
+                        <div class="job-progress-fill" style="width:${clampedProgress}%;"></div>
+                        <span class="job-progress-percent">${clampedProgress}%</span>
+                    </div>
+                `
+                : '';
+            const details = j.meta && (j.meta.current || j.meta.elapsed || j.meta.eta || j.meta.status)
+                ? `
+                    <details class="job-details" data-id="${j.id}" ${j.meta.detailsOpen ? 'open' : ''}>
+                        <summary>Details</summary>
+                        <div class="job-details-content">
+                            ${j.meta.status ? `<div>Status: ${j.meta.status}</div>` : ''}
+                            ${j.meta.current ? `<div>Current: ${j.meta.current}</div>` : ''}
+                            ${j.meta.elapsed ? `<div>Elapsed: ${j.meta.elapsed}</div>` : ''}
+                            ${j.meta.eta ? `<div>ETA: ${j.meta.eta}</div>` : ''}
+                        </div>
+                    </details>
+                `
+                : '';
+            const actions = `
+                <div class="job-actions">
+                    ${j.status === 'running' ? `<button data-action="cancel" data-id="${j.id}">Cancel</button>` : ''}
+                    ${j.status === 'error' && j.canRetry ? `<button data-action="retry" data-id="${j.id}">Retry</button>` : ''}
+                </div>
+            `;
+            return `
+                <div class="job-item">
+                    <div class="job-top">
+                        <div class="job-label">${j.label}</div>
+                        <div class="job-status">${statusText}</div>
+                    </div>
+                    ${progressBar}
+                    ${err}
+                    ${details}
+                    ${actions}
+                </div>
+            `;
+        }).join('');
+
+        list.querySelectorAll('button[data-action="retry"]').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.getAttribute('data-id');
+                try {
+                    await window.JobQueue.retryById(id);
+                } catch (e) {
+                    window.showToast(String(e), true);
+                }
+            };
+        });
+
+        list.querySelectorAll('button[data-action="cancel"]').forEach(btn => {
+            btn.onclick = () => {
+                const id = btn.getAttribute('data-id');
+                window.JobQueue.cancelById(id);
+            };
+        });
+
+        list.querySelectorAll('details.job-details[data-id]').forEach(detailsEl => {
+            detailsEl.addEventListener('toggle', () => {
+                const id = detailsEl.getAttribute('data-id');
+                if (!id || !window.JobQueue || !window.JobQueue.patch) return;
+                window.JobQueue.patch(id, { meta: { detailsOpen: detailsEl.open } });
+            });
+        });
+    });
 };
 
 window.pendingSearch = null;
@@ -690,19 +1244,22 @@ document.addEventListener('mod_manager_loaded', () => window.executePendingSearc
 document.addEventListener('allies_loaded', () => setTimeout(() => window.executePendingSearch(), 100));
 
 document.addEventListener('DOMContentLoaded', async () => {
-    
-    eel.get_settings()().then(settings => {
-        if (settings && settings.accent_color) {
-            document.documentElement.style.setProperty('--accent-blue', settings.accent_color);
-            const hex = settings.accent_color.replace('#', '');
-            if (hex.length === 6) {
-                const r = parseInt(hex.substring(0, 2), 16);
-                const g = parseInt(hex.substring(2, 4), 16);
-                const b = parseInt(hex.substring(4, 6), 16);
-                document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
-            }
+    await window.AppSettings.load();
+    if (window.JobQueue && typeof window.JobQueue.syncFromSettings === 'function') {
+        window.JobQueue.syncFromSettings();
+    }
+
+    const accentColor = window.AppSettings.get('accent_color');
+    if (accentColor) {
+        document.documentElement.style.setProperty('--accent-blue', accentColor);
+        const hex = String(accentColor).replace('#', '');
+        if (hex.length === 6) {
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
         }
-    });
+    }
 
     const cmdOverlay = document.getElementById('command-palette-overlay');
     const cmdInput = document.getElementById('cmd-input');
@@ -732,18 +1289,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (query.startsWith('@')) {
             const sq = query.substring(1).trim();
-            if (sq) displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
+            if (sq) {
+                displayCommands.push({ id: 'trovesaurus', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', query: sq });
+                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+            }
         } else if (query.startsWith('#')) {
             const sq = query.substring(1).trim();
             if (sq) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
         } else {
             const sq = query.startsWith('>') ? query.substring(1).trim() : query;
-            displayCommands = commands.filter(c => t(c.title).toLowerCase().includes(sq.toLowerCase()) || c.id.toLowerCase().includes(sq.toLowerCase()));
+            displayCommands = commands
+                .map(c => ({
+                    ...c,
+                    _score: Math.max(
+                        window.fuzzyMatchScore(t(c.title), sq),
+                        window.fuzzyMatchScore(c.id, sq)
+                    )
+                }))
+                .filter(c => !sq || c._score > 0)
+                .sort((a, b) => b._score - a._score);
             
             if (sq.length >= 3 && displayCommands.length === 0) {
-                displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
-                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
                 displayCommands.push({ id: 'trovesaurus', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', query: sq });
+                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
             }
         }
 
@@ -817,22 +1385,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+    let lastNavBlockToastAt = 0;
 
     const burgerBtn = document.getElementById('burger-btn');
     const sidebar = document.getElementById('sidebar');
+    let activeViewLoadToken = 0;
+    let activeViewLoadController = null;
+
+    if (sidebar && window.AppSettings) {
+        try {
+            await window.AppSettings.load();
+            if (window.AppSettings.getPref('sidebar_collapsed', false)) {
+                sidebar.classList.add('collapsed');
+            }
+        } catch {}
+    }
+
     if (burgerBtn && sidebar) {
         burgerBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
+            if (window.AppSettings) {
+                window.AppSettings.setPrefSync('sidebar_collapsed', sidebar.classList.contains('collapsed'));
+            }
         });
     }
 
     window.loadView = async function(target) {
+        const loadToken = ++activeViewLoadToken;
+        if (activeViewLoadController) {
+            try { activeViewLoadController.abort(); } catch {}
+        }
+        activeViewLoadController = new AbortController();
+
         try {
-            const response = await fetch(`views/${target}.html`);
+            const currentTarget = document.querySelector('.nav-btn.active')?.getAttribute('data-target') || null;
+            const isSwitchingTabs = !!currentTarget && !!target && currentTarget !== target;
+            const hasBlockingJobs = (() => {
+                if (!window.JobQueue || typeof window.JobQueue.getJobs !== 'function') return false;
+                const jobs = window.JobQueue.getJobs() || [];
+                return jobs.some(j => j && (j.status === 'running' || j.status === 'cancelling'));
+            })();
+
+            if (isSwitchingTabs && hasBlockingJobs) {
+                const now = Date.now();
+                if (now - lastNavBlockToastAt > 1200) {
+                    window.showToast(t('Cannot switch tabs while a job is running.'), true);
+                    lastNavBlockToastAt = now;
+                }
+                return false;
+            }
+
+            const response = await fetch(`views/${target}.html`, { signal: activeViewLoadController.signal });
+            if (loadToken !== activeViewLoadToken) return false;
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const html = await response.text();
+            if (loadToken !== activeViewLoadToken) return false;
             viewContainer.innerHTML = html;
+            if (loadToken !== activeViewLoadToken) return false;
 
             navButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('data-target') === target);
@@ -840,18 +1450,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (window.I18nManager) {
                 await window.I18nManager.translatePage();
+                if (loadToken !== activeViewLoadToken) return false;
             }
             
             window.applyCustomDropdowns();
+            if (loadToken !== activeViewLoadToken) return false;
 
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
             
             console.log(`Successfully loaded view: ${target}`);
+            return true;
         } catch (err) {
+            if (loadToken !== activeViewLoadToken || (err && err.name === 'AbortError')) {
+                return false;
+            }
             console.error("View loading error:", err);
             const errorMsg = t("Failed to load view: {error}").replace("{error}", err.message);
             viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">${errorMsg}</div>`;
+            return false;
+        } finally {
+            if (loadToken === activeViewLoadToken) {
+                activeViewLoadController = null;
+            }
         }
     };
 
@@ -885,6 +1506,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
         dateEl.textContent = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
         clockEl.textContent = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const heroDate = document.getElementById('st-hero-date');
+        const heroClock = document.getElementById('st-hero-clock');
+        if (heroDate) heroDate.textContent = dateEl.textContent;
+        if (heroClock) heroClock.textContent = clockEl.textContent;
 
         const modalList = document.getElementById('st-timezones-list');
         const modal = document.getElementById('server-time-modal');
@@ -948,8 +1574,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const convTz = document.getElementById('st-converter-tz');
     const convResult = document.getElementById('st-converter-result');
     const discordFormat = document.getElementById('st-discord-format');
+    const btnCopyNormal = document.getElementById('st-btn-copy-normal');
     const btnCopyDiscord = document.getElementById('st-btn-copy-discord');
     let currentUnixSeconds = 0;
+
+    const formatUtcTimestamp = (unixSec) => {
+        const d = new Date(unixSec * 1000);
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`;
+    };
 
     if (convTz) {
         window.globalTimezones.forEach(tz => {
@@ -1044,6 +1677,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (convInput) convInput.addEventListener('input', doTimeConversion);
     if (convTz) convTz.addEventListener('change', doTimeConversion);
+    if (btnCopyNormal) btnCopyNormal.addEventListener('click', () => {
+        if (!currentUnixSeconds) return;
+        navigator.clipboard.writeText(formatUtcTimestamp(currentUnixSeconds)).then(() => {
+            if(window.showToast) window.showToast(t("Timestamp copied!"));
+        });
+    });
     if (btnCopyDiscord) btnCopyDiscord.addEventListener('click', () => {
         navigator.clipboard.writeText(`<t:${currentUnixSeconds}:${discordFormat.value}>`).then(() => { if(window.showToast) window.showToast(t("Discord timestamp copied!")); });
     });
@@ -1052,10 +1691,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     const timeWrapper = document.getElementById('server-time-wrapper');
     const timeModal = document.getElementById('server-time-modal');
     const closeTimeBtn = document.getElementById('close-server-time-btn');
+    const copyTimeBtn = document.getElementById('copy-server-time-btn');
+
+    const copyCurrentServerTime = () => {
+        const payload = [dateEl?.textContent, clockEl?.textContent].filter(Boolean).join(' ');
+        if (!payload) return;
+        navigator.clipboard.writeText(payload).then(() => {
+            if (window.showToast) window.showToast(t('Server time copied to clipboard!'));
+        });
+    };
+
     if (timeWrapper && timeModal) {
-        timeWrapper.addEventListener('click', () => { timeModal.style.display = 'flex'; updateServerTime(); });
-        if (closeTimeBtn) closeTimeBtn.addEventListener('click', () => timeModal.style.display = 'none');
-        timeModal.addEventListener('click', (e) => { if (e.target === timeModal) timeModal.style.display = 'none'; });
+        const openServerTimeModal = () => {
+            timeModal.style.display = 'flex';
+            updateServerTime();
+        };
+
+        const closeServerTimeModal = () => {
+            timeModal.style.display = 'none';
+        };
+
+        timeWrapper.addEventListener('click', openServerTimeModal);
+        timeWrapper.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openServerTimeModal();
+            }
+        });
+        if (closeTimeBtn) closeTimeBtn.addEventListener('click', closeServerTimeModal);
+        if (copyTimeBtn) copyTimeBtn.addEventListener('click', copyCurrentServerTime);
+        timeModal.addEventListener('click', (e) => { if (e.target === timeModal) closeServerTimeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && timeModal.style.display === 'flex') {
+                closeServerTimeModal();
+            }
+        });
     }
 
     const startupUrl = await eel.get_startup_url()();

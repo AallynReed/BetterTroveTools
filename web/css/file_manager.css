@@ -13,6 +13,7 @@
 .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
 .tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
 .tab-btn.active { background: var(--bg-panel); color: var(--accent-blue); border: 1px solid var(--border-color); border-bottom: 2px solid var(--accent-blue); }
+.tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .tab-content { display: none; animation: fadeIn 0.2s ease; }
 .tab-content.active { display: block; }
 
@@ -65,15 +66,18 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 .searching .file-item, .searching details.folder, .searching details.files-group { display: none !important; }
 .searching .is-match { display: flex !important; }
 .searching details.folder.has-match, .searching details.files-group.has-match { display: block !important; }
+.file-item.is-active-match {
+    background: rgba(var(--accent-rgb), 0.22);
+    outline: 1px solid rgba(var(--accent-rgb), 0.85);
+}
 
 @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 #extraction-bar { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--bg-hover); border: 1px solid var(--border-color); padding: 12px 25px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 9999; align-items: center; gap: 20px; backdrop-filter: blur(10px); }
 #extraction-bar.active { display: flex; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .progress-container { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 550px; max-width: 80vw; }
-.progress-track { width: 100%; height: 6px; background: var(--bg-dark); border-radius: 10px; overflow: hidden; }
-.progress-text { font-size: 13px; color: var(--text-main); width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-.progress-filename { font-size: 11px; color: var(--text-muted); width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
-.progress-fill { height: 100%; width: 0%; background: var(--accent-blue); transition: width 0.2s ease-out; }
+.progress-track { width: 100%; height: 18px; background: var(--bg-dark); border-radius: 10px; overflow: hidden; position: relative; }
+.progress-percent { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65); pointer-events: none; }
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.75), var(--accent-blue)); transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
 
 #btn-collapse-all { background: #444; color: #ccc; border: 1px solid var(--border-color); }
 #btn-collapse-all:hover { background: #555; color: #fff; }
@@ -121,4 +125,36 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 
 .close-modal:hover { 
     color: var(--accent-blue); 
+}
+
+/* Concise module pass */
+.file-manager-container {
+    padding: 22px;
+}
+
+.file-manager-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+}
+
+.tabs-container {
+    gap: 14px;
+}
+
+.tab-buttons,
+.search-container,
+.file-controls {
+    gap: 10px;
+}
+
+.tool-panel {
+    padding: 18px;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.file-tree {
+    max-height: 64vh;
 }

@@ -38,6 +38,13 @@
     font-size: 13px;
 }
 
+.settings-action-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .custom-dirs-list {
     display: flex;
     flex-direction: column;
@@ -181,4 +188,33 @@ input:checked + .slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+/* Concise module pass */
+.settings-container {
+    padding: 24px;
+    max-width: 860px;
+}
+
+.settings-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+}
+
+.tabs-container {
+    gap: 14px;
+}
+
+.tab-buttons {
+    gap: 8px;
+    padding-bottom: 8px;
+}
+
+.settings-section {
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.settings-action-row {
+    gap: 10px;
 }

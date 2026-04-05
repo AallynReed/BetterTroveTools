@@ -85,6 +85,25 @@
     border-color: var(--slot-border-active, #88c0d0);
 }
 
+.equipped-slot-placeholder {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.25;
+    filter: grayscale(100%);
+    pointer-events: none;
+}
+
+.equipped-slot-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 50%;
+}
+
 .equipped-row {
     display: flex;
     gap: 40px;
@@ -361,3 +380,27 @@
 .gem-tooltip-row { display: flex; justify-content: space-between; }
 .gem-tooltip-stat { font-weight: bold; color: #fff; }
 .gem-tooltip-muted { color: var(--text-muted); }
+
+/* Concise module pass */
+.gem-sim-container {
+    gap: 14px;
+    padding: 14px;
+    height: calc(100vh - 28px);
+}
+
+.column-header {
+    padding: 11px 12px;
+}
+
+.column-scroll-area {
+    padding: 14px;
+}
+
+.panel-divider {
+    margin: 14px 0;
+}
+
+.equipped-row {
+    gap: 26px;
+    margin-bottom: 10px;
+}

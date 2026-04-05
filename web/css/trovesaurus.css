@@ -15,46 +15,138 @@
 #ts-search-input { width: 100%; padding: 10px 10px 10px 35px; background: #111; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); outline: none; transition: border-color 0.2s; }
 #ts-search-input:focus { border-color: var(--accent-blue); }
 
-#ts-mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; padding: 15px 0; }
-.ts-mod-card { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; }
-.ts-mod-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); border-color: var(--accent-blue); }
+#ts-mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); grid-auto-rows: 300px; gap: 20px; padding: 15px 0; align-items: stretch; }
+.ts-mod-card { height: 100%; border-radius: 10px; position: relative; }
 
-.mod-image-container { position: relative; width: 100%; aspect-ratio: 400 / 230; background: #151515; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-.ts-mod-card .mod-image-container { max-height: 150px; }
-.mod-preview-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s; }
-.mod-preview-img:hover { filter: brightness(1.15); }
-.mod-image-container::after {
-    content: '\f00e';
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.4);
-    color: rgba(255, 255, 255, 0.8);
+.ts-card-content {
+    position: relative;
+    height: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: linear-gradient(170deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15)), var(--bg-panel);
+    padding: 12px;
     display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.ts-card-delete-hover {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: var(--text-muted);
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    margin-left: auto;
+    flex: 0 0 auto;
+    cursor: pointer;
     opacity: 0;
-    transition: all 0.2s ease;
     pointer-events: none;
-    backdrop-filter: blur(2px);
+    transition: opacity 0.2s ease, color 0.15s ease, transform 0.2s ease;
+    z-index: 4;
 }
-.mod-image-container:hover::after {
+
+.ts-mod-card:hover .ts-card-delete-hover {
     opacity: 1;
+    pointer-events: auto;
 }
 
-.mod-card-content { display: flex; flex-direction: column; padding: 12px; flex-grow: 1; gap: 6px; }
+.ts-card-delete-hover:hover {
+    transform: scale(1.05);
+    color: #ff6b6b;
+}
 
-.ts-mod-title { font-size: 15px; font-weight: 600; margin: 0; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; transition: color 0.2s; }
-.ts-mod-title:hover { color: var(--accent-blue); }
+.ts-front-top {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.ts-inline-actions {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.ts-inline-actions .ts-install-btn { margin-top: 0; }
+
+.ts-mod-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-main);
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.25;
+    min-height: 2.5em;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.ts-mod-title,
+.ts-mod-title:hover,
+.ts-mod-title:visited {
+    text-decoration: none;
+}
+
+.ts-mod-title:hover {
+    color: var(--accent-blue);
+}
 
 .mod-meta { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ts-mod-author { font-weight: 500; cursor: pointer; transition: color 0.2s; }
-.ts-mod-author:hover { color: var(--accent-blue); text-decoration: underline; }
+.ts-mod-author,
+.ts-mod-author:visited {
+    font-weight: 600;
+    color: var(--text-muted);
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.ts-mod-author:hover {
+    color: var(--text-main);
+    text-decoration: none;
+}
+
+.ts-front-top .ts-mod-title {
+    margin-top: 1px;
+}
+
+.ts-front-top .ts-card-delete-hover {
+    margin-top: 1px;
+}
+
+.ts-front-preview {
+    margin-top: 8px;
+    width: 100%;
+    height: 96px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 0;
+    cursor: pointer;
+}
+
+.mod-preview-img { width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.2s; }
+.ts-front-preview:hover .mod-preview-img { filter: brightness(1.12); }
 
 .ts-mod-stats { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); background: rgba(0, 0, 0, 0.2); padding: 8px 12px; border-radius: 4px; margin-top: auto; border: 1px solid rgba(255, 255, 255, 0.03); }
 .ts-stat-item { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+
+.ts-action-btn {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
 
 
 .ts-install-btn { background: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; color: #28a745; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; text-align: center; transition: all 0.2s; width: 100%; margin-top: 10px; display: flex; justify-content: center; align-items: center; gap: 6px; }
@@ -75,3 +167,32 @@
 #modal-caption { margin-top: 15px; color: #ccc; font-size: 18px; font-weight: bold; text-align: center; }
 #modal-view-ts-btn { background: rgba(var(--accent-rgb), 0.15); border: 1px solid var(--accent-blue); color: var(--accent-blue); margin-top: 15px; padding: 8px 16px; border-radius: 4px; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
 #modal-view-ts-btn:hover { background: var(--accent-blue); color: #111; }
+
+@media (max-width: 900px) {
+    #ts-mod-grid { grid-auto-rows: 300px; }
+}
+
+/* Concise module pass */
+.trovesaurus-container {
+    padding: 16px;
+}
+
+.file-manager-header {
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+}
+
+.search-filter-bar {
+    padding: 12px;
+    margin-bottom: 14px;
+}
+
+#ts-mod-grid {
+    gap: 12px;
+    padding: 10px 0;
+    grid-auto-rows: 288px;
+}
+
+.ts-card-content {
+    padding: 10px;
+}
