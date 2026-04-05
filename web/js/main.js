@@ -362,7 +362,6 @@ function handle_deep_link(url) {
 }
 
 window.applyCustomDropdowns = function() {
-    // Target ALL standard dropdowns (ignores multi-selects and Select2)
     document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)').forEach(select => {
         if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
@@ -404,7 +403,6 @@ window.applyCustomDropdowns = function() {
 
             triggerText.innerHTML = select.options[select.selectedIndex]?.innerHTML || '';
             
-            // Try to selectively update to preserve scroll focus during fast mutation updates
             if (optionsContainer.children.length === select.options.length) {
                 Array.from(select.options).forEach((opt, index) => {
                     const optDiv = optionsContainer.children[index];
@@ -415,7 +413,6 @@ window.applyCustomDropdowns = function() {
                 return;
             }
 
-            // Fallback full rebuild
             optionsContainer.innerHTML = '';
             Array.from(select.options).forEach((opt, index) => {
                 const optDiv = document.createElement('div');
@@ -441,7 +438,6 @@ window.applyCustomDropdowns = function() {
         
         select.addEventListener('change', () => updateOptions());
 
-        // Intercept background JS property changes so the custom UI syncs instantly
         if (!select._customDropdownPatched) {
             const originalValueSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
             if (originalValueSetter) {
@@ -652,11 +648,9 @@ document.addEventListener('click', (e) => {
 });
 
 document.addEventListener('contextmenu', (e) => {
-    // Allow native right-click in text fields or when text is highlighted for copying
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (window.getSelection().toString().length > 0) return; 
     
-    // Prevent the default browser context menu globally
     e.preventDefault();
     
     if (window.ContextMenu) window.ContextMenu.hide();
@@ -667,7 +661,6 @@ window.executePendingSearch = function() {
     
     let handled = false;
 
-    // Trovesaurus
     const tsInput = document.getElementById('ts-search-input');
     if (tsInput) {
         tsInput.value = window.pendingSearch;
@@ -675,7 +668,6 @@ window.executePendingSearch = function() {
         handled = true;
     }
 
-    // Local Mod Manager
     const modInput = document.getElementById('mod-search-input');
     if (modInput) {
         modInput.value = window.pendingSearch;
@@ -683,7 +675,6 @@ window.executePendingSearch = function() {
         handled = true;
     }
 
-    // Ally Codex
     const allyInput = document.getElementById('ally-search-input');
     if (allyInput) {
         allyInput.value = window.pendingSearch;
@@ -713,7 +704,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Command Palette Logic
     const cmdOverlay = document.getElementById('command-palette-overlay');
     const cmdInput = document.getElementById('cmd-input');
     const cmdResults = document.getElementById('cmd-results');
@@ -750,7 +740,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sq = query.startsWith('>') ? query.substring(1).trim() : query;
             displayCommands = commands.filter(c => t(c.title).toLowerCase().includes(sq.toLowerCase()) || c.id.toLowerCase().includes(sq.toLowerCase()));
             
-            // Auto-fallback to deep searches if no tabs match your typing
             if (sq.length >= 3 && displayCommands.length === 0) {
                 displayCommands.push({ id: 'mod_manager', title: `Search Mods: "${sq}"`, icon: 'fa-cubes', query: sq });
                 displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
@@ -796,7 +785,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         } else if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f')) && !e.target.matches('input, textarea')) {
-            // Universal Focus Search Hotkey
             e.preventDefault();
             const searchInputs = ['ts-search-input', 'mod-search-input', 'ally-search-input', 'tree-search'];
             for (let id of searchInputs) {
@@ -878,9 +866,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (langSelect && window.I18nManager) {
         langSelect.addEventListener('change', async (e) => {
             await window.I18nManager.setLocale(e.target.value);
-            await window.I18nManager.translatePage(); // Translates static shell (sidebar, etc)
+            await window.I18nManager.translatePage();
             const currentView = document.querySelector('.nav-btn.active')?.getAttribute('data-target');
-            if (currentView) window.loadView(currentView); // Reloads active view to translate dynamic JS content
+            if (currentView) window.loadView(currentView);
         });
     }
 

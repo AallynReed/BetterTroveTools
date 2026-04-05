@@ -97,7 +97,6 @@
         </div>
     </div>
 
-    <!-- TRACKER MODAL -->
     <div class="image-modal" :class="{ active: modals.addTracker }" style="display: flex;" v-show="modals.addTracker">
     <div class="tool-panel" style="width: 450px; position: relative; padding-top: 35px;">
             <span @click="modals.addTracker = false" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;">&times;</span>
@@ -120,7 +119,6 @@
     </div>
 </div>
 
-    <!-- EXTRACTION BAR -->
     <div id="extraction-bar" :class="{ active: selectedFilesCount > 0 || progress.active }">
         <span v-show="!progress.active">
             <span style="font-weight: bold; color: var(--accent-blue);">{{ selectedFilesCount }}</span> {{ t('files selected') }}

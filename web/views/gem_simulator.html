@@ -2,7 +2,6 @@
     <link rel="stylesheet" href="css/gem_simulator.css">
 </head>
 <div id="gem-simulator-vue-app" class="gem-sim-container" v-cloak>
-    <!-- LEFT COLUMN: EQUIPPED -->
     <div class="gem-sim-column left-column">
         <div class="column-header" data-i18n>Equipped Gems & Stats</div>
         <div class="column-scroll-area">
@@ -26,7 +25,6 @@
                     </div>
                 </div>
 
-                <!-- STATS & TOGGLES -->
                 <div style="margin-top: 20px;">
                     <div class="primordial-toggles-row">
                         <label v-for="element in elementsList" :key="element.id" class="primordial-toggle-label">
@@ -201,7 +199,6 @@
         </div>
     </div>
 
-    <!-- MODALS & OVERLAYS -->
     <div id="custom-confirm-modal" class="modal-overlay" v-show="confirmModal.show" style="display: flex;">
         <div class="modal-content">
             <h3>{{ confirmModal.title }}</h3>

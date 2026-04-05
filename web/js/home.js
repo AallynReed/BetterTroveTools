@@ -46,7 +46,6 @@ document.addEventListener('home_loaded', () => {
                 list: [], d15Cols: [], d15Rows: [], d15ShowFinalName: true, d15AllExpanded: false
             });
 
-            // --- Utility Functions ---
             const openUrl = (url) => eel.open_url_in_browser(url)();
             const scrollCarousel = (amount) => { if (carouselRef.value) carouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
 
@@ -79,7 +78,6 @@ document.addEventListener('home_loaded', () => {
                 return showLeft ? t("{time} left").replace("{time}", timeStr) : timeStr;
             };
 
-            // --- Media Callbacks ---
             window._homeAppHandleYoutube = (response) => {
                 mediaData.youtube.loading = false;
                 if (response?.success && response.data) {
@@ -123,7 +121,6 @@ document.addEventListener('home_loaded', () => {
                 }
             };
 
-            // --- Computed Mapped Data ---
             const mappedEvents = computed(() => {
                 return events.data.map(ev => {
                     const startTs = parseInt(ev.startdate);
@@ -201,7 +198,6 @@ document.addEventListener('home_loaded', () => {
                 return cards;
             });
 
-            // --- Fetching Logic ---
             const refreshAllData = async () => {
                 isChinese.value = window.I18nManager?.currentLocale === 'zh_CN';
                 const sets = await eel.get_settings()();
@@ -244,7 +240,6 @@ document.addEventListener('home_loaded', () => {
                 serverData.loading = false;
             };
 
-            // --- Modals ---
             const openBuffSchedule = async (type) => {
                 rotationModal.type = 'list';
                 const buff = type === 'daily' ? serverData.daily : serverData.weekly;
@@ -409,7 +404,6 @@ document.addEventListener('home_loaded', () => {
                 rotationModal.show = true;
             };
 
-            // --- Yearly Calendar ---
             const timelineWrapperRef = ref(null);
             const isDraggingTimeline = ref(false);
             let dragStartX = 0, dragScrollLeft = 0;
@@ -549,7 +543,6 @@ document.addEventListener('home_loaded', () => {
     app.mount('#home-vue-app');
 });
 
-// Forward Eel callbacks
 eel.expose(receive_youtube_videos, 'receive_youtube_videos');
 function receive_youtube_videos(response) { if (window._homeAppHandleYoutube) window._homeAppHandleYoutube(response); }
 

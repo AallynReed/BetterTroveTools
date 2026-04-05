@@ -12,13 +12,10 @@
             <h3 v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Calculating Constellations...') }}</span></h3>
             
             <svg v-else id="chart-svg" viewBox="0 0 1000 1000">
-                <!-- Lines -->
                 <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" stroke="#333" stroke-width="3" :class="{'line-selected': line.selected}" />
                 
-                <!-- Center Anchor -->
                 <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="20" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="root-node" :class="{'root-active': hasAnySelection}" />
 
-                <!-- Stars -->
                 <template v-for="node in renderNodes" :key="node.id">
                     <polygon v-if="node.Type === 'Root'" :points="node.points" fill="var(--bg-dark, #111)" :stroke="node.stroke" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive}" @click="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                     

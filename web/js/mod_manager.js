@@ -145,7 +145,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 mod.status = mod.status === 'enabled' ? 'disabled' : 'enabled';
                 if (response.new_path) mod.path = response.new_path;
                 
-                // Update conflicts in other mods
                 mods.value.forEach(m => {
                     if (m !== mod && m.conflicts_with) {
                         const conflict = m.conflicts_with.find(c => c.name === mod.name);

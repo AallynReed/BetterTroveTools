@@ -38,7 +38,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const isActioning = ref(false);
             const isSyncing = ref(false);
 
-            // --- Utility Methods ---
             const formatGemName = (name) => {
                 if (!name) return "";
                 return String(name).split('_').join(' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
@@ -76,7 +75,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
             
             const formatStat = (val) => (Math.round(val * 100) / 100).toLocaleString();
 
-            // --- Computed ---
             const equippedRows = computed(() => {
                 if (!lookups.value.elements) return [];
                 return Object.entries(lookups.value.elements)
@@ -157,7 +155,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 return inInv || inEq;
             });
 
-            // --- Core Logic ---
             const saveInventoryDebounced = () => {
                 eel.save_gem_storage({
                     inventory: inventory.value,
@@ -206,7 +203,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 confirmModal.show = false;
             };
 
-            // --- Drag & Drop ---
             const onDragStart = (e, pane, idx) => {
                 hideTooltip();
                 e.dataTransfer.setData('text/plain', JSON.stringify({ pane, idx }));
@@ -322,7 +318,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 inventory.value[emptyIdx] = JSON.parse(JSON.stringify(selected.value));
             };
 
-            // --- Context Menu & Tooltips ---
             const showContextMenu = (e, item, pane, idx) => {
                 if (!window.ContextMenu) return;
                 window.ContextMenu.show(e, [
@@ -355,7 +350,6 @@ document.addEventListener('gem_simulator_loaded', async () => {
             };
             const hideTooltip = () => { tooltip.show = false; tooltip.item = null; };
 
-            // --- API Actions ---
             const generateGem = async () => {
                 isGenerating.value = true;
                 try {

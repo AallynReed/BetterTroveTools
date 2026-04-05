@@ -15,7 +15,6 @@
     padding-bottom: 20px;
 }
 
-/* Tabs */
 .tabs-container { display: flex; flex-direction: column; gap: 20px; }
 .tab-buttons { display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
 .tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }

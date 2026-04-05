@@ -163,7 +163,6 @@ body {
     align-items: center;
 }
 
-/* Custom Dropdown System */
 .custom-select-wrapper {
     position: relative;
     user-select: none;
@@ -366,7 +365,6 @@ body {
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
-/* Server Time Modal Styles */
 .tz-row {
     display: flex;
     justify-content: space-between;
@@ -435,7 +433,6 @@ body {
     background: transparent;
 }
 
-/* Flatpickr Theme Overrides */
 .flatpickr-calendar {
     background: var(--bg-panel, #1d232b) !important;
     border: 1px solid var(--border-color, #444c5e) !important;
@@ -476,7 +473,6 @@ span.flatpickr-weekday {
     background: rgba(255, 255, 255, 0.05) !important;
 }
 
-/* Command Palette */
 .cmd-result-item {
     padding: 12px 20px; display: flex; align-items: center; gap: 15px;
     color: var(--text-main); cursor: pointer; border-left: 3px solid transparent;
@@ -488,7 +484,6 @@ span.flatpickr-weekday {
 .cmd-result-item.active .cmd-result-icon { color: var(--accent-blue); }
 .cmd-result-item:hover .cmd-result-icon { color: var(--accent-blue); }
 
-/* Custom Context Menu */
 .context-menu {
     position: fixed;
     background: var(--bg-panel, #1d232b);

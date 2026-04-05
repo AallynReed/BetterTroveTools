@@ -14,7 +14,6 @@ document.addEventListener('calculators_loaded', () => {
 
             const activeTab = ref('pr-tab');
 
-            // --- Mastery State ---
             const troveMastery = ref(900);
             const geodeMastery = ref(100);
 
@@ -37,7 +36,6 @@ document.addEventListener('calculators_loaded', () => {
                 geodeMastery.value = Math.max(0, Math.min(parseInt(geodeMastery.value) || 0, 200));
             };
 
-            // --- Magic Find State ---
             const mfData = ref([]);
             
             const fetchMf = async () => {
@@ -87,7 +85,6 @@ document.addEventListener('calculators_loaded', () => {
                 return item.percentage ? t("+{val}% Bonus").replace("{val}", v) : t("+{val} Flat").replace("{val}", v);
             };
 
-            // --- Power Rank State ---
             const prData = ref([]);
             
             const fetchPr = async () => {
@@ -157,7 +154,6 @@ document.addEventListener('calculators_loaded', () => {
         }
     });
 
-    // Cleanup previous Vue instance if view is reloaded by language change
     if (window._calculatorsApp) window._calculatorsApp.unmount();
     window._calculatorsApp = app;
     

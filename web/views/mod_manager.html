@@ -39,7 +39,6 @@
         </div>
     </div>
 
-    <!-- Grid -->
     <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ statusText }}</div>
     <div v-else-if="!selectedInstall" class="placeholder-box">{{ t('Select a game installation to view installed mods.') }}</div>
     <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found in the selected directory.') }}</div>
@@ -68,7 +67,6 @@
         </div>
     </div>
 
-    <!-- Image Modal -->
     <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
         <span class="close-modal" @click="closeImageModal" :title="t('Close Modal')"><i class="fa-solid fa-xmark"></i></span>
         <img class="modal-content" :src="modal.src" v-if="modal.src" alt="Expanded Mod Preview">

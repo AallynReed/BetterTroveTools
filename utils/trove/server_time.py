@@ -4,7 +4,6 @@ from pathlib import Path
 
 
 def load_json_data(filename: str):
-    """Dynamically reads the json data directly from the assets folder."""
     file_path = Path.cwd() / "web" / "assets" / "data" / filename
     try:
         with open(file_path, "r", encoding="utf-8") as f:
@@ -26,7 +25,6 @@ class ServerTime:
         self.first_fluxion = datetime(2023, 7, 18, tzinfo=UTC)
         self.first_gardening = datetime(2025, 5, 23, tzinfo=UTC)
         
-        # Invasions (Baseline: 9 AM UTC-11)
         self.invasion_interval = timedelta(hours=27)
         self.invasion_duration = timedelta(hours=3)
         self.first_invasion = datetime(2026, 3, 24, 9, tzinfo=UTC)
@@ -39,12 +37,10 @@ class ServerTime:
         return datetime.now(UTC) - self.trove_time
 
     def _get_week_index(self, target_time):
-        """Helper to find the 4-week cycle index (0, 1, 2, or 3) for a given time."""
         week_length = 60 * 60 * 24 * 7
         weeks = (target_time.timestamp() - self.first_week_buff.timestamp()) // week_length
         return int(weeks % 4)
 
-    # Daily
     @property
     def daily_buffs(self):
         return load_json_data("daily_buffs.json")
@@ -54,7 +50,6 @@ class ServerTime:
         buffs = self.daily_buffs
         return buffs.get(str(self.now.weekday()), {})
 
-    # Weekly
     @property
     def weekly_buffs(self):
         return load_json_data("weekly_buffs.json")
@@ -64,7 +59,6 @@ class ServerTime:
         buffs = self.weekly_buffs
         return buffs.get(str(self._get_week_index(self.now)), {})
 
-    # Dragons
     def _calculate_dragon(self, first):
         delta = self.now - first
         completed, current = divmod(
@@ -95,7 +89,6 @@ class ServerTime:
     def until_end_dragon(self, first):
         return self.end_dragon(first) - self.now
 
-    # Fluxion
     def _calculate_fluxion(self):
         delta = self.now.timestamp() - self.first_fluxion.timestamp()
         completed, current = divmod(delta, self.dragon_interval.total_seconds())
@@ -132,9 +125,7 @@ class ServerTime:
     def until_end_fluxion(self):
         return self.end_fluxion() - self.now
 
-    # Invasions
     def _get_current_invasion_cycle(self):
-        """Calculates the raw 27-hour cycle we are currently in, regardless of week."""
         delta = self.now - self.first_invasion
         completed, current = divmod(
             int(delta.total_seconds()), int(self.invasion_interval.total_seconds())
@@ -142,14 +133,12 @@ class ServerTime:
         return completed, current
 
     def _is_invasion_week(self, target_time):
-        """Checks if the target_time falls in the 1-week active period of the 4-week cycle."""
         delta = target_time - self.first_invasion
         cycle_seconds = 28 * 24 * 3600
         active_seconds = 6 * 24 * 3600
         return (delta.total_seconds() % cycle_seconds) < active_seconds
 
     def is_invasion(self):
-        """Returns True if within a 3-hour invasion window during the active week."""
         completed, current_seconds = self._get_current_invasion_cycle()
         inv_start = self.first_invasion + completed * self.invasion_interval
         if not self._is_invasion_week(inv_start):
@@ -157,7 +146,6 @@ class ServerTime:
         return current_seconds < self.invasion_duration.total_seconds()
 
     def next_invasion(self):
-        """Finds the next 27-hour invasion block."""
         completed, _ = self._get_current_invasion_cycle()
         check_cycle = completed + 1
         while True:
@@ -170,7 +158,6 @@ class ServerTime:
         return self.next_invasion() - self.now
 
     def previous_invasion(self):
-        """Finds the most recent 27-hour invasion block."""
         completed, _ = self._get_current_invasion_cycle()
         
         check_cycle = completed

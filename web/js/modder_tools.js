@@ -59,7 +59,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 removingOverrides: false
             });
 
-            // --- Game Paths ---
             const scanForGames = async () => {
                 const response = await eel.get_detected_game_paths()();
                 const settings = await eel.get_settings()();
@@ -83,7 +82,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 await eel.save_settings(settings)();
             });
 
-            // --- Build TMod Methods ---
             const onBuildPreviewChange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -210,7 +208,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 isWorking.buildingTMod = false;
             };
 
-            // --- Extract TMod Methods ---
             const browseExtractSource = async () => {
                 const file = await eel.ask_tmod_file()();
                 if (file) extract.source = file;
@@ -234,7 +231,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 isWorking.extracting = false;
             };
 
-            // --- Project Methods ---
             const onProjectPreviewChange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
@@ -336,7 +332,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!project.title.trim()) return window.showToast(t("Project title cannot be empty."), true);
                 if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
 
-                await saveProject(); // Auto save metadata before compiling
+                await saveProject();
                 
                 isWorking.compilingProject = true;
                 try {
@@ -382,7 +378,6 @@ document.addEventListener('modder_tools_loaded', () => {
                 isWorking.removingOverrides = false;
             };
 
-            // --- Software Tab ---
             const loadModdingSoftware = async () => {
                 try {
                     const response = await fetch('assets/data/modding_software.json');

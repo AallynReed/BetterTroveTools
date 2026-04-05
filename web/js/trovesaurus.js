@@ -11,7 +11,6 @@ document.addEventListener('trovesaurus_loaded', () => {
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-            // State
             const isLoading = ref(true);
             const error = ref("");
             const mods = ref([]);
@@ -28,7 +27,6 @@ document.addEventListener('trovesaurus_loaded', () => {
 
             const modal = reactive({ show: false, src: "", caption: "", modId: null });
 
-            // Dropdown Options
             const categoryOptions = computed(() => [
                 [t('All Categories'), ''],
                 [t('UI & HUD'), 'ui'],
@@ -52,7 +50,6 @@ document.addEventListener('trovesaurus_loaded', () => {
                 return games.value.map(g => [`${g.name} - ${g.path}`, g.path]);
             });
 
-            // Fetch Data
             const fetchMods = (page = 1) => {
                 if (isLoading.value && page !== 1) return;
                 isLoading.value = true;
@@ -63,7 +60,6 @@ document.addEventListener('trovesaurus_loaded', () => {
                 if (vc && page !== currentPage.value) vc.scrollTo({top: 0, behavior: 'smooth'});
             };
 
-            // Global eel callbacks hook into these
             window._tsAppHandleMods = (response) => {
                 if (response && response.success) {
                     mods.value = response.mods.map(m => ({
@@ -102,7 +98,6 @@ document.addEventListener('trovesaurus_loaded', () => {
                 eel.install_trovesaurus_mod(selectedGame.value, mod.id)();
             };
 
-            // Context Menu & Interactions
             const openUrl = (url) => eel.open_url_in_browser(url)();
 
             const showContextMenu = (e, mod) => {
@@ -138,7 +133,6 @@ document.addEventListener('trovesaurus_loaded', () => {
                 fetchMods(1);
             });
 
-            // Initialization
             onMounted(async () => {
                 const response = await eel.get_detected_game_paths()();
                 const settings = await eel.get_settings()();

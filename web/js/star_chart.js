@@ -36,7 +36,6 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const tooltip = reactive({ show: false, node: null, x: 0, y: 0 });
 
-            // --- Template Selection ---
             const templateOptions = computed(() => {
                 const opts = [['-- Templates --', '']];
                 for (let name in templates.value) {
@@ -45,7 +44,6 @@ document.addEventListener('star_chart_loaded', async () => {
                 return opts;
             });
 
-            // --- Stats ---
             const overwrites = computed(() => {
                 let ow = new Set();
                 selectedPaths.forEach(p => {
@@ -104,7 +102,6 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const selectedNodeCount = computed(() => selectedPaths.size);
 
-            // --- Build SVG Elements ---
             const renderNodes = computed(() => {
                 return nodesList.value.map(node => {
                     const isSelected = selectedPaths.has(node.Path);
@@ -112,7 +109,6 @@ document.addEventListener('star_chart_loaded', async () => {
                     
                     let rootActive = false;
                     if (node.Type === 'Root') {
-                        // Check if any selected node is in this constellation
                         for (let p of selectedPaths) {
                             if (nodeMap[p] && nodeMap[p].constellName === node.constellName) {
                                 rootActive = true;
@@ -140,7 +136,6 @@ document.addEventListener('star_chart_loaded', async () => {
                 });
             });
 
-            // --- Graph Traversal ---
             function registerNode(star, constellName, parentPath) {
                 star.parentPath = parentPath;
                 star.constellName = constellName;
@@ -193,7 +188,6 @@ document.addEventListener('star_chart_loaded', async () => {
                 }
             }
 
-            // --- Interactions ---
             const getAncestorsToSelect = (path, newNodes = []) => {
                 if (!path || selectedPaths.has(path)) return newNodes;
                 newNodes.push(path);
@@ -252,7 +246,6 @@ document.addEventListener('star_chart_loaded', async () => {
                 }
             };
 
-            // --- Code & Templates ---
             const normalizeCode = (code) => {
                 if (!code) return "";
                 try { return atob(code).split('$').sort().join('$'); } catch(e) { return code; }
@@ -389,7 +382,6 @@ document.addEventListener('star_chart_loaded', async () => {
                 modal.show = false;
             };
 
-            // --- Tooltips ---
             const showTooltip = (e, node) => {
                 tooltip.node = node;
                 tooltip.show = true;

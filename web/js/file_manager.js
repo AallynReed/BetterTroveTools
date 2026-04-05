@@ -11,7 +11,6 @@ document.addEventListener('file_manager_loaded', () => {
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-            // State
             const activeTab = ref('tab-explorer');
             
             const installs = ref([]);
@@ -22,7 +21,6 @@ document.addEventListener('file_manager_loaded', () => {
             const selectedInstall = ref('');
             const selectedTrackerGame = ref('');
 
-            // Tree State
             const treeContainerRef = ref(null);
             const isTreeLoaded = ref(false);
             const isLoadingTree = ref(false);
@@ -36,7 +34,6 @@ document.addEventListener('file_manager_loaded', () => {
             const searchCountText = ref('');
             let searchTimeout = null;
 
-            // Extraction
             const selectedFilesCount = ref(0);
             const selectedFilesSize = ref(0);
             const isMassExtracting = ref(false);
@@ -47,7 +44,6 @@ document.addEventListener('file_manager_loaded', () => {
                 filename: ''
             });
 
-            // Tracker
             const trackingDirs = ref([]);
             const trackingDirOptions = computed(() => {
                 if (trackingDirs.value.length === 0) return [[t('No paths saved. Add one...'), '']];
@@ -79,7 +75,6 @@ document.addEventListener('file_manager_loaded', () => {
             const newTrackerForm = reactive({ name: '', path: '' });
             const isBrowsingTracker = ref(false);
 
-            // Utilities
             const timeSince = (dateString) => {
                 if (!dateString) return "";
                 const date = new Date(dateString);
@@ -117,7 +112,6 @@ document.addEventListener('file_manager_loaded', () => {
                 progress.text = `${progress.percent}% | ${timeText.join(' | ')}`;
             };
 
-            // Install & Config Load
             const scanForGames = async () => {
                 const response = await eel.get_detected_game_paths()();
                 const settings = await eel.get_settings()();
@@ -150,7 +144,6 @@ document.addEventListener('file_manager_loaded', () => {
                 await eel.save_settings(settings)();
             });
 
-            // Tree Methods
             const loadTree = async () => {
                 if (!selectedInstall.value) return window.showToast(t("Select a game first."), true);
                 isLoadingTree.value = true;
@@ -405,7 +398,7 @@ document.addEventListener('file_manager_loaded', () => {
                                 detailsEl.classList.add('has-match');
                                 parentEl = detailsEl.querySelector('.folder-content');
                             } else {
-                                break; 
+                                break;
                             }
                         }
 
@@ -423,7 +416,6 @@ document.addEventListener('file_manager_loaded', () => {
                 }, 300);
             };
 
-            // Mass Extract
             const massExtract = async () => {
                 if (!treeContainerRef.value) return;
                 const destDir = await eel.ask_extraction_directory()();
@@ -463,7 +455,6 @@ document.addEventListener('file_manager_loaded', () => {
                 }
             };
 
-            // Tracker Methods
             const loadTrackingDirectories = async () => {
                 const res = await eel.get_tracking_directories()();
                 if (res.success) {

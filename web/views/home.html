@@ -55,7 +55,6 @@
                 <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Server Data...') }}</span>
             </div>
             <div v-else class="buffs-grid" style="display: grid;">
-                <!-- Daily Buff -->
                 <div v-if="serverData.daily" class="buff-card hover-card" :style="{ '--buff-color': '#' + serverData.daily.color }" style="cursor: pointer;" :title="t('Click to see schedule')" @click="openBuffSchedule('daily')">
                     <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.daily.banner}') center/cover` }">
                         <img v-if="serverData.daily.icon" :src="serverData.daily.icon" alt="">
@@ -75,7 +74,6 @@
                     </div>
                 </div>
 
-                <!-- Weekly Buff -->
                 <div v-if="serverData.weekly" class="buff-card hover-card" :style="{ '--buff-color': '#' + serverData.weekly.color }" style="cursor: pointer;" :title="t('Click to see schedule')" @click="openBuffSchedule('weekly')">
                     <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.weekly.banner}') center/cover` }">
                         <img v-if="serverData.weekly.icon" :src="serverData.weekly.icon" alt="">
@@ -86,7 +84,6 @@
                     </div>
                 </div>
 
-                <!-- Chaos Chest -->
                 <div v-if="chaosChestCard" class="merchant-card" :class="{ 'hover-card': chaosChestCard.identifier }" style="--merchant-color: #ab47bc;" :style="{ cursor: chaosChestCard.identifier ? 'pointer' : 'default' }" :title="chaosChestCard.identifier ? t('{name} (Click to view on Trovesaurus)').replace('{name}', t(chaosChestCard.name)) : ''" @click="chaosChestCard.identifier && openUrl(`https://trovesaurus.com/${chaosChestCard.identifier}`)">
                     <div class="merchant-icon" style="background: transparent;"><img :src="chaosChestCard.iconUrl" style="width: 40px; height: 40px; object-fit: contain;" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
                     <div class="merchant-info" style="width: 100%;">
@@ -145,7 +142,6 @@
 
     </div>
 
-    <!-- YEARLY CALENDAR MODAL -->
     <div class="modal-overlay" v-show="calendarModal.show" style="display: flex;" @click.self="calendarModal.show = false">
     <div class="modal-content" style="max-width: 95%; width: 1200px;">
         <div class="modal-header">
@@ -190,7 +186,6 @@
     </div>
 </div>
 
-    <!-- ROTATIONS MODAL -->
     <div class="modal-overlay" v-show="rotationModal.show" style="display: flex;" @click.self="rotationModal.show = false">
     <div class="modal-content" :style="{ maxWidth: rotationModal.type === 'd15' ? '95%' : '600px', width: rotationModal.type === 'd15' ? 'max-content' : '90%' }">
         <div class="modal-header">
@@ -204,7 +199,6 @@
             <button class="modal-close" @click="rotationModal.show = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
             <div class="modal-body">
-                <!-- Standard List View (Merchants, Biomes, Gardening, Buffs) -->
                 <template v-if="rotationModal.type === 'list'">
                     <div v-for="(row, idx) in rotationModal.list" :key="idx" class="modal-rotation-row" :style="row.style">
                         <div class="modal-time-col" :style="row.timeColStyle">
@@ -216,7 +210,6 @@
                     </div>
                 </template>
                 
-                <!-- D15 Grid View -->
                 <template v-if="rotationModal.type === 'd15'">
                     <div class="weekly-schedule-grid">
                         <div class="schedule-row schedule-header-row">
