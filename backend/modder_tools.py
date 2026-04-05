@@ -276,6 +276,8 @@ def build_tmod(payload):
         mod = TMod()
         
         title = payload.get("title", "").strip()
+        if title.lower().endswith(".tmod"):
+            title = title[:-5].strip()
         if not title:
             return {"success": False, "error": "Mod title is required."}
 
@@ -608,6 +610,8 @@ def compile_project(project_path_str, version, game_path_str):
             return {"success": False, "error": "Mod notes cannot exceed 220 characters. Please edit the notes and try again."}
 
         title = meta.get("title", "Untitled Project").strip()
+        if title.lower().endswith(".tmod"):
+            title = title[:-5].strip()
         author = meta.get("author", "Unknown").strip()
         notes = meta.get("notes", "").strip()
         tags = meta.get("tags", [])
