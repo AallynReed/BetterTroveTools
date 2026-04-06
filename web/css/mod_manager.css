@@ -36,9 +36,6 @@
     margin-right: 4px;
 }
 
-.pagination-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 16px; padding-bottom: 8px; }
-.pagination-info { color: var(--text-main); font-weight: 700; }
-
 @media (max-width: 900px) {
     .file-manager-container { padding: 20px; }
     .search-filter-bar { flex-wrap: wrap; }
@@ -72,6 +69,20 @@
     display: flex;
     flex-direction: column;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.mod-card.is-conflicting .mod-card-content {
+    box-shadow:
+    0 0 10px rgba(255, 85, 85, 0.22),
+    0 0 18px rgba(255, 85, 85, 0.14),
+        0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.mod-card.is-potential-conflict .mod-card-content {
+    box-shadow:
+    0 0 10px rgba(255, 193, 7, 0.2),
+    0 0 18px rgba(255, 193, 7, 0.12),
+        0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
 .mod-card-delete-hover {
@@ -445,8 +456,4 @@
 
 .mod-card-content {
     padding: 10px;
-}
-
-.pagination-controls {
-    gap: 10px;
 }

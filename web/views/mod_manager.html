@@ -79,7 +79,7 @@
     <div v-else-if="filteredMods.length === 0" class="placeholder-box no-results-message">{{ t('No mods match your current filters.') }}</div>
     <div v-else>
         <div class="mod-grid">
-        <div v-for="mod in paginatedMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled' }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)" @dblclick="handleCardDoubleClick($event, mod)">
+        <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)" @dblclick="handleCardDoubleClick($event, mod)">
             <div class="mod-card-content">
                 <div class="mod-front-top">
                     <span v-if="mod.has_conflicts" class="mod-conflict-icon" :class="hasActiveConflict(mod) ? 'active' : 'inactive'" :title="getConflictTitle(mod)" aria-hidden="true">
@@ -121,16 +121,6 @@
             </div>
         </div>
         </div>
-    </div>
-
-    <div v-if="!isLoading && filteredMods.length > 0" class="pagination-controls">
-        <button class="primary-btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
-            <i class="fa-solid fa-chevron-left"></i> <span>{{ t('Previous') }}</span>
-        </button>
-        <span class="pagination-info"><span>{{ t('Page') }}</span> <span>{{ currentPage }}</span> <span>{{ t('of') }}</span> <span>{{ maxPages }}</span></span>
-        <button class="primary-btn" :disabled="currentPage >= maxPages" @click="goToPage(currentPage + 1)">
-            <span>{{ t('Next') }}</span> <i class="fa-solid fa-chevron-right"></i>
-        </button>
     </div>
 
     <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">

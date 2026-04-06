@@ -29,8 +29,6 @@ document.addEventListener('mod_manager_loaded', async () => {
             const searchQuery = ref(uiState.searchQuery || '');
             const activeResultIndex = ref(-1);
             const filterStatus = ref(uiState.filterStatus || 'all');
-            const currentPage = ref(uiState.currentPage || 1);
-            const pageSize = ref(24);
             const selectedPaths = ref([]);
             const toursEnabled = window.BTT_ENABLE_ONBOARDING_TOURS !== false;
             const showOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref(PREF_TOUR_KEY, '') !== 'dismissed' : true));
@@ -50,8 +48,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 window.AppSettings.setPrefSync(PREF_STATE_KEY, {
                     selectedInstall: selectedInstall.value,
                     searchQuery: searchQuery.value,
-                    filterStatus: filterStatus.value,
-                    currentPage: currentPage.value
+                    filterStatus: filterStatus.value
                 });
             };
 
@@ -91,15 +88,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 });
             });
 
-            const maxPages = computed(() => Math.max(1, Math.ceil(filteredMods.value.length / pageSize.value)));
-            const paginatedMods = computed(() => {
-                const start = (currentPage.value - 1) * pageSize.value;
-                return filteredMods.value.slice(start, start + pageSize.value);
-            });
-
             const totalCount = computed(() => mods.value.length);
             const filteredCount = computed(() => filteredMods.value.length);
-            const shownCount = computed(() => paginatedMods.value.length);
+            const shownCount = computed(() => filteredMods.value.length);
 
             const selectedMods = computed(() => {
                 const set = new Set(selectedPaths.value);
@@ -107,18 +98,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             });
             const selectedCount = computed(() => selectedMods.value.length);
             const allPageSelected = computed(() => {
-                if (paginatedMods.value.length === 0) return false;
+                if (filteredMods.value.length === 0) return false;
                 const set = new Set(selectedPaths.value);
-                return paginatedMods.value.every(m => set.has(m.path));
+                return filteredMods.value.every(m => set.has(m.path));
             });
-
-            const goToPage = (page) => {
-                const safe = Math.max(1, Math.min(page, maxPages.value));
-                if (safe === currentPage.value) return;
-                currentPage.value = safe;
-                const vc = document.getElementById('view-container');
-                if (vc) vc.scrollTo({ top: 0, behavior: 'smooth' });
-            };
 
             const isSelected = (mod) => selectedPaths.value.includes(mod.path);
             const toggleSelect = (mod, checked) => {
@@ -129,7 +112,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
             const toggleSelectPage = (checked) => {
                 const set = new Set(selectedPaths.value);
-                paginatedMods.value.forEach(mod => {
+                filteredMods.value.forEach(mod => {
                     if (checked) set.add(mod.path);
                     else set.delete(mod.path);
                 });
@@ -238,7 +221,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                             isUpdating: false,
                             isDeleting: false
                         }));
-                        currentPage.value = 1;
                         await Promise.all([applyModUrls(token), applyUpdateFlags(token, false)]);
                     } catch (err) {
                         if (!loadGuard.isCurrent(token)) return;
@@ -613,19 +595,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                 await loadMods();
             });
 
-            watch([searchQuery, filterStatus], () => {
-                currentPage.value = 1;
-            });
-
             watch(filteredMods, () => {
-                if (currentPage.value > maxPages.value) currentPage.value = maxPages.value;
-                if (currentPage.value < 1) currentPage.value = 1;
                 const validPaths = new Set(mods.value.map(m => m.path));
                 selectedPaths.value = selectedPaths.value.filter(p => validPaths.has(p));
                 activeResultIndex.value = -1;
             });
 
-            watch([searchQuery, filterStatus, currentPage, selectedInstall], persistUiState);
+            watch([searchQuery, filterStatus, selectedInstall], persistUiState);
 
             onMounted(async () => {
                 await scanForGames();
@@ -649,7 +625,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 installOptions,
                 mods,
                 filteredMods,
-                paginatedMods,
                 isLoading,
                 statusText,
                 searchQuery,
@@ -658,8 +633,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 totalCount,
                 filteredCount,
                 shownCount,
-                currentPage,
-                maxPages,
                 selectedCount,
                 selectedPaths,
                 allPageSelected,
@@ -672,7 +645,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 refreshInstallState,
                 refreshUpdates,
                 clearCache,
-                goToPage,
                 toggleMod,
                 updateMod,
                 deleteMod,
