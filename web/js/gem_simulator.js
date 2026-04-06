@@ -541,7 +541,12 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     if (creatorParams.element) body.element = parseInt(creatorParams.element);
                     if (creatorParams.type === 1 && creatorParams.restriction) body.restriction = parseInt(creatorParams.restriction);
                     if (creatorParams.level) body.level = parseInt(creatorParams.level);
-                    body.augmentation = creatorParams.augment / 100;
+
+                    if (!creatorParams.augmentNull) {
+                        body.augmentation = creatorParams.augment / 100;
+                    } else {
+                        if ('augmentation' in body) delete body.augmentation;
+                    }
 
                     const resp = await eel.create_gem(body)();
                     if (resp && resp.success) {
