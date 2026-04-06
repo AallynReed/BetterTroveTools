@@ -1236,20 +1236,61 @@ window.CustomVueSelect = {
 };
 
 window.Select2Component = {
-    props: ['options', 'modelValue', 'placeholder', 'maxSelectionLength'],
+    props: ['options', 'modelValue', 'placeholder', 'maxSelectionLength', 'limitReachedMessage'],
     template: '<select multiple style="width: 100%;"></select>',
+    methods: {
+        getMaxSelectionLength() {
+            const parsed = Number(this.maxSelectionLength);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        },
+        setupSelect2() {
+            const vm = this;
+            const maxSelectionLength = this.getMaxSelectionLength();
+            const $el = $(this.$el);
+            if ($el.hasClass('select2-hidden-accessible')) {
+                $el.off('.bttSelect2');
+                $el.select2('destroy');
+            }
+            $el.select2({
+                data: this.options,
+                placeholder: this.placeholder,
+                allowClear: true,
+                theme: "btt-dark",
+                maxSelectionLength
+            })
+            .val(this.modelValue).trigger('change')
+            .on('change.bttSelect2', function() {
+                vm.$emit('update:modelValue', $(this).val() || []);
+            })
+            .on('select2:selecting.bttSelect2', function(e) {
+                if (!maxSelectionLength) return;
+                const selectedCount = ($(this).val() || []).length;
+                if (selectedCount >= maxSelectionLength) {
+                    if (vm.limitReachedMessage && window.showToast) {
+                        window.showToast(vm.limitReachedMessage, true);
+                    }
+                    e.preventDefault();
+                }
+            });
+        }
+    },
     mounted() {
-        const vm = this;
-        $(this.$el).select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark", maxSelectionLength: this.maxSelectionLength || 0 })
-        .val(this.modelValue).trigger('change')
-        .on('change', function() { vm.$emit('update:modelValue', $(this).val() || []); });
+        this.setupSelect2();
     },
     watch: {
         modelValue(value) { if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change'); },
-        options(newOptions) { $(this.$el).empty().select2({ data: newOptions, placeholder: this.placeholder, allowClear: true, theme: "btt-dark", maxSelectionLength: this.maxSelectionLength || 0 }).val(this.modelValue).trigger('change'); },
-        maxSelectionLength(value) { $(this.$el).empty().select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark", maxSelectionLength: value || 0 }).val(this.modelValue).trigger('change'); }
+        options() { this.setupSelect2(); },
+        maxSelectionLength() { this.setupSelect2(); },
+        placeholder() { this.setupSelect2(); },
+        limitReachedMessage() { this.setupSelect2(); }
     },
-    unmounted() { $(this.$el).select2('destroy'); }
+    unmounted() {
+        const $el = $(this.$el);
+        if ($el.hasClass('select2-hidden-accessible')) {
+            $el.off('.bttSelect2');
+            $el.select2('destroy');
+        }
+    }
 };
 
 window.ContextMenu = {

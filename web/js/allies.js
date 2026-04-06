@@ -209,6 +209,13 @@ document.addEventListener('allies_loaded', async () => {
                 activeResultIndex.value = -1;
             });
 
+            watch(selectedStat, (newValue) => {
+                if (!Array.isArray(newValue)) return;
+                if (newValue.length > 3) {
+                    selectedStat.value = newValue.slice(0, 3);
+                }
+            }, { deep: true });
+
             watch(totalPages, (newTotal) => {
                 if (currentPage.value > newTotal) currentPage.value = newTotal;
             });

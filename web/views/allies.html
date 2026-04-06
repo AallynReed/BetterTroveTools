@@ -44,7 +44,7 @@
             
             <div class="filter-group">
                 <label>{{ t('Required Stats') }}</label>
-                <select2-component v-model="selectedStat" :options="statsOptions" :placeholder="t('All Stats')" :max-selection-length="3"></select2-component>
+                <select2-component v-model="selectedStat" :options="statsOptions" :placeholder="t('All Stats')" :max-selection-length="3" :limit-reached-message="t('You can select up to 3 stats.')"></select2-component>
             </div>
 
             <div class="filter-group">
