@@ -1236,17 +1236,18 @@ window.CustomVueSelect = {
 };
 
 window.Select2Component = {
-    props: ['options', 'modelValue', 'placeholder'],
+    props: ['options', 'modelValue', 'placeholder', 'maxSelectionLength'],
     template: '<select multiple style="width: 100%;"></select>',
     mounted() {
         const vm = this;
-        $(this.$el).select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark" })
+        $(this.$el).select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark", maxSelectionLength: this.maxSelectionLength || 0 })
         .val(this.modelValue).trigger('change')
         .on('change', function() { vm.$emit('update:modelValue', $(this).val() || []); });
     },
     watch: {
         modelValue(value) { if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change'); },
-        options(newOptions) { $(this.$el).empty().select2({ data: newOptions, placeholder: this.placeholder, allowClear: true, theme: "btt-dark" }).val(this.modelValue).trigger('change'); }
+        options(newOptions) { $(this.$el).empty().select2({ data: newOptions, placeholder: this.placeholder, allowClear: true, theme: "btt-dark", maxSelectionLength: this.maxSelectionLength || 0 }).val(this.modelValue).trigger('change'); },
+        maxSelectionLength(value) { $(this.$el).empty().select2({ data: this.options, placeholder: this.placeholder, allowClear: true, theme: "btt-dark", maxSelectionLength: value || 0 }).val(this.modelValue).trigger('change'); }
     },
     unmounted() { $(this.$el).select2('destroy'); }
 };

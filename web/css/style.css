@@ -1485,7 +1485,6 @@ span.flatpickr-weekday {
     color: #ff5555;
     margin-right: 6px;
     border: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.2);
     padding-right: 6px;
     background: transparent;
 }

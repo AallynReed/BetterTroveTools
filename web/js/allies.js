@@ -17,13 +17,13 @@ document.addEventListener('allies_loaded', async () => {
             const alliesData = ref([]);
             
             const categoryOptions = ref([]);
-            const statsOptions = ref([[t('All Stats'), '']]);
+            const statsOptions = ref([]);
             const abilitiesOptions = ref([[t('All Abilities'), '']]);
 
             const searchQuery = ref('');
             const activeResultIndex = ref(-1);
             const selectedCategory = ref('All');
-            const selectedStat = ref('');
+            const selectedStat = ref([]);
             const selectedAbility = ref('');
             const currentPage = ref(1);
             const pageSize = ref(36);
@@ -34,7 +34,7 @@ document.addEventListener('allies_loaded', async () => {
             const resetFilters = () => {
                 searchQuery.value = '';
                 selectedCategory.value = 'All';
-                selectedStat.value = '';
+                selectedStat.value = [];
                 selectedAbility.value = '';
                 currentPage.value = 1;
             };
@@ -43,7 +43,11 @@ document.addEventListener('allies_loaded', async () => {
                 if (!saved || typeof saved !== 'object') return;
                 if (typeof saved.searchQuery === 'string') searchQuery.value = saved.searchQuery;
                 if (typeof saved.selectedCategory === 'string') selectedCategory.value = saved.selectedCategory;
-                if (typeof saved.selectedStat === 'string') selectedStat.value = saved.selectedStat;
+                if (saved.selectedStat !== undefined) {
+                    if (Array.isArray(saved.selectedStat)) selectedStat.value = saved.selectedStat;
+                    else if (typeof saved.selectedStat === 'string' && saved.selectedStat) selectedStat.value = [saved.selectedStat];
+                    else selectedStat.value = [];
+                }
                 if (typeof saved.selectedAbility === 'string') selectedAbility.value = saved.selectedAbility;
                 if (saved.currentPage !== undefined) {
                     const parsedPage = parseInt(saved.currentPage, 10);
@@ -78,7 +82,7 @@ document.addEventListener('allies_loaded', async () => {
             };
 
             const formatStat = (statText) => {
-                const isHighlighted = !!selectedStat.value && statText.includes(selectedStat.value);
+                const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statText.includes(s));
                 return isHighlighted ? `<strong>${statText}</strong>` : statText;
             };
 
@@ -130,8 +134,7 @@ document.addEventListener('allies_loaded', async () => {
                         if (generalSearch.length > 0) {
                             const matchGeneral = a.name.toLowerCase().includes(generalSearch) || 
                                                  (a.designer && a.designer.toLowerCase().includes(generalSearch)) ||
-                                                 a.extractedAbilities.some(ab => ab.toLowerCase().includes(generalSearch)) ||
-                                                 (window.fuzzyIncludes ? window.fuzzyIncludes(`${a.name || ''} ${a.designer || ''} ${(a.extractedAbilities || []).join(' ')}`, generalSearch, 4) : false);
+                                                 a.extractedAbilities.some(ab => ab.toLowerCase().includes(generalSearch));
                             if (!matchGeneral) return false;
                         }
                         return true;
@@ -142,10 +145,10 @@ document.addEventListener('allies_loaded', async () => {
                     result = result.filter(a => a.category === selectedCategory.value);
                 }
 
-                if (selectedStat.value) {
-                    result = result.filter(a => a.parsedStats[selectedStat.value] !== undefined);
+                if (selectedStat.value && selectedStat.value.length > 0) {
+                    result = result.filter(a => selectedStat.value.every(stat => a.parsedStats[stat] !== undefined));
 
-                    const primary = selectedStat.value;
+                    const primary = selectedStat.value[0];
                     result.sort((a, b) => {
                         const sA = a.parsedStats[primary];
                         const sB = b.parsedStats[primary];
@@ -329,7 +332,7 @@ document.addEventListener('allies_loaded', async () => {
                     Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
                     categoryOptions.value = catOpts;
 
-                    statsOptions.value = [[t('All Stats'), '']].concat(Array.from(uniqueStats).sort().map(s => [t(s), s]));
+                    statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
                     abilitiesOptions.value = [[t('All Abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
 
                 } catch (err) {
@@ -362,6 +365,7 @@ document.addEventListener('allies_loaded', async () => {
     });
 
     app.component('custom-vue-select', window.CustomVueSelect);
+    app.component('select2-component', window.Select2Component);
     
     if (window._alliesApp) window._alliesApp.unmount();
     window._alliesApp = app;

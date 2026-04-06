@@ -105,6 +105,83 @@
 
 .custom-select:focus { outline: none; border-color: #ff9800; }
 
+#allies-vue-app .custom-select-trigger {
+    height: 42px;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection--multiple {
+    height: 42px;
+    min-height: 42px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    overflow-y: auto;
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__rendered {
+    min-height: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    align-content: center;
+    row-gap: 4px;
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice {
+    min-height: 24px;
+    height: 24px;
+    padding: 2px 9px;
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove {
+    color: #ff8a8a;
+    font-size: 14px;
+    font-weight: 800;
+    width: 14px;
+    height: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    padding: 0;
+    position: relative;
+    top: 0;
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove:hover,
+#allies-vue-app .select2-container--btt-dark .select2-selection__clear:hover {
+    color: #ffd2d2;
+    background: rgba(255, 90, 90, 0.22);
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection__clear {
+    color: #ff9a9a;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    border-radius: 4px;
+    padding: 0 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center;
+    height: 20px;
+    margin-top: 0 !important;
+}
+
+#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__placeholder {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    line-height: 24px;
+    margin-top: 0 !important;
+}
+
 .search-stats {
     font-size: 0.9em;
     color: var(--text-muted, #a3adc2);

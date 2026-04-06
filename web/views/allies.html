@@ -44,7 +44,7 @@
             
             <div class="filter-group">
                 <label>{{ t('Required Stats') }}</label>
-                <custom-vue-select v-model="selectedStat" :options="statsOptions"></custom-vue-select>
+                <select2-component v-model="selectedStat" :options="statsOptions" :placeholder="t('All Stats')" :max-selection-length="3"></select2-component>
             </div>
 
             <div class="filter-group">
