@@ -933,3 +933,246 @@
     min-width: 220px;
     max-width: 220px;
 }
+
+/* Home refresh aligned with current app style */
+#home-vue-app.home-container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 22px;
+}
+
+#home-vue-app .split-layout {
+    gap: 22px;
+    margin-bottom: 24px;
+}
+
+#home-vue-app .split-column {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#home-vue-app .section-header {
+    margin: 4px 0 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+    padding-bottom: 10px;
+}
+
+#home-vue-app .section-header h2 {
+    font-size: 1.08rem;
+    letter-spacing: 0.2px;
+    color: #eef6ff;
+}
+
+#home-vue-app .community-panel,
+#home-vue-app .buff-card,
+#home-vue-app .merchant-card,
+#home-vue-app .event-card,
+#home-vue-app .calendar-spotlight {
+    background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom));
+    border: 1px solid var(--glass-border);
+    box-shadow: none;
+}
+
+#home-vue-app .community-panel {
+    border-radius: 14px;
+    padding: 14px 14px 12px;
+}
+
+#home-vue-app .media-tabs {
+    background: rgba(9, 13, 20, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 4px;
+}
+
+#home-vue-app .media-tab {
+    border-radius: 7px;
+    padding: 7px 11px;
+}
+
+#home-vue-app .stream-card {
+    min-width: 236px;
+    max-width: 236px;
+    border-radius: 12px;
+    border-color: rgba(255, 255, 255, 0.12);
+    background: rgba(16, 22, 32, 0.8);
+}
+
+#home-vue-app .stream-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(var(--accent-rgb), 0.6);
+    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.34);
+}
+
+#home-vue-app .stream-info {
+    padding: 11px;
+}
+
+#home-vue-app .carousel-btn {
+    width: 32px;
+    height: 32px;
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(10, 14, 21, 0.7);
+}
+
+#home-vue-app .buff-card {
+    border-radius: 12px;
+    border-left-width: 3px;
+}
+
+#home-vue-app .buff-header {
+    min-height: 42px;
+    padding: 10px 14px;
+}
+
+#home-vue-app .buff-content,
+#home-vue-app .buff-split-container {
+    background: rgba(8, 12, 18, 0.24);
+}
+
+#home-vue-app .merchant-card {
+    border-radius: 11px;
+    border-left-width: 3px;
+    min-height: 60px;
+}
+
+#home-vue-app .merchant-card:not(.inactive) {
+    background: linear-gradient(120deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03));
+    border-color: var(--merchant-color);
+}
+
+#home-vue-app .merchant-card.hover-card:hover {
+    transform: translateX(2px);
+}
+
+#home-vue-app .merchant-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18) !important;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+#home-vue-app .merchant-card.inactive {
+    opacity: 0.62;
+    filter: grayscale(0.95) saturate(0.7);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12) !important;
+}
+
+#home-vue-app .merchant-card.inactive .merchant-icon {
+    position: relative;
+    overflow: hidden;
+}
+
+#home-vue-app .merchant-card.inactive .merchant-icon::after {
+    content: '';
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 50%;
+    height: 2px;
+    background: rgba(255, 85, 85, 0.95);
+    transform: translateY(-50%) rotate(-45deg);
+    transform-origin: center;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+    z-index: 2;
+}
+
+#home-vue-app .merchant-card.inactive .merchant-icon > * {
+    opacity: 0.4;
+}
+
+#home-vue-app .calendar-spotlight {
+    border-radius: 12px;
+    padding: 11px 13px;
+    border-color: rgba(var(--accent-rgb), 0.38);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(10, 14, 21, 0.38));
+}
+
+#home-vue-app .calendar-spotlight:hover {
+    border-color: rgba(var(--accent-rgb), 0.7);
+    box-shadow: none;
+}
+
+#home-vue-app .calendar-spotlight-cta {
+    background: rgba(0, 0, 0, 0.24);
+}
+
+#home-vue-app .event-card {
+    border-radius: 12px;
+    border-color: rgba(255, 255, 255, 0.11);
+    padding: 11px 14px;
+}
+
+#home-vue-app .event-card:hover {
+    transform: translateX(2px);
+    border-color: rgba(var(--accent-rgb), 0.42);
+    background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.12), rgba(10, 14, 21, 0.34));
+}
+
+#home-vue-app .event-category {
+    border-radius: 999px;
+    padding: 3px 8px;
+}
+
+#home-vue-app .modal-overlay {
+    background: rgba(6, 9, 14, 0.78);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+#home-vue-app .modal-content {
+    background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom));
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.45);
+}
+
+#home-vue-app .modal-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#home-vue-app .modal-body {
+    padding: 16px;
+}
+
+#home-vue-app .calendar-toolbar,
+#home-vue-app .calendar-jump-row {
+    background: rgba(7, 11, 17, 0.4);
+}
+
+#home-vue-app .calendar-timeline-wrapper {
+    background: rgba(6, 9, 15, 0.28);
+}
+
+#home-vue-app .calendar-track {
+    background: rgba(7, 11, 17, 0.36);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 900px) {
+    #home-vue-app.home-container {
+        padding: 14px;
+    }
+
+    #home-vue-app .split-layout {
+        gap: 16px;
+    }
+
+    #home-vue-app .stream-card {
+        min-width: 210px;
+        max-width: 210px;
+    }
+
+    #home-vue-app .event-card {
+        gap: 11px;
+        padding: 10px 12px;
+    }
+
+    #home-vue-app .event-name {
+        font-size: 0.95em;
+    }
+}

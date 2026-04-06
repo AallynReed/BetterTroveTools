@@ -4,7 +4,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
 
     const ELEMENT_COLORS = { Fire: '#e57373', Water: '#64b5f6', Air: '#fff59d', Cosmic: '#4db6ac' };
     const ELEMENT_DEFAULT_COLOR = '#888888';
@@ -31,6 +31,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const selectedActionKey = ref(null);
 
             const tooltip = reactive({ show: false, item: null, x: 0, y: 0 });
+            const dragTarget = reactive({ pane: null, idx: -1, valid: false });
+            const draggingState = reactive({ pane: null, idx: -1, gem: null });
             
             const isGenerating = ref(false);
             const isLevelingUp = ref(false);
@@ -196,12 +198,155 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const onDragStart = (e, pane, idx) => {
                 hideTooltip();
                 e.dataTransfer.setData('text/plain', JSON.stringify({ pane, idx }));
+                const resolved = resolveDraggedGem(pane, idx);
+                draggingState.pane = pane;
+                draggingState.idx = idx;
+                draggingState.gem = resolved ? resolved.gem : null;
+                clearDragTarget();
+
+                if (e.dataTransfer && draggingState.gem) {
+                    const dragPreview = document.createElement('div');
+                    dragPreview.style.width = '40px';
+                    dragPreview.style.height = '40px';
+                    dragPreview.style.borderRadius = '50%';
+                    dragPreview.style.position = 'fixed';
+                    dragPreview.style.left = '-9999px';
+                    dragPreview.style.top = '-9999px';
+                    dragPreview.style.pointerEvents = 'none';
+                    dragPreview.style.backgroundSize = 'cover, cover';
+                    dragPreview.style.backgroundPosition = 'center, center';
+                    dragPreview.style.backgroundImage = `url(${gemImageUrl(draggingState.gem)}), url(${gemTierBgUrl(draggingState.gem)})`;
+                    dragPreview.style.border = '1px solid rgba(255, 255, 255, 0.3)';
+                    dragPreview.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.35)';
+                    document.body.appendChild(dragPreview);
+                    e.dataTransfer.setDragImage(dragPreview, 20, 20);
+                    setTimeout(() => {
+                        if (dragPreview && dragPreview.parentNode) dragPreview.parentNode.removeChild(dragPreview);
+                    }, 0);
+                }
+            };
+
+            const clearDragTarget = () => {
+                dragTarget.pane = null;
+                dragTarget.idx = -1;
+                dragTarget.valid = false;
+            };
+
+            const clearDraggingState = () => {
+                draggingState.pane = null;
+                draggingState.idx = -1;
+                draggingState.gem = null;
+            };
+
+            const parseDraggedGemFromEvent = (e) => {
+                try {
+                    if (draggingState.gem) return draggingState.gem;
+                    const raw = e && e.dataTransfer ? e.dataTransfer.getData('text/plain') : '';
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    if (!parsed || typeof parsed !== 'object') return null;
+                    const resolved = resolveDraggedGem(parsed.pane, parsed.idx);
+                    return resolved && resolved.gem ? resolved.gem : null;
+                } catch {
+                    return null;
+                }
+            };
+
+            const handleGlobalDragEnd = () => {
+                clearDragTarget();
+                clearDraggingState();
+            };
+
+            const slotDragClass = (pane, idx) => {
+                if (dragTarget.pane === pane && dragTarget.idx === idx) {
+                    return {
+                        'slot-drop-valid': !!dragTarget.valid,
+                        'slot-drop-invalid': !dragTarget.valid
+                    };
+                }
+
+                if (pane === 'equipped' && draggingState.gem && dragTarget.idx < 0) {
+                    const validHint = validateEquip(draggingState.gem, idx).valid;
+                    return validHint ? { 'slot-drop-hint': true } : {};
+                }
+
+                return {
+                    'slot-drop-valid': false,
+                    'slot-drop-invalid': false
+                };
+            };
+
+            const onEquippedDragEnter = (e, toIdx) => {
+                const draggedGem = parseDraggedGemFromEvent(e);
+                if (!draggedGem) {
+                    clearDragTarget();
+                    return;
+                }
+                const valid = validateEquip(draggedGem, toIdx).valid;
+                dragTarget.pane = 'equipped';
+                dragTarget.idx = toIdx;
+                dragTarget.valid = valid;
+            };
+
+            const onEquippedDragOver = (e, toIdx) => {
+                const draggedGem = parseDraggedGemFromEvent(e);
+                if (!draggedGem) {
+                    clearDragTarget();
+                    return;
+                }
+                const valid = validateEquip(draggedGem, toIdx).valid;
+                dragTarget.pane = 'equipped';
+                dragTarget.idx = toIdx;
+                dragTarget.valid = valid;
+                if (e.dataTransfer) {
+                    e.dataTransfer.dropEffect = valid ? 'move' : 'none';
+                }
+            };
+
+            const onInventoryDragEnter = (e, toIdx) => {
+                const draggedGem = parseDraggedGemFromEvent(e);
+                if (!draggedGem) {
+                    clearDragTarget();
+                    return;
+                }
+                dragTarget.pane = 'inventory';
+                dragTarget.idx = toIdx;
+                dragTarget.valid = true;
+            };
+
+            const onInventoryDragOver = (e, toIdx) => {
+                const draggedGem = parseDraggedGemFromEvent(e);
+                if (!draggedGem) {
+                    clearDragTarget();
+                    return;
+                }
+                dragTarget.pane = 'inventory';
+                dragTarget.idx = toIdx;
+                dragTarget.valid = true;
+                if (e.dataTransfer) {
+                    e.dataTransfer.dropEffect = 'move';
+                }
+            };
+
+            const onSlotDragLeave = (pane, idx, e) => {
+                const nextEl = e && e.relatedTarget ? e.relatedTarget : null;
+                if (e && e.currentTarget && nextEl && e.currentTarget.contains(nextEl)) return;
+                if (dragTarget.pane === pane && dragTarget.idx === idx) {
+                    clearDragTarget();
+                }
             };
 
             const resolveDraggedGem = (pane, idx) => {
-                if (pane === 'selected') return { source: selectedSource.value, gem: selected.value };
+                if (pane === 'selected') {
+                    const hasBackingSource = !!selectedSource.value;
+                    return {
+                        source: hasBackingSource ? { pane: selectedSource.value.pane, idx: selectedSource.value.idx } : { pane: 'selected', idx: 0 },
+                        gem: selected.value,
+                        fromDetachedSelected: !hasBackingSource
+                    };
+                }
                 const sourceGem = pane === 'inventory' ? inventory.value[idx] : equipped.value[idx];
-                return { source: { pane, idx }, gem: sourceGem };
+                return { source: { pane, idx }, gem: sourceGem, fromDetachedSelected: false };
             };
 
             const updateSelectionAfterSwap = (paneA, idxA, gemA, paneB, idxB, gemB) => {
@@ -228,10 +373,12 @@ document.addEventListener('gem_simulator_loaded', async () => {
             };
 
             const onDropInventory = (e, toIdx) => {
+                clearDragTarget();
                 const data = e.dataTransfer.getData('text/plain');
                 if (!data) return;
-                const { source, gem: draggedGem } = resolveDraggedGem(...Object.values(JSON.parse(data)));
-                if (!draggedGem || (source.pane === 'inventory' && source.idx === toIdx)) return;
+                const parsed = JSON.parse(data);
+                const { source, gem: draggedGem, fromDetachedSelected } = resolveDraggedGem(parsed.pane, parsed.idx);
+                if (!draggedGem || !source || (source.pane === 'inventory' && source.idx === toIdx)) return;
 
                 const targetGem = inventory.value[toIdx];
                 
@@ -247,14 +394,25 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     equipped.value[source.idx] = targetGem;
                     inventory.value[toIdx] = draggedGem;
                     updateSelectionAfterSwap('equipped', source.idx, targetGem, 'inventory', toIdx, draggedGem);
+                } else if (fromDetachedSelected || source.pane === 'selected') {
+                    inventory.value[toIdx] = draggedGem;
+                    if (targetGem) {
+                        selected.value = targetGem;
+                        selectedSource.value = null;
+                    } else {
+                        selected.value = draggedGem;
+                        selectedSource.value = { pane: 'inventory', idx: toIdx };
+                    }
                 }
             };
 
             const onDropEquipped = (e, reqElementId, reqType, toIdx) => {
+                clearDragTarget();
                 const data = e.dataTransfer.getData('text/plain');
                 if (!data) return;
-                const { source, gem: draggedGem } = resolveDraggedGem(...Object.values(JSON.parse(data)));
-                if (!draggedGem || (source.pane === 'equipped' && source.idx === toIdx)) return;
+                const parsed = JSON.parse(data);
+                const { source, gem: draggedGem, fromDetachedSelected } = resolveDraggedGem(parsed.pane, parsed.idx);
+                if (!draggedGem || !source || (source.pane === 'equipped' && source.idx === toIdx)) return;
 
                 const val = validateEquip(draggedGem, toIdx);
                 if (!val.valid) return window.showToast(val.error, true);
@@ -269,13 +427,23 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     equipped.value[source.idx] = targetGem;
                     equipped.value[toIdx] = draggedGem;
                     updateSelectionAfterSwap('equipped', source.idx, targetGem, 'equipped', toIdx, draggedGem);
+                } else if (fromDetachedSelected || source.pane === 'selected') {
+                    equipped.value[toIdx] = draggedGem;
+                    if (targetGem) {
+                        selected.value = targetGem;
+                        selectedSource.value = null;
+                    } else {
+                        selected.value = draggedGem;
+                        selectedSource.value = { pane: 'equipped', idx: toIdx };
+                    }
                 }
             };
 
             const onDropTrash = async (e) => {
                 const data = e.dataTransfer.getData('text/plain');
                 if (!data) return;
-                const { source, gem: draggedGem } = resolveDraggedGem(...Object.values(JSON.parse(data)));
+                const parsed = JSON.parse(data);
+                const { source, gem: draggedGem } = resolveDraggedGem(parsed.pane, parsed.idx);
                 if (!draggedGem) return;
 
                 const confirmed = await window.showConfirmModal({
@@ -373,8 +541,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     if (creatorParams.element) body.element = parseInt(creatorParams.element);
                     if (creatorParams.type === 1 && creatorParams.restriction) body.restriction = parseInt(creatorParams.restriction);
                     if (creatorParams.level) body.level = parseInt(creatorParams.level);
-                    if (creatorParams.augmentNull) body.augmentation = null;
-                    else body.augmentation = creatorParams.augment / 100;
+                    body.augmentation = creatorParams.augment / 100;
 
                     const resp = await eel.create_gem(body)();
                     if (resp && resp.success) {
@@ -460,6 +627,13 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     if (res && res.success) lookups.value = res.data;
                 } catch(e) {}
                 await loadStorage();
+                document.addEventListener('dragend', handleGlobalDragEnd);
+                document.addEventListener('drop', handleGlobalDragEnd);
+            });
+
+            onUnmounted(() => {
+                document.removeEventListener('dragend', handleGlobalDragEnd);
+                document.removeEventListener('drop', handleGlobalDragEnd);
             });
 
             return {
@@ -471,6 +645,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 selectedStatIdx, selectedActionKey, augmentOptions, modifierOptions,
                 actionButtonText, isLevelingUp, isActioning, levelUpSelected, doSelectedAction,
                 onDragStart, onDropEquipped, onDropInventory, onDropTrash, trashSelected, saveSelectedToInventory,
+                slotDragClass, onEquippedDragEnter, onEquippedDragOver, onInventoryDragEnter, onInventoryDragOver, onSlotDragLeave,
                 showContextMenu, tooltip, showTooltip, moveTooltip, hideTooltip,
                 isSyncing, syncGems,
                 

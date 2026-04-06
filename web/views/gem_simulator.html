@@ -10,7 +10,7 @@
                     <div class="equipped-row-label" :style="{ color: row.color }">{{ row.elementName }}</div>
                     <div class="equipped-row" :style="{ border: '1px dashed ' + row.color }">
                         <template v-for="(slot, slotIdx) in row.slots" :key="'eq-'+slot.idx">
-                            <div class="slot" :data-has-item="!!equipped[slot.idx]" @dragover.prevent @drop="onDropEquipped($event, row.elementId, slot.typeRestriction, slot.idx)">
+                            <div class="slot" :class="slotDragClass('equipped', slot.idx)" :data-has-item="!!equipped[slot.idx]" @dragenter.prevent="onEquippedDragEnter($event, slot.idx)" @dragover.prevent="onEquippedDragOver($event, slot.idx)" @dragleave="onSlotDragLeave('equipped', slot.idx, $event)" @drop="onDropEquipped($event, row.elementId, slot.typeRestriction, slot.idx)">
                                 <div v-if="equipped[slot.idx]" class="item" draggable="true" @dragstart="onDragStart($event, 'equipped', slot.idx)" @click="selectGem(equipped[slot.idx], 'equipped', slot.idx)" @contextmenu.prevent.stop="showContextMenu($event, equipped[slot.idx], 'equipped', slot.idx)" @mouseenter="showTooltip($event, equipped[slot.idx])" @mousemove="moveTooltip" @mouseleave="hideTooltip">
                                     <div class="item-img-holder">
                                         <img class="item-tier-bg" :src="gemTierBgUrl(equipped[slot.idx])">
@@ -66,29 +66,32 @@
                     <label><span>{{ t('Element') }}</span><custom-vue-select v-model="creatorParams.element" :options="formattedObj(lookups.elements)"></custom-vue-select></label>
                     <label><span>{{ t('Restriction') }}</span><custom-vue-select v-model="creatorParams.restriction" :options="formattedObj(lookups.restrictions)" :disabled="creatorParams.type !== 1"></custom-vue-select></label>
                 </div>
-                <div class="gem-form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
-                    <label style="flex:1;">
+                <div class="gem-form-row creator-advanced-row">
+                    <label class="slider-field">
                         <span data-i18n>Level</span>
-                        <div style="display: flex; align-items: center; margin-top: 6px;">
-                            <input type="range" v-model.number="creatorParams.level" min="1" max="35" style="flex:1; accent-color: var(--accent-blue);">
-                            <span style="width:30px;text-align:right;">{{ creatorParams.level }}</span>
+                        <div class="slider-inline">
+                            <input class="slider-input" type="range" v-model.number="creatorParams.level" min="1" max="35">
+                            <span class="slider-value">{{ creatorParams.level }}</span>
                         </div>
                     </label>
-                    <div style="flex:1; display: flex; flex-direction: column; justify-content: flex-end;">
-                        <label style="display:flex; align-items:center; margin-bottom: 6px; cursor: pointer; user-select: none;">
-                            <input type="checkbox" v-model="creatorParams.augmentNull" style="margin-right:6px;">
-                            <span style="font-size: 0.9em; color: var(--text-muted);">{{ t('Random Augment') }}</span>
-                        </label>
-                        <div style="display: flex; align-items: center;">
-                            <input type="range" v-model.number="creatorParams.augment" min="0" max="100" style="flex:1; accent-color: var(--accent-blue);" :disabled="creatorParams.augmentNull">
-                            <span style="width:30px;text-align:right;" :style="{ color: creatorParams.augmentNull ? 'var(--text-muted)' : 'var(--text-main)' }">{{ creatorParams.augmentNull ? '—' : creatorParams.augment }}</span>
+                    <label class="slider-field augment-field">
+                        <span>{{ t('Augment') }}</span>
+                        <div class="slider-inline">
+                            <input class="slider-input" type="range" v-model.number="creatorParams.augment" min="0" max="100">
+                            <span class="slider-value">{{ creatorParams.augment }}</span>
                         </div>
-                    </div>
+                    </label>
                 </div>
-                <button @click="generateGem" class="primary-btn" style="width: 100%; margin-top: 10px;" :disabled="isGenerating">
-                    <template v-if="!isGenerating">{{ t('Generate Random Gem') }}</template>
-                    <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
-                </button>
+                <div class="creator-generate-row">
+                    <label class="augment-toggle-inline">
+                        <input type="checkbox" v-model="creatorParams.augmentNull">
+                        <span>{{ t('Random Augment') }}</span>
+                    </label>
+                    <button @click="generateGem" class="primary-btn creator-generate-btn" :disabled="isGenerating">
+                        <template v-if="!isGenerating">{{ t('Generate Random Gem') }}</template>
+                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
+                    </button>
+                </div>
             </div>
             
             <hr class="panel-divider">
@@ -183,7 +186,7 @@
         <div class="column-header" data-i18n>Inventory</div>
         <div class="column-scroll-area">
             <div class="slots right-slots">
-                <div v-for="(item, idx) in inventory" :key="'inv-'+idx" class="slot" :data-has-item="!!item" @dragover.prevent @drop="onDropInventory($event, idx)">
+                <div v-for="(item, idx) in inventory" :key="'inv-'+idx" class="slot" :data-has-item="!!item" @dragenter.prevent="onInventoryDragEnter($event, idx)" @dragover.prevent="onInventoryDragOver($event, idx)" @dragleave="onSlotDragLeave('inventory', idx, $event)" @drop="onDropInventory($event, idx)">
                     <div v-if="item" class="item" draggable="true" @dragstart="onDragStart($event, 'inventory', idx)" @click="selectGem(item, 'inventory', idx)" @contextmenu.prevent.stop="showContextMenu($event, item, 'inventory', idx)" @mouseenter="showTooltip($event, item)" @mousemove="moveTooltip" @mouseleave="hideTooltip">
                         <div class="item-img-holder">
                             <img class="item-tier-bg" :src="gemTierBgUrl(item)">

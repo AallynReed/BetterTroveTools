@@ -85,6 +85,21 @@
     border-color: var(--slot-border-active, #88c0d0);
 }
 
+.slot.slot-drop-valid {
+    border-color: #34d058 !important;
+    box-shadow: 0 0 0 2px rgba(52, 208, 88, 0.45);
+}
+
+.slot.slot-drop-invalid {
+    border-color: #ff5555 !important;
+    box-shadow: 0 0 0 2px rgba(255, 85, 85, 0.45);
+}
+
+.slot.slot-drop-hint {
+    border-color: var(--accent-blue, #5ec6ff) !important;
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 94, 198, 255), 0.35);
+}
+
 .equipped-slot-placeholder {
     width: 30px;
     height: 30px;
@@ -187,6 +202,89 @@
     flex-direction: column;
     font-size: 0.9em;
     color: var(--text-muted, #a3adc2);
+}
+
+.creator-advanced-row {
+    align-items: flex-end;
+}
+
+.creator-advanced-row > .slider-field {
+    flex: 1 1 0;
+}
+
+.slider-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.slider-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider-input {
+    flex: 1;
+    accent-color: var(--accent-blue, #5ec6ff);
+}
+
+.slider-value {
+    width: 34px;
+    text-align: right;
+    font-weight: 700;
+    color: var(--text-main, #e0e0e0);
+}
+
+.augment-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.augment-toggle input[type="checkbox"] {
+    margin: 0;
+}
+
+.creator-generate-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.augment-toggle-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.86em;
+    color: var(--text-muted, #a3adc2);
+    user-select: none;
+    cursor: pointer;
+}
+
+.augment-toggle-inline input[type="checkbox"] {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: var(--accent-blue, #5ec6ff);
+}
+
+.creator-generate-btn {
+    flex: 1 1 auto;
+    width: auto !important;
+}
+
+.augment-field .slider-input:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
 }
 .gem-form-row select, .gem-form-row input[type="text"] {
     margin-top: 5px;
@@ -388,8 +486,18 @@
     height: calc(100vh - 28px);
 }
 
+.gem-sim-column {
+    background: linear-gradient(160deg, var(--glass-top, rgba(255, 255, 255, 0.08)), var(--glass-bottom, rgba(12, 16, 24, 0.42)));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
+    box-shadow: none;
+    backdrop-filter: blur(10px) saturate(120%);
+    -webkit-backdrop-filter: blur(10px) saturate(120%);
+}
+
 .column-header {
     padding: 11px 12px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.2));
+    border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
 }
 
 .column-scroll-area {
@@ -403,4 +511,16 @@
 .equipped-row {
     gap: 26px;
     margin-bottom: 10px;
+}
+
+@media (max-width: 900px) {
+    .creator-advanced-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .creator-generate-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

@@ -31,13 +31,23 @@
 
             <div class="config-section">
                 <h4><i class="fa-solid fa-shield-halved"></i> {{ t('Build & Gear') }}</h4>
-                <div class="input-group">
-                    <label>{{ t('Build Type') }}</label>
-                    <select v-model="config.build_type">
-                        <option value="Light">{{ t('Light') }}</option>
-                        <option value="Farm">{{ t('Farm') }}</option>
-                        <option value="Health">{{ t('Health') }}</option>
-                    </select>
+                <div class="input-row build-gear-row">
+                    <div class="input-group">
+                        <label>{{ t('Build Type') }}</label>
+                        <select v-model="config.build_type">
+                            <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('Light') }}</option>
+                            <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('Farm') }}</option>
+                            <option value="Health" data-icon="fa-solid fa-shield-halved">{{ t('Health') }}</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>{{ t('Food') }}</label>
+                        <select v-model="config.food">
+                            <option value="">{{ t('None') }}</option>
+                            <option v-for="(data, key) in foodsData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
+                        </select>
+                    </div>
                 </div>
     
                 <div class="input-group">
@@ -48,18 +58,10 @@
                     </select>
                 </div>
     
-                <div class="input-group">
-                    <label>{{ t('Food') }}</label>
-                    <select v-model="config.food">
-                        <option value="">{{ t('None') }}</option>
-                        <option v-for="(data, key) in foodsData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
-                    </select>
-                </div>
-    
                 <div class="input-row">
-                    <div class="input-group" :style="{ opacity: config.build_type === 'Farm' ? '1' : '0.5' }">
+                    <div class="input-group" v-if="config.build_type === 'Farm'">
                         <label>{{ t('Base Light') }} <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" :title="t('Base Light optimization is only active for \'Farm\' builds.')"></i></label>
-                        <input type="number" v-model.number="config.light" :disabled="config.build_type !== 'Farm'">
+                        <input type="number" v-model.number="config.light">
                     </div>
                     <div class="input-group">
                         <label><span>{{ t('Gear Crit Dmg Rolls:') }}</span> <span style="color: var(--accent-orange); font-weight: bold;">{{ config.critical_damage_count }}</span></label>
@@ -69,39 +71,10 @@
             </div>
 
             <div class="config-section">
-                <h4><i class="fa-solid fa-sliders"></i> {{ t('Modifiers') }}</h4>
-                <div class="toggles-grid">
-                    <label class="toggle-container" :title="t('Simulates Berserker Battler Gem ability being active')">
-                        <input type="checkbox" v-model="config.berserker_battler">
-                        <span class="checkmark"></span>
-                        <span>{{ t('Berserker Battler') }}</span>
-                    </label>
-    
-                    <label class="toggle-container" :title="t('Simulates Litany light buff being active')">
-                        <input type="checkbox" v-model="config.litany">
-                        <span class="checkmark"></span>
-                        <span>{{ t('Enlightened (Litany)') }}</span>
-                    </label>
-    
-                    <label class="toggle-container" :title="t('Adds the passive stats from your selected subclass.')">
-                        <input type="checkbox" v-model="config.subclass_active">
-                        <span class="checkmark"></span>
-                        <span>{{ t('Subclass Active') }}</span>
-                    </label>
-    
-                    <label class="toggle-container" :title="t('Removes the damage stat from your face gear slot.')">
-                        <input type="checkbox" v-model="config.no_face">
-                        <span class="checkmark"></span>
-                        <span>{{ t('No Face Stats') }}</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="config-section">
                 <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart') }}</h4>
-                <div class="input-group">
+                <div class="input-group star-chart-controls">
                     <label>{{ t('Star Chart Build Code (Base64)') }}</label>
-                    <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%; margin-bottom: 8px;">
+                    <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%;">
                         <option value="">{{ t('-- Load Saved Star Chart --') }}</option>
                         <option v-for="(code, name) in starChartTemplates" :key="name" :value="code">{{ name }}</option>
                     </select>
@@ -131,6 +104,38 @@
                             </ul>
                         </template>
                     </template>
+                </div>
+            </div>
+
+            <div class="config-section modifiers-section" :class="{ 'is-open': modifiersOpen }">
+                <button type="button" class="section-collapse-btn" @click="modifiersOpen = !modifiersOpen" :aria-expanded="modifiersOpen ? 'true' : 'false'" :title="t('Advanced toggles for edge-case optimization.')">
+                    <h4><i class="fa-solid fa-sliders"></i> {{ t('Modifiers') }}</h4>
+                    <i class="fa-solid fa-chevron-down collapse-caret" :class="{ 'is-open': modifiersOpen }"></i>
+                </button>
+                <div v-show="modifiersOpen" class="toggles-grid">
+                    <label class="toggle-container" :title="t('Simulates Berserker Battler Gem ability being active')">
+                        <input type="checkbox" v-model="config.berserker_battler">
+                        <span class="checkmark"></span>
+                        <span>{{ t('Berserker Battler') }}</span>
+                    </label>
+    
+                    <label class="toggle-container" :title="t('Simulates Litany light buff being active')">
+                        <input type="checkbox" v-model="config.litany">
+                        <span class="checkmark"></span>
+                        <span>{{ t('Enlightened (Litany)') }}</span>
+                    </label>
+    
+                    <label class="toggle-container" :title="t('Adds the passive stats from your selected subclass.')">
+                        <input type="checkbox" v-model="config.subclass_active">
+                        <span class="checkmark"></span>
+                        <span>{{ t('Subclass Active') }}</span>
+                    </label>
+    
+                    <label class="toggle-container" :title="t('Removes the damage stat from your face gear slot.')">
+                        <input type="checkbox" v-model="config.no_face">
+                        <span class="checkmark"></span>
+                        <span>{{ t('No Face Stats') }}</span>
+                    </label>
                 </div>
             </div>
             </div>

@@ -17,22 +17,20 @@
     max-width: 1240px;
     margin: 0 auto;
     background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
     border-radius: 12px;
     overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .tab-buttons {
     display: flex;
     background: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid var(--border-color, #444c5e);
 }
 
 .tab-btn {
     flex: 1;
     background: transparent;
     border: none;
+    border-radius: 0;
     padding: 14px 18px;
     color: var(--text-muted, #a3adc2);
     font-size: 1em;

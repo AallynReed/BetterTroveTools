@@ -1,3 +1,15 @@
+document.addEventListener('keydown', function(e) {
+    const blockedKeys = ['F12', 'F5', 'F11'];
+    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+    
+    if (blockedKeys.includes(e.key)) e.preventDefault();
+    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+});
+
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+
 const globalTooltip = document.createElement('div');
 globalTooltip.id = 'global-tooltip';
 globalTooltip.style.cssText = 'position: fixed; background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: none; z-index: 10010; display: none; color: #fff; font-size: 0.9em; line-height: 1.4; max-width: 450px;';
@@ -457,18 +469,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-document.addEventListener('keydown', function(e) {
-    const blockedKeys = ['F12', 'F5', 'F11'];
-    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
-    
-    if (blockedKeys.includes(e.key)) e.preventDefault();
-    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-});
-
-document.addEventListener('contextmenu', (e) => e.preventDefault());
-
 window.showToast = function(message, isError = false, options = {}) {
     let toastHost = document.getElementById('global-toast-host');
     if (!toastHost) {
@@ -484,7 +484,8 @@ window.showToast = function(message, isError = false, options = {}) {
         toastHost.style.gap = '10px';
         toastHost.style.maxWidth = 'min(92vw, 640px)';
         toastHost.style.width = 'max-content';
-        toastHost.style.zIndex = '10020';
+        const toastZ = getComputedStyle(document.documentElement).getPropertyValue('--z-toast').trim();
+        toastHost.style.zIndex = toastZ || '210000';
         toastHost.style.pointerEvents = 'none';
         document.body.appendChild(toastHost);
     }
@@ -987,6 +988,32 @@ function handle_deep_link(url) {
 }
 
 window.applyCustomDropdowns = function() {
+    if (!window.closeAllDropdowns) {
+        window.closeAllDropdowns = function(exceptEl = null) {
+            document.querySelectorAll('.custom-select-wrapper.open').forEach((wrapper) => {
+                if (!exceptEl || wrapper !== exceptEl) wrapper.classList.remove('open');
+            });
+            document.dispatchEvent(new CustomEvent('btt-close-vue-selects', { detail: { exceptEl } }));
+        };
+    }
+
+    const escapeHtml = (value) => String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
+    const renderSelectOptionHtml = (opt) => {
+        if (!opt) return '';
+        const label = escapeHtml(opt.textContent || '');
+        const iconClass = (opt.dataset && opt.dataset.icon) ? String(opt.dataset.icon).trim() : '';
+        if (!iconClass) return `<span class="custom-select-option-label">${label}</span>`;
+        const safeIconClass = iconClass.replace(/[^a-zA-Z0-9\-\s]/g, '').trim();
+        const iconHtml = safeIconClass ? `<i class="${safeIconClass} custom-select-option-icon" aria-hidden="true"></i>` : '';
+        return `${iconHtml}<span class="custom-select-option-label">${label}</span>`;
+    };
+
     document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)').forEach(select => {
         if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
@@ -1026,12 +1053,13 @@ window.applyCustomDropdowns = function() {
                 trigger.tabIndex = 0;
             }
 
-            triggerText.innerHTML = select.options[select.selectedIndex]?.innerHTML || '';
+            triggerText.innerHTML = renderSelectOptionHtml(select.options[select.selectedIndex]);
             
             if (optionsContainer.children.length === select.options.length) {
                 Array.from(select.options).forEach((opt, index) => {
                     const optDiv = optionsContainer.children[index];
-                    if (optDiv.innerHTML !== opt.innerHTML) optDiv.innerHTML = opt.innerHTML;
+                    const rendered = renderSelectOptionHtml(opt);
+                    if (optDiv.innerHTML !== rendered) optDiv.innerHTML = rendered;
                     if (opt.selected) optDiv.classList.add('selected');
                     else optDiv.classList.remove('selected');
                 });
@@ -1042,7 +1070,7 @@ window.applyCustomDropdowns = function() {
             Array.from(select.options).forEach((opt, index) => {
                 const optDiv = document.createElement('div');
                 optDiv.className = 'custom-select-option' + (opt.selected ? ' selected' : '');
-                optDiv.innerHTML = opt.innerHTML;
+                optDiv.innerHTML = renderSelectOptionHtml(opt);
                 optDiv.dataset.value = opt.value;
                 optDiv.dataset.index = index;
 
@@ -1062,31 +1090,6 @@ window.applyCustomDropdowns = function() {
         observer.observe(select, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['disabled'] });
         
         select.addEventListener('change', () => updateOptions());
-
-        if (!select._customDropdownPatched) {
-            const originalValueSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
-            if (originalValueSetter) {
-                Object.defineProperty(select, 'value', {
-                    set: function(val) {
-                        originalValueSetter.call(this, val);
-                        updateOptions();
-                    },
-                    get: function() { return Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').get.call(this); }
-                });
-            }
-            
-            const originalIndexSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex')?.set;
-            if (originalIndexSetter) {
-                Object.defineProperty(select, 'selectedIndex', {
-                    set: function(val) {
-                        originalIndexSetter.call(this, val);
-                        updateOptions();
-                    },
-                    get: function() { return Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex').get.call(this); }
-                });
-            }
-            select._customDropdownPatched = true;
-        }
 
         trigger.addEventListener('keydown', (e) => {
             if (select.disabled) return;
@@ -1117,7 +1120,8 @@ window.applyCustomDropdowns = function() {
             e.stopPropagation();
             if (select.disabled) return;
             const isOpen = wrapper.classList.contains('open');
-            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+            if (window.closeAllDropdowns) window.closeAllDropdowns(wrapper);
+            else document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
             if (!isOpen) {
                 const rect = trigger.getBoundingClientRect();
                 const spaceBelow = window.innerHeight - rect.bottom;
@@ -1143,7 +1147,8 @@ window.applyCustomDropdowns = function() {
 
     if (!window._customDropdownListenerAttached) {
         document.addEventListener('click', () => {
-            document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
+            if (window.closeAllDropdowns) window.closeAllDropdowns(null);
+            else document.querySelectorAll('.custom-select-wrapper').forEach(w => w.classList.remove('open'));
         });
         window._customDropdownListenerAttached = true;
     }
@@ -1161,9 +1166,20 @@ window.CustomVueSelect = {
             const found = props.options ? props.options.find(opt => String(opt[1]) === String(props.modelValue)) : null;
             return found ? t(found[0]) : '';
         });
+
+        const onGlobalClose = (evt) => {
+            const exceptEl = evt && evt.detail ? evt.detail.exceptEl : null;
+            if (!wrapperRef.value || exceptEl === wrapperRef.value) return;
+            isOpen.value = false;
+        };
+
         const toggle = () => {
             if (props.disabled) return;
-            isOpen.value = !isOpen.value;
+            const nextOpen = !isOpen.value;
+            if (nextOpen && window.closeAllDropdowns) {
+                window.closeAllDropdowns(wrapperRef.value);
+            }
+            isOpen.value = nextOpen;
             if (isOpen.value && wrapperRef.value) {
                 const rect = wrapperRef.value.getBoundingClientRect();
                 const spaceBelow = window.innerHeight - rect.bottom;
@@ -1191,7 +1207,17 @@ window.CustomVueSelect = {
                 if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
             }
         };
-        Vue.onMounted(() => { document.addEventListener('click', (e) => { if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false; }); });
+        const onDocClick = (e) => {
+            if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false;
+        };
+        Vue.onMounted(() => {
+            document.addEventListener('click', onDocClick);
+            document.addEventListener('btt-close-vue-selects', onGlobalClose);
+        });
+        Vue.onUnmounted(() => {
+            document.removeEventListener('click', onDocClick);
+            document.removeEventListener('btt-close-vue-selects', onGlobalClose);
+        });
         return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
     },
     template: `

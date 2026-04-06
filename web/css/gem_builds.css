@@ -70,6 +70,11 @@
 
 .input-group { margin-bottom: 12px; }
 .input-group label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+.star-chart-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 .input-group select, .input-group input {
     width: 100%; padding: 9px 12px;
     background: var(--bg-dark); color: #fff;
@@ -84,6 +89,7 @@
 }
 .input-row { display: flex; gap: 15px; }
 .input-row .input-group { flex: 1; }
+.build-gear-row .input-group { min-width: 0; }
 
 .full-width { width: 100%; justify-content: center; }
 .mt-3 { margin-top: 20px; }
@@ -110,6 +116,14 @@
     border-radius: 10px;
     margin-bottom: 12px;
     border: 1px solid rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: visible;
+    z-index: 0;
+}
+
+.config-panel .config-section:has(.custom-select-wrapper.open),
+.config-panel .config-section:has(.select2-container--open) {
+    z-index: 3;
 }
 .config-section h4 {
     margin-top: 0;
@@ -123,6 +137,38 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
+}
+
+.section-collapse-btn {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    text-align: left;
+}
+
+.section-collapse-btn h4 {
+    margin-bottom: 0;
+}
+
+.modifiers-section .toggles-grid {
+    margin-top: 12px;
+}
+
+.collapse-caret {
+    color: var(--text-muted);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.collapse-caret.is-open {
+    transform: rotate(180deg);
+    color: var(--accent-blue);
 }
 .config-section:last-child { margin-bottom: 0; }
 
@@ -283,6 +329,11 @@ input[type="range"] {
     }
 }
 
+@media (max-width: 640px) {
+    .build-gear-row {
+        flex-direction: column;
+    }
+}
 /* Concise module pass */
 .view-container {
     padding: 16px;

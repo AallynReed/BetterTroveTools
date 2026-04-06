@@ -35,8 +35,19 @@ document.addEventListener("gem_builds_loaded", () => {
                 star_chart: "",
                 scTemplate: ""
             });
+            const modifiersOpen = ref(false);
 
             let hydratingState = false;
+
+            const saveState = () => {
+                if (!window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    config: JSON.parse(JSON.stringify(config)),
+                    ui: {
+                        modifiersOpen: !!modifiersOpen.value
+                    }
+                });
+            };
 
             const restoreState = async () => {
                 if (!window.AppSettings) return;
@@ -44,12 +55,18 @@ document.addEventListener("gem_builds_loaded", () => {
                 const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
                 if (!saved || typeof saved !== 'object') return;
 
+                const savedConfig = saved.config && typeof saved.config === 'object' ? saved.config : saved;
+                const savedUi = saved.ui && typeof saved.ui === 'object' ? saved.ui : null;
+
                 hydratingState = true;
                 Object.keys(config).forEach((key) => {
-                    if (saved[key] !== undefined) {
-                        config[key] = saved[key];
+                    if (savedConfig[key] !== undefined) {
+                        config[key] = savedConfig[key];
                     }
                 });
+                if (savedUi && typeof savedUi.modifiersOpen === 'boolean') {
+                    modifiersOpen.value = savedUi.modifiersOpen;
+                }
                 hydratingState = false;
             };
 
@@ -249,10 +266,16 @@ document.addEventListener("gem_builds_loaded", () => {
 
             watch(config, () => {
                 if (!hydratingState && window.AppSettings) {
-                    window.AppSettings.setPrefSync(PREF_STATE_KEY, JSON.parse(JSON.stringify(config)));
+                    saveState();
                 }
                 triggerCalculation();
             }, { deep: true });
+
+            watch(modifiersOpen, () => {
+                if (!hydratingState && window.AppSettings) {
+                    saveState();
+                }
+            });
 
             onMounted(async () => {
                 try {
@@ -284,6 +307,7 @@ document.addEventListener("gem_builds_loaded", () => {
             return {
                 t, config, classesData, foodsData, alliesData, starChartTemplates, starChartSummary,
                 classIcon, subclassIcon, onImageError,
+                modifiersOpen,
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff,
                 nextPage, prevPage, getTooltipHtml, copyLayout, exportCsv, showContextMenu
             };
