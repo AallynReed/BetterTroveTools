@@ -76,9 +76,11 @@
     gap: 10px;
 }
 .input-group select, .input-group input {
-    width: 100%; padding: 9px 12px;
+    width: 100%;
+    padding: 9px 12px;
     background: var(--bg-dark); color: #fff;
-    border: 1px solid var(--border-color); border-radius: 8px;
+    /* border: 1px solid var(--border-color); */
+    border-radius: 8px;
     font-size: 0.95rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -300,12 +302,6 @@
 .results-panel {
     height: auto !important;
     max-height: none !important;
-}
-
-input[type="range"] {
-    padding: 0 !important;
-    margin: 10px 0; 
-    background: transparent; 
 }
 
 @media (max-width: 1200px) {

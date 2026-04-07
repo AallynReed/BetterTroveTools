@@ -37,7 +37,7 @@
                         <select v-model="config.build_type">
                             <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('Light') }}</option>
                             <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('Farm') }}</option>
-                            <option value="Health" data-icon="fa-solid fa-shield-halved">{{ t('Health') }}</option>
+                            <option value="Health" data-icon="fa-solid fa-shield-halved" disabled title="Need review">{{ t('Health') }} ({{ t('Need review') }})</option>
                         </select>
                     </div>
 
@@ -63,7 +63,7 @@
                         <label>{{ t('Base Light') }} <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" :title="t('Base Light optimization is only active for \'Farm\' builds.')"></i></label>
                         <input type="number" v-model.number="config.light">
                     </div>
-                    <div class="input-group">
+                    <div class="input-group" v-if="config.build_type !== 'Health'">
                         <label><span>{{ t('Gear Crit Dmg Rolls:') }}</span> <span style="color: var(--accent-orange); font-weight: bold;">{{ config.critical_damage_count }}</span></label>
                         <input type="range" v-model.number="config.critical_damage_count" min="0" max="3" step="1" style="width: 100%; cursor: pointer; accent-color: var(--accent-orange);">
                     </div>
@@ -90,10 +90,10 @@
                         <ul style="margin-bottom: 8px;">
                             <li v-html="t('{count} Nodes Detected').replace('{count}', `<strong>${starChartSummary.pathsCount}</strong>`)"></li>
                         </ul>
-                        <template v-if="Object.keys(starChartSummary.stats).length > 0">
+                        <template v-if="Object.keys(filteredStarChartStats).length > 0">
                             <hr class="divider" style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">
                             <ul style="list-style-type: none; padding-left: 0;">
-                                <li v-for="(values, statName) in starChartSummary.stats" :key="statName">
+                                <li v-for="(values, statName) in filteredStarChartStats" :key="statName">
                                     <strong>{{ t(statName) }}:</strong> 
                                     <span style="color: var(--accent-orange);">
                                         <template v-if="values.flat > 0">+{{ values.flat }}</template>

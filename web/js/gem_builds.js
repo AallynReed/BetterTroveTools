@@ -304,8 +304,21 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
             });
 
+            // Only show these stats in the star chart summary
+            const allowedStats = ['Physical Damage', 'Magic Damage', 'Critical Damage', 'Critical Hit', 'Light'];
+            const filteredStarChartStats = computed(() => {
+                if (!starChartSummary.value || !starChartSummary.value.stats) return {};
+                const stats = starChartSummary.value.stats;
+                const filtered = {};
+                for (const key of allowedStats) {
+                    if (stats[key]) filtered[key] = stats[key];
+                }
+                return filtered;
+            });
+
             return {
                 t, config, classesData, foodsData, alliesData, starChartTemplates, starChartSummary,
+                filteredStarChartStats,
                 classIcon, subclassIcon, onImageError,
                 modifiersOpen,
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff,

@@ -26,6 +26,7 @@ document.addEventListener('home_loaded', () => {
             const nowSec = ref(Math.floor(Date.now() / 1000));
             let timeInterval;
             let refreshInterval;
+            let resetTimer = null;
 
             const serverData = reactive({ loading: true, daily: null, weekly: null });
             const merchants = ref({});
@@ -639,37 +640,36 @@ document.addEventListener('home_loaded', () => {
                 if (e.deltaY !== 0) timelineWrapperRef.value.scrollLeft += e.deltaY;
             };
 
-            // --- Server reset (UTC-11) auto-refresh logic ---
             function getNextServerResetSec() {
                 // Server reset is at 00:00 UTC-11 (13:00 UTC)
                 const now = new Date();
-                // Get UTC time
                 const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-                // Find next 13:00 UTC
                 const nextReset = new Date(utcNow);
                 nextReset.setUTCHours(13, 0, 0, 0);
                 if (utcNow >= nextReset) nextReset.setUTCDate(nextReset.getUTCDate() + 1);
                 return Math.floor(nextReset.getTime() / 1000);
             }
 
-            let resetTimer = null;
+            function scheduleResetRefresh() {
+                if (resetTimer) clearTimeout(resetTimer);
+                const now = Math.floor(Date.now() / 1000);
+                const nextReset = getNextServerResetSec();
+                const msUntil = Math.max(1000, ((nextReset - now) * 1000) + 2000);
+
+                resetTimer = setTimeout(async () => {
+                    await refreshAllData();
+                    if (calendarModal.show) {
+                        await loadYearlyCalendar();
+                    }
+                    scheduleResetRefresh();
+                }, msUntil);
+            }
 
             onMounted(() => {
                 refreshAllData();
-                refreshInterval = setInterval(refreshAllData, 60000);
+                refreshInterval = setInterval(refreshAllData, 30000);
                 timeInterval = setInterval(() => nowSec.value = Math.floor(Date.now() / 1000), 1000);
-
-                // Set up server reset auto-refresh
-                function scheduleResetCheck() {
-                    if (resetTimer) clearTimeout(resetTimer);
-                    const now = Math.floor(Date.now() / 1000);
-                    const nextReset = getNextServerResetSec();
-                    const msUntil = (nextReset - now) * 1000 + 2000; // 2s buffer
-                    resetTimer = setTimeout(() => {
-                        window.location.reload();
-                    }, msUntil);
-                }
-                scheduleResetCheck();
+                scheduleResetRefresh();
 
                 window._homeLangListener = (e) => {
                     if (e.target && e.target.id === 'global-language-select') setTimeout(refreshAllData, 150);

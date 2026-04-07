@@ -1843,7 +1843,6 @@ span.flatpickr-weekday {
     .job-item .job-actions button
 ) {
     background: rgba(18, 24, 34, 0.62) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
 }
 
@@ -1897,4 +1896,17 @@ span.flatpickr-weekday {
 
 .select2-container--open .select2-dropdown {
     z-index: var(--z-dropdown-menu) !important;
+}
+
+input[type="range"] {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  margin-right: 0;
+}
+input[type="range"]::-ms-fill-lower {
+  margin-right: 0;
 }
