@@ -194,9 +194,9 @@ document.addEventListener('calculators_loaded', () => {
             
             const getMfBadgeText = (item) => {
                 if (item.type === 'patron_switch') return t("+{val}% Multiplier").replace("{val}", item.value);
-                if (item.type === 'switch') return item.percentage ? t("+{val}% Bonus").replace("{val}", item.value) : t("+{val} Flat").replace("{val}", item.value);
+                if (item.type === 'switch') return item.percentage ? t("+{val}% MF").replace("{val}", item.value) : t("+{val} MF").replace("{val}", item.value);
                 let v = item.type === 'mastery' ? Math.max(0, (item.currentValue || 0) - 500) : (item.currentValue || 0);
-                return item.percentage ? t("+{val}% Bonus").replace("{val}", v) : t("+{val} Flat").replace("{val}", v);
+                return item.percentage ? t("+{val}% MF").replace("{val}", v) : t("+{val} MF").replace("{val}", v);
             };
 
             const prData = ref([]);
