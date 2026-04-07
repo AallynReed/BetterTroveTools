@@ -1,4 +1,5 @@
 :root {
+    --font: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --bg-dark: #121212;
     --bg-panel: #1e1e1e;
     --bg-hover: #2d2d30;
@@ -22,7 +23,7 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font);
 }
 
 body {
