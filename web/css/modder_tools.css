@@ -118,3 +118,15 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .form-group {
     margin-bottom: 14px;
 }
+
+#modder-tools-file-manager-host .file-manager-container {
+    padding: 0;
+}
+
+#modder-tools-file-manager-host .tabs-container {
+    gap: 0;
+}
+
+#modder-tools-file-manager-host .tab-buttons {
+    display: none;
+}

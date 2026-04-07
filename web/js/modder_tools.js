@@ -5,7 +5,7 @@ document.addEventListener('modder_tools_loaded', () => {
         return;
     }
 
-    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
 
     const app = createApp({
         setup() {
@@ -14,6 +14,8 @@ document.addEventListener('modder_tools_loaded', () => {
             let hydratingState = false;
 
             const activeTab = ref('build');
+            let embeddedFileManagerLoaded = false;
+            let embeddedFileManagerLoading = null;
             
             const installs = ref([]);
             const selectedGamePath = ref('');
@@ -582,6 +584,56 @@ document.addEventListener('modder_tools_loaded', () => {
                 } catch (e) { console.error("Failed to load software:", e); }
             };
 
+            const ensureEmbeddedFileManagerLoaded = async () => {
+                if (embeddedFileManagerLoaded) return;
+                if (embeddedFileManagerLoading) {
+                    await embeddedFileManagerLoading;
+                    return;
+                }
+
+                embeddedFileManagerLoading = (async () => {
+                    const host = document.getElementById('modder-tools-file-manager-host');
+                    if (!host) return;
+
+                    const response = await fetch('views/file_manager.html', { cache: 'no-store' });
+                    if (!response.ok) throw new Error(`Failed to load file manager view (${response.status})`);
+
+                    const html = await response.text();
+                    const parsed = new DOMParser().parseFromString(html, 'text/html');
+                    const root = parsed.querySelector('#file-manager-vue-app');
+                    if (!root) throw new Error('File Manager root element not found');
+
+                    host.innerHTML = '';
+                    host.appendChild(root);
+
+                    document.dispatchEvent(new CustomEvent('file_manager_loaded'));
+                    embeddedFileManagerLoaded = true;
+                })();
+
+                try {
+                    await embeddedFileManagerLoading;
+                } finally {
+                    embeddedFileManagerLoading = null;
+                }
+            };
+
+            const syncEmbeddedFileManagerTab = (tabName) => {
+                document.dispatchEvent(new CustomEvent('file_manager_set_tab', { detail: { tab: tabName } }));
+            };
+
+            const handleEmbeddedTabSelection = async (newTab) => {
+                if (newTab !== 'file_explorer' && newTab !== 'update_tracker') return;
+                await ensureEmbeddedFileManagerLoaded();
+                syncEmbeddedFileManagerTab(newTab === 'file_explorer' ? 'tab-explorer' : 'tab-tracker');
+            };
+
+            watch(activeTab, (newTab) => {
+                handleEmbeddedTabSelection(newTab).catch((e) => {
+                    console.error('Failed to load embedded File Manager:', e);
+                    window.showToast(t('Failed to load Game File Manager inside Modder Tools.'), true);
+                });
+            });
+
             onMounted(async () => {
                 hydratingState = true;
                 if (window.AppSettings) {
@@ -589,10 +641,22 @@ document.addEventListener('modder_tools_loaded', () => {
                     const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
                     applyStateSnapshot(saved);
                 }
+                if (window.pendingModderToolsTab) {
+                    activeTab.value = window.pendingModderToolsTab;
+                    window.pendingModderToolsTab = null;
+                }
                 await scanForGames();
                 await loadModdingSoftware();
+                await handleEmbeddedTabSelection(activeTab.value);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 hydratingState = false;
+            });
+
+            onBeforeUnmount(() => {
+                if (window._fileManagerApp && typeof window._fileManagerApp.unmount === 'function') {
+                    window._fileManagerApp.unmount();
+                    window._fileManagerApp = null;
+                }
             });
 
             return {

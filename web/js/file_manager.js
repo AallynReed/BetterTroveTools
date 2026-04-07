@@ -706,6 +706,13 @@ document.addEventListener('file_manager_loaded', () => {
                 activeTab.value = tabName;
             };
 
+            const onExternalSetTab = (event) => {
+                const requested = event && event.detail ? event.detail.tab : null;
+                if (requested === 'tab-explorer' || requested === 'tab-tracker') {
+                    setActiveTab(requested);
+                }
+            };
+
             const checkTrackerStatus = async () => {
                 if (!selectedTrackingDir.value) {
                     trackerStatus.state = 'empty';
@@ -926,12 +933,14 @@ document.addEventListener('file_manager_loaded', () => {
                 await scanForGames();
                 await loadTrackingDirectories();
                 document.addEventListener('keydown', onKeyDown);
+                document.addEventListener('file_manager_set_tab', onExternalSetTab);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 hydratingState = false;
             });
 
             onBeforeUnmount(() => {
                 document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('file_manager_set_tab', onExternalSetTab);
             });
 
             return {

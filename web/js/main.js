@@ -1411,10 +1411,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const commands = [
         { id: 'home', title: 'Home', icon: 'fa-house' },
-        { id: 'trovesaurus', title: 'Trovesaurus', imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png' },
-        { id: 'mod_manager', title: 'Mod Manager', icon: 'fa-cubes' },
-        { id: 'file_manager', title: 'Game File Manager', icon: 'fa-folder-tree' },
-        { id: 'modder_tools', title: 'Modder Tools', icon: 'fa-toolbox' },
+        { id: 'mod_manager', title: 'My Mods', icon: 'fa-cubes', mmSection: 'mod_manager' },
+        { id: 'mod_manager', title: 'Trovesaurus', imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus' },
+        { id: 'modder_tools', title: 'File Explorer', icon: 'fa-folder-tree', modderTab: 'file_explorer' },
+        { id: 'modder_tools', title: 'Update Tracker', icon: 'fa-satellite-dish', modderTab: 'update_tracker' },
+        { id: 'modder_tools', title: 'Build TMod', icon: 'fa-hammer', modderTab: 'build' },
+        { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
+        { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects' },
+        { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
         { id: 'star_chart', title: 'Star Chart', icon: 'fa-star' },
         { id: 'gem_builds', title: 'Gem Builds', icon: 'fa-dice-five' },
         { id: 'gem_simulator', title: 'Gem Simulator', icon: 'fa-gem' },
@@ -1434,7 +1438,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (query.startsWith('@')) {
             const sq = query.substring(1).trim();
             if (sq) {
-                displayCommands.push({ id: 'trovesaurus', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', query: sq });
+                displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
                 displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
             }
         } else if (query.startsWith('#')) {
@@ -1454,7 +1458,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .sort((a, b) => b._score - a._score);
             
             if (sq.length >= 3 && displayCommands.length === 0) {
-                displayCommands.push({ id: 'trovesaurus', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', query: sq });
+                displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
                 displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
             }
         }
@@ -1467,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
         cmdResults.innerHTML = displayCommands.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-query="${c.query || ''}">
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -1475,6 +1479,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const activeEl = cmdResults.querySelector('.cmd-result-item.active');
         if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    function openCommandResult(itemEl) {
+        const target = itemEl.getAttribute('data-target');
+        const modderTab = itemEl.getAttribute('data-modder-tab');
+        const mmSection = itemEl.getAttribute('data-mm-section');
+        if (modderTab) {
+            window.pendingModderToolsTab = modderTab;
+        }
+        if (mmSection) {
+            window.pendingModManagerSection = mmSection;
+        }
+        window.loadView(target);
     }
 
     document.addEventListener('keydown', (e) => {
@@ -1492,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (activeEl) { 
                     const q = activeEl.getAttribute('data-query');
                     if (q) window.pendingSearch = q;
-                    window.loadView(activeEl.getAttribute('data-target')); 
+                    openCommandResult(activeEl);
                     cmdOverlay.style.display = 'none'; 
                 }
             }
@@ -1520,7 +1537,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (item) { 
             const q = item.getAttribute('data-query');
             if (q) window.pendingSearch = q;
-            window.loadView(item.getAttribute('data-target')); 
+            openCommandResult(item);
             cmdOverlay.style.display = 'none'; 
         } 
     });

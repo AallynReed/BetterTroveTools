@@ -1,5 +1,6 @@
 <head>
     <link rel="stylesheet" href="css/modder_tools.css">
+    <link rel="stylesheet" href="css/file_manager.css">
 </head>
 <div id="modder-tools-vue-app" class="modder-tools-container" v-cloak>
     <div class="tabs-container">
@@ -13,8 +14,14 @@
             <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('Projects') }}</span>
             </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="activeTab = 'file_explorer'">
+                <i class="fa-solid fa-folder-tree"></i> <span>{{ t('File Explorer') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'update_tracker' }" @click="activeTab = 'update_tracker'">
+                <i class="fa-solid fa-satellite-dish"></i> <span>{{ t('Update Tracker') }}</span>
+            </button>
             <button class="tab-btn" :class="{ active: activeTab === 'software' }" @click="activeTab = 'software'">
-                <i class="fa-solid fa-computer"></i> <span>{{ t('Software') }}</span>
+                <i class="fa-solid fa-computer"></i> <span>{{ t('Third Party Software') }}</span>
             </button>
         </div>
 
@@ -255,9 +262,13 @@
             </div>
         </div>
 
+        <div class="tab-content" :class="{ active: activeTab === 'file_explorer' || activeTab === 'update_tracker' }">
+            <div id="modder-tools-file-manager-host"></div>
+        </div>
+
         <div class="tab-content" :class="{ active: activeTab === 'software' }">
             <div class="tool-panel">
-                <h3>{{ t('Recommended Modding Software') }}</h3>
+                <h3>{{ t('Third Party Software') }}</h3>
                 <p class="help-text">{{ t('Tools and software used for creating Trove mods.') }}</p>
                 
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
