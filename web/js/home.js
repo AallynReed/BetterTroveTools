@@ -68,7 +68,7 @@ document.addEventListener('home_loaded', () => {
 
             const getCountdown = (targetTs, showLeft = true) => {
                 const diff = targetTs - nowSec.value;
-                if (diff <= 0) return t("Ending now...");
+                if (diff <= 0) return null; // changed: return null if ended
                 const days = Math.floor(diff / 86400);
                 const hours = Math.floor((diff % 86400) / 3600);
                 const mins = Math.floor((diff % 3600) / 60);
@@ -194,10 +194,25 @@ document.addEventListener('home_loaded', () => {
             const chaosChestCard = computed(() => {
                 if (!chaosChest.value) return null;
                 const c = chaosChest.value;
-                const name = c.data?.name || "Chaos Chest";
+                const now = nowSec.value;
                 const end = c.data?.end || c.fallback_times?.end || 0;
+                // If Trovesaurus endpoint failed, or end is in the past, show fallback/unknown
+                if (!c.data || !c.data.end || end < now) {
+                    return {
+                        name: t('Chaos Chest'),
+                        identifier: null,
+                        unknown: true,
+                        iconUrl: "https://trovesaurus.com/data/catalog/item_chaos_box.png",
+                        timeHtml: t("Dates: {start} - {end}")
+                            .replace("{start}", new Date((c.fallback_times?.start || 0) * 1000).toLocaleDateString())
+                            .replace("{end}", new Date((c.fallback_times?.end || 0) * 1000).toLocaleDateString())
+                    };
+                }
+                // Otherwise, show the real item
                 return {
-                    name, identifier: c.data?.identifier, unknown: !c.data?.blueprint,
+                    name: c.data?.name || "Chaos Chest",
+                    identifier: c.data?.identifier,
+                    unknown: !c.data?.blueprint,
                     iconUrl: c.data?.blueprint ? `https://trovesaurus.com/data/catalog/${c.data.blueprint.toLowerCase()}.png` : "https://trovesaurus.com/data/catalog/item_chaos_box.png",
                     timeHtml: t("Changes in {time}").replace("{time}", `<b>${getCountdown(end, false)}</b>`)
                 };
@@ -624,11 +639,38 @@ document.addEventListener('home_loaded', () => {
                 if (e.deltaY !== 0) timelineWrapperRef.value.scrollLeft += e.deltaY;
             };
 
+            // --- Server reset (UTC-11) auto-refresh logic ---
+            function getNextServerResetSec() {
+                // Server reset is at 00:00 UTC-11 (13:00 UTC)
+                const now = new Date();
+                // Get UTC time
+                const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
+                // Find next 13:00 UTC
+                const nextReset = new Date(utcNow);
+                nextReset.setUTCHours(13, 0, 0, 0);
+                if (utcNow >= nextReset) nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+                return Math.floor(nextReset.getTime() / 1000);
+            }
+
+            let resetTimer = null;
+
             onMounted(() => {
                 refreshAllData();
                 refreshInterval = setInterval(refreshAllData, 60000);
                 timeInterval = setInterval(() => nowSec.value = Math.floor(Date.now() / 1000), 1000);
-                
+
+                // Set up server reset auto-refresh
+                function scheduleResetCheck() {
+                    if (resetTimer) clearTimeout(resetTimer);
+                    const now = Math.floor(Date.now() / 1000);
+                    const nextReset = getNextServerResetSec();
+                    const msUntil = (nextReset - now) * 1000 + 2000; // 2s buffer
+                    resetTimer = setTimeout(() => {
+                        window.location.reload();
+                    }, msUntil);
+                }
+                scheduleResetCheck();
+
                 window._homeLangListener = (e) => {
                     if (e.target && e.target.id === 'global-language-select') setTimeout(refreshAllData, 150);
                 };
@@ -644,6 +686,7 @@ document.addEventListener('home_loaded', () => {
             onUnmounted(() => {
                 clearInterval(refreshInterval);
                 clearInterval(timeInterval);
+                if (resetTimer) clearTimeout(resetTimer);
                 document.removeEventListener('change', window._homeLangListener);
             });
 
