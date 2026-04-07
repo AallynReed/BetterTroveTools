@@ -1357,6 +1357,7 @@ window.executePendingSearch = function() {
     const tsInput = document.getElementById('ts-search-input');
     if (tsInput) {
         tsInput.value = window.pendingSearch;
+        tsInput.dispatchEvent(new Event('input', { bubbles: true }));
         document.getElementById('btn-ts-search')?.click();
         handled = true;
     }
