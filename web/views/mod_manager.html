@@ -1,131 +1,253 @@
 <head>
     <link rel="stylesheet" href="css/mod_manager.css">
+    <link rel="stylesheet" href="css/trovesaurus.css">
 </head>
-<div id="mod-manager-vue-app" class="file-manager-container" v-cloak>
-    <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
-        <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
-        
-        <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')">
-            <i class="fa-solid fa-rotate-right"></i>
-        </button>
 
-        <button @click="refreshInstallState" class="primary-btn" :disabled="!selectedInstall || isLoading" :title="t('Refresh install state')">
-            <i class="fa-solid fa-arrows-rotate"></i>
-        </button>
-
-        <button @click="refreshUpdates" class="primary-btn" :disabled="!selectedInstall || isRefreshingUpdates" :title="t('Refresh update availability')">
-            <template v-if="isRefreshingUpdates"><i class="fa-solid fa-spinner fa-spin"></i></template>
-            <template v-else><i class="fa-solid fa-cloud-arrow-down"></i></template>
-        </button>
-
-        <button @click="clearCache" class="primary-btn" :disabled="isClearingCache" :title="t('Clear Mod Manager cache')">
-            <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i></template>
-            <template v-else><i class="fa-solid fa-broom"></i></template>
-        </button>
-        
-        <button @click="fixNames" class="primary-btn" :title="t('Rename files to match Mod internal names')" style="background: var(--accent-blue);" :disabled="isFixingNames || !selectedInstall">
-            <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
-            <template v-else><i class="fa-solid fa-tag"></i> {{ t('Fix Names') }}</template>
-        </button>
-        
-        <button @click="fixConfigs" class="primary-btn" :title="t('Generate missing UI config files')" style="background: var(--accent-blue);" :disabled="isFixingConfigs || !selectedInstall">
-            <template v-if="isFixingConfigs"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
-            <template v-else><i class="fa-solid fa-gear"></i> {{ t('Fix Configs') }}</template>
-        </button>
-    </div>
-
-    <div class="search-filter-bar">
-        <div class="search-wrapper">
-            <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-            <input type="text" id="mod-search-input" v-model="searchQuery" :placeholder="t('Search mods by name or author...')">
-        </div>
-
-        <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
-        <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
-        
-        <div style="width: 200px;">
-            <custom-vue-select v-model="filterStatus" :options="statusOptions"></custom-vue-select>
-        </div>
-        
-        <div class="mod-count-display">
-            <span>{{ t('Showing {shown} of {filtered} filtered mods ({total} total)').replace('{shown}', shownCount).replace('{filtered}', filteredCount).replace('{total}', totalCount) }}</span>
+<div id="mod-manager-unified-root" class="file-manager-container" style="padding-top: 22px;">
+    <div class="mm-tabs-container">
+        <div class="mm-tab-buttons">
+            <button class="mm-tab-btn active" data-mm-tab="mod_manager">
+                <i class="fa-solid fa-cubes"></i> <span data-i18n>My Mods</span>
+            </button>
+            <button class="mm-tab-btn" data-mm-tab="trovesaurus">
+                <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
+                <span data-i18n>Trovesaurus</span>
+            </button>
         </div>
     </div>
-    <div v-if="showOnboardingTips" class="onboarding-tour">
-        <div class="onboarding-tour-header">
-            <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('Quick Tour: Mod Manager') }}</span>
-            <button class="onboarding-dismiss" @click="dismissOnboardingTips">{{ t('Skip Tour') }}</button>
-        </div>
-        <ol class="onboarding-tour-steps">
-            <li>{{ t('Pick your game install from the top dropdown.') }}</li>
-            <li>{{ t('Use search + status filter to narrow the list quickly.') }}</li>
-            <li>{{ t('Use Arrow Up/Down in search to jump result cards.') }}</li>
-        </ol>
-        <div class="onboarding-tour-actions">
-            <button class="secondary-btn" @click="focusSearchInput"><i class="fa-solid fa-magnifying-glass"></i> {{ t('Show Me Search') }}</button>
-            <button class="secondary-btn" @click="dismissOnboardingTips">{{ t('Done') }}</button>
-        </div>
-    </div>
-    <div v-if="showSearchShortcutHint" class="search-shortcut-hint">
-        <span>{{ t('Shortcuts: Ctrl/Cmd+F focus search, Arrow Up/Down navigate results') }}</span>
-        <button class="search-shortcut-dismiss" @click="dismissSearchShortcutHint" :title="t('Hide this tip')" aria-label="Hide this tip">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-    </div>
 
-    <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ statusText }}</div>
-    <div v-else-if="!selectedInstall" class="placeholder-box">{{ t('Select a game installation to view installed mods.') }}</div>
-    <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found in the selected directory.') }}</div>
-    <div v-else-if="filteredMods.length === 0" class="placeholder-box no-results-message">{{ t('No mods match your current filters.') }}</div>
-    <div v-else>
-        <div class="mod-grid">
-        <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)" @dblclick="handleCardDoubleClick($event, mod)">
-            <div class="mod-card-content">
-                <div class="mod-front-top">
-                    <span v-if="mod.has_conflicts" class="mod-conflict-icon" :class="hasActiveConflict(mod) ? 'active' : 'inactive'" :title="getConflictTitle(mod)" aria-hidden="true">
-                        <i class="fa-solid fa-triangle-exclamation"></i>
-                    </span>
-                    <a v-if="mod.tsUrl" class="mod-title mod-link ts-mod-title" :href="modNameUrl(mod) || '#'" :title="t('{title} (Click to view on Trovesaurus)').replace('{title}', mod.name)" @click.prevent="openUrl(mod.tsUrl)" v-html="highlightSearch(mod.name)"></a>
-                    <span v-else class="mod-title" v-html="highlightSearch(mod.name)"></span>
-                    <button class="mod-card-delete-hover" :title="t('Delete Mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
-                        <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
-                    </button>
-                </div>
+    <section class="mm-tab-content active" data-mm-panel="mod_manager">
+        <div id="mod-manager-vue-app" class="file-manager-container" style="padding: 0;" v-cloak>
+            <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
 
-                <a v-if="mod.author_id" class="mod-meta mod-author-link" :href="authorUrl(mod) || '#'" :title="t('View author profile')" @click.prevent="openAuthor(mod)" v-html="highlightSearch(mod.author)"></a>
-                <span v-else class="mod-meta" v-html="highlightSearch(mod.author)"></span>
-
-                <button v-if="showPreviewOnInfoSide" class="mod-front-preview" @click="mod.image && openImageModal(mod)" :disabled="!mod.image" :title="mod.image ? t('Open Preview') : t('No Preview Available')">
-                    <img v-if="mod.image" :src="'data:image/png;base64,' + mod.image" alt="Preview" class="mod-front-preview-img" loading="lazy">
-                    <span v-else class="mod-front-preview-empty"><i class="fa-regular fa-image"></i> {{ t('No Preview') }}</span>
+                <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')">
+                    <i class="fa-solid fa-rotate-right"></i>
                 </button>
 
-                <div class="mod-front-tags">
-                    <span v-if="mod.hasUpdate" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('Update') }}</span>
+                <button @click="refreshInstallState" class="primary-btn" :disabled="!selectedInstall || isLoading" :title="t('Refresh install state')">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+
+                <button @click="refreshUpdates" class="primary-btn" :disabled="!selectedInstall || isRefreshingUpdates" :title="t('Refresh update availability')">
+                    <template v-if="isRefreshingUpdates"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                    <template v-else><i class="fa-solid fa-cloud-arrow-down"></i></template>
+                </button>
+
+                <button @click="clearCache" class="primary-btn" :disabled="isClearingCache" :title="t('Clear Mod Manager cache')">
+                    <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                    <template v-else><i class="fa-solid fa-broom"></i></template>
+                </button>
+
+                <button @click="fixNames" class="primary-btn" :title="t('Rename files to match Mod internal names')" style="background: var(--accent-blue);" :disabled="isFixingNames || !selectedInstall">
+                    <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
+                    <template v-else><i class="fa-solid fa-tag"></i> {{ t('Fix Names') }}</template>
+                </button>
+
+                <button @click="fixConfigs" class="primary-btn" :title="t('Generate missing UI config files')" style="background: var(--accent-blue);" :disabled="isFixingConfigs || !selectedInstall">
+                    <template v-if="isFixingConfigs"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
+                    <template v-else><i class="fa-solid fa-gear"></i> {{ t('Fix Configs') }}</template>
+                </button>
+            </div>
+
+            <div class="search-filter-bar">
+                <div class="search-wrapper">
+                    <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="mod-search-input" v-model="searchQuery" :placeholder="t('Search mods by name or author...')">
                 </div>
 
-                <div class="mod-inline-actions">
-                    <button v-if="mod.hasUpdate" class="update-mod-btn" :title="t('Update Available')" @click="updateMod(mod)" :disabled="mod.isUpdating">
-                        <i class="fa-solid" :class="mod.isUpdating ? 'fa-spinner fa-spin' : 'fa-download'"></i>
-                        <span>{{ t('Update') }}</span>
+                <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
+
+                <div style="width: 200px;">
+                    <custom-vue-select v-model="filterStatus" :options="statusOptions"></custom-vue-select>
+                </div>
+
+                <div class="mod-count-display">
+                    <span>{{ t('Showing {shown} of {filtered} filtered mods ({total} total)').replace('{shown}', shownCount).replace('{filtered}', filteredCount).replace('{total}', totalCount) }}</span>
+                </div>
+            </div>
+            <div v-if="showOnboardingTips" class="onboarding-tour">
+                <div class="onboarding-tour-header">
+                    <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('Quick Tour: Mod Manager') }}</span>
+                    <button class="onboarding-dismiss" @click="dismissOnboardingTips">{{ t('Skip Tour') }}</button>
+                </div>
+                <ol class="onboarding-tour-steps">
+                    <li>{{ t('Pick your game install from the top dropdown.') }}</li>
+                    <li>{{ t('Use search + status filter to narrow the list quickly.') }}</li>
+                    <li>{{ t('Use Arrow Up/Down in search to jump result cards.') }}</li>
+                </ol>
+                <div class="onboarding-tour-actions">
+                    <button class="secondary-btn" @click="focusSearchInput"><i class="fa-solid fa-magnifying-glass"></i> {{ t('Show Me Search') }}</button>
+                    <button class="secondary-btn" @click="dismissOnboardingTips">{{ t('Done') }}</button>
+                </div>
+            </div>
+            <div v-if="showSearchShortcutHint" class="search-shortcut-hint">
+                <span>{{ t('Shortcuts: Ctrl/Cmd+F focus search, Arrow Up/Down navigate results') }}</span>
+                <button class="search-shortcut-dismiss" @click="dismissSearchShortcutHint" :title="t('Hide this tip')" aria-label="Hide this tip">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ statusText }}</div>
+            <div v-else-if="!selectedInstall" class="placeholder-box">{{ t('Select a game installation to view installed mods.') }}</div>
+            <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found in the selected directory.') }}</div>
+            <div v-else-if="filteredMods.length === 0" class="placeholder-box no-results-message">{{ t('No mods match your current filters.') }}</div>
+            <div v-else>
+                <div class="mod-grid">
+                    <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)" @dblclick="handleCardDoubleClick($event, mod)">
+                        <div class="mod-card-content">
+                            <div class="mod-front-top">
+                                <span v-if="mod.has_conflicts" class="mod-conflict-icon" :class="hasActiveConflict(mod) ? 'active' : 'inactive'" :title="getConflictTitle(mod)" aria-hidden="true">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </span>
+                                <a v-if="mod.tsUrl" class="mod-title mod-link ts-mod-title" :href="modNameUrl(mod) || '#'" :title="t('{title} (Click to view on Trovesaurus)').replace('{title}', mod.name)" @click.prevent="openUrl(mod.tsUrl)" v-html="highlightSearch(mod.name)"></a>
+                                <span v-else class="mod-title" v-html="highlightSearch(mod.name)"></span>
+                                <button class="mod-card-delete-hover" :title="t('Delete Mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
+                                    <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                                </button>
+                            </div>
+
+                            <a v-if="mod.author_id" class="mod-meta mod-author-link" :href="authorUrl(mod) || '#'" :title="t('View author profile')" @click.prevent="openAuthor(mod)" v-html="highlightSearch(mod.author)"></a>
+                            <span v-else class="mod-meta" v-html="highlightSearch(mod.author)"></span>
+
+                            <button v-if="showPreviewOnInfoSide" class="mod-front-preview" @click="mod.image && openImageModal(mod)" :disabled="!mod.image" :title="mod.image ? t('Open Preview') : t('No Preview Available')">
+                                <img v-if="mod.image" :src="'data:image/png;base64,' + mod.image" alt="Preview" class="mod-front-preview-img" loading="lazy">
+                                <span v-else class="mod-front-preview-empty"><i class="fa-regular fa-image"></i> {{ t('No Preview') }}</span>
+                            </button>
+
+                            <div class="mod-front-tags">
+                                <span v-if="mod.hasUpdate" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('Update') }}</span>
+                            </div>
+
+                            <div class="mod-inline-actions">
+                                <button v-if="mod.hasUpdate" class="update-mod-btn" :title="t('Update Available')" @click="updateMod(mod)" :disabled="mod.isUpdating">
+                                    <i class="fa-solid" :class="mod.isUpdating ? 'fa-spinner fa-spin' : 'fa-download'"></i>
+                                    <span>{{ t('Update') }}</span>
+                                </button>
+                            </div>
+
+                            <button class="mod-status-pill mod-status-toggle" :class="mod.status === 'enabled' ? 'enabled' : 'disabled'" :title="mod.status === 'enabled' ? t('Click to disable mod') : t('Click to enable mod')" @click.stop.prevent="toggleMod(mod)" :disabled="mod.isToggling">
+                                <template v-if="mod.isToggling"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Working...') }}</template>
+                                <template v-else>
+                                    <i class="fa-solid" :class="mod.status === 'enabled' ? 'fa-circle-check' : 'fa-circle-pause'"></i>
+                                    {{ mod.status === 'enabled' ? t('Enabled') : t('Disabled') }}
+                                </template>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
+                <span class="close-modal" @click="closeImageModal" :title="t('Close Modal')"><i class="fa-solid fa-xmark"></i></span>
+                <img class="modal-content" :src="modal.src" v-if="modal.src" alt="Expanded Mod Preview">
+                <div id="modal-caption">{{ modal.caption }}</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mm-tab-content" data-mm-panel="trovesaurus">
+        <div id="trovesaurus-vue-app" class="trovesaurus-container" v-cloak>
+            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <p style="color: var(--text-muted); margin-top: 5px;">{{ t('Discover and install mods directly from the community.') }}</p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('Install to:') }}</label>
+                    <div style="width: 250px;">
+                        <custom-vue-select v-model="selectedGame" :options="gameOptions"></custom-vue-select>
+                    </div>
+                    <button class="primary-btn" @click="refreshMods" :disabled="isLoading || isRefreshing" :title="t('Refresh install state')">
+                        <template v-if="isRefreshing"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                        <template v-else><i class="fa-solid fa-arrows-rotate"></i></template>
+                    </button>
+                    <button class="primary-btn" @click="clearCache" :disabled="isClearingCache" :title="t('Clear Trovesaurus cache')">
+                        <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                        <template v-else><i class="fa-solid fa-broom"></i></template>
                     </button>
                 </div>
+            </div>
 
-                <button class="mod-status-pill mod-status-toggle" :class="mod.status === 'enabled' ? 'enabled' : 'disabled'" :title="mod.status === 'enabled' ? t('Click to disable mod') : t('Click to enable mod')" @click.stop.prevent="toggleMod(mod)" :disabled="mod.isToggling">
-                    <template v-if="mod.isToggling"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Working...') }}</template>
-                    <template v-else>
-                        <i class="fa-solid" :class="mod.status === 'enabled' ? 'fa-circle-check' : 'fa-circle-pause'"></i>
-                        {{ mod.status === 'enabled' ? t('Enabled') : t('Disabled') }}
-                    </template>
+            <div class="search-filter-bar" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+                <div class="search-wrapper" style="flex: 1; min-width: 250px;">
+                    <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="ts-search-input" v-model="searchQuery" @keyup.enter="fetchMods(1)" :placeholder="t('Search by name, author, or ID...')">
+                </div>
+
+                <div style="width: 160px;">
+                    <custom-vue-select v-model="selectedCategory" :options="categoryOptions"></custom-vue-select>
+                </div>
+
+                <div style="width: 180px;">
+                    <custom-vue-select v-model="selectedSort" :options="sortOptions"></custom-vue-select>
+                </div>
+
+                <button id="btn-ts-search" class="primary-btn" style="background: var(--accent-blue);" @click="fetchMods(1)" :disabled="isLoading">
+                    <i class="fa-solid fa-magnifying-glass"></i> <span>{{ t('Search') }}</span>
+                </button>
+            </div>
+
+            <div id="ts-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+                <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Browsing Trovesaurus...') }}</div>
+                <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+                <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found matching your search.') }}</div>
+                <template v-else>
+                    <div v-for="mod in mods" :key="mod.id" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
+                        <div class="ts-card-content">
+                            <div class="ts-front-top">
+                                <a class="mod-title ts-mod-title" href="#" :title="t('Open in trovesaurus')" @click.prevent="openUrl(`https://trovesaurus.com/mod=${mod.id}`)">{{ mod.name }}</a>
+                                <button v-if="mod.is_installed" class="ts-card-delete-hover" :title="t('Delete Installed Mod')" @click.stop.prevent="deleteInstalledMod(mod)" :disabled="mod.is_deleting">
+                                    <i class="fa-solid" :class="mod.is_deleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                                </button>
+                            </div>
+
+                            <span class="mod-meta">
+                                <a v-if="mod.author_id" class="ts-mod-author" href="#" :title="t(`View {author}'s profile`).replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/user=${mod.author_id}`)">{{ mod.author }}</a>
+                                <a v-else class="ts-mod-author" href="#" :title="t('Search mods by {author}').replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/search?query=${encodeURIComponent(mod.author || '')}`)">{{ mod.author }}</a>
+                            </span>
+
+                            <button class="ts-front-preview" @click="openImageModal(mod)" :title="t('Click to enlarge image')">
+                                <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                            </button>
+
+                            <div class="ts-mod-stats">
+                                <span class="ts-stat-item" :title="t('Downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(mod.downloads) }}</span>
+                                <span class="ts-stat-item" :title="t('Likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ formatCount(mod.likes) }}</span>
+                            </div>
+
+                            <div class="ts-inline-actions">
+                                <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click.stop.prevent="installMod(mod)">
+                                    <template v-if="mod.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Installing...') }}</template>
+                                    <template v-else-if="mod.needs_update"><i class="fa-solid fa-rotate"></i> {{ t('Update') }}</template>
+                                    <template v-else-if="mod.is_installed"><i class="fa-solid fa-check"></i> {{ t('Installed') }}</template>
+                                    <template v-else><i class="fa-solid fa-download"></i> {{ t('Install') }}</template>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+                <button class="primary-btn" :disabled="currentPage <= 1 || isLoading" @click="fetchMods(currentPage - 1)">
+                    <i class="fa-solid fa-chevron-left"></i> <span>{{ t('Previous') }}</span>
+                </button>
+                <span style="color: var(--text-main); font-weight: bold;"><span>{{ t('Page') }}</span> <span>{{ currentPage }}</span> <span>{{ t('of') }}</span> <span>{{ maxPages }}</span></span>
+                <button class="primary-btn" :disabled="currentPage >= maxPages || isLoading" @click="fetchMods(currentPage + 1)">
+                    <span>{{ t('Next') }}</span> <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
+                <span class="close-modal" @click="closeImageModal">&times;</span>
+                <img class="modal-content" :src="modal.src" v-if="modal.src">
+                <div id="modal-caption">{{ modal.caption }}</div>
+                <button v-if="modal.modId" id="modal-view-ts-btn" @click="openUrl(`https://trovesaurus.com/mod=${modal.modId}`)">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('View on Trovesaurus') }}</span>
                 </button>
             </div>
         </div>
-        </div>
-    </div>
-
-    <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
-        <span class="close-modal" @click="closeImageModal" :title="t('Close Modal')"><i class="fa-solid fa-xmark"></i></span>
-        <img class="modal-content" :src="modal.src" v-if="modal.src" alt="Expanded Mod Preview">
-        <div id="modal-caption">{{ modal.caption }}</div>
-    </div>
+    </section>
 </div>

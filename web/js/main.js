@@ -972,12 +972,16 @@ function handle_deep_link(url) {
                 
                 if (modId) {
                     window.pendingSearch = modId;
+                    window.pendingModManagerSection = 'trovesaurus';
                     
                     const searchInput = document.getElementById('ts-search-input');
                     if (searchInput) {
+                        if (typeof window.setModManagerSection === 'function') {
+                            window.setModManagerSection('trovesaurus');
+                        }
                         window.executePendingSearch();
                     } else {
-                        window.loadView('trovesaurus');
+                        window.loadView('mod_manager');
                     }
                 }
             }
@@ -1380,7 +1384,7 @@ window.executePendingSearch = function() {
 };
 
 document.addEventListener('trovesaurus_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
-document.addEventListener('mod_manager_loaded', () => window.executePendingSearch());
+document.addEventListener('mod_manager_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
 document.addEventListener('allies_loaded', () => setTimeout(() => window.executePendingSearch(), 100));
 
 document.addEventListener('DOMContentLoaded', async () => {

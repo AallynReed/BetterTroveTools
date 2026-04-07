@@ -4,6 +4,37 @@ document.addEventListener('mod_manager_loaded', async () => {
         return;
     }
 
+    let trovesaurusInitialized = false;
+    let activeSection = null;
+    const setModManagerSection = (section) => {
+        const previousSection = activeSection;
+        activeSection = section;
+        const buttons = document.querySelectorAll('[data-mm-tab]');
+        const panels = document.querySelectorAll('[data-mm-panel]');
+        buttons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-mm-tab') === section));
+        panels.forEach(panel => panel.classList.toggle('active', panel.getAttribute('data-mm-panel') === section));
+
+        if (section === 'trovesaurus' && !trovesaurusInitialized) {
+            trovesaurusInitialized = true;
+            document.dispatchEvent(new CustomEvent('trovesaurus_loaded'));
+        }
+
+        if (previousSection !== section) {
+            document.dispatchEvent(new CustomEvent('mod_manager_section_changed', {
+                detail: { previousSection, currentSection: section }
+            }));
+        }
+    };
+
+    document.querySelectorAll('[data-mm-tab]').forEach((btn) => {
+        btn.addEventListener('click', () => setModManagerSection(btn.getAttribute('data-mm-tab')));
+    });
+
+    window.setModManagerSection = setModManagerSection;
+    const requestedSection = window.pendingModManagerSection || 'mod_manager';
+    window.pendingModManagerSection = null;
+    setModManagerSection(requestedSection);
+
     const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
     const PREF_STATE_KEY = 'state_mod_manager';
     const PREF_TOUR_KEY = 'onboarding_mod_manager_v1';
@@ -579,6 +610,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            const onSectionChanged = async (e) => {
+                const detail = e && e.detail ? e.detail : {};
+                if (detail.previousSection === 'trovesaurus' && detail.currentSection === 'mod_manager' && selectedInstall.value) {
+                    await loadMods();
+                }
+            };
+
             const closeImageModal = () => {
                 modal.show = false;
                 setTimeout(() => {
@@ -609,6 +647,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     await loadMods();
                 }
                 document.addEventListener('keydown', onKeyDown);
+                document.addEventListener('mod_manager_section_changed', onSectionChanged);
                 nextTick(() => {
                     if (window.applyCustomDropdowns) window.applyCustomDropdowns();
                 });
@@ -616,6 +655,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             onBeforeUnmount(() => {
                 document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('mod_manager_section_changed', onSectionChanged);
             });
 
             return {
