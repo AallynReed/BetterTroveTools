@@ -1240,7 +1240,7 @@ span.flatpickr-weekday {
 .network-status-indicator {
     position: fixed;
     right: 18px;
-    bottom: 72px;
+    bottom: 18px;
     z-index: 10050;
     width: 44px;
     height: 44px;
@@ -1263,7 +1263,7 @@ span.flatpickr-weekday {
 .job-queue-toggle {
     position: fixed;
     right: 18px;
-    bottom: 18px;
+    bottom: 72px;
     z-index: 10040;
     width: 44px;
     height: 44px;
