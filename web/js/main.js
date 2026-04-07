@@ -1419,9 +1419,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
         { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects' },
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
-        { id: 'star_chart', title: 'Star Chart', icon: 'fa-star' },
-        { id: 'gem_builds', title: 'Gem Builds', icon: 'fa-dice-five' },
-        { id: 'gem_simulator', title: 'Gem Simulator', icon: 'fa-gem' },
+        { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
+        { id: 'gems_and_builds', title: 'Star Chart', icon: 'fa-star', gemsTab: 'star-chart' },
+        { id: 'gems_and_builds', title: 'Gem Simulator', icon: 'fa-gem', gemsTab: 'gem-simulator' },
         { id: 'calculators', title: 'Calculators', icon: 'fa-calculator' },
         { id: 'allies', title: 'Ally Codex', icon: 'fa-paw' },
         { id: 'settings', title: 'Settings', icon: 'fa-gear' },
@@ -1471,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
         cmdResults.innerHTML = displayCommands.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-query="${c.query || ''}">
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -1485,11 +1485,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const target = itemEl.getAttribute('data-target');
         const modderTab = itemEl.getAttribute('data-modder-tab');
         const mmSection = itemEl.getAttribute('data-mm-section');
+        const gemsTab = itemEl.getAttribute('data-gems-tab');
         if (modderTab) {
             window.pendingModderToolsTab = modderTab;
         }
         if (mmSection) {
             window.pendingModManagerSection = mmSection;
+        }
+        if (gemsTab) {
+            window.pendingGemsTab = gemsTab;
         }
         window.loadView(target);
     }

@@ -1,0 +1,45 @@
+<head>
+    <link rel="stylesheet" href="css/gems_and_builds/index.css">
+    <link rel="stylesheet" href="css/gems_and_builds/gem_builds.css">
+    <link rel="stylesheet" href="css/gems_and_builds/gem_simulator.css">
+    <link rel="stylesheet" href="css/gems_and_builds/star_chart.css">
+</head>
+
+<div id="gems-and-builds-vue-app" class="gems-and-builds-container" v-cloak>
+    
+    <div class="tabs-container">
+        <div class="tab-buttons" style="margin-bottom: 20px;">
+            <button class="tab-btn" :class="{ active: activeTab === 'gem-builds' }" @click="setActiveTab('gem-builds')">
+                <i class="fa-solid fa-dice-five"></i> <span>{{ t('Gem Builds') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'star-chart' }" @click="setActiveTab('star-chart')">
+                <i class="fa-solid fa-star"></i> <span>{{ t('Star Chart') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'gem-simulator' }" @click="setActiveTab('gem-simulator')">
+                <i class="fa-solid fa-gem"></i> <span>{{ t('Gem Simulator') }}</span>
+            </button>
+        </div>
+
+        <!-- Gem Builds Tab -->
+        <div v-show="activeTab === 'gem-builds'" class="tab-content" :class="{ active: activeTab === 'gem-builds' }">
+            <div id="gem-builds-vue-app-inner" class="view-container" v-cloak>
+                <!-- Gem Builds content will be injected here -->
+            </div>
+        </div>
+
+        <!-- Star Chart Tab -->
+        <div v-show="activeTab === 'star-chart'" class="tab-content" :class="{ active: activeTab === 'star-chart' }">
+            <div id="star-chart-vue-app-inner" class="star-chart-container" v-cloak>
+                <!-- Star Chart content will be injected here -->
+            </div>
+        </div>
+
+        <!-- Gem Simulator Tab -->
+        <div v-show="activeTab === 'gem-simulator'" class="tab-content" :class="{ active: activeTab === 'gem-simulator' }">
+            <div id="gem-simulator-vue-app-inner" class="gem-sim-container" v-cloak>
+                <!-- Gem Simulator content will be injected here -->
+            </div>
+        </div>
+    </div>
+
+</div>

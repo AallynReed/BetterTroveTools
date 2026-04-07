@@ -1,0 +1,318 @@
+[v-cloak] {
+    display: none !important;
+}
+
+.star-chart-container {
+    padding: 40px;
+    max-width: 1400px;
+    margin: 0 auto;
+    animation: fadeIn 0.3s ease;
+}
+
+.star-chart-header {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 20px;
+}
+
+.chart-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+#chart-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    min-height: 600px;
+    position: relative;
+    overflow: visible;
+    padding-top: 42px;
+}
+
+.chart-toolbar {
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    right: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    z-index: 5;
+}
+
+.chart-toolbar-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-main);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chart-toolbar-hints {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.chart-hint-chip {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 3px 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#chart-svg {
+    width: 100%;
+    max-width: 1000px; 
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background-color: transparent; 
+}
+
+.star-node {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.star-node:hover {
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+    stroke: #ffffff !important;
+    stroke-width: 3px;
+}
+
+.root-node {
+    cursor: default; 
+    stroke-width: 4px;
+}
+
+.center-clear-anchor {
+    cursor: pointer;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.15s ease, stroke 0.2s ease, filter 0.2s ease;
+}
+
+.center-clear-anchor:hover {
+    transform: scale(1.08);
+    stroke: var(--accent-blue);
+    filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.45));
+}
+
+.node-selected {
+    stroke: #fff !important;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+}
+
+.node-overwritten {
+    opacity: 0.3; 
+}
+
+.root-active {
+    stroke: #fff !important;
+    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+    fill: rgba(255, 255, 255, 0.1);
+}
+
+.center-clear-anchor.root-active {
+    stroke: var(--accent-blue) !important;
+    filter: drop-shadow(0 0 12px rgba(var(--accent-rgb), 0.55));
+    fill: rgba(var(--accent-rgb), 0.12);
+}
+
+.line-selected {
+    stroke: #aaa; 
+}
+
+#build-summary-panel {
+    width: 350px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    flex-shrink: 0;
+    
+    display: flex;
+    flex-direction: column;
+}
+
+#build-summary-panel h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.build-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.build-meta-chip {
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    border-radius: 999px;
+    padding: 3px 9px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.build-meta-chip.active {
+    color: var(--accent-blue);
+    border-color: rgba(var(--accent-rgb), 0.4);
+    background: rgba(var(--accent-rgb), 0.12);
+}
+
+.build-share-controls {
+    display: flex;
+    gap: 8px;
+}
+
+#build-code-input {
+    flex: 1;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--accent-blue);
+    padding: 8px 10px;
+    border-radius: 4px;
+    outline: none;
+    font-size: 12px;
+    font-family: monospace;
+}
+
+#build-code-input:focus {
+    border-color: var(--accent-blue);
+    color: var(--text-main);
+}
+
+.build-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.secondary-btn {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background: var(--bg-hover);
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+#summary-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 5px;
+}
+
+.summary-section {
+    margin-bottom: 15px;
+}
+
+.summary-section h4 {
+    color: var(--accent-blue);
+    margin: 0 0 5px 0;
+    font-size: 14px;
+}
+
+.summary-section ul {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: #ccc;
+}
+
+#star-tooltip {
+    position: fixed;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    max-width: 250px;
+    pointer-events: none;
+    z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    color: var(--text-main);
+    font-size: 13px;
+}
+
+#star-tooltip h3 {
+    margin: 0 0 5px 0;
+    color: var(--accent-blue);
+    font-size: 15px;
+}
+
+#star-tooltip .type {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 8px;
+}
+
+#star-tooltip p { margin: 0 0 8px 0; line-height: 1.4; }
+#star-tooltip ul { margin: 0; padding-left: 20px; }
+#star-tooltip li { margin-bottom: 4px; color: #ccc; }
+#star-tooltip hr { border-color: var(--border-color); margin: 8px 0; }
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+/* Concise module pass */
+.star-chart-container {
+    padding: 24px;
+    max-width: 1320px;
+}
+
+.star-chart-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+}
+
+.chart-layout,
+.chart-toolbar,
+.chart-toolbar-hints,
+.build-share-controls {
+    gap: 10px;
+}
+
+#chart-wrapper {
+    padding: 14px;
+    padding-top: 38px;
+    min-height: 560px;
+}

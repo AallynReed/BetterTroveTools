@@ -20,13 +20,13 @@ import backend.about
 import backend.allies
 import backend.calculators
 import backend.file_manager
-import backend.gem_builds
-import backend.gem_simulator
+import backend.gems_and_builds.gem_builds
+import backend.gems_and_builds.gem_simulator
 import backend.home
 import backend.mod_manager
 import backend.modder_tools
 import backend.settings
-import backend.star_chart
+import backend.gems_and_builds.star_chart
 import backend.trovesaurus
 
 if getattr(sys, 'frozen', False):

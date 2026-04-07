@@ -1,0 +1,212 @@
+<head>
+    <link rel="stylesheet" href="../css/gems_and_builds/gem_builds.css">
+</head>
+<div id="gem-builds-vue-app-inner" class="view-container" v-cloak>
+    <div class="gem-builds-grid">
+        
+        <div class="config-panel-wrapper">
+            <div class="card config-panel">
+            <div class="config-section">
+                <h4><i class="fa-solid fa-user-astronaut"></i> {{ t('Character') }}</h4>
+                <div class="input-group">
+                    <label>{{ t('Class') }}</label>
+                    <div class="select-with-icon">
+                        <img class="select-icon" :src="classIcon" @error="onImageError" alt="">
+                        <select v-model="config.character" style="flex: 1;">
+                            <option v-for="cls in classesData" :key="cls.value" :value="cls.value">{{ t(cls.name) }}</option>
+                        </select>
+                    </div>
+                </div>
+    
+                <div class="input-group">
+                    <label>{{ t('Subclass') }}</label>
+                    <div class="select-with-icon">
+                        <img class="select-icon" :src="subclassIcon" @error="onImageError" alt="">
+                        <select v-model="config.subclass" style="flex: 1;">
+                            <option v-for="cls in classesData" :key="cls.value" :value="cls.value">{{ t(cls.name) }}</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4><i class="fa-solid fa-shield-halved"></i> {{ t('Build & Gear') }}</h4>
+                <div class="input-row build-gear-row">
+                    <div class="input-group">
+                        <label>{{ t('Build Type') }}</label>
+                        <select v-model="config.build_type">
+                            <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('Light') }}</option>
+                            <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('Farm') }}</option>
+                            <option value="Health" data-icon="fa-solid fa-shield-halved" disabled title="Need review">{{ t('Health') }} ({{ t('Need review') }})</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>{{ t('Food') }}</label>
+                        <select v-model="config.food">
+                            <option value="">{{ t('None') }}</option>
+                            <option v-for="(data, key) in foodsData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
+                        </select>
+                    </div>
+                </div>
+    
+                <div class="input-group">
+                    <label>{{ t('Ally') }}</label>
+                    <select v-model="config.ally">
+                        <option value="boot_clown">{{ t('None (Auto-Optimal)') }}</option>
+                        <option v-for="(data, key) in alliesData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
+                    </select>
+                </div>
+    
+                <div class="input-row">
+                    <div class="input-group" v-if="config.build_type === 'Farm'">
+                        <label>{{ t('Base Light') }} <i class="fa-solid fa-circle-info" style="cursor: help; color: var(--text-muted);" :title="t('Base Light optimization is only active for \'Farm\' builds.')"></i></label>
+                        <input type="number" v-model.number="config.light">
+                    </div>
+                    <div class="input-group" v-if="config.build_type !== 'Health'">
+                        <label><span>{{ t('Gear Crit Dmg Rolls:') }}</span> <span style="color: var(--accent-orange); font-weight: bold;">{{ config.critical_damage_count }}</span></label>
+                        <input type="range" v-model.number="config.critical_damage_count" min="0" max="3" step="1" style="width: 100%; cursor: pointer; accent-color: var(--accent-orange);">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart') }}</h4>
+                <div class="input-group star-chart-controls">
+                    <label>{{ t('Star Chart Build Code (Base64)') }}</label>
+                    <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%;">
+                        <option value="">{{ t('-- Load Saved Star Chart --') }}</option>
+                        <option v-for="(code, name) in starChartTemplates" :key="name" :value="code">{{ name }}</option>
+                    </select>
+                    <input type="text" v-model="config.star_chart" :placeholder="t('e.g. Y29tYmF0LmEkY29t...')">
+                </div>
+                
+                <div v-if="starChartSummary" class="star-chart-summary">
+                    <template v-if="starChartSummary.error">
+                        <span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Invalid Base64 Build Code') }}</span>
+                    </template>
+                    <template v-else>
+                        <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart Loaded') }}</h4>
+                        <ul style="margin-bottom: 8px;">
+                            <li v-html="t('{count} Nodes Detected').replace('{count}', `<strong>${starChartSummary.pathsCount}</strong>`)"></li>
+                        </ul>
+                        <template v-if="Object.keys(filteredStarChartStats).length > 0">
+                            <hr class="divider" style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">
+                            <ul style="list-style-type: none; padding-left: 0;">
+                                <li v-for="(values, statName) in filteredStarChartStats" :key="statName">
+                                    <strong>{{ t(statName) }}:</strong> 
+                                    <span style="color: var(--accent-orange);">
+                                        <template v-if="values.flat > 0">+{{ values.flat }}</template>
+                                        <template v-if="values.flat > 0 && values.pct > 0"> / </template>
+                                        <template v-if="values.pct > 0">+{{ values.pct }}%</template>
+                                    </span>
+                                </li>
+                            </ul>
+                        </template>
+                    </template>
+                </div>
+            </div>
+
+            <div class="config-section modifiers-section" :class="{ 'is-open': modifiersOpen }">
+                <button type="button" class="section-collapse-btn" @click="modifiersOpen = !modifiersOpen" :aria-expanded="modifiersOpen ? 'true' : 'false'" :title="t('Advanced toggles for edge-case optimization.')">
+                    <h4><i class="fa-solid fa-sliders"></i> {{ t('Modifiers') }}</h4>
+                    <i class="fa-solid fa-chevron-down collapse-caret" :class="{ 'is-open': modifiersOpen }"></i>
+                </button>
+                <div v-show="modifiersOpen" class="toggles-grid">
+                    <label class="toggle-container" :title="t('Simulates Berserker Battler Gem ability being active')">
+                        <input type="checkbox" v-model="config.berserker_battler">
+                        <span class="checkmark"></span>
+                        <span>{{ t('Berserker Battler') }}</span>
+                    </label>
+    
+                    <label class="toggle-container" :title="t('Simulates Litany light buff being active')">
+                        <input type="checkbox" v-model="config.litany">
+                        <span class="checkmark"></span>
+                        <span>{{ t('Enlightened (Litany)') }}</span>
+                    </label>
+    
+                    <label class="toggle-container" :title="t('Adds the passive stats from your selected subclass.')">
+                        <input type="checkbox" v-model="config.subclass_active">
+                        <span class="checkmark"></span>
+                        <span>{{ t('Subclass Active') }}</span>
+                    </label>
+    
+                    <label class="toggle-container" :title="t('Removes the damage stat from your face gear slot.')">
+                        <input type="checkbox" v-model="config.no_face">
+                        <span class="checkmark"></span>
+                        <span>{{ t('No Face Stats') }}</span>
+                    </label>
+                </div>
+            </div>
+            </div>
+        </div>
+
+        <div class="card results-panel">
+            <div class="results-toolbar">
+                <div class="results-metrics">
+                    <span class="metric-chip"><i class="fa-solid fa-list-ol"></i> {{ t('Builds') }}: {{ cachedBuilds.length }}</span>
+                    <span class="metric-chip" v-if="cachedBuilds.length > 0"><i class="fa-solid fa-trophy"></i> {{ t('Best Coeff') }}: {{ bestCoeff.toLocaleString() }}</span>
+                    <span class="metric-chip"><i class="fa-solid fa-gem"></i> {{ t(config.build_type) }}</span>
+                </div>
+                <div class="results-state" :class="{ busy: isCalculating }">
+                    <i class="fa-solid" :class="isCalculating ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
+                    <span>{{ isCalculating ? t('Calculating...') : t('Ready') }}</span>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="btt-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center">{{ t('#') }}</th>
+                            <th class="text-left">{{ t('Build') }}</th>
+                            <th class="text-right">{{ t('Light') }}</th>
+                            <th class="text-right">{{ t('Base Dmg') }}</th>
+                            <th class="text-right">{{ t('Bonus Dmg') }}</th>
+                            <th class="text-right">{{ t('Total Dmg') }}</th>
+                            <th class="text-right">{{ t('Crit Dmg') }}</th>
+                            <th class="text-right sort-col">{{ t('Coefficient') }}</th>
+                            <th class="text-right">{{ t('Diff.') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="isCalculating">
+                            <td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Crunching Math...') }}</td>
+                        </tr>
+                        <tr v-else-if="cachedBuilds.length === 0">
+                            <td colspan="9" class="text-center text-muted">{{ t('No builds generated. Check your config.') }}</td>
+                        </tr>
+                        <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :class="{ 'row-best': build.rank === 1 }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
+                            <td class="text-center">{{ build.rank }}</td>
+                            <td class="build-layout-cell text-left" :title="t('Click to copy')" @click="copyLayout(build.layout, $event)">
+                                {{ build.layout }}
+                            </td>
+                            <td class="text-right">{{ build.light.toLocaleString() }}</td>
+                            <td class="text-right">{{ Math.round(build.base_dmg).toLocaleString() }}</td>
+                            <td class="text-right">
+                                {{ build.bonus_dmg.toFixed(2) }}%<span v-if="build.class_bonus" style="color: var(--accent-blue);"> + {{ build.class_bonus }}%</span>
+                            </td>
+                            <td class="text-right">{{ Math.round(build.total_dmg).toLocaleString() }}</td>
+                            <td class="text-right">{{ build.crit_dmg.toFixed(1) }}%</td>
+                            <td class="text-right sort-col" style="font-weight: bold; color: #fff;">{{ build.coefficient.toLocaleString() }}</td>
+                            <td class="text-right">
+                                <span v-if="build.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('Best') }}</span>
+                                <span v-else style="color: #e57373;">-{{ (((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3) }}%</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination-container">
+                <button class="btn-icon" :title="t('Export to CSV')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('Export') }}</span></button>
+                <div class="pagination">
+                    <button class="btn-icon" @click="prevPage" :disabled="currentPage === 0"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span><span>{{ t('Page') }}</span> <span>{{ currentPage + 1 }}</span> / <span>{{ maxPages }}</span></span>
+                    <button class="btn-icon" @click="nextPage" :disabled="currentPage >= maxPages - 1"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>

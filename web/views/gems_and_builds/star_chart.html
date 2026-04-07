@@ -1,0 +1,101 @@
+<head>
+    <link rel="stylesheet" href="../css/gems_and_builds/star_chart.css">
+</head>
+<div id="star-chart-vue-app-inner" class="star-chart-container" v-cloak>    
+    <div class="chart-layout">
+        <div id="chart-wrapper" :class="{ 'placeholder-box': isLoading }">
+            <h3 v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Calculating Constellations...') }}</span></h3>
+            <template v-else>
+            <div class="chart-toolbar">
+                <div class="chart-toolbar-title"><i class="fa-solid fa-star"></i> {{ t('Interactive Star Chart') }}</div>
+                <div class="chart-toolbar-hints">
+                    <span class="chart-hint-chip"><i class="fa-solid fa-computer-mouse"></i> {{ t('Click nodes to select path') }}</span>
+                    <span class="chart-hint-chip"><i class="fa-solid fa-circle-dot"></i> {{ t('Click center to clear all') }}</span>
+                </div>
+            </div>
+
+            <svg id="chart-svg" viewBox="0 0 1000 1000">
+                <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" stroke="#333" stroke-width="3" :class="{'line-selected': line.selected}" />
+                
+                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="t('Quick Clear: Remove all active nodes')" @click="clearAllSelectedNodes" />
+
+                <template v-for="node in renderNodes" :key="node.id">
+                    <polygon v-if="node.Type === 'Root'" :points="node.points" fill="var(--bg-dark, #111)" :stroke="node.stroke" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                    
+                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :fill="node.fill" stroke="#111" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten}" @click.left="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                </template>
+            </svg>
+            </template>
+        </div>
+
+        <div id="build-summary-panel">
+            <h3>{{ t('Current Build') }}</h3>
+            <div class="build-meta-row">
+                <span class="build-meta-chip"><i class="fa-solid fa-diagram-project"></i> {{ t('Nodes') }}: {{ selectedNodeCount }}/40</span>
+                <span class="build-meta-chip" :class="{ active: hasAnySelection }"><i class="fa-solid" :class="hasAnySelection ? 'fa-circle-check' : 'fa-circle' "></i> {{ hasAnySelection ? t('Active') : t('Empty') }}</span>
+            </div>
+            
+            <div class="build-share-controls">
+                <input type="text" id="build-code-input" v-model="buildCode" :placeholder="t('Paste build code here...')" autocomplete="off" spellcheck="false" @focus="codeInputFocused = true" @blur="codeInputFocused = false" />
+                <div class="build-buttons">
+                    <button class="secondary-btn" :title="t('Copy Build Code')" @click="copyCode"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 5px; margin-top: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
+                <custom-vue-select v-model="selectedTemplate" :options="templateOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
+                <button class="primary-btn" @click="saveTemplate"><i class="fa-solid fa-floppy-disk"></i> {{ t('Save') }}</button>
+                <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            
+            <div id="summary-content">
+                <p v-if="selectedNodeCount === 0" class="file-meta">{{ t('Select nodes to calculate stats.') }}</p>
+                <template v-else>
+                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">{{ t('Nodes Active: {count} / 40').replace('{count}', selectedNodeCount) }}</div>
+                    
+                    <div v-if="summaryStats.length > 0" class="summary-section">
+                        <h4>{{ t('Aggregated Stats') }}</h4>
+                        <ul><li v-for="s in summaryStats" :key="s.name"><strong>{{ t(s.name) }}:</strong> +{{ s.value }}{{ s.percentage ? '%' : '' }}</li></ul>
+                    </div>
+
+                    <div v-if="summaryAbilities.length > 0" class="summary-section">
+                        <h4>{{ t('Active Abilities') }}</h4>
+                        <ul><li v-for="a in summaryAbilities" :key="a">{{ t(a) }}</li></ul>
+                    </div>
+
+                    <div v-if="summaryObtainables.length > 0" class="summary-section">
+                        <h4>{{ t('Obtainables') }}</h4>
+                        <ul><li v-for="(o, idx) in summaryObtainables" :key="idx">{{ o.count > 1 ? o.count + 'x ' : '' }}{{ t(o.name) }}</li></ul>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+    
+    <div id="star-tooltip" v-show="tooltip.show" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+        <template v-if="tooltip.node">
+            <h3>{{ t(tooltip.node.Name || tooltip.node.Constellation) }}</h3>
+            <span class="type">{{ t('{type} Node').replace('{type}', t(tooltip.node.Type)) }}</span>
+            <template v-if="tooltip.node.Description"><p>{{ t(tooltip.node.Description) }}</p><hr/></template>
+            <template v-if="tooltip.node.Stats && tooltip.node.Stats.length > 0">
+                <ul><li v-for="(s, idx) in tooltip.node.Stats" :key="'ts-'+idx"><strong>{{ t(s.name) }}:</strong> +{{ s.value }}{{ s.percentage ? '%' : '' }}</li></ul>
+            </template>
+            <template v-if="tooltip.node.Abilities && tooltip.node.Abilities.length > 0">
+                <hr v-if="tooltip.node.Stats && tooltip.node.Stats.length > 0"/>
+                <ul><li v-for="(a, idx) in tooltip.node.Abilities" :key="'ta-'+idx">{{ t(a) }}</li></ul>
+            </template>
+        </template>
+    </div>
+
+    <div id="st-modal-overlay" class="modal-overlay" v-show="modal.show" style="display: flex;">
+        <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+            <h3 style="margin-top:0; color:var(--text-main, #fff);">{{ modal.title }}</h3>
+            <p style="color:var(--text-muted, #aaa); margin-bottom:15px; font-size:14px;">{{ modal.msg }}</p>
+            <input v-if="modal.showInput" type="text" v-model="modal.inputValue" style="width:calc(100% - 22px); margin-bottom:15px; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px; outline: none;" :placeholder="t('Template Name')" ref="modalInputRef" />
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="primary-btn" style="flex:1;" @click="confirmModal">{{ t('Confirm') }}</button>
+                <button class="secondary-btn" style="flex:1;" @click="modal.show = false">{{ t('Cancel') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
