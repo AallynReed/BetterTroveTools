@@ -30,7 +30,7 @@
 
 .config-panel {
     position: relative;
-    max-height: calc(100vh - 88px);
+    max-height: calc(100vh - 200px);
     overflow-y: auto;
 }
 

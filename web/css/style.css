@@ -1714,8 +1714,6 @@ span.flatpickr-weekday {
 }
 
 #view-container :is(
-    .tabs-container,
-    .tab-buttons,
     .file-controls,
     .search-container,
     .search-filter-bar,
@@ -1729,8 +1727,7 @@ span.flatpickr-weekday {
     .media-tabs,
     .chart-toolbar,
     .chart-toolbar-hints,
-    .build-share-controls,
-    .compact-header
+    .build-share-controls
 ) {
     gap: 10px !important;
 }
@@ -1910,4 +1907,38 @@ input[type="range"]::-webkit-slider-thumb {
 }
 input[type="range"]::-ms-fill-lower {
   margin-right: 0;
+}
+
+/* Unified layout constraints: concise spacing + inner-container scrolling */
+#view-container {
+    overflow: hidden;
+}
+
+#view-container > * {
+    height: 100%;
+    min-height: 0;
+}
+
+#view-container :is(
+    .home-container,
+    .allies-container,
+    .settings-container,
+    .star-chart-container,
+    .trovesaurus-container,
+    .file-manager-container,
+    .modder-tools-container,
+    .gem-sim-container,
+    .about-view-container,
+    .view-container
+) {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+    padding: 14px !important;
+}
+
+#view-container :is(.tool-panel, .card, .results-panel, .settings-section, .search-container, .search-filter-bar) {
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+    padding: 14px !important;
 }

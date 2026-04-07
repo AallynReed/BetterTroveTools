@@ -269,6 +269,17 @@ document.addEventListener('trovesaurus_loaded', () => {
                 isClearingCache.value = false;
             };
 
+            const openSelectedGameFolder = async () => {
+                if (!selectedGame.value) {
+                    window.showToast(t('No path selected.'), true);
+                    return;
+                }
+                const response = await eel.open_path_in_explorer(selectedGame.value)();
+                if (!response || !response.success) {
+                    window.showToast(t('Failed to open folder: {error}').replace('{error}', response?.error || t('Unknown error occurred')), true);
+                }
+            };
+
             const openUrl = (url) => eel.open_url_in_browser(url)();
 
             const showContextMenu = (e, mod) => {
@@ -368,6 +379,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                 fetchMods,
                 refreshMods,
                 clearCache,
+                openSelectedGameFolder,
                 installMod,
                 deleteInstalledMod,
                 openUrl,

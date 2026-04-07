@@ -13,6 +13,9 @@
         <div v-show="activeTab === 'tab-explorer'" class="tab-content" :class="{ active: activeTab === 'tab-explorer' }">
             <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
                 <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
+                <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedInstall || isAnyOperationRunning">
+                    <i class="fa-solid fa-folder-open"></i>
+                </button>
                 
                 <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')" :disabled="isAnyOperationRunning">
                     <i class="fa-solid fa-rotate-right"></i>
@@ -77,13 +80,21 @@
                 
                 <div class="form-group">
                     <label>{{ t('Target Game Installation') }}</label>
-                    <custom-vue-select v-model="selectedTrackerGame" :options="installOptions"></custom-vue-select>
+                    <div class="input-row">
+                        <custom-vue-select v-model="selectedTrackerGame" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
+                        <button @click="openSelectedTrackerGameFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedTrackerGame || isAnyOperationRunning">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="form-group">
                     <label>{{ t('Tracking Directory (Where to save hashes and extracted patches)') }}</label>
                     <div class="input-row">
                         <custom-vue-select v-model="selectedTrackingDir" :options="trackingDirOptions" style="flex-grow: 1;"></custom-vue-select>
+                        <button @click="openSelectedTrackingDirFolder" class="primary-btn" :title="t('Open Selected Tracking Folder')" :disabled="!selectedTrackingDir || isAnyOperationRunning">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </button>
                         <button @click="modals.addTracker = true" class="primary-btn" :disabled="isAnyOperationRunning"><i class="fa-solid fa-plus"></i> <span>{{ t('Add Path') }}</span></button>
                     </div>
                 </div>

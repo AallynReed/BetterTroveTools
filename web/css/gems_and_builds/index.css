@@ -13,13 +13,18 @@
     max-width: none; 
     margin: 0; 
     box-sizing: border-box; 
-    animation: fadeIn 0.3s ease; 
+    animation: fadeIn 0.3s ease;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .tabs-container { 
     display: flex; 
     flex-direction: column; 
-    gap: 20px; 
+    gap: 10px;
+    height: 100%;
+    min-height: 0;
 }
 
 .tab-buttons { 
@@ -58,11 +63,20 @@
 
 .tab-content { 
     display: none; 
-    animation: fadeIn 0.2s ease; 
+    animation: fadeIn 0.2s ease;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .tab-content.active { 
     display: block; 
+}
+
+.tab-content > * {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
 }
 
 .view-container { 

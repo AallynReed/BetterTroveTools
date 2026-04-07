@@ -48,7 +48,12 @@
                     <div class="build-right-col">
                         <div class="form-group">
                             <label>{{ t('Target Game Installation') }}</label>
-                            <custom-vue-select v-model="selectedGamePath" :options="gameOptions"></custom-vue-select>
+                            <div class="input-row">
+                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions" style="flex: 1;"></custom-vue-select>
+                                <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                                    <i class="fa-solid fa-folder-open"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="form-row">
@@ -96,7 +101,7 @@
                             </thead>
                             <tbody>
                                 <tr v-for="file in build.files" :key="file.path">
-                                    <td :title="'Source: ' + file.path" style="color: var(--text-main); font-size: 13px; word-break: break-all;">
+                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('Click to open containing folder')" style="color: var(--text-main); font-size: 13px; word-break: break-all; cursor: pointer;">
                                         <div>{{ file.internal_path }}</div>
                                         <div style="color: var(--text-muted); font-size: 11px;">{{ file.path }}</div>
                                     </td>
@@ -110,10 +115,15 @@
                     </div>
                 </div>
 
-                <button class="primary-btn execute-btn" @click="buildTMod" :disabled="isWorking.buildingTMod">
-                    <template v-if="isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling TMod...') }}</template>
-                    <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Build TMod') }}</span></template>
-                </button>
+                <div class="input-row" style="margin-top: 10px; align-items: stretch;">
+                    <button class="primary-btn execute-btn" @click="buildTMod" :disabled="isWorking.buildingTMod" style="margin-top: 0; flex: 1;">
+                        <template v-if="isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling TMod...') }}</template>
+                        <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Build TMod') }}</span></template>
+                    </button>
+                    <button class="primary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('Open Built TMod Folder')" style="min-width: 44px; padding: 0 12px;">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -155,6 +165,7 @@
                     <div class="input-row">
                         <input type="text" v-model="project.dir" :placeholder="t('Select or create a project folder...')" readonly>
                         <button class="primary-btn" @click="browseProject"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
+                        <button class="primary-btn" @click="openProjectFolder" :disabled="!project.dir" :title="t('Open Project Folder')"><i class="fa-solid fa-folder-tree"></i></button>
                     </div>
                 </div>
 
@@ -175,7 +186,12 @@
                             
                             <div class="form-group" style="margin-top: 15px;">
                                 <label>{{ t('Target Game Installation') }}</label>
-                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions"></custom-vue-select>
+                                <div class="input-row">
+                                    <custom-vue-select v-model="selectedGamePath" :options="gameOptions" style="flex: 1;"></custom-vue-select>
+                                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                                        <i class="fa-solid fa-folder-open"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -231,7 +247,7 @@
                                 <tbody>
                                     <tr v-if="project.files.length === 0"><td style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files found in this version folder.') }}</td></tr>
                                     <tr v-else v-for="f in project.files" :key="f.rel_path">
-                                        <td style="padding: 8px 10px; color: var(--text-main); font-family: monospace;">{{ f.rel_path }}</td>
+                                        <td @click="openProjectFileLocation(f)" :title="t('Click to open containing folder')" style="padding: 8px 10px; color: var(--text-main); font-family: monospace; cursor: pointer;">{{ f.rel_path }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -244,6 +260,9 @@
                             <button class="primary-btn" @click="compileProject" :disabled="isWorking.compilingProject" style="background: var(--accent-blue);">
                                 <template v-if="isWorking.compilingProject"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling...') }}</template>
                                 <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Compile Active Version') }}</span></template>
+                            </button>
+                            <button class="primary-btn" @click="openCompileOutputFolder" :disabled="!lastCompiledProjectPath" :title="t('Open Compiled TMod Folder')" style="min-width: 44px; padding: 0 12px;">
+                                <i class="fa-solid fa-folder-open"></i>
                             </button>
                         </div>
                         

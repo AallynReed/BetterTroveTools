@@ -386,8 +386,14 @@ def build_tmod(payload):
         out_dir = game_path / "mods"
         save_path = out_dir / f"{title}.tmod"
         
-        if save_path.exists():
-            return {"success": False, "error": f"A mod file named '{title}.tmod' already exists in the mods folder. Please choose a different title or remove the existing file."}
+        overwrite = bool(payload.get("overwrite", False))
+        if save_path.exists() and not overwrite:
+            return {
+                "success": False,
+                "code": "FILE_EXISTS",
+                "error": f"A mod file named '{title}.tmod' already exists in the mods folder.",
+                "path": str(save_path),
+            }
 
         mod.name = title
         mod.author = author
@@ -427,6 +433,8 @@ def build_tmod(payload):
                     mod.add_file(TroveModFile(f_path, f_bytes))
             
         out_dir.mkdir(parents=True, exist_ok=True)
+        if save_path.exists() and overwrite:
+            save_path.unlink(missing_ok=True)
         mod.mod_path = save_path
         
         tmod_bytes = mod.compile_tmod()

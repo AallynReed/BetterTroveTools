@@ -14,7 +14,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
             const lookups = ref({});
-            const inventory = ref(new Array(150).fill(null));
+            const inventory = ref(new Array(104).fill(null));
             const equipped = ref(new Array(12).fill(null));
             
             const selected = ref(null);
@@ -172,7 +172,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 const storageResp = await eel.load_gem_storage()();
                 const data = storageResp?.gem_simulator ?? storageResp?.data ?? storageResp;
                 if (data) {
-                    if (data.inventory && data.inventory.length > 0) inventory.value = data.inventory;
+                    if (data.inventory && data.inventory.length > 0) inventory.value = data.inventory.slice(0, 104);
                     if (data.equipped && data.equipped.length > 0) equipped.value = data.equipped;
                     if (data.toggles) {
                         Object.keys(data.toggles).forEach(k => primordialToggles[k] = data.toggles[k]);

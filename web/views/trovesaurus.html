@@ -12,6 +12,9 @@
             <div style="width: 250px;">
                 <custom-vue-select v-model="selectedGame" :options="gameOptions"></custom-vue-select>
             </div>
+            <button class="primary-btn" @click="openSelectedGameFolder" :disabled="!selectedGame" :title="t('Open Selected Game Folder')">
+                <i class="fa-solid fa-folder-open"></i>
+            </button>
             <button class="primary-btn" @click="refreshMods" :disabled="isLoading || isRefreshing" :title="t('Refresh install state')">
                 <template v-if="isRefreshing"><i class="fa-solid fa-spinner fa-spin"></i></template>
                 <template v-else><i class="fa-solid fa-arrows-rotate"></i></template>

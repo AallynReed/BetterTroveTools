@@ -221,6 +221,29 @@ def browse_for_game_dir():
         return {"success": True, "path": str(path)}
     else:
         return {"success": False, "error": "Trove.exe was not found in the selected directory."}
+
+
+@eel.expose
+@standardize_response
+def open_path_in_explorer(path_str, select_file=False):
+    try:
+        raw = str(path_str or "").strip()
+        if not raw:
+            return {"success": False, "error": "No path was provided."}
+
+        target = Path(raw).expanduser()
+        if not target.exists():
+            return {"success": False, "error": "The selected path does not exist."}
+
+        if select_file and target.is_file():
+            subprocess.Popen(["explorer", "/select,", str(target)])
+            return {"success": True}
+
+        open_target = target.parent if target.is_file() else target
+        subprocess.Popen(["explorer", str(open_target)])
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
     
 @eel.expose
 @standardize_response

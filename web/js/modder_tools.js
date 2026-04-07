@@ -19,6 +19,8 @@ document.addEventListener('modder_tools_loaded', () => {
             
             const installs = ref([]);
             const selectedGamePath = ref('');
+            const lastBuildOutputPath = ref('');
+            const lastCompiledProjectPath = ref('');
             
             const gameOptions = computed(() => {
                 if (installs.value.length === 0) return [[t('Searching...'), '']];
@@ -137,6 +139,41 @@ document.addEventListener('modder_tools_loaded', () => {
             });
 
             watch([activeTab, selectedGamePath], persistState, { deep: true });
+
+            const openPathInExplorer = async (path) => {
+                if (!path) {
+                    window.showToast(t('No path selected.'), true);
+                    return;
+                }
+                const result = await eel.open_path_in_explorer(path)();
+                if (!result || !result.success) {
+                    window.showToast(t('Failed to open folder: {error}').replace('{error}', result?.error || t('Unknown error occurred')), true);
+                }
+            };
+
+            const openSelectedGamePath = async () => {
+                await openPathInExplorer(selectedGamePath.value);
+            };
+
+            const openProjectFolder = async () => {
+                await openPathInExplorer(project.dir);
+            };
+
+            const openBuildOutputFolder = async () => {
+                await openPathInExplorer(lastBuildOutputPath.value);
+            };
+
+            const openCompileOutputFolder = async () => {
+                await openPathInExplorer(lastCompiledProjectPath.value);
+            };
+
+            const openBuildFileLocation = async (file) => {
+                await openPathInExplorer(file?.path);
+            };
+
+            const openProjectFileLocation = async (file) => {
+                await openPathInExplorer(file?.abs_path);
+            };
 
             const onBuildPreviewChange = (e) => {
                 const file = e.target.files[0];
@@ -289,17 +326,40 @@ document.addEventListener('modder_tools_loaded', () => {
                         files: build.files.map(f => ({ internal_path: f.internal_path, abs_path: f.path }))
                     };
 
-                    const result = await runQueuedModderOperation({
+                    const runBuild = async (requestPayload) => runQueuedModderOperation({
                         label: t("Build TMod '{name}'").replace('{name}', title),
                         operation: 'build_tmod',
-                        task: () => eel.build_tmod(payload)()
+                        task: () => eel.build_tmod(requestPayload)()
                     });
+
+                    let result = await runBuild(payload);
+                    if (!result.cancelled && !result.success && result.code === 'FILE_EXISTS') {
+                        const overwriteConfirmed = await window.showConfirmModal({
+                            title: t('Overwrite Existing TMod?'),
+                            message: t('A file with this name already exists. Do you want to overwrite it?'),
+                            confirmLabel: t('Overwrite'),
+                            cancelLabel: t('Cancel'),
+                            danger: true
+                        });
+
+                        if (!overwriteConfirmed) {
+                            isWorking.buildingTMod = false;
+                            window.showToast(t('Build cancelled.'));
+                            return;
+                        }
+
+                        result = await runBuild({ ...payload, overwrite: true });
+                    }
+
                     if (result.cancelled) {
                         window.showToast(t('Build cancelled.'));
                         isWorking.buildingTMod = false;
                         return;
                     }
-                    if (result.success) window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
+                    if (result.success) {
+                        lastBuildOutputPath.value = result.path || '';
+                        window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
+                    }
                     else window.showToast(t("Failed to build TMod:\n{error}").replace("{error}", result.error), true);
                 } catch (e) {
                     window.showToast(t("An unexpected error occurred while building the TMod."), true);
@@ -465,7 +525,10 @@ document.addEventListener('modder_tools_loaded', () => {
                         isWorking.compilingProject = false;
                         return;
                     }
-                    if (result.success) window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
+                    if (result.success) {
+                        lastCompiledProjectPath.value = result.path || '';
+                        window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
+                    }
                     else window.showToast(t("Failed to compile project:\n{error}").replace("{error}", result.error), true);
                 } catch (e) {
                     window.showToast(t("An unexpected error occurred while compiling the project."), true);
@@ -661,8 +724,10 @@ document.addEventListener('modder_tools_loaded', () => {
 
             return {
                 t, activeTab, installs, selectedGamePath, gameOptions,
+                lastBuildOutputPath, lastCompiledProjectPath,
                 tagOptions, build, extract, project, softwareCategories, isWorking,
                 scanForGames, onBuildPreviewChange, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
+                openSelectedGamePath, openProjectFolder, openBuildOutputFolder, openCompileOutputFolder, openBuildFileLocation, openProjectFileLocation,
                 browseExtractSource, browseExtractDest, extractTMod,
                 onProjectPreviewChange, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides
             };

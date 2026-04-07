@@ -185,6 +185,17 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            const openSelectedInstallFolder = async () => {
+                if (!selectedInstall.value) {
+                    window.showToast(t('No path selected.'), true);
+                    return;
+                }
+                const response = await eel.open_path_in_explorer(selectedInstall.value)();
+                if (!response || !response.success) {
+                    window.showToast(t('Failed to open folder: {error}').replace('{error}', response?.error || t('Unknown error occurred')), true);
+                }
+            };
+
             const applyModUrls = async (token) => {
                 if (!selectedInstall.value) return;
                 const response = await window.callBackend(eel.get_mod_urls(selectedInstall.value)(), 'Failed to load mod URLs');
@@ -663,6 +674,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 installs,
                 selectedInstall,
                 installOptions,
+                openSelectedInstallFolder,
                 mods,
                 filteredMods,
                 isLoading,

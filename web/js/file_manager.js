@@ -243,6 +243,29 @@ document.addEventListener('file_manager_loaded', () => {
                 await eel.save_settings(settings)();
             });
 
+            const openPathInExplorer = async (path) => {
+                if (!path) {
+                    window.showToast(t('No path selected.'), true);
+                    return;
+                }
+                const response = await eel.open_path_in_explorer(path)();
+                if (!response || !response.success) {
+                    window.showToast(t('Failed to open folder: {error}').replace('{error}', response?.error || t('Unknown error occurred')), true);
+                }
+            };
+
+            const openSelectedInstallFolder = async () => {
+                await openPathInExplorer(selectedInstall.value);
+            };
+
+            const openSelectedTrackerGameFolder = async () => {
+                await openPathInExplorer(selectedTrackerGame.value);
+            };
+
+            const openSelectedTrackingDirFolder = async () => {
+                await openPathInExplorer(selectedTrackingDir.value);
+            };
+
             const loadTree = async () => {
                 if (!selectedInstall.value) return window.showToast(t("Select a game first."), true);
                 if (isAnyOperationRunning.value && !isLoadingTree.value) {
@@ -946,6 +969,7 @@ document.addEventListener('file_manager_loaded', () => {
             return {
                 t, activeTab, setActiveTab,
                 installs, installOptions, selectedInstall, selectedTrackerGame, scanForGames,
+                openSelectedInstallFolder, openSelectedTrackerGameFolder, openSelectedTrackingDirFolder,
                 treeContainerRef, isTreeLoaded, isLoadingTree, treePlaceholderText, loadTree,
                 searchQuery, searchCountText, isSearching, debouncedSearch, clearSearch, nextSearchMatch, prevSearchMatch,
                 focusSearchInput,
