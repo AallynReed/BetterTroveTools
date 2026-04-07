@@ -1,17 +1,11 @@
+import base64
+import itertools
 import json
 import os
-import itertools
-import base64
-from typing import List, Dict
+from typing import Dict, List
 
-from models.trove.builds import (
-    Class,
-    StatName,
-    BuildConfig,
-    BuildType,
-    DamageType,
-    TroveClass
-)
+from models.trove.builds import (BuildConfig, BuildType, Class, DamageType,
+                                 StatName, TroveClass)
 from utils.functions import get_attr
 
 
@@ -73,8 +67,15 @@ class StarChartParser:
             passive_stats = node.get("Stats", [])
             
             for stat in passive_stats:
-                name = stat["name"]
-                val = stat.get("value", 0)
+                name = stat.get("name")
+                if not name:
+                    continue
+
+                raw_val = stat.get("value", 0)
+                try:
+                    val = float(raw_val) if raw_val is not None else 0.0
+                except (TypeError, ValueError):
+                    val = 0.0
                 is_pct = stat.get("percentage", False)
 
                 if name not in result["stats"]:

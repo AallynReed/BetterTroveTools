@@ -1014,7 +1014,7 @@ window.applyCustomDropdowns = function() {
         return `${iconHtml}<span class="custom-select-option-label">${label}</span>`;
     };
 
-    document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months)').forEach(select => {
+    document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months):not([data-native-select="true"])').forEach(select => {
         if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
 

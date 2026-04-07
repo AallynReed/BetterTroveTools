@@ -12,6 +12,14 @@ document.addEventListener('calculators_loaded', () => {
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
             const PREF_STATE_KEY = 'state_calculators';
+            const unwrapResp = (resp, key = null, fallback = null) => {
+                if (key) {
+                    if (resp && Object.prototype.hasOwnProperty.call(resp, key)) return resp[key];
+                    if (resp && resp.data && Object.prototype.hasOwnProperty.call(resp.data, key)) return resp.data[key];
+                }
+                if (resp && resp.data !== undefined && resp.success !== undefined) return resp.data;
+                return resp ?? fallback;
+            };
 
             const activeTab = ref('pr-tab');
             let hydratingState = false;
@@ -39,6 +47,88 @@ document.addEventListener('calculators_loaded', () => {
             };
 
             const mfData = ref([]);
+            const starChartCode = ref('');
+            const starChartTemplate = ref('');
+            const starChartTemplates = ref({});
+            const starChartMf = ref({ flat: 0, pct: 0, pathsCount: 0, error: false, loaded: false });
+
+            const resetStarChartMf = () => {
+                starChartMf.value = { flat: 0, pct: 0, pathsCount: 0, error: false, loaded: false };
+            };
+
+            const fetchStarChartTemplates = async () => {
+                if (!window.eel || typeof window.eel.get_star_chart_templates !== 'function') {
+                    starChartTemplates.value = {};
+                    return;
+                }
+                try {
+                    const templatesResp = await window.eel.get_star_chart_templates()();
+                    starChartTemplates.value = unwrapResp(templatesResp, 'templates', {}) || {};
+                } catch (e) {
+                    console.warn('Skipping Star Chart templates setup (data missing):', e);
+                    starChartTemplates.value = {};
+                }
+            };
+
+            const syncStarChartTemplateSelection = (code) => {
+                let matchedTemplate = '';
+                const normalizedCode = (code || '').trim();
+                for (const [name, templateCode] of Object.entries(starChartTemplates.value)) {
+                    if (templateCode === normalizedCode && normalizedCode !== '') {
+                        matchedTemplate = name;
+                        break;
+                    }
+                }
+                starChartTemplate.value = matchedTemplate;
+            };
+
+            const extractStarChartMfStats = (stats) => {
+                let flat = 0;
+                let pct = 0;
+                if (!stats || typeof stats !== 'object') return { flat, pct };
+
+                Object.entries(stats).forEach(([name, values]) => {
+                    const normalized = String(name || '').toLowerCase().replace(/[\s_-]+/g, '');
+                    const isMagicFind = normalized === 'magicfind' || normalized.includes('magicfind');
+                    if (!isMagicFind || !values || typeof values !== 'object') return;
+
+                    flat += Number(values.flat) || 0;
+                    pct += Number(values.pct) || 0;
+                });
+
+                return { flat, pct };
+            };
+
+            const parseStarChartMf = async (code) => {
+                const trimmed = (code || '').trim();
+                if (!trimmed) {
+                    resetStarChartMf();
+                    return;
+                }
+
+                try {
+                    const decoded = atob(trimmed);
+                    const pathsCount = decoded ? decoded.split('$').length : 0;
+
+                    if (!window.eel || typeof window.eel.parse_star_chart_code !== 'function') {
+                        starChartMf.value = { flat: 0, pct: 0, pathsCount, error: false, loaded: true };
+                        return;
+                    }
+
+                    const parsedResp = await window.eel.parse_star_chart_code(trimmed)();
+                    const parsed = unwrapResp(parsedResp, null, {}) || {};
+                    const mfOnly = extractStarChartMfStats(parsed.stats);
+                    starChartMf.value = {
+                        flat: mfOnly.flat,
+                        pct: mfOnly.pct,
+                        pathsCount,
+                        error: false,
+                        loaded: true
+                    };
+                } catch (e) {
+                    starChartMf.value = { flat: 0, pct: 0, pathsCount: 0, error: true, loaded: false };
+                }
+            };
             
             const fetchMf = async () => {
                 try {
@@ -74,10 +164,32 @@ document.addEventListener('calculators_loaded', () => {
                     else if (item.percentage) bonus += val;
                     else flat += val;
                 });
-                return { flat, bonus, patron, total: Math.floor(flat * (1 + (bonus / 100)) * patron) };
+
+                const starFlat = starChartMf.value.flat || 0;
+                const starPct = starChartMf.value.pct || 0;
+                const totalFlat = flat + starFlat;
+                const totalBonus = bonus + starPct;
+
+                return {
+                    flat: totalFlat,
+                    bonus: totalBonus,
+                    patron,
+                    total: Math.floor(totalFlat * (1 + (totalBonus / 100)) * patron),
+                    starFlat,
+                    starPct
+                };
             });
 
-            const resetMf = () => mfData.value.forEach(i => i.currentValue = i.type.includes('switch') ? (i.default_checked !== undefined ? i.default_checked : true) : (i.default !== undefined ? i.default : (i.value || 0)));
+            const resetMf = () => {
+                mfData.value.forEach(i => {
+                    i.currentValue = i.type.includes('switch')
+                        ? (i.default_checked !== undefined ? i.default_checked : true)
+                        : (i.default !== undefined ? i.default : (i.value || 0));
+                });
+                starChartCode.value = '';
+                starChartTemplate.value = '';
+                resetStarChartMf();
+            };
             const clampMfValue = (item) => item.currentValue = Math.max(0, Math.min(parseInt(item.currentValue) || 0, item.max || item.value));
             
             const getMfBadgeText = (item) => {
@@ -150,6 +262,8 @@ document.addEventListener('calculators_loaded', () => {
                     activeTab: activeTab.value,
                     troveMastery: troveMastery.value,
                     geodeMastery: geodeMastery.value,
+                    starChartCode: starChartCode.value,
+                    starChartTemplate: starChartTemplate.value,
                     mfValues,
                     prValues
                 };
@@ -166,6 +280,12 @@ document.addEventListener('calculators_loaded', () => {
                 }
                 if (saved.geodeMastery !== undefined) {
                     geodeMastery.value = parseInt(saved.geodeMastery, 10) || 0;
+                }
+                if (typeof saved.starChartCode === 'string') {
+                    starChartCode.value = saved.starChartCode;
+                }
+                if (typeof saved.starChartTemplate === 'string') {
+                    starChartTemplate.value = saved.starChartTemplate;
                 }
                 clampMastery();
 
@@ -214,15 +334,31 @@ document.addEventListener('calculators_loaded', () => {
                 return t("+{val} PR").replace("{val}", v);
             };
 
-            watch([activeTab, troveMastery, geodeMastery, mfData, prData], persistState, { deep: true });
+            watch(starChartCode, (newVal) => {
+                syncStarChartTemplateSelection(newVal);
+                parseStarChartMf(newVal);
+            });
+
+            watch(starChartTemplate, (newVal) => {
+                if (newVal && Object.prototype.hasOwnProperty.call(starChartTemplates.value, newVal)) {
+                    const code = starChartTemplates.value[newVal] || '';
+                    if (code !== starChartCode.value) {
+                        starChartCode.value = code;
+                    }
+                }
+            });
+
+            watch([activeTab, troveMastery, geodeMastery, starChartCode, starChartTemplate, mfData, prData], persistState, { deep: true });
 
             onMounted(async () => {
                 hydratingState = true;
                 try {
                     if (window.AppSettings) await window.AppSettings.load();
-                    await Promise.all([fetchMf(), fetchPr()]);
+                    await Promise.all([fetchMf(), fetchPr(), fetchStarChartTemplates()]);
                     const saved = window.AppSettings ? window.AppSettings.getPref(PREF_STATE_KEY, null) : null;
                     applyStateSnapshot(saved);
+                    syncStarChartTemplateSelection(starChartCode.value);
+                    await parseStarChartMf(starChartCode.value);
                 } finally {
                     hydratingState = false;
                 }
@@ -232,6 +368,7 @@ document.addEventListener('calculators_loaded', () => {
                 t, activeTab,
                 troveMastery, geodeMastery, masteryPR, masteryDmg, masteryHp, masteryLight, masteryMf, resetMastery, clampMastery,
                 mfData, mfStats, resetMf, getMfBadgeText, clampMfValue,
+                starChartCode, starChartTemplate, starChartTemplates, starChartMf,
                 prData, totalPR, resetPr, getPrBadgeText, clampPrValue
             };
         }

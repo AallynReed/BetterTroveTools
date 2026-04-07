@@ -111,6 +111,12 @@
                 <div class="mf-summary-strip">
                     <span class="summary-chip"><strong>{{ t('Base MF') }}</strong> {{ mfStats.flat.toLocaleString() }}</span>
                     <span class="summary-chip"><strong>{{ t('Bonus') }}</strong> +{{ mfStats.bonus }}%</span>
+                    <span v-if="mfStats.starFlat > 0 || mfStats.starPct > 0" class="summary-chip">
+                        <strong>{{ t('Star Chart') }}</strong>
+                        <template v-if="mfStats.starFlat > 0">+{{ mfStats.starFlat }}</template>
+                        <template v-if="mfStats.starFlat > 0 && mfStats.starPct > 0"> / </template>
+                        <template v-if="mfStats.starPct > 0">+{{ mfStats.starPct }}%</template>
+                    </span>
                     <span v-if="mfStats.patron > 1" class="summary-chip"><strong>{{ t('Patron') }}</strong> x{{ mfStats.patron }}</span>
                 </div>
                 <div class="mf-header-actions">
@@ -135,6 +141,36 @@
                         <input type="range" class="calc-slider" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" style="accent-color: var(--accent-blue);">
                             <input type="number" class="calc-number-input" :min="item.type === 'mastery' ? 1 : 0" :max="item.max || item.value" v-model.number="item.currentValue" @change="clampMfValue(item)">
                         </div>
+                    </div>
+                </div>
+
+                <div class="calc-item star-chart-calc-item">
+                    <div class="calc-item-header">
+                        <span><i class="fa-solid fa-chart-network" style="color: #ff9800;"></i> {{ t('Star Chart') }}</span>
+                        <span class="calc-item-badge" style="background: rgba(255, 152, 0, 0.1); color: #ff9800;">{{ t('MF Only') }}</span>
+                    </div>
+                    <div class="star-chart-inline-controls">
+                        <select v-model="starChartTemplate" class="star-chart-template-select" data-native-select="true">
+                            <option value="">{{ t('-- Load Saved Star Chart --') }}</option>
+                            <option v-for="(code, name) in starChartTemplates" :key="name" :value="name">{{ name }}</option>
+                        </select>
+                        <input type="text" class="calc-number-input star-chart-code-input" v-model.trim="starChartCode" :placeholder="t('Paste Star Chart build code...')">
+                    </div>
+                    <div class="mf-breakdown star-chart-breakdown" v-if="starChartCode">
+                        <template v-if="starChartMf.error">
+                            <span style="color: #ff6b6b;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Invalid Base64 Build Code') }}</span>
+                        </template>
+                        <template v-else>
+                            <span>
+                                <strong>{{ t('Nodes') }}:</strong> {{ starChartMf.pathsCount }}
+                                <span style="margin: 0 8px; opacity: 0.55;">|</span>
+                                <strong>{{ t('Magic Find') }}:</strong>
+                                <template v-if="starChartMf.flat > 0">+{{ starChartMf.flat }}</template>
+                                <template v-if="starChartMf.flat > 0 && starChartMf.pct > 0"> / </template>
+                                <template v-if="starChartMf.pct > 0">+{{ starChartMf.pct }}%</template>
+                                <template v-if="starChartMf.flat <= 0 && starChartMf.pct <= 0">{{ t('No Magic Find stats detected') }}</template>
+                            </span>
+                        </template>
                     </div>
                 </div>
             </div>
