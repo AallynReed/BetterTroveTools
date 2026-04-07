@@ -82,7 +82,7 @@ setup(
     name=APP_NAME,
     version=APP_VERSION,
     author=APP_AUTHOR,
-    description=APP_DESCRIPTION,
+    description=APP_NAME,
     options=options,
     executables=[
         Executable(
@@ -92,6 +92,7 @@ setup(
             base="gui",
             shortcut_name=APP_NAME,
             shortcut_dir="DesktopFolder",
+            copyright=f"{APP_AUTHOR} 2026-Present",
         )
     ],
 )

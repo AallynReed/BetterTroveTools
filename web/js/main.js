@@ -1,12 +1,12 @@
-// document.addEventListener('keydown', function(e) {
-//     const blockedKeys = ['F12', 'F5', 'F11'];
-//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+document.addEventListener('keydown', function(e) {
+    const blockedKeys = ['F12', 'F5', 'F11'];
+    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-//     if (blockedKeys.includes(e.key)) e.preventDefault();
-//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-// });
+    if (blockedKeys.includes(e.key)) e.preventDefault();
+    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+});
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1379,7 +1379,7 @@ window.executePendingSearch = function() {
     if (handled) window.pendingSearch = null;
 };
 
-document.addEventListener('trovesaurus_loaded', () => window.executePendingSearch());
+document.addEventListener('trovesaurus_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
 document.addEventListener('mod_manager_loaded', () => window.executePendingSearch());
 document.addEventListener('allies_loaded', () => setTimeout(() => window.executePendingSearch(), 100));
 

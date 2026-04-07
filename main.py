@@ -1,3 +1,4 @@
+import atexit
 import json
 import os
 import socket
@@ -7,9 +8,9 @@ import time
 import winreg
 from pathlib import Path
 
-import requests
 import bottle
 import eel
+import requests
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
@@ -38,7 +39,13 @@ else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     DEV_MODE = True
 
-IPC_PORT = 28923
+IPC_LOCK_FILE = Path(os.getenv('APPDATA', '')) / 'Trove' / 'btt_ipc.lock'
+
+def get_free_port():
+    """Ask the OS for an available port by binding to port 0."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('localhost', 0))
+        return s.getsockname()[1]
 
 def register_btt_protocol():
     if sys.platform == 'win32':
@@ -62,27 +69,43 @@ def check_single_instance_and_send_ipc():
             break
 
     try:
+        port = int(IPC_LOCK_FILE.read_text().strip())
+    except Exception:
+        return url  # No lock file or unreadable — we are the first instance
+
+    try:
         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client.connect(('localhost', IPC_PORT))
-        
+        client.settimeout(2)
+        client.connect(('localhost', port))
+
         if url:
             client.sendall(url.encode('utf-8'))
             print("Link sent to existing instance. Exiting.")
         else:
-            client.sendall(b"WAKE_UP") 
+            client.sendall(b"WAKE_UP")
             print("Another instance is already running. Exiting.")
-            
+
         client.close()
         sys.exit(0)
-    except ConnectionRefusedError:
-        pass  
-            
+    except (ConnectionRefusedError, OSError):
+        # Stale lock file from a crashed previous run — clean up and continue
+        try:
+            IPC_LOCK_FILE.unlink()
+        except Exception:
+            pass
+
     return url
 
 def start_ipc_server():
+    ipc_port = get_free_port()
+
+    IPC_LOCK_FILE.parent.mkdir(parents=True, exist_ok=True)
+    IPC_LOCK_FILE.write_text(str(ipc_port))
+    atexit.register(lambda: IPC_LOCK_FILE.unlink(missing_ok=True))
+
     def listen():
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(('localhost', IPC_PORT))
+        server.bind(('localhost', ipc_port))
         server.listen(1)
         while True:
             conn, addr = server.accept()
@@ -90,7 +113,7 @@ def start_ipc_server():
             if data and data.startswith('btt://'):
                 eel.handle_deep_link(data)()
             conn.close()
-            
+
     threading.Thread(target=listen, daemon=True).start()
 
 def clean_chromium_startup(exe_path):
@@ -255,43 +278,37 @@ eel.browsers.set_path('chrome', chromium_path)
 
 eel.init(os.path.join(base_dir, 'web'))
 
-start_port = 28924
-max_ports_to_try = 10
-
-for current_port in range(start_port, start_port + max_ports_to_try):
-    try:
-        print(f"Attempting to launch UI on port {current_port}...")
-        eel.start('index.html', mode='chrome', size=(1700, 1000), port=current_port, cmdline_args=[
-            '--disable-infobars',
-            '--no-default-browser-check',
-            '--no-first-run',
-            '--disable-background-mode',
-            '--disable-features=BackgroundMode,AutoLaunchAtStartup',
-            '--disable-background-networking',
-            '--disable-component-update',
-            '--disable-extensions',
-            '--disable-sync',
-            '--disable-translate',
-            '--disable-default-apps',
-            '--metrics-recording-only',
-            f'--user-data-dir={appdata_path}',
-            '--incognito',
-            '--disable-cache',
-            '--disk-cache-size=0',
-            '--media-cache-size=0',
-            '--disable-application-cache',
-            '--disable-component-extensions-with-background-pages',
-            '--disable-client-side-phishing-detection',
-            '--disable-breakpad',
-        ])
-        break
-    except OSError as e:
-        print(f"⚠️ Port {current_port} is unavailable ({e}).")
-        if current_port == start_port + max_ports_to_try - 1:
-            print(f"❌ ERROR: Could not find an open port after {max_ports_to_try} attempts. Exiting cleanly.")
-            sys.exit(1)
-    except (SystemExit, MemoryError, KeyboardInterrupt):
-        sys.exit(0)
+eel_port = get_free_port()
+print(f"Launching UI on port {eel_port}...")
+try:
+    eel.start('index.html', mode='chrome', size=(1700, 1000), port=eel_port, cmdline_args=[
+        '--disable-infobars',
+        '--no-default-browser-check',
+        '--no-first-run',
+        '--disable-background-mode',
+        '--disable-features=BackgroundMode,AutoLaunchAtStartup',
+        '--disable-background-networking',
+        '--disable-component-update',
+        '--disable-extensions',
+        '--disable-sync',
+        '--disable-translate',
+        '--disable-default-apps',
+        '--metrics-recording-only',
+        f'--user-data-dir={appdata_path}',
+        '--incognito',
+        '--disable-cache',
+        '--disk-cache-size=0',
+        '--media-cache-size=0',
+        '--disable-application-cache',
+        '--disable-component-extensions-with-background-pages',
+        '--disable-client-side-phishing-detection',
+        '--disable-breakpad',
+    ])
+except OSError as e:
+    print(f"❌ ERROR: Could not bind UI port {eel_port}: {e}")
+    sys.exit(1)
+except (SystemExit, MemoryError, KeyboardInterrupt):
+    sys.exit(0)
 
 try:
     clean_chromium_startup(chromium_path)
