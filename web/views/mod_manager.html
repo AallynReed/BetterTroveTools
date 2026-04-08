@@ -18,40 +18,57 @@
 
     <section class="mm-tab-content active" data-mm-panel="mod_manager">
         <div id="mod-manager-vue-app" class="file-manager-container" style="padding: 0;" v-cloak>
-            <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
-                <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
+            <div class="mod-toolbar">
+                <div class="toolbar-cluster toolbar-cluster-install">
+                    <div class="toolbar-cluster-label">{{ t('Current Trove Path') }}</div>
+                    <div class="toolbar-cluster-actions">
+                        <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
+                        <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedInstall || isLoading">
+                            <i class="fa-solid fa-folder-open"></i>
+                            <span>{{ t('Open Folder') }}</span>
+                        </button>
+                    </div>
+                </div>
 
-                <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedInstall || isLoading">
-                    <i class="fa-solid fa-folder-open"></i>
-                </button>
+                <div class="toolbar-cluster">
+                    <div class="toolbar-cluster-label">{{ t('Refresh') }}</div>
+                    <div class="toolbar-cluster-actions">
+                        <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')">
+                            <i class="fa-solid fa-rotate-right"></i>
+                            <span>{{ t('Find Installs') }}</span>
+                        </button>
 
-                <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')">
-                    <i class="fa-solid fa-rotate-right"></i>
-                </button>
+                        <button @click="refreshInstallState" class="primary-btn" :disabled="!selectedInstall || isLoading" :title="t('Refresh install state')">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            <span>{{ t('Reload Mods') }}</span>
+                        </button>
 
-                <button @click="refreshInstallState" class="primary-btn" :disabled="!selectedInstall || isLoading" :title="t('Refresh install state')">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
+                        <button @click="refreshUpdates" class="primary-btn" :disabled="!selectedInstall || isRefreshingUpdates" :title="t('Refresh update availability')">
+                            <template v-if="isRefreshingUpdates"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Checking...') }}</template>
+                            <template v-else><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('Check Updates') }}</template>
+                        </button>
+                    </div>
+                </div>
 
-                <button @click="refreshUpdates" class="primary-btn" :disabled="!selectedInstall || isRefreshingUpdates" :title="t('Refresh update availability')">
-                    <template v-if="isRefreshingUpdates"><i class="fa-solid fa-spinner fa-spin"></i></template>
-                    <template v-else><i class="fa-solid fa-cloud-arrow-down"></i></template>
-                </button>
+                <div class="toolbar-cluster toolbar-cluster-repair">
+                    <div class="toolbar-cluster-label">{{ t('Maintenance') }}</div>
+                    <div class="toolbar-cluster-actions">
+                        <button @click="fixNames" class="primary-btn" :title="t('Rename files to match Mod internal names')" style="background: var(--accent-blue);" :disabled="isFixingNames || !selectedInstall">
+                            <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
+                            <template v-else><i class="fa-solid fa-tag"></i> {{ t('Fix Names') }}</template>
+                        </button>
 
-                <button @click="clearCache" class="primary-btn" :disabled="isClearingCache" :title="t('Clear Mod Manager cache')">
-                    <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i></template>
-                    <template v-else><i class="fa-solid fa-broom"></i></template>
-                </button>
+                        <button @click="fixConfigs" class="primary-btn" :title="t('Generate missing UI config files')" style="background: var(--accent-blue);" :disabled="isFixingConfigs || !selectedInstall">
+                            <template v-if="isFixingConfigs"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
+                            <template v-else><i class="fa-solid fa-gear"></i> {{ t('Fix Configs') }}</template>
+                        </button>
 
-                <button @click="fixNames" class="primary-btn" :title="t('Rename files to match Mod internal names')" style="background: var(--accent-blue);" :disabled="isFixingNames || !selectedInstall">
-                    <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
-                    <template v-else><i class="fa-solid fa-tag"></i> {{ t('Fix Names') }}</template>
-                </button>
-
-                <button @click="fixConfigs" class="primary-btn" :title="t('Generate missing UI config files')" style="background: var(--accent-blue);" :disabled="isFixingConfigs || !selectedInstall">
-                    <template v-if="isFixingConfigs"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
-                    <template v-else><i class="fa-solid fa-gear"></i> {{ t('Fix Configs') }}</template>
-                </button>
+                        <button @click="clearCache" class="secondary-btn" :disabled="isClearingCache" :title="t('Clear Mod Manager cache')">
+                            <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Clearing...') }}</template>
+                            <template v-else><i class="fa-solid fa-broom"></i> {{ t('Clear Cache') }}</template>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <div class="search-filter-bar">
@@ -99,7 +116,7 @@
             <div v-else-if="filteredMods.length === 0" class="placeholder-box no-results-message">{{ t('No mods match your current filters.') }}</div>
             <div v-else>
                 <div class="mod-grid">
-                    <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)" @dblclick="handleCardDoubleClick($event, mod)">
+                    <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)">
                         <div class="mod-card-content">
                             <div class="mod-front-top">
                                 <span v-if="mod.has_conflicts" class="mod-conflict-icon" :class="hasActiveConflict(mod) ? 'active' : 'inactive'" :title="getConflictTitle(mod)" aria-hidden="true">

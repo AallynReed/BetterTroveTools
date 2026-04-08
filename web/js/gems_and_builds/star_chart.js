@@ -8,10 +8,11 @@ document.addEventListener('star_chart_loaded', async () => {
     const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
     const COLORS = {
-        Combat: { minor: "#FF8F00", major: "#D84315" },
-        Gathering: { minor: "#00695C", major: "#558B2F" },
-        Pve: { minor: "#6A1B9A", major: "#283593" }
+        Combat: { minor: "#a54209", major: "#7a3310" },
+        Gathering: { minor: "#03741c", major: "#3c5f0b" },
+        Pve: { minor: "#161883", major: "#0a285a" }
     };
+    const REPLACEMENT_GOLD = "#d8ab45";
 
     const app = createApp({
         setup() {
@@ -41,6 +42,51 @@ document.addEventListener('star_chart_loaded', async () => {
                     baseX + (dx * CHART_SPACING_SCALE),
                     baseY + (dy * CHART_SPACING_SCALE) + CHART_Y_OFFSET
                 ];
+            };
+
+            const mixColors = (hexA, hexB, weight = 0.5) => {
+                const parseHex = (hex) => {
+                    const value = String(hex || '').replace('#', '');
+                    const normalized = value.length === 3
+                        ? value.split('').map((char) => char + char).join('')
+                        : value.padEnd(6, '0').slice(0, 6);
+                    return {
+                        r: parseInt(normalized.slice(0, 2), 16),
+                        g: parseInt(normalized.slice(2, 4), 16),
+                        b: parseInt(normalized.slice(4, 6), 16)
+                    };
+                };
+
+                const a = parseHex(hexA);
+                const b = parseHex(hexB);
+                const blend = (start, end) => Math.round((start * (1 - weight)) + (end * weight));
+                return `rgb(${blend(a.r, b.r)}, ${blend(a.g, b.g)}, ${blend(a.b, b.b)})`;
+            };
+
+            const getNodeCenter = (path) => {
+                const node = nodeMap[path];
+                if (!node || !node.Coords) return null;
+                const [x, y] = withChartOffset(node.Coords);
+                return { x, y };
+            };
+
+            const distancePointToSegment = (px, py, x1, y1, x2, y2) => {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const lenSq = (dx * dx) + (dy * dy);
+                if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+                const t = Math.max(0, Math.min(1, (((px - x1) * dx) + ((py - y1) * dy)) / lenSq));
+                const projX = x1 + (t * dx);
+                const projY = y1 + (t * dy);
+                return Math.hypot(px - projX, py - projY);
+            };
+
+            const sampleQuadratic = (from, control, to, t) => {
+                const mt = 1 - t;
+                return {
+                    x: (mt * mt * from.x) + (2 * mt * t * control.x) + (t * t * to.x),
+                    y: (mt * mt * from.y) + (2 * mt * t * control.y) + (t * t * to.y)
+                };
             };
             
             const nodeMap = reactive({});
@@ -78,6 +124,49 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const activePaths = computed(() => {
                 return Array.from(selectedPaths).filter(p => !overwrites.value.has(p));
+            });
+
+            const replacementInfo = computed(() => {
+                const selectedSet = new Set(Array.from(selectedPaths));
+                const overwrittenSelected = new Set();
+                const edges = [];
+
+                selectedSet.forEach((path) => {
+                    const node = nodeMap[path];
+                    const directOverwrites = (node?.Overwrites || []).filter(overwrittenPath => selectedSet.has(overwrittenPath));
+                    if (directOverwrites.length === 0) return;
+
+                    directOverwrites.forEach((overwrittenPath) => overwrittenSelected.add(overwrittenPath));
+
+                    const directParents = directOverwrites.filter((candidate) => {
+                        return !directOverwrites.some((other) => {
+                            if (other === candidate) return false;
+                            const otherNode = nodeMap[other];
+                            return Array.isArray(otherNode?.Overwrites) && otherNode.Overwrites.includes(candidate);
+                        });
+                    });
+
+                    directParents.forEach((fromPath) => {
+                        edges.push({ fromPath, toPath: path });
+                    });
+                });
+
+                const tipSet = new Set();
+                selectedSet.forEach((path) => {
+                    const node = nodeMap[path];
+                    const overwritesSelected = (node?.Overwrites || []).some(overwrittenPath => selectedSet.has(overwrittenPath));
+                    if (overwritesSelected && !overwrittenSelected.has(path)) {
+                        tipSet.add(path);
+                    }
+                });
+
+                const chainNodeSet = new Set();
+                edges.forEach((edge) => {
+                    chainNodeSet.add(edge.fromPath);
+                    chainNodeSet.add(edge.toPath);
+                });
+
+                return { edges, tipSet, chainNodeSet };
             });
 
             const summaryStats = computed(() => {
@@ -126,9 +215,12 @@ document.addEventListener('star_chart_loaded', async () => {
             const selectedNodeCount = computed(() => selectedPaths.size);
 
             const renderNodes = computed(() => {
+                const replacementTips = replacementInfo.value.tipSet;
                 return nodesList.value.map(node => {
                     const isSelected = selectedPaths.has(node.Path);
                     const isOverwritten = overwrites.value.has(node.Path);
+                    const isReplacementTip = replacementTips.has(node.Path);
+                    const baseColor = node.fill;
                     
                     let rootActive = false;
                     if (node.Type === 'Root') {
@@ -144,7 +236,23 @@ document.addEventListener('star_chart_loaded', async () => {
                         ...node,
                         selected: isSelected,
                         overwritten: isOverwritten,
-                        rootActive: rootActive
+                        rootActive: rootActive,
+                        replacementTip: isReplacementTip,
+                        muted: !isSelected && !isOverwritten && node.Type !== 'Root',
+                        style: node.Type === 'Root'
+                            ? {
+                                fill: rootActive ? 'rgba(255, 255, 255, 0.06)' : 'var(--bg-dark, #111)',
+                                stroke: isReplacementTip ? REPLACEMENT_GOLD : mixColors(node.stroke, '#ffffff', rootActive ? 0.24 : 0)
+                            }
+                            : {
+                                fill: isReplacementTip
+                                    ? mixColors(baseColor, REPLACEMENT_GOLD, 0.34)
+                                    : (isSelected ? mixColors(baseColor, '#ffffff', 0.22) : baseColor),
+                                stroke: isReplacementTip
+                                    ? mixColors(REPLACEMENT_GOLD, '#ffffff', 0.18)
+                                    : (isSelected ? mixColors(baseColor, '#ffffff', 0.38) : '#0f1319'),
+                                opacity: isOverwritten ? 0.24 : (isSelected || isReplacementTip ? 1 : 0.62)
+                            }
                     };
                 });
             });
@@ -157,6 +265,70 @@ document.addEventListener('star_chart_loaded', async () => {
                         selected: isSelected
                     };
                 });
+            });
+
+            const replacementCurves = computed(() => {
+                const tips = replacementInfo.value.tipSet;
+
+                return replacementInfo.value.edges.map((edge) => {
+                    const from = getNodeCenter(edge.fromPath);
+                    const to = getNodeCenter(edge.toPath);
+                    if (!from || !to) return null;
+
+                    const dx = to.x - from.x;
+                    const dy = to.y - from.y;
+                    const distance = Math.hypot(dx, dy) || 1;
+                    const normalX = -dy / distance;
+                    const normalY = dx / distance;
+                    const bend = Math.max(30, Math.min(72, distance * 0.2));
+                    const midpoint = {
+                        x: (from.x + to.x) / 2,
+                        y: (from.y + to.y) / 2
+                    };
+
+                    const candidates = [-1, 1].map((sign) => {
+                        const control = {
+                            x: midpoint.x + (normalX * bend * sign),
+                            y: midpoint.y + (normalY * bend * sign)
+                        };
+
+                        let score = 0;
+                        for (let step = 1; step < 12; step++) {
+                            const point = sampleQuadratic(from, control, to, step / 12);
+
+                            nodesList.value.forEach((node) => {
+                                if (node.Path === edge.fromPath || node.Path === edge.toPath) return;
+                                const radius = (node.r || 8) + 8;
+                                const nodeDistance = Math.hypot(point.x - node.cx, point.y - node.cy);
+                                if (nodeDistance < radius) {
+                                    score += (radius - nodeDistance) * 10;
+                                }
+                            });
+
+                            linesList.value.forEach((line) => {
+                                if (line.pathId === edge.fromPath || line.pathId === edge.toPath) return;
+                                const lineDistance = distancePointToSegment(point.x, point.y, line.x1, line.y1, line.x2, line.y2);
+                                if (lineDistance < 10) {
+                                    score += (10 - lineDistance) * 4;
+                                }
+                            });
+                        }
+
+                        const centerDistance = Math.hypot(control.x - origin.value[0], control.y - origin.value[1]);
+                        score -= centerDistance * 0.02;
+
+                        return { control, score };
+                    });
+
+                    candidates.sort((a, b) => a.score - b.score);
+                    const best = candidates[0];
+
+                    return {
+                        id: `replacement-${edge.fromPath.replace(/\./g, '-')}-to-${edge.toPath.replace(/\./g, '-')}`,
+                        d: `M ${from.x} ${from.y} Q ${best.control.x} ${best.control.y} ${to.x} ${to.y}`,
+                        isTipEdge: tips.has(edge.toPath)
+                    };
+                }).filter(Boolean);
             });
 
             function registerNode(star, constellName, parentPath) {
@@ -520,7 +692,7 @@ document.addEventListener('star_chart_loaded', async () => {
             });
 
             return {
-                t, isLoading, origin, lines, renderNodes,
+                t, isLoading, origin, lines, replacementCurves, renderNodes,
                 selectedNodeCount, summaryStats, summaryAbilities, summaryObtainables, hasAnySelection,
                 onRootClick, onNodeClick, clearAllSelectedNodes,
                 buildCode, codeInputFocused, loadCode, copyCode,

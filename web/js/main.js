@@ -538,6 +538,24 @@ window.showToast = function(message, isError = false, options = {}) {
     messageEl.innerText = message;
     toast.appendChild(messageEl);
 
+    if (options.closeable) {
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.setAttribute('aria-label', 'Dismiss');
+        closeBtn.style.background = 'transparent';
+        closeBtn.style.color = '#fff';
+        closeBtn.style.border = 'none';
+        closeBtn.style.fontSize = '18px';
+        closeBtn.style.lineHeight = '1';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.style.padding = '0 0 0 4px';
+        closeBtn.onclick = () => {
+            toast.style.opacity = '0';
+            setTimeout(() => toast.remove(), 300);
+        };
+        toast.appendChild(closeBtn);
+    }
+
     if (options.actionLabel && typeof options.onAction === 'function') {
         const actionBtn = document.createElement('button');
         actionBtn.innerText = options.actionLabel;
@@ -1433,6 +1451,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const cmdOverlay = document.getElementById('command-palette-overlay');
     const cmdInput = document.getElementById('cmd-input');
     const cmdResults = document.getElementById('cmd-results');
+    const quickOpenCard = document.getElementById('quick-open-card');
+    const quickOpenCardDismiss = document.getElementById('quick-open-card-dismiss');
     
     const commands = [
         { id: 'home', title: 'Home', icon: 'fa-house' },
@@ -1454,6 +1474,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     ];
 
     let activeCmdIndex = 0;
+
+    function openCommandPalette() {
+        if (!cmdOverlay || !cmdInput) return;
+        cmdOverlay.style.display = 'flex';
+        cmdInput.value = '';
+        activeCmdIndex = 0;
+        renderCmdResults();
+        cmdInput.focus();
+    }
+
+    const quickOpenCardPrefKey = 'hint_command_palette_card_v1';
+    const hideQuickOpenCard = () => {
+        if (!quickOpenCard) return;
+        quickOpenCard.style.display = 'none';
+        if (window.AppSettings) {
+            window.AppSettings.setPrefSync(quickOpenCardPrefKey, 'dismissed');
+        }
+    };
+
+    const showQuickOpenCard = () => {
+        if (!quickOpenCard) return;
+        quickOpenCard.style.display = '';
+    };
 
     function renderCmdResults(filter = "") {
         const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
@@ -1527,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
             e.preventDefault();
             if (cmdOverlay.style.display === 'flex') { cmdOverlay.style.display = 'none'; } 
-            else { cmdOverlay.style.display = 'flex'; cmdInput.value = ''; activeCmdIndex = 0; renderCmdResults(); cmdInput.focus(); }
+            else { openCommandPalette(); }
         } else if (e.key === 'Escape' && cmdOverlay.style.display === 'flex') { cmdOverlay.style.display = 'none'; } 
         else if (cmdOverlay.style.display === 'flex') {
             if (e.key === 'ArrowDown') { e.preventDefault(); activeCmdIndex++; renderCmdResults(cmdInput.value); } 
@@ -1571,6 +1614,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         } 
     });
     cmdOverlay.addEventListener('click', (e) => { if (e.target === cmdOverlay) cmdOverlay.style.display = 'none'; });
+    if (quickOpenCard) {
+        quickOpenCard.addEventListener('click', openCommandPalette);
+        quickOpenCard.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openCommandPalette();
+            }
+        });
+    }
+    if (quickOpenCardDismiss) {
+        const dismissQuickOpen = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            hideQuickOpenCard();
+        };
+        quickOpenCardDismiss.addEventListener('click', dismissQuickOpen);
+        quickOpenCardDismiss.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') dismissQuickOpen(e);
+        });
+    }
 
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
@@ -1587,6 +1650,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             await window.AppSettings.load();
             if (window.AppSettings.getPref('sidebar_collapsed', false)) {
                 sidebar.classList.add('collapsed');
+            }
+            if (window.AppSettings.getPref(quickOpenCardPrefKey, '') === 'dismissed') {
+                hideQuickOpenCard();
+            } else {
+                showQuickOpenCard();
             }
         } catch {}
     }
@@ -1924,6 +1992,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         window.loadView('home');
     }
+
+    const maybeShowDiscoverabilityHints = () => {
+        const commandHintKey = 'hint_command_palette_v1';
+        const requestHintKey = 'hint_request_log_v1';
+
+        if (window.AppSettings.getPref(commandHintKey, '') !== 'dismissed') {
+            window.AppSettings.setPrefSync(commandHintKey, 'dismissed');
+            window.showToast(t('Quick Open is available from the sidebar or with Ctrl/Cmd+K.'), false, {
+                actionLabel: t('Open'),
+                onAction: async () => openCommandPalette(),
+                durationMs: 7000,
+                closeable: true
+            });
+            return;
+        }
+
+        if (window.AppSettings.getPref(requestHintKey, '') !== 'dismissed') {
+            window.AppSettings.setPrefSync(requestHintKey, 'dismissed');
+            window.showToast(t('The Requests button shows every external call the app makes.'), false, {
+                actionLabel: t('View'),
+                onAction: async () => { networkState.isModalOpen = true; },
+                durationMs: 7000
+            });
+        }
+    };
+
+    setTimeout(maybeShowDiscoverabilityHints, 900);
     
     window.applyCustomDropdowns();
 });

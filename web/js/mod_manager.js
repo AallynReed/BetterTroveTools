@@ -60,7 +60,6 @@ document.addEventListener('mod_manager_loaded', async () => {
             const searchQuery = ref(uiState.searchQuery || '');
             const activeResultIndex = ref(-1);
             const filterStatus = ref(uiState.filterStatus || 'all');
-            const selectedPaths = ref([]);
             const toursEnabled = window.BTT_ENABLE_ONBOARDING_TOURS !== false;
             const showOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref(PREF_TOUR_KEY, '') !== 'dismissed' : true));
             const showSearchShortcutHint = ref(window.AppSettings ? window.AppSettings.getPref(PREF_HINT_KEY, '') !== 'dismissed' : true);
@@ -122,36 +121,6 @@ document.addEventListener('mod_manager_loaded', async () => {
             const totalCount = computed(() => mods.value.length);
             const filteredCount = computed(() => filteredMods.value.length);
             const shownCount = computed(() => filteredMods.value.length);
-
-            const selectedMods = computed(() => {
-                const set = new Set(selectedPaths.value);
-                return mods.value.filter(m => set.has(m.path));
-            });
-            const selectedCount = computed(() => selectedMods.value.length);
-            const allPageSelected = computed(() => {
-                if (filteredMods.value.length === 0) return false;
-                const set = new Set(selectedPaths.value);
-                return filteredMods.value.every(m => set.has(m.path));
-            });
-
-            const isSelected = (mod) => selectedPaths.value.includes(mod.path);
-            const toggleSelect = (mod, checked) => {
-                const set = new Set(selectedPaths.value);
-                if (checked) set.add(mod.path);
-                else set.delete(mod.path);
-                selectedPaths.value = [...set];
-            };
-            const toggleSelectPage = (checked) => {
-                const set = new Set(selectedPaths.value);
-                filteredMods.value.forEach(mod => {
-                    if (checked) set.add(mod.path);
-                    else set.delete(mod.path);
-                });
-                selectedPaths.value = [...set];
-            };
-            const clearSelection = () => {
-                selectedPaths.value = [];
-            };
 
             const dismissSearchShortcutHint = () => {
                 showSearchShortcutHint.value = false;
@@ -227,7 +196,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const token = loadGuard.next();
                 isLoading.value = true;
                 mods.value = [];
-                clearSelection();
 
                 const settingsResp = await window.callBackend(eel.get_settings()(), 'Failed to load settings');
                 const settings = settingsResp.data || settingsResp.raw || {};
@@ -353,9 +321,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     mod.status = mod.status === 'enabled' ? 'disabled' : 'enabled';
                     const newPath = response.data.new_path || response.raw?.new_path;
                     if (newPath) {
-                        const oldPath = mod.path;
                         mod.path = newPath;
-                        selectedPaths.value = selectedPaths.value.map(p => (p === oldPath ? newPath : p));
                     }
 
                     mods.value.forEach(m => {
@@ -371,7 +337,6 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const removeModLocally = (mod) => {
                 mods.value = mods.value.filter(m => m.path !== mod.path);
-                selectedPaths.value = selectedPaths.value.filter(p => p !== mod.path);
                 mods.value.forEach(m => {
                     if (Array.isArray(m.conflicts_with)) {
                         m.conflicts_with = m.conflicts_with.filter(c => c.name !== mod.name);
@@ -420,40 +385,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 } else {
                     window.showToast(t("Deleted '{name}'").replace('{name}', mod.name));
                 }
-            };
-
-            const batchToggle = async (enable) => {
-                const targets = selectedMods.value.filter(m => (enable ? m.status !== 'enabled' : m.status === 'enabled'));
-                if (targets.length === 0) return;
-                for (const mod of targets) {
-                    await toggleMod(mod);
-                }
-                window.showToast(enable ? t('Selected mods enabled.') : t('Selected mods disabled.'));
-            };
-
-            const batchUpdate = async () => {
-                const targets = selectedMods.value.filter(m => m.hasUpdate);
-                if (targets.length === 0) return;
-                for (const mod of targets) {
-                    await updateMod(mod);
-                }
-            };
-
-            const batchDelete = async () => {
-                if (selectedMods.value.length === 0) return;
-                const confirmed = await window.showConfirmModal({
-                    title: t('Delete Selected Mods'),
-                    message: t('Delete {count} selected mods?').replace('{count}', selectedMods.value.length),
-                    confirmLabel: t('Delete All'),
-                    cancelLabel: t('Cancel'),
-                    danger: true
-                });
-                if (!confirmed) return;
-                const targets = [...selectedMods.value];
-                for (const mod of targets) {
-                    await deleteMod(mod);
-                }
-                clearSelection();
             };
 
             const fixNames = async () => {
@@ -523,13 +454,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
 
                 menuItems.push({
-                    label: isSelected(mod) ? 'Unselect' : 'Select',
-                    icon: isSelected(mod) ? 'fa-square-minus' : 'fa-square-check',
-                    action: () => toggleSelect(mod, !isSelected(mod))
-                });
-
-                menuItems.push({ separator: true });
-                menuItems.push({
                     label: 'Delete Mod',
                     icon: 'fa-trash',
                     danger: true,
@@ -550,12 +474,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 modal.src = `data:image/png;base64,${mod.image}`;
                 modal.caption = mod.name;
                 modal.show = true;
-            };
-
-            const handleCardDoubleClick = (event, mod) => {
-                const target = event?.target;
-                if (target && target.closest('button, a, input, label, .mod-preview-img, .mod-card-delete-hover')) return;
-                toggleSelect(mod, !isSelected(mod));
             };
 
             const escapeHtml = (text) => String(text || '')
@@ -645,8 +563,6 @@ document.addEventListener('mod_manager_loaded', async () => {
             });
 
             watch(filteredMods, () => {
-                const validPaths = new Set(mods.value.map(m => m.path));
-                selectedPaths.value = selectedPaths.value.filter(p => validPaths.has(p));
                 activeResultIndex.value = -1;
             });
 
@@ -685,9 +601,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 totalCount,
                 filteredCount,
                 shownCount,
-                selectedCount,
-                selectedPaths,
-                allPageSelected,
                 isFixingNames,
                 isFixingConfigs,
                 isRefreshingUpdates,
@@ -700,13 +613,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 toggleMod,
                 updateMod,
                 deleteMod,
-                isSelected,
-                toggleSelect,
-                toggleSelectPage,
-                clearSelection,
-                batchToggle,
-                batchUpdate,
-                batchDelete,
                 fixNames,
                 fixConfigs,
                 hasActiveConflict,
@@ -725,7 +631,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 showPreviewOnInfoSide,
                 showOnboardingTips,
                 dismissOnboardingTips,
-                handleCardDoubleClick,
                 openImageModal,
                 closeImageModal
             };

@@ -84,6 +84,11 @@
     background-color: transparent; 
 }
 
+.chart-line {
+    stroke: rgba(117, 127, 141, 0.42);
+    stroke-width: 2.5;
+}
+
 .star-node {
     cursor: pointer;
     transition: all 0.2s;
@@ -109,34 +114,58 @@
 
 .center-clear-anchor:hover {
     transform: scale(1.08);
-    stroke: var(--accent-blue);
-    filter: drop-shadow(0 0 8px rgba(var(--accent-rgb), 0.45));
+    stroke: #ffffff;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.42));
 }
 
 .node-selected {
-    stroke: #fff !important;
-    stroke-width: 3px;
+    stroke-width: 1.25px;
+    stroke: #ffffff !important;
     filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
 }
 
 .node-overwritten {
-    opacity: 0.3; 
+    opacity: 0.24;
+    filter: saturate(0.25) brightness(0.82);
+}
+
+.node-muted {
+    filter: saturate(0.62) brightness(0.92);
 }
 
 .root-active {
-    stroke: #fff !important;
-    filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
-    fill: rgba(255, 255, 255, 0.1);
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
+    fill: rgba(255, 255, 255, 0.06);
 }
 
 .center-clear-anchor.root-active {
-    stroke: var(--accent-blue) !important;
-    filter: drop-shadow(0 0 12px rgba(var(--accent-rgb), 0.55));
-    fill: rgba(var(--accent-rgb), 0.12);
+    stroke: #ffffff !important;
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
+    fill: rgba(255, 255, 255, 0.08);
 }
 
 .line-selected {
-    stroke: #aaa; 
+    stroke: rgba(206, 214, 224, 0.54);
+}
+
+.replacement-line {
+    fill: none;
+    stroke: rgba(216, 171, 69, 0.5);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px rgba(216, 171, 69, 0.22));
+    pointer-events: none;
+}
+
+.replacement-line-active {
+    stroke: rgba(216, 171, 69, 0.92);
+    filter: drop-shadow(0 0 10px rgba(216, 171, 69, 0.45));
+}
+
+.node-replacement-tip {
+    stroke-width: 2px;
+    stroke: rgba(216, 171, 69, 0.8) !important;
+    filter: drop-shadow(0 0 10px rgba(216, 171, 69, 0.6)) saturate(1.16) brightness(1.03);
 }
 
 #build-summary-panel {

@@ -15,14 +15,15 @@
             </div>
 
             <svg id="chart-svg" viewBox="0 0 1000 1000">
-                <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" stroke="#333" stroke-width="3" :class="{'line-selected': line.selected}" />
+                <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" class="chart-line" :class="{'line-selected': line.selected}" />
+                <path v-for="curve in replacementCurves" :key="curve.id" :d="curve.d" class="replacement-line" :class="{ 'replacement-line-active': curve.isTipEdge }" />
                 
                 <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="t('Quick Clear: Remove all active nodes')" @click="clearAllSelectedNodes" />
 
                 <template v-for="node in renderNodes" :key="node.id">
-                    <polygon v-if="node.Type === 'Root'" :points="node.points" fill="var(--bg-dark, #111)" :stroke="node.stroke" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                    <polygon v-if="node.Type === 'Root'" :points="node.points" :style="node.style" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive, 'node-replacement-tip': node.replacementTip}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                     
-                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :fill="node.fill" stroke="#111" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten}" @click.left="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :style="node.style" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten, 'node-muted': node.muted, 'node-replacement-tip': node.replacementTip}" @click.left="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                 </template>
             </svg>
             </template>

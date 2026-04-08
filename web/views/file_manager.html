@@ -40,6 +40,10 @@
                 <button class="secondary-btn" @click="nextSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-down"></i></button>
                 <span class="file-meta" style="font-size: 12px; color: var(--accent-blue); font-weight: bold;">{{ searchCountText }}</span>
             </div>
+            <div class="search-helper-row">
+                <span>{{ t('Search starts after 4 characters and automatically opens matching folders.') }}</span>
+                <span>{{ t('Tip: use Select Visible after filtering to grab only what is on screen.') }}</span>
+            </div>
             <div v-if="showOnboardingTips" class="onboarding-tour">
                 <div class="onboarding-tour-header">
                     <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('Quick Tour: File Explorer') }}</span>
@@ -70,16 +74,46 @@
             </div>
         </div>
 
-        <div v-show="activeTab === 'tab-tracker'" class="tab-content" :class="{ active: activeTab === 'tab-tracker' }">
+            <div v-show="activeTab === 'tab-tracker'" class="tab-content" :class="{ active: activeTab === 'tab-tracker' }">
             <div class="tool-panel">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h3>{{ t('Update Tracker') }}</h3>
-                    <span class="mod-badge" style="position: relative; top: 0; right: 0; background: #e8b031; color: #111;">{{ t('PRO') }}</span>
+                    <span class="tracker-mode-pill">{{ t('Guided') }}</span>
                 </div>
                 <p class="help-text">{{ t('Track game updates, generate patch baselines, and extract only modified files to save space.') }}</p>
+                <div class="tracker-steps">
+                    <div class="tracker-step" :class="{ active: !!selectedTrackerGame }">
+                        <span class="tracker-step-num">1</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('Pick Trove Path') }}</div>
+                            <div class="tracker-step-copy">{{ t('Choose the install you want to monitor for patches.') }}</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" :class="{ active: !!selectedTrackingDir }">
+                        <span class="tracker-step-num">2</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('Pick Tracking Folder') }}</div>
+                            <div class="tracker-step-copy">{{ t('Store your baseline hashes and extracted update files here.') }}</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" :class="{ active: trackerStatus.state === 'baseline' }">
+                        <span class="tracker-step-num">3</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('Build Baseline Cache') }}</div>
+                            <div class="tracker-step-copy">{{ t('Run this once before you try scanning for patch changes.') }}</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" :class="{ active: trackerStatus.state === 'baseline' }">
+                        <span class="tracker-step-num">4</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('Scan & Extract Updates') }}</div>
+                            <div class="tracker-step-copy">{{ t('After a patch, compare against the baseline and save only changed files.') }}</div>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="form-group">
-                    <label>{{ t('Target Game Installation') }}</label>
+                    <label>{{ t('Target Trove Installation') }}</label>
                     <div class="input-row">
                         <custom-vue-select v-model="selectedTrackerGame" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
                         <button @click="openSelectedTrackerGameFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedTrackerGame || isAnyOperationRunning">
@@ -131,6 +165,7 @@
                 </div>
                 <div class="placeholder-box" style="margin-top: 20px; padding: 30px 20px;">
                     <i class="fa-solid fa-circle-info" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i>
+                    <div class="tracker-status-kicker">{{ trackerNextAction }}</div>
                     <p :style="{ color: trackerStatusColor, fontWeight: 'bold', fontSize: '16px' }">{{ trackerStatus.text }}</p>
                     <p class="help-text" style="margin-top: 5px; white-space: pre-wrap;">{{ trackerStatus.subText }}</p>
                     

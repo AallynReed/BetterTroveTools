@@ -675,6 +675,112 @@ body {
     overflow: visible;
 }
 
+.sidebar-quick-open {
+    margin: 0 10px 14px;
+    padding: 12px 14px;
+    text-align: left;
+    border: 1px solid rgba(var(--accent-rgb), 0.32);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(0,0,0,0.16));
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    color: var(--text-main);
+}
+
+.sidebar-quick-open:hover {
+    transform: translateY(-1px);
+    border-color: rgba(var(--accent-rgb), 0.68);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.26);
+}
+
+.sidebar-quick-open-topline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.sidebar-quick-open-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sidebar-quick-open-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: #dff5ff;
+}
+
+.sidebar-quick-open-kbd {
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(0,0,0,0.22);
+    border-radius: 999px;
+    padding: 3px 8px;
+    white-space: nowrap;
+}
+
+.sidebar-quick-open-dismiss {
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    color: rgba(255,255,255,0.86);
+    background: rgba(0,0,0,0.18);
+    border: 1px solid rgba(255,255,255,0.14);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-quick-open-dismiss:hover,
+.sidebar-quick-open-dismiss:focus-visible {
+    background: rgba(0,0,0,0.3);
+    border-color: rgba(255,255,255,0.28);
+    color: #fff;
+    outline: none;
+}
+
+.sidebar-quick-open-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+}
+
+.sidebar-quick-open-copy {
+    font-size: 12px;
+    line-height: 1.35;
+    color: rgba(255,255,255,0.78);
+}
+
+#sidebar.collapsed .sidebar-quick-open {
+    opacity: 0;
+    pointer-events: none;
+    padding: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0 10px 0;
+}
+
+#sidebar.collapsed:hover .sidebar-quick-open {
+    opacity: 1;
+    pointer-events: auto;
+    padding: 12px 14px;
+    height: auto;
+    overflow: visible;
+    margin: 0 10px 14px;
+}
+
 .server-time-modal-card {
     background: var(--bg-panel, #1d232b);
     border: 1px solid var(--border-color, #444c5e);
@@ -1302,6 +1408,31 @@ span.flatpickr-weekday {
 .network-status-indicator:hover {
     background: var(--bg-hover);
     color: var(--text-main);
+}
+
+.network-status-indicator::after {
+    content: "Requests";
+    position: absolute;
+    right: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(9, 13, 20, 0.84);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--text-main);
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+    opacity: 0.92;
+    pointer-events: none;
+}
+
+@media (max-width: 900px) {
+    .network-status-indicator::after {
+        display: none;
+    }
 }
 
 .job-queue-toggle {

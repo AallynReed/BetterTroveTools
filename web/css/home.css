@@ -177,7 +177,11 @@
     margin-bottom: 40px;
 }
 
-@media (max-width: 1200px) { .split-layout { grid-template-columns: 1fr; } }
+@media (max-width: 1200px) {
+    .split-layout {
+        grid-template-columns: 1fr;
+    }
+}
 
 .buffs-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 

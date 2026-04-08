@@ -86,6 +86,13 @@ document.addEventListener('file_manager_loaded', () => {
                 return '#e8b031';
             });
 
+            const trackerNextAction = computed(() => {
+                if (!selectedTrackerGame.value) return t('Next step: Pick Trove Path');
+                if (!selectedTrackingDir.value) return t('Next step: Pick Tracking Folder');
+                if (trackerStatus.state !== 'baseline') return t('Next step: Build Baseline Cache');
+                return t('Next step: Scan & Extract Updates');
+            });
+
             const modals = reactive({ addTracker: false });
             const newTrackerForm = reactive({ name: '', path: '' });
             const isBrowsingTracker = ref(false);
@@ -752,12 +759,12 @@ document.addEventListener('file_manager_loaded', () => {
                 
                 if (response.exists) {
                     trackerStatus.state = 'baseline';
-                    trackerStatus.text = t("Active Baseline Found!");
-                    trackerStatus.subText = `${t("Last Scanned:")} ${new Date(response.last_scan).toLocaleString()}\n${t("Tracking Game:")} ${response.game_path}`;
+                    trackerStatus.text = t("Baseline ready.");
+                    trackerStatus.subText = `${t("Last Scanned:")} ${new Date(response.last_scan).toLocaleString()}\n${t("Tracking Game:")} ${response.game_path}\n${t("You can now compare future patches against this baseline.")}`;
                 } else {
                     trackerStatus.state = 'none';
-                    trackerStatus.text = t("No Baseline Found.");
-                    trackerStatus.subText = t("You must build an initial cache hash before you can scan for updates. This will take a few minutes.");
+                    trackerStatus.text = t("No baseline found yet.");
+                    trackerStatus.subText = t("Build the initial cache once for this folder, then future scans can extract only the files changed by patches.");
                 }
             };
 
@@ -978,7 +985,7 @@ document.addEventListener('file_manager_loaded', () => {
                 onTreeToggle, onTreeChange, collapseAll, selectVisible,
                 selectedFilesCount, selectedFilesSize, isMassExtracting, massExtract, clearSelectedFiles, progress,
                 trackingDirs, trackingDirOptions, selectedTrackingDir, runCatalogMode, showTrackerAdvanced,
-                trackerStatus, trackerStatusColor, isTrackerWorking, isAnyOperationRunning, isExplorerWorking, buildBaseline, scanUpdates, cancelTrackerOperation,
+                trackerStatus, trackerStatusColor, trackerNextAction, isTrackerWorking, isAnyOperationRunning, isExplorerWorking, buildBaseline, scanUpdates, cancelTrackerOperation,
                 modals, newTrackerForm, isBrowsingTracker, browseTrackerDir, saveTrackerDir
             };
         }
