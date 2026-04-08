@@ -18,6 +18,21 @@
                     </div>
                     <input type="color" v-model="settings.accent_color" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
                 </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('App Font') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Select a font family that supports your language.') }}</div>
+                    </div>
+                    <select v-model="settings.app_font" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 8px 12px; cursor: pointer; min-width: 180px; outline: none;">
+                        <option value="system">{{ t('System Font') }}</option>
+                        <option value="product-sans">Product Sans</option>
+                        <option value="noto-sans">Noto Sans</option>
+                        <option value="inter">Inter</option>
+                        <option value="roboto">Roboto</option>
+                        <option value="segoe-ui">Segoe UI</option>
+                        <option value="arial">Arial</option>
+                    </select>
+                </div>
             </div>
             
             <div class="settings-section">

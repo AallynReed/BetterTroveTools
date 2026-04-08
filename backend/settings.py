@@ -1,13 +1,15 @@
-import eel
 import json
 import os
 from pathlib import Path
+
+import eel
+
 from backend.response import resp, standardize_response
 
 
 def _normalize_settings_payload(payload):
     if not isinstance(payload, dict):
-        return {"custom_directories": [], "ui_preferences": {}}
+        return {"custom_directories": [], "ui_preferences": {}, "app_font": "system"}
 
     # Accept wrapped responses and extract raw settings payload.
     if all(k in payload for k in ("success", "code", "data", "error", "meta")) and isinstance(payload.get("data"), dict):
@@ -19,6 +21,8 @@ def _normalize_settings_payload(payload):
         normalized["custom_directories"] = []
     if "ui_preferences" not in normalized or not isinstance(normalized.get("ui_preferences"), dict):
         normalized["ui_preferences"] = {}
+    if "app_font" not in normalized or normalized.get("app_font") not in ("system", "product-sans", "noto-sans", "inter", "roboto", "segoe-ui", "arial"):
+        normalized["app_font"] = "system"
 
     # Strip accidental envelope keys if they leaked into file payload.
     for key in ("success", "code", "error", "meta", "data"):

@@ -1,12 +1,12 @@
-// document.addEventListener('keydown', function(e) {
-//     const blockedKeys = ['F12', 'F5', 'F11'];
-//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+document.addEventListener('keydown', function(e) {
+    const blockedKeys = ['F12', 'F5', 'F11'];
+    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-//     if (blockedKeys.includes(e.key)) e.preventDefault();
-//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-// });
+    if (blockedKeys.includes(e.key)) e.preventDefault();
+    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+});
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -352,6 +352,31 @@ XMLHttpRequest.prototype.send = function(...args) {
 
 document.addEventListener('DOMContentLoaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+
+    // Load and apply saved font preference
+    const applyFont = async () => {
+        try {
+            const settings = window.AppSettings
+                ? await window.AppSettings.load(true)
+                : await eel.get_settings()();
+            const appFont = settings?.app_font || 'system';
+            
+            const fontMap = {
+                'system': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                'product-sans': '"Product Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                'noto-sans': '"Noto Sans", sans-serif',
+                'inter': 'Inter, sans-serif',
+                'roboto': 'Roboto, sans-serif',
+                'segoe-ui': '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                'arial': 'Arial, Helvetica, sans-serif'
+            };
+            document.documentElement.style.setProperty('--app-font', fontMap[appFont] || fontMap['system']);
+        } catch (e) {
+            console.error('Failed to load font preference:', e);
+        }
+    };
+    
+    await applyFont();
 
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";

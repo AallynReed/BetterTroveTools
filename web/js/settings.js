@@ -22,6 +22,7 @@ document.addEventListener('settings_loaded', async () => {
             
             const settings = reactive({
                 accent_color: '#5ec6ff',
+                app_font: 'system',
                 show_community_content: true,
                 auto_fix_names: false,
                 auto_fix_configs: false,
@@ -47,6 +48,7 @@ document.addEventListener('settings_loaded', async () => {
                     : unwrap(await eel.get_settings()());
                 if (data) {
                     settings.accent_color = data.accent_color || '#5ec6ff';
+                    settings.app_font = data.app_font || 'system';
                     settings.show_community_content = data.show_community_content !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.auto_fix_configs = data.auto_fix_configs === true;
@@ -64,6 +66,19 @@ document.addEventListener('settings_loaded', async () => {
                     const b = parseInt(hex.substring(4, 6), 16);
                     document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
                 }
+                
+                // Apply font globally
+                const fontMap = {
+                    'system': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    'product-sans': '"Product Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                    'noto-sans': '"Noto Sans", sans-serif',
+                    'inter': 'Inter, sans-serif',
+                    'roboto': 'Roboto, sans-serif',
+                    'segoe-ui': '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+                    'arial': 'Arial, Helvetica, sans-serif'
+                };
+                document.documentElement.style.setProperty('--app-font', fontMap[settings.app_font] || fontMap['system']);
+                
                 const currentSettings = window.AppSettings
                     ? await window.AppSettings.load()
                     : unwrap(await eel.get_settings()());
