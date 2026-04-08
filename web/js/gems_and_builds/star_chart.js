@@ -8,9 +8,9 @@ document.addEventListener('star_chart_loaded', async () => {
     const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
     const COLORS = {
-        Combat: { minor: "#a54209", major: "#7a3310" },
-        Gathering: { minor: "#03741c", major: "#3c5f0b" },
-        Pve: { minor: "#161883", major: "#0a285a" }
+        Combat: { minor: "#FF8F00", major: "#D84315" },
+        Gathering: { minor: "#00695C", major: "#558B2F" },
+        Pve: { minor: "#6A1B9A", major: "#283593" }
     };
     const REPLACEMENT_GOLD = "#d8ab45";
 
