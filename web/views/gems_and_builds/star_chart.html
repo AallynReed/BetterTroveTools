@@ -14,11 +14,11 @@
                 </div>
             </div>
 
-            <svg id="chart-svg" viewBox="0 0 1000 1000">
+            <svg id="chart-svg" viewBox="0 0 1000 800">
                 <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" class="chart-line" :class="{'line-selected': line.selected}" />
                 <path v-for="curve in replacementCurves" :key="curve.id" :d="curve.d" class="replacement-line" :class="{ 'replacement-line-active': curve.isTipEdge }" />
                 
-                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="t('Quick Clear: Remove all active nodes')" @click="clearAllSelectedNodes" />
+                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="cheatModeEnabled ? t('Click center to clear all. Double-click to activate every node.') : t('Quick Clear: Remove all active nodes')" @click="onCenterAnchorClick" />
 
                 <template v-for="node in renderNodes" :key="node.id">
                     <polygon v-if="node.Type === 'Root'" :points="node.points" :style="node.style" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive, 'node-replacement-tip': node.replacementTip}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
@@ -32,8 +32,12 @@
         <div id="build-summary-panel">
             <h3>{{ t('Current Build') }}</h3>
             <div class="build-meta-row">
-                <span class="build-meta-chip"><i class="fa-solid fa-diagram-project"></i> {{ t('Nodes') }}: {{ selectedNodeCount }}/40</span>
+                <span class="build-meta-chip"><i class="fa-solid fa-diagram-project"></i> {{ t('Nodes') }}: {{ selectedNodeCount }}/{{ maxNodeLimit }}</span>
                 <span class="build-meta-chip" :class="{ active: hasAnySelection }"><i class="fa-solid" :class="hasAnySelection ? 'fa-circle-check' : 'fa-circle' "></i> {{ hasAnySelection ? t('Active') : t('Empty') }}</span>
+                <span class="build-meta-chip cheat-mode-chip" :class="{ active: cheatModeEnabled }" role="button" tabindex="0" @click="toggleCheatMode" @keydown.enter.prevent="toggleCheatMode" @keydown.space.prevent="toggleCheatMode">
+                    <i class="fa-solid" :class="cheatModeEnabled ? 'fa-bolt' : 'fa-lock'"></i>
+                    {{ t('Cheat Mode') }}: {{ cheatModeEnabled ? t('On') : t('Off') }}
+                </span>
             </div>
             
             <div class="build-share-controls">
@@ -43,16 +47,16 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 5px; margin-top: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
+            <div class="build-template-controls" style="display: flex; gap: 5px; margin-top: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
                 <custom-vue-select v-model="selectedTemplate" :options="templateOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
-                <button class="primary-btn" @click="saveTemplate"><i class="fa-solid fa-floppy-disk"></i> {{ t('Save') }}</button>
+                <button class="primary-btn" @click="saveTemplate" :disabled="cheatModeEnabled" :title="cheatModeEnabled ? t('Disable Cheat Mode before saving templates') : t('Save Template')"><i class="fa-solid fa-floppy-disk"></i> {{ t('Save') }}</button>
                 <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate"><i class="fa-solid fa-trash"></i></button>
             </div>
             
             <div id="summary-content">
                 <p v-if="selectedNodeCount === 0" class="file-meta">{{ t('Select nodes to calculate stats.') }}</p>
                 <template v-else>
-                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">{{ t('Nodes Active: {count} / 40').replace('{count}', selectedNodeCount) }}</div>
+                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">{{ t('Nodes Active: {count} / {limit}').replace('{count}', selectedNodeCount).replace('{limit}', maxNodeLimit) }}</div>
                     
                     <div v-if="summaryStats.length > 0" class="summary-section">
                         <h4>{{ t('Aggregated Stats') }}</h4>

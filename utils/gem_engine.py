@@ -2,6 +2,7 @@ import base64
 import itertools
 import json
 import os
+import re
 from typing import Dict, List
 
 from models.trove.builds import (BuildConfig, BuildType, Class, DamageType,
@@ -10,23 +11,100 @@ from utils.functions import get_attr
 
 
 class StarChartParser:
+    COMPACT_CODE_PREFIX = "SC:"
+    ROOT_TO_ABBREV = {
+        "combat": "c",
+        "gathering": "g",
+        "pve": "p",
+    }
+    ABBREV_TO_ROOT = {value: key for key, value in ROOT_TO_ABBREV.items()}
+
     def __init__(self, star_chart_raw_data: dict):
         """
         Takes the raw star_chart.json dictionary and builds a flat 
         O(1) lookup map for instant node resolution.
         """
         self.node_map = {}
+        self.parent_map = {}
         if star_chart_raw_data:
             for constell in star_chart_raw_data.values():
                 self._flatten_tree(constell)
+        self.selectable_paths = sorted(
+            path for path, node in self.node_map.items() if node.get("Type") != "Root"
+        )
+        self.path_to_id = {path: index for index, path in enumerate(self.selectable_paths)}
 
-    def _flatten_tree(self, node: dict):
+    def _flatten_tree(self, node: dict, parent_path: str = None):
         if "Path" in node:
             self.node_map[node["Path"]] = node
+            self.parent_map[node["Path"]] = parent_path
         for child in node.get("Stars", []):
-            self._flatten_tree(child)
+            self._flatten_tree(child, node.get("Path"))
 
-    def parse_build_code(self, base64_code: str) -> dict:
+    def _expand_terminal_path(self, path: str) -> set[str]:
+        expanded = set()
+        current_path = path
+
+        while current_path and current_path in self.node_map:
+            node = self.node_map[current_path]
+            if node.get("Type") == "Root":
+                break
+            if current_path in expanded:
+                break
+
+            expanded.add(current_path)
+            parent_path = self.parent_map.get(current_path)
+            if not parent_path or self.node_map.get(parent_path, {}).get("Type") == "Root":
+                break
+            current_path = parent_path
+
+        return expanded
+
+    def _decode_compact_path(self, token: str) -> str | None:
+        compact_token = str(token or "").strip().lower()
+        if not compact_token:
+            return None
+
+        root_name = self.ABBREV_TO_ROOT.get(compact_token[0])
+        if not root_name:
+            return None
+
+        segments = re.findall(r"[a-z]+|\d+", compact_token[1:])
+        path = ".".join([root_name, *segments])
+        node = self.node_map.get(path)
+        if not node or node.get("Type") == "Root":
+            return None
+        return path
+
+    def _decode_build_code(self, build_code: str) -> set[str]:
+        compact_code = str(build_code or "").strip()
+        if not compact_code:
+            return set()
+
+        if compact_code.startswith(self.COMPACT_CODE_PREFIX) or compact_code.startswith("v2:"):
+            selected_paths = set()
+            payload = compact_code.split(":", 1)[1]
+
+            if "|" in payload:
+                for token in payload.split("|"):
+                    path = self._decode_compact_path(token)
+                    if path:
+                        selected_paths.update(self._expand_terminal_path(path))
+                return selected_paths
+
+            padded_payload = payload + ("=" * ((4 - len(payload) % 4) % 4))
+            decoded_bytes = base64.urlsafe_b64decode(padded_payload.encode("utf-8"))
+
+            for node_id in decoded_bytes:
+                if 0 <= node_id < len(self.selectable_paths):
+                    selected_paths.update(self._expand_terminal_path(self.selectable_paths[node_id]))
+
+            return selected_paths
+
+        decoded_string = base64.b64decode(compact_code).decode('utf-8')
+        return {path for path in decoded_string.split('$') if path in self.node_map}
+
+    def parse_build_code(self, build_code: str) -> dict:
         """
         Decodes the string, filters out overwritten nodes, and aggregates 
         only permanent passive stats.
@@ -34,18 +112,20 @@ class StarChartParser:
         result = {
             "stats": {}, 
             "abilities": set(),
-            "ability_values": {} # Kept separate for future buff-toggling UI
+            "ability_values": {}, # Kept separate for future buff-toggling UI
+            "paths_count": 0,
         }
         
-        if not base64_code or not self.node_map:
+        if not build_code or not self.node_map:
             return result
 
         try:
-            decoded_string = base64.b64decode(base64_code).decode('utf-8')
-            selected_paths = set(decoded_string.split('$'))
+            selected_paths = self._decode_build_code(build_code)
         except Exception as e:
             print(f"Failed to decode Star Chart code: {e}")
             return result
+
+        result["paths_count"] = len(selected_paths)
 
         # 1. Identify all Overwritten paths
         overwrites = set()

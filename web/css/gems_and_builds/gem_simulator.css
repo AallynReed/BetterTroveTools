@@ -6,7 +6,8 @@
     display: flex;
     gap: 20px;
     padding: 20px;
-    height: calc(100vh - 40px);
+    min-height: var(--gems-builds-min-height, 420px);
+    height: auto;
     max-width: 1600px;
     margin: 0 auto;
     animation: fadeIn 0.3s ease;
@@ -483,7 +484,8 @@
 .gem-sim-container {
     gap: 14px;
     padding: 14px;
-    height: calc(100vh - 28px);
+    min-height: var(--gems-builds-min-height, 420px);
+    height: auto;
 }
 
 .gem-sim-column {

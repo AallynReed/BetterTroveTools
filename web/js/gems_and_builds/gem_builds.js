@@ -254,11 +254,13 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
 
                 try {
-                    const decoded = atob(newVal);
-                    const paths = decoded.split('$');
                     const parsedData = await eel.parse_star_chart_code(newVal)();
                     const parsed = unwrapResp(parsedData, null, {});
-                    starChartSummary.value = { pathsCount: paths.length, stats: parsed?.stats || {}, error: false };
+                    const pathsCount = Number(parsed?.paths_count) || 0;
+                    if (pathsCount <= 0) {
+                        throw new Error('Invalid build code');
+                    }
+                    starChartSummary.value = { pathsCount, stats: parsed?.stats || {}, error: false };
                 } catch(e) {
                     starChartSummary.value = { error: true };
                 }

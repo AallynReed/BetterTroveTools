@@ -107,16 +107,17 @@ document.addEventListener('calculators_loaded', () => {
                 }
 
                 try {
-                    const decoded = atob(trimmed);
-                    const pathsCount = decoded ? decoded.split('$').length : 0;
-
                     if (!window.eel || typeof window.eel.parse_star_chart_code !== 'function') {
-                        starChartMf.value = { flat: 0, pct: 0, pathsCount, error: false, loaded: true };
+                        starChartMf.value = { flat: 0, pct: 0, pathsCount: 0, error: false, loaded: true };
                         return;
                     }
 
                     const parsedResp = await window.eel.parse_star_chart_code(trimmed)();
                     const parsed = unwrapResp(parsedResp, null, {}) || {};
+                    const pathsCount = Number(parsed.paths_count) || 0;
+                    if (pathsCount <= 0) {
+                        throw new Error('Invalid build code');
+                    }
                     const mfOnly = extractStarChartMfStats(parsed.stats);
                     starChartMf.value = {
                         flat: mfOnly.flat,

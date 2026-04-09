@@ -8,6 +8,7 @@
 }
 
 .gems-and-builds-container { 
+    --gems-builds-min-height: clamp(420px, calc(100dvh - 220px), 860px);
     padding: 32px; 
     width: 100%; 
     max-width: none; 
@@ -75,8 +76,11 @@
 
 .tab-content > * {
     height: 100%;
-    min-height: 0;
-    overflow: auto;
+    min-height: var(--gems-builds-min-height);
+    max-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
 }
 
 .view-container { 
@@ -95,6 +99,7 @@
 /* Responsive design */
 @media (max-width: 900px) {
     .gems-and-builds-container { 
+        --gems-builds-min-height: clamp(360px, calc(100dvh - 180px), 720px);
         padding: 20px; 
     }
     

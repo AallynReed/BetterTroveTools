@@ -10,7 +10,7 @@
     display: grid;
     grid-template-columns: 390px 1fr;
     gap: 20px;
-    min-height: 700px;
+    min-height: min(700px, 100%);
 }
 
 .card {

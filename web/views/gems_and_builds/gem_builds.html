@@ -73,7 +73,7 @@
             <div class="config-section">
                 <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart') }}</h4>
                 <div class="input-group star-chart-controls">
-                    <label>{{ t('Star Chart Build Code (Base64)') }}</label>
+                    <label>{{ t('Star Chart Build Code') }}</label>
                     <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%;">
                         <option value="">{{ t('-- Load Saved Star Chart --') }}</option>
                         <option v-for="(code, name) in starChartTemplates" :key="name" :value="code">{{ name }}</option>
@@ -83,7 +83,7 @@
                 
                 <div v-if="starChartSummary" class="star-chart-summary">
                     <template v-if="starChartSummary.error">
-                        <span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Invalid Base64 Build Code') }}</span>
+                        <span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Invalid Build Code') }}</span>
                     </template>
                     <template v-else>
                         <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart Loaded') }}</h4>

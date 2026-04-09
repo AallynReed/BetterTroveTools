@@ -5,7 +5,7 @@ document.addEventListener('star_chart_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
 
     const COLORS = {
         Combat: { minor: "#FF8F00", major: "#D84315" },
@@ -13,6 +13,9 @@ document.addEventListener('star_chart_loaded', async () => {
         Pve: { minor: "#6A1B9A", major: "#283593" }
     };
     const REPLACEMENT_GOLD = "#d8ab45";
+    const COMPACT_CODE_PREFIX = 'SC:';
+    const ROOT_TO_ABBREV = { combat: 'c', gathering: 'g', pve: 'p' };
+    const ABBREV_TO_ROOT = { c: 'combat', g: 'gathering', p: 'pve' };
 
     const app = createApp({
         setup() {
@@ -28,10 +31,12 @@ document.addEventListener('star_chart_loaded', async () => {
             };
 
             const isLoading = ref(true);
-            const CHART_Y_OFFSET = -40;
-            const CHART_SPACING_SCALE = 1.06;
+            const cheatModeEnabled = ref(false);
+            const CHART_Y_OFFSET = -130;
+            const CHART_SPACING_SCALE = 0.92;
             const origin = ref([500, 460]);
             const chartBaseOrigin = ref([500, 500]);
+            const maxNodeLimit = computed(() => cheatModeEnabled.value ? 120 : 40);
 
             const withChartOffset = (coords) => {
                 if (!Array.isArray(coords) || coords.length < 2) return [500, 500 + CHART_Y_OFFSET];
@@ -104,6 +109,24 @@ document.addEventListener('star_chart_loaded', async () => {
             const modalInputRef = ref(null);
 
             const tooltip = reactive({ show: false, node: null, x: 0, y: 0 });
+            let chartResizeObserver = null;
+
+            const syncSummaryPanelHeight = () => {
+                const root = document.getElementById('star-chart-vue-app-inner');
+                const chartWrapper = document.getElementById('chart-wrapper');
+                if (!root || !chartWrapper) return;
+                const height = Math.round(chartWrapper.getBoundingClientRect().height);
+                if (height > 0) {
+                    root.style.setProperty('--star-chart-panel-height', `${height}px`);
+                }
+            };
+
+            const scheduleSummaryPanelHeightSync = () => {
+                requestAnimationFrame(() => {
+                    syncSummaryPanelHeight();
+                    requestAnimationFrame(syncSummaryPanelHeight);
+                });
+            };
 
             const templateOptions = computed(() => {
                 const opts = [['-- Templates --', '']];
@@ -112,6 +135,135 @@ document.addEventListener('star_chart_loaded', async () => {
                 }
                 return opts;
             });
+
+            const getSelectablePathList = () => {
+                return Object.keys(nodeMap)
+                    .filter(path => nodeMap[path] && nodeMap[path].Type !== 'Root')
+                    .sort();
+            };
+
+            const getCodecMaps = () => {
+                const selectablePaths = getSelectablePathList();
+                const pathToId = new Map();
+                selectablePaths.forEach((path, index) => {
+                    pathToId.set(path, index);
+                });
+                return { selectablePaths, pathToId };
+            };
+
+            const toBase64Url = (binary) => {
+                return btoa(binary)
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/g, '');
+            };
+
+            const fromBase64Url = (payload) => {
+                const normalized = String(payload || '')
+                    .replace(/-/g, '+')
+                    .replace(/_/g, '/');
+                const padLength = (4 - (normalized.length % 4)) % 4;
+                return atob(normalized + '='.repeat(padLength));
+            };
+
+            const getSelectedTerminalPaths = (selection = selectedPaths) => {
+                const selected = Array.from(selection)
+                    .filter(path => nodeMap[path] && nodeMap[path].Type !== 'Root');
+
+                return selected
+                    .filter(path => !selected.some(other => other !== path && other.startsWith(`${path}.`)))
+                    .sort();
+            };
+
+            const encodeCompactPath = (path) => {
+                const [root, ...segments] = String(path || '').split('.');
+                const rootAbbrev = ROOT_TO_ABBREV[root];
+                if (!rootAbbrev || segments.length === 0) return null;
+                return `${rootAbbrev}${segments.join('')}`;
+            };
+
+            const decodeCompactPath = (token) => {
+                const compactToken = String(token || '').trim().toLowerCase();
+                if (!compactToken) return null;
+
+                const root = ABBREV_TO_ROOT[compactToken[0]];
+                if (!root) return null;
+
+                const remainder = compactToken.slice(1);
+                const segments = remainder.match(/[a-z]+|\d+/g) || [];
+                const fullPath = [root, ...segments].join('.');
+                return nodeMap[fullPath] && nodeMap[fullPath].Type !== 'Root' ? fullPath : null;
+            };
+
+            const expandPathSelection = (path, collected = new Set()) => {
+                let currentPath = path;
+                while (currentPath && nodeMap[currentPath] && nodeMap[currentPath].Type !== 'Root') {
+                    if (collected.has(currentPath)) break;
+                    collected.add(currentPath);
+                    const parentPath = nodeMap[currentPath].parentPath;
+                    if (!parentPath || !nodeMap[parentPath] || nodeMap[parentPath].Type === 'Root') break;
+                    currentPath = parentPath;
+                }
+                return collected;
+            };
+
+            const encodeBuildCodeFromSelection = (selection = selectedPaths) => {
+                const { pathToId } = getCodecMaps();
+                const ids = getSelectedTerminalPaths(selection)
+                    .map(path => pathToId.get(path))
+                    .filter(id => Number.isInteger(id))
+                    .sort((left, right) => left - right);
+
+                if (ids.length === 0) return '';
+
+                const binary = String.fromCharCode(...ids);
+                return `${COMPACT_CODE_PREFIX}${toBase64Url(binary)}`;
+            };
+
+            const decodeBuildCodeToPathSet = (code) => {
+                const trimmed = String(code || '').trim();
+                const expanded = new Set();
+                if (!trimmed) return expanded;
+
+                if (trimmed.startsWith(COMPACT_CODE_PREFIX) || trimmed.startsWith('v2:')) {
+                    const payload = trimmed.slice(trimmed.indexOf(':') + 1);
+
+                    if (payload.includes('|')) {
+                        payload.split('|').forEach(token => {
+                            const path = decodeCompactPath(token);
+                            if (path) expandPathSelection(path, expanded);
+                        });
+                        return expanded;
+                    }
+
+                    try {
+                        const { selectablePaths } = getCodecMaps();
+                        const binary = fromBase64Url(payload);
+                        Array.from(binary).forEach(char => {
+                            const path = selectablePaths[char.charCodeAt(0)];
+                            if (path) expandPathSelection(path, expanded);
+                        });
+                    } catch (error) {
+                        return new Set();
+                    }
+
+                    return expanded;
+                }
+
+                try {
+                    const decoded = atob(trimmed);
+                    decoded.split('$').forEach(path => {
+                        const normalizedPath = String(path || '').trim();
+                        if (nodeMap[normalizedPath] && nodeMap[normalizedPath].Type !== 'Root') {
+                            expanded.add(normalizedPath);
+                        }
+                    });
+                } catch (error) {
+                    return new Set();
+                }
+
+                return expanded;
+            };
 
             const overwrites = computed(() => {
                 let ow = new Set();
@@ -213,6 +365,14 @@ document.addEventListener('star_chart_loaded', async () => {
             });
 
             const selectedNodeCount = computed(() => selectedPaths.size);
+
+            const persistState = () => {
+                if (!window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    buildCode: buildCode.value || "",
+                    cheatModeEnabled: cheatModeEnabled.value
+                });
+            };
 
             const renderNodes = computed(() => {
                 const replacementTips = replacementInfo.value.tipSet;
@@ -411,15 +571,16 @@ document.addEventListener('star_chart_loaded', async () => {
                 Object.values(nodeMap).forEach(node => {
                     if (node.constellName === rootNode.constellName && node.Type !== "Root") {
                         if (!selectedPaths.has(node.Path)) {
-                            if (selectedPaths.size >= 40) { limitHit = true; return; }
+                            if (selectedPaths.size >= maxNodeLimit.value) { limitHit = true; return; }
                             selectedPaths.add(node.Path);
                         }
                     }
                 });
-                if (limitHit) window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
+                if (limitHit) window.showToast(t("Cannot exceed maximum of {limit} active nodes.").replace("{limit}", maxNodeLimit.value), true);
             };
 
             let clickTimer = null;
+            let centerClickTimer = null;
             const onRootClick = (node, e) => {
                 if (e.detail === 1) {
                     clickTimer = setTimeout(() => {
@@ -431,16 +592,62 @@ document.addEventListener('star_chart_loaded', async () => {
                 }
             };
 
+            const selectAllNodes = () => {
+                let limitHit = false;
+                Object.values(nodeMap).forEach(node => {
+                    if (node.Type !== "Root" && !selectedPaths.has(node.Path)) {
+                        if (selectedPaths.size >= maxNodeLimit.value) {
+                            limitHit = true;
+                            return;
+                        }
+                        selectedPaths.add(node.Path);
+                    }
+                });
+                if (limitHit) {
+                    window.showToast(t("Cannot exceed maximum of {limit} active nodes.").replace("{limit}", maxNodeLimit.value), true);
+                }
+            };
+
+            const onCenterAnchorClick = (e) => {
+                if (e.detail === 1) {
+                    centerClickTimer = setTimeout(() => {
+                        clearAllSelectedNodes();
+                    }, 250);
+                } else if (e.detail === 2) {
+                    clearTimeout(centerClickTimer);
+                    if (!cheatModeEnabled.value) return;
+                    selectAllNodes();
+                }
+            };
+
             const onNodeClick = (node) => {
                 if (selectedPaths.has(node.Path)) {
                     deselectNodeAndChildren(node.Path);
                 } else {
                     const nodesToAdd = getAncestorsToSelect(node.Path, []);
-                    if (selectedPaths.size + nodesToAdd.length > 40) {
-                        window.showToast(t("Cannot exceed maximum of 40 active nodes."), true);
+                    if (selectedPaths.size + nodesToAdd.length > maxNodeLimit.value) {
+                        window.showToast(t("Cannot exceed maximum of {limit} active nodes.").replace("{limit}", maxNodeLimit.value), true);
                         return;
                     }
                     nodesToAdd.forEach(p => selectedPaths.add(p));
+                }
+            };
+
+            const toggleCheatMode = () => {
+                if (cheatModeEnabled.value && selectedPaths.size > 40) {
+                    window.showToast(t("Reduce active nodes to 40 or fewer before disabling Cheat Mode."), true);
+                    return;
+                }
+
+                cheatModeEnabled.value = !cheatModeEnabled.value;
+                persistState();
+
+                if (window.showToast) {
+                    window.showToast(
+                        cheatModeEnabled.value
+                            ? t("Cheat Mode enabled. Node limit set to 120.")
+                            : t("Cheat Mode disabled. Node limit set to 40.")
+                    );
                 }
             };
 
@@ -452,21 +659,15 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const normalizeCode = (code) => {
                 if (!code) return "";
-                try { return atob(code).split('$').sort().join('$'); } catch(e) { return code; }
+                return Array.from(decodeBuildCodeToPathSet(code)).sort().join('$');
             };
 
             watch(selectedPaths, () => {
                 if (!codeInputFocused.value) {
-                    const pathsArray = Array.from(selectedPaths);
-                    buildCode.value = pathsArray.length > 0 ? btoa(pathsArray.join('$')) : "";
+                    buildCode.value = encodeBuildCodeFromSelection();
                 }
                 updateTemplateDropdown();
-
-                if (window.AppSettings) {
-                    window.AppSettings.setPrefSync(PREF_STATE_KEY, {
-                        buildCode: buildCode.value || ""
-                    });
-                }
+                persistState();
             }, { deep: true });
 
             const updateTemplateDropdown = () => {
@@ -488,12 +689,8 @@ document.addEventListener('star_chart_loaded', async () => {
                 const code = buildCode.value.trim();
                 if (!code) return;
                 try {
-                    const paths = atob(code).split('$');
-                    
-                    let hasValid = false;
-                    paths.forEach(p => {
-                        if (nodeMap[p] && nodeMap[p].Type !== "Root") hasValid = true;
-                    });
+                    const paths = Array.from(decodeBuildCodeToPathSet(code));
+                    let hasValid = paths.length > 0;
                     
                     if (!hasValid) {
                         if (!isSilent) window.showToast(t("No valid nodes found in build code."), true);
@@ -503,9 +700,11 @@ document.addEventListener('star_chart_loaded', async () => {
                     selectedPaths.clear();
                     let loaded = 0, skipped = 0;
 
+                    paths.sort((left, right) => left.split('.').length - right.split('.').length);
+
                     paths.forEach(p => {
                         if (nodeMap[p] && nodeMap[p].Type !== "Root") {
-                            if (selectedPaths.size < 40) {
+                            if (selectedPaths.size < maxNodeLimit.value && !selectedPaths.has(p)) {
                                 selectedPaths.add(p);
                                 loaded++;
                             } else {
@@ -515,7 +714,7 @@ document.addEventListener('star_chart_loaded', async () => {
                     });
                     
                     if (!isSilent) {
-                        if (skipped > 0) window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max 40 limit).").replace("{loaded}", loaded).replace("{skipped}", skipped), true);
+                        if (skipped > 0) window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max {limit} limit).").replace("{loaded}", loaded).replace("{skipped}", skipped).replace("{limit}", maxNodeLimit.value), true);
                         else if (loaded > 0) window.showToast(t("Successfully loaded {loaded} nodes!").replace("{loaded}", loaded));
                     }
                 } catch (e) {
@@ -527,6 +726,10 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (codeInputFocused.value && newVal) {
                     loadCode(true);
                 }
+            });
+
+            watch(selectedNodeCount, () => {
+                scheduleSummaryPanelHeightSync();
             });
 
             const copyCode = () => {
@@ -549,6 +752,10 @@ document.addEventListener('star_chart_loaded', async () => {
             };
 
             const saveTemplate = () => {
+                if (cheatModeEnabled.value) {
+                    window.showToast(t("Disable Cheat Mode before saving templates."), true);
+                    return;
+                }
                 const code = buildCode.value.trim();
                 if (!code) { window.showToast(t("No active build to save."), true); return; }
                 modal.action = 'save';
@@ -679,22 +886,46 @@ document.addEventListener('star_chart_loaded', async () => {
                     if (window.AppSettings) {
                         await window.AppSettings.load();
                         const savedState = window.AppSettings.getPref(PREF_STATE_KEY, null);
-                        if (savedState && typeof savedState === 'object' && savedState.buildCode) {
-                            buildCode.value = savedState.buildCode;
-                            loadCode(true);
+                        if (savedState && typeof savedState === 'object') {
+                            cheatModeEnabled.value = savedState.cheatModeEnabled === true;
+                            if (savedState.buildCode) {
+                                buildCode.value = savedState.buildCode;
+                                loadCode(true);
+                            }
                         }
                     }
 
-                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                    nextTick(() => {
+                        if (window.applyCustomDropdowns) window.applyCustomDropdowns();
+                        scheduleSummaryPanelHeightSync();
+
+                        const chartWrapper = document.getElementById('chart-wrapper');
+                        if (chartWrapper && typeof ResizeObserver !== 'undefined') {
+                            chartResizeObserver = new ResizeObserver(() => {
+                                syncSummaryPanelHeight();
+                            });
+                            chartResizeObserver.observe(chartWrapper);
+                        }
+
+                        window.addEventListener('resize', syncSummaryPanelHeight);
+                    });
                 } else {
                     window.showToast(t("Error loading chart data: {error}").replace("{error}", response.error), true);
                 }
             });
 
+            onBeforeUnmount(() => {
+                if (chartResizeObserver) {
+                    chartResizeObserver.disconnect();
+                    chartResizeObserver = null;
+                }
+                window.removeEventListener('resize', syncSummaryPanelHeight);
+            });
+
             return {
                 t, isLoading, origin, lines, replacementCurves, renderNodes,
-                selectedNodeCount, summaryStats, summaryAbilities, summaryObtainables, hasAnySelection,
-                onRootClick, onNodeClick, clearAllSelectedNodes,
+                selectedNodeCount, maxNodeLimit, cheatModeEnabled, summaryStats, summaryAbilities, summaryObtainables, hasAnySelection,
+                onRootClick, onNodeClick, onCenterAnchorClick, clearAllSelectedNodes, toggleCheatMode,
                 buildCode, codeInputFocused, loadCode, copyCode,
                 selectedTemplate, templateOptions, saveTemplate, deleteTemplate,
                 modal, modalInputRef, confirmModal,

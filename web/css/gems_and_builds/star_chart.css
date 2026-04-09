@@ -3,6 +3,7 @@
 }
 
 .star-chart-container {
+    --star-chart-panel-height: auto;
     padding: 40px;
     max-width: 1400px;
     margin: 0 auto;
@@ -18,7 +19,7 @@
 .chart-layout {
     display: flex;
     gap: 20px;
-    align-items: flex-start;
+    align-items: stretch;
 }
 
 #chart-wrapper {
@@ -80,7 +81,6 @@
     width: 100%;
     max-width: 1000px; 
     height: auto;
-    aspect-ratio: 1 / 1;
     background-color: transparent; 
 }
 
@@ -175,9 +175,18 @@
     border-radius: 8px;
     padding: 20px;
     flex-shrink: 0;
-    
+    align-self: flex-start;
+    height: var(--star-chart-panel-height);
+    max-height: var(--star-chart-panel-height);
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    overflow: visible;
+}
+
+.build-template-controls {
+    position: relative;
+    z-index: calc(var(--z-dropdown) - 1);
 }
 
 #build-summary-panel h3 {
@@ -211,6 +220,26 @@
     color: var(--accent-blue);
     border-color: rgba(var(--accent-rgb), 0.4);
     background: rgba(var(--accent-rgb), 0.12);
+}
+
+.cheat-mode-chip {
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.cheat-mode-chip:hover {
+    color: var(--text-main);
+    border-color: rgba(var(--accent-rgb), 0.28);
+    background: rgba(var(--accent-rgb), 0.08);
+}
+
+.cheat-mode-chip:focus-visible {
+    color: var(--text-main);
+    border-color: rgba(var(--accent-rgb), 0.38);
+    background: rgba(var(--accent-rgb), 0.1);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.16);
+    outline: none;
 }
 
 .build-share-controls {
@@ -261,6 +290,7 @@
     overflow-y: auto;
     min-height: 0;
     padding-right: 5px;
+    scrollbar-gutter: stable;
 }
 
 .summary-section {
@@ -343,5 +373,5 @@
 #chart-wrapper {
     padding: 14px;
     padding-top: 38px;
-    min-height: 560px;
+    max-height: calc(100vh - 200px);
 }
