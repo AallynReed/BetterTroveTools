@@ -4,6 +4,7 @@
 
 .star-chart-container {
     --star-chart-panel-height: auto;
+    --star-chart-panel-max-height: calc(100vh - 120px);
     padding: 40px;
     max-width: 1400px;
     margin: 0 auto;
@@ -19,11 +20,12 @@
 .chart-layout {
     display: flex;
     gap: 20px;
-    align-items: stretch;
+    align-items: flex-start;
 }
 
 #chart-wrapper {
     flex: 1;
+    align-self: flex-start;
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -174,19 +176,19 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 20px;
+    box-sizing: border-box;
     flex-shrink: 0;
     align-self: flex-start;
-    height: var(--star-chart-panel-height);
-    max-height: var(--star-chart-panel-height);
+    height: min(var(--star-chart-panel-height), var(--star-chart-panel-max-height));
+    max-height: min(var(--star-chart-panel-height), var(--star-chart-panel-max-height));
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow: visible;
-}
-
-.build-template-controls {
-    position: relative;
-    z-index: calc(var(--z-dropdown) - 1);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    max-height: 753px;
 }
 
 #build-summary-panel h3 {
@@ -286,21 +288,53 @@
 }
 
 #summary-content {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding-right: 5px;
-    scrollbar-gutter: stable;
+    flex: 0 0 auto;
+    overflow: visible;
+    min-height: auto;
+    padding-right: 0;
 }
 
 .summary-section {
     margin-bottom: 15px;
 }
 
-.summary-section h4 {
+.summary-section-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
     color: var(--accent-blue);
     margin: 0 0 5px 0;
+    padding: 4px 2px;
     font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.summary-section-toggle:hover {
+    background: rgba(var(--accent-rgb), 0.08);
+    color: var(--text-main);
+}
+
+.summary-section-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+}
+
+.summary-section-toggle i {
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.summary-section-toggle.expanded i {
+    color: var(--accent-blue);
 }
 
 .summary-section ul {

@@ -105,6 +105,12 @@ document.addEventListener('star_chart_loaded', async () => {
             const templates = ref({});
             const selectedTemplate = ref("");
 
+            const summarySectionState = reactive({
+                stats: true,
+                abilities: true,
+                obtainables: true
+            });
+
             const modal = reactive({ show: false, title: '', msg: '', showInput: false, inputValue: '', action: null });
             const modalInputRef = ref(null);
 
@@ -114,10 +120,17 @@ document.addEventListener('star_chart_loaded', async () => {
             const syncSummaryPanelHeight = () => {
                 const root = document.getElementById('star-chart-vue-app-inner');
                 const chartWrapper = document.getElementById('chart-wrapper');
-                if (!root || !chartWrapper) return;
-                const height = Math.round(chartWrapper.getBoundingClientRect().height);
+                const summaryPanel = document.getElementById('build-summary-panel');
+                if (!root || !chartWrapper || !summaryPanel) return;
+                const chartRect = chartWrapper.getBoundingClientRect();
+                const panelRect = summaryPanel.getBoundingClientRect();
+                const height = Math.round(chartRect.height);
+                const viewportHeight = Math.max(0, Math.floor(window.innerHeight - panelRect.top - 16));
                 if (height > 0) {
                     root.style.setProperty('--star-chart-panel-height', `${height}px`);
+                }
+                if (viewportHeight > 0) {
+                    root.style.setProperty('--star-chart-panel-max-height', `${viewportHeight}px`);
                 }
             };
 
@@ -657,6 +670,11 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (window.showToast) window.showToast(t('All active nodes cleared.'));
             };
 
+            const toggleSummarySection = (sectionKey) => {
+                if (!Object.prototype.hasOwnProperty.call(summarySectionState, sectionKey)) return;
+                summarySectionState[sectionKey] = !summarySectionState[sectionKey];
+            };
+
             const normalizeCode = (code) => {
                 if (!code) return "";
                 return Array.from(decodeBuildCodeToPathSet(code)).sort().join('$');
@@ -926,6 +944,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 t, isLoading, origin, lines, replacementCurves, renderNodes,
                 selectedNodeCount, maxNodeLimit, cheatModeEnabled, summaryStats, summaryAbilities, summaryObtainables, hasAnySelection,
                 onRootClick, onNodeClick, onCenterAnchorClick, clearAllSelectedNodes, toggleCheatMode,
+                summarySectionState, toggleSummarySection,
                 buildCode, codeInputFocused, loadCode, copyCode,
                 selectedTemplate, templateOptions, saveTemplate, deleteTemplate,
                 modal, modalInputRef, confirmModal,
