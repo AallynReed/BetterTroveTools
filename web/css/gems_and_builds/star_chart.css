@@ -184,11 +184,21 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-gutter: stable;
+    overflow: visible;
     max-height: 753px;
+}
+
+.build-template-controls {
+    position: relative;
+    z-index: 12;
+}
+
+.build-template-controls .custom-select-wrapper {
+    min-width: 0;
+}
+
+.build-template-controls .custom-select-wrapper.open {
+    z-index: 13;
 }
 
 #build-summary-panel h3 {
@@ -288,10 +298,13 @@
 }
 
 #summary-content {
-    flex: 0 0 auto;
-    overflow: visible;
-    min-height: auto;
-    padding-right: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding-right: 6px;
 }
 
 .summary-section {
