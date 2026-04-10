@@ -31,7 +31,7 @@
                     <div class="build-left-col">
                         <div class="form-group">
                             <label>{{ t('Mod Preview') }}</label>
-                            <div class="mod-preview-picker" :title="t('Click to select preview image')" @click="$refs.buildPreviewInput.click()">
+                            <div class="mod-preview-picker" :title="t('Click to select preview image')" @click="chooseBuildPreview">
                                 <img :src="build.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
@@ -40,7 +40,19 @@
                                 <button type="button" class="remove-preview-btn" v-show="build.preview" @click.stop="build.preview = ''; build.previewName = ''" :title="t('Remove Preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
-                                <input type="file" ref="buildPreviewInput" @change="onBuildPreviewChange" accept="image/png, image/jpeg" style="display: none;">
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label>{{ t('Config File (.cfg)') }}</label>
+                            <div class="input-row">
+                                <input type="text" :value="build.configName" :placeholder="t('Optional UI config file...')" readonly>
+                                <button class="primary-btn" @click="chooseBuildConfig">
+                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('Browse') }}</span>
+                                </button>
+                                <button type="button" class="icon-btn-small danger" v-show="build.config" @click="build.config = ''; build.configName = ''" :title="t('Remove Config File')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -172,7 +184,7 @@
                 <div v-show="project.dir" style="margin-top: 20px;">
                     <div class="build-split-layout">
                         <div class="build-left-col">
-                            <div class="mod-preview-picker" @click="$refs.projectPreviewInput.click()">
+                            <div class="mod-preview-picker" @click="chooseProjectPreview">
                                 <img :src="project.preview || 'assets/images/no_preview.png'" alt="Project Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
@@ -181,7 +193,19 @@
                                 <button type="button" class="remove-preview-btn" v-show="project.preview" @click.stop="project.preview = ''; project.previewName = ''" :title="t('Remove Preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
-                                <input type="file" ref="projectPreviewInput" @change="onProjectPreviewChange" accept="image/png, image/jpeg" style="display: none;">
+                            </div>
+
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label>{{ t('Config File (.cfg)') }}</label>
+                                <div class="input-row">
+                                    <input type="text" :value="project.configName" :placeholder="t('Optional UI config file...')" readonly>
+                                    <button class="primary-btn" @click="chooseProjectConfig">
+                                        <i class="fa-solid fa-file-lines"></i> <span>{{ t('Browse') }}</span>
+                                    </button>
+                                    <button type="button" class="icon-btn-small danger" v-show="project.config" @click="project.config = ''; project.configName = ''" :title="t('Remove Config File')">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-group" style="margin-top: 15px;">

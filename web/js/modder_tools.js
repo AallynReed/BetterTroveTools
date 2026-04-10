@@ -36,9 +36,41 @@ document.addEventListener('modder_tools_loaded', () => {
                 {id: 'Wings', text: 'Wings'}, {id: 'VFX', text: 'VFX'}
             ]);
 
+            const normalizeInternalPath = (value) => String(value || '').replaceAll('\\', '/').trim().toLowerCase();
+            const defaultConfigInternalPath = 'ui/default.cfg';
+            const previewInternalPath = (name) => `ui/${String(name || '').replace(/[\\/*?:"<>|]/g, '').trim()}`;
+
+            const validateSpecialFileSelections = ({ files, previewName, hasPreview, hasConfig }) => {
+                const seen = new Set();
+                for (const file of files || []) {
+                    const internalPath = normalizeInternalPath(file.internal_path);
+                    if (!internalPath) continue;
+                    if (seen.has(internalPath)) return 'You cannot add the same file path more than once.';
+                    seen.add(internalPath);
+                }
+
+                if (hasConfig && seen.has(defaultConfigInternalPath)) {
+                    return 'default.cfg can only be added through the config file option.';
+                }
+
+                if (hasPreview) {
+                    const previewPath = normalizeInternalPath(previewInternalPath(previewName || 'preview.png'));
+                    if (seen.has(previewPath)) return 'Preview image path cannot also be included in the files list.';
+                }
+
+                const cfgPaths = [...seen].filter(path => path.endsWith('.cfg'));
+                if (hasConfig) cfgPaths.push(defaultConfigInternalPath);
+                if (cfgPaths.length > 1) return 'Only one config file can be included in a mod.';
+                if (cfgPaths.length === 1) {
+                    if (cfgPaths[0] !== defaultConfigInternalPath) return 'default.cfg can only be added through the config file option.';
+                }
+
+                return null;
+            };
+
             const build = reactive({
                 title: '', author: '', version: '1.0', notes: '', tags: [], files: [],
-                preview: '', previewName: ''
+                preview: '', previewName: '', config: '', configName: ''
             });
 
             const extract = reactive({
@@ -48,7 +80,7 @@ document.addEventListener('modder_tools_loaded', () => {
             const project = reactive({
                 dir: '', title: '', author: '', notes: '', tags: [],
                 versions: [], activeVersion: '', files: [],
-                preview: '', previewName: '', activeOverrides: []
+                preview: '', previewName: '', config: '', configName: '', activeOverrides: []
             });
 
             const softwareCategories = ref({});
@@ -175,15 +207,29 @@ document.addEventListener('modder_tools_loaded', () => {
                 await openPathInExplorer(file?.abs_path);
             };
 
-            const onBuildPreviewChange = (e) => {
-                const file = e.target.files[0];
+            const chooseBuildPreview = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                const result = await eel.ask_preview_file(selectedGamePath.value)();
+                const file = result?.file;
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        build.preview = event.target.result;
-                        build.previewName = file.name;
-                    };
-                    reader.readAsDataURL(file);
+                    const nextPreviewName = file.name;
+                    const previewPath = normalizeInternalPath(previewInternalPath(nextPreviewName));
+                    if (build.files.some(existing => normalizeInternalPath(existing.internal_path) === previewPath)) {
+                        window.showToast(t("Preview image path cannot also be included in the files list."), true);
+                        return;
+                    }
+                    build.preview = file.data;
+                    build.previewName = nextPreviewName;
+                }
+            };
+
+            const chooseBuildConfig = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                const result = await eel.ask_config_file(selectedGamePath.value)();
+                const file = result?.file;
+                if (file) {
+                    build.config = file.data;
+                    build.configName = 'default.cfg';
                 }
             };
 
@@ -226,6 +272,18 @@ document.addEventListener('modder_tools_loaded', () => {
                             addedCount++;
                         }
                     });
+                    const validationError = validateSpecialFileSelections({
+                        files: build.files,
+                        previewName: build.previewName,
+                        hasPreview: Boolean(build.preview),
+                        hasConfig: Boolean(build.config)
+                    });
+                    if (validationError) {
+                        build.files = build.files.filter(file => !result.files.some(added => added.path === file.path));
+                        window.showToast(t(validationError), true);
+                        isWorking.detectingOverrides = false;
+                        return;
+                    }
                     if (addedCount === 0) window.showToast(t("No new override files found in the source directory."), true);
                     else window.showToast(t("{count} override file(s) successfully detected.").replace("{count}", addedCount));
                 } else {
@@ -242,12 +300,27 @@ document.addEventListener('modder_tools_loaded', () => {
                         if (result.rejected && result.rejected.length > 0) {
                             window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
                         }
+                        if (result.rejected_cfg && result.rejected_cfg.length > 0) {
+                            window.showToast(t("Denied {count} file(s):\n.cfg files must be added through the Config File option.").replace("{count}", result.rejected_cfg.length), true);
+                        }
                         if (result.files && result.files.length > 0) {
+                            const newFiles = [];
                             result.files.forEach(f => {
                                 if (!build.files.find(existing => existing.path === f.path)) {
-                                    build.files.push({ internal_path: f.internal_path, path: f.path });
+                                    newFiles.push({ internal_path: f.internal_path, path: f.path });
                                 }
                             });
+                            build.files.push(...newFiles);
+                            const validationError = validateSpecialFileSelections({
+                                files: build.files,
+                                previewName: build.previewName,
+                                hasPreview: Boolean(build.preview),
+                                hasConfig: Boolean(build.config)
+                            });
+                            if (validationError) {
+                                build.files = build.files.filter(file => !newFiles.some(added => added.path === file.path));
+                                window.showToast(t(validationError), true);
+                            }
                         }
                     }
                 } catch (e) {
@@ -300,6 +373,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!build.notes.trim()) return window.showToast(t("Please enter mod notes or a description."), true);
                 if (build.tags.length === 0) return window.showToast(t("Please select at least one tag."), true);
                 if (build.files.length === 0) return window.showToast(t("Please add at least one file to your mod!"), true);
+                const buildValidationError = validateSpecialFileSelections({
+                    files: build.files,
+                    previewName: build.previewName,
+                    hasPreview: Boolean(build.preview),
+                    hasConfig: Boolean(build.config)
+                });
+                if (buildValidationError) return window.showToast(t(buildValidationError), true);
 
                 isWorking.buildingTMod = true;
                 try {
@@ -323,6 +403,8 @@ document.addEventListener('modder_tools_loaded', () => {
                         tags: build.tags,
                         previewBase64: build.preview || null,
                         previewName: build.previewName || "preview.png",
+                        configBase64: build.config || null,
+                        configName: build.configName || "config.cfg",
                         files: build.files.map(f => ({ internal_path: f.internal_path, abs_path: f.path }))
                     };
 
@@ -401,15 +483,29 @@ document.addEventListener('modder_tools_loaded', () => {
                 isWorking.extracting = false;
             };
 
-            const onProjectPreviewChange = (e) => {
-                const file = e.target.files[0];
+            const chooseProjectPreview = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                const result = await eel.ask_preview_file(selectedGamePath.value)();
+                const file = result?.file;
                 if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        project.preview = event.target.result;
-                        project.previewName = file.name;
-                    };
-                    reader.readAsDataURL(file);
+                    const nextPreviewName = file.name;
+                    const previewPath = normalizeInternalPath(previewInternalPath(nextPreviewName));
+                    if (project.files.some(existing => normalizeInternalPath(existing.rel_path) === previewPath)) {
+                        window.showToast(t("Preview image path cannot also be included in the files list."), true);
+                        return;
+                    }
+                    project.preview = file.data;
+                    project.previewName = nextPreviewName;
+                }
+            };
+
+            const chooseProjectConfig = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                const result = await eel.ask_config_file(selectedGamePath.value)();
+                const file = result?.file;
+                if (file) {
+                    project.config = file.data;
+                    project.configName = 'default.cfg';
                 }
             };
 
@@ -434,6 +530,8 @@ document.addEventListener('modder_tools_loaded', () => {
                     project.tags = result.data.tags || [];
                     project.preview = result.data.previewBase64 || '';
                     project.previewName = result.data.previewName || '';
+                    project.config = result.data.configBase64 || '';
+                    project.configName = result.data.configName || '';
                     
                     project.versions = result.data.versions || ["1.0"];
                     project.activeVersion = result.data.active_version || project.versions[0];
@@ -462,7 +560,9 @@ document.addEventListener('modder_tools_loaded', () => {
                     tags: project.tags,
                     active_version: project.activeVersion,
                     previewBase64: project.preview || null,
-                    previewName: project.previewName || "preview.png"
+                    previewName: project.previewName || "preview.png",
+                    configBase64: project.config || null,
+                    configName: project.config ? (project.configName || "config.cfg") : ""
                 };
 
                 const result = await eel.save_mod_project(project.dir, payload)();
@@ -510,6 +610,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
                 if (!project.title.trim()) return window.showToast(t("Project title cannot be empty."), true);
                 if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
+                const projectValidationError = validateSpecialFileSelections({
+                    files: project.files.map(file => ({ internal_path: file.rel_path })),
+                    previewName: project.previewName,
+                    hasPreview: Boolean(project.preview),
+                    hasConfig: Boolean(project.config)
+                });
+                if (projectValidationError) return window.showToast(t(projectValidationError), true);
 
                 await saveProject();
                 
@@ -726,10 +833,11 @@ document.addEventListener('modder_tools_loaded', () => {
                 t, activeTab, installs, selectedGamePath, gameOptions,
                 lastBuildOutputPath, lastCompiledProjectPath,
                 tagOptions, build, extract, project, softwareCategories, isWorking,
-                scanForGames, onBuildPreviewChange, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
+                scanForGames, chooseBuildPreview, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
+                chooseBuildConfig,
                 openSelectedGamePath, openProjectFolder, openBuildOutputFolder, openCompileOutputFolder, openBuildFileLocation, openProjectFileLocation,
                 browseExtractSource, browseExtractDest, extractTMod,
-                onProjectPreviewChange, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides
+                chooseProjectPreview, chooseProjectConfig, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides
             };
         }
     });

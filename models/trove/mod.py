@@ -28,6 +28,47 @@ from ..trovesaurus.mods import Mod
 mod_file_cache = {}
 
 
+def _normalize_internal_path(path) -> str | None:
+    if path is None:
+        return None
+    normalized = Path(path).as_posix().strip().lower()
+    return normalized or None
+
+
+def _parse_cfg_sections(text: str) -> tuple[list[str], dict[str, dict[str, str]]]:
+    section_order = []
+    sections = {}
+    current_section = None
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line.startswith("[") and line.endswith("]"):
+            current_section = line[1:-1].strip()
+            if current_section not in sections:
+                sections[current_section] = {}
+                section_order.append(current_section)
+            continue
+        if current_section is None or "=" not in raw_line:
+            continue
+        key, value = raw_line.split("=", 1)
+        sections[current_section][key.strip()] = value.lstrip()
+
+    return section_order, sections
+
+
+def _serialize_cfg_sections(section_order: list[str], sections: dict[str, dict[str, str]]) -> str:
+    output = []
+    for index, section in enumerate(section_order):
+        if index:
+            output.append("")
+        output.append(f"[{section}]")
+        for key, value in sections.get(section, {}).items():
+            output.append(f"{key} = {value}")
+    return "\n".join(output)
+
+
 class NoFilesError(Exception): ...
 
 
@@ -205,8 +246,9 @@ class TroveMod:
     @property
     def content_files(self):
         if not self._content_files:
+            special_paths = {self.preview_path, self.config_path}
             self._content_files = [
-                f.trove_path for f in self.files if f.trove_path != self.preview_path
+                f.trove_path for f in self.files if f.trove_path not in special_paths
             ]
         return self._content_files
 
@@ -342,14 +384,19 @@ class TroveMod:
 
     @property
     def preview_path(self):
-        preview_path = self.get_property_value("previewPath")
-        if preview_path:
-            return preview_path.lower()
-        return preview_path
+        return _normalize_internal_path(self.get_property_value("previewPath"))
 
     @preview_path.setter
     def preview_path(self, value: Path):
         self.add_property("previewPath", value.as_posix())
+
+    @property
+    def config_path(self):
+        return _normalize_internal_path(self.get_property_value("configPath"))
+
+    @config_path.setter
+    def config_path(self, value: Path):
+        self.add_property("configPath", value.as_posix())
 
     @property
     def image(self):
@@ -359,6 +406,13 @@ class TroveMod:
         return base64.b64encode(
             open("web/assets/images/no_preview.png", "rb").read()
         ).decode("utf-8")
+
+    @property
+    def config(self):
+        for file in self.files:
+            if file.trove_path == self.config_path:
+                return file.data
+        return None
 
     @property
     def tags(self):
@@ -685,29 +739,46 @@ class TMod(TroveMod):
         mods_cfgs_path = Path(os.getenv("APPDATA")).joinpath("Trove", "ModCfgs")
         mods_cfgs_path.mkdir(parents=True, exist_ok=True)
         config_file = mods_cfgs_path.joinpath(f"{self.name}.cfg")
+        embedded_config = self.config
         swf_files = [
             file.trove_path.split("/")[-1]
             for file in self.files
             if file.trove_path.endswith(".swf")
         ]
-        if not config_file.exists():
-            configs = []
-            for file in swf_files:
-                file_name = file
-                configs.append(f"[{file_name}]")
-            config_file.write_text("\n".join(configs))
+        desired_order = []
+        desired_sections = {}
+
+        if embedded_config is not None:
+            embedded_text = embedded_config.decode("utf-8-sig", errors="replace")
+            desired_order, desired_sections = _parse_cfg_sections(embedded_text)
+
+        for swf_file in swf_files:
+            if swf_file not in desired_sections:
+                desired_sections[swf_file] = {}
+                desired_order.append(swf_file)
+
+        if config_file.exists():
+            current_text = config_file.read_text(encoding="utf-8-sig", errors="replace")
+            current_order, current_sections = _parse_cfg_sections(current_text)
         else:
-            regex = re.compile(r"^\[(.*?\.swf)]$", re.MULTILINE)
-            current = config_file.read_text(encoding="utf-8")
-            configs = regex.findall(current)
-            missing = []
-            for file in swf_files:
-                if file not in configs:
-                    missing.append(file)
-            if missing:
-                missing_text = "\n\n".join([f"[{file}]" for file in missing])
-                current += "\n\n" + missing_text
-                config_file.write_text(current, encoding="utf-8")
+            current_order, current_sections = [], {}
+
+        final_order = list(current_order)
+        final_sections = {section: dict(values) for section, values in current_sections.items()}
+
+        for section in desired_order:
+            if section not in final_sections:
+                final_sections[section] = dict(desired_sections.get(section, {}))
+                final_order.append(section)
+                continue
+            for key, value in desired_sections.get(section, {}).items():
+                if key not in final_sections[section]:
+                    final_sections[section][key] = value
+
+        if not final_order:
+            return
+
+        config_file.write_text(_serialize_cfg_sections(final_order, final_sections), encoding="utf-8")
 
 
 class ZMod(TroveMod):

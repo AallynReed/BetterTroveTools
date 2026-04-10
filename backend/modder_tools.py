@@ -34,6 +34,56 @@ _MODDER_CANCEL_FLAGS = {
 }
 
 
+def _decode_data_url(data_url):
+    if not data_url or "," not in data_url:
+        return None
+    _, data_str = data_url.split(",", 1)
+    return base64.b64decode(data_str)
+
+
+def _normalize_internal_path(path) -> str | None:
+    if path is None:
+        return None
+    normalized = Path(path).as_posix().strip().lower()
+    return normalized or None
+
+
+def _default_config_path() -> Path:
+    return Path("ui/default.cfg")
+
+
+def _validate_special_paths(file_paths, preview_path=None, include_config=False):
+    normalized_files = []
+    seen_files = set()
+    for path in file_paths or []:
+        normalized = _normalize_internal_path(path)
+        if not normalized:
+            continue
+        if normalized in seen_files:
+            return "You cannot add the same file path more than once."
+        seen_files.add(normalized)
+        normalized_files.append(normalized)
+
+    preview_normalized = _normalize_internal_path(preview_path)
+    if preview_normalized and preview_normalized in seen_files:
+        return "Preview image path cannot also be included in the files list."
+
+    default_cfg = _default_config_path().as_posix()
+    cfg_paths = [path for path in normalized_files if path.endswith(".cfg")]
+    if include_config:
+        cfg_paths.append(default_cfg)
+        if default_cfg in seen_files:
+            return "default.cfg can only be added through the config file option."
+
+    if not cfg_paths:
+        return None
+    if len(cfg_paths) > 1:
+        return "Only one config file can be included in a mod."
+    if cfg_paths[0] != default_cfg:
+        return "default.cfg can only be added through the config file option."
+    return None
+
+
 def _trash_root():
     appdata = os.getenv("APPDATA")
     base = Path(appdata) if appdata else Path.cwd()
@@ -114,19 +164,71 @@ def ask_extract_destination():
     root.destroy()
     return folder_path
 
+
+@eel.expose
+@standardize_response
+def ask_preview_file(game_path_str=None):
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    file_path = filedialog.askopenfilename(
+        title="Select Preview Image",
+        initialdir=game_path_str or None,
+        filetypes=[("Images", "*.png;*.jpg;*.jpeg"), ("PNG", "*.png"), ("JPEG", "*.jpg;*.jpeg")],
+    )
+    root.destroy()
+    if not file_path:
+        return {"success": True, "file": None}
+    path = Path(file_path)
+    return {
+        "success": True,
+        "file": {
+            "name": path.name,
+            "path": str(path),
+            "data": f"data:image/{'png' if path.suffix.lower() == '.png' else 'jpeg'};base64,"
+            + base64.b64encode(path.read_bytes()).decode("utf-8"),
+        },
+    }
+
+
+@eel.expose
+@standardize_response
+def ask_config_file(game_path_str=None):
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    file_path = filedialog.askopenfilename(
+        title="Select Config File",
+        initialdir=game_path_str or None,
+        filetypes=[("Config Files", "*.cfg")],
+    )
+    root.destroy()
+    if not file_path:
+        return {"success": True, "file": None}
+    path = Path(file_path)
+    return {
+        "success": True,
+        "file": {
+            "name": path.name,
+            "path": str(path),
+            "data": "data:text/plain;base64," + base64.b64encode(path.read_bytes()).decode("utf-8"),
+        },
+    }
+
 @eel.expose
 @standardize_response
 def ask_add_files(game_path_str=None):
     root = tk.Tk()
     root.attributes('-topmost', True)
     root.withdraw()
-    file_paths = filedialog.askopenfilenames(title="Select Files to Add")
+    file_paths = filedialog.askopenfilenames(title="Select Files to Add", initialdir=game_path_str or None)
     root.destroy()
     
     files = []
     rejected = []
+    rejected_cfg = []
     if not file_paths:
-        return {"success": True, "files": files, "rejected": rejected}
+        return {"success": True, "files": files, "rejected": rejected, "rejected_cfg": rejected_cfg}
         
     try:
         game_path = Path(game_path_str).resolve() if game_path_str else None
@@ -164,6 +266,8 @@ def ask_add_files(game_path_str=None):
             root_dir = internal_parts[0].lower()
             if root_dir not in valid_dirs:
                 rejected.append(file_path.name)
+            elif file_path.suffix.lower() == ".cfg":
+                rejected_cfg.append(file_path.name)
             else:
                 internal_path = "/".join(internal_parts)
                 files.append({
@@ -171,7 +275,7 @@ def ask_add_files(game_path_str=None):
                     "internal_path": internal_path
                 })
             
-    return {"success": True, "files": files, "rejected": rejected}
+    return {"success": True, "files": files, "rejected": rejected, "rejected_cfg": rejected_cfg}
 
 @eel.expose
 @standardize_response
@@ -383,6 +487,21 @@ def build_tmod(payload):
         if not tags: return {"success": False, "error": "At least one tag is required."}
         if not files: return {"success": False, "error": "At least one file is required."}
 
+        config_data = _decode_data_url(payload.get("configBase64"))
+        config_path = _default_config_path() if config_data is not None else None
+
+        preview_name = payload.get("previewName", "preview.png")
+        clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
+        preview_path = Path(f"ui/{clean_preview_name}") if payload.get("previewBase64") else None
+
+        path_error = _validate_special_paths(
+            [f.get("internal_path", f.get("name", "unknown_file")) for f in files],
+            preview_path=preview_path.as_posix() if preview_path else None,
+            include_config=config_data is not None,
+        )
+        if path_error:
+            return {"success": False, "error": path_error}
+
         out_dir = game_path / "mods"
         save_path = out_dir / f"{title}.tmod"
         
@@ -406,16 +525,16 @@ def build_tmod(payload):
         mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))
             
         preview_b64 = payload.get("previewBase64")
-        preview_name = payload.get("previewName", "preview.png")
 
-        if preview_b64 and "," in preview_b64:
-            header, data_str = preview_b64.split(",", 1)
-            img_bytes = base64.b64decode(data_str)
-            clean_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
-            preview_path = Path(f"ui/{clean_name}")
-            mod.add_file(TroveModFile(preview_path, img_bytes))
+        preview_bytes = _decode_data_url(preview_b64)
+        if preview_bytes is not None and preview_path is not None:
+            mod.add_file(TroveModFile(preview_path, preview_bytes))
             mod.preview_path = preview_path
-            
+
+        if config_data is not None and config_path is not None:
+            mod.add_file(TroveModFile(config_path, config_data))
+            mod.config_path = config_path
+
         for f in files:
             _raise_if_cancelled("build_tmod")
             abs_path = f.get("abs_path")
@@ -427,11 +546,10 @@ def build_tmod(payload):
                 mod.add_file(TroveModFile(f_path, f_bytes))
             else:
                 b64_data = f.get("data")
-                if b64_data and "," in b64_data:
-                    _, data_str = b64_data.split(",", 1)
-                    f_bytes = base64.b64decode(data_str)
+                f_bytes = _decode_data_url(b64_data)
+                if f_bytes is not None:
                     mod.add_file(TroveModFile(f_path, f_bytes))
-            
+
         out_dir.mkdir(parents=True, exist_ok=True)
         if save_path.exists() and overwrite:
             save_path.unlink(missing_ok=True)
@@ -470,6 +588,8 @@ def load_mod_project(project_path_str):
 
         if project_file.exists():
             data = json.loads(project_file.read_text(encoding="utf-8"))
+            data.setdefault("configBase64", None)
+            data.setdefault("configName", "")
             data["versions"] = sorted(list(set(versions + data.get("versions", []))))
             return {"success": True, "data": data}
         else:
@@ -479,7 +599,9 @@ def load_mod_project(project_path_str):
                 "notes": "",
                 "tags": [],
                 "versions": versions,
-                "active_version": versions[0]
+                "active_version": versions[0],
+                "configBase64": None,
+                "configName": "",
             }
             project_file.write_text(json.dumps(default_data, indent=4), encoding="utf-8")
             return {"success": True, "data": default_data}
@@ -808,13 +930,26 @@ def compile_project(project_path_str, version, game_path_str):
 
         preview_b64 = meta.get("previewBase64")
         preview_name = meta.get("previewName", "preview.png")
-        if preview_b64 and "," in preview_b64:
-            header, data_str = preview_b64.split(",", 1)
-            img_bytes = base64.b64decode(data_str)
-            clean_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
-            preview_path = Path(f"ui/{clean_name}")
-            mod.add_file(TroveModFile(preview_path, img_bytes))
+        clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
+        preview_path = Path(f"ui/{clean_preview_name}") if preview_b64 else None
+        config_data = _decode_data_url(meta.get("configBase64"))
+        config_path = _default_config_path() if config_data is not None else None
+        path_error = _validate_special_paths(
+            [file_path.relative_to(target_dir).as_posix() for file_path in target_dir.rglob("*") if file_path.is_file()],
+            preview_path=preview_path.as_posix() if preview_path else None,
+            include_config=config_data is not None,
+        )
+        if path_error:
+            return {"success": False, "error": path_error}
+
+        preview_bytes = _decode_data_url(preview_b64)
+        if preview_bytes is not None and preview_path is not None:
+            mod.add_file(TroveModFile(preview_path, preview_bytes))
             mod.preview_path = preview_path
+
+        if config_data is not None and config_path is not None:
+            mod.add_file(TroveModFile(config_path, config_data))
+            mod.config_path = config_path
 
         file_count = 0
         ignored_extensions = {'.tfi', '.tfa', '.exe', '.dll', '.tmod', '.zip', '.cfg', '.txt', '.log', '.ini', '.toml', '.json', '.xml', '.dat'}
