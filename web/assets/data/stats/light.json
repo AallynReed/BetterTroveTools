@@ -1,0 +1,110 @@
+[
+    {
+        "name": "Mystic 1 Weapon",
+        "value": 2340,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Mystic 1 Hat",
+        "value": 1170,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Mystic 1 Face",
+        "value": 1170,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Mystic Cosmic Empowered Gem",
+        "value": 1715,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Mystic Cosmic Lesser Gem 1",
+        "value": 1615,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Mystic Cosmic Lesser Gem 2",
+        "value": 1615,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Banner (Leviathan Permanent Torch U10/U11)",
+        "value": 900,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Crystal 4 Ring",
+        "value": 325,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Ally",
+        "value": 400,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Rune",
+        "value": 450,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Phoenix Fire (Subclass) / Solarion",
+        "value": 140,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Star Chart",
+        "value": 250,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Geode Mastery Level",
+        "value": 1000,
+        "type": "slider",
+        "perm": true
+    },
+    {
+        "name": "Taeryn Veernok (Cosmic Primordial Dragon)",
+        "value": 415,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Charl (Chaos Dragon)",
+        "value": 50,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Zeuztian (Irradiant Dragon)",
+        "value": 25,
+        "type": "switch",
+        "perm": true
+    },
+    {
+        "name": "Berserker Battler (Empowered Cosmic Gem Ability)",
+        "value": 750,
+        "type": "switch",
+        "perm": false
+    },
+    {
+        "name": "Enlightened Buff",
+        "value": 0.01,
+        "type": "switch",
+        "perm": false
+    }
+]

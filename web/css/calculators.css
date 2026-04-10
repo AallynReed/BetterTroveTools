@@ -58,6 +58,7 @@
 .tab-btn[data-tab="pr-tab"].active { border-bottom-color: #fbc02d; }
 .tab-btn[data-tab="mastery-tab"].active { border-bottom-color: #ff9800; }
 .tab-btn[data-tab="mf-tab"].active { border-bottom-color: var(--accent-blue); }
+.tab-btn[data-tab="light-tab"].active { border-bottom-color: #00bcd4; }
 
 .tab-content {
     display: none;
@@ -347,6 +348,11 @@
 .calc-switch input:checked + .slider-toggle.pr-slider-toggle { 
     background-color: #fbc02d !important; 
     border-color: #fbc02d !important; 
+}
+
+.calc-switch input:checked + .slider-toggle.light-slider-toggle {
+    background-color: #00bcd4 !important;
+    border-color: #00bcd4 !important;
 }
 
 @keyframes fadeIn { 

@@ -47,6 +47,7 @@ document.addEventListener('calculators_loaded', () => {
             };
 
             const mfData = ref([]);
+            const lightData = ref([]);
             const starChartCode = ref('');
             const starChartTemplate = ref('');
             const starChartTemplates = ref({});
@@ -144,6 +145,102 @@ document.addEventListener('calculators_loaded', () => {
                         currentValue: item.type.includes('switch') ? (item.default_checked !== undefined ? item.default_checked : true) : (item.default !== undefined ? item.default : (item.value || 0))
                     }));
                 } catch(e) { console.warn("Skipping Magic Find setup (data missing):", e); }
+            };
+
+            const isPercentBonusValue = (value) => {
+                const numeric = Number(value);
+                return Number.isFinite(numeric) && !Number.isInteger(numeric) && Math.abs(numeric) < 1;
+            };
+
+            const isLightGeodeMastery = (item) => {
+                const name = String(item?.name || '').toLowerCase();
+                return item?.type === 'slider' && name.includes('geode mastery');
+            };
+
+            const getLightSliderMax = (item) => isLightGeodeMastery(item) ? 150 : Number(item.max || item.value || 0);
+            const getLightNumberMax = (item) => isLightGeodeMastery(item) ? 200 : Number(item.max || item.value || 0);
+
+            const getLightAppliedValue = (item) => {
+                const numeric = Number(item.currentValue || 0);
+                if (isLightGeodeMastery(item)) {
+                    return Math.min(Math.max(numeric, 0), 100) * 10;
+                }
+                return numeric;
+            };
+
+            const formatLightBonusPercent = (value) => {
+                const pct = Math.abs(Number(value) || 0) * 100;
+                return Number.isInteger(pct) ? pct.toString() : pct.toFixed(2).replace(/\.?0+$/, '');
+            };
+
+            const fetchLight = async () => {
+                try {
+                    const res = await fetch('/assets/data/stats/light.json');
+                    const data = await res.json();
+                    lightData.value = data.map(item => ({
+                        ...item,
+                        currentValue: item.type === 'switch'
+                            ? item.perm === true
+                            : (isLightGeodeMastery(item)
+                                ? (item.perm === true ? 100 : 0)
+                                : (item.perm === true ? Number(item.value || 0) : 0))
+                    }));
+                } catch(e) { console.warn("Skipping Light setup (data missing):", e); }
+            };
+
+            const lightStats = computed(() => {
+                let flat = 0;
+                let bonusMultiplier = 1;
+
+                lightData.value.forEach((item) => {
+                    const rawValue = Number(item.value || 0);
+                    const appliedValue = item.type === 'switch'
+                        ? (item.currentValue ? rawValue : 0)
+                        : getLightAppliedValue(item);
+
+                    if (isPercentBonusValue(rawValue)) {
+                        bonusMultiplier += appliedValue;
+                    } else {
+                        flat += appliedValue;
+                    }
+                });
+
+                const total = Math.floor(flat * bonusMultiplier);
+                return {
+                    flat,
+                    bonusPct: Math.max(0, (bonusMultiplier - 1) * 100),
+                    total
+                };
+            });
+
+            const resetLight = () => {
+                lightData.value.forEach((item) => {
+                    item.currentValue = item.type === 'switch'
+                        ? item.perm === true
+                        : (isLightGeodeMastery(item)
+                            ? (item.perm === true ? 100 : 0)
+                            : (item.perm === true ? Number(item.value || 0) : 0));
+                });
+            };
+
+            const clampLightValue = (item) => {
+                const max = getLightNumberMax(item);
+                const min = 0;
+                const numeric = Number(item.currentValue || 0);
+                item.currentValue = Math.max(min, Math.min(Number.isFinite(numeric) ? numeric : 0, max));
+            };
+
+            const getLightBadgeText = (item) => {
+                const rawValue = Number(item.value || 0);
+                const displayValue = item.type === 'switch'
+                    ? rawValue
+                    : (isLightGeodeMastery(item) ? getLightAppliedValue(item) : Number(item.currentValue || 0));
+
+                if (isPercentBonusValue(rawValue)) {
+                    return t("+{val}% Light").replace("{val}", formatLightBonusPercent(displayValue));
+                }
+
+                return t("+{val} Light").replace("{val}", Math.round(displayValue).toLocaleString());
             };
 
             const mfStats = computed(() => {
@@ -244,7 +341,7 @@ document.addEventListener('calculators_loaded', () => {
 
             const normalizeItemValue = (item, rawValue) => {
                 if (item.type && item.type.includes('switch')) return !!rawValue;
-                const numeric = parseInt(rawValue, 10);
+                const numeric = Number(rawValue);
                 return Number.isFinite(numeric) ? numeric : 0;
             };
 
@@ -259,6 +356,11 @@ document.addEventListener('calculators_loaded', () => {
                     prValues[getStateKey(item)] = item.currentValue;
                 });
 
+                const lightValues = {};
+                lightData.value.forEach((item) => {
+                    lightValues[getStateKey(item)] = item.currentValue;
+                });
+
                 return {
                     activeTab: activeTab.value,
                     troveMastery: troveMastery.value,
@@ -266,7 +368,8 @@ document.addEventListener('calculators_loaded', () => {
                     starChartCode: starChartCode.value,
                     starChartTemplate: starChartTemplate.value,
                     mfValues,
-                    prValues
+                    prValues,
+                    lightValues
                 };
             };
 
@@ -313,6 +416,20 @@ document.addEventListener('calculators_loaded', () => {
                         }
                     });
                 }
+
+                if (saved.lightValues && typeof saved.lightValues === 'object') {
+                    lightData.value.forEach((item) => {
+                        const key = getStateKey(item);
+                        if (Object.prototype.hasOwnProperty.call(saved.lightValues, key)) {
+                            item.currentValue = item.type && item.type.includes('switch')
+                                ? !!saved.lightValues[key]
+                                : Number(saved.lightValues[key] || 0);
+                            if (!(item.type && item.type.includes('switch'))) {
+                                clampLightValue(item);
+                            }
+                        }
+                    });
+                }
             };
 
             const persistState = () => {
@@ -349,13 +466,13 @@ document.addEventListener('calculators_loaded', () => {
                 }
             });
 
-            watch([activeTab, troveMastery, geodeMastery, starChartCode, starChartTemplate, mfData, prData], persistState, { deep: true });
+            watch([activeTab, troveMastery, geodeMastery, starChartCode, starChartTemplate, mfData, prData, lightData], persistState, { deep: true });
 
             onMounted(async () => {
                 hydratingState = true;
                 try {
                     if (window.AppSettings) await window.AppSettings.load();
-                    await Promise.all([fetchMf(), fetchPr(), fetchStarChartTemplates()]);
+                    await Promise.all([fetchMf(), fetchPr(), fetchLight(), fetchStarChartTemplates()]);
                     const saved = window.AppSettings ? window.AppSettings.getPref(PREF_STATE_KEY, null) : null;
                     applyStateSnapshot(saved);
                     syncStarChartTemplateSelection(starChartCode.value);
@@ -370,7 +487,8 @@ document.addEventListener('calculators_loaded', () => {
                 troveMastery, geodeMastery, masteryPR, masteryDmg, masteryHp, masteryLight, masteryMf, resetMastery, clampMastery,
                 mfData, mfStats, resetMf, getMfBadgeText, clampMfValue,
                 starChartCode, starChartTemplate, starChartTemplates, starChartMf,
-                prData, totalPR, resetPr, getPrBadgeText, clampPrValue
+                prData, totalPR, resetPr, getPrBadgeText, clampPrValue,
+                lightData, lightStats, resetLight, getLightBadgeText, clampLightValue, isLightGeodeMastery, getLightSliderMax, getLightNumberMax
             };
         }
     });

@@ -4,14 +4,17 @@
 <div id="calculators-vue-app" class="calculators-container">
     <div class="tabs-wrapper">
         <div class="tab-buttons">
-            <button :class="['tab-btn', { active: activeTab === 'pr-tab' }]" @click="activeTab = 'pr-tab'">
+            <button data-tab="pr-tab" :class="['tab-btn', { active: activeTab === 'pr-tab' }]" @click="activeTab = 'pr-tab'">
                 <i class="fa-solid fa-star" style="color: #fbc02d;"></i> {{ t('Power Rank') }}
             </button>
-            <button :class="['tab-btn', { active: activeTab === 'mastery-tab' }]" @click="activeTab = 'mastery-tab'">
+            <button data-tab="mastery-tab" :class="['tab-btn', { active: activeTab === 'mastery-tab' }]" @click="activeTab = 'mastery-tab'">
                 <i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery') }}
             </button>
-            <button :class="['tab-btn', { active: activeTab === 'mf-tab' }]" @click="activeTab = 'mf-tab'">
+            <button data-tab="mf-tab" :class="['tab-btn', { active: activeTab === 'mf-tab' }]" @click="activeTab = 'mf-tab'">
                 <i class="fa-solid fa-gem" style="color: var(--accent-blue);"></i> {{ t('Magic Find') }}
+            </button>
+            <button data-tab="light-tab" :class="['tab-btn', { active: activeTab === 'light-tab' }]" @click="activeTab = 'light-tab'">
+                <i class="fa-solid fa-sun" style="color: #00bcd4;"></i> {{ t('Light') }}
             </button>
         </div>
 
@@ -171,6 +174,43 @@
                                 <template v-if="starChartMf.flat <= 0 && starChartMf.pct <= 0">{{ t('No Magic Find stats detected') }}</template>
                             </span>
                         </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'light-tab' }">
+            <div class="mf-header compact-header light-header" style="border-color: #00bcd4;">
+                <div class="mf-total-box">
+                    <span class="mf-total-label">{{ t('Total Light') }}</span>
+                    <span class="mf-total-value" style="color: #00bcd4; text-shadow: 0 0 20px rgba(0, 188, 212, 0.35);">{{ lightStats.total.toLocaleString() }}</span>
+                </div>
+                <div class="mf-summary-strip">
+                    <span class="summary-chip"><strong>{{ t('Base Light') }}</strong> {{ lightStats.flat.toLocaleString() }}</span>
+                    <span v-if="lightStats.bonusPct > 0" class="summary-chip"><strong>{{ t('Bonus') }}</strong> +{{ lightStats.bonusPct.toFixed(0) }}%</span>
+                </div>
+                <div class="mf-header-actions">
+                    <button class="btn-reset" @click="resetLight"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
+                </div>
+            </div>
+
+            <div class="mf-calculator-grid">
+                <div class="calc-item" v-for="(item, index) in lightData" :key="'light-'+index">
+                    <div class="calc-item-header">
+                        <span>{{ t(item.name) }}</span>
+                        <span :class="['calc-item-badge', { bonus: Math.abs(Number(item.value || 0)) < 1 && !Number.isInteger(Number(item.value || 0)) }]">
+                            {{ getLightBadgeText(item) }}
+                        </span>
+                    </div>
+                    <div>
+                        <label v-if="item.type === 'switch'" class="calc-switch">
+                            <input type="checkbox" v-model="item.currentValue">
+                            <span class="slider-toggle light-slider-toggle"></span>
+                        </label>
+                        <div v-else class="calc-slider-wrapper">
+                            <input type="range" class="calc-slider" min="0" :max="getLightSliderMax(item)" v-model.number="item.currentValue" style="accent-color: #00bcd4;">
+                            <input type="number" class="calc-number-input" min="0" :max="getLightNumberMax(item)" v-model.number="item.currentValue" @change="clampLightValue(item)">
+                        </div>
                     </div>
                 </div>
             </div>
