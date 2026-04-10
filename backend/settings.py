@@ -9,7 +9,11 @@ from backend.response import resp, standardize_response
 
 def _normalize_settings_payload(payload):
     if not isinstance(payload, dict):
-        return {"custom_directories": [], "ui_preferences": {}, "app_font": "system"}
+        return {
+            "custom_directories": [],
+            "ui_preferences": {},
+            "app_font": "system",
+        }
 
     # Accept wrapped responses and extract raw settings payload.
     if all(k in payload for k in ("success", "code", "data", "error", "meta")) and isinstance(payload.get("data"), dict):
@@ -28,6 +32,8 @@ def _normalize_settings_payload(payload):
     for key in ("success", "code", "error", "meta", "data"):
         if key in normalized and key not in ("ui_preferences",):
             normalized.pop(key, None)
+    normalized.pop("auto_fix_configs", None)
+    normalized.pop("auto_fix_configs_enabled_v1", None)
 
     return normalized
 
@@ -69,7 +75,10 @@ def get_settings():
         except Exception:
             pass
 
-    data = {"custom_directories": [], "ui_preferences": {}}
+    data = {
+        "custom_directories": [],
+        "ui_preferences": {},
+    }
     return resp(True, data=data, **data)
 
 @eel.expose

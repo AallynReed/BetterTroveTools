@@ -66,7 +66,6 @@ document.addEventListener('mod_manager_loaded', async () => {
             const showPreviewOnInfoSide = ref(true);
 
             const isFixingNames = ref(false);
-            const isFixingConfigs = ref(false);
             const isRefreshingUpdates = ref(false);
             const isClearingCache = ref(false);
 
@@ -202,16 +201,17 @@ document.addEventListener('mod_manager_loaded', async () => {
                 showPreviewOnInfoSide.value = settings.show_mod_preview_on_info_side !== false;
 
                 let stText = t('Scanning Mod Directory...');
-                if (settings.auto_fix_names || settings.auto_fix_configs) {
+                if (settings.auto_fix_names) {
                     const fixing = [];
                     if (settings.auto_fix_names) fixing.push(t('Names'));
-                    if (settings.auto_fix_configs) fixing.push(t('Configs'));
                     stText = t('Auto-fixing Mod {fixing}...').replace('{fixing}', fixing.join(' & '));
+                } else {
+                    stText = t('Scanning Mod Directory...');
                 }
                 statusText.value = stText;
 
                 const response = await window.callBackend(
-                    eel.get_installed_mods(selectedInstall.value, settings.auto_fix_names === true, settings.auto_fix_configs === true)(),
+                    eel.get_installed_mods(selectedInstall.value, settings.auto_fix_names === true, true)(),
                     'Failed to load installed mods'
                 );
 
@@ -401,20 +401,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 isFixingNames.value = false;
             };
 
-            const fixConfigs = async () => {
-                if (!selectedInstall.value) return window.showToast(t('Select a game first.'), true);
-                isFixingConfigs.value = true;
-                const response = await window.callBackend(eel.fix_mod_configs(selectedInstall.value)(), 'Failed to fix configs');
-                if (response.success) {
-                    const count = response.data.configs_ensured || response.raw?.configs_ensured || 0;
-                    window.showToast(t('Verified configs for {count} mods!').replace('{count}', count));
-                    await loadMods();
-                } else {
-                    window.showToast(t('Error: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
-                }
-                isFixingConfigs.value = false;
-            };
-
             const getConflictTitle = (mod) => {
                 const title = hasActiveConflict(mod) ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT');
                 const names = (mod.conflicts_with || []).map(c => `${c.name} (${c.enabled ? t('ENABLED') : t('Disabled')})`).join('\n• ');
@@ -602,7 +588,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 filteredCount,
                 shownCount,
                 isFixingNames,
-                isFixingConfigs,
                 isRefreshingUpdates,
                 isClearingCache,
                 modal,
@@ -614,7 +599,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 updateMod,
                 deleteMod,
                 fixNames,
-                fixConfigs,
                 hasActiveConflict,
                 getConflictTitle,
                 openUrl,

@@ -25,7 +25,6 @@ document.addEventListener('settings_loaded', async () => {
                 app_font: 'system',
                 show_community_content: true,
                 auto_fix_names: false,
-                auto_fix_configs: false,
                 show_mod_preview_on_info_side: true
             });
 
@@ -51,7 +50,6 @@ document.addEventListener('settings_loaded', async () => {
                     settings.app_font = data.app_font || 'system';
                     settings.show_community_content = data.show_community_content !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
-                    settings.auto_fix_configs = data.auto_fix_configs === true;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     customDirs.value = data.custom_directories || [];
                 }

@@ -63,16 +63,6 @@
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Auto-Fix Mod Configs') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Recommended if you use UI mods often. Recreates missing config files that can stop some mods from working properly.') }}</div>
-                    </div>
-                    <label class="switch">
-                        <input type="checkbox" v-model="settings.auto_fix_configs" @change="saveGeneralSettings">
-                        <span class="slider round"></span>
-                    </label>
-                </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
-                    <div>
                         <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Mod Preview on Info Side') }}</div>
                         <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Shows thumbnails directly on each mod card. Turn it off if you prefer denser lists with less visual noise.') }}</div>
                     </div>

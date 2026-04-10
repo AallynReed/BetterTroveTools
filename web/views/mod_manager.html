@@ -58,11 +58,6 @@
                             <template v-else><i class="fa-solid fa-tag"></i> {{ t('Fix Names') }}</template>
                         </button>
 
-                        <button @click="fixConfigs" class="primary-btn" :title="t('Generate missing UI config files')" style="background: var(--accent-blue);" :disabled="isFixingConfigs || !selectedInstall">
-                            <template v-if="isFixingConfigs"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
-                            <template v-else><i class="fa-solid fa-gear"></i> {{ t('Fix Configs') }}</template>
-                        </button>
-
                         <button @click="clearCache" class="secondary-btn" :disabled="isClearingCache" :title="t('Clear Mod Manager cache')">
                             <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Clearing...') }}</template>
                             <template v-else><i class="fa-solid fa-broom"></i> {{ t('Clear Cache') }}</template>
