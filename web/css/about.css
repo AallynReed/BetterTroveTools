@@ -285,6 +285,24 @@
     gap: 12px;
     margin-top: 10px;
 }
+.supporters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+.supporter-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(var(--accent-rgb), 0.14);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    color: #dbeafe;
+    font-size: 0.9em;
+    line-height: 1;
+}
 .contributor-avatar {
     width: 44px;
     height: 44px;

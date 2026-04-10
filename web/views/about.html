@@ -59,6 +59,18 @@
                     </template>
                 </div>
             </div>
+
+            <div class="about-section">
+                <div class="section-title"><i class="fa-solid fa-star"></i> <span>{{ t('Supporters') }}</span></div>
+                <p>{{ t('Thank you to everyone supporting the project and helping it grow.') }}</p>
+                <div class="supporters-container">
+                    <div v-if="!supportersLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>
+                    <template v-else>
+                        <span v-for="name in supporters" :key="name" class="supporter-chip">{{ name }}</span>
+                        <span v-if="supporters.length === 0" class="special-thanks">{{ t('No supporters listed yet.') }}</span>
+                    </template>
+                </div>
+            </div>
         </div>
     </div>
 

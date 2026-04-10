@@ -21,6 +21,8 @@ document.addEventListener('about_loaded', async () => {
             
             const contributors = ref([]);
             const contributorsLoaded = ref(false);
+            const supporters = ref([]);
+            const supportersLoaded = ref(false);
 
             const modals = reactive({
                 changelog: false,
@@ -135,11 +137,25 @@ document.addEventListener('about_loaded', async () => {
                     if (Array.isArray(data)) contributors.value = data;
                 } catch (e) {}
                 contributorsLoaded.value = true;
+
+                try {
+                    const res = await fetch('/assets/data/supporters.json?t=' + Date.now(), { bttLabel: t('Fetching Supporters') });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data)) {
+                            supporters.value = data
+                                .map((name) => typeof name === 'string' ? name.trim() : '')
+                                .filter((name) => name.length > 0);
+                        }
+                    }
+                } catch (e) {}
+                supportersLoaded.value = true;
             });
 
             return {
                 t, appVersion, appAuthor, appDescription, sysInfoStrShort, debugCopied,
-                contributors, contributorsLoaded, modals, appLicenseText, changelogLoaded, changelogGroups, changelogError,
+                contributors, contributorsLoaded, supporters, supportersLoaded,
+                modals, appLicenseText, changelogLoaded, changelogGroups, changelogError,
                 copyDebug, loadAppLicense, loadChangelog, openUrl
             };
         }
