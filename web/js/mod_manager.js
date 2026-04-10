@@ -164,6 +164,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            const runManagedJob = async ({ label, task, retryTask = task }) => {
+                return window.JobQueue.run({
+                    label,
+                    task,
+                    retryTask
+                });
+            };
+
             const applyModUrls = async (token) => {
                 if (!selectedInstall.value) return;
                 const response = await window.callBackend(eel.get_mod_urls(selectedInstall.value)(), 'Failed to load mod URLs');
@@ -200,14 +208,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const settings = settingsResp.data || settingsResp.raw || {};
                 showPreviewOnInfoSide.value = settings.show_mod_preview_on_info_side !== false;
 
-                let stText = t('Scanning Mod Directory...');
-                if (settings.auto_fix_names) {
-                    const fixing = [];
-                    if (settings.auto_fix_names) fixing.push(t('Names'));
-                    stText = t('Auto-fixing Mod {fixing}...').replace('{fixing}', fixing.join(' & '));
-                } else {
-                    stText = t('Scanning Mod Directory...');
-                }
+                let stText = settings.auto_fix_names
+                    ? t('Scanning mods and auto-fixing names...')
+                    : t('Scanning mods and verifying configs...');
                 statusText.value = stText;
 
                 const response = await window.callBackend(
@@ -283,25 +286,35 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (!confirmed) return;
 
                 isClearingCache.value = true;
-                const response = await window.callBackend(eel.clear_mod_manager_cache()(), 'Failed to clear cache');
-                if (!response.success) {
-                    window.showToast(t('Failed to clear cache: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
-                } else {
-                    window.showToast(t('Cache cleared.'));
+                try {
+                    const response = await runManagedJob({
+                        label: t('Clear Mod Manager cache'),
+                        task: async () => window.callBackend(eel.clear_mod_manager_cache()(), 'Failed to clear cache')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('Failed to clear cache: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                    } else {
+                        window.showToast(t('Mod Manager cache cleared.'));
+                    }
+                } finally {
+                    isClearingCache.value = false;
                 }
-                isClearingCache.value = false;
             };
 
             const updateMod = async (mod) => {
                 if (mod.isUpdating) return;
                 mod.isUpdating = true;
                 try {
-                    const response = await window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod');
+                    const response = await runManagedJob({
+                        label: t("Update mod '{name}'").replace('{name}', mod.name),
+                        task: async () => window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod')
+                    });
                     if (!response.success) {
                         window.showToast(t('Failed to update mod: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
                     } else {
                         mod.hasUpdate = false;
-                        window.showToast(t("Mod '{name}' updated successfully!").replace('{name}', mod.name));
+                        window.showToast(t("Updated '{name}'.").replace('{name}', mod.name));
+                        await loadMods();
                     }
                 } finally {
                     mod.isUpdating = false;
@@ -312,7 +325,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (mod.isToggling) return;
                 mod.isToggling = true;
                 try {
-                    const response = await window.callBackend(eel.toggle_mod(selectedInstall.value, mod.path)(), 'Failed to toggle mod');
+                    const nextStateLabel = mod.status === 'enabled' ? t('Disable') : t('Enable');
+                    const response = await runManagedJob({
+                        label: t("{action} mod '{name}'").replace('{action}', nextStateLabel).replace('{name}', mod.name),
+                        task: async () => window.callBackend(eel.toggle_mod(selectedInstall.value, mod.path)(), 'Failed to toggle mod')
+                    });
                     if (!response.success) {
                         window.showToast(t('Failed to toggle mod: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
                         return;
@@ -330,6 +347,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                             if (conflict) conflict.enabled = mod.status === 'enabled';
                         }
                     });
+                    window.showToast(
+                        mod.status === 'enabled'
+                            ? t("Enabled '{name}'.").replace('{name}', mod.name)
+                            : t("Disabled '{name}'.").replace('{name}', mod.name)
+                    );
                 } finally {
                     mod.isToggling = false;
                 }
@@ -356,7 +378,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (!confirmed) return;
 
                 mod.isDeleting = true;
-                const response = await window.callBackend(eel.delete_mod(selectedInstall.value, mod.path)(), 'Failed to delete mod');
+                const response = await runManagedJob({
+                    label: t("Delete mod '{name}'").replace('{name}', mod.name),
+                    task: async () => window.callBackend(eel.delete_mod(selectedInstall.value, mod.path)(), 'Failed to delete mod')
+                });
                 mod.isDeleting = false;
 
                 if (!response.success) {
@@ -390,15 +415,21 @@ document.addEventListener('mod_manager_loaded', async () => {
             const fixNames = async () => {
                 if (!selectedInstall.value) return window.showToast(t('Select a game first.'), true);
                 isFixingNames.value = true;
-                const response = await window.callBackend(eel.fix_mod_names(selectedInstall.value)(), 'Failed to fix names');
-                if (response.success) {
-                    const count = response.data.fixed_count || response.raw?.fixed_count || 0;
-                    window.showToast(t('Fixed {count} mod names!').replace('{count}', count));
-                    await loadMods();
-                } else {
-                    window.showToast(t('Error: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                try {
+                    const response = await runManagedJob({
+                        label: t('Fix mod file names'),
+                        task: async () => window.callBackend(eel.fix_mod_names(selectedInstall.value)(), 'Failed to fix names')
+                    });
+                    if (response.success) {
+                        const count = response.data.fixed_count || response.raw?.fixed_count || 0;
+                        window.showToast(t('Fixed {count} mod file names.').replace('{count}', count));
+                        await loadMods();
+                    } else {
+                        window.showToast(t('Failed to fix names: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                    }
+                } finally {
+                    isFixingNames.value = false;
                 }
-                isFixingNames.value = false;
             };
 
             const getConflictTitle = (mod) => {

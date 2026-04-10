@@ -40,6 +40,60 @@
         </div>
     </div>
 
+    <div v-show="settings.show_official_news" class="news-panel">
+        <div class="section-header news-header">
+            <div class="news-header-row">
+                <h2><i class="fa-solid fa-newspaper" style="color: #f3b64b;"></i> <span>{{ t('Official News') }}</span></h2>
+                <div class="news-header-actions">
+                    <button class="news-filter-btn" :class="{ active: showShopOffers }" @click="showShopOffers = !showShopOffers">
+                        <i class="fa-solid" :class="showShopOffers ? 'fa-store-slash' : 'fa-store'"></i>
+                        <span>{{ showShopOffers ? t('Hide Shop Offers') : t('Show Shop Offers') }}</span>
+                    </button>
+                    <button class="news-collapse-btn" :class="{ active: isNewsCollapsed }" @click="toggleNewsCollapsed">
+                        <i class="fa-solid" :class="isNewsCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
+                        <span>{{ isNewsCollapsed ? t('Expand') : t('Collapse') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div v-if="isNewsCollapsed" class="news-state news-collapsed-state">
+            <i class="fa-regular fa-newspaper"></i>
+            <span>{{ t('Official news is collapsed.') }}</span>
+        </div>
+        <div v-else-if="news.loading" class="loading-box">
+            <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trove News...') }}</span>
+        </div>
+        <div v-else-if="!isNewsCollapsed && news.error" class="news-state news-state-error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ t('Failed to fetch Trove news.') }}</span>
+        </div>
+        <div v-else-if="!isNewsCollapsed && mappedNews.length === 0" class="news-state">
+            <i class="fa-regular fa-newspaper"></i>
+            <span>{{ t('No news articles are available right now.') }}</span>
+        </div>
+        <div v-else-if="!isNewsCollapsed" class="carousel-wrapper news-carousel-wrapper">
+            <button class="carousel-btn left" @click="scrollNewsCarousel(-320)"><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="news-carousel" ref="newsCarouselRef">
+                <article v-for="item in mappedNews" :key="item.id" class="news-card" @click="openUrl(item.url)">
+                    <div class="news-image-wrap">
+                        <img class="news-image" :src="item.image" alt="">
+                        <span class="news-category">{{ t(item.category) }}</span>
+                    </div>
+                    <div class="news-body">
+                        <div class="news-meta">
+                            <span><i class="fa-regular fa-clock"></i> {{ item.publishedLabel }}</span>
+                            <span><i class="fa-regular fa-user"></i> {{ item.author }}</span>
+                        </div>
+                        <h3 class="news-title">{{ item.title }}</h3>
+                        <p class="news-summary">{{ item.summary }}</p>
+                        <div class="news-link">{{ t('Read article') }} <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </article>
+            </div>
+            <button class="carousel-btn right" @click="scrollNewsCarousel(320)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+    </div>
+
     <div class="split-layout">
         
         <div class="split-column">

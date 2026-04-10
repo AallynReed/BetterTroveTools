@@ -246,28 +246,6 @@ def fix_mod_names(game_path_str):
 
 
 @eel.expose
-def fix_mod_configs(game_path_str):
-    try:
-        trove_path = TroveGamePath(Path(game_path_str))
-        mod_list = TroveModList(path=trove_path, partial=True)
-
-        configs_ensured = 0
-
-        for mod in mod_list:
-            if mod.is_ui_mod:
-                mod.ensure_config()
-                configs_ensured += 1
-
-        return _resp(True, data={"configs_ensured": configs_ensured}, configs_ensured=configs_ensured)
-
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        return _resp(False, error=str(e), code="FIX_CONFIGS_FAILED")
-
-
-@eel.expose
 def get_mod_urls(game_path_str):
     try:
         trove_path = TroveGamePath(Path(game_path_str))

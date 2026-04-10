@@ -24,6 +24,7 @@ document.addEventListener('settings_loaded', async () => {
                 accent_color: '#5ec6ff',
                 app_font: 'system',
                 show_community_content: true,
+                show_official_news: true,
                 auto_fix_names: false,
                 show_mod_preview_on_info_side: true
             });
@@ -49,6 +50,7 @@ document.addEventListener('settings_loaded', async () => {
                     settings.accent_color = data.accent_color || '#5ec6ff';
                     settings.app_font = data.app_font || 'system';
                     settings.show_community_content = data.show_community_content !== false;
+                    settings.show_official_news = data.show_official_news !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     customDirs.value = data.custom_directories || [];

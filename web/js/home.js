@@ -6,16 +6,21 @@ document.addEventListener('home_loaded', () => {
     }
 
     const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
+    const NEWS_COLLAPSED_PREF_KEY = 'home_official_news_collapsed_v1';
 
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
             
-            const settings = reactive({ show_community_content: true });
+            const settings = reactive({ show_community_content: true, show_official_news: true });
             const isChinese = ref(window.I18nManager?.currentLocale === 'zh_CN');
             
             const mediaTab = ref('youtube');
             const carouselRef = ref(null);
+            const newsCarouselRef = ref(null);
+            const showShopOffers = ref(false);
+            const isNewsCollapsed = ref(false);
+            let hydratingNewsPrefs = false;
             
             const mediaData = reactive({
                 youtube: { loading: true, data: [] },
@@ -38,6 +43,7 @@ document.addEventListener('home_loaded', () => {
             const schedulesCache = ref({});
 
             const events = reactive({ loading: true, error: false, data: [] });
+            const news = reactive({ loading: true, error: false, data: [] });
             const timeMode = ref('local');
             
             const calendarModal = reactive({ show: false, isLoading: true, error: false });
@@ -51,6 +57,24 @@ document.addEventListener('home_loaded', () => {
 
             const openUrl = (url) => eel.open_url_in_browser(url)();
             const scrollCarousel = (amount) => { if (carouselRef.value) carouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
+            const scrollNewsCarousel = (amount) => { if (newsCarouselRef.value) newsCarouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
+            const toggleNewsCollapsed = () => {
+                isNewsCollapsed.value = !isNewsCollapsed.value;
+                if (window.AppSettings) window.AppSettings.setPrefSync(NEWS_COLLAPSED_PREF_KEY, isNewsCollapsed.value);
+            };
+
+            const saveShopOfferPreference = async () => {
+                try {
+                    const currentSettings = window.AppSettings
+                        ? await window.AppSettings.load()
+                        : await eel.get_settings()();
+                    currentSettings.show_news_shop_offers = showShopOffers.value;
+                    await eel.save_settings(currentSettings)();
+                    if (window.AppSettings) {
+                        window.AppSettings._cache = { ...currentSettings };
+                    }
+                } catch (e) {}
+            };
 
             const getTimeAgo = (dateString) => {
                 const date = new Date(dateString);
@@ -143,6 +167,16 @@ document.addEventListener('home_loaded', () => {
                 }
             };
 
+            window._homeAppHandleNews = (response) => {
+                news.loading = false;
+                if (response?.success && response.data) {
+                    news.data = response.data;
+                    news.error = false;
+                } else {
+                    news.error = true;
+                }
+            };
+
             const mappedEvents = computed(() => {
                 return events.data.map(ev => {
                     const startTs = parseInt(ev.startdate);
@@ -173,6 +207,16 @@ document.addEventListener('home_loaded', () => {
                         img: ev.image || ev.icon || 'https://trovesaurus.com/images/logos/Sage_64.png'
                     };
                 });
+            });
+
+            const mappedNews = computed(() => {
+                const filtered = news.data.filter((item) => showShopOffers.value || !((item.categories || []).includes('Shop Offers')));
+                return filtered.slice(0, 10).map((item, index) => ({
+                    ...item,
+                    id: item.url || `${item.title}-${index}`,
+                    publishedLabel: getTimeAgo(item.published_at),
+                    image: item.image || '/assets/images/no_preview.png'
+                }));
             });
 
             const filteredCalendarTracks = computed(() => {
@@ -270,8 +314,14 @@ document.addEventListener('home_loaded', () => {
 
             const refreshAllData = async () => {
                 isChinese.value = window.I18nManager?.currentLocale === 'zh_CN';
-                const sets = await eel.get_settings()();
+                const sets = window.AppSettings
+                    ? await window.AppSettings.load(true)
+                    : await eel.get_settings()();
                 settings.show_community_content = sets.show_community_content !== false;
+                settings.show_official_news = sets.show_official_news !== false;
+                hydratingNewsPrefs = true;
+                showShopOffers.value = sets.show_news_shop_offers === true;
+                hydratingNewsPrefs = false;
 
                 if (settings.show_community_content) {
                     if (isChinese.value && mediaTab.value !== 'bilibili') mediaTab.value = 'bilibili';
@@ -282,6 +332,15 @@ document.addEventListener('home_loaded', () => {
                     if (isChinese.value) eel.get_bilibili_videos()();
                 }
 
+                if (settings.show_official_news) {
+                    news.loading = true;
+                    news.error = false;
+                    eel.get_trove_news()();
+                } else {
+                    news.loading = false;
+                    news.error = false;
+                    news.data = [];
+                }
                 eel.get_trovesaurus_events()();
                 
                 try {
@@ -683,6 +742,11 @@ document.addEventListener('home_loaded', () => {
                 }
             });
 
+            watch(showShopOffers, async () => {
+                if (hydratingNewsPrefs) return;
+                await saveShopOfferPreference();
+            });
+
             onUnmounted(() => {
                 clearInterval(refreshInterval);
                 clearInterval(timeInterval);
@@ -690,10 +754,18 @@ document.addEventListener('home_loaded', () => {
                 document.removeEventListener('change', window._homeLangListener);
             });
 
+            onMounted(async () => {
+                if (window.AppSettings) {
+                    await window.AppSettings.load();
+                    isNewsCollapsed.value = window.AppSettings.getPref(NEWS_COLLAPSED_PREF_KEY, false) === true;
+                }
+            });
+
             return {
                 t, settings, isChinese, mediaTab, mediaData, carouselRef,
-                serverData, events, mappedEvents, merchantCards, chaosChestCard,
-                scrollCarousel, openUrl, openBuffSchedule, openMerchantSchedule,
+                newsCarouselRef, showShopOffers, isNewsCollapsed,
+                serverData, events, mappedEvents, news, mappedNews, merchantCards, chaosChestCard,
+                scrollCarousel, scrollNewsCarousel, toggleNewsCollapsed, openUrl, openBuffSchedule, openMerchantSchedule,
                 rotationModal, calendarModal, calendarData, loadYearlyCalendar, centerCalendarToday,
                 timelineWrapperRef, isDraggingTimeline, startDrag, onDrag, stopDrag, onWheel,
                 filteredCalendarTracks, calendarViewFilter, jumpToCalendarTarget,
@@ -718,3 +790,6 @@ function receive_bilibili_videos(response) { if (window._homeAppHandleBilibili) 
 
 eel.expose(receive_events_data, 'receive_events_data');
 function receive_events_data(response) { if (window._homeAppHandleEvents) window._homeAppHandleEvents(response); }
+
+eel.expose(receive_trove_news, 'receive_trove_news');
+function receive_trove_news(response) { if (window._homeAppHandleNews) window._homeAppHandleNews(response); }

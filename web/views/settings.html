@@ -47,6 +47,16 @@
                         <span class="slider round"></span>
                     </label>
                 </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Official News') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Show the official Trove news carousel on Home. Turn this off if you want a cleaner dashboard.') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.show_official_news" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
             </div>
             
             <div class="settings-section">
@@ -54,7 +64,7 @@
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
                         <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Auto-Fix Mod Names') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Recommended for most users. Renames local mod files to match their internal titles so your list stays readable.') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Keeps local mod filenames aligned with their internal titles so your mod list stays easier to read.') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.auto_fix_names" @change="saveGeneralSettings">
@@ -64,7 +74,7 @@
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
                         <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Mod Preview on Info Side') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Shows thumbnails directly on each mod card. Turn it off if you prefer denser lists with less visual noise.') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Shows thumbnails directly on each mod card. Turn it off if you prefer a denser list with less visual noise.') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_mod_preview_on_info_side" @change="saveGeneralSettings">

@@ -1,8 +1,12 @@
 import datetime
 import json
 import os
+import re
 import traceback
 from datetime import UTC, datetime, timedelta
+from email.utils import parsedate_to_datetime
+from html import unescape
+from xml.etree import ElementTree as ET
 
 import eel
 import requests
@@ -20,6 +24,43 @@ def format_timedelta(td):
     return f"{hours}h {minutes}m"
 
 import gevent
+
+
+RSS_NAMESPACES = {
+    "content": "http://purl.org/rss/1.0/modules/content/",
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "media": "http://search.yahoo.com/mrss/",
+}
+
+
+def _strip_html(value):
+    if not value:
+        return ""
+    if "<" not in value:
+        return value.strip()
+    stripped = re.sub(r"<br\s*/?>", " ", value, flags=re.IGNORECASE)
+    stripped = re.sub(r"<[^>]+>", " ", stripped)
+    return " ".join(unescape(stripped).split()).strip()
+
+
+def _safe_strip_html(value):
+    try:
+        return _strip_html(value)
+    except Exception:
+        return " ".join(
+            unescape(value or "")
+            .replace("<br>", " ")
+            .replace("<br/>", " ")
+            .replace("<br />", " ")
+            .split()
+        ).strip()
+
+
+def _truncate_text(value, limit=220):
+    if len(value) <= limit:
+        return value
+    truncated = value[:limit].rsplit(" ", 1)[0].strip()
+    return f"{truncated}..."
 
 
 @eel.expose
@@ -121,6 +162,72 @@ def get_trovesaurus_events():
             traceback.print_exc()
             eel.receive_events_data(resp(False, error=str(e), code="EVENTS_FETCH_FAILED"))
             
+    gevent.spawn(fetch_task)
+
+
+@eel.expose
+@standardize_response
+def get_trove_news():
+    def fetch_task():
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Fetching Trove News", "https://trovegame.com/feed")()
+        except Exception:
+            pass
+        try:
+            headers = {"User-Agent": "BetterTroveTools/1.0"}
+            response = requests.get("https://trovegame.com/feed", headers=headers, timeout=8)
+            response.raise_for_status()
+            if req_id:
+                eel.remove_external_request(req_id, True)()
+
+            root = ET.fromstring(response.text)
+            items = []
+
+            for item in root.findall("./channel/item"):
+                title = unescape((item.findtext("title") or "").strip())
+                link = (item.findtext("link") or "").strip()
+                author = (item.findtext("dc:creator", "", RSS_NAMESPACES) or "").strip()
+                pub_date_raw = (item.findtext("pubDate") or "").strip()
+                description = item.findtext("description") or ""
+                media_content = item.find("media:content", RSS_NAMESPACES)
+                media_thumb = item.find("media:thumbnail", RSS_NAMESPACES)
+                categories = [unescape((cat.text or "").strip()) for cat in item.findall("category") if (cat.text or "").strip()]
+
+                published_at = pub_date_raw
+                try:
+                    published_at = parsedate_to_datetime(pub_date_raw).astimezone(UTC).isoformat()
+                except Exception:
+                    pass
+
+                summary = _safe_strip_html(unescape(description))
+                image = None
+                if media_content is not None:
+                    image = media_content.attrib.get("url")
+                if not image and media_thumb is not None:
+                    image = media_thumb.attrib.get("url")
+
+                items.append({
+                    "title": title,
+                    "url": link,
+                    "author": author or "Team Trove",
+                    "published_at": published_at,
+                    "summary": _truncate_text(summary, 220),
+                    "category": categories[0] if categories else "News",
+                    "categories": categories,
+                    "image": image,
+                })
+
+                if len(items) >= 20:
+                    break
+
+            eel.receive_trove_news(resp(True, data=items))
+        except Exception as e:
+            if req_id:
+                eel.remove_external_request(req_id, False)()
+            traceback.print_exc()
+            eel.receive_trove_news(resp(False, error=str(e), code="NEWS_FETCH_FAILED"))
+
     gevent.spawn(fetch_task)
 
 @eel.expose

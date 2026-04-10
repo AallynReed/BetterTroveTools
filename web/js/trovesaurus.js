@@ -44,6 +44,7 @@ document.addEventListener('trovesaurus_loaded', () => {
 
             const modal = reactive({ show: false, src: '', caption: '', modId: null });
             const activeRequestToken = ref(0);
+            const fetchResolvers = new Map();
             const installResolvers = new Map();
 
             const persistUiState = () => {
@@ -80,7 +81,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                 return games.value.map(g => [`${g.name} - ${g.path}`, g.path]);
             });
 
-            const fetchMods = (page = 1, force = false) => {
+            const fetchMods = (page = 1, force = false, options = {}) => {
                 if (isLoading.value && !force && page !== 1) return;
                 if (!selectedGame.value) return;
 
@@ -99,12 +100,24 @@ document.addEventListener('trovesaurus_loaded', () => {
                     token
                 )();
 
+                if (options.awaitResult) {
+                    return new Promise((resolve, reject) => {
+                        fetchResolvers.set(token, { resolve, reject });
+                    });
+                }
+
                 const vc = document.getElementById('view-container');
                 if (vc && page !== currentPage.value) vc.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
             window._tsAppHandleMods = (response) => {
-                if (response?.request_token && response.request_token !== activeRequestToken.value) {
+                const responseToken = response?.request_token;
+                if (responseToken && responseToken !== activeRequestToken.value) {
+                    const pending = fetchResolvers.get(responseToken);
+                    if (pending) {
+                        fetchResolvers.delete(responseToken);
+                        pending.reject(new Error('Stale request'));
+                    }
                     return;
                 }
 
@@ -122,6 +135,13 @@ document.addEventListener('trovesaurus_loaded', () => {
                     error.value = response?.error || t('Unknown error occurred');
                 }
                 isLoading.value = false;
+
+                const pending = fetchResolvers.get(responseToken);
+                if (pending) {
+                    fetchResolvers.delete(responseToken);
+                    if (response?.success) pending.resolve(response);
+                    else pending.reject(new Error(response?.error || 'Failed to load Trovesaurus mods'));
+                }
             };
 
             window._tsAppHandleInstall = (response) => {
@@ -207,10 +227,17 @@ document.addEventListener('trovesaurus_loaded', () => {
                 if (!confirmed) return;
 
                 mod.is_deleting = true;
-                const response = await window.callBackend(
-                    eel.delete_trovesaurus_installed_mod(selectedGame.value, mod.id)(),
-                    'Failed to delete installed mod'
-                );
+                const response = await window.JobQueue.run({
+                    label: t("Delete mod '{name}'").replace('{name}', mod.name),
+                    task: async () => window.callBackend(
+                        eel.delete_trovesaurus_installed_mod(selectedGame.value, mod.id)(),
+                        'Failed to delete installed mod'
+                    ),
+                    retryTask: async () => window.callBackend(
+                        eel.delete_trovesaurus_installed_mod(selectedGame.value, mod.id)(),
+                        'Failed to delete installed mod'
+                    )
+                });
                 mod.is_deleting = false;
 
                 if (!response.success) {
@@ -244,8 +271,20 @@ document.addEventListener('trovesaurus_loaded', () => {
             const refreshMods = async () => {
                 if (!selectedGame.value) return;
                 isRefreshing.value = true;
-                fetchMods(currentPage.value, true);
-                isRefreshing.value = false;
+                try {
+                    await window.JobQueue.run({
+                        label: t('Refresh Trovesaurus results'),
+                        task: async () => {
+                            await fetchMods(currentPage.value, true, { awaitResult: true });
+                        },
+                        retryTask: async () => {
+                            await fetchMods(currentPage.value, true, { awaitResult: true });
+                        }
+                    });
+                    window.showToast(t('Refreshed Trovesaurus results.'));
+                } finally {
+                    isRefreshing.value = false;
+                }
             };
 
             const clearCache = async () => {
@@ -259,14 +298,21 @@ document.addEventListener('trovesaurus_loaded', () => {
                 if (!confirmed) return;
 
                 isClearingCache.value = true;
-                const response = await window.callBackend(eel.clear_trovesaurus_cache()(), 'Failed to clear Trovesaurus cache');
-                if (!response.success) {
-                    window.showToast(t('Failed to clear cache: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
-                } else {
-                    window.showToast(t('Cache cleared.'));
-                    fetchMods(1, true);
+                try {
+                    const response = await window.JobQueue.run({
+                        label: t('Clear Trovesaurus cache'),
+                        task: async () => window.callBackend(eel.clear_trovesaurus_cache()(), 'Failed to clear Trovesaurus cache'),
+                        retryTask: async () => window.callBackend(eel.clear_trovesaurus_cache()(), 'Failed to clear Trovesaurus cache')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('Failed to clear cache: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                    } else {
+                        window.showToast(t('Trovesaurus cache cleared.'));
+                        fetchMods(1, true);
+                    }
+                } finally {
+                    isClearingCache.value = false;
                 }
-                isClearingCache.value = false;
             };
 
             const openSelectedGameFolder = async () => {
