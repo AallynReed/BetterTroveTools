@@ -104,6 +104,7 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const templates = ref({});
             const selectedTemplate = ref("");
+            const selectedStatFilter = ref("");
 
             const summarySectionState = reactive({
                 stats: true,
@@ -148,6 +149,38 @@ document.addEventListener('star_chart_loaded', async () => {
                 }
                 return opts;
             });
+
+            const statFilterOptions = computed(() => {
+                const labels = new Set();
+                nodesList.value.forEach((node) => {
+                    if (!Array.isArray(node.Stats)) return;
+                    node.Stats.forEach((stat) => {
+                        const name = String(stat?.name || '').trim();
+                        if (name) labels.add(name);
+                    });
+                });
+
+                const options = [['-- Highlight Stat --', '']];
+                Array.from(labels)
+                    .sort((left, right) => t(left).localeCompare(t(right)))
+                    .forEach((name) => options.push([t(name), name]));
+                return options;
+            });
+
+            const highlightedStatPaths = computed(() => {
+                const statName = String(selectedStatFilter.value || '').trim();
+                if (!statName) return new Set();
+
+                const matching = new Set();
+                nodesList.value.forEach((node) => {
+                    if (!Array.isArray(node.Stats) || node.Type === 'Root') return;
+                    const hasStat = node.Stats.some((stat) => String(stat?.name || '').trim() === statName);
+                    if (hasStat) matching.add(node.Path);
+                });
+                return matching;
+            });
+
+            const highlightedStatNodeCount = computed(() => highlightedStatPaths.value.size);
 
             const getSelectablePathList = () => {
                 return Object.keys(nodeMap)
@@ -389,10 +422,13 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const renderNodes = computed(() => {
                 const replacementTips = replacementInfo.value.tipSet;
+                const hasStatFilter = Boolean(selectedStatFilter.value);
+                const matchingPaths = highlightedStatPaths.value;
                 return nodesList.value.map(node => {
                     const isSelected = selectedPaths.has(node.Path);
                     const isOverwritten = overwrites.value.has(node.Path);
                     const isReplacementTip = replacementTips.has(node.Path);
+                    const isStatHighlighted = matchingPaths.has(node.Path);
                     const baseColor = node.fill;
                     
                     let rootActive = false;
@@ -411,6 +447,7 @@ document.addEventListener('star_chart_loaded', async () => {
                         overwritten: isOverwritten,
                         rootActive: rootActive,
                         replacementTip: isReplacementTip,
+                        statHighlighted: isStatHighlighted,
                         muted: !isSelected && !isOverwritten && node.Type !== 'Root',
                         style: node.Type === 'Root'
                             ? {
@@ -420,11 +457,15 @@ document.addEventListener('star_chart_loaded', async () => {
                             : {
                                 fill: isReplacementTip
                                     ? mixColors(baseColor, REPLACEMENT_GOLD, 0.34)
-                                    : (isSelected ? mixColors(baseColor, '#ffffff', 0.22) : baseColor),
+                                    : (isSelected || isStatHighlighted ? mixColors(baseColor, '#ffffff', isStatHighlighted ? 0.32 : 0.22) : baseColor),
                                 stroke: isReplacementTip
                                     ? mixColors(REPLACEMENT_GOLD, '#ffffff', 0.18)
-                                    : (isSelected ? mixColors(baseColor, '#ffffff', 0.38) : '#0f1319'),
-                                opacity: isOverwritten ? 0.24 : (isSelected || isReplacementTip ? 1 : 0.62)
+                                    : (isSelected || isStatHighlighted ? mixColors(baseColor, '#ffffff', isStatHighlighted ? 0.5 : 0.38) : '#0f1319'),
+                                opacity: isOverwritten
+                                    ? 0.24
+                                    : (isSelected || isReplacementTip || isStatHighlighted
+                                        ? 1
+                                        : (hasStatFilter ? 0.2 : 0.62))
                             }
                     };
                 });
@@ -668,6 +709,10 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (selectedPaths.size === 0) return;
                 selectedPaths.clear();
                 if (window.showToast) window.showToast(t('All active nodes cleared.'));
+            };
+
+            const clearStatFilter = () => {
+                selectedStatFilter.value = "";
             };
 
             const toggleSummarySection = (sectionKey) => {
@@ -946,6 +991,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 onRootClick, onNodeClick, onCenterAnchorClick, clearAllSelectedNodes, toggleCheatMode,
                 summarySectionState, toggleSummarySection,
                 buildCode, codeInputFocused, loadCode, copyCode,
+                selectedStatFilter, statFilterOptions, highlightedStatNodeCount, clearStatFilter,
                 selectedTemplate, templateOptions, saveTemplate, deleteTemplate,
                 modal, modalInputRef, confirmModal,
                 tooltip, showTooltip, moveTooltip, hideTooltip, showContextMenu

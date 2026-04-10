@@ -170,6 +170,38 @@
     filter: drop-shadow(0 0 10px rgba(216, 171, 69, 0.6)) saturate(1.16) brightness(1.03);
 }
 
+.node-stat-highlight-active,
+.node-stat-highlight-inactive {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: starPulse 1.35s ease-in-out infinite;
+}
+
+@keyframes starPulse {
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+    }
+    50% {
+        transform: scale(1.14);
+        filter: drop-shadow(0 0 12px var(--pulse-color, rgba(255, 255, 255, 0.72)));
+    }
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
+    }
+}
+
+.node-stat-highlight-active {
+    --pulse-color: rgba(84, 255, 138, 0.85);
+    stroke: rgba(84, 255, 138, 0.95) !important;
+}
+
+.node-stat-highlight-inactive {
+    --pulse-color: rgba(255, 101, 101, 0.82);
+    stroke: rgba(255, 101, 101, 0.92) !important;
+}
+
 #build-summary-panel {
     width: 350px;
     background: var(--bg-panel);
@@ -257,6 +289,19 @@
 .build-share-controls {
     display: flex;
     gap: 8px;
+}
+
+.stat-filter-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.stat-filter-meta {
+    margin-top: 6px;
+    margin-bottom: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
 }
 
 #build-code-input {

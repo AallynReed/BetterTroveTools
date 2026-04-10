@@ -23,7 +23,7 @@
                 <template v-for="node in renderNodes" :key="node.id">
                     <polygon v-if="node.Type === 'Root'" :points="node.points" :style="node.style" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive, 'node-replacement-tip': node.replacementTip}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                     
-                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :style="node.style" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten, 'node-muted': node.muted, 'node-replacement-tip': node.replacementTip}" @click.left="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
+                    <circle v-else :cx="node.cx" :cy="node.cy" :r="node.r" :style="node.style" stroke-width="2" class="star-node" :class="{'node-selected': node.selected, 'node-overwritten': node.overwritten, 'node-muted': node.muted, 'node-replacement-tip': node.replacementTip, 'node-stat-highlight-active': node.statHighlighted && node.selected, 'node-stat-highlight-inactive': node.statHighlighted && !node.selected}" @click.left="onNodeClick(node)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
                 </template>
             </svg>
             </template>
@@ -45,6 +45,16 @@
                 <div class="build-buttons">
                     <button class="secondary-btn" :title="t('Copy Build Code')" @click="copyCode"><i class="fa-regular fa-copy"></i></button>
                 </div>
+            </div>
+
+            <div class="stat-filter-controls">
+                <custom-vue-select v-model="selectedStatFilter" :options="statFilterOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
+                <button class="secondary-btn" :disabled="!selectedStatFilter" :title="t('Clear Stat Highlight')" @click="clearStatFilter">
+                    <i class="fa-solid fa-filter-circle-xmark"></i>
+                </button>
+            </div>
+            <div class="stat-filter-meta" v-if="selectedStatFilter">
+                {{ t('Highlighted Nodes') }}: {{ highlightedStatNodeCount }}
             </div>
             
             <div class="build-template-controls" style="display: flex; gap: 5px; margin-top: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
