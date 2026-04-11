@@ -1,7 +1,13 @@
-document.addEventListener('allies_loaded', async () => {
+function initAlliesView() {
+    const root = document.getElementById('allies-vue-app');
+    if (!root || root.dataset.alliesInitializing === '1') return;
+    root.dataset.alliesInitializing = '1';
+
     console.log("Ally Codex Vue initialized!");
     if (typeof Vue === 'undefined') {
         console.error("Vue.js failed to load!");
+        root.removeAttribute('v-cloak');
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Ally Codex.</div>`;
         return;
     }
 
@@ -15,6 +21,7 @@ document.addEventListener('allies_loaded', async () => {
 
             const isLoading = ref(true);
             const alliesData = ref([]);
+            const dataSourceText = ref('');
             
             const categoryOptions = ref([]);
             const statsOptions = ref([]);
@@ -82,8 +89,9 @@ document.addEventListener('allies_loaded', async () => {
             };
 
             const formatStat = (statText) => {
-                const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statText.includes(s));
-                return isHighlighted ? `<strong>${statText}</strong>` : statText;
+                const statLine = typeof statText === 'string' ? statText : ((statText && statText.text) || '');
+                const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statLine.includes(s));
+                return isHighlighted ? `<strong>${statLine}</strong>` : statLine;
             };
 
             const formatAbility = (abilityText) => {
@@ -98,6 +106,13 @@ document.addEventListener('allies_loaded', async () => {
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
 
+            const normalizeCatalogImageId = (value) => String(value || '')
+                .replace(/\.blueprint$/i, '')
+                .replace(/\\/g, '/')
+                .replace(/^\$+/, '')
+                .trim()
+                .toLowerCase();
+
             const highlightSearch = (text) => {
                 const q = searchQuery.value.trim();
                 const safe = escapeHtml(text || '');
@@ -108,7 +123,10 @@ document.addEventListener('allies_loaded', async () => {
             };
 
             const filteredAllies = computed(() => {
-                let result = alliesData.value;
+                let result = alliesData.value.filter(a => {
+                    const category = a.category || 'Unknown';
+                    return category !== 'Unknown' && category !== 'InProgress';
+                });
                 
                 const sq = searchQuery.value.toLowerCase().trim();
                 if (sq.length >= 3) {
@@ -245,6 +263,101 @@ document.addEventListener('allies_loaded', async () => {
                 input.select();
             };
 
+            const loadAllies = async (forceRefresh = false) => {
+                let data = null;
+                let response = null;
+
+                if (window.eel && eel.get_allies_data) {
+                    response = await eel.get_allies_data(forceRefresh)();
+                    if (!response || response.success === false) {
+                        throw new Error((response && response.error) || 'Failed to retrieve allies data from backend');
+                    }
+                    data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                } else {
+                    throw new Error('Backend allies endpoint is unavailable');
+                }
+
+                const uniqueCategories = new Set();
+                const uniqueStats = new Set();
+                const uniqueAbilities = new Set();
+
+                const parsedAllies = Object.keys(data).map(key => {
+                    const ally = data[key];
+                    if (ally.category) uniqueCategories.add(ally.category);
+                    const parsedStats = {};
+                    const stats = Array.isArray(ally.stats) ? ally.stats : [];
+                    const rawStats = stats.map(stat => (stat && stat.text) || '').filter(Boolean);
+                    stats.forEach(stat => {
+                        const statName = (stat && stat.name) || '';
+                        if (!statName) return;
+                        uniqueStats.add(statName);
+                        parsedStats[statName] = {
+                            value: stat && typeof stat.value === 'number' ? stat.value : parseFloat((stat && stat.value) || 0),
+                            isPercent: !!(stat && stat.is_percent)
+                        };
+                    });
+
+                    const abilities = Array.isArray(ally.abilities) ? ally.abilities.filter(Boolean) : [];
+                    abilities.forEach(ab => uniqueAbilities.add(ab));
+
+                    const explicitImage = String(ally.image || '');
+                    const catalogId = normalizeCatalogImageId(ally.blueprint || explicitImage);
+                    const imagePath = explicitImage.startsWith('http')
+                        ? explicitImage
+                        : `https://trovesaurus.com/data/catalog/${catalogId}.png`;
+
+                    return {
+                        id: key,
+                        ...ally,
+                        rawStats,
+                        parsedStats,
+                        extractedAbilities: abilities,
+                        imagePath
+                    };
+                });
+
+                alliesData.value = parsedAllies;
+
+                const catOpts = [['All Categories', 'All']];
+                Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
+                categoryOptions.value = catOpts;
+
+                statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
+                abilitiesOptions.value = [[t('All Abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
+
+                const source = (response && response.source) || '';
+                const cacheMeta = (response && response.meta && response.meta.cache) || {};
+                const warning = response && response.warning;
+                if (source === 'game-cache') {
+                    dataSourceText.value = t('Loaded ally data from cached game-file scan.');
+                } else if (source === 'game-live') {
+                    dataSourceText.value = t('Loaded ally data from live game files.');
+                } else if (source === 'baseline-json') {
+                    dataSourceText.value = t('Using bundled ally fallback data.') + (warning ? ` ${warning}` : '');
+                } else {
+                    dataSourceText.value = '';
+                }
+                if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
+                    const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
+                    if (hours > 0) dataSourceText.value += ` ${t('Cache age')}: ${hours}h.`;
+                }
+            };
+
+            const clearCacheAndReload = async () => {
+                try {
+                    isLoading.value = true;
+                    if (window.eel && eel.clear_allies_cache) {
+                        await eel.clear_allies_cache()();
+                    }
+                    await loadAllies(true);
+                } catch (err) {
+                    console.error("Failed to clear ally cache:", err);
+                } finally {
+                    isLoading.value = false;
+                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                }
+            };
+
             const onKeyDown = (e) => {
                 const root = document.getElementById('allies-vue-app');
                 if (!root || root.offsetParent === null) return;
@@ -277,71 +390,7 @@ document.addEventListener('allies_loaded', async () => {
                     applyStateSnapshot(saved);
                 }
                 try {
-                    let data = null;
-
-                    if (window.eel && eel.get_allies_data) {
-                        const response = await eel.get_allies_data()();
-                        if (!response || response.success === false) {
-                            throw new Error(response?.error || 'Failed to retrieve allies data from backend');
-                        }
-                        data = (response && response.data && typeof response.data === 'object') ? response.data : response;
-                    } else {
-                        throw new Error('Backend allies endpoint is unavailable');
-                    }
-
-                    const uniqueCategories = new Set();
-                    const uniqueStats = new Set();
-                    const uniqueAbilities = new Set();
-
-                    const parsedAllies = Object.keys(data).map(key => {
-                        const ally = data[key];
-                        if (ally.category) uniqueCategories.add(ally.category);
-
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(ally.tooltip, 'text/html');
-                        
-                        const rawStats = [];
-                        const parsedStats = {};
-
-                        Array.from(doc.querySelectorAll('li')).forEach(li => {
-                            const text = li.textContent.trim();
-                            rawStats.push(text);
-                            const match = text.match(/^([+-]?[\d.]+)(%?)\s+(.+)$/);
-                            if (match) {
-                                const statName = match[3].trim();
-                                uniqueStats.add(statName);
-                                parsedStats[statName] = { value: parseFloat(match[1]), isPercent: match[2] === '%' };
-                            }
-                        });
-
-                        const abilities = Array.from(doc.querySelectorAll('p'))
-                            .map(p => p.textContent.trim())
-                            .filter(text => text !== 'Ally' && text !== '');
-
-                        abilities.forEach(ab => uniqueAbilities.add(ab));
-
-                        let imgSource = ally.image || ally.blueprint;
-                        let imagePath = imgSource.startsWith('http') ? imgSource : `https://trovesaurus.com/data/catalog/${imgSource}.png`;
-
-                        return {
-                            id: key,
-                            ...ally,
-                            rawStats,
-                            parsedStats,
-                            extractedAbilities: abilities,
-                            imagePath
-                        };
-                    });
-
-                    alliesData.value = parsedAllies;
-
-                    const catOpts = [['All Categories', 'All']];
-                    Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
-                    categoryOptions.value = catOpts;
-
-                    statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
-                    abilitiesOptions.value = [[t('All Abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
-
+                    await loadAllies(false);
                 } catch (err) {
                     console.error("Failed to load allies data:", err);
                 }
@@ -364,18 +413,31 @@ document.addEventListener('allies_loaded', async () => {
                 setPage, nextPage, prevPage,
                 resetFilters, formatStat, formatAbility,
                 highlightSearch, nextSearchResult, prevSearchResult,
-                focusSearchInput,
+                focusSearchInput, clearCacheAndReload, dataSourceText,
                 showSearchShortcutHint, dismissSearchShortcutHint,
                 showOnboardingTips, dismissOnboardingTips
             };
         }
     });
 
-    app.component('custom-vue-select', window.CustomVueSelect);
-    app.component('select2-component', window.Select2Component);
-    
-    if (window._alliesApp) window._alliesApp.unmount();
-    window._alliesApp = app;
-    
-    app.mount('#allies-vue-app');
+    try {
+        if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
+        if (window.Select2Component) app.component('select2-component', window.Select2Component);
+
+        if (window._alliesApp) window._alliesApp.unmount();
+        window._alliesApp = app;
+
+        app.mount('#allies-vue-app');
+    } catch (err) {
+        console.error("Failed to initialize Ally Codex app:", err);
+        root.removeAttribute('v-cloak');
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Ally Codex: ${String((err && err.message) || err)}</div>`;
+    } finally {
+        delete root.dataset.alliesInitializing;
+    }
+}
+
+document.addEventListener('allies_loaded', initAlliesView);
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initAlliesView, 0);
 });

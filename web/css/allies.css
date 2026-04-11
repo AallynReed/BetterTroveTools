@@ -187,6 +187,10 @@
     color: var(--text-muted, #a3adc2);
 }
 
+.cache-status {
+    margin-bottom: 12px;
+}
+
 .allies-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

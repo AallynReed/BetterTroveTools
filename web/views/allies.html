@@ -8,12 +8,16 @@
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                 <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\nability:\ndesc:\ncategory:\n\nExample: author:&quot;Trove Team&quot; ability:jump')" :placeholder="t(`Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...`)" id="ally-search-input">
             </div>
+            <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear ally cache and rebuild from game files')">
+                <i class="fa-solid fa-broom"></i>
+            </button>
             <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
             <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
             <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
+        <div v-if="dataSourceText" class="search-stats cache-status">{{ dataSourceText }}</div>
         <div v-if="showSearchShortcutHint" class="search-shortcut-hint">
             <span>{{ t('Shortcuts: Ctrl/Cmd+F focus search, Arrow Up/Down navigate results') }}</span>
             <button class="search-shortcut-dismiss" @click="dismissSearchShortcutHint" :title="t('Hide this tip')" aria-label="Hide this tip">
@@ -64,7 +68,7 @@
         <div v-for="(ally, idx) in paginatedAllies" :key="ally.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
             <div class="ally-header">
                 <div class="ally-icon">
-                    <img :src="ally.imagePath" @error="$event.target.src='/assets/images/default_ally.png'; $event.target.onerror=null;" alt="">
+                    <img :src="ally.imagePath" alt="">
                 </div>
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(ally.name))"></div>

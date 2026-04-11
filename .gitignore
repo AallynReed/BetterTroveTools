@@ -23,6 +23,10 @@ ally_prefab_test.py
 analyze_ally_test.py
 generate_new_allies_json.py
 mine_ally_binfab_patterns.py
+analyze_delve_patterns.py
+generate_allies_from_prefabs.py
+fetch_delve_history.py
+*.php
 
 # Ignore web cache
 web/cache/
