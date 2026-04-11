@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="css/gems_and_builds/gem_builds.css">
     <link rel="stylesheet" href="css/gems_and_builds/gem_simulator.css">
     <link rel="stylesheet" href="css/gems_and_builds/star_chart.css">
+    <link rel="stylesheet" href="css/gems_and_builds/gem_evaluator.css">
 </head>
 
 <div id="gems-and-builds-vue-app" class="gems-and-builds-container" v-cloak>
@@ -14,6 +15,9 @@
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'star-chart' }" @click="setActiveTab('star-chart')">
                 <i class="fa-solid fa-star"></i> <span>{{ t('Star Chart') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'gem-evaluator' }" @click="setActiveTab('gem-evaluator')">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> <span>{{ t('Gem Evaluator') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'gem-simulator' }" @click="setActiveTab('gem-simulator')">
                 <i class="fa-solid fa-gem"></i> <span>{{ t('Gem Simulator') }}</span>
@@ -31,6 +35,13 @@
         <div v-show="activeTab === 'star-chart'" class="tab-content" :class="{ active: activeTab === 'star-chart' }">
             <div id="star-chart-vue-app-inner" class="star-chart-container" v-cloak>
                 <!-- Star Chart content will be injected here -->
+            </div>
+        </div>
+
+        <!-- Gem Evaluator Tab -->
+        <div v-show="activeTab === 'gem-evaluator'" class="tab-content" :class="{ active: activeTab === 'gem-evaluator' }">
+            <div id="gem-evaluator-vue-app-inner" class="gem-evaluator-container" v-cloak>
+                <!-- Gem Evaluator content will be injected here -->
             </div>
         </div>
 

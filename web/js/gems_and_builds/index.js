@@ -57,6 +57,16 @@ document.addEventListener('gems_and_builds_loaded', () => {
                         }
                     }
 
+                    // Load Gem Evaluator view
+                    const gemEvaluatorResponse = await fetch('views/gems_and_builds/gem_evaluator.html');
+                    if (gemEvaluatorResponse.ok) {
+                        const gemEvaluatorHtml = await gemEvaluatorResponse.text();
+                        const gemEvaluatorContainer = document.getElementById('gem-evaluator-vue-app-inner');
+                        if (gemEvaluatorContainer) {
+                            gemEvaluatorContainer.innerHTML = gemEvaluatorHtml;
+                        }
+                    }
+
                     // Load Gem Simulator view
                     const gemSimulatorResponse = await fetch('views/gems_and_builds/gem_simulator.html');
                     if (gemSimulatorResponse.ok) {
@@ -87,6 +97,7 @@ document.addEventListener('gems_and_builds_loaded', () => {
                 // These will be caught by gem_builds.js, star_chart.js, and gem_simulator.js
                 document.dispatchEvent(new CustomEvent('gem_builds_loaded'));
                 document.dispatchEvent(new CustomEvent('star_chart_loaded'));
+                document.dispatchEvent(new CustomEvent('gem_evaluator_loaded'));
                 document.dispatchEvent(new CustomEvent('gem_simulator_loaded'));
             });
 
@@ -96,6 +107,8 @@ document.addEventListener('gems_and_builds_loaded', () => {
                     document.dispatchEvent(new CustomEvent('gem_builds_shown'));
                 } else if (newTab === 'star-chart') {
                     document.dispatchEvent(new CustomEvent('star_chart_shown'));
+                } else if (newTab === 'gem-evaluator') {
+                    document.dispatchEvent(new CustomEvent('gem_evaluator_shown'));
                 } else if (newTab === 'gem-simulator') {
                     document.dispatchEvent(new CustomEvent('gem_simulator_shown'));
                 }

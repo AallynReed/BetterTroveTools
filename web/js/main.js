@@ -1466,6 +1466,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
         { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
         { id: 'gems_and_builds', title: 'Star Chart', icon: 'fa-star', gemsTab: 'star-chart' },
+        { id: 'gems_and_builds', title: 'Gem Evaluator', icon: 'fa-magnifying-glass-chart', gemsTab: 'gem-evaluator' },
         { id: 'gems_and_builds', title: 'Gem Simulator', icon: 'fa-gem', gemsTab: 'gem-simulator' },
         { id: 'calculators', title: 'Calculators', icon: 'fa-calculator' },
         { id: 'allies', title: 'Ally Codex', icon: 'fa-paw' },
@@ -1644,6 +1645,95 @@ document.addEventListener('DOMContentLoaded', async () => {
     const sidebar = document.getElementById('sidebar');
     let activeViewLoadToken = 0;
     let activeViewLoadController = null;
+    const loadedViewStyles = new Map();
+
+    function extractViewContentAndStyles(html) {
+        const parser = new DOMParser();
+        const parsed = parser.parseFromString(html, 'text/html');
+
+        const stylesheetHrefs = [...parsed.querySelectorAll('link[rel="stylesheet"][href]')]
+            .map(link => link.getAttribute('href'))
+            .filter(Boolean);
+
+        let contentHtml = parsed.body ? parsed.body.innerHTML.trim() : '';
+        if (!contentHtml) {
+            // Fallback for malformed partials: strip any head block and keep the rest.
+            contentHtml = html.replace(/<head[\s\S]*?<\/head>/i, '').trim();
+        }
+
+        return { contentHtml, stylesheetHrefs };
+    }
+
+    async function ensureViewStylesLoaded(stylesheetHrefs, abortSignal) {
+        const absoluteHrefs = stylesheetHrefs.map(href => new URL(href, window.location.href).href);
+        const pendingLoads = stylesheetHrefs.map((href, index) => {
+            const absoluteHref = absoluteHrefs[index];
+            if (loadedViewStyles.has(absoluteHref)) return loadedViewStyles.get(absoluteHref).promise;
+
+            const existingLink = [...document.querySelectorAll('link[rel="stylesheet"][href]')]
+                .find(link => new URL(link.href, window.location.href).href === absoluteHref);
+
+            const linkEl = existingLink || (() => {
+                const newLink = document.createElement('link');
+                newLink.rel = 'stylesheet';
+                newLink.href = href;
+                document.head.appendChild(newLink);
+                return newLink;
+            })();
+            linkEl.setAttribute('data-view-style-managed', 'true');
+
+            const loadPromise = new Promise((resolve, reject) => {
+                if (abortSignal?.aborted) {
+                    reject(new DOMException('View style load aborted', 'AbortError'));
+                    return;
+                }
+
+                const done = () => {
+                    cleanup();
+                    resolve();
+                };
+
+                const fail = () => {
+                    cleanup();
+                    reject(new Error(`Failed to load stylesheet: ${href}`));
+                };
+
+                const onAbort = () => {
+                    cleanup();
+                    reject(new DOMException('View style load aborted', 'AbortError'));
+                };
+
+                const cleanup = () => {
+                    linkEl.removeEventListener('load', done);
+                    linkEl.removeEventListener('error', fail);
+                    abortSignal?.removeEventListener('abort', onAbort);
+                };
+
+                if (linkEl.sheet) {
+                    resolve();
+                    return;
+                }
+
+                linkEl.addEventListener('load', done, { once: true });
+                linkEl.addEventListener('error', fail, { once: true });
+                abortSignal?.addEventListener('abort', onAbort, { once: true });
+            });
+
+            loadedViewStyles.set(absoluteHref, { promise: loadPromise, linkEl });
+            return loadPromise;
+        });
+
+        await Promise.all(pendingLoads);
+        return absoluteHrefs;
+    }
+
+    function activateViewStyles(activeAbsoluteHrefs) {
+        const activeSet = new Set(activeAbsoluteHrefs);
+        document.querySelectorAll('link[data-view-style-managed="true"]').forEach((link) => {
+            const absoluteHref = new URL(link.href, window.location.href).href;
+            link.disabled = !activeSet.has(absoluteHref);
+        });
+    }
 
     if (sidebar && window.AppSettings) {
         try {
@@ -1699,7 +1789,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const html = await response.text();
             if (loadToken !== activeViewLoadToken) return false;
-            viewContainer.innerHTML = html;
+
+            const { contentHtml, stylesheetHrefs } = extractViewContentAndStyles(html);
+            const activeStyleHrefs = await ensureViewStylesLoaded(stylesheetHrefs, activeViewLoadController.signal);
+            if (loadToken !== activeViewLoadToken) return false;
+            activateViewStyles(activeStyleHrefs);
+
+            viewContainer.innerHTML = contentHtml;
             if (loadToken !== activeViewLoadToken) return false;
 
             navButtons.forEach(btn => {

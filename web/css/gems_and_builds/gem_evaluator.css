@@ -1,0 +1,495 @@
+﻿.gem-evaluator-shell {
+    display: grid;
+    grid-template-columns: minmax(320px, 460px) minmax(420px, 1fr);
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.gem-evaluator-shell.has-results {
+    grid-template-columns: minmax(320px, 400px) minmax(620px, 1fr);
+}
+
+.gem-evaluator-panel,
+.gem-evaluator-result-card,
+.gem-evaluator-placeholder {
+    background: rgba(29, 35, 43, 0.92);
+    border: 1px solid var(--border-color, #444c5e);
+    border-radius: 14px;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+}
+
+.gem-evaluator-panel {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.evaluator-mode-tabs {
+    display: inline-flex;
+    gap: 8px;
+    padding: 6px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    width: fit-content;
+}
+
+.mode-tab-btn {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.mode-tab-btn.active {
+    background: rgba(var(--accent-rgb, 94, 198, 255), 0.18);
+    color: var(--text-main);
+}
+
+.gem-evaluator-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.gem-evaluator-header h3 {
+    margin: 0 0 6px;
+    color: var(--accent-blue);
+}
+
+.gem-evaluator-header p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.gem-evaluator-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.simple-evaluator-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+}
+
+.gem-evaluator-grid-secondary {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.simple-evaluator-grid-secondary {
+    grid-template-columns: minmax(180px, 260px);
+    justify-content: start;
+    margin-top: -4px;
+}
+
+.gem-evaluator-grid label,
+.gem-evaluator-stat-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.gem-evaluator-grid label span {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.evaluator-input {
+    color: #f3f7ff;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 10px;
+}
+
+.evaluator-input::placeholder {
+    color: #aeb8c9;
+}
+
+.gem-evaluator-proc-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(var(--accent-rgb, 94, 198, 255), 0.08);
+    color: var(--text-main);
+}
+
+.gem-evaluator-stat-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.gem-evaluator-stat-row {
+    display: grid;
+    grid-template-columns: 1.1fr auto 1.6fr;
+    gap: 10px;
+    align-items: center;
+}
+
+.stat-row-full {
+    grid-template-columns: 1.15fr 1.6fr;
+}
+
+.gem-evaluator-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 10px;
+    height: 44px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color, #444c5e);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.stepper-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 8px;
+    background: rgba(var(--accent-rgb, 94, 198, 255), 0.15);
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.auto-proc-btn {
+    width: auto;
+    min-width: 98px;
+    padding: 0 12px;
+    height: 34px;
+    font-size: 0.85rem;
+}
+
+.evaluator-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+.bottom-calc-btn {
+    min-width: 180px;
+}
+
+.stepper-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.gem-evaluator-results {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.gem-evaluator-placeholder {
+    padding: 28px;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.simple-result-card {
+    padding: 16px;
+    border-radius: 14px;
+    background: rgba(29, 35, 43, 0.92);
+    border: 1px solid var(--border-color, #444c5e);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.simple-result-head {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.simple-result-sub {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.simple-meta {
+    grid-template-columns: 1fr;
+}
+
+.compact-focus-card {
+    padding: 0;
+    background: transparent;
+}
+
+.gem-evaluator-result-card {
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.gem-evaluator-result-card.best {
+    border-color: rgba(var(--accent-rgb, 94, 198, 255), 0.8);
+    box-shadow: 0 0 0 1px rgba(var(--accent-rgb, 94, 198, 255), 0.2), 0 18px 28px rgba(0, 0, 0, 0.22);
+}
+
+.gem-evaluator-result-card.invalid {
+    opacity: 0.92;
+}
+
+.result-card-header,
+.result-meta,
+.result-stat-row {
+    display: grid;
+    gap: 12px;
+}
+
+.result-card-header {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+}
+
+.result-card-header h4,
+.result-card-header p {
+    margin: 0;
+}
+
+.result-card-header p {
+    margin-top: 6px;
+    color: var(--text-muted);
+}
+
+.result-quality {
+    text-align: right;
+}
+
+.result-quality span,
+.result-meta span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.result-quality strong {
+    font-size: 1.45rem;
+    color: var(--accent-blue);
+}
+
+.result-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.focus-plan-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.focus-plan-title {
+    color: var(--accent-blue);
+    font-weight: 700;
+}
+
+.focus-plan-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.focus-plan-empty {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-muted);
+}
+
+.focus-plan-empty strong {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-main);
+}
+
+.focus-plan-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.focus-plan-tile-header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.focus-plan-gem-icon {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.focus-plan-label {
+    color: var(--text-main);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.focus-plan-total {
+    margin-top: 4px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.focus-plan-focuses,
+.focus-plan-recipes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.focus-plan-divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.focus-chip,
+.recipe-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    font-size: 0.85rem;
+}
+
+.focus-chip img,
+.recipe-chip img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+}
+
+.recipe-chip.flux {
+    background: rgba(255, 194, 92, 0.12);
+    border: 1px solid rgba(255, 194, 92, 0.2);
+}
+
+.result-stat-table {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.result-warning {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255, 170, 64, 0.1);
+    border: 1px solid rgba(255, 170, 64, 0.25);
+    color: #ffd089;
+    line-height: 1.5;
+}
+
+.result-warning strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.result-stat-row {
+    grid-template-columns: 1.6fr 1fr 0.8fr 0.9fr;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.result-stat-row-invalid {
+    border: 1px solid rgba(255, 120, 120, 0.28);
+    background: rgba(255, 120, 120, 0.08);
+}
+
+.result-stat-flag {
+    margin-left: 6px;
+    color: #ff9a76;
+}
+
+.result-stat-head {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+@media (max-width: 1100px) {
+    .gem-evaluator-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .gem-evaluator-shell.has-results {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .gem-evaluator-grid,
+    .simple-evaluator-grid,
+    .gem-evaluator-stat-row,
+    .result-card-header,
+    .result-meta,
+    .result-stat-row {
+        grid-template-columns: 1fr;
+    }
+
+    .gem-evaluator-header,
+    .gem-evaluator-proc-summary {
+        flex-direction: column;
+    }
+
+    .result-quality {
+        text-align: left;
+    }
+
+    .focus-plan-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .simple-results-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .simple-evaluator-grid-secondary {
+        grid-template-columns: 1fr;
+        margin-top: 0;
+    }
+
+    .evaluator-actions {
+        justify-content: stretch;
+    }
+
+    .bottom-calc-btn {
+        width: 100%;
+    }
+}
