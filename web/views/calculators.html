@@ -208,8 +208,8 @@
                             <span class="slider-toggle light-slider-toggle"></span>
                         </label>
                         <div v-else class="calc-slider-wrapper">
-                            <input type="range" class="calc-slider" min="0" :max="getLightSliderMax(item)" v-model.number="item.currentValue" style="accent-color: #00bcd4;">
-                            <input type="number" class="calc-number-input" min="0" :max="getLightNumberMax(item)" v-model.number="item.currentValue" @change="clampLightValue(item)">
+                            <input type="range" class="calc-slider" min="0" :max="getLightSliderMax(item)" :step="getLightStep(item)" v-model.number="item.currentValue" style="accent-color: #00bcd4;">
+                            <input type="number" class="calc-number-input" min="0" :max="getLightNumberMax(item)" :step="getLightStep(item)" v-model.number="item.currentValue" @change="clampLightValue(item)">
                         </div>
                     </div>
                 </div>

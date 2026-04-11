@@ -19,6 +19,10 @@ __pycache__/
 populate_translations.py
 test_binfab_decoded.py
 test_gem_engine.py
+ally_prefab_test.py
+analyze_ally_test.py
+generate_new_allies_json.py
+mine_ally_binfab_patterns.py
 
 # Ignore web cache
 web/cache/

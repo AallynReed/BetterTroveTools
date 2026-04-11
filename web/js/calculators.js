@@ -159,6 +159,10 @@ document.addEventListener('calculators_loaded', () => {
 
             const getLightSliderMax = (item) => isLightGeodeMastery(item) ? 150 : Number(item.max || item.value || 0);
             const getLightNumberMax = (item) => isLightGeodeMastery(item) ? 200 : Number(item.max || item.value || 0);
+            const getLightStep = (item) => {
+                const step = Number(item?.step);
+                return Number.isFinite(step) && step > 0 ? step : 1;
+            };
 
             const getLightAppliedValue = (item) => {
                 const numeric = Number(item.currentValue || 0);
@@ -226,8 +230,10 @@ document.addEventListener('calculators_loaded', () => {
             const clampLightValue = (item) => {
                 const max = getLightNumberMax(item);
                 const min = 0;
+                const step = getLightStep(item);
                 const numeric = Number(item.currentValue || 0);
-                item.currentValue = Math.max(min, Math.min(Number.isFinite(numeric) ? numeric : 0, max));
+                const bounded = Math.max(min, Math.min(Number.isFinite(numeric) ? numeric : 0, max));
+                item.currentValue = Math.max(min, Math.min(Math.round(bounded / step) * step, max));
             };
 
             const getLightBadgeText = (item) => {
@@ -488,7 +494,7 @@ document.addEventListener('calculators_loaded', () => {
                 mfData, mfStats, resetMf, getMfBadgeText, clampMfValue,
                 starChartCode, starChartTemplate, starChartTemplates, starChartMf,
                 prData, totalPR, resetPr, getPrBadgeText, clampPrValue,
-                lightData, lightStats, resetLight, getLightBadgeText, clampLightValue, isLightGeodeMastery, getLightSliderMax, getLightNumberMax
+                lightData, lightStats, resetLight, getLightBadgeText, clampLightValue, isLightGeodeMastery, getLightSliderMax, getLightNumberMax, getLightStep
             };
         }
     });

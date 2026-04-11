@@ -49,14 +49,16 @@
     },
     {
         "name": "Ally",
-        "value": 400,
-        "type": "switch",
+        "value": 450,
+        "type": "slider",
+        "step": 10,
         "perm": true
     },
     {
         "name": "Rune",
         "value": 450,
-        "type": "switch",
+        "type": "slider",
+        "step": 10,
         "perm": true
     },
     {
@@ -68,18 +70,20 @@
     {
         "name": "Star Chart",
         "value": 250,
-        "type": "switch",
+        "type": "slider",
+        "step": 10,
         "perm": true
     },
     {
         "name": "Geode Mastery Level",
         "value": 1000,
         "type": "slider",
+        "step": 1,
         "perm": true
     },
     {
         "name": "Taeryn Veernok (Cosmic Primordial Dragon)",
-        "value": 415,
+        "value": 494.5,
         "type": "switch",
         "perm": true
     },
