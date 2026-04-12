@@ -1451,31 +1451,6 @@ span.flatpickr-weekday {
     color: var(--text-main);
 }
 
-.network-status-indicator::after {
-    content: "Requests";
-    position: absolute;
-    right: 52px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.2px;
-    padding: 5px 9px;
-    border-radius: 999px;
-    background: rgba(9, 13, 20, 0.84);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: var(--text-main);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
-    opacity: 0.92;
-    pointer-events: none;
-}
-
-@media (max-width: 900px) {
-    .network-status-indicator::after {
-        display: none;
-    }
-}
-
 .job-queue-toggle {
     position: fixed;
     right: 18px;

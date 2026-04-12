@@ -1147,8 +1147,9 @@
 
 /* Home refresh aligned with current app style */
 #home-vue-app.home-container {
-    max-width: 1440px;
-    margin: 0 auto;
+    max-width: none;
+    width: 100%;
+    margin: 0;
     padding: 22px;
 }
 

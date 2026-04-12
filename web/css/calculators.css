@@ -14,8 +14,9 @@
 }
 
 .tabs-wrapper {
-    max-width: 1240px;
-    margin: 0 auto;
+    max-width: none;
+    width: 100%;
+    margin: 0;
     background: var(--bg-panel, #1d232b);
     border-radius: 12px;
     overflow: hidden;
