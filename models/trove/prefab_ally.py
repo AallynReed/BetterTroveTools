@@ -22,51 +22,6 @@ ALLY_KEY_ALIASES = {
     "tentacle_bopplepod": "tentacle_bobblepod",
 }
 
-# These category tokens are only used when the prefab token matched the
-# existing dataset with very high confidence during local correlation.
-CATEGORY_TOKEN_MAP = {
-    "snakeundertowmodsF": "Chaotic",
-    "dogannwnhoundmodsF": "Store",
-    "gardeningfuzzybeemodsF": "Gardening",
-    "faegardeningmodsF": "Gardening",
-    "tentaclejackmodsF": "Chaotic",
-    "monkey_smol_modF": "Chaotic",
-    "stickydragonallymodsF": "BomberRoyale",
-    "snake_firehorseF": "Store",
-    "panda_puppysword_modsF": "Curiosities",
-    "guineapig_ghostF": "Chaotic",
-    "floateye_shadewood_statF": "Chaotic",
-    "caterpillar_lavalarva_modsF": "Chaotic",
-    "griffonsunderermodsF": "Sundered Uplands 5 Star",
-    "sunfestAlly2019ModsF": "Store",
-    "stacktankardmodsF": "Store",
-    "octopustanabataorangemodF": "Store",
-    "octopustanabatabluemodF": "Store",
-    "monkey_carysF": "Store",
-    "froleekbreadbasketmodsF": "Store",
-    "faeminielysiamodsF": "Store",
-    "august2020_modsF": "Store",
-    "tentacle_viking_modsF": "Rare",
-    "papercrane_viking_modsF": "Rare",
-    "mammoth_rooster_modsF": "Prestige",
-    "Profession": "Mystic Arts",
-    "zepperayphoenixmodsF": "Giantlands",
-    "wheel_eggman_modsF": "Event Vault",
-    "qubesly_pinsly_modsF": "Event Vault",
-    "gym_membership_card_statsF": "Event Vault",
-    "goldfish_zebrafish_kmodsF": "Event Vault",
-    "floateye_horsehead_statF": "Event Vault",
-    "dreambrodragonicemodsF": "Event Vault",
-    "dreambrodragonfiremodsF": "Event Vault",
-    "dragonserpent_eggman_modsF": "Event Vault",
-    "cat_witch_october2024_modsF": "Event Vault",
-    "birdkiwiundeadmodsF": "Event Vault",
-    "biped_pumpkinaxe_modsF": "Event Vault",
-    "biped_bunnywarrior_modsF": "Event Vault",
-    "dragonfriendmodsF": "Dragon",
-    "pandacherrymodsF": "Dev Dream",
-}
-
 
 def detect_first_glyph_install() -> Path:
     with contextlib.redirect_stdout(io.StringIO()):
@@ -344,15 +299,6 @@ def resolve_blueprint_catalog_path(blueprint: str, blueprint_map: dict[str, obje
     if best_match:
         return best_match
     return normalize_blueprint_catalog_id(normalized)
-
-
-def infer_category_from_strings(strings: list[dict]) -> str:
-    for entry in strings:
-        text = entry["text"]
-        category = CATEGORY_TOKEN_MAP.get(text)
-        if category:
-            return category
-    return ""
 
 
 async def find_pet_prefabs(game_path: Path) -> list[dict]:
@@ -819,8 +765,6 @@ def merge_allies(
         if not record.get("designer"):
             record["designer"] = "Trove Team"
         category = category_map.get(ally_key, "")
-        if not category:
-            category = infer_category_from_strings(parsed.get("strings", []))
         if category:
             record["category"] = category
         record["filename"] = paths_by_ally[ally_key][0].removesuffix(".binfab")
