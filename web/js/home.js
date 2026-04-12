@@ -12,7 +12,32 @@ document.addEventListener('home_loaded', () => {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            let isDisposed = false;
+            let homeViewAbortController = new AbortController();
             
+            const resetHomeAbortController = () => {
+                if (homeViewAbortController) {
+                    try { homeViewAbortController.abort(); } catch {}
+                }
+                homeViewAbortController = new AbortController();
+                return homeViewAbortController;
+            };
+
+            const cancelHomeWork = async () => {
+                isDisposed = true;
+                resetHomeAbortController();
+                window._homeAppHandleYoutube = null;
+                window._homeAppHandleTwitch = null;
+                window._homeAppHandleBilibili = null;
+                window._homeAppHandleEvents = null;
+                window._homeAppHandleNews = null;
+                if (window.eel && eel.cancel_home_fetches) {
+                    try {
+                        await eel.cancel_home_fetches()();
+                    } catch (e) {}
+                }
+            };
+
             const settings = reactive({ show_community_content: true, show_official_news: true });
             const isChinese = ref(window.I18nManager?.currentLocale === 'zh_CN');
             
@@ -127,6 +152,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             window._homeAppHandleYoutube = (response) => {
+                if (isDisposed) return;
                 mediaData.youtube.loading = false;
                 if (response?.success && response.data) {
                     mediaData.youtube.data = response.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).map(v => ({
@@ -138,6 +164,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             window._homeAppHandleTwitch = (response) => {
+                if (isDisposed) return;
                 mediaData.twitch.loading = false;
                 if (response?.success && response.data) {
                     mediaData.twitch.data = response.data.sort((a, b) => b.viewer_count - a.viewer_count).map(v => ({
@@ -149,6 +176,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             window._homeAppHandleBilibili = (response) => {
+                if (isDisposed) return;
                 mediaData.bilibili.loading = false;
                 if (response?.success && response.data) {
                     mediaData.bilibili.data = response.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).map(v => ({
@@ -160,6 +188,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             window._homeAppHandleEvents = (response) => {
+                if (isDisposed) return;
                 events.loading = false;
                 if (response?.success && response.data) {
                     events.data = response.data;
@@ -170,6 +199,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             window._homeAppHandleNews = (response) => {
+                if (isDisposed) return;
                 news.loading = false;
                 if (response?.success && response.data) {
                     news.data = response.data;
@@ -327,6 +357,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             const refreshAllData = async ({ refreshOfficialNews = false } = {}) => {
+                if (isDisposed) return;
                 isChinese.value = window.I18nManager?.currentLocale === 'zh_CN';
                 const sets = window.AppSettings
                     ? await window.AppSettings.load(true)
@@ -378,6 +409,7 @@ document.addEventListener('home_loaded', () => {
                     if (chaosd?.success) chaosChest.value = chaosd;
                     if (gardend?.success) gardening.value = gardend;
                 } catch(e) {}
+                if (isDisposed) return;
                 serverData.loading = false;
             };
 
@@ -390,7 +422,8 @@ document.addEventListener('home_loaded', () => {
                 rotationModal.show = true;
                 
                 try {
-                    const res = await fetch(`/assets/data/${type}_buffs.json`);
+                    const controller = homeViewAbortController;
+                    const res = await fetch(`/assets/data/${type}_buffs.json`, { signal: controller.signal });
                     const scheduleData = await res.json();
                     
                     if (type === 'daily') {
@@ -431,7 +464,9 @@ document.addEventListener('home_loaded', () => {
                             });
                         }
                     }
-                } catch(e) {}
+                } catch(e) {
+                    if (e && e.name === 'AbortError') return;
+                }
             };
 
             const openMerchantSchedule = (card) => {
@@ -736,7 +771,13 @@ document.addEventListener('home_loaded', () => {
                 }, msUntil);
             }
 
+            const handleHomeUnloading = () => {
+                cancelHomeWork();
+            };
+
             onMounted(() => {
+                isDisposed = false;
+                resetHomeAbortController();
                 refreshAllData({ refreshOfficialNews: true });
                 refreshInterval = setInterval(refreshAllData, 30000);
                 newsRefreshInterval = setInterval(() => refreshNews(), NEWS_REFRESH_MS);
@@ -747,6 +788,7 @@ document.addEventListener('home_loaded', () => {
                     if (e.target && e.target.id === 'global-language-select') setTimeout(() => refreshAllData({ refreshOfficialNews: false }), 150);
                 };
                 document.addEventListener('change', window._homeLangListener);
+                document.addEventListener('home_unloading', handleHomeUnloading);
             });
 
             watch(timeMode, async () => {
@@ -766,6 +808,8 @@ document.addEventListener('home_loaded', () => {
                 clearInterval(timeInterval);
                 if (resetTimer) clearTimeout(resetTimer);
                 document.removeEventListener('change', window._homeLangListener);
+                document.removeEventListener('home_unloading', handleHomeUnloading);
+                cancelHomeWork();
             });
 
             onMounted(async () => {

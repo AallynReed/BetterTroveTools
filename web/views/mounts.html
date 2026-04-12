@@ -11,8 +11,6 @@
             <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear mount cache and rebuild from game files')">
                 <i class="fa-solid fa-broom"></i>
             </button>
-            <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
-            <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
             <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
                 <i class="fa-solid fa-xmark"></i>
             </button>

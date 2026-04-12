@@ -33,6 +33,63 @@ RSS_NAMESPACES = {
 }
 
 
+_HOME_FETCH_GENERATION = 0
+_HOME_FETCH_TASKS = set()
+
+
+def _home_generation() -> int:
+    return _HOME_FETCH_GENERATION
+
+
+def _track_home_task(task):
+    _HOME_FETCH_TASKS.add(task)
+
+    def _cleanup(_task):
+        _HOME_FETCH_TASKS.discard(_task)
+
+    task.link(_cleanup)
+    return task
+
+
+def _spawn_home_fetch(fetcher):
+    generation = _home_generation()
+
+    def wrapped():
+        try:
+            fetcher(generation)
+        except gevent.GreenletExit:
+            raise
+
+    return _track_home_task(gevent.spawn(wrapped))
+
+
+def _home_fetch_is_active(generation: int) -> bool:
+    return generation == _HOME_FETCH_GENERATION
+
+
+def _finish_external_request(req_id, success):
+    if not req_id:
+        return
+    try:
+        eel.remove_external_request(req_id, success)()
+    except Exception:
+        pass
+
+
+@eel.expose
+@standardize_response
+def cancel_home_fetches():
+    global _HOME_FETCH_GENERATION
+    _HOME_FETCH_GENERATION += 1
+    for task in list(_HOME_FETCH_TASKS):
+        try:
+            task.kill(block=False)
+        except Exception:
+            pass
+    _HOME_FETCH_TASKS.clear()
+    return resp(True, data={"cancelled": True})
+
+
 def _strip_html(value):
     if not value:
         return ""
@@ -66,7 +123,7 @@ def _truncate_text(value, limit=220):
 @eel.expose
 @standardize_response
 def get_twitch_streams():
-    def fetch_task():
+    def fetch_task(generation):
         req_id = None
         try:
             req_id = eel.add_external_request("Fetching Twitch Streams", "https://trovesaurus.aallyn.net/twitch_streams")()
@@ -76,22 +133,27 @@ def get_twitch_streams():
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.aallyn.net/twitch_streams", headers=headers, timeout=10)
             response.raise_for_status()
-            if req_id:
-                eel.remove_external_request(req_id, True)()
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
             data = response.json()
             eel.receive_twitch_streams(resp(True, data=data))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
         except Exception as e:
-            if req_id:
-                eel.remove_external_request(req_id, False)()
+            _finish_external_request(req_id, False)
             traceback.print_exc()
-            eel.receive_twitch_streams(resp(False, error=str(e), code="TWITCH_FETCH_FAILED"))
+            if _home_fetch_is_active(generation):
+                eel.receive_twitch_streams(resp(False, error=str(e), code="TWITCH_FETCH_FAILED"))
             
-    gevent.spawn(fetch_task)
+    _spawn_home_fetch(fetch_task)
 
 @eel.expose
 @standardize_response
 def get_youtube_videos():
-    def fetch_task():
+    def fetch_task(generation):
         req_id = None
         try:
             req_id = eel.add_external_request("Fetching YouTube Videos", "https://trovesaurus.aallyn.net/youtube_videos")()
@@ -101,22 +163,27 @@ def get_youtube_videos():
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.aallyn.net/youtube_videos", headers=headers, timeout=10)
             response.raise_for_status()
-            if req_id:
-                eel.remove_external_request(req_id, True)()
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
             data = response.json()
             eel.receive_youtube_videos(resp(True, data=data))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
         except Exception as e:
-            if req_id:
-                eel.remove_external_request(req_id, False)()
+            _finish_external_request(req_id, False)
             traceback.print_exc()
-            eel.receive_youtube_videos(resp(False, error=str(e), code="YOUTUBE_FETCH_FAILED"))
+            if _home_fetch_is_active(generation):
+                eel.receive_youtube_videos(resp(False, error=str(e), code="YOUTUBE_FETCH_FAILED"))
             
-    gevent.spawn(fetch_task)
+    _spawn_home_fetch(fetch_task)
 
 @eel.expose
 @standardize_response
 def get_bilibili_videos():
-    def fetch_task():
+    def fetch_task(generation):
         req_id = None
         try:
             req_id = eel.add_external_request("Fetching BiliBili Videos", "https://trovesaurus.aallyn.net/bilibili_videos")()
@@ -126,22 +193,27 @@ def get_bilibili_videos():
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.aallyn.net/bilibili_videos", headers=headers, timeout=10)
             response.raise_for_status()
-            if req_id:
-                eel.remove_external_request(req_id, True)()
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
             data = response.json()
             eel.receive_bilibili_videos(resp(True, data=data))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
         except Exception as e:
-            if req_id:
-                eel.remove_external_request(req_id, False)()
+            _finish_external_request(req_id, False)
             traceback.print_exc()
-            eel.receive_bilibili_videos(resp(False, error=str(e), code="BILIBILI_FETCH_FAILED"))
+            if _home_fetch_is_active(generation):
+                eel.receive_bilibili_videos(resp(False, error=str(e), code="BILIBILI_FETCH_FAILED"))
             
-    gevent.spawn(fetch_task)
+    _spawn_home_fetch(fetch_task)
 
 @eel.expose
 @standardize_response
 def get_trovesaurus_events():
-    def fetch_task():
+    def fetch_task(generation):
         req_id = None
         try:
             req_id = eel.add_external_request("Fetching Trovesaurus Events", "https://trovesaurus.com/calendar/feed")()
@@ -151,24 +223,29 @@ def get_trovesaurus_events():
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=3)
             response.raise_for_status()
-            if req_id:
-                eel.remove_external_request(req_id, True)()
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
             events = response.json()
             events.sort(key=lambda x: int(x['startdate']))
             eel.receive_events_data(resp(True, data=events))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
         except Exception as e:
-            if req_id:
-                eel.remove_external_request(req_id, False)()
+            _finish_external_request(req_id, False)
             traceback.print_exc()
-            eel.receive_events_data(resp(False, error=str(e), code="EVENTS_FETCH_FAILED"))
+            if _home_fetch_is_active(generation):
+                eel.receive_events_data(resp(False, error=str(e), code="EVENTS_FETCH_FAILED"))
             
-    gevent.spawn(fetch_task)
+    _spawn_home_fetch(fetch_task)
 
 
 @eel.expose
 @standardize_response
 def get_trove_news():
-    def fetch_task():
+    def fetch_task(generation):
         req_id = None
         try:
             req_id = eel.add_external_request("Fetching Trove News", "https://trovegame.com/feed")()
@@ -178,8 +255,10 @@ def get_trove_news():
             headers = {"User-Agent": "BetterTroveTools/1.0"}
             response = requests.get("https://trovegame.com/feed", headers=headers, timeout=8)
             response.raise_for_status()
-            if req_id:
-                eel.remove_external_request(req_id, True)()
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
 
             root = ET.fromstring(response.text)
             items = []
@@ -222,13 +301,16 @@ def get_trove_news():
                     break
 
             eel.receive_trove_news(resp(True, data=items))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
         except Exception as e:
-            if req_id:
-                eel.remove_external_request(req_id, False)()
+            _finish_external_request(req_id, False)
             traceback.print_exc()
-            eel.receive_trove_news(resp(False, error=str(e), code="NEWS_FETCH_FAILED"))
+            if _home_fetch_is_active(generation):
+                eel.receive_trove_news(resp(False, error=str(e), code="NEWS_FETCH_FAILED"))
 
-    gevent.spawn(fetch_task)
+    _spawn_home_fetch(fetch_task)
 
 @eel.expose
 @standardize_response

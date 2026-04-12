@@ -11,8 +11,6 @@
             <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear ally cache and rebuild from game files')">
                 <i class="fa-solid fa-broom"></i>
             </button>
-            <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
-            <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
             <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -95,7 +93,8 @@
                 </template>
             </div>
             
-            <div v-if="ally.mastery || ally.mastery_geode" class="ally-footer">
+            <div v-if="ally.mastery || ally.mastery_geode || ally.powerrank" class="ally-footer">
+                <span v-if="ally.powerrank !== ''" class="footer-stat"><i class="fa-solid fa-bolt" style="color: #ffd54f;"></i> {{ t('Power Rank {val}').replace('{val}', parseInt(ally.powerrank)) }}</span>
                 <span v-if="parseInt(ally.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery {val}').replace('{val}', parseInt(ally.mastery)) }}</span>
                 <span v-if="parseInt(ally.mastery_geode) > 0" class="footer-stat"><i class="fa-solid fa-gem" style="color: #00bcd4;"></i> {{ t('Geode Mastery {val}').replace('{val}', parseInt(ally.mastery_geode)) }}</span>
             </div>

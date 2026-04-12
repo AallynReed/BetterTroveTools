@@ -1783,6 +1783,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return false;
             }
 
+            if (isSwitchingTabs && currentTarget === 'home' && target !== 'home') {
+                document.dispatchEvent(new CustomEvent('home_unloading', { detail: { from: currentTarget, to: target } }));
+                if (window._homeApp && typeof window._homeApp.unmount === 'function') {
+                    try { window._homeApp.unmount(); } catch {}
+                    window._homeApp = null;
+                }
+            }
+
             const response = await fetch(`views/${target}.html`, { signal: activeViewLoadController.signal });
             if (loadToken !== activeViewLoadToken) return false;
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);

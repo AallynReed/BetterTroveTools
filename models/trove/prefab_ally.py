@@ -638,6 +638,24 @@ def parse_item_pet_signature(content: bytes) -> dict:
     return {}
 
 
+KNOWN_POWER_RANK_PATTERNS = (
+    (bytes.fromhex("30EC044001"), "50"),
+    (bytes.fromhex("30D8044001"), "50"),
+    (bytes.fromhex("30A4064001"), "75"),
+    (bytes.fromhex("2E0008300040011EE205"), "30"),
+    (bytes.fromhex("30A2064001"), "20"),
+    (bytes.fromhex("30A0064001"), "5"),
+    (bytes.fromhex("30004001"), "0"),
+)
+
+
+def decode_known_power_rank(content: bytes) -> str:
+    for pattern, value in KNOWN_POWER_RANK_PATTERNS:
+        if pattern in content:
+            return value
+    return ""
+
+
 async def load_item_pet_prefabs(game_path: Path, matches: list[dict]) -> list[dict]:
     loaded = []
     grouped: dict[tuple[Path, int], list[dict]] = defaultdict(list)
@@ -716,6 +734,7 @@ async def build_allies_dataset(
         "decoded_geode_mastery": sum(1 for ally in merged.values() if geode_multipliers_map.get(ally.get("filename", ""))),
         "decoded_names": sum(1 for ally in merged.values() if ally.get("name")),
         "decoded_descriptions": sum(1 for ally in merged.values() if ally.get("desc")),
+        "decoded_powerrank": sum(1 for ally in merged.values() if ally.get("powerrank") != ""),
     }
     return merged, manifest
 
@@ -747,14 +766,15 @@ def merge_allies(
             "blueprint": "",
             "mastery": "0",
             "mastery_geode": "0",
+            "powerrank": "",
             "stats": [],
             "ability_paths": [],
             "ability_names": [],
             "abilities": [],
         }
 
-        prefab_paths = by_ally[ally_key]
-        parsed = best_prefab_record(prefab_paths)
+        prefab_items = by_ally[ally_key]
+        parsed = best_prefab_record(prefab_items)
         if parsed["stat_lines"]:
             decoded_count += 1
         if parsed["blueprint"]:
@@ -775,6 +795,14 @@ def merge_allies(
             record["name"] = localized_name
         if localized_description:
             record["desc"] = localized_description
+        decoded_powerranks = {
+            value
+            for item in prefab_items
+            for value in [decode_known_power_rank(item.get("content", b""))]
+            if value != ""
+        }
+        if len(decoded_powerranks) == 1:
+            record["powerrank"] = next(iter(decoded_powerranks))
         multiplier_row = multipliers_map.get(record["filename"])
         if multiplier_row is not None:
             record["mastery"] = str(multiplier_row["predicted"])

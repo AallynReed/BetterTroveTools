@@ -67,6 +67,8 @@ function initMementosView() {
                 .trim()
                 .toLowerCase();
 
+            const stripMementoPrefix = (value) => String(value || '').replace(/^\s*Memento:\s*/i, '').trim();
+
             const highlightSearch = (text) => {
                 const q = searchQuery.value.trim();
                 const safe = escapeHtml(text || '');
@@ -79,14 +81,18 @@ function initMementosView() {
             const filteredMementos = computed(() => {
                 let result = mementosData.value.filter(m => {
                     const category = m.category || 'Unknown';
-                    return category !== 'Unknown' && category !== 'InProgress' && category !== 'ReadyForGame' && category !== 'Hidden';
+                    return category !== 'Unknown'
+                        && category !== 'InProgress'
+                        && category !== 'ReadyForGame'
+                        && category !== 'Hidden'
+                        && !!String(m.source_name || '').trim();
                 });
 
                 const sq = searchQuery.value.toLowerCase().trim();
                 if (sq.length >= 3) {
                     let generalSearch = sq;
-                    const filters = { author: null, name: null, desc: null, category: null, source: null };
-                    const regex = /(author|designer|name|desc|category|source):("([^"]+)"|([^\s]+))/g;
+                    const filters = { author: null, name: null, category: null, source: null };
+                    const regex = /(author|designer|name|category|source):("([^"]+)"|([^\s]+))/g;
                     let match;
                     while ((match = regex.exec(sq)) !== null) {
                         const key = match[1] === 'designer' ? 'author' : match[1];
@@ -97,17 +103,15 @@ function initMementosView() {
 
                     result = result.filter(m => {
                         const name = (m.name || m.fallbackName || '').toLowerCase();
-                        const desc = (m.desc || '').toLowerCase();
                         const source = (m.source_name || '').toLowerCase();
                         const category = (m.category || '').toLowerCase();
                         const designer = (m.designer || '').toLowerCase();
 
                         if (filters.author && !designer.includes(filters.author)) return false;
                         if (filters.name && !name.includes(filters.name)) return false;
-                        if (filters.desc && !desc.includes(filters.desc)) return false;
                         if (filters.category && !category.includes(filters.category)) return false;
                         if (filters.source && !source.includes(filters.source)) return false;
-                        if (generalSearch.length > 0 && !(name.includes(generalSearch) || desc.includes(generalSearch) || source.includes(generalSearch) || category.includes(generalSearch) || designer.includes(generalSearch))) return false;
+                        if (generalSearch.length > 0 && !(name.includes(generalSearch) || source.includes(generalSearch) || category.includes(generalSearch) || designer.includes(generalSearch))) return false;
                         return true;
                     });
                 }
@@ -165,11 +169,14 @@ function initMementosView() {
                     if (row.category) uniqueCategories.add(row.category);
                     const fallbackName = key.split('/').slice(-1)[0].replaceAll('_', ' ');
                     const imagePath = `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || '')}.png`;
+                    const hasSourceContext = !!(row.source_label && row.source_name);
+                    const displayName = hasSourceContext ? (row.name || fallbackName) : (stripMementoPrefix(row.name || '') || fallbackName);
                     return {
                         id: key,
                         ...row,
                         fallbackName,
-                        imagePath
+                        imagePath,
+                        displayName
                     };
                 });
                 mementosData.value = parsed;

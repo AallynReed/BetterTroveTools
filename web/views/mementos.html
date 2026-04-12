@@ -6,7 +6,7 @@
         <div class="search-bar-wrapper">
             <div style="position: relative; flex: 1;">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\ndesc:\ncategory:\nsource:')" :placeholder="t(`Search mementos by name, source, or keyword...`)" id="memento-search-input">
+                <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\ncategory:\nsource:')" :placeholder="t(`Search mementos by name, source, or keyword...`)" id="memento-search-input">
             </div>
             <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear memento cache and rebuild from game files')">
                 <i class="fa-solid fa-broom"></i>
@@ -39,7 +39,7 @@
                     <img :src="memento.imagePath" alt="">
                 </div>
                 <div class="ally-title-area">
-                    <div class="ally-name" v-html="highlightSearch(t(memento.name || memento.fallbackName))"></div>
+                    <div class="ally-name" v-html="highlightSearch(t(memento.displayName || memento.name || memento.fallbackName))"></div>
                     <div class="ally-category">{{ t(memento.category || 'Unknown') }}</div>
                     <div v-if="memento.designer && memento.designer !== 'Trove Team'" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
                         <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(memento.designer)"></span>
@@ -47,8 +47,6 @@
                 </div>
             </div>
             <div class="ally-body">
-                <div v-if="memento.desc" class="ally-desc" v-html="'&quot;' + highlightSearch(t(memento.desc)) + '&quot;'"></div>
-                <div v-else class="ally-desc">{{ t('No description decoded from game files yet.') }}</div>
                 <div v-if="memento.source_label && memento.source_name" class="memento-meta">
                     <div class="memento-meta-row" :class="sourceRowClass(memento.source_label)">
                         <span class="memento-meta-label">{{ t(memento.source_label) }}</span>
