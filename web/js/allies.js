@@ -95,23 +95,42 @@ function initAlliesView() {
                 return normalized.toLocaleString(undefined, { maximumFractionDigits: 20 });
             };
 
+            const translateText = (text) => t(String(text || '').trim());
+
+            const buildTranslatedStatLine = (stat) => {
+                if (!stat || typeof stat !== 'object') return String(stat || '');
+                const statName = translateText(stat.name || '');
+                const formattedValue = stat.value_display || stat.display || (
+                    stat.is_percent
+                        ? `${formatNumberWithSeparators(stat.value)}%`
+                        : formatNumberWithSeparators(stat.value)
+                );
+                return `${formattedValue || ''} ${statName}`.trim();
+            };
+
             const formatStat = (statText) => {
                 let statLine = typeof statText === 'string' ? statText : ((statText && statText.text) || '');
                 if (statText && typeof statText === 'object' && typeof statText.value === 'number') {
-                    const formattedValue = statText.is_percent
-                        ? `${formatNumberWithSeparators(statText.value)}%`
-                        : formatNumberWithSeparators(statText.value);
-                    if (formattedValue) {
-                        statLine = `${formattedValue} ${(statText.name || '').trim()}`.trim();
-                    }
+                    statLine = buildTranslatedStatLine(statText);
+                } else if (typeof statText === 'string') {
+                    statLine = translateText(statText);
                 }
-                const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statLine.includes(s));
-                return isHighlighted ? `<strong>${statLine}</strong>` : statLine;
+                const highlightKeys = selectedStat.value || [];
+                const statKey = statText && typeof statText === 'object' ? String(statText.name || '').trim() : '';
+                const translatedStatKey = translateText(statKey);
+                const isHighlighted = highlightKeys.length > 0 && (
+                    (statKey && highlightKeys.includes(statKey)) ||
+                    (translatedStatKey && highlightKeys.includes(translatedStatKey))
+                );
+                const safeLine = escapeHtml(statLine);
+                return isHighlighted ? `<strong>${safeLine}</strong>` : safeLine;
             };
 
             const formatAbility = (abilityText) => {
+                const translatedAbility = translateText(abilityText);
                 const isHighlighted = !!selectedAbility.value && selectedAbility.value === abilityText;
-                return isHighlighted ? `<strong>${abilityText}</strong>` : abilityText;
+                const safeAbility = escapeHtml(translatedAbility);
+                return isHighlighted ? `<strong>${safeAbility}</strong>` : safeAbility;
             };
 
             const escapeHtml = (text) => String(text || '')
@@ -158,16 +177,25 @@ function initAlliesView() {
                     generalSearch = generalSearch.trim();
 
                     result = result.filter(a => {
+                        const translatedName = translateText(a.name).toLowerCase();
+                        const translatedDesc = translateText(a.desc).toLowerCase();
+                        const translatedCategory = translateText(a.category).toLowerCase();
+                        const translatedAbilities = a.extractedAbilities.map(ab => translateText(ab).toLowerCase());
+
                         if (filters.author && !(a.designer && a.designer.toLowerCase().includes(filters.author))) return false;
-                        if (filters.name && !a.name.toLowerCase().includes(filters.name)) return false;
-                        if (filters.ability && !a.extractedAbilities.some(ab => ab.toLowerCase().includes(filters.ability))) return false;
-                        if (filters.desc && !(a.desc && a.desc.toLowerCase().includes(filters.desc))) return false;
-                        if (filters.category && !(a.category && a.category.toLowerCase().includes(filters.category))) return false;
+                        if (filters.name && !translatedName.includes(filters.name)) return false;
+                        if (filters.ability && !translatedAbilities.some(ab => ab.includes(filters.ability))) return false;
+                        if (filters.desc && !translatedDesc.includes(filters.desc)) return false;
+                        if (filters.category && !translatedCategory.includes(filters.category)) return false;
 
                         if (generalSearch.length > 0) {
-                            const matchGeneral = a.name.toLowerCase().includes(generalSearch) || 
+                            const translatedStats = a.rawStats.map(stat => typeof stat === 'object' ? buildTranslatedStatLine(stat).toLowerCase() : translateText(stat).toLowerCase());
+                            const matchGeneral = translatedName.includes(generalSearch) || 
                                                  (a.designer && a.designer.toLowerCase().includes(generalSearch)) ||
-                                                 a.extractedAbilities.some(ab => ab.toLowerCase().includes(generalSearch));
+                                                 translatedDesc.includes(generalSearch) ||
+                                                 translatedCategory.includes(generalSearch) ||
+                                                 translatedAbilities.some(ab => ab.includes(generalSearch)) ||
+                                                 translatedStats.some(stat => stat.includes(generalSearch));
                             if (!matchGeneral) return false;
                         }
                         return true;

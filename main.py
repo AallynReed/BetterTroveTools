@@ -24,6 +24,7 @@ import backend.gems_and_builds.gem_builds
 import backend.gems_and_builds.gem_evaluator
 import backend.gems_and_builds.gem_simulator
 import backend.home
+import backend.mementos
 import backend.mounts
 import backend.mod_manager
 import backend.modder_tools

@@ -1,0 +1,80 @@
+@import url('./allies.css');
+
+#memento-search-input {
+	width: 100%;
+	background: rgba(0, 0, 0, 0.3);
+	border: 1px solid var(--border-color, #444c5e);
+	border-radius: 8px;
+	padding: 15px 15px 15px 45px;
+	color: #fff;
+	font-size: 1.1em;
+	transition: all 0.2s ease;
+}
+
+#memento-search-input:focus {
+	outline: none;
+	border-color: #ff9800;
+	background: rgba(0, 0, 0, 0.5);
+	box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+}
+
+#mementos-vue-app .custom-select-trigger {
+	height: 42px;
+	min-height: 42px;
+	padding: 10px 12px;
+	border-radius: 8px;
+}
+
+.memento-meta {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.memento-meta-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: rgba(255, 255, 255, 0.03);
+}
+
+.memento-meta-row-biome {
+	border: 1px solid rgba(255, 152, 0, 0.18);
+	background: rgba(255, 152, 0, 0.06);
+}
+
+.memento-meta-row-boss {
+	border: 1px solid rgba(244, 67, 54, 0.2);
+	background: rgba(244, 67, 54, 0.08);
+}
+
+.memento-meta-row-creature {
+	border: 1px solid rgba(76, 175, 80, 0.2);
+	background: rgba(76, 175, 80, 0.08);
+}
+
+.memento-meta-label {
+	flex: 0 0 auto;
+	font-size: 0.75em;
+	font-weight: 700;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--text-muted, #a3adc2);
+}
+
+.memento-meta-value {
+	text-align: right;
+	font-size: 0.95em;
+	font-weight: 600;
+	color: #fff;
+}
+
+.memento-meta-value mark {
+	background: rgba(var(--accent-rgb), 0.2);
+	color: #fff;
+	padding: 0 2px;
+	border-radius: 3px;
+}

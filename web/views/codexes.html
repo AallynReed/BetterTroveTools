@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="css/allies.css">
     <link rel="stylesheet" href="css/mounts.css">
     <link rel="stylesheet" href="css/dragons.css">
+    <link rel="stylesheet" href="css/mementos.css">
 </head>
 
 <div id="codexes-vue-app" class="gems-and-builds-container" v-cloak>
@@ -17,6 +18,9 @@
             <button class="tab-btn" :class="{ active: activeTab === 'dragons' }" @click="setActiveTab('dragons')">
                 <i class="fa-solid fa-dragon"></i> <span>{{ t('Dragon Codex') }}</span>
             </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'mementos' }" @click="setActiveTab('mementos')">
+                <i class="fa-solid fa-scroll"></i> <span>{{ t('Memento Codex') }}</span>
+            </button>
         </div>
 
         <div v-show="activeTab === 'allies'" class="tab-content" :class="{ active: activeTab === 'allies' }">
@@ -29,6 +33,10 @@
 
         <div v-show="activeTab === 'dragons'" class="tab-content" :class="{ active: activeTab === 'dragons' }">
             <div id="codexes-dragons-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'mementos'" class="tab-content" :class="{ active: activeTab === 'mementos' }">
+            <div id="codexes-mementos-host" class="view-container" v-cloak></div>
         </div>
     </div>
 </div>

@@ -64,6 +64,19 @@ function initDragonsView() {
                 return normalized.toLocaleString(undefined, { maximumFractionDigits: 20 });
             };
 
+            const translateText = (text) => t(String(text || '').trim());
+
+            const buildTranslatedStatLine = (stat) => {
+                if (!stat || typeof stat !== 'object') return String(stat || '');
+                const label = translateText(stat.label || stat.name || '');
+                const formattedValue = stat.value_display || stat.display || (
+                    stat.is_percent
+                        ? `${formatNumberWithSeparators(stat.value * 100)}%`
+                        : formatNumberWithSeparators(stat.value)
+                );
+                return `${formattedValue || ''} ${label}`.trim();
+            };
+
             const componentHeadingLabel = (componentType) => {
                 switch (componentType) {
                     case 'Mag Rider':
@@ -126,16 +139,19 @@ function initDragonsView() {
                 }
                 let statLine = typeof statText === 'string' ? statText : ((statText && statText.text) || '');
                 if (statText && typeof statText === 'object' && typeof statText.value === 'number') {
-                    const name = (statText.label || statText.name || '').trim();
-                    const formattedValue = statText.value_display || statText.display || (
-                        statText.is_percent
-                            ? `${formatNumberWithSeparators(statText.value * 100)}%`
-                            : formatNumberWithSeparators(statText.value)
-                    );
-                    if (formattedValue) statLine = `${formattedValue} ${name}`.trim();
+                    statLine = buildTranslatedStatLine(statText);
+                } else if (typeof statText === 'string') {
+                    statLine = translateText(statText);
                 }
-                const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statLine.includes(s));
-                return isHighlighted ? `<strong>${statLine}</strong>` : statLine;
+                const highlightKeys = selectedStat.value || [];
+                const statKey = statText && typeof statText === 'object' ? String(statText.label || statText.name || '').trim() : '';
+                const translatedStatKey = translateText(statKey);
+                const isHighlighted = highlightKeys.length > 0 && (
+                    (statKey && highlightKeys.includes(statKey)) ||
+                    (translatedStatKey && highlightKeys.includes(translatedStatKey))
+                );
+                const safeLine = escapeHtml(statLine);
+                return isHighlighted ? `<strong>${safeLine}</strong>` : safeLine;
             };
 
             const escapeHtml = (text) => String(text || '')
@@ -178,20 +194,22 @@ function initDragonsView() {
                     generalSearch = generalSearch.trim();
 
                     result = result.filter(d => {
+                        const translatedName = translateText(d.name).toLowerCase();
+                        const translatedDesc = translateText(d.desc).toLowerCase();
+                        const translatedCategory = translateText(d.category).toLowerCase();
+
                         if (filters.author && !(d.designer && d.designer.toLowerCase().includes(filters.author))) return false;
-                        if (filters.name && !d.name.toLowerCase().includes(filters.name)) return false;
-                        if (filters.desc && !(d.desc && d.desc.toLowerCase().includes(filters.desc))) return false;
-                        if (filters.category && !(d.category && d.category.toLowerCase().includes(filters.category))) return false;
+                        if (filters.name && !translatedName.includes(filters.name)) return false;
+                        if (filters.desc && !translatedDesc.includes(filters.desc)) return false;
+                        if (filters.category && !translatedCategory.includes(filters.category)) return false;
 
                         if (generalSearch.length > 0) {
-                            const matchGeneral = d.name.toLowerCase().includes(generalSearch) ||
+                            const matchGeneral = translatedName.includes(generalSearch) ||
                                 (d.designer && d.designer.toLowerCase().includes(generalSearch)) ||
-                                (d.desc && d.desc.toLowerCase().includes(generalSearch)) ||
+                                translatedDesc.includes(generalSearch) ||
+                                translatedCategory.includes(generalSearch) ||
                                 d.rawStats.some(stat => {
-                                    const statValue = stat.value_display || stat.display || (stat.is_percent && typeof stat.value === 'number'
-                                        ? `${formatNumberWithSeparators(stat.value * 100)}%`
-                                        : (stat.value ?? ''));
-                                    const text = typeof stat === 'string' ? stat : `${statValue || ''} ${stat.label || stat.name || ''}`;
+                                    const text = typeof stat === 'string' ? translateText(stat) : buildTranslatedStatLine(stat);
                                     return text.toLowerCase().includes(generalSearch);
                                 });
                             if (!matchGeneral) return false;
