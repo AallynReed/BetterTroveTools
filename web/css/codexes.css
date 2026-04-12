@@ -1,0 +1,9 @@
+@import url('./gems_and_builds/index.css');
+
+#codexes-vue-app .tabs-container {
+    margin: 0;
+}
+
+#codexes-vue-app .tab-content {
+    padding: 0;
+}

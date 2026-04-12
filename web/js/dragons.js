@@ -1,0 +1,396 @@
+function initDragonsView() {
+    const root = document.getElementById('dragons-vue-app');
+    if (!root || root.dataset.dragonsInitializing === '1') return;
+    root.dataset.dragonsInitializing = '1';
+
+    if (typeof Vue === 'undefined') {
+        root.removeAttribute('v-cloak');
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Dragon Codex.</div>`;
+        return;
+    }
+
+    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick, watch } = Vue;
+
+    const app = createApp({
+        setup() {
+            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const PREF_STATE_KEY = 'state_dragons';
+            let hydratingState = false;
+
+            const isLoading = ref(true);
+            const loadError = ref('');
+            const dragonsData = ref([]);
+            const dataSourceText = ref('');
+            const statsOptions = ref([]);
+
+            const searchQuery = ref('');
+            const activeResultIndex = ref(-1);
+            const selectedStat = ref([]);
+            const currentPage = ref(1);
+            const pageSize = ref(36);
+
+            const resetFilters = () => {
+                searchQuery.value = '';
+                selectedStat.value = [];
+                currentPage.value = 1;
+            };
+
+            const applyStateSnapshot = (saved) => {
+                if (!saved || typeof saved !== 'object') return;
+                if (typeof saved.searchQuery === 'string') searchQuery.value = saved.searchQuery;
+                if (saved.selectedStat !== undefined) {
+                    if (Array.isArray(saved.selectedStat)) selectedStat.value = saved.selectedStat;
+                    else if (typeof saved.selectedStat === 'string' && saved.selectedStat) selectedStat.value = [saved.selectedStat];
+                    else selectedStat.value = [];
+                }
+                if (saved.currentPage !== undefined) {
+                    const parsedPage = parseInt(saved.currentPage, 10);
+                    currentPage.value = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+                }
+            };
+
+            const persistState = () => {
+                if (hydratingState || !window.AppSettings) return;
+                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
+                    searchQuery: searchQuery.value,
+                    selectedStat: selectedStat.value,
+                    currentPage: currentPage.value
+                });
+            };
+
+            const formatNumberWithSeparators = (value) => {
+                if (typeof value !== 'number' || !Number.isFinite(value)) return '';
+                const normalized = Object.is(value, -0) ? 0 : value;
+                return normalized.toLocaleString(undefined, { maximumFractionDigits: 20 });
+            };
+
+            const componentHeadingLabel = (componentType) => {
+                switch (componentType) {
+                    case 'Mag Rider':
+                        return t('Mag Rider');
+                    case 'Mount':
+                        return t('Ground');
+                    case 'Wings':
+                        return t('Flight');
+                    case 'Stat Stats':
+                        return t('Permanent Stat increases');
+                    case 'Boat/Ship':
+                        return t('Water');
+                    default:
+                        return '';
+                }
+            };
+
+            const resolveStatHeading = (stat) => {
+                if (!stat || typeof stat !== 'object' || typeof stat.value !== 'number') return '';
+                const statName = stat.stat || stat.name || stat.label || '';
+                const value = stat.display_value ?? stat.value;
+                const componentType = stat.component_type || '';
+
+                if (componentType === 'Wings' || statName === 'Glide') {
+                    return t('Flight');
+                }
+                if (componentType === 'Boat/Ship' || statName === 'Acceleration' || statName === 'Turning Rate' || statName === 'TurningRate') {
+                    return t('Water');
+                }
+                if (statName === 'MovementSpeed' || statName === 'Movement Speed') {
+                    return Math.abs(Number(value) - 25) < 0.0001 ? t('Mag Rider') : t('Ground');
+                }
+                if (componentType === 'Stat Stats') {
+                    return t('Permanent Stat increases');
+                }
+                return componentHeadingLabel(componentType);
+            };
+
+            const buildGroupedStats = (stats) => {
+                const grouped = [];
+                let lastHeading = '';
+                for (const stat of stats) {
+                    if (!stat || typeof stat !== 'object' || typeof stat.value !== 'number') {
+                        if (stat) grouped.push(stat);
+                        continue;
+                    }
+                    const heading = resolveStatHeading(stat);
+                    if (heading && heading !== lastHeading) {
+                        grouped.push({ heading, text: `${heading}:`, isHeading: true });
+                        lastHeading = heading;
+                    }
+                    grouped.push(stat);
+                }
+                return grouped;
+            };
+
+            const formatStat = (statText) => {
+                if (statText && typeof statText === 'object' && statText.isHeading) {
+                    return `<strong>${escapeHtml(statText.text || '')}</strong>`;
+                }
+                let statLine = typeof statText === 'string' ? statText : ((statText && statText.text) || '');
+                if (statText && typeof statText === 'object' && typeof statText.value === 'number') {
+                    const name = (statText.label || statText.name || '').trim();
+                    const formattedValue = statText.value_display || statText.display || (
+                        statText.is_percent
+                            ? `${formatNumberWithSeparators(statText.value * 100)}%`
+                            : formatNumberWithSeparators(statText.value)
+                    );
+                    if (formattedValue) statLine = `${formattedValue} ${name}`.trim();
+                }
+                const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statLine.includes(s));
+                return isHighlighted ? `<strong>${statLine}</strong>` : statLine;
+            };
+
+            const escapeHtml = (text) => String(text || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+
+            const normalizeCatalogImageId = (value) => String(value || '')
+                .replace(/\.blueprint$/i, '')
+                .replace(/\\/g, '/')
+                .replace(/^\$+/, '')
+                .trim()
+                .toLowerCase();
+
+            const highlightSearch = (text) => {
+                const q = searchQuery.value.trim();
+                const safe = escapeHtml(text || '');
+                if (!q) return safe;
+                const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const re = new RegExp(`(${escaped})`, 'ig');
+                return safe.replace(re, '<mark>$1</mark>');
+            };
+
+            const filteredDragons = computed(() => {
+                let result = dragonsData.value.filter(d => (d.category || '').toLowerCase().includes('dragon'));
+                const sq = searchQuery.value.toLowerCase().trim();
+
+                if (sq.length >= 3) {
+                    let generalSearch = sq;
+                    const filters = { author: null, name: null, desc: null, category: null };
+                    const regex = /(author|designer|name|desc|category):("([^"]+)"|([^\s]+))/g;
+                    let match;
+                    while ((match = regex.exec(sq)) !== null) {
+                        const key = match[1] === 'designer' ? 'author' : match[1];
+                        filters[key] = match[3] || match[4];
+                        generalSearch = generalSearch.replace(match[0], '');
+                    }
+                    generalSearch = generalSearch.trim();
+
+                    result = result.filter(d => {
+                        if (filters.author && !(d.designer && d.designer.toLowerCase().includes(filters.author))) return false;
+                        if (filters.name && !d.name.toLowerCase().includes(filters.name)) return false;
+                        if (filters.desc && !(d.desc && d.desc.toLowerCase().includes(filters.desc))) return false;
+                        if (filters.category && !(d.category && d.category.toLowerCase().includes(filters.category))) return false;
+
+                        if (generalSearch.length > 0) {
+                            const matchGeneral = d.name.toLowerCase().includes(generalSearch) ||
+                                (d.designer && d.designer.toLowerCase().includes(generalSearch)) ||
+                                (d.desc && d.desc.toLowerCase().includes(generalSearch)) ||
+                                d.rawStats.some(stat => {
+                                    const statValue = stat.value_display || stat.display || (stat.is_percent && typeof stat.value === 'number'
+                                        ? `${formatNumberWithSeparators(stat.value * 100)}%`
+                                        : (stat.value ?? ''));
+                                    const text = typeof stat === 'string' ? stat : `${statValue || ''} ${stat.label || stat.name || ''}`;
+                                    return text.toLowerCase().includes(generalSearch);
+                                });
+                            if (!matchGeneral) return false;
+                        }
+                        return true;
+                    });
+                }
+
+                if (selectedStat.value && selectedStat.value.length > 0) {
+                    result = result.filter(d => selectedStat.value.every(stat => d.parsedStats[stat] !== undefined));
+                }
+
+                return [...result].sort((a, b) => a.name.localeCompare(b.name));
+            });
+
+            const totalPages = computed(() => Math.max(1, Math.ceil(filteredDragons.value.length / pageSize.value)));
+            const paginatedDragons = computed(() => filteredDragons.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
+            const visibleStart = computed(() => filteredDragons.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
+            const visibleEnd = computed(() => filteredDragons.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, filteredDragons.value.length));
+            const pageNumbers = computed(() => {
+                const total = totalPages.value;
+                const current = currentPage.value;
+                const pages = new Set([1, total, current - 1, current, current + 1]);
+                return Array.from(pages).filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+            });
+
+            const setPage = (page) => {
+                currentPage.value = Math.min(totalPages.value, Math.max(1, page));
+                activeResultIndex.value = -1;
+                nextTick(() => {
+                    const grid = document.querySelector('#dragons-vue-app .allies-grid');
+                    if (grid) grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                });
+            };
+            const nextPage = () => setPage(currentPage.value + 1);
+            const prevPage = () => setPage(currentPage.value - 1);
+
+            watch([searchQuery, selectedStat], () => {
+                currentPage.value = 1;
+                activeResultIndex.value = -1;
+            });
+            watch([searchQuery, selectedStat, currentPage], persistState, { deep: true });
+
+            const setActiveResult = (index) => {
+                const cards = Array.from(document.querySelectorAll('#dragons-vue-app .ally-card'));
+                cards.forEach(c => c.classList.remove('kbd-active-result'));
+                if (!cards.length) {
+                    activeResultIndex.value = -1;
+                    return;
+                }
+                const normalized = ((index % cards.length) + cards.length) % cards.length;
+                activeResultIndex.value = normalized;
+                cards[normalized].classList.add('kbd-active-result');
+                cards[normalized].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            };
+
+            const nextSearchResult = () => setActiveResult(activeResultIndex.value + 1);
+            const prevSearchResult = () => setActiveResult(activeResultIndex.value - 1);
+
+            const loadDragons = async (forceRefresh = false) => {
+                loadError.value = '';
+                let data = null;
+                let response = null;
+
+                if (window.eel && eel.get_mounts_data) {
+                    response = await eel.get_mounts_data(forceRefresh)();
+                    if (!response || response.success === false) {
+                        throw new Error((response && response.error) || 'Failed to retrieve mount data from backend');
+                    }
+                    data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                } else {
+                    throw new Error('Backend mounts endpoint is unavailable');
+                }
+
+                const uniqueStats = new Set();
+                const parsedDragons = Object.keys(data).map(key => {
+                    const row = data[key];
+                    const stats = Array.isArray(row.stats) ? row.stats : [];
+                    const rawStats = buildGroupedStats(
+                        stats.filter(stat => stat && (((typeof stat.label === 'string' || typeof stat.name === 'string') && typeof stat.value === 'number') || typeof stat.text === 'string'))
+                    );
+                    const parsedStats = {};
+                    stats.forEach(stat => {
+                        const statName = (stat && (stat.label || stat.name)) || '';
+                        if (!statName) return;
+                        uniqueStats.add(statName);
+                        parsedStats[statName] = {
+                            value: stat && typeof stat.value === 'number' ? stat.value : parseFloat((stat && stat.value) || 0),
+                            isPercent: !!(stat && stat.is_percent)
+                        };
+                    });
+
+                    return {
+                        id: key,
+                        ...row,
+                        rawStats,
+                        parsedStats,
+                        imagePath: `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || row.image || '')}.png`
+                    };
+                });
+
+                dragonsData.value = parsedDragons;
+                statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
+
+                const source = (response && response.source) || '';
+                const cacheMeta = (response && response.meta && response.meta.cache) || {};
+                if (source === 'game-cache') dataSourceText.value = t('Loaded dragon data from cached game-file scan.');
+                else if (source === 'game-live') dataSourceText.value = t('Loaded dragon data from live game files.');
+                else dataSourceText.value = '';
+                if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
+                    const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
+                    if (hours > 0) dataSourceText.value += ` ${t('Cache age')}: ${hours}h.`;
+                }
+            };
+
+            const clearCacheAndReload = async () => {
+                try {
+                    isLoading.value = true;
+                    if (window.eel && eel.clear_mounts_cache) await eel.clear_mounts_cache()();
+                    await loadDragons(true);
+                } finally {
+                    isLoading.value = false;
+                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                }
+            };
+
+            const onKeyDown = (e) => {
+                const rootEl = document.getElementById('dragons-vue-app');
+                if (!rootEl || rootEl.offsetParent === null) return;
+                if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'f') {
+                    const input = document.getElementById('dragon-search-input');
+                    if (input) {
+                        e.preventDefault();
+                        input.focus();
+                        input.select();
+                    }
+                    return;
+                }
+                const activeEl = document.activeElement;
+                if (activeEl && activeEl.id === 'dragon-search-input') {
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        nextSearchResult();
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        prevSearchResult();
+                    }
+                }
+            };
+
+            onMounted(async () => {
+                hydratingState = true;
+                if (window.AppSettings) {
+                    await window.AppSettings.load();
+                    const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
+                    applyStateSnapshot(saved);
+                }
+                try {
+                    await loadDragons(false);
+                } catch (err) {
+                    loadError.value = String((err && err.message) || err || 'Failed to load dragons from game files.');
+                }
+                isLoading.value = false;
+                document.addEventListener('keydown', onKeyDown);
+                nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                hydratingState = false;
+            });
+
+            onBeforeUnmount(() => {
+                document.removeEventListener('keydown', onKeyDown);
+            });
+
+            return {
+                t, isLoading, loadError, dragonsData, filteredDragons, paginatedDragons,
+                searchQuery, selectedStat, statsOptions,
+                currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
+                setPage, nextPage, prevPage,
+                resetFilters, formatStat, highlightSearch,
+                nextSearchResult, prevSearchResult,
+                clearCacheAndReload, dataSourceText
+            };
+        }
+    });
+
+    try {
+        if (window.Select2Component) app.component('select2-component', window.Select2Component);
+        if (window._dragonsApp) window._dragonsApp.unmount();
+        window._dragonsApp = app;
+        app.mount('#dragons-vue-app');
+    } catch (err) {
+        console.error("Failed to initialize Dragon Codex app:", err);
+        root.removeAttribute('v-cloak');
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Dragon Codex: ${String((err && err.message) || err)}</div>`;
+    } finally {
+        delete root.dataset.dragonsInitializing;
+    }
+}
+
+document.addEventListener('dragons_loaded', initDragonsView);
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(initDragonsView, 0);
+});

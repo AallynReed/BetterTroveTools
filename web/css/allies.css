@@ -21,6 +21,25 @@
     margin-bottom: 30px;
 }
 
+.codex-warning-banner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 7px 10px;
+    border: 1px solid rgba(255, 184, 77, 0.16);
+    border-left: 2px solid rgba(255, 184, 77, 0.55);
+    border-radius: 6px;
+    background: rgba(255, 184, 77, 0.04);
+    color: rgba(255, 224, 165, 0.9);
+    font-size: 0.82em;
+}
+
+.codex-warning-banner i {
+    color: rgba(255, 184, 77, 0.8);
+    font-size: 0.95em;
+}
+
 .search-bar-wrapper {
     display: flex;
     gap: 15px;
@@ -304,6 +323,21 @@
 
 .ally-stats-list li strong {
     color: var(--accent-blue);
+}
+
+.ally-stats-list-single {
+    margin: 0 0 4px 0;
+}
+
+.ally-stats-heading {
+    margin: 10px 0 4px;
+    color: var(--accent-blue);
+    font-size: 0.9em;
+    font-weight: 700;
+}
+
+.ally-stats-heading:first-child {
+    margin-top: 0;
 }
 
 .ally-ability {

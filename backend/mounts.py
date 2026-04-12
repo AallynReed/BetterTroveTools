@@ -7,22 +7,20 @@ from pathlib import Path
 import eel
 
 from backend.response import resp, standardize_response
-from models.trove.prefab_ally import (
-    build_allies_dataset,
-    detect_first_glyph_install,
-)
+from models.trove.prefab_ally import detect_first_glyph_install
+from models.trove.prefab_mount import build_mounts_dataset
 
 
-ALLIES_CACHE_EXPIRY_SECONDS = 60 * 60 * 12
-ALLIES_CACHE_FILENAME = "allies_game_cache.json"
-ALLIES_CACHE_MANIFEST_FILENAME = "allies_game_cache_manifest.json"
+MOUNTS_CACHE_EXPIRY_SECONDS = 60 * 60 * 12
+MOUNTS_CACHE_FILENAME = "mounts_game_cache.json"
+MOUNTS_CACHE_MANIFEST_FILENAME = "mounts_game_cache_manifest.json"
 
 
 def _cache_root() -> Path:
     for root in _cache_root_candidates():
         try:
             root.mkdir(parents=True, exist_ok=True)
-            probe = root / ".ally_cache_probe"
+            probe = root / ".mount_cache_probe"
             probe.write_text("ok", encoding="utf-8")
             try:
                 probe.unlink(missing_ok=True)
@@ -31,7 +29,7 @@ def _cache_root() -> Path:
             return root
         except Exception:
             continue
-    raise RuntimeError("No writable cache directory is available for ally data.")
+    raise RuntimeError("No writable cache directory is available for mount data.")
 
 
 def _cache_root_candidates() -> list[Path]:
@@ -39,21 +37,21 @@ def _cache_root_candidates() -> list[Path]:
     candidates = []
     if appdata:
         candidates.append(Path(appdata) / "Trove" / "ModManagerCache")
-    candidates.append(Path(os.getcwd()) / "web" / "cache" / "allies")
+    candidates.append(Path(os.getcwd()) / "web" / "cache" / "mounts")
     return candidates
 
 
-def _allies_cache_file() -> Path:
-    return _cache_root() / ALLIES_CACHE_FILENAME
+def _mounts_cache_file() -> Path:
+    return _cache_root() / MOUNTS_CACHE_FILENAME
 
 
-def _allies_cache_manifest_file() -> Path:
-    return _cache_root() / ALLIES_CACHE_MANIFEST_FILENAME
+def _mounts_cache_manifest_file() -> Path:
+    return _cache_root() / MOUNTS_CACHE_MANIFEST_FILENAME
 
 
-def _read_cached_allies() -> tuple[dict | None, dict]:
-    cache_file = _allies_cache_file()
-    manifest_file = _allies_cache_manifest_file()
+def _read_cached_mounts() -> tuple[dict | None, dict]:
+    cache_file = _mounts_cache_file()
+    manifest_file = _mounts_cache_manifest_file()
     manifest = {}
     if manifest_file.exists():
         try:
@@ -78,16 +76,16 @@ def _cache_age_seconds(manifest: dict) -> int | None:
 
 def _cache_is_fresh(manifest: dict) -> bool:
     age = _cache_age_seconds(manifest)
-    return age is not None and age < ALLIES_CACHE_EXPIRY_SECONDS
+    return age is not None and age < MOUNTS_CACHE_EXPIRY_SECONDS
 
 
-def _write_cached_allies(data: dict, manifest: dict) -> None:
-    _allies_cache_file().write_text(json.dumps(data, indent=4), encoding="utf-8")
-    _allies_cache_manifest_file().write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+def _write_cached_mounts(data: dict, manifest: dict) -> None:
+    _mounts_cache_file().write_text(json.dumps(data, indent=4), encoding="utf-8")
+    _mounts_cache_manifest_file().write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _build_allies_from_game_files(force_refresh: bool = False) -> tuple[dict, dict, str]:
-    cached_data, cached_manifest = _read_cached_allies()
+def _build_mounts_from_game_files(force_refresh: bool = False) -> tuple[dict, dict, str]:
+    cached_data, cached_manifest = _read_cached_mounts()
     if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest):
         return cached_data, cached_manifest, "game-cache"
 
@@ -97,11 +95,9 @@ def _build_allies_from_game_files(force_refresh: bool = False) -> tuple[dict, di
     for root in _cache_root_candidates():
         try:
             root.mkdir(parents=True, exist_ok=True)
-            extract_dir = root / "allies_runtime_cache"
             data, manifest = asyncio.run(
-                build_allies_dataset(
+                build_mounts_dataset(
                     game_path=game_path,
-                    extract_dir=extract_dir,
                     locale="en",
                 )
             )
@@ -109,30 +105,30 @@ def _build_allies_from_game_files(force_refresh: bool = False) -> tuple[dict, di
             full_manifest = {
                 **manifest,
                 "generated_at": generated_at,
-                "expires_at": generated_at + ALLIES_CACHE_EXPIRY_SECONDS,
-                "cache_file": str(_allies_cache_file()),
-                "cache_expiry_seconds": ALLIES_CACHE_EXPIRY_SECONDS,
+                "expires_at": generated_at + MOUNTS_CACHE_EXPIRY_SECONDS,
+                "cache_file": str(_mounts_cache_file()),
+                "cache_expiry_seconds": MOUNTS_CACHE_EXPIRY_SECONDS,
             }
-            _write_cached_allies(data, full_manifest)
+            _write_cached_mounts(data, full_manifest)
             return data, full_manifest, "game-live"
         except Exception as exc:
             last_error = exc
             continue
 
-    raise last_error or RuntimeError("Failed to build ally data from game files.")
+    raise last_error or RuntimeError("Failed to build mount data from game files.")
 
 
 @eel.expose
 @standardize_response
-def get_allies_cache_status():
-    cached_data, manifest = _read_cached_allies()
+def get_mounts_cache_status():
+    cached_data, manifest = _read_cached_mounts()
     return resp(
         True,
         data={
             "exists": cached_data is not None,
             "fresh": cached_data is not None and _cache_is_fresh(manifest),
             "age_seconds": _cache_age_seconds(manifest),
-            "expiry_seconds": ALLIES_CACHE_EXPIRY_SECONDS,
+            "expiry_seconds": MOUNTS_CACHE_EXPIRY_SECONDS,
             "manifest": manifest,
         },
     )
@@ -140,15 +136,15 @@ def get_allies_cache_status():
 
 @eel.expose
 @standardize_response
-def clear_allies_cache():
+def clear_mounts_cache():
     cleared = []
-    for path in (_allies_cache_file(), _allies_cache_manifest_file()):
+    for path in (_mounts_cache_file(), _mounts_cache_manifest_file()):
         if path.exists():
             try:
                 path.unlink()
             except Exception:
                 if path.name.endswith(".json"):
-                    if path == _allies_cache_manifest_file():
+                    if path == _mounts_cache_manifest_file():
                         path.write_text(json.dumps({"generated_at": 0, "expires_at": 0}, indent=2), encoding="utf-8")
                     else:
                         path.write_text("{}", encoding="utf-8")
@@ -158,23 +154,23 @@ def clear_allies_cache():
 
 @eel.expose
 @standardize_response
-def get_allies_data(force_refresh: bool = False):
+def get_mounts_data(force_refresh: bool = False):
     try:
-        data, manifest, source = _build_allies_from_game_files(force_refresh=bool(force_refresh))
+        data, manifest, source = _build_mounts_from_game_files(force_refresh=bool(force_refresh))
         return resp(True, data=data, source=source, meta={"cache": manifest})
     except Exception as build_error:
         message = str(build_error)
         if "No valid Glyph Trove installation was detected." in message:
-            message = "Allies could not be loaded because no valid Glyph Trove installation was found."
+            message = "Mounts could not be loaded because no valid Glyph Trove installation was found."
         return resp(
             False,
             error=message,
-            code="GET_ALLIES_DATA_FAILED",
+            code="GET_MOUNTS_DATA_FAILED",
         )
 
 
 @eel.expose
 @standardize_response
-def sync_allies_data():
-    data, manifest, source = _build_allies_from_game_files(force_refresh=True)
+def sync_mounts_data():
+    data, manifest, source = _build_mounts_from_game_files(force_refresh=True)
     return resp(True, data={"source": source, "cache": manifest})

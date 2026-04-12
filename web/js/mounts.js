@@ -1,13 +1,11 @@
-function initAlliesView() {
-    const root = document.getElementById('allies-vue-app');
-    if (!root || root.dataset.alliesInitializing === '1') return;
-    root.dataset.alliesInitializing = '1';
+function initMountsView() {
+    const root = document.getElementById('mounts-vue-app');
+    if (!root || root.dataset.mountsInitializing === '1') return;
+    root.dataset.mountsInitializing = '1';
 
-    console.log("Ally Codex Vue initialized!");
     if (typeof Vue === 'undefined') {
-        console.error("Vue.js failed to load!");
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Ally Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Mount Codex.</div>`;
         return;
     }
 
@@ -16,34 +14,28 @@ function initAlliesView() {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-            const PREF_STATE_KEY = 'state_allies';
+            const PREF_STATE_KEY = 'state_mounts';
             let hydratingState = false;
 
             const isLoading = ref(true);
             const loadError = ref('');
-            const alliesData = ref([]);
+            const mountsData = ref([]);
             const dataSourceText = ref('');
-            
+
             const categoryOptions = ref([]);
             const statsOptions = ref([]);
-            const abilitiesOptions = ref([[t('All Abilities'), '']]);
 
             const searchQuery = ref('');
             const activeResultIndex = ref(-1);
             const selectedCategory = ref('All');
             const selectedStat = ref([]);
-            const selectedAbility = ref('');
             const currentPage = ref(1);
             const pageSize = ref(36);
-            const toursEnabled = window.BTT_ENABLE_ONBOARDING_TOURS !== false;
-            const showOnboardingTips = ref(toursEnabled && (window.AppSettings ? window.AppSettings.getPref('onboarding_allies_v1', '') !== 'dismissed' : true));
-            const showSearchShortcutHint = ref(window.AppSettings ? window.AppSettings.getPref('hint_allies_search_shortcuts_v1', '') !== 'dismissed' : true);
 
             const resetFilters = () => {
                 searchQuery.value = '';
                 selectedCategory.value = 'All';
                 selectedStat.value = [];
-                selectedAbility.value = '';
                 currentPage.value = 1;
             };
 
@@ -56,7 +48,6 @@ function initAlliesView() {
                     else if (typeof saved.selectedStat === 'string' && saved.selectedStat) selectedStat.value = [saved.selectedStat];
                     else selectedStat.value = [];
                 }
-                if (typeof saved.selectedAbility === 'string') selectedAbility.value = saved.selectedAbility;
                 if (saved.currentPage !== undefined) {
                     const parsedPage = parseInt(saved.currentPage, 10);
                     currentPage.value = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -73,20 +64,9 @@ function initAlliesView() {
                     searchQuery: searchQuery.value,
                     selectedCategory: selectedCategory.value,
                     selectedStat: selectedStat.value,
-                    selectedAbility: selectedAbility.value,
                     currentPage: currentPage.value,
                     pageSize: pageSize.value
                 });
-            };
-
-            const dismissOnboardingTips = () => {
-                showOnboardingTips.value = false;
-                if (window.AppSettings) window.AppSettings.setPrefSync('onboarding_allies_v1', 'dismissed');
-            };
-
-            const dismissSearchShortcutHint = () => {
-                showSearchShortcutHint.value = false;
-                if (window.AppSettings) window.AppSettings.setPrefSync('hint_allies_search_shortcuts_v1', 'dismissed');
             };
 
             const formatNumberWithSeparators = (value) => {
@@ -95,23 +75,80 @@ function initAlliesView() {
                 return normalized.toLocaleString(undefined, { maximumFractionDigits: 20 });
             };
 
+            const componentHeadingLabel = (componentType) => {
+                switch (componentType) {
+                    case 'Mag Rider':
+                        return t('Mag Rider');
+                    case 'Mount':
+                        return t('Ground');
+                    case 'Wings':
+                        return t('Flight');
+                    case 'Stat Stats':
+                        return t('Permanent Stat increases');
+                    case 'Boat/Ship':
+                        return t('Water');
+                    default:
+                        return '';
+                }
+            };
+
+            const resolveStatHeading = (stat) => {
+                if (!stat || typeof stat !== 'object' || typeof stat.value !== 'number') return '';
+                const statName = stat.stat || stat.name || stat.label || '';
+                const value = stat.display_value ?? stat.value;
+                const componentType = stat.component_type || '';
+
+                if (componentType === 'Wings' || statName === 'Glide') {
+                    return t('Flight');
+                }
+                if (componentType === 'Boat/Ship' || statName === 'Acceleration' || statName === 'Turning Rate' || statName === 'TurningRate') {
+                    return t('Water');
+                }
+                if (statName === 'MovementSpeed' || statName === 'Movement Speed') {
+                    return Math.abs(Number(value) - 25) < 0.0001 ? t('Mag Rider') : t('Ground');
+                }
+                if (componentType === 'Stat Stats') {
+                    return t('Permanent Stat increases');
+                }
+                return componentHeadingLabel(componentType);
+            };
+
+            const buildGroupedStats = (stats) => {
+                const grouped = [];
+                let lastHeading = '';
+                for (const stat of stats) {
+                    if (!stat || typeof stat !== 'object' || typeof stat.value !== 'number') {
+                        if (stat) grouped.push(stat);
+                        continue;
+                    }
+                    const heading = resolveStatHeading(stat);
+                    if (heading && heading !== lastHeading) {
+                        grouped.push({ heading, text: `${heading}:`, isHeading: true });
+                        lastHeading = heading;
+                    }
+                    grouped.push(stat);
+                }
+                return grouped;
+            };
+
             const formatStat = (statText) => {
+                if (statText && typeof statText === 'object' && statText.isHeading) {
+                    return `<strong>${escapeHtml(statText.text || '')}</strong>`;
+                }
                 let statLine = typeof statText === 'string' ? statText : ((statText && statText.text) || '');
                 if (statText && typeof statText === 'object' && typeof statText.value === 'number') {
-                    const formattedValue = statText.is_percent
-                        ? `${formatNumberWithSeparators(statText.value)}%`
-                        : formatNumberWithSeparators(statText.value);
+                    const name = (statText.label || statText.name || '').trim();
+                    const formattedValue = statText.value_display || statText.display || (
+                        statText.is_percent
+                            ? `${formatNumberWithSeparators(statText.value * 100)}%`
+                            : formatNumberWithSeparators(statText.value)
+                    );
                     if (formattedValue) {
-                        statLine = `${formattedValue} ${(statText.name || '').trim()}`.trim();
+                        statLine = `${formattedValue} ${name}`.trim();
                     }
                 }
                 const isHighlighted = selectedStat.value && selectedStat.value.length > 0 && selectedStat.value.some(s => statLine.includes(s));
                 return isHighlighted ? `<strong>${statLine}</strong>` : statLine;
-            };
-
-            const formatAbility = (abilityText) => {
-                const isHighlighted = !!selectedAbility.value && selectedAbility.value === abilityText;
-                return isHighlighted ? `<strong>${abilityText}</strong>` : abilityText;
             };
 
             const escapeHtml = (text) => String(text || '')
@@ -137,18 +174,17 @@ function initAlliesView() {
                 return safe.replace(re, '<mark>$1</mark>');
             };
 
-            const filteredAllies = computed(() => {
-                let result = alliesData.value.filter(a => {
-                    const category = a.category || 'Unknown';
-                    return category !== 'Unknown' && category !== 'InProgress';
+            const filteredMounts = computed(() => {
+                let result = mountsData.value.filter(m => {
+                    const category = m.category || 'Unknown';
+                    return category !== 'Unknown' && category !== 'InProgress' && category !== 'READY_FOR_GAME';
                 });
-                
+
                 const sq = searchQuery.value.toLowerCase().trim();
                 if (sq.length >= 3) {
                     let generalSearch = sq;
-                    let filters = { author: null, name: null, ability: null, desc: null, category: null };
-
-                    const regex = /(author|designer|name|ability|desc|category):("([^"]+)"|([^\s]+))/g;
+                    const filters = { author: null, name: null, desc: null, category: null };
+                    const regex = /(author|designer|name|desc|category):("([^"]+)"|([^\s]+))/g;
                     let match;
                     while ((match = regex.exec(sq)) !== null) {
                         const key = match[1] === 'designer' ? 'author' : match[1];
@@ -157,17 +193,23 @@ function initAlliesView() {
                     }
                     generalSearch = generalSearch.trim();
 
-                    result = result.filter(a => {
-                        if (filters.author && !(a.designer && a.designer.toLowerCase().includes(filters.author))) return false;
-                        if (filters.name && !a.name.toLowerCase().includes(filters.name)) return false;
-                        if (filters.ability && !a.extractedAbilities.some(ab => ab.toLowerCase().includes(filters.ability))) return false;
-                        if (filters.desc && !(a.desc && a.desc.toLowerCase().includes(filters.desc))) return false;
-                        if (filters.category && !(a.category && a.category.toLowerCase().includes(filters.category))) return false;
+                    result = result.filter(m => {
+                        if (filters.author && !(m.designer && m.designer.toLowerCase().includes(filters.author))) return false;
+                        if (filters.name && !m.name.toLowerCase().includes(filters.name)) return false;
+                        if (filters.desc && !(m.desc && m.desc.toLowerCase().includes(filters.desc))) return false;
+                        if (filters.category && !(m.category && m.category.toLowerCase().includes(filters.category))) return false;
 
                         if (generalSearch.length > 0) {
-                            const matchGeneral = a.name.toLowerCase().includes(generalSearch) || 
-                                                 (a.designer && a.designer.toLowerCase().includes(generalSearch)) ||
-                                                 a.extractedAbilities.some(ab => ab.toLowerCase().includes(generalSearch));
+                            const matchGeneral = m.name.toLowerCase().includes(generalSearch) ||
+                                (m.designer && m.designer.toLowerCase().includes(generalSearch)) ||
+                                (m.desc && m.desc.toLowerCase().includes(generalSearch)) ||
+                                m.rawStats.some(stat => {
+                                    const statValue = stat.value_display || stat.display || (stat.is_percent && typeof stat.value === 'number'
+                                        ? `${formatNumberWithSeparators(stat.value * 100)}%`
+                                        : (stat.value ?? ''));
+                                    const text = typeof stat === 'string' ? stat : `${statValue || ''} ${stat.label || stat.name || ''}`;
+                                    return text.toLowerCase().includes(generalSearch);
+                                });
                             if (!matchGeneral) return false;
                         }
                         return true;
@@ -175,47 +217,32 @@ function initAlliesView() {
                 }
 
                 if (selectedCategory.value && selectedCategory.value !== 'All') {
-                    result = result.filter(a => a.category === selectedCategory.value);
+                    result = result.filter(m => m.category === selectedCategory.value);
                 }
 
                 if (selectedStat.value && selectedStat.value.length > 0) {
-                    result = result.filter(a => selectedStat.value.every(stat => a.parsedStats[stat] !== undefined));
-
-                    const primary = selectedStat.value[0];
-                    result.sort((a, b) => {
-                        const sA = a.parsedStats[primary];
-                        const sB = b.parsedStats[primary];
-                        if (sA.isPercent && !sB.isPercent) return -1;
-                        if (!sA.isPercent && sB.isPercent) return 1;
-                        return sB.value - sA.value;
-                    });
-                } else {
-                    result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+                    result = result.filter(m => selectedStat.value.every(stat => m.parsedStats[stat] !== undefined));
                 }
 
-                if (selectedAbility.value) {
-                    result = result.filter(a => a.extractedAbilities.includes(selectedAbility.value));
-                }
-
-                return result;
+                return [...result].sort((a, b) => a.name.localeCompare(b.name));
             });
 
-            const totalPages = computed(() => Math.max(1, Math.ceil(filteredAllies.value.length / pageSize.value)));
+            const totalPages = computed(() => Math.max(1, Math.ceil(filteredMounts.value.length / pageSize.value)));
 
-            const paginatedAllies = computed(() => {
+            const paginatedMounts = computed(() => {
                 const start = (currentPage.value - 1) * pageSize.value;
                 const end = start + pageSize.value;
-                return filteredAllies.value.slice(start, end);
+                return filteredMounts.value.slice(start, end);
             });
 
             const visibleStart = computed(() => {
-                if (filteredAllies.value.length === 0) return 0;
+                if (filteredMounts.value.length === 0) return 0;
                 return (currentPage.value - 1) * pageSize.value + 1;
             });
 
             const visibleEnd = computed(() => {
-                if (filteredAllies.value.length === 0) return 0;
-                return Math.min(currentPage.value * pageSize.value, filteredAllies.value.length);
+                if (filteredMounts.value.length === 0) return 0;
+                return Math.min(currentPage.value * pageSize.value, filteredMounts.value.length);
             });
 
             const pageNumbers = computed(() => {
@@ -229,7 +256,7 @@ function initAlliesView() {
                 currentPage.value = Math.min(totalPages.value, Math.max(1, page));
                 activeResultIndex.value = -1;
                 nextTick(() => {
-                    const grid = document.querySelector('#allies-vue-app .allies-grid');
+                    const grid = document.querySelector('#mounts-vue-app .allies-grid');
                     if (grid) grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
                 });
             };
@@ -237,7 +264,7 @@ function initAlliesView() {
             const nextPage = () => setPage(currentPage.value + 1);
             const prevPage = () => setPage(currentPage.value - 1);
 
-            watch([searchQuery, selectedCategory, selectedStat, selectedAbility], () => {
+            watch([searchQuery, selectedCategory, selectedStat], () => {
                 currentPage.value = 1;
                 activeResultIndex.value = -1;
             });
@@ -253,10 +280,10 @@ function initAlliesView() {
                 if (currentPage.value > newTotal) currentPage.value = newTotal;
             });
 
-            watch([searchQuery, selectedCategory, selectedStat, selectedAbility, currentPage, pageSize], persistState, { deep: true });
+            watch([searchQuery, selectedCategory, selectedStat, currentPage, pageSize], persistState, { deep: true });
 
             const setActiveResult = (index) => {
-                const cards = Array.from(document.querySelectorAll('#allies-vue-app .ally-card'));
+                const cards = Array.from(document.querySelectorAll('#mounts-vue-app .ally-card'));
                 cards.forEach(c => c.classList.remove('kbd-active-result'));
                 if (!cards.length) {
                     activeResultIndex.value = -1;
@@ -271,40 +298,36 @@ function initAlliesView() {
             const nextSearchResult = () => setActiveResult(activeResultIndex.value + 1);
             const prevSearchResult = () => setActiveResult(activeResultIndex.value - 1);
 
-            const focusSearchInput = () => {
-                const input = document.getElementById('ally-search-input');
-                if (!input) return;
-                input.focus();
-                input.select();
-            };
-
-            const loadAllies = async (forceRefresh = false) => {
+            const loadMounts = async (forceRefresh = false) => {
                 loadError.value = '';
                 let data = null;
                 let response = null;
 
-                if (window.eel && eel.get_allies_data) {
-                    response = await eel.get_allies_data(forceRefresh)();
+                if (window.eel && eel.get_mounts_data) {
+                    response = await eel.get_mounts_data(forceRefresh)();
                     if (!response || response.success === false) {
-                        throw new Error((response && response.error) || 'Failed to retrieve allies data from backend');
+                        throw new Error((response && response.error) || 'Failed to retrieve mount data from backend');
                     }
                     data = (response && response.data && typeof response.data === 'object') ? response.data : response;
                 } else {
-                    throw new Error('Backend allies endpoint is unavailable');
+                    throw new Error('Backend mounts endpoint is unavailable');
                 }
 
                 const uniqueCategories = new Set();
                 const uniqueStats = new Set();
-                const uniqueAbilities = new Set();
 
-                const parsedAllies = Object.keys(data).map(key => {
-                    const ally = data[key];
-                    if (ally.category) uniqueCategories.add(ally.category);
+                const parsedMounts = Object.keys(data).map(key => {
+                    const mount = data[key];
+                    if (mount.category) uniqueCategories.add(mount.category);
+
                     const parsedStats = {};
-                    const stats = Array.isArray(ally.stats) ? ally.stats : [];
-                    const rawStats = stats.filter(stat => stat && ((typeof stat.text === 'string' && stat.text) || (typeof stat.value === 'number' && stat.name)));
+                    const stats = Array.isArray(mount.stats) ? mount.stats : [];
+                    const rawStats = buildGroupedStats(
+                        stats.filter(stat => stat && (((typeof stat.label === 'string' || typeof stat.name === 'string') && typeof stat.value === 'number') || typeof stat.text === 'string'))
+                    );
+
                     stats.forEach(stat => {
-                        const statName = (stat && stat.name) || '';
+                        const statName = (stat && (stat.label || stat.name)) || '';
                         if (!statName) return;
                         uniqueStats.add(statName);
                         parsedStats[statName] = {
@@ -313,40 +336,33 @@ function initAlliesView() {
                         };
                     });
 
-                    const abilities = Array.isArray(ally.abilities) ? ally.abilities.filter(Boolean) : [];
-                    abilities.forEach(ab => uniqueAbilities.add(ab));
-
-                    const explicitImage = String(ally.image || '');
-                    const catalogId = normalizeCatalogImageId(ally.blueprint || explicitImage);
-                    const imagePath = explicitImage.startsWith('http')
-                        ? explicitImage
+                    const catalogId = normalizeCatalogImageId(mount.blueprint || mount.image || '');
+                    const imagePath = String(mount.image || '').startsWith('http')
+                        ? String(mount.image)
                         : `https://trovesaurus.com/data/catalog/${catalogId}.png`;
 
                     return {
                         id: key,
-                        ...ally,
+                        ...mount,
                         rawStats,
                         parsedStats,
-                        extractedAbilities: abilities,
                         imagePath
                     };
                 });
 
-                alliesData.value = parsedAllies;
+                mountsData.value = parsedMounts;
 
                 const catOpts = [['All Categories', 'All']];
                 Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
                 categoryOptions.value = catOpts;
-
                 statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
-                abilitiesOptions.value = [[t('All Abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
                 if (source === 'game-cache') {
-                    dataSourceText.value = t('Loaded ally data from cached game-file scan.');
+                    dataSourceText.value = t('Loaded mount data from cached game-file scan.');
                 } else if (source === 'game-live') {
-                    dataSourceText.value = t('Loaded ally data from live game files.');
+                    dataSourceText.value = t('Loaded mount data from live game files.');
                 } else {
                     dataSourceText.value = '';
                 }
@@ -359,12 +375,12 @@ function initAlliesView() {
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
-                    if (window.eel && eel.clear_allies_cache) {
-                        await eel.clear_allies_cache()();
+                    if (window.eel && eel.clear_mounts_cache) {
+                        await eel.clear_mounts_cache()();
                     }
-                    await loadAllies(true);
+                    await loadMounts(true);
                 } catch (err) {
-                    console.error("Failed to clear ally cache:", err);
+                    console.error("Failed to clear mount cache:", err);
                 } finally {
                     isLoading.value = false;
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -372,10 +388,10 @@ function initAlliesView() {
             };
 
             const onKeyDown = (e) => {
-                const root = document.getElementById('allies-vue-app');
-                if (!root || root.offsetParent === null) return;
+                const rootEl = document.getElementById('mounts-vue-app');
+                if (!rootEl || rootEl.offsetParent === null) return;
                 if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'f') {
-                    const input = document.getElementById('ally-search-input');
+                    const input = document.getElementById('mount-search-input');
                     if (input) {
                         e.preventDefault();
                         input.focus();
@@ -384,7 +400,7 @@ function initAlliesView() {
                     return;
                 }
                 const activeEl = document.activeElement;
-                if (activeEl && activeEl.id === 'ally-search-input') {
+                if (activeEl && activeEl.id === 'mount-search-input') {
                     if (e.key === 'ArrowDown') {
                         e.preventDefault();
                         nextSearchResult();
@@ -403,12 +419,12 @@ function initAlliesView() {
                     applyStateSnapshot(saved);
                 }
                 try {
-                    await loadAllies(false);
+                    await loadMounts(false);
                 } catch (err) {
-                    console.error("Failed to load allies data:", err);
-                    loadError.value = String((err && err.message) || err || 'Failed to load allies from game files.');
+                    console.error("Failed to load mounts data:", err);
+                    loadError.value = String((err && err.message) || err || 'Failed to load mounts from game files.');
                 }
-                
+
                 isLoading.value = false;
                 document.addEventListener('keydown', onKeyDown);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -420,16 +436,14 @@ function initAlliesView() {
             });
 
             return {
-                t, isLoading, loadError, alliesData, filteredAllies, paginatedAllies,
-                searchQuery, selectedCategory, selectedStat, selectedAbility,
-                categoryOptions, statsOptions, abilitiesOptions,
+                t, isLoading, loadError, mountsData, filteredMounts, paginatedMounts,
+                searchQuery, selectedCategory, selectedStat,
+                categoryOptions, statsOptions,
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
-                resetFilters, formatStat, formatAbility,
-                highlightSearch, nextSearchResult, prevSearchResult,
-                focusSearchInput, clearCacheAndReload, dataSourceText,
-                showSearchShortcutHint, dismissSearchShortcutHint,
-                showOnboardingTips, dismissOnboardingTips
+                resetFilters, formatStat, highlightSearch,
+                nextSearchResult, prevSearchResult,
+                clearCacheAndReload, dataSourceText
             };
         }
     });
@@ -438,20 +452,20 @@ function initAlliesView() {
         if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
         if (window.Select2Component) app.component('select2-component', window.Select2Component);
 
-        if (window._alliesApp) window._alliesApp.unmount();
-        window._alliesApp = app;
+        if (window._mountsApp) window._mountsApp.unmount();
+        window._mountsApp = app;
 
-        app.mount('#allies-vue-app');
+        app.mount('#mounts-vue-app');
     } catch (err) {
-        console.error("Failed to initialize Ally Codex app:", err);
+        console.error("Failed to initialize Mount Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Ally Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Mount Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
-        delete root.dataset.alliesInitializing;
+        delete root.dataset.mountsInitializing;
     }
 }
 
-document.addEventListener('allies_loaded', initAlliesView);
+document.addEventListener('mounts_loaded', initMountsView);
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initAlliesView, 0);
+    setTimeout(initMountsView, 0);
 });

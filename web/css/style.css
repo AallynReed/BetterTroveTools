@@ -221,6 +221,17 @@ body {
     padding: 0 8px;
 }
 
+.menu-section-label {
+    margin: 12px 10px 2px;
+    padding: 0 6px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.45);
+    user-select: none;
+}
+
 .nav-btn {
     width: 100%;
     background: rgba(255,255,255,0.02);
@@ -277,6 +288,10 @@ body {
     opacity: 0;
     pointer-events: none;
     transform: translateX(-4px);
+    display: none;
+}
+
+#sidebar.collapsed .menu-section-label {
     display: none;
 }
 

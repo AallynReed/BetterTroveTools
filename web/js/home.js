@@ -7,6 +7,7 @@ document.addEventListener('home_loaded', () => {
 
     const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
     const NEWS_COLLAPSED_PREF_KEY = 'home_official_news_collapsed_v1';
+    const NEWS_REFRESH_MS = 30 * 60 * 1000;
 
     const app = createApp({
         setup() {
@@ -31,6 +32,7 @@ document.addEventListener('home_loaded', () => {
             const nowSec = ref(Math.floor(Date.now() / 1000));
             let timeInterval;
             let refreshInterval;
+            let newsRefreshInterval;
             let resetTimer = null;
 
             const serverData = reactive({ loading: true, daily: null, weekly: null });
@@ -312,7 +314,19 @@ document.addEventListener('home_loaded', () => {
                 return cards;
             });
 
-            const refreshAllData = async () => {
+            const refreshNews = () => {
+                if (settings.show_official_news) {
+                    news.loading = true;
+                    news.error = false;
+                    eel.get_trove_news()();
+                } else {
+                    news.loading = false;
+                    news.error = false;
+                    news.data = [];
+                }
+            };
+
+            const refreshAllData = async ({ refreshOfficialNews = false } = {}) => {
                 isChinese.value = window.I18nManager?.currentLocale === 'zh_CN';
                 const sets = window.AppSettings
                     ? await window.AppSettings.load(true)
@@ -332,11 +346,9 @@ document.addEventListener('home_loaded', () => {
                     if (isChinese.value) eel.get_bilibili_videos()();
                 }
 
-                if (settings.show_official_news) {
-                    news.loading = true;
-                    news.error = false;
-                    eel.get_trove_news()();
-                } else {
+                if (refreshOfficialNews) {
+                    refreshNews();
+                } else if (!settings.show_official_news) {
                     news.loading = false;
                     news.error = false;
                     news.data = [];
@@ -725,13 +737,14 @@ document.addEventListener('home_loaded', () => {
             }
 
             onMounted(() => {
-                refreshAllData();
+                refreshAllData({ refreshOfficialNews: true });
                 refreshInterval = setInterval(refreshAllData, 30000);
+                newsRefreshInterval = setInterval(() => refreshNews(), NEWS_REFRESH_MS);
                 timeInterval = setInterval(() => nowSec.value = Math.floor(Date.now() / 1000), 1000);
                 scheduleResetRefresh();
 
                 window._homeLangListener = (e) => {
-                    if (e.target && e.target.id === 'global-language-select') setTimeout(refreshAllData, 150);
+                    if (e.target && e.target.id === 'global-language-select') setTimeout(() => refreshAllData({ refreshOfficialNews: false }), 150);
                 };
                 document.addEventListener('change', window._homeLangListener);
             });
@@ -749,6 +762,7 @@ document.addEventListener('home_loaded', () => {
 
             onUnmounted(() => {
                 clearInterval(refreshInterval);
+                clearInterval(newsRefreshInterval);
                 clearInterval(timeInterval);
                 if (resetTimer) clearTimeout(resetTimer);
                 document.removeEventListener('change', window._homeLangListener);

@@ -1,0 +1,34 @@
+<head>
+    <link rel="stylesheet" href="css/codexes.css">
+    <link rel="stylesheet" href="css/allies.css">
+    <link rel="stylesheet" href="css/mounts.css">
+    <link rel="stylesheet" href="css/dragons.css">
+</head>
+
+<div id="codexes-vue-app" class="gems-and-builds-container" v-cloak>
+    <div class="tabs-container">
+        <div class="tab-buttons">
+            <button class="tab-btn" :class="{ active: activeTab === 'allies' }" @click="setActiveTab('allies')">
+                <i class="fa-solid fa-paw"></i> <span>{{ t('Ally Codex') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'mounts' }" @click="setActiveTab('mounts')">
+                <i class="fa-solid fa-horse"></i> <span>{{ t('Mount Codex') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'dragons' }" @click="setActiveTab('dragons')">
+                <i class="fa-solid fa-dragon"></i> <span>{{ t('Dragon Codex') }}</span>
+            </button>
+        </div>
+
+        <div v-show="activeTab === 'allies'" class="tab-content" :class="{ active: activeTab === 'allies' }">
+            <div id="codexes-allies-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'mounts'" class="tab-content" :class="{ active: activeTab === 'mounts' }">
+            <div id="codexes-mounts-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'dragons'" class="tab-content" :class="{ active: activeTab === 'dragons' }">
+            <div id="codexes-dragons-host" class="view-container" v-cloak></div>
+        </div>
+    </div>
+</div>

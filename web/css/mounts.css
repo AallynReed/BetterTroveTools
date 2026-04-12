@@ -1,0 +1,36 @@
+@import url('./allies.css');
+
+#mount-search-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color, #444c5e);
+    border-radius: 8px;
+    padding: 15px 15px 15px 45px;
+    color: #fff;
+    font-size: 1.1em;
+    transition: all 0.2s ease;
+}
+
+#mount-search-input:focus {
+    outline: none;
+    border-color: #ff9800;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+}
+
+#mounts-vue-app .custom-select-trigger {
+    height: 42px;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+#mounts-vue-app .select2-container--btt-dark .select2-selection--multiple {
+    height: 42px;
+    min-height: 42px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    overflow-y: auto;
+}
