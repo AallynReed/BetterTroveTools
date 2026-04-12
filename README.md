@@ -5,35 +5,68 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/AallynReed/BetterTroveTools?style=for-the-badge&color=green)
 ![GitHub issues](https://img.shields.io/github/issues/AallynReed/BetterTroveTools?style=for-the-badge)
 
-Better Trove Tools is a comprehensive, offline-capable suite of utilities designed for players and modders of the game *Trove*. Packed with multiple essential tools into a single, streamlined desktop application, it empowers you to manage mods, extract game files, build custom mods, and seamlessly integrate with Trovesaurus.
+Better Trove Tools is a desktop companion for Trove players, collectors, and modders. It combines live game utilities, build planning, mod management, archive tooling, and game-file powered codexes into a single local-first app.
 
-## 🚀 Features
+## Features
 
-### 🎮 Player Utilities
-* 🏠 **Home Dashboard:** Stay up-to-date with live Trove server data including daily and weekly buffs, merchant statuses (Luxion, Corruxion, Fluxion), active Trovesaurus events, top live Twitch streams, and an interactive **Yearly Rotation Calendar**.
-* 💎 **Gem Simulator:** Build, level up, and augment virtual gems to optimize your character's stats without spending in-game resources. Includes features for sparking and flaring.
-* 📊 **Gem Builds Optimizer:** Calculate the absolute mathematical best gem allocations for your specific class and setup. Integrates with Star Chart builds and allows 1-click build copying.
-* 🌌 **Star Chart:** Explore and plan your Star Chart constellations, calculate aggregated stats, and save, load, or share your builds with generated Base64 codes.
-* 🧮 **Calculators:** Compute and optimize your in-game stats with dedicated calculators for Power Rank, Mastery, and Magic Find.
-* 🐾 **Ally Codex:** Browse and filter a comprehensive collection of Trove allies. Search by specific stats, abilities, categories, and more.
+### Home dashboard
+- Live rotation tracking for daily and weekly bonuses.
+- Merchant tracking for Luxion, Corruxion, Fluxion, and biome-based schedules.
+- Community content carousels for YouTube, Twitch, and BiliBili.
+- Official Trove news feed with quick filtering and collapse controls.
+- Trovesaurus event calendar integration.
+- Interactive yearly rotation calendar with timeline filters, time-mode switching, and quick jumps.
 
-### 🛠️ Modding & Technical
-* 🧩 **Local Mod Manager:** Easily enable, disable, and update your local Trove mods. Includes conflict detection and tools to auto-fix broken UI configs or mod names.
-* 🦕 **Trovesaurus Browser:** Browse, search, and 1-click install mods directly from Trovesaurus without leaving the app. Supports `btt://` deep linking.
-* 📂 **Game File Manager:** High-performance file manager to parse Trove's `.tfi` and `.tfa` archives to mass-extract game assets directly to your disk. Includes a built-in **Update Tracker** to detect and extract only changed or updated files after game patches.
-* 🧰 **Modder Tools:** 
-  * Compile your files into the `.tmod` format quickly and easily.
-  * Extract existing `.tmod` files to inspect or modify their contents.
-  * **Project Manager:** Manage persistent mod projects with versioning, auto-structuring, and live in-game testing via overrides.
+### Gems and builds
+- Gem Builds planner for class-focused optimization.
+- Star Chart builder with saved templates and shareable build codes.
+- Gem Evaluator for reviewing gem quality and decisions.
+- Gem Simulator for leveling, augmenting, sparking, and flaring experiments.
 
-### ⚡ General
-* 🌍 **Multi-Language Support (i18n):** Fully localized interface with support for multiple languages dynamically loaded.
-* 🔄 **Auto-Updates:** Built-in GitHub release checker to ensure you are always running the latest version.
-* ⚙️ **Custom Game Paths:** Support for managing multiple game installations (Live, PTS, Custom).
-* 🔌 **Offline Capable & Transparent:** Designed to run locally on your machine, with a built-in external request tracker so you know exactly what network calls are being made to Trovesaurus or Twitch APIs.
+### Calculators
+- Power Rank calculator.
+- Mastery calculator.
+- Magic Find calculator with Star Chart integration.
+- Light calculator.
 
-## ⚠️ Disclaimer
+### Codexes
+- Ally Codex built from Trove game files with category, stats, abilities, mastery, geode mastery, designer, blueprint, and decoded ally power rank.
+- Mount Codex built from Trove game files with category, movement stats, mastery, designer, and blueprint data.
+- Dragon Codex for dragon-category mounts.
+- Memento Codex with category, mastery, and source context such as biome, boss, or creature origin when available.
 
-*No promises, I might never really finish it.* 
+### Mod manager
+- Manage installed mods per Trove installation.
+- Enable, disable, update, and delete mods.
+- Conflict detection for overlapping active mods.
+- Rename local mod files to match internal titles.
+- Search, filter, and quickly jump through results.
+- Built-in onboarding tips and shortcut hints.
+- Trovesaurus browser with direct install and update support.
+- Preview images and open Trovesaurus mod or author pages from inside the app.
+- `btt://` deep link support.
 
-(But it works pretty great so far!)
+### Modder tools
+- Build `.tmod` packages from loose files.
+- Extract existing `.tmod` files for editing.
+- Project manager for persistent mod workspaces.
+- Active version workspaces for project iteration.
+- Preview image and `.cfg` support when building mods.
+- Auto-structure and override-detection tools for packaging files correctly.
+- One-click "Test in Game" override deployment and cleanup.
+- File Explorer for Trove archives and extracted content.
+- Update Tracker for patch-to-patch archive diffing and targeted extraction.
+- Third-party software directory for common Trove modding tools.
+
+### Game-file powered data
+- Reads Trove `.tfi` and `.tfa` archives directly.
+- Uses cache-backed runtime parsing instead of relying only on bundled static data.
+- Includes decoding work for allies, mounts, mementos, mastery groups, geode mastery, localized names, descriptions, and related metadata.
+
+### App and quality-of-life features
+- Multi-language interface support.
+- Accent color and app font customization.
+- Home page content toggles for a calmer dashboard.
+- Custom Trove directory management for Live, PTS, and custom installs.
+- Local-first design with an external request tracker for transparency.
+- Built-in update checking through GitHub releases.
