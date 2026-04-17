@@ -11,6 +11,8 @@ from tkinter import filedialog
 
 import eel
 
+from backend.qubicle_qb import QubicleDocument
+from backend.trove_blueprint import BlueprintDecodeError, blueprint_to_document, blueprint_to_package
 from backend.response import standardize_response
 from binary_reader import BinaryReader
 
@@ -154,6 +156,48 @@ def ask_tmod_file():
     root.destroy()
     return file_path
 
+
+@eel.expose
+@standardize_response
+def ask_qb_file():
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    file_path = filedialog.askopenfilename(
+        title="Select QB or Trove Blueprint File",
+        filetypes=[
+            ("Voxel Files", "*.qb;*.blueprint"),
+            ("Qubicle Binary", "*.qb"),
+            ("Trove Blueprint", "*.blueprint"),
+            ("All Files", "*.*"),
+        ],
+    )
+    root.destroy()
+    return file_path
+
+
+@eel.expose
+@standardize_response
+def ask_qb_save_file(current_path_str=None, suggested_name="untitled.qb"):
+    current_path = Path(str(current_path_str or "").strip()) if current_path_str else None
+    initial_dir = str(current_path.parent) if current_path and current_path.parent.exists() else None
+    initial_name = current_path.name if current_path and current_path.name else str(suggested_name or "untitled.qb")
+    if not initial_name.lower().endswith(".qb"):
+        initial_name = f"{initial_name}.qb"
+
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    file_path = filedialog.asksaveasfilename(
+        title="Save Qubicle QB File",
+        initialdir=initial_dir,
+        initialfile=initial_name,
+        defaultextension=".qb",
+        filetypes=[("Qubicle Binary", "*.qb"), ("All Files", "*.*")],
+    )
+    root.destroy()
+    return file_path
+
 @eel.expose
 @standardize_response
 def ask_extract_destination():
@@ -163,6 +207,53 @@ def ask_extract_destination():
     folder_path = filedialog.askdirectory(title="Select Extraction Destination")
     root.destroy()
     return folder_path
+
+
+@eel.expose
+@standardize_response
+def load_qb_file(path_str):
+    path = Path(str(path_str or "").strip())
+    if not path.exists() or not path.is_file():
+        return {"success": False, "error": "QB file does not exist."}
+
+    if path.suffix.lower() == ".blueprint":
+        try:
+            package = blueprint_to_package(path)
+        except BlueprintDecodeError as exc:
+            raw_data = path.read_bytes()
+            try:
+                document = blueprint_to_document(raw_data, path.name)
+            except BlueprintDecodeError:
+                return {"success": False, "error": str(exc)}
+            document["path"] = str(path)
+            document["file_name"] = path.name
+            return {"success": True, "document": document}
+        selected_asset = package["assets"][package["selected_asset_id"]]
+        return {"success": True, "document": selected_asset, "package": package}
+    else:
+        raw_data = path.read_bytes()
+        document = QubicleDocument.from_bytes(raw_data).to_dict()
+    document["path"] = str(path)
+    document["file_name"] = path.name
+    return {"success": True, "document": document}
+
+
+@eel.expose
+@standardize_response
+def save_qb_file(path_str, payload):
+    raw_path = str(path_str or "").strip()
+    if not raw_path:
+        return {"success": False, "error": "No QB output path was provided."}
+
+    path = Path(raw_path)
+    if path.suffix.lower() != ".qb":
+        path = path.with_suffix(".qb")
+
+    document = QubicleDocument.from_dict(payload).to_bytes()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(document)
+
+    return {"success": True, "path": str(path), "file_name": path.name}
 
 
 @eel.expose

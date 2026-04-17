@@ -14,6 +14,9 @@
             <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('Projects') }}</span>
             </button>
+            <!-- <button class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="activeTab = 'qb_editor'">
+                <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('QB Editor') }}</span>
+            </button> -->
             <button class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="activeTab = 'file_explorer'">
                 <i class="fa-solid fa-folder-tree"></i> <span>{{ t('File Explorer') }}</span>
             </button>
@@ -301,6 +304,467 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'qb_editor' }">
+            <div class="tool-panel qb-editor-panel">
+                <div class="qb-toolbar">
+                    <div>
+                        <h3>{{ t('Voxel Editor') }}</h3>
+                        <p class="help-text" style="margin-bottom: 0;">
+                            {{ t('Open a .qb file or a Trove .blueprint package, navigate its internal assets, inspect them in 3D, and save the selected voxel asset back to Qubicle Binary format.') }}
+                        </p>
+                    </div>
+                    <div class="qb-toolbar-actions">
+                        <button class="primary-btn" @click="newQbDocument">
+                            <i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('New') }}</span>
+                        </button>
+                        <button class="primary-btn" @click="openQbDocument">
+                            <i class="fa-solid fa-folder-open"></i> <span>{{ t('Open') }}</span>
+                        </button>
+                        <button class="primary-btn" @click="saveQbDocument" :disabled="isWorking.savingQb">
+                            <template v-if="isWorking.savingQb"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Saving...') }}</template>
+                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('Save') }}</span></template>
+                        </button>
+                        <button class="primary-btn" @click="saveQbDocumentAs" :disabled="isWorking.savingQb">
+                            <i class="fa-solid fa-file-export"></i> <span>{{ t('Save As') }}</span>
+                        </button>
+                        <button class="primary-btn" @click="openQbFileLocation" :disabled="!qbEditor.path" :title="t('Open QB file location')">
+                            <i class="fa-solid fa-folder-tree"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <details class="qb-collapsible-card qb-meta-card">
+                    <summary class="qb-collapsible-summary">
+                        <div>
+                            <strong>{{ t('Document Info') }}</strong>
+                            <span>{{ qbPackageActive ? qbContainerName : qbDisplayName }}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </summary>
+                    <div class="qb-collapsible-body">
+                        <div class="qb-summary-bar">
+                            <div class="qb-summary-pill">
+                                <span class="qb-summary-label">{{ qbPackageActive ? t('Asset') : t('File') }}</span>
+                                <span class="qb-summary-value">{{ qbDisplayName }}</span>
+                            </div>
+                            <div class="qb-summary-pill" v-if="qbPackageActive">
+                                <span class="qb-summary-label">{{ t('Blueprint') }}</span>
+                                <span class="qb-summary-value">{{ qbContainerName }}</span>
+                            </div>
+                            <div class="qb-summary-pill">
+                                <span class="qb-summary-label">{{ t('Matrices') }}</span>
+                                <span class="qb-summary-value">{{ qbEditor.matrices.length }}</span>
+                            </div>
+                            <div class="qb-summary-pill">
+                                <span class="qb-summary-label">{{ t('Voxels') }}</span>
+                                <span class="qb-summary-value">{{ qbTotalVoxelCount }}</span>
+                            </div>
+                            <div class="qb-summary-pill qb-summary-status" :class="{ dirty: qbHasUnsavedAssets }">
+                                <span class="qb-summary-label">{{ t('Status') }}</span>
+                                <span class="qb-summary-value">{{ qbHasUnsavedAssets ? t('Unsaved Changes') : t('Saved') }}</span>
+                            </div>
+                        </div>
+
+                        <div class="qb-settings-grid">
+                            <div class="form-group">
+                                <label>{{ t('Version') }}</label>
+                                <input type="text" :value="qbVersionLabel" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>{{ t('Color Format') }}</label>
+                                <select v-model.number="qbEditor.header.color_format" @change="markQbDirty">
+                                    <option :value="0">{{ t('RGBA') }}</option>
+                                    <option :value="1">{{ t('BGRA') }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>{{ t('Z Axis Orientation') }}</label>
+                                <select v-model.number="qbEditor.header.z_axis_orientation" @change="markQbDirty">
+                                    <option :value="0">{{ t('Left-handed') }}</option>
+                                    <option :value="1">{{ t('Right-handed') }}</option>
+                                </select>
+                            </div>
+                            <label class="qb-toggle-card">
+                                <input type="checkbox" v-model="qbEditor.header.compressed" @change="markQbDirty">
+                                <div>
+                                    <strong>{{ t('Compressed') }}</strong>
+                                    <span>{{ t('Write slice-compressed QB data when saving.') }}</span>
+                                </div>
+                            </label>
+                            <label class="qb-toggle-card">
+                                <input type="checkbox" v-model="qbEditor.header.visibility_mask_encoded" @change="toggleQbVisibilityMaskMode">
+                                <div>
+                                    <strong>{{ t('Visibility Mask Encoded') }}</strong>
+                                    <span>{{ t('Use mask values instead of alpha for voxel visibility.') }}</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="qb-layout">
+                    <aside class="qb-matrix-sidebar">
+                        <div v-if="qbPackageActive" class="qb-blueprint-panel">
+                            <div class="qb-sidebar-header">
+                                <div>
+                                    <h4>{{ t('Blueprint Assets') }}</h4>
+                                    <span>{{ t('Select an internal QB asset to edit.') }}</span>
+                                </div>
+                            </div>
+
+                            <div v-if="qbBlueprintAssetRows.length === 0" class="qb-empty-matrices">
+                                {{ t('No internal blueprint assets were found.') }}
+                            </div>
+
+                            <div v-for="row in qbBlueprintAssetRows" :key="row.id">
+                                <button
+                                    v-if="row.assetId"
+                                    class="qb-asset-item"
+                                    :class="{ active: qbEditor.selectedAssetId === row.assetId }"
+                                    :style="{ paddingLeft: `${12 + (row.depth * 18)}px` }"
+                                    @click="selectQbPackageAsset(row.assetId)"
+                                    :title="row.path"
+                                >
+                                    <span class="qb-asset-item-label">
+                                        <i class="fa-solid" :class="row.kind === 'blueprint' ? 'fa-folder-tree' : 'fa-cube'"></i>
+                                        <span>{{ row.label }}</span>
+                                    </span>
+                                </button>
+
+                                <div
+                                    v-else
+                                    class="qb-asset-group"
+                                    :style="{ paddingLeft: `${12 + (row.depth * 18)}px` }"
+                                    :title="row.path"
+                                >
+                                    <span class="qb-asset-item-label">
+                                        <i class="fa-solid fa-folder-tree"></i>
+                                        <span>{{ row.label }}</span>
+                                    </span>
+                                    <small v-if="row.error">{{ row.error }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qb-sidebar-header">
+                            <div>
+                                <h4>{{ t('Matrices') }}</h4>
+                                <span>{{ t('Select a matrix to edit.') }}</span>
+                            </div>
+                            <button class="icon-btn-small" @click="addQbMatrix" :title="t('Add Matrix')">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <div v-if="qbEditor.matrices.length === 0" class="qb-empty-matrices">
+                            {{ t('No matrices yet. Add one to start editing.') }}
+                        </div>
+
+                        <button
+                            v-for="(matrix, index) in qbEditor.matrices"
+                            :key="matrix.name + '_' + index"
+                            class="qb-matrix-item"
+                            :class="{ active: qbEditor.selectedMatrixIndex === index }"
+                            @click="selectQbMatrix(index)"
+                        >
+                            <div class="qb-matrix-item-main">
+                                <strong>{{ matrix.name }}</strong>
+                                <span>{{ matrix.size_x }} x {{ matrix.size_y }} x {{ matrix.size_z }}</span>
+                            </div>
+                            <span class="qb-matrix-item-count">{{ matrix.voxels.length }}</span>
+                        </button>
+
+                        <button class="danger-btn qb-remove-matrix-btn" @click="removeSelectedQbMatrix" :disabled="!selectedQbMatrix">
+                            <i class="fa-solid fa-trash"></i> <span>{{ t('Remove Selected Matrix') }}</span>
+                        </button>
+
+                        <details class="qb-collapsible-card qb-paint-panel" open>
+                            <summary class="qb-collapsible-summary">
+                                <div>
+                                    <strong>{{ t('Paint & Attachment') }}</strong>
+                                    <span>{{ qbEditor.paintColor.toUpperCase() }} - {{ qbEditor.header.visibility_mask_encoded ? t('Mask') : t('Alpha') }} {{ qbEditor.paintAlpha }}</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </summary>
+                            <div class="qb-collapsible-body">
+                                <div class="form-group">
+                                    <label>{{ qbEditor.header.visibility_mask_encoded ? t('Paint Mask') : t('Paint Alpha') }}</label>
+                                    <input type="text" v-model.number="qbEditor.paintAlpha">
+                                </div>
+                                <div class="form-group">
+                                    <label>{{ t('Paint Color') }}</label>
+                                    <div class="qb-paint-row">
+                                        <input type="color" v-model="qbEditor.paintColor" class="qb-color-input">
+                                        <div class="qb-color-code">{{ qbEditor.paintColor.toUpperCase() }}</div>
+                                    </div>
+                                </div>
+                                <div class="qb-paint-actions">
+                                    <button class="primary-btn" @click="fillQbSlice">
+                                        <i class="fa-solid fa-fill-drip"></i> <span>{{ t('Fill Slice') }}</span>
+                                    </button>
+                                    <button class="primary-btn" @click="clearQbSlice" style="background: #a23a3a;">
+                                        <i class="fa-solid fa-eraser"></i> <span>{{ t('Clear Slice') }}</span>
+                                    </button>
+                                </div>
+
+                                <div class="qb-attachment-card">
+                                    <div class="qb-attachment-header">
+                                        <strong>
+                                            {{ t('Attachment Point') }}
+                                            <span class="qb-attachment-swatch" :title="t('Shown as pink in the viewers')"></span>
+                                        </strong>
+                                        <span>{{ qbAttachmentStatus.currentLabel }}</span>
+                                    </div>
+                                    <div class="qb-attachment-meta">
+                                        <span v-if="qbCurrentAttachmentPoint">
+                                            {{ qbCurrentAttachmentPoint.x }}, {{ qbCurrentAttachmentPoint.y }}, {{ qbCurrentAttachmentPoint.z }}
+                                        </span>
+                                        <span v-else>
+                                            {{ qbAttachmentStatus.currentCount === 0 ? t('No pink attachment voxel set.') : t('More than one pink voxel found.') }}
+                                        </span>
+                                    </div>
+                                    <div class="qb-attachment-note">
+                                        {{ qbPackageActive ? t('Sync copies this pink point to sibling QB maps in the same blueprint family.') : t('Set Hovered turns the current hovered voxel into the pink attachment point.') }}
+                                    </div>
+                                    <div class="qb-attachment-actions">
+                                        <button class="qb-tool-btn" @click="focusCurrentQbAttachmentPoint" :disabled="!qbCurrentAttachmentPoint" :title="t('Jump to the attachment slice and highlight it')">
+                                            <i class="fa-solid fa-crosshairs"></i> <span>{{ t('Jump') }}</span>
+                                        </button>
+                                        <button class="qb-tool-btn" @click="setCurrentQbAttachmentPoint()" :disabled="!qbHoveredEditableCell" :title="t('Replace the current attachment point with the hovered voxel')">
+                                            <i class="fa-solid fa-thumbtack"></i> <span>{{ t('Set Hovered') }}</span>
+                                        </button>
+                                        <button class="qb-tool-btn" @click="clearCurrentQbAttachmentPoints()" :disabled="qbAttachmentStatus.currentCount === 0" :title="t('Remove all attachment points from this asset')">
+                                            <i class="fa-solid fa-ban"></i> <span>{{ t('Clear') }}</span>
+                                        </button>
+                                    </div>
+                                    <button class="qb-tool-btn qb-attachment-sync" @click="syncAttachmentPointAcrossPackageFamily" :disabled="!qbPackageActive || !qbCurrentAttachmentPoint || qbAttachmentStatus.familyCount < 2" :title="t('Copy this attachment point to sibling package maps like base, A, S, and T')">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        <span>{{ t('Sync Across Package Maps') }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
+                    </aside>
+
+                    <section class="qb-editor-workspace">
+                        <div v-if="!selectedQbMatrix" class="qb-empty-state">
+                            <i class="fa-solid fa-cubes-stacked"></i>
+                            <p>{{ t('No matrix selected. Add a matrix or open a QB file to begin.') }}</p>
+                        </div>
+
+                        <template v-else>
+                            <div class="qb-workspace-top">
+                                <details class="qb-collapsible-card qb-matrix-form">
+                                    <summary class="qb-collapsible-summary">
+                                        <div>
+                                            <strong>{{ t('Matrix Settings') }}</strong>
+                                            <span>{{ selectedQbMatrix.name }} - {{ selectedQbMatrix.size_x }} x {{ selectedQbMatrix.size_y }} x {{ selectedQbMatrix.size_z }}</span>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </summary>
+                                    <div class="qb-collapsible-body">
+                                        <div class="form-row">
+                                            <div class="form-group" style="flex: 2;">
+                                                <label>{{ t('Matrix Name') }}</label>
+                                                <input type="text" v-model="qbMatrixForm.name">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('Pos X') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.pos_x">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('Pos Y') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.pos_y">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('Pos Z') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.pos_z">
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>{{ t('Size X') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.size_x">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('Size Y') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.size_y">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('Size Z') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.size_z">
+                                            </div>
+                                            <div class="form-group qb-matrix-apply-wrap">
+                                                <label>&nbsp;</label>
+                                                <button class="primary-btn" @click="applyQbMatrixForm">
+                                                    <i class="fa-solid fa-wrench"></i> <span>{{ t('Apply Matrix Changes') }}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
+
+                            </div>
+
+                            <div class="qb-display-toolbar">
+                                <div class="qb-view-mode-toggle" role="tablist" :aria-label="t('QB View Mode')">
+                                    <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '3d' }" @click="setQbViewMode('3d')">
+                                        <i class="fa-solid fa-cubes"></i> <span>{{ t('3D Edit') }}</span>
+                                    </button>
+                                    <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '2d' }" @click="setQbViewMode('2d')">
+                                        <i class="fa-solid fa-table-cells-large"></i> <span>{{ t('2D Slice') }}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="qb-viewport-card" v-if="qbEditor.viewMode === '3d'">
+                                <div class="qb-canvas-header">
+                                    <strong>{{ t('3D Viewport') }}</strong>
+                                    <div class="qb-viewport-header-inline">
+                                        <strong>{{ qbActiveToolLabel }}</strong>
+                                        <span>{{ t('Visible in clip') }}: {{ qbVisibleVoxelCount }}</span>
+                                        <div class="form-group qb-inline-clip">
+                                            <select v-model="qbEditor.clipMode">
+                                                <option value="off">{{ t('Show All') }}</option>
+                                                <option value="below">{{ t('Show Up To Slice') }}</option>
+                                                <option value="slice">{{ t('Only Current Slice') }}</option>
+                                            </select>
+                                        </div>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" @click="resetQbView" :title="t('Reset View')" :aria-label="t('Reset View')">
+                                            <i class="fa-solid fa-compass-drafting"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="qb-viewport-shell">
+                                    <div class="qb-tool-rail">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'orbit' }" @click="setQbTool('orbit')" :title="t('Orbit')" :aria-label="t('Orbit')">
+                                            <i class="fa-solid fa-arrows-rotate"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'pan' }" @click="setQbTool('pan')" :title="t('Pan')" :aria-label="t('Pan')">
+                                            <i class="fa-solid fa-hand"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'paint' }" @click="setQbTool('paint')" :title="t('Paint')" :aria-label="t('Paint')">
+                                            <i class="fa-solid fa-paintbrush"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'add' }" @click="setQbTool('add')" :title="t('Add')" :aria-label="t('Add')">
+                                            <i class="fa-solid fa-cube"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'erase' }" @click="setQbTool('erase')" :title="t('Erase')" :aria-label="t('Erase')">
+                                            <i class="fa-solid fa-eraser"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'sample' }" @click="setQbTool('sample')" :title="t('Sample')" :aria-label="t('Sample')">
+                                            <i class="fa-solid fa-eye-dropper"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="qb-viewport-wrap">
+                                        <canvas
+                                            ref="qbViewportCanvasRef"
+                                            class="qb-viewport-canvas"
+                                            @mousedown="onQbViewportMouseDown"
+                                            @mousemove="onQbViewportMouseMove"
+                                            @mouseleave="onQbViewportMouseLeave"
+                                            @wheel.prevent="onQbViewportWheel"
+                                        ></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="qb-slice-toolbar" v-if="qbEditor.viewMode === '2d' || qbEditor.clipMode !== 'off'">
+                                <div class="qb-slice-controls">
+                                    <button class="icon-btn-small" @click="stepQbSlice(-1)" :disabled="qbEditor.selectedSlice <= 0" :title="t('Previous Slice')">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                    <div class="qb-slice-readout">
+                                        <strong>{{ t('Z Slice') }}</strong>
+                                        <span>{{ qbEditor.selectedSlice + 1 }} / {{ selectedQbMatrix.size_z }}</span>
+                                    </div>
+                                    <button class="icon-btn-small" @click="stepQbSlice(1)" :disabled="qbEditor.selectedSlice >= selectedQbMatrix.size_z - 1" :title="t('Next Slice')">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <input type="range" min="0" :max="Math.max(0, selectedQbMatrix.size_z - 1)" v-model.number="qbEditor.selectedSlice" class="qb-slice-range">
+                                <div class="qb-slice-zoom" v-if="qbEditor.viewMode === '2d'">
+                                    <label>{{ t('Cell Size') }}</label>
+                                    <input type="range" min="12" max="34" v-model.number="qbEditor.sliceZoom">
+                                </div>
+                            </div>
+
+                            <div class="qb-canvas-card" v-if="qbEditor.viewMode === '2d'">
+                                <div class="qb-canvas-header">
+                                    <div>
+                                        <strong>{{ t('Slice Painter') }}</strong>
+                                        <span>{{ t('Left click to paint, right click to erase, Alt-click to sample.') }}</span>
+                                    </div>
+                                    <div class="qb-hover-readout">
+                                        <template v-if="qbHoverSummary">
+                                            <strong>{{ qbHoverSummary.coords }}</strong>
+                                            <span>{{ qbHoverSummary.color }}</span>
+                                        </template>
+                                        <template v-else>
+                                            <span>{{ t('Hover a cell to inspect it.') }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="qb-canvas-wrap">
+                                    <canvas
+                                        ref="qbCanvasRef"
+                                        class="qb-slice-canvas"
+                                        @mousedown="onQbCanvasMouseDown"
+                                        @mousemove="onQbCanvasMouseMove"
+                                        @mouseleave="onQbCanvasMouseLeave"
+                                    ></canvas>
+                                </div>
+                            </div>
+
+                            <div class="qb-slice-table-card" v-if="qbEditor.viewMode === '2d'">
+                                <div class="qb-slice-table-header">
+                                    <strong>{{ t('Current Slice Voxels') }}</strong>
+                                    <span>{{ qbSliceVoxels.length }} {{ t('voxel(s)') }}</span>
+                                </div>
+                                <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                        <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                            <tr>
+                                                <th style="padding: 8px 10px;">{{ t('Coord') }}</th>
+                                                <th style="padding: 8px 10px;">{{ t('Color') }}</th>
+                                                <th style="padding: 8px 10px;">{{ qbEditor.header.visibility_mask_encoded ? t('Mask') : t('Alpha') }}</th>
+                                                <th style="padding: 8px 10px; width: 74px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="qbSliceVoxels.length === 0">
+                                                <td colspan="4" style="padding: 10px; color: var(--text-muted); text-align: center;">{{ t('No visible voxels in this slice.') }}</td>
+                                            </tr>
+                                            <tr v-for="voxel in qbSliceVoxels" :key="voxel.key">
+                                                <td style="padding: 8px 10px; font-family: monospace;">{{ voxel.coords }}</td>
+                                                <td style="padding: 8px 10px;">
+                                                    <div class="qb-voxel-color-cell">
+                                                        <span class="qb-voxel-swatch" :style="{ background: voxel.swatch }"></span>
+                                                        <span>{{ voxel.color }}</span>
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 8px 10px;">{{ voxel.a }}</td>
+                                                <td style="padding: 8px 10px; text-align: right;">
+                                                    <button class="icon-btn-small" @click="sampleQbVoxel(voxel.raw)" :title="t('Sample Color')">
+                                                        <i class="fa-solid fa-eye-dropper"></i>
+                                                    </button>
+                                                    <button class="icon-btn-small danger" @click="removeQbVoxel(voxel.raw)" :title="t('Delete Voxel')">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                    </section>
                 </div>
             </div>
         </div>
