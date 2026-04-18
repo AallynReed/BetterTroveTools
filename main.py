@@ -28,6 +28,7 @@ import backend.mementos
 import backend.mounts
 import backend.mod_manager
 import backend.modder_tools
+import backend.recipes
 import backend.settings
 import backend.gems_and_builds.star_chart
 import backend.trovesaurus

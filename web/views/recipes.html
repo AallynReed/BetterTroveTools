@@ -1,14 +1,14 @@
 <head>
-    <link rel="stylesheet" href="css/mementos.css">
+    <link rel="stylesheet" href="css/recipes.css">
 </head>
-<div id="mementos-vue-app" class="allies-container" v-cloak>
+<div id="recipes-vue-app" class="allies-container" v-cloak>
     <div class="search-section">
         <div class="search-bar-wrapper">
             <div style="position: relative; flex: 1;">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\ncategory:\nsource:')" :placeholder="t(`Search mementos by name, source, or keyword...`)" id="memento-search-input">
+                <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nname:\ncategory:\ningredient:\noutput:')" :placeholder="t(`Search recipes by name, output, ingredient, or keyword...`)" id="recipe-search-input">
             </div>
-            <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear memento cache and rebuild from game files')">
+            <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear recipe cache and rebuild from game files')">
                 <i class="fa-solid fa-broom"></i>
             </button>
             <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
@@ -29,42 +29,45 @@
         </div>
 
         <div class="search-stats">
-            <span v-if="isLoading">{{ t('Loading mementos from game files. This may take a few seconds...') }}</span>
+            <span v-if="isLoading">{{ t('Loading recipes from game files. This may take a few seconds...') }}</span>
             <span v-else-if="loadError" style="color: #ff5555; font-weight: bold;">{{ loadError }}</span>
             <span v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" style="color: #ff9800; font-weight: bold;">{{ t('Minimum 3 characters to search...') }}</span>
-            <span v-else>{{ t('Showing {from}-{to} of {count} filtered mementos ({total} total)').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{count}', filteredMementos.length).replace('{total}', mementosData.length) }}</span>
+            <span v-else>{{ t('Showing {from}-{to} of {count} filtered recipes ({total} total)').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{count}', filteredRecipes.length).replace('{total}', recipesData.length) }}</span>
         </div>
     </div>
 
     <div class="allies-grid">
-        <div v-for="(memento, idx) in paginatedMementos" :key="memento.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
+        <div v-for="(recipe, idx) in paginatedRecipes" :key="recipe.id" class="ally-card recipe-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
             <div class="ally-header">
                 <div class="ally-icon">
-                    <img :src="memento.imagePath" alt="">
+                    <img :src="recipe.imagePath" alt="">
                 </div>
                 <div class="ally-title-area">
-                    <div class="ally-name" v-html="highlightSearch(t(memento.displayName || memento.name || memento.fallbackName))"></div>
-                    <div class="ally-category">{{ t(memento.category || 'Unknown') }}</div>
-                    <div v-if="memento.designer && memento.designer !== 'Trove Team'" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
-                        <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(memento.designer)"></span>
+                    <div class="ally-name" v-html="highlightSearch(t(recipe.name))"></div>
+                    <div class="ally-category">{{ t(recipe.category || 'Recipe') }}</div>
+                    <div v-if="recipe.outputAmount > 1" class="recipe-output-count">
+                        {{ t('Makes {count}').replace('{count}', recipe.outputAmount) }}
                     </div>
                 </div>
             </div>
             <div class="ally-body">
-                <div v-if="memento.source_label && memento.source_name" class="memento-meta">
-                    <div class="memento-meta-row" :class="sourceRowClass(memento.source_label)">
-                        <span class="memento-meta-label">{{ t(memento.source_label) }}</span>
-                        <span class="memento-meta-value" v-html="highlightSearch(t(memento.source_name))"></span>
+                <div class="ally-desc recipe-output-path" v-html="highlightSearch(recipe.outputLabel)"></div>
+                <div v-if="recipe.ingredients.length > 0" class="recipe-chip-group">
+                    <div v-for="ingredient in recipe.ingredients" :key="recipe.id + ':' + ingredient.path" class="recipe-chip">
+                        <span class="recipe-chip-count">{{ ingredient.amount }}</span>
+                        <span v-html="highlightSearch(t(ingredient.name))"></span>
                     </div>
                 </div>
-            </div>
-            <div v-if="memento.mastery" class="ally-footer">
-                <span v-if="parseInt(memento.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery {val}').replace('{val}', parseInt(memento.mastery)) }}</span>
+                <div v-if="recipe.requirements.length > 0" class="recipe-chip-group recipe-chip-group-secondary">
+                    <div v-for="requirement in recipe.requirements" :key="recipe.id + ':' + requirement" class="recipe-chip recipe-chip-secondary">
+                        <span v-html="highlightSearch(t(requirement))"></span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="allies-pagination" v-if="!isLoading && filteredMementos.length > 0">
+    <div class="allies-pagination" v-if="!isLoading && filteredRecipes.length > 0">
         <button class="secondary-btn" @click="prevPage" :disabled="currentPage === 1">
             <i class="fa-solid fa-chevron-left"></i> {{ t('Prev') }}
         </button>

@@ -34,6 +34,7 @@ Better Trove Tools is a desktop companion for Trove players, collectors, and mod
 - Mount Codex built from Trove game files with category, movement stats, mastery, designer, and blueprint data.
 - Dragon Codex for dragon-category mounts.
 - Memento Codex with category, mastery, and source context such as biome, boss, or creature origin when available.
+- Recipe Codex built from `prefabs/recipes` with decoded outputs, ingredient counts, category grouping, and output prefab metadata.
 
 ### Mod manager
 - Manage installed mods per Trove installation.

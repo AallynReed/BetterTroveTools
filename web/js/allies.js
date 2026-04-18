@@ -154,6 +154,7 @@ function initAlliesView() {
                 .replace(/\.blueprint$/i, '')
                 .replace(/\\/g, '/')
                 .replace(/^\$+/, '')
+                .replace(/^[^a-z0-9_/]+/i, '')
                 .trim()
                 .toLowerCase();
 

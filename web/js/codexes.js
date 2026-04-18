@@ -62,6 +62,7 @@ document.addEventListener('codexes_loaded', () => {
                 await loadSubview('codexes-mounts-host', 'views/mounts.html', '#mounts-vue-app', 'mounts_loaded');
                 await loadSubview('codexes-dragons-host', 'views/dragons.html', '#dragons-vue-app', 'dragons_loaded');
                 await loadSubview('codexes-mementos-host', 'views/mementos.html', '#mementos-vue-app', 'mementos_loaded');
+                await loadSubview('codexes-recipes-host', 'views/recipes.html', '#recipes-vue-app', 'recipes_loaded');
             });
 
             return {

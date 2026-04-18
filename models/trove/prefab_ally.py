@@ -238,6 +238,7 @@ def normalize_blueprint_catalog_id(blueprint: str) -> str:
     if not text:
         return ""
     text = text.removesuffix(".blueprint")
+    text = re.sub(r"^[^A-Za-z0-9_/]+", "", text)
     text = DESIGNER_RE.sub("", text)
     if "/" in text:
         text = text.split("/")[-1]
@@ -248,6 +249,7 @@ def normalize_blueprint_catalog_id(blueprint: str) -> str:
 def _normalize_blueprint_lookup_key(value: str) -> str:
     text = str(value or "").replace("\\", "/").strip().lower()
     text = text.removesuffix(".blueprint")
+    text = re.sub(r"^[^a-z0-9_/]+", "", text)
     text = DESIGNER_RE.sub("", text)
     return text.split("/")[-1]
 
@@ -278,7 +280,7 @@ def resolve_blueprint_catalog_path(blueprint: str, blueprint_map: dict[str, obje
     normalized = str(blueprint or "").replace("\\", "/").strip()
     if not normalized:
         return ""
-    normalized = normalized.removesuffix(".blueprint").lstrip("$")
+    normalized = re.sub(r"^[^A-Za-z0-9_/]+", "", normalized.removesuffix(".blueprint").lstrip("$"))
     basename = Path(normalized).name.lower()
     keys = [
         f"{normalized.lower()}.blueprint",

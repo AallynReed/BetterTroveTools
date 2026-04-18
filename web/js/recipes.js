@@ -1,11 +1,11 @@
-function initMementosView() {
-    const root = document.getElementById('mementos-vue-app');
-    if (!root || root.dataset.mementosInitializing === '1') return;
-    root.dataset.mementosInitializing = '1';
+function initRecipesView() {
+    const root = document.getElementById('recipes-vue-app');
+    if (!root || root.dataset.recipesInitializing === '1') return;
+    root.dataset.recipesInitializing = '1';
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Memento Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Recipe Codex.</div>`;
         return;
     }
 
@@ -14,12 +14,12 @@ function initMementosView() {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-            const PREF_STATE_KEY = 'state_mementos';
+            const PREF_STATE_KEY = 'state_recipes';
             let hydratingState = false;
 
             const isLoading = ref(true);
             const loadError = ref('');
-            const mementosData = ref([]);
+            const recipesData = ref([]);
             const dataSourceText = ref('');
             const categoryOptions = ref([]);
             const searchQuery = ref('');
@@ -68,7 +68,10 @@ function initMementosView() {
                 .trim()
                 .toLowerCase();
 
-            const stripMementoPrefix = (value) => String(value || '').replace(/^\s*Memento:\s*/i, '').trim();
+            const prettyPath = (value) => String(value || '')
+                .replace(/\\/g, '/')
+                .replace(/^\/+/, '')
+                .trim();
 
             const highlightSearch = (text) => {
                 const q = searchQuery.value.trim();
@@ -79,55 +82,52 @@ function initMementosView() {
                 return safe.replace(re, '<mark>$1</mark>');
             };
 
-            const filteredMementos = computed(() => {
-                let result = mementosData.value.filter(m => {
-                    const category = m.category || 'Unknown';
-                    return category !== 'Unknown'
-                        && category !== 'InProgress'
-                        && category !== 'ReadyForGame'
-                        && category !== 'Hidden'
-                        && !!String(m.source_name || '').trim();
-                });
+            const filteredRecipes = computed(() => {
+                let result = recipesData.value.slice();
 
                 const sq = searchQuery.value.toLowerCase().trim();
                 if (sq.length >= 3) {
                     let generalSearch = sq;
-                    const filters = { author: null, name: null, category: null, source: null };
-                    const regex = /(author|designer|name|category|source):("([^"]+)"|([^\s]+))/g;
+                    const filters = { name: null, category: null, ingredient: null, output: null };
+                    const regex = /(name|category|ingredient|output):("([^"]+)"|([^\s]+))/g;
                     let match;
                     while ((match = regex.exec(sq)) !== null) {
-                        const key = match[1] === 'designer' ? 'author' : match[1];
-                        filters[key] = match[3] || match[4];
+                        filters[match[1]] = (match[3] || match[4] || '').toLowerCase();
                         generalSearch = generalSearch.replace(match[0], '');
                     }
                     generalSearch = generalSearch.trim();
 
-                    result = result.filter(m => {
-                        const name = (m.name || m.fallbackName || '').toLowerCase();
-                        const source = (m.source_name || '').toLowerCase();
-                        const category = (m.category || '').toLowerCase();
-                        const designer = (m.designer || '').toLowerCase();
+                    result = result.filter(recipe => {
+                        const name = String(recipe.name || '').toLowerCase();
+                        const category = String(recipe.category || '').toLowerCase();
+                        const output = String(recipe.outputLabel || '').toLowerCase();
+                        const ingredients = (recipe.ingredients || []).map(row => `${row.name} ${row.path}`.toLowerCase()).join(' ');
+                        const requirements = (recipe.requirements || []).join(' ').toLowerCase();
 
-                        if (filters.author && !designer.includes(filters.author)) return false;
                         if (filters.name && !name.includes(filters.name)) return false;
                         if (filters.category && !category.includes(filters.category)) return false;
-                        if (filters.source && !source.includes(filters.source)) return false;
-                        if (generalSearch.length > 0 && !(name.includes(generalSearch) || source.includes(generalSearch) || category.includes(generalSearch) || designer.includes(generalSearch))) return false;
+                        if (filters.ingredient && !ingredients.includes(filters.ingredient)) return false;
+                        if (filters.output && !output.includes(filters.output)) return false;
+
+                        if (generalSearch.length > 0) {
+                            const haystack = `${name} ${category} ${output} ${ingredients} ${requirements}`;
+                            if (!haystack.includes(generalSearch)) return false;
+                        }
                         return true;
                     });
                 }
 
                 if (selectedCategory.value && selectedCategory.value !== 'All') {
-                    result = result.filter(m => m.category === selectedCategory.value);
+                    result = result.filter(recipe => recipe.category === selectedCategory.value);
                 }
 
-                return [...result].sort((a, b) => (a.name || a.fallbackName || '').localeCompare(b.name || b.fallbackName || ''));
+                return [...result].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
             });
 
-            const totalPages = computed(() => Math.max(1, Math.ceil(filteredMementos.value.length / pageSize.value)));
-            const paginatedMementos = computed(() => filteredMementos.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
-            const visibleStart = computed(() => filteredMementos.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
-            const visibleEnd = computed(() => filteredMementos.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, filteredMementos.value.length));
+            const totalPages = computed(() => Math.max(1, Math.ceil(filteredRecipes.value.length / pageSize.value)));
+            const paginatedRecipes = computed(() => filteredRecipes.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
+            const visibleStart = computed(() => filteredRecipes.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
+            const visibleEnd = computed(() => filteredRecipes.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, filteredRecipes.value.length));
             const pageNumbers = computed(() => {
                 const total = totalPages.value;
                 const current = currentPage.value;
@@ -138,7 +138,7 @@ function initMementosView() {
             const setPage = (page) => {
                 currentPage.value = Math.min(totalPages.value, Math.max(1, page));
                 nextTick(() => {
-                    const grid = document.querySelector('#mementos-vue-app .allies-grid');
+                    const grid = document.querySelector('#recipes-vue-app .allies-grid');
                     if (grid) grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
                 });
             };
@@ -150,37 +150,48 @@ function initMementosView() {
             });
             watch([searchQuery, selectedCategory, currentPage], persistState, { deep: true });
 
-            const loadMementos = async (forceRefresh = false) => {
+            const loadRecipes = async (forceRefresh = false) => {
                 loadError.value = '';
                 let data = null;
                 let response = null;
-                if (window.eel && eel.get_mementos_data) {
-                    response = await eel.get_mementos_data(forceRefresh)();
+                if (window.eel && eel.get_recipes_data) {
+                    response = await eel.get_recipes_data(forceRefresh)();
                     if (!response || response.success === false) {
-                        throw new Error((response && response.error) || 'Failed to retrieve memento data from backend');
+                        throw new Error((response && response.error) || 'Failed to retrieve recipe data from backend');
                     }
-                    data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                    const cacheUrl = String(
+                        (response && response.cache_file)
+                        || (response && response.meta && response.meta.cache && response.meta.cache.cache_url)
+                        || ''
+                    ).trim();
+                    if (cacheUrl) {
+                        const cacheResp = await fetch(cacheUrl, { cache: 'no-store' });
+                        if (!cacheResp.ok) throw new Error(`Failed to load recipe cache file (${cacheResp.status})`);
+                        data = await cacheResp.json();
+                    } else {
+                        data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                    }
                 } else {
-                    throw new Error('Backend mementos endpoint is unavailable');
+                    throw new Error('Backend recipes endpoint is unavailable');
                 }
 
                 const uniqueCategories = new Set();
                 const parsed = Object.keys(data).map(key => {
                     const row = data[key];
                     if (row.category) uniqueCategories.add(row.category);
-                    const fallbackName = key.split('/').slice(-1)[0].replaceAll('_', ' ');
-                    const imagePath = `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || '')}.png`;
-                    const hasSourceContext = !!(row.source_label && row.source_name);
-                    const displayName = hasSourceContext ? (row.name || fallbackName) : (stripMementoPrefix(row.name || '') || fallbackName);
+                    const outputPath = prettyPath(row.output_path || '');
                     return {
                         id: key,
                         ...row,
-                        fallbackName,
-                        imagePath,
-                        displayName
+                        outputPath,
+                        outputAmount: Number(row.output_amount || 1),
+                        outputLabel: outputPath || prettyPath(row.filename || key),
+                        imagePath: `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || outputPath)}.png`,
+                        ingredients: Array.isArray(row.ingredients) ? row.ingredients : [],
+                        requirements: Array.isArray(row.requirements) ? row.requirements : []
                     };
                 });
-                mementosData.value = parsed;
+                recipesData.value = parsed;
 
                 const catOpts = [['All Categories', 'All']];
                 Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
@@ -188,8 +199,8 @@ function initMementosView() {
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
-                if (source === 'game-cache') dataSourceText.value = t('Loaded memento data from cached game-file scan.');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded memento data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('Loaded recipe data from cached game-file scan.');
+                else if (source === 'game-live') dataSourceText.value = t('Loaded recipe data from live game files.');
                 else dataSourceText.value = '';
                 if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
                     const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
@@ -200,24 +211,11 @@ function initMementosView() {
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
-                    if (window.eel && eel.clear_mementos_cache) await eel.clear_mementos_cache()();
-                    await loadMementos(true);
+                    if (window.eel && eel.clear_recipes_cache) await eel.clear_recipes_cache()();
+                    await loadRecipes(true);
                 } finally {
                     isLoading.value = false;
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
-                }
-            };
-
-            const sourceRowClass = (label) => {
-                switch (String(label || '').toLowerCase()) {
-                    case 'biome':
-                        return 'memento-meta-row-biome';
-                    case 'boss':
-                        return 'memento-meta-row-boss';
-                    case 'creature':
-                        return 'memento-meta-row-creature';
-                    default:
-                        return '';
                 }
             };
 
@@ -229,9 +227,9 @@ function initMementosView() {
                     applyStateSnapshot(saved);
                 }
                 try {
-                    await loadMementos(false);
+                    await loadRecipes(false);
                 } catch (err) {
-                    loadError.value = String((err && err.message) || err || 'Failed to load mementos from game files.');
+                    loadError.value = String((err && err.message) || err || 'Failed to load recipes from game files.');
                 }
                 isLoading.value = false;
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -239,30 +237,28 @@ function initMementosView() {
             });
 
             return {
-                t, isLoading, loadError, mementosData, filteredMementos, paginatedMementos,
+                t, isLoading, loadError, recipesData, filteredRecipes, paginatedRecipes,
                 searchQuery, selectedCategory, categoryOptions,
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
-                resetFilters, highlightSearch, clearCacheAndReload, dataSourceText, sourceRowClass
+                resetFilters, highlightSearch, clearCacheAndReload, dataSourceText
             };
         }
     });
 
     try {
         if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
-        if (window._mementosApp) window._mementosApp.unmount();
-        window._mementosApp = app;
-        app.mount('#mementos-vue-app');
+        if (window._recipesApp) window._recipesApp.unmount();
+        window._recipesApp = app;
+        app.mount('#recipes-vue-app');
     } catch (err) {
-        console.error("Failed to initialize Memento Codex app:", err);
+        console.error("Failed to initialize Recipe Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Memento Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Recipe Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
-        delete root.dataset.mementosInitializing;
+        delete root.dataset.recipesInitializing;
     }
 }
 
-document.addEventListener('mementos_loaded', initMementosView);
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(initMementosView, 0);
-});
+document.addEventListener('recipes_loaded', initRecipesView);
+if (document.readyState !== 'loading') initRecipesView();
