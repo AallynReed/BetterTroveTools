@@ -24,7 +24,12 @@ document.addEventListener('modder_tools_loaded', () => {
             
             const gameOptions = computed(() => {
                 if (installs.value.length === 0) return [[t('Searching...'), '']];
-                return installs.value.map(g => [`${g.name} - ${g.path}`, g.path]);
+                return installs.value.map(g => [
+                    t('{name} - {path}')
+                        .replace('{name}', t(g.name))
+                        .replace('{path}', g.path),
+                    g.path
+                ]);
             });
 
             const tagOptions = ref([

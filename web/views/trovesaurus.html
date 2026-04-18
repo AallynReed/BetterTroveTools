@@ -10,7 +10,7 @@
         <div style="display: flex; align-items: center; gap: 10px;">
             <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('Install to:') }}</label>
             <div style="width: 250px;">
-                <custom-vue-select v-model="selectedGame" :options="gameOptions"></custom-vue-select>
+                <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
             </div>
             <button class="primary-btn" @click="openSelectedGameFolder" :disabled="!selectedGame" :title="t('Open Selected Game Folder')">
                 <i class="fa-solid fa-folder-open"></i>

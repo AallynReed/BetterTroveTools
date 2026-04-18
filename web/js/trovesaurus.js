@@ -78,7 +78,12 @@ document.addEventListener('trovesaurus_loaded', () => {
 
             const gameOptions = computed(() => {
                 if (games.value.length === 0) return [[t('Auto-detecting...'), '']];
-                return games.value.map(g => [`${g.name} - ${g.path}`, g.path]);
+                return games.value.map(g => [
+                    t('{name} - {path}')
+                        .replace('{name}', t(g.name))
+                        .replace('{path}', g.path),
+                    g.path
+                ]);
             });
 
             const fetchMods = (page = 1, force = false, options = {}) => {

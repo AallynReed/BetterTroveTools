@@ -64,7 +64,7 @@
                         <div class="form-group">
                             <label>{{ t('Target Game Installation') }}</label>
                             <div class="input-row">
-                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions" style="flex: 1;"></custom-vue-select>
+                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
                                 <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
                                     <i class="fa-solid fa-folder-open"></i>
                                 </button>
@@ -214,7 +214,7 @@
                             <div class="form-group" style="margin-top: 15px;">
                                 <label>{{ t('Target Game Installation') }}</label>
                                 <div class="input-row">
-                                    <custom-vue-select v-model="selectedGamePath" :options="gameOptions" style="flex: 1;"></custom-vue-select>
+                                    <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
                                     <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
                                         <i class="fa-solid fa-folder-open"></i>
                                     </button>

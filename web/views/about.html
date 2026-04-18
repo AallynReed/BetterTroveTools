@@ -45,7 +45,7 @@
                     <a href="#" @click.prevent="openUrl('https://paypal.me/waterin')" class="donate-icon paypal" :title="t('PayPal')"><i class="fa-brands fa-paypal"></i></a>
                 </div>
             </div>
-    
+
             <div class="about-section">
                 <div class="section-title"><i class="fa-solid fa-code-merge"></i> <span>{{ t('GitHub Contributors') }}</span></div>
                 <p>{{ t('A huge thank you to everyone who has contributed code to Better Trove Tools!') }}</p>
@@ -70,6 +70,37 @@
                         <span v-if="supporters.length === 0" class="special-thanks">{{ t('No supporters listed yet.') }}</span>
                     </template>
                 </div>
+            </div>
+        </div>
+
+        <div class="about-section full-width">
+            <div class="section-title"><i class="fa-solid fa-language"></i> <span>{{ t('Translation Contributors') }}</span></div>
+            <p>{{ t('Thank you to the community members helping localize Better Trove Tools.') }}</p>
+            <div class="translation-region">
+                <div class="translation-region-title">{{ t('Chinese') }}</div>
+                <div class="translation-pill-list">
+                    <div class="translation-pill">
+                        <span class="translation-pill-name">{{ t('LiuLianF') }}</span>
+                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                    </div>
+                    <div class="translation-pill">
+                        <span class="translation-pill-name">{{ t('MewsCat') }}</span>
+                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                    </div>
+                    <div class="translation-pill">
+                        <span class="translation-pill-name">{{ t('D_FairyTail') }}</span>
+                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                    </div>
+                    <div class="translation-pill">
+                        <span class="translation-pill-name">{{ t('star_ss') }}</span>
+                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                    </div>
+                    <div class="translation-pill">
+                        <span class="translation-pill-name">{{ t('LeafGreen_Snake') }}</span>
+                        <span class="translation-pill-role">{{ t('Translation Contributor') }}</span>
+                    </div>
+                </div>
+                <p class="translation-note">{{ t('Hover over a contributor to see their role.') }}</p>
             </div>
         </div>
     </div>

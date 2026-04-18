@@ -22,7 +22,7 @@
                 <div class="toolbar-cluster toolbar-cluster-install">
                     <div class="toolbar-cluster-label">{{ t('Current Trove Path') }}</div>
                     <div class="toolbar-cluster-actions">
-                        <custom-vue-select v-model="selectedInstall" :options="installOptions" style="flex-grow: 1;"></custom-vue-select>
+                        <custom-vue-select v-model="selectedInstall" :options="installOptions" :translate-options="false" style="flex-grow: 1;"></custom-vue-select>
                         <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedInstall || isLoading">
                             <i class="fa-solid fa-folder-open"></i>
                             <span>{{ t('Open Folder') }}</span>
@@ -173,7 +173,7 @@
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('Install to:') }}</label>
                     <div style="width: 250px;">
-                        <custom-vue-select v-model="selectedGame" :options="gameOptions"></custom-vue-select>
+                        <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
                     </div>
                     <button class="primary-btn" @click="openSelectedGameFolder" :disabled="!selectedGame" :title="t('Open Selected Game Folder')">
                         <i class="fa-solid fa-folder-open"></i>

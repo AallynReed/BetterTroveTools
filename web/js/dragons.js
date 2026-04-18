@@ -65,16 +65,26 @@ function initDragonsView() {
             };
 
             const translateText = (text) => t(String(text || '').trim());
+            const formatStatValue = (stat) => {
+                if (!stat || typeof stat !== 'object') return '';
+                if (typeof stat.value_display === 'string' && stat.value_display.trim()) return stat.value_display.trim();
+                if (typeof stat.display === 'string' && stat.display.trim()) return stat.display.trim();
+                if (typeof stat.value !== 'number' || !Number.isFinite(stat.value)) return '';
+                return stat.is_percent
+                    ? t('{value}%').replace('{value}', formatNumberWithSeparators(stat.value * 100))
+                    : formatNumberWithSeparators(stat.value);
+            };
 
             const buildTranslatedStatLine = (stat) => {
                 if (!stat || typeof stat !== 'object') return String(stat || '');
                 const label = translateText(stat.label || stat.name || '');
-                const formattedValue = stat.value_display || stat.display || (
-                    stat.is_percent
-                        ? `${formatNumberWithSeparators(stat.value * 100)}%`
-                        : formatNumberWithSeparators(stat.value)
-                );
-                return `${formattedValue || ''} ${label}`.trim();
+                const formattedValue = formatStatValue(stat);
+                if (formattedValue && label) {
+                    return t('{value} {stat}')
+                        .replace('{value}', formattedValue)
+                        .replace('{stat}', label);
+                }
+                return formattedValue || label || '';
             };
 
             const componentHeadingLabel = (componentType) => {
@@ -125,7 +135,7 @@ function initDragonsView() {
                     }
                     const heading = resolveStatHeading(stat);
                     if (heading && heading !== lastHeading) {
-                        grouped.push({ heading, text: `${heading}:`, isHeading: true });
+                        grouped.push({ heading, text: t('{heading}:').replace('{heading}', heading), isHeading: true });
                         lastHeading = heading;
                     }
                     grouped.push(stat);

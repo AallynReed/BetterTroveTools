@@ -1202,16 +1202,18 @@ window.applyCustomDropdowns = function() {
 };
 
 window.CustomVueSelect = {
-    props: ['modelValue', 'options', 'disabled'],
+    props: ['modelValue', 'options', 'disabled', 'translateOptions'],
     setup(props, { emit }) {
         const isOpen = Vue.ref(false);
         const isDropUp = Vue.ref(false);
         const maxH = Vue.ref(250);
         const wrapperRef = Vue.ref(null);
         const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const shouldTranslateOptions = Vue.computed(() => props.translateOptions !== false);
+        const formatLabel = (label) => shouldTranslateOptions.value ? t(label) : label;
         const currentLabel = Vue.computed(() => {
             const found = props.options ? props.options.find(opt => String(opt[1]) === String(props.modelValue)) : null;
-            return found ? t(found[0]) : '';
+            return found ? formatLabel(found[0]) : '';
         });
 
         const onGlobalClose = (evt) => {
@@ -1265,7 +1267,7 @@ window.CustomVueSelect = {
             document.removeEventListener('click', onDocClick);
             document.removeEventListener('btt-close-vue-selects', onGlobalClose);
         });
-        return { isOpen, isDropUp, maxH, wrapperRef, t, currentLabel, toggle, selectOpt, handleKey };
+        return { isOpen, isDropUp, maxH, wrapperRef, formatLabel, currentLabel, toggle, selectOpt, handleKey };
     },
     template: `
         <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
@@ -1275,7 +1277,7 @@ window.CustomVueSelect = {
             </div>
             <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
                 <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: String(modelValue) === String(opt[1]) }" @click.stop="selectOpt(opt[1])">
-                    {{ t(opt[0]) }}
+                    {{ formatLabel(opt[0]) }}
                 </div>
             </div>
         </div>

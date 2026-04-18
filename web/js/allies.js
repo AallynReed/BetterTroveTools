@@ -96,16 +96,26 @@ function initAlliesView() {
             };
 
             const translateText = (text) => t(String(text || '').trim());
+            const formatStatValue = (stat) => {
+                if (!stat || typeof stat !== 'object') return '';
+                if (typeof stat.value_display === 'string' && stat.value_display.trim()) return stat.value_display.trim();
+                if (typeof stat.display === 'string' && stat.display.trim()) return stat.display.trim();
+                if (typeof stat.value !== 'number' || !Number.isFinite(stat.value)) return '';
+                return stat.is_percent
+                    ? t('{value}%').replace('{value}', formatNumberWithSeparators(stat.value))
+                    : formatNumberWithSeparators(stat.value);
+            };
 
             const buildTranslatedStatLine = (stat) => {
                 if (!stat || typeof stat !== 'object') return String(stat || '');
                 const statName = translateText(stat.name || '');
-                const formattedValue = stat.value_display || stat.display || (
-                    stat.is_percent
-                        ? `${formatNumberWithSeparators(stat.value)}%`
-                        : formatNumberWithSeparators(stat.value)
-                );
-                return `${formattedValue || ''} ${statName}`.trim();
+                const formattedValue = formatStatValue(stat);
+                if (formattedValue && statName) {
+                    return t('{value} {stat}')
+                        .replace('{value}', formattedValue)
+                        .replace('{stat}', statName);
+                }
+                return formattedValue || statName || '';
             };
 
             const formatStat = (statText) => {
