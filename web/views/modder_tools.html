@@ -14,9 +14,9 @@
             <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('Projects') }}</span>
             </button>
-            <!-- <button class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="activeTab = 'qb_editor'">
-                <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('QB Editor') }}</span>
-            </button> -->
+            <button class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="activeTab = 'qb_editor'">
+                <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('QB Editor') }}</span> <span class="beta-label">BETA</span>
+            </button>
             <button class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="activeTab = 'file_explorer'">
                 <i class="fa-solid fa-folder-tree"></i> <span>{{ t('File Explorer') }}</span>
             </button>
@@ -335,6 +335,10 @@
                             <i class="fa-solid fa-folder-tree"></i>
                         </button>
                     </div>
+                </div>
+                <div class="qb-warning-banner" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>{{ t("This tool isn't working correctly. It is available for demonstration purposes only and will not be able to produce any results.") }}</span>
                 </div>
 
                 <details class="qb-collapsible-card qb-meta-card">

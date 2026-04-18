@@ -455,8 +455,13 @@ document.addEventListener('file_manager_loaded', () => {
 
             const onTreeToggle = (e) => {
                 const details = e.target;
-                if (!details.open || details.dataset.populated === 'true' || !details.closest('.file-tree')) return;
-                populateNode(details);
+                if (!details.open || !details.closest('.file-tree')) return;
+                if (details.dataset.populated !== 'true') {
+                    populateNode(details);
+                }
+                if (isSearching.value) {
+                    applySearch();
+                }
             };
 
             const onTreeChange = (e) => {
@@ -572,64 +577,90 @@ document.addEventListener('file_manager_loaded', () => {
                 setActiveSearchMatch(base + delta);
             };
 
-            const debouncedSearch = () => {
-                clearTimeout(searchTimeout);
+            const resetSearchClasses = () => {
+                if (!treeContainerRef.value) return;
+                treeContainerRef.value.querySelectorAll('.is-match, .has-match').forEach((node) => {
+                    node.classList.remove('is-match', 'has-match');
+                });
+                treeContainerRef.value.querySelectorAll('.file-item.is-active-match').forEach((node) => {
+                    node.classList.remove('is-active-match');
+                });
+            };
+
+            const ensurePathVisible = (fullPath) => {
+                if (!treeContainerRef.value) return;
+                const pathParts = fullPath.split('/');
+                let currentPath = '';
+                let parentEl = treeContainerRef.value.querySelector('.file-tree');
+
+                for (let i = 0; i < pathParts.length - 1; i++) {
+                    const part = pathParts[i];
+                    currentPath = currentPath ? `${currentPath}/${part}` : part;
+
+                    const detailsEl = parentEl?.querySelector(`:scope > details[data-path="${currentPath}"]`);
+                    if (!detailsEl) return;
+
+                    detailsEl.classList.add('has-match');
+                    if (!detailsEl.dataset.populated) {
+                        populateNode(detailsEl);
+                    }
+                    detailsEl.open = true;
+                    parentEl = detailsEl.querySelector('.folder-content');
+                }
+
+                const filesGroupEl = parentEl?.querySelector(`:scope > details[data-is-files-group="true"]`);
+                if (filesGroupEl) {
+                    filesGroupEl.classList.add('has-match');
+                    if (!filesGroupEl.dataset.populated) {
+                        populateNode(filesGroupEl);
+                    }
+                    filesGroupEl.open = true;
+                }
+
+            };
+
+            const applySearch = () => {
                 const term = searchQuery.value.toLowerCase().trim();
 
                 if (!treeContainerRef.value) return;
-                
-                isSearching.value = false;
-                treeContainerRef.value.querySelectorAll('.is-match, .has-match').forEach(n => {
-                    n.classList.remove('is-match', 'has-match');
-                });
+
+                resetSearchClasses();
+                searchMatchIds.value = [];
+                activeSearchMatchIndex.value = -1;
 
                 if (term.length < 4) {
+                    isSearching.value = false;
                     searchCountText.value = term.length > 0 ? t("Minimum 4 characters required...") : "";
-                    searchMatchIds.value = [];
-                    activeSearchMatchIndex.value = -1;
                     return;
                 }
 
-                treeContainerRef.value.querySelectorAll('details[open]').forEach(d => d.open = false);
+                isSearching.value = true;
+                const matches = fileCache.filter((f) => f.name.includes(term) || f.path.includes(term));
+                const visibleMatchIds = [];
+
+                matches.forEach((match) => {
+                    ensurePathVisible(match.fullPath);
+                    const fileEl = document.getElementById(match.id);
+                    if (fileEl) {
+                        fileEl.classList.add('is-match');
+                        visibleMatchIds.push(match.id);
+                    }
+                });
+
+                searchMatchIds.value = visibleMatchIds;
+                if (visibleMatchIds.length > 0) {
+                    setActiveSearchMatch(0);
+                }
+
+                searchCountText.value = `${t("Found")} ${matches.length} ${t("matches")}`;
+            };
+
+            const debouncedSearch = () => {
+                clearTimeout(searchTimeout);
+                if (!treeContainerRef.value) return;
 
                 searchTimeout = setTimeout(() => {
-                    isSearching.value = true;
-                    
-                    const matches = fileCache.filter(f => f.name.includes(term) || f.fullPath.toLowerCase().includes(term));
-                    
-                    matches.forEach(match => {
-                        const pathParts = match.fullPath.split('/');
-                        let currentPath = '';
-                        let parentEl = treeContainerRef.value.querySelector('.file-tree');
-
-                        for (let i = 0; i < pathParts.length - 1; i++) {
-                            const part = pathParts[i];
-                            currentPath = currentPath ? `${currentPath}/${part}` : part;
-                            
-                            let detailsEl = parentEl.querySelector(`:scope > details[data-path="${currentPath}"]`);
-                            if (detailsEl) {
-                                if (!detailsEl.open) detailsEl.open = true;
-                                detailsEl.classList.add('has-match');
-                                parentEl = detailsEl.querySelector('.folder-content');
-                            } else {
-                                break;
-                            }
-                        }
-
-                        const filesGroupEl = parentEl.querySelector(`:scope > details[data-is-files-group="true"]`);
-                        if (filesGroupEl) {
-                            if (!filesGroupEl.open) filesGroupEl.open = true;
-                            filesGroupEl.classList.add('has-match');
-                        }
-
-                        const fileEl = document.getElementById(match.id);
-                        if (fileEl) fileEl.classList.add('is-match');
-                    });
-
-                    searchMatchIds.value = matches.map(m => m.id).filter(id => !!document.getElementById(id));
-                    setActiveSearchMatch(0);
-
-                    searchCountText.value = `${t("Found")} ${matches.length} ${t("matches")}`;
+                    applySearch();
                 }, 300);
             };
 

@@ -144,6 +144,25 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     gap: 16px;
 }
 
+.qb-warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 184, 77, 0.45);
+    background: linear-gradient(180deg, rgba(255, 184, 77, 0.18), rgba(255, 120, 50, 0.12));
+    color: #ffe7bf;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.qb-warning-banner i {
+    color: #ffb84d;
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
 .qb-toolbar,
 .qb-summary-bar,
 .qb-workspace-top,
