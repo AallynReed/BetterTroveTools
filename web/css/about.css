@@ -4,8 +4,9 @@
 
 .about-view-container {
     padding: 60px 40px;
-    max-width: 900px;
+    width: 100%;
     margin: 0 auto;
+    box-sizing: border-box;
     animation: fadeIn 0.3s ease;
 }
 
