@@ -773,7 +773,7 @@
 }
 
 .schedule-time-col {
-    width: 40px;
+    width: 110px;
     flex-shrink: 0;
     box-sizing: border-box;
     position: sticky;
@@ -787,7 +787,8 @@
     font-weight: bold;
     color: var(--text-muted);
     border-right: 1px dashed rgba(255, 255, 255, 0.1);
-    padding: 10px 0;
+    padding: 10px 8px;
+    text-align: center;
 }
 
 .schedule-header-row .schedule-time-col {
@@ -796,7 +797,7 @@
 }
 
 .schedule-day-header {
-    width: 145px;
+    width: 118px;
     flex-shrink: 0;
     box-sizing: border-box;
     text-align: center;
@@ -809,7 +810,7 @@
 }
 
 .schedule-slot {
-    width: 145px;
+    width: 118px;
     flex-shrink: 0;
     box-sizing: border-box;
     background: rgba(0, 0, 0, 0.2);

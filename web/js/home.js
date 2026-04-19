@@ -545,36 +545,40 @@ document.addEventListener('home_loaded', () => {
                     rotationModal.titleHtml = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")}`;
                     
                     const daysData = [];
-                    let maxRows = 0;
+                    let maxCols = 0;
                     const rotations = d15.value.rotations;
                     for (let i = 0; i < 7; i++) {
                         const dayStart = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + i);
                         const dayEndTs = dayStart.getTime() + 86400000;
                         const dayRots = rotations.filter(rot => (rot.start * 1000 < dayEndTs && rot.end * 1000 > dayStart.getTime())).sort((a,b) => a.start - b.start);
-                        if (dayRots.length > maxRows) maxRows = dayRots.length;
+                        if (dayRots.length > maxCols) maxCols = dayRots.length;
                         daysData.push({ label: i === 0 ? t("Today") : formatDisplayDate(dayStart, { weekday: 'short', month: 'short', day: 'numeric' }), rots: dayRots });
                     }
                     
-                    const rows = [];
-                    for (let r = 0; r < maxRows; r++) {
-                        let timeStr = "";
-                        let baseRot = daysData[0].rots[r] || daysData[1].rots[r];
-                        if (baseRot) timeStr = formatDisplayDate(baseRot.start * 1000, { hour: '2-digit', minute:'2-digit' });
-                        
-                        const slots = daysData.map(day => {
-                            const rot = day.rots[r];
+                    const cols = [];
+                    for (let c = 0; c < maxCols; c++) {
+                        const baseRot = daysData.find(day => day.rots[c])?.rots[c];
+                        cols.push({
+                            label: baseRot ? formatDisplayDate(baseRot.start * 1000, { hour: '2-digit', minute:'2-digit' }) : '',
+                            expanded: false
+                        });
+                    }
+
+                    const rows = daysData.map((day) => {
+                        const rowExpanded = false;
+                        const slots = cols.map((_, c) => {
+                            const rot = day.rots[c];
                             if (!rot) return { empty: true };
                             const isCurrent = nowSec.value >= rot.start && nowSec.value < rot.end;
-                            const collapsedHtml = rot.biomes.map(b => `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}" style="padding: 4px; flex: 1; justify-content: center;"><img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" style="width: 16px; height: 16px;"></span>`).join('');
-                            return { empty: false, rot, isCurrent, hasPassed: nowSec.value >= rot.end, collapsedHtml, expanded: false };
+                            return { empty: false, rot, isCurrent, hasPassed: nowSec.value >= rot.end, expanded: rowExpanded };
                         });
-                        rows.push({ timeStr, slots, expanded: false });
-                    }
+                        return { label: day.label, slots, expanded: rowExpanded };
+                    });
                     
-                    rotationModal.d15Cols = daysData.map(d => ({ label: d.label, expanded: false }));
+                    rotationModal.d15Cols = cols;
                     rotationModal.d15Rows = rows;
                     rotationModal.d15AllExpanded = false;
-                    rotationModal.d15ShowFinalName = true;
+                    rotationModal.d15ShowFinalName = false;
                 }
                 
                 rotationModal.show = true;
