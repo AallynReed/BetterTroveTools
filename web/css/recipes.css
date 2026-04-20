@@ -80,3 +80,8 @@
     background: rgba(255, 255, 255, 0.1);
     font-weight: 700;
 }
+
+.item-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+}

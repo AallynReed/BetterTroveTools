@@ -137,10 +137,6 @@ function initMementosView() {
 
             const setPage = (page) => {
                 currentPage.value = Math.min(totalPages.value, Math.max(1, page));
-                nextTick(() => {
-                    const grid = document.querySelector('#mementos-vue-app .allies-grid');
-                    if (grid) grid.scrollIntoView({ block: 'start', behavior: 'smooth' });
-                });
             };
             const nextPage = () => setPage(currentPage.value + 1);
             const prevPage = () => setPage(currentPage.value - 1);

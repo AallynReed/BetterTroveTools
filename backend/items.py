@@ -1,0 +1,153 @@
+import asyncio
+import json
+import os
+import time
+from pathlib import Path
+
+import eel
+
+from backend.response import resp, standardize_response
+from models.trove.prefab_ally import detect_first_glyph_install
+from models.trove.prefab_item import build_items_dataset
+
+
+ITEMS_CACHE_EXPIRY_SECONDS = 60 * 60 * 12
+ITEMS_CACHE_FILENAME = "items_game_cache.json"
+ITEMS_CACHE_MANIFEST_FILENAME = "items_game_cache_manifest.json"
+ITEMS_CACHE_SCHEMA_VERSION = 2
+
+
+def _cache_root() -> Path:
+    for root in _cache_root_candidates():
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+            probe = root / ".items_cache_probe"
+            probe.write_text("ok", encoding="utf-8")
+            try:
+                probe.unlink(missing_ok=True)
+            except Exception:
+                pass
+            return root
+        except Exception:
+            continue
+    raise RuntimeError("No writable cache directory is available for item data.")
+
+
+def _cache_root_candidates() -> list[Path]:
+    appdata = os.getenv("APPDATA")
+    candidates = []
+    if appdata:
+        candidates.append(Path(appdata) / "Trove" / "ModManagerCache")
+    candidates.append(Path(os.getcwd()) / "web" / "cache" / "items")
+    return candidates
+
+
+def _items_cache_file() -> Path:
+    return _cache_root() / ITEMS_CACHE_FILENAME
+
+
+def _items_cache_manifest_file() -> Path:
+    return _cache_root() / ITEMS_CACHE_MANIFEST_FILENAME
+
+
+def _read_cached_items() -> tuple[dict | None, dict]:
+    cache_file = _items_cache_file()
+    manifest_file = _items_cache_manifest_file()
+    manifest = {}
+    if manifest_file.exists():
+        try:
+            manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+        except Exception:
+            manifest = {}
+    if not cache_file.exists():
+        return None, manifest
+    try:
+        data = json.loads(cache_file.read_text(encoding="utf-8"))
+        return data, manifest
+    except Exception:
+        return None, manifest
+
+
+def _cache_age_seconds(manifest: dict) -> int | None:
+    generated_at = manifest.get("generated_at")
+    if not isinstance(generated_at, (int, float)):
+        return None
+    return max(0, int(time.time() - generated_at))
+
+
+def _cache_is_fresh(manifest: dict) -> bool:
+    if int(manifest.get("cache_schema_version", 0) or 0) != ITEMS_CACHE_SCHEMA_VERSION:
+        return False
+    age = _cache_age_seconds(manifest)
+    return age is not None and age < ITEMS_CACHE_EXPIRY_SECONDS
+
+
+def _write_cached_items(data: dict, manifest: dict) -> None:
+    _items_cache_file().write_text(json.dumps(data, indent=4), encoding="utf-8")
+    _items_cache_manifest_file().write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
+def _build_items_from_game_files(force_refresh: bool = False) -> tuple[dict, dict, str]:
+    cached_data, cached_manifest = _read_cached_items()
+    if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest):
+        return cached_data, cached_manifest, "game-cache"
+
+    game_path = detect_first_glyph_install()
+    last_error = None
+    for root in _cache_root_candidates():
+        try:
+            root.mkdir(parents=True, exist_ok=True)
+            data, manifest = asyncio.run(build_items_dataset(game_path=game_path, locale="en"))
+            generated_at = int(time.time())
+            full_manifest = {
+                **manifest,
+                "cache_schema_version": ITEMS_CACHE_SCHEMA_VERSION,
+                "generated_at": generated_at,
+                "expires_at": generated_at + ITEMS_CACHE_EXPIRY_SECONDS,
+                "cache_file": str(_items_cache_file()),
+                "cache_expiry_seconds": ITEMS_CACHE_EXPIRY_SECONDS,
+            }
+            _write_cached_items(data, full_manifest)
+            return data, full_manifest, "game-live"
+        except Exception as exc:
+            last_error = exc
+            continue
+    raise last_error or RuntimeError("Failed to build item data from game files.")
+
+
+@eel.expose
+@standardize_response
+def clear_items_cache():
+    cleared = []
+    for path in (_items_cache_file(), _items_cache_manifest_file()):
+        if path.exists():
+            try:
+                path.unlink()
+            except Exception:
+                if path == _items_cache_manifest_file():
+                    path.write_text(json.dumps({"generated_at": 0, "expires_at": 0}, indent=2), encoding="utf-8")
+                else:
+                    path.write_text("{}", encoding="utf-8")
+            cleared.append(str(path))
+    return resp(True, data={"cleared": cleared})
+
+
+@eel.expose
+@standardize_response
+def get_items_data(force_refresh: bool = False):
+    try:
+        data, manifest, source = _build_items_from_game_files(force_refresh=bool(force_refresh))
+        cache_file = _items_cache_file()
+        cache_url = f"/api/cache/{cache_file.name}" if cache_file.exists() else ""
+        return resp(
+            True,
+            data={},
+            source=source,
+            cache_file=cache_url,
+            meta={"cache": {**manifest, "cache_url": cache_url}},
+        )
+    except Exception as build_error:
+        message = str(build_error)
+        if "No valid Glyph Trove installation was detected." in message:
+            message = "Items could not be loaded because no valid Glyph Trove installation was found."
+        return resp(False, error=message, code="GET_ITEMS_DATA_FAILED")

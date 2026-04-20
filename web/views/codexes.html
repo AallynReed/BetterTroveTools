@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="css/dragons.css">
     <link rel="stylesheet" href="css/mementos.css">
     <link rel="stylesheet" href="css/recipes.css">
+    <link rel="stylesheet" href="css/items.css">
 </head>
 
 <div id="codexes-vue-app" class="gems-and-builds-container" v-cloak>
@@ -24,6 +25,9 @@
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'recipes' }" @click="setActiveTab('recipes')">
                 <i class="fa-solid fa-book"></i> <span>{{ t('Recipe Codex') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'items' }" @click="setActiveTab('items')">
+                <i class="fa-solid fa-box"></i> <span>{{ t('Item Codex') }}</span>
             </button>
         </div>
 
@@ -45,6 +49,10 @@
 
         <div v-show="activeTab === 'recipes'" class="tab-content" :class="{ active: activeTab === 'recipes' }">
             <div id="codexes-recipes-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'items'" class="tab-content" :class="{ active: activeTab === 'items' }">
+            <div id="codexes-items-host" class="view-container" v-cloak></div>
         </div>
     </div>
 </div>

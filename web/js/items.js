@@ -1,11 +1,11 @@
-function initRecipesView() {
-    const root = document.getElementById('recipes-vue-app');
-    if (!root || root.dataset.recipesInitializing === '1') return;
-    root.dataset.recipesInitializing = '1';
+function initItemsView() {
+    const root = document.getElementById('items-vue-app');
+    if (!root || root.dataset.itemsInitializing === '1') return;
+    root.dataset.itemsInitializing = '1';
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Recipe Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Item Codex.</div>`;
         return;
     }
 
@@ -14,12 +14,12 @@ function initRecipesView() {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-            const PREF_STATE_KEY = 'state_recipes';
+            const PREF_STATE_KEY = 'state_items';
             let hydratingState = false;
 
             const isLoading = ref(true);
             const loadError = ref('');
-            const recipesData = ref([]);
+            const itemsData = ref([]);
             const dataSourceText = ref('');
             const categoryOptions = ref([]);
             const searchQuery = ref('');
@@ -68,10 +68,32 @@ function initRecipesView() {
                 .trim()
                 .toLowerCase();
 
-            const prettyPath = (value) => String(value || '')
-                .replace(/\\/g, '/')
-                .replace(/^\/+/, '')
-                .trim();
+            const prettyNameFromPath = (value) => {
+                const normalized = String(value || '').replace(/\\/g, '/').replace(/\.binfab$/i, '').trim();
+                const tail = normalized.split('/').filter(Boolean).pop() || normalized;
+                return tail
+                    .replace(/^collections\//i, '')
+                    .replace(/^(?:item|placeable|block|collections)\//i, '')
+                    .replace(/[_-]+/g, ' ')
+                    .trim()
+                    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+            };
+
+            const normalizeUnlockEntry = (unlock) => {
+                if (unlock && typeof unlock === 'object' && !Array.isArray(unlock)) {
+                    const path = String(unlock.path || unlock.filename || unlock.id || '').trim();
+                    const name = String(unlock.name || '').trim();
+                    return {
+                        path,
+                        name: name || prettyNameFromPath(path),
+                    };
+                }
+                const path = String(unlock || '').trim();
+                return {
+                    path,
+                    name: prettyNameFromPath(path),
+                };
+            };
 
             const highlightSearch = (text) => {
                 const q = searchQuery.value.trim();
@@ -82,14 +104,14 @@ function initRecipesView() {
                 return safe.replace(re, '<mark>$1</mark>');
             };
 
-            const filteredRecipes = computed(() => {
-                let result = recipesData.value.slice();
+            const filteredItems = computed(() => {
+                let result = itemsData.value.slice();
 
                 const sq = searchQuery.value.toLowerCase().trim();
                 if (sq.length >= 3) {
                     let generalSearch = sq;
-                    const filters = { name: null, category: null, ingredient: null, output: null };
-                    const regex = /(name|category|ingredient|output):("([^"]+)"|([^\s]+))/g;
+                    const filters = { name: null, category: null, unlock: null, path: null };
+                    const regex = /(name|category|unlock|path):("([^"]+)"|([^\s]+))/g;
                     let match;
                     while ((match = regex.exec(sq)) !== null) {
                         filters[match[1]] = (match[3] || match[4] || '').toLowerCase();
@@ -97,20 +119,25 @@ function initRecipesView() {
                     }
                     generalSearch = generalSearch.trim();
 
-                    result = result.filter(recipe => {
-                        const name = String(recipe.name || '').toLowerCase();
-                        const category = String(recipe.category || '').toLowerCase();
-                        const output = String(recipe.outputLabel || '').toLowerCase();
-                        const ingredients = (recipe.ingredients || []).map(row => `${row.name} ${row.path}`.toLowerCase()).join(' ');
-                        const requirements = (recipe.requirements || []).join(' ').toLowerCase();
+                    result = result.filter(item => {
+                        const name = String(item.name || '').toLowerCase();
+                        const category = String(item.category || '').toLowerCase();
+                        const path = String(item.filename || '').toLowerCase();
+                        const desc = String(item.desc || '').toLowerCase();
+                        const unlocks = (item.unlocks || []).map(unlock => {
+                            if (unlock && typeof unlock === 'object') {
+                                return `${unlock.name || ''} ${unlock.path || ''}`;
+                            }
+                            return String(unlock || '');
+                        }).join(' ').toLowerCase();
 
                         if (filters.name && !name.includes(filters.name)) return false;
                         if (filters.category && !category.includes(filters.category)) return false;
-                        if (filters.ingredient && !ingredients.includes(filters.ingredient)) return false;
-                        if (filters.output && !output.includes(filters.output)) return false;
+                        if (filters.unlock && !unlocks.includes(filters.unlock)) return false;
+                        if (filters.path && !path.includes(filters.path)) return false;
 
                         if (generalSearch.length > 0) {
-                            const haystack = `${name} ${category} ${output} ${ingredients} ${requirements}`;
+                            const haystack = `${name} ${category} ${path} ${desc} ${unlocks}`;
                             if (!haystack.includes(generalSearch)) return false;
                         }
                         return true;
@@ -118,16 +145,16 @@ function initRecipesView() {
                 }
 
                 if (selectedCategory.value && selectedCategory.value !== 'All') {
-                    result = result.filter(recipe => recipe.category === selectedCategory.value);
+                    result = result.filter(item => item.category === selectedCategory.value);
                 }
 
                 return [...result].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
             });
 
-            const totalPages = computed(() => Math.max(1, Math.ceil(filteredRecipes.value.length / pageSize.value)));
-            const paginatedRecipes = computed(() => filteredRecipes.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
-            const visibleStart = computed(() => filteredRecipes.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
-            const visibleEnd = computed(() => filteredRecipes.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, filteredRecipes.value.length));
+            const totalPages = computed(() => Math.max(1, Math.ceil(filteredItems.value.length / pageSize.value)));
+            const paginatedItems = computed(() => filteredItems.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
+            const visibleStart = computed(() => filteredItems.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
+            const visibleEnd = computed(() => filteredItems.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, filteredItems.value.length));
             const pageNumbers = computed(() => {
                 const total = totalPages.value;
                 const current = currentPage.value;
@@ -146,14 +173,14 @@ function initRecipesView() {
             });
             watch([searchQuery, selectedCategory, currentPage], persistState, { deep: true });
 
-            const loadRecipes = async (forceRefresh = false) => {
+            const loadItems = async (forceRefresh = false) => {
                 loadError.value = '';
                 let data = null;
                 let response = null;
-                if (window.eel && eel.get_recipes_data) {
-                    response = await eel.get_recipes_data(forceRefresh)();
+                if (window.eel && eel.get_items_data) {
+                    response = await eel.get_items_data(forceRefresh)();
                     if (!response || response.success === false) {
-                        throw new Error((response && response.error) || 'Failed to retrieve recipe data from backend');
+                        throw new Error((response && response.error) || 'Failed to retrieve item data from backend');
                     }
                     const cacheUrl = String(
                         (response && response.cache_file)
@@ -162,33 +189,27 @@ function initRecipesView() {
                     ).trim();
                     if (cacheUrl) {
                         const cacheResp = await fetch(cacheUrl, { cache: 'no-store' });
-                        if (!cacheResp.ok) throw new Error(`Failed to load recipe cache file (${cacheResp.status})`);
+                        if (!cacheResp.ok) throw new Error(`Failed to load item cache file (${cacheResp.status})`);
                         data = await cacheResp.json();
                     } else {
                         data = (response && response.data && typeof response.data === 'object') ? response.data : response;
                     }
                 } else {
-                    throw new Error('Backend recipes endpoint is unavailable');
+                    throw new Error('Backend items endpoint is unavailable');
                 }
 
                 const uniqueCategories = new Set();
                 const parsed = Object.keys(data).map(key => {
                     const row = data[key];
                     if (row.category) uniqueCategories.add(row.category);
-                    const outputPath = prettyPath(row.output_path || '');
                     return {
                         id: key,
                         ...row,
-                        outputPath,
-                        outputAmount: Number(row.output_amount || 1),
-                        unlockCount: Number(row.unlock_count || 0),
-                        outputLabel: outputPath || prettyPath(row.filename || key),
-                        imagePath: `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || outputPath)}.png`,
-                        ingredients: Array.isArray(row.ingredients) ? row.ingredients : [],
-                        requirements: Array.isArray(row.requirements) ? row.requirements : []
+                        imagePath: `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || row.filename || key)}.png`,
+                        unlocks: Array.isArray(row.unlocks) ? row.unlocks.map(normalizeUnlockEntry).filter(unlock => unlock.path) : [],
                     };
                 });
-                recipesData.value = parsed;
+                itemsData.value = parsed;
 
                 const catOpts = [['All Categories', 'All']];
                 Array.from(uniqueCategories).sort().forEach(c => catOpts.push([c, c]));
@@ -196,8 +217,8 @@ function initRecipesView() {
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
-                if (source === 'game-cache') dataSourceText.value = t('Loaded recipe data from cached game-file scan.');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded recipe data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('Loaded item data from cached game-file scan.');
+                else if (source === 'game-live') dataSourceText.value = t('Loaded item data from live game files.');
                 else dataSourceText.value = '';
                 if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
                     const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
@@ -208,8 +229,8 @@ function initRecipesView() {
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
-                    if (window.eel && eel.clear_recipes_cache) await eel.clear_recipes_cache()();
-                    await loadRecipes(true);
+                    if (window.eel && eel.clear_items_cache) await eel.clear_items_cache()();
+                    await loadItems(true);
                 } finally {
                     isLoading.value = false;
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -224,9 +245,9 @@ function initRecipesView() {
                     applyStateSnapshot(saved);
                 }
                 try {
-                    await loadRecipes(false);
+                    await loadItems(false);
                 } catch (err) {
-                    loadError.value = String((err && err.message) || err || 'Failed to load recipes from game files.');
+                    loadError.value = String((err && err.message) || err || 'Failed to load items from game files.');
                 }
                 isLoading.value = false;
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -234,7 +255,7 @@ function initRecipesView() {
             });
 
             return {
-                t, isLoading, loadError, recipesData, filteredRecipes, paginatedRecipes,
+                t, isLoading, loadError, itemsData, filteredItems, paginatedItems,
                 searchQuery, selectedCategory, categoryOptions,
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
@@ -245,17 +266,17 @@ function initRecipesView() {
 
     try {
         if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
-        if (window._recipesApp) window._recipesApp.unmount();
-        window._recipesApp = app;
-        app.mount('#recipes-vue-app');
+        if (window._itemsApp) window._itemsApp.unmount();
+        window._itemsApp = app;
+        app.mount('#items-vue-app');
     } catch (err) {
-        console.error("Failed to initialize Recipe Codex app:", err);
+        console.error("Failed to initialize Item Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Recipe Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Item Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
-        delete root.dataset.recipesInitializing;
+        delete root.dataset.itemsInitializing;
     }
 }
 
-document.addEventListener('recipes_loaded', initRecipesView);
-if (document.readyState !== 'loading') initRecipesView();
+document.addEventListener('items_loaded', initItemsView);
+if (document.readyState !== 'loading') initItemsView();

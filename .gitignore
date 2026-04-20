@@ -9,6 +9,7 @@ bin/
 build/
 dist/
 strings/
+handoff/
 Better_Trove_Tools.egg-info
 
 # Ignore Python cache

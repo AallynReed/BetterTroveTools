@@ -64,6 +64,11 @@
                     </div>
                 </div>
             </div>
+            <div v-if="recipe.lootbox || recipe.decay || recipe.unlockCount" class="ally-footer item-footer">
+                <span v-if="recipe.lootbox" class="footer-stat"><i class="fa-solid fa-box-open" style="color: #ffd54f;"></i> {{ t('Lootbox Output') }}</span>
+                <span v-if="recipe.decay" class="footer-stat"><i class="fa-solid fa-hourglass-half" style="color: #ff9800;"></i> {{ t('Decay Output') }}</span>
+                <span v-if="recipe.unlockCount" class="footer-stat"><i class="fa-solid fa-unlock" style="color: #5ec6ff;"></i> {{ t('Unlocks {count}').replace('{count}', recipe.unlockCount) }}</span>
+            </div>
         </div>
     </div>
 

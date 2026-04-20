@@ -1,0 +1,44 @@
+@import url('./allies.css');
+@import url('./recipes.css');
+
+#item-search-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color, #444c5e);
+    border-radius: 8px;
+    padding: 15px 15px 15px 45px;
+    color: #fff;
+    font-size: 1.1em;
+    transition: all 0.2s ease;
+}
+
+#item-search-input:focus {
+    outline: none;
+    border-color: #5ec6ff;
+    background: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(94, 198, 255, 0.2);
+}
+
+#items-vue-app .custom-select-trigger {
+    height: 42px;
+    min-height: 42px;
+    padding: 10px 12px;
+    border-radius: 8px;
+}
+
+.item-card .ally-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item-path {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    word-break: break-word;
+}
+
+.item-footer {
+    flex-wrap: wrap;
+    gap: 10px;
+}

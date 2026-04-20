@@ -72,7 +72,7 @@ STAT_LABELS = {
     "CriticalHitChance": "Critical Hit",
     "MovementSpeed": "Movement Speed",
     "Jump": "Jump",
-    "Superstition": "Lasermancy",
+    "Superstition": "Superstition",
     "IncomingDamageMod": "Incoming Damage",
     "OutgoingDamageMod": "Damage",
     "MagicFind": "Magic Find",
@@ -276,6 +276,55 @@ def format_stat_display(value: float, stat_name: str, *, is_percent: bool = Fals
             return f"{int(round(display_value))}%"
         return f"{display_value:.1f}".rstrip("0").rstrip(".") + "%"
     return format_float_value(value)
+
+
+def collection_h2d(first: int, second: int) -> float:
+    denom = 67 - second
+    if first > 128:
+        return 2 * (128 / math.pow(4, denom)) + 2 * (first - 128) / math.pow(4, denom)
+    return 128 / math.pow(4, denom) + first / math.pow(4, denom)
+
+
+COLLECTION_VALUE_MARKERS = (
+    (b"\x38\x10ground_movespeedF", "ground_movespeed", "MovementSpeed", "Movement Speed", "Mount"),
+    (b"\x38\x0Ewing_movespeedF", "wing_movespeed", "MovementSpeed", "Movement Speed", "Wings"),
+    (b"\x38\x1Cyellow_dragon_wing_movespeedF", "wing_movespeed", "MovementSpeed", "Movement Speed", "Wings"),
+    (b"\x38\x0Fglide_movespeedF", "glide_movespeed", "Glide", "Glide", "Wings"),
+)
+
+
+def extract_collection_value_stats(data: bytes) -> list[dict]:
+    extracted = []
+    seen = set()
+    for marker, source, stat_name, label, component_type in COLLECTION_VALUE_MARKERS:
+        start = 0
+        while True:
+            index = data.find(marker, start)
+            if index < 2:
+                break
+            first = data[index - 2]
+            second = data[index - 1]
+            value = collection_h2d(first, second)
+            rounded_value = round(value, 6)
+            key = (source, rounded_value)
+            if key not in seen:
+                seen.add(key)
+                extracted.append(
+                    {
+                        "source": source,
+                        "stat": stat_name,
+                        "label": label,
+                        "value": value,
+                        "display_value": value,
+                        "is_percent": False,
+                        "value_display": format_float_value(value),
+                        "display": format_float_value(value),
+                        "group": "",
+                        "component_type": component_type,
+                    }
+                )
+            start = index + 1
+    return extracted
 
 
 def zig_zag_decode(value: int) -> int:
@@ -637,7 +686,42 @@ def parse_ally_binfab_content(data: bytes, source_name: str = "") -> dict:
         elif "abilities/" in lowered:
             abilities.append(text)
 
-    stat_lines = build_stat_lines(analysis["records"])
+    extracted_stats = [
+        {
+            "source": record["label"],
+            "stat": record["decoded_stat_name"],
+            "label": STAT_LABELS.get(record["decoded_stat_name"], record["decoded_stat_name"]),
+            "value": record["value"],
+            "display_value": get_stat_display_value(record)[0],
+            "is_percent": get_stat_display_value(record)[1],
+            "value_display": format_stat_display(
+                get_stat_display_value(record)[0],
+                record["decoded_stat_name"],
+                is_percent=get_stat_display_value(record)[1],
+            ),
+            "display": format_stat_display(
+                get_stat_display_value(record)[0],
+                record["decoded_stat_name"],
+                is_percent=get_stat_display_value(record)[1],
+            ),
+            "group": record.get("group_display", ""),
+            "component_type": record.get("component_type", ""),
+        }
+        for record in analysis["records"]
+        if record["decoded_stat_name"]
+    ]
+    existing_sources = {row["source"] for row in extracted_stats}
+    for fallback in extract_collection_value_stats(data):
+        if fallback["source"] not in existing_sources:
+            extracted_stats.append(fallback)
+
+    stat_lines = []
+    seen_lines = set()
+    for row in extracted_stats:
+        line = f"{row['display']} {row['label']}".strip()
+        if line not in seen_lines:
+            seen_lines.add(line)
+            stat_lines.append(line)
     ability_ids = list(dict.fromkeys(abilities))
 
     return {
@@ -646,30 +730,7 @@ def parse_ally_binfab_content(data: bytes, source_name: str = "") -> dict:
         "records": analysis["records"],
         "stat_lines": stat_lines,
         "tooltip": build_tooltip_html(stat_lines, []),
-        "extracted_stats": [
-            {
-                "source": record["label"],
-                "stat": record["decoded_stat_name"],
-                "label": STAT_LABELS.get(record["decoded_stat_name"], record["decoded_stat_name"]),
-                "value": record["value"],
-                "display_value": get_stat_display_value(record)[0],
-                "is_percent": get_stat_display_value(record)[1],
-                "value_display": format_stat_display(
-                    get_stat_display_value(record)[0],
-                    record["decoded_stat_name"],
-                    is_percent=get_stat_display_value(record)[1],
-                ),
-                "display": format_stat_display(
-                    get_stat_display_value(record)[0],
-                    record["decoded_stat_name"],
-                    is_percent=get_stat_display_value(record)[1],
-                ),
-                "group": record.get("group_display", ""),
-                "component_type": record.get("component_type", ""),
-            }
-            for record in analysis["records"]
-            if record["decoded_stat_name"]
-        ],
+        "extracted_stats": extracted_stats,
         "extracted_abilities": ability_ids,
         "blueprint": blueprint,
         "npc_path": npc_path,

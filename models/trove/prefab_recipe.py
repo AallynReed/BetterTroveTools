@@ -50,6 +50,10 @@ def normalize_recipe_string(text: str) -> str:
 
 def pretty_name_from_path(path: str) -> str:
     stem = Path(str(path or "").replace("\\", "/")).stem
+    for suffix in ("_notrade", "_trade"):
+        if stem.endswith(suffix):
+            stem = stem[: -len(suffix)]
+            break
     return stem.replace("_", " ").strip().title()
 
 
@@ -274,6 +278,23 @@ def extract_prefab_metadata(
     }
 
 
+def extract_prefab_unlocks(strings: list[str], identifier: str) -> list[str]:
+    normalized_identifier = str(identifier or "").replace("\\", "/").strip().lower()
+    unlocks = []
+    seen = set()
+    for text in strings:
+        normalized = normalize_recipe_string(text).replace("\\", "/")
+        lowered = normalized.lower()
+        if not lowered.startswith("collections/"):
+            continue
+        if lowered == normalized_identifier:
+            continue
+        if normalized not in seen:
+            seen.add(normalized)
+            unlocks.append(normalized)
+    return unlocks
+
+
 def category_from_output(recipe_path: str, output_path: str) -> str:
     lowered_output = str(output_path or "").lower()
     lowered_recipe = str(recipe_path or "").lower()
@@ -338,6 +359,9 @@ async def build_recipes_dataset(
             "blueprint": Path(str(output_path or recipe_entry["prefab_path"])).stem,
             "blueprint_source": "fallback",
             "designer": "Trove Team",
+            "lootbox": False,
+            "decay": False,
+            "unlocks": [],
         }
         normalized_output = output_path.removesuffix(".binfab") if output_path else ""
         if normalized_output:
@@ -351,6 +375,9 @@ async def build_recipes_dataset(
                         language_map,
                         blueprint_map,
                     )
+                    cached["lootbox"] = b"LootTable" in resolved_content
+                    cached["decay"] = b"quantitydecay" in resolved_content
+                    cached["unlocks"] = extract_prefab_unlocks(cached.get("strings", []), normalized_output)
                 else:
                     cached = output_meta
                 item_meta_cache[normalized_output.lower()] = cached
@@ -401,6 +428,9 @@ async def build_recipes_dataset(
             "designer": output_meta.get("designer", "Trove Team"),
             "filename": recipe_id,
             "blueprint": output_meta.get("blueprint", ""),
+            "lootbox": bool(output_meta.get("lootbox")),
+            "decay": bool(output_meta.get("decay")),
+            "unlock_count": len(output_meta.get("unlocks", [])),
             "output_path": normalized_output,
             "output_amount": derive_output_amount(normalized_output, quantified),
             "ingredients": ingredients,

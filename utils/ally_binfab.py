@@ -72,7 +72,7 @@ STAT_LABELS = {
     "CriticalHitChance": "Critical Hit",
     "MovementSpeed": "Movement Speed",
     "Jump": "Jump",
-    "Superstition": "Lasermancy",
+    "Superstition": "Superstition",
     "IncomingDamageMod": "Incoming Damage",
     "OutgoingDamageMod": "Damage",
     "MagicFind": "Magic Find",
