@@ -113,7 +113,7 @@
                     <div class="buff-content">
                         <div class="buff-split-container">
                             <div class="buff-column normal-buffs">
-                                <div class="buff-column-title"><i class="fa-solid fa-crown" style="opacity: 0.5;"></i> {{ t('Free') }}</div>
+                                <div class="buff-column-title"><i class="fa-solid fa-crown" style="opacity: 0.5;"></i> BASIC</div>
                                 <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.normal_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
                             </div>
                             <div class="buff-column patron-buffs">
@@ -221,7 +221,6 @@
                 </div>
 
                 <div class="calendar-jump-row">
-                    <button class="calendar-chip-btn" @click="jumpToCalendarTarget('luxion')">Luxion</button>
                     <button class="calendar-chip-btn" @click="jumpToCalendarTarget('corruxion')">Corruxion</button>
                     <button class="calendar-chip-btn" @click="jumpToCalendarTarget('fluxion')">Fluxion</button>
                     <button class="calendar-chip-btn" @click="jumpToCalendarTarget('mana')">{{ t('Mana') }}</button>

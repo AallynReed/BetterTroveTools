@@ -1076,19 +1076,13 @@
     top: 0;
     bottom: 0;
     width: 2px;
-    background: rgba(var(--accent-rgb), 0.5);
+    background: rgba(var(--accent-rgb), 0.85);
     z-index: 4;
     pointer-events: none;
 }
 
 .calendar-today-band {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 10px;
-    background: linear-gradient(to right, rgba(var(--accent-rgb), 0.2), rgba(var(--accent-rgb), 0));
-    z-index: 3;
-    pointer-events: none;
+    display: none;
 }
 
 .calendar-empty-state {
@@ -1108,7 +1102,6 @@
     top: 2px;
     position: relative;
 }
-.event-luxion { background: #c89b27; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8);  }
 .event-corruxion { background: #7a1e8a; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .event-fluxion { background: #3a9cbd; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .event-invasion { background: #ff5252; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }

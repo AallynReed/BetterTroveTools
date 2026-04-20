@@ -318,9 +318,6 @@ def get_current_server_data():
     try:
         st = ServerTime()
         
-        lux_active = st.is_dragon(st.first_luxion)
-        lux_time = st.until_end_dragon(st.first_luxion) if lux_active else st.until_next_dragon(st.first_luxion)
-        
         corr_active = st.is_dragon(st.first_corruxion)
         corr_time = st.until_end_dragon(st.first_corruxion) if corr_active else st.until_next_dragon(st.first_corruxion)
         
@@ -332,11 +329,6 @@ def get_current_server_data():
         inv_time = st.until_end_invasion() if inv_active else st.until_next_invasion()
 
         merchants = {
-            "luxion": {
-                "active": lux_active,
-                "time_str": format_timedelta(lux_time),
-                "action": "Leaves in" if lux_active else "Arrives in"
-            },
             "corruxion": {
                 "active": corr_active,
                 "time_str": format_timedelta(corr_time),
@@ -506,7 +498,6 @@ def get_merchant_schedules():
             return schedule
 
         data = {
-            "luxion": generate_dragon_schedule(st.first_luxion),
             "corruxion": generate_dragon_schedule(st.first_corruxion),
             "fluxion": generate_fluxion_schedule(),
             "invasion": generate_invasion_schedule(),
@@ -693,11 +684,9 @@ def get_yearly_calendar_data():
                 s += st_temp.invasion_interval
                 check_cycle += 1
 
-        base_luxion = datetime(2023, 12, 1, 11, 0, 0, tzinfo=UTC)
         base_corruxion = datetime(2023, 12, 8, 11, 0, 0, tzinfo=UTC)
         base_fluxion = datetime(2023, 12, 5, 11, 0, 0, tzinfo=UTC)
 
-        generate_merchant_events(base_luxion, 14, 3, "luxion", "Luxion")
         generate_merchant_events(base_corruxion, 14, 3, "corruxion", "Corruxion")
         generate_fluxion_events(base_fluxion, 14)
         generate_gardening_events()

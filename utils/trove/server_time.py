@@ -20,7 +20,6 @@ class ServerTime:
         self.dragon_interval = timedelta(days=14)
         self.fluxion_interval = timedelta(days=7)
         self.first_week_buff = datetime(2020, 3, 23, tzinfo=UTC)
-        self.first_luxion = datetime(2024, 3, 1, tzinfo=UTC)
         self.first_corruxion = datetime(2024, 3, 8, tzinfo=UTC)
         self.first_fluxion = datetime(2023, 7, 18, tzinfo=UTC)
         self.first_gardening = datetime(2025, 5, 23, tzinfo=UTC)
@@ -64,8 +63,8 @@ class ServerTime:
         completed, current = divmod(
             int(delta.total_seconds()), int(self.dragon_interval.total_seconds())
         )
-        next_luxion = first + (completed + 1) * self.dragon_interval
-        return completed, next_luxion, current
+        next_dragon = first + (completed + 1) * self.dragon_interval
+        return completed, next_dragon, current
 
     def is_dragon(self, first):
         return self._calculate_dragon(first)[2] < self.dragon_duration.total_seconds()

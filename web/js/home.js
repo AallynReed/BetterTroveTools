@@ -74,7 +74,7 @@ document.addEventListener('home_loaded', () => {
             const timeMode = ref('local');
             
             const calendarModal = reactive({ show: false, isLoading: true, error: false });
-            const calendarData = reactive({ months: [], days: [], tracks: [], todayPx: 0, totalWidth: 0 });
+            const calendarData = reactive({ months: [], days: [], tracks: [], todayPx: 0, totalWidth: 0, startTs: 0, dayWidth: 40 });
             const calendarViewFilter = ref('full');
             
             const rotationModal = reactive({
@@ -132,11 +132,46 @@ document.addEventListener('home_loaded', () => {
                 return showLeft ? t("{time} left").replace("{time}", timeStr) : timeStr;
             };
 
+            const TROVE_OFFSET_MS = 11 * 3600000;
+            const DAY_MS = 86400000;
+
             const toDisplayDate = (input) => {
                 const base = input instanceof Date ? new Date(input.getTime()) : new Date(input);
                 if (timeMode.value !== 'trove') return base;
                 const utcMs = base.getTime() + (base.getTimezoneOffset() * 60000);
                 return new Date(utcMs - (11 * 3600000));
+            };
+
+            const toTimelineDisplayMs = (input) => {
+                const baseMs = input instanceof Date ? input.getTime() : new Date(input).getTime();
+                return timeMode.value === 'trove' ? baseMs - TROVE_OFFSET_MS : baseMs;
+            };
+
+            const getTimelineDayStartMs = (input, dayOffset = 0) => {
+                const baseMs = input instanceof Date ? input.getTime() : new Date(input).getTime();
+                if (timeMode.value !== 'trove') {
+                    const d = new Date(baseMs);
+                    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + dayOffset).getTime();
+                }
+
+                const shifted = new Date(baseMs - TROVE_OFFSET_MS);
+                return Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth(), shifted.getUTCDate() + dayOffset);
+            };
+
+            const formatTimelineDate = (displayMs, options) => {
+                const locale = (window.I18nManager && window.I18nManager.currentLocale)
+                    ? window.I18nManager.currentLocale.replace('_', '-')
+                    : 'en-US';
+                const formatOptions = timeMode.value === 'trove'
+                    ? { ...options, timeZone: 'UTC' }
+                    : options;
+                return new Date(displayMs).toLocaleDateString(locale, formatOptions);
+            };
+
+            const updateCalendarNowMarker = () => {
+                if (!calendarData.startTs || !calendarData.dayWidth) return;
+                const displayNowTs = toTimelineDisplayMs(nowSec.value * 1000);
+                calendarData.todayPx = ((displayNowTs - calendarData.startTs) / DAY_MS) * calendarData.dayWidth;
             };
 
             const formatDisplayDate = (ts, options) => {
@@ -299,7 +334,6 @@ document.addEventListener('home_loaded', () => {
                 const cards = [];
                 const m = merchants.value;
                 
-                if (m.luxion) cards.push({ type: 'merchant', id: 'luxion', name: 'Luxion', color: '#fbc02d', iconClass: 'fa-dragon', active: m.luxion.active, statusText: m.luxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.luxion.action)} <b>${m.luxion.time_str}</b>` });
                 if (m.corruxion) cards.push({ type: 'merchant', id: 'corruxion', name: 'Corruxion', color: '#9c27b0', iconClass: 'fa-dragon', active: m.corruxion.active, statusText: m.corruxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.corruxion.action)} <b>${m.corruxion.time_str}</b>` });
                 if (m.fluxion) cards.push({ type: 'merchant', id: 'fluxion', name: m.fluxion.active ? t("Fluxion ({state})").replace("{state}", t(m.fluxion.state)) : 'Fluxion', color: '#4fc3f7', iconClass: 'fa-scale-balanced', active: m.fluxion.active, statusText: m.fluxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.fluxion.action)} <b>${m.fluxion.time_str}</b>` });
 
@@ -629,46 +663,47 @@ document.addEventListener('home_loaded', () => {
                     if (!res || !res.success) throw new Error();
 
                     const evs = res.events;
-                    const startTs = new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() - 365).getTime();
+                    const startTs = getTimelineDayStartMs(Date.now(), -365);
                     const totalDays = 730;
                     const dayWidth = 40;
                     
+                    calendarData.startTs = startTs;
+                    calendarData.dayWidth = dayWidth;
                     calendarData.totalWidth = 140 + (totalDays * dayWidth);
                     
                     let months = [], days = [], currentMonthKey = null, currentMonth = null;
-                    const locale = (window.I18nManager && window.I18nManager.currentLocale) ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
-                    const todayKey = displayDateKey(Date.now());
-                    let todayIndex = 365;
+                    const todayIndex = 365;
 
                     for(let i=0; i<totalDays; i++) {
-                        const d = new Date(startTs + (i * 86400000));
-                        const displayDate = toDisplayDate(d);
-                        const monthKey = displayDate.getFullYear() + "-" + displayDate.getMonth();
+                        const dayStartMs = startTs + (i * DAY_MS);
+                        const displayDate = new Date(dayStartMs);
+                        const monthKey = timeMode.value === 'trove'
+                            ? `${displayDate.getUTCFullYear()}-${displayDate.getUTCMonth()}`
+                            : `${displayDate.getFullYear()}-${displayDate.getMonth()}`;
                         if (monthKey !== currentMonthKey) {
                             if (currentMonth) months.push(currentMonth);
                             currentMonthKey = monthKey;
-                            currentMonth = { name: displayDate.toLocaleDateString(locale, { month: 'long' }), year: displayDate.getFullYear(), days: 0 };
+                            currentMonth = {
+                                name: formatTimelineDate(dayStartMs, { month: 'long' }),
+                                year: timeMode.value === 'trove' ? displayDate.getUTCFullYear() : displayDate.getFullYear(),
+                                days: 0
+                            };
                         }
                         currentMonth.days++;
-                        const isToday = displayDateKey(d) === todayKey;
-                        if (isToday) todayIndex = i;
                         days.push({
-                            isToday,
-                            num: displayDate.getDate(),
-                            weekday: displayDate.toLocaleDateString(locale, { weekday: 'short' })
+                            isToday: i === todayIndex,
+                            num: timeMode.value === 'trove' ? displayDate.getUTCDate() : displayDate.getDate(),
+                            weekday: formatTimelineDate(dayStartMs, { weekday: 'short' })
                         });
                     }
                     if (currentMonth) months.push(currentMonth);
 
-                    // Anchor the line to the center of the day column, not current clock time.
-                    calendarData.todayPx = (todayIndex * dayWidth) + (dayWidth / 2);
-                    
                     calendarData.months = months;
                     calendarData.days = days;
 
                     const trackDefs = [
                         { id: 'weekly_buff', name: 'Weekly Buffs', color: 'weekly', icon: 'fa-bolt' },
-                        { id: 'dragon_merchants', types: ['luxion', 'corruxion', 'fluxion'], name: 'Dragon Merchants', color: 'luxion', icon: 'fa-dragon' },
+                        { id: 'dragon_merchants', types: ['corruxion', 'fluxion'], name: 'Dragon Merchants', color: 'corruxion', icon: 'fa-dragon' },
                         { id: 'd15', name: 'D15 Biomes', color: 'gardening', icon: 'fa-leaf' },
                         { id: 'gardening_2', name: '2-day plants', color: 'gardening', icon: 'fa-seedling' },
                         { id: 'gardening_3', name: '3-day plants', color: 'gardening', icon: 'fa-seedling' },
@@ -681,8 +716,10 @@ document.addEventListener('home_loaded', () => {
                         const mapped = [];
                         trackEvents.forEach(ev => {
                             const eStartTs = ev.start * 1000, eEndTs = ev.end * 1000;
-                            let leftPx = ((eStartTs - startTs) / 86400000) * dayWidth;
-                            let widthPx = ((eEndTs - eStartTs) / 86400000) * dayWidth;
+                            const displayStartTs = toTimelineDisplayMs(eStartTs);
+                            const displayEndTs = toTimelineDisplayMs(eEndTs);
+                            let leftPx = ((displayStartTs - startTs) / DAY_MS) * dayWidth;
+                            let widthPx = ((displayEndTs - displayStartTs) / DAY_MS) * dayWidth;
                             
                             if (leftPx + widthPx > 0 && leftPx < totalDays * dayWidth) {
                                 if (leftPx < 0) { widthPx += leftPx; leftPx = 0; }
@@ -705,7 +742,7 @@ document.addEventListener('home_loaded', () => {
                                 if (ev.icons?.length > 0) iconsHtml = `<div style="display: flex; gap: 2px; align-items: center; margin-right: 4px;">${ev.icons.map(ic => `<img src="/assets/images/biomes/${ic}.png" onerror="this.style.display='none'" style="width: 14px; height: 14px; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.5));">`).join('')}</div>`;
                                 else if (ev.type === 'fluxion') iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid ${ev.name.includes('Voting') ? 'fa-check-to-slot' : 'fa-sack-dollar'}"></i></div>`;
                                 else if (ev.type.startsWith('gardening')) iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-seedling"></i></div>`;
-                                else if (ev.type === 'luxion' || ev.type === 'corruxion') iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;
+                                else if (ev.type === 'corruxion') iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;
                                 else if (ev.type === 'invasion') iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-meteor"></i></div>`;
                                 
                                 let showText = "";
@@ -728,6 +765,7 @@ document.addEventListener('home_loaded', () => {
                         });
                         return { ...track, events: mapped };
                     }).filter((track) => track.events.length > 0);
+                    updateCalendarNowMarker();
                     calendarModal.isLoading = false;
                     setTimeout(() => centerCalendarToday(false), 50);
                 } catch(e) { calendarModal.error = true; calendarModal.isLoading = false; }
@@ -798,6 +836,12 @@ document.addEventListener('home_loaded', () => {
             watch(timeMode, async () => {
                 if (calendarModal.show) {
                     await loadYearlyCalendar();
+                }
+            });
+
+            watch(nowSec, () => {
+                if (calendarModal.show) {
+                    updateCalendarNowMarker();
                 }
             });
 
