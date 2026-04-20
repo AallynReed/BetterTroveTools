@@ -79,6 +79,55 @@ function initAlliesView() {
                 });
             };
 
+
+
+            const getSelectedGamePath = () => window.getSelectedCodexGamePath ? window.getSelectedCodexGamePath() : '';
+            const installOptions = ref([]);
+            const selectedGamePath = ref('');
+            let syncingGamePath = false;
+
+            const applyGamePathState = (state) => {
+                syncingGamePath = true;
+                installOptions.value = Array.isArray(state && state.installOptions) ? state.installOptions : [];
+                selectedGamePath.value = String((state && state.selectedGamePath) || getSelectedGamePath() || '');
+                syncingGamePath = false;
+            };
+
+            const syncGamePathPicker = async () => {
+                if (!window.CodexGamePathApi || !window.CodexGamePathApi.getState) {
+                    applyGamePathState({ installOptions: [], selectedGamePath: getSelectedGamePath() });
+                    return;
+                }
+                const state = await window.CodexGamePathApi.getState();
+                applyGamePathState(state || {});
+            };
+
+            const refreshGamePaths = async () => {
+                if (!window.CodexGamePathApi || !window.CodexGamePathApi.refresh) return;
+                const state = await window.CodexGamePathApi.refresh();
+                applyGamePathState(state || {});
+            };
+
+            const openSelectedGamePath = async () => {
+                if (!window.CodexGamePathApi || !window.CodexGamePathApi.openSelectedPath) return;
+                await window.CodexGamePathApi.openSelectedPath(selectedGamePath.value);
+            };
+
+            const handleCodexGamePathChanged = async () => {
+                try {
+                    isLoading.value = true;
+                    activeResultIndex.value = -1;
+                    await syncGamePathPicker();
+                    await loadAllies(false);
+                } catch (err) {
+                    console.error('Failed to reload allies data for new game path:', err);
+                    loadError.value = String((err && err.message) || err || 'Failed to load allies from game files.');
+                } finally {
+                    isLoading.value = false;
+                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+                }
+            };
+
             const dismissOnboardingTips = () => {
                 showOnboardingTips.value = false;
                 if (window.AppSettings) window.AppSettings.setPrefSync('onboarding_allies_v1', 'dismissed');
@@ -313,13 +362,20 @@ function initAlliesView() {
                 input.select();
             };
 
+
+            watch(selectedGamePath, async (newVal, oldVal) => {
+                if (syncingGamePath || !window.CodexGamePathApi || !window.CodexGamePathApi.setSelectedPath || newVal === oldVal) return;
+                const state = await window.CodexGamePathApi.setSelectedPath(newVal);
+                applyGamePathState(state || {});
+            });
+
             const loadAllies = async (forceRefresh = false) => {
                 loadError.value = '';
                 let data = null;
                 let response = null;
 
                 if (window.eel && eel.get_allies_data) {
-                    response = await eel.get_allies_data(forceRefresh)();
+                    response = await eel.get_allies_data(forceRefresh, getSelectedGamePath())();
                     if (!response || response.success === false) {
                         throw new Error((response && response.error) || 'Failed to retrieve allies data from backend');
                     }
@@ -437,6 +493,7 @@ function initAlliesView() {
                     const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
                     applyStateSnapshot(saved);
                 }
+                await syncGamePathPicker();
                 try {
                     await loadAllies(false);
                 } catch (err) {
@@ -448,10 +505,12 @@ function initAlliesView() {
                 document.addEventListener('keydown', onKeyDown);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 hydratingState = false;
+                document.addEventListener('codex_game_path_changed', handleCodexGamePathChanged);
             });
 
             onBeforeUnmount(() => {
                 document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('codex_game_path_changed', handleCodexGamePathChanged);
             });
 
             return {
@@ -460,6 +519,7 @@ function initAlliesView() {
                 categoryOptions, statsOptions, abilitiesOptions,
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
+                selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
                 resetFilters, formatStat, formatAbility,
                 highlightSearch, nextSearchResult, prevSearchResult,
                 focusSearchInput, clearCacheAndReload, dataSourceText,

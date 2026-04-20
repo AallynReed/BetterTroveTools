@@ -9,7 +9,7 @@ import eel
 from backend.response import resp, standardize_response
 from models.trove.prefab_ally import (
     build_allies_dataset,
-    detect_first_glyph_install,
+    resolve_game_install,
 )
 
 
@@ -76,7 +76,10 @@ def _cache_age_seconds(manifest: dict) -> int | None:
     return max(0, int(time.time() - generated_at))
 
 
-def _cache_is_fresh(manifest: dict) -> bool:
+def _cache_is_fresh(manifest: dict, game_path: Path) -> bool:
+    manifest_game_path = str(manifest.get("game_path", "")).strip()
+    if manifest_game_path and Path(manifest_game_path) != game_path:
+        return False
     age = _cache_age_seconds(manifest)
     return age is not None and age < ALLIES_CACHE_EXPIRY_SECONDS
 
@@ -86,12 +89,11 @@ def _write_cached_allies(data: dict, manifest: dict) -> None:
     _allies_cache_manifest_file().write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _build_allies_from_game_files(force_refresh: bool = False) -> tuple[dict, dict, str]:
+def _build_allies_from_game_files(force_refresh: bool = False, game_path_str: str = "") -> tuple[dict, dict, str]:
+    game_path = resolve_game_install(game_path_str)
     cached_data, cached_manifest = _read_cached_allies()
-    if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest):
+    if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest, game_path):
         return cached_data, cached_manifest, "game-cache"
-
-    game_path = detect_first_glyph_install()
 
     last_error = None
     for root in _cache_root_candidates():
@@ -124,13 +126,18 @@ def _build_allies_from_game_files(force_refresh: bool = False) -> tuple[dict, di
 
 @eel.expose
 @standardize_response
-def get_allies_cache_status():
+def get_allies_cache_status(game_path_str: str = ""):
     cached_data, manifest = _read_cached_allies()
+    try:
+        game_path = resolve_game_install(game_path_str)
+        is_fresh = cached_data is not None and _cache_is_fresh(manifest, game_path)
+    except Exception:
+        is_fresh = False
     return resp(
         True,
         data={
             "exists": cached_data is not None,
-            "fresh": cached_data is not None and _cache_is_fresh(manifest),
+            "fresh": is_fresh,
             "age_seconds": _cache_age_seconds(manifest),
             "expiry_seconds": ALLIES_CACHE_EXPIRY_SECONDS,
             "manifest": manifest,
@@ -158,9 +165,9 @@ def clear_allies_cache():
 
 @eel.expose
 @standardize_response
-def get_allies_data(force_refresh: bool = False):
+def get_allies_data(force_refresh: bool = False, game_path_str: str = ""):
     try:
-        data, manifest, source = _build_allies_from_game_files(force_refresh=bool(force_refresh))
+        data, manifest, source = _build_allies_from_game_files(force_refresh=bool(force_refresh), game_path_str=game_path_str)
         return resp(True, data=data, source=source, meta={"cache": manifest})
     except Exception as build_error:
         message = str(build_error)
@@ -175,6 +182,6 @@ def get_allies_data(force_refresh: bool = False):
 
 @eel.expose
 @standardize_response
-def sync_allies_data():
-    data, manifest, source = _build_allies_from_game_files(force_refresh=True)
+def sync_allies_data(game_path_str: str = ""):
+    data, manifest, source = _build_allies_from_game_files(force_refresh=True, game_path_str=game_path_str)
     return resp(True, data={"source": source, "cache": manifest})

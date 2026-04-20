@@ -32,6 +32,16 @@ def detect_first_glyph_install() -> Path:
     raise RuntimeError("No valid Glyph Trove installation was detected.")
 
 
+def resolve_game_install(game_path: str | Path | None = None) -> Path:
+    if game_path is not None:
+        candidate = Path(str(game_path).strip())
+        if str(candidate).strip():
+            if candidate.exists() and candidate.joinpath("Trove.exe").exists():
+                return candidate
+            raise RuntimeError(f"Selected Trove installation is invalid: {candidate}")
+    return detect_first_glyph_install()
+
+
 def read_leb128(buffer: BinaryReader, pos: int) -> int:
     result = 0
     shift = 0

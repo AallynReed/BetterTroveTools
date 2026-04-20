@@ -15,6 +15,18 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
+        <div class="codexes-install-picker">
+            <label>{{ t('Game Installation') }}</label>
+            <div class="codexes-install-row">
+                <custom-vue-select v-model="selectedGamePath" :options="installOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
+                <button class="secondary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                    <i class="fa-solid fa-folder-open"></i>
+                </button>
+                <button class="secondary-btn" @click="refreshGamePaths" :title="t('Refresh Detected Games')">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </div>
         <div v-if="dataSourceText" class="search-stats cache-status">{{ dataSourceText }}</div>
         <div class="codex-warning-banner">
             <i class="fa-solid fa-triangle-exclamation"></i>

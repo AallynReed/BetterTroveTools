@@ -1,9 +1,38 @@
 @import url('./gems_and_builds/index.css');
 
+.codexes-install-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: min(720px, 100%);
+}
+
+.codexes-install-picker label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+.codexes-install-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 #codexes-vue-app .tabs-container {
     margin: 0;
 }
 
 #codexes-vue-app .tab-content {
     padding: 0;
+}
+
+@media (max-width: 900px) {
+    .codexes-install-picker {
+        min-width: 100%;
+    }
+
+    .codexes-install-row {
+        flex-wrap: wrap;
+    }
 }

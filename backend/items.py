@@ -7,7 +7,7 @@ from pathlib import Path
 import eel
 
 from backend.response import resp, standardize_response
-from models.trove.prefab_ally import detect_first_glyph_install
+from models.trove.prefab_ally import resolve_game_install
 from models.trove.prefab_item import build_items_dataset
 
 
@@ -75,8 +75,11 @@ def _cache_age_seconds(manifest: dict) -> int | None:
     return max(0, int(time.time() - generated_at))
 
 
-def _cache_is_fresh(manifest: dict) -> bool:
+def _cache_is_fresh(manifest: dict, game_path: Path) -> bool:
     if int(manifest.get("cache_schema_version", 0) or 0) != ITEMS_CACHE_SCHEMA_VERSION:
+        return False
+    manifest_game_path = str(manifest.get("game_path", "")).strip()
+    if manifest_game_path and Path(manifest_game_path) != game_path:
         return False
     age = _cache_age_seconds(manifest)
     return age is not None and age < ITEMS_CACHE_EXPIRY_SECONDS
@@ -87,12 +90,11 @@ def _write_cached_items(data: dict, manifest: dict) -> None:
     _items_cache_manifest_file().write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
-def _build_items_from_game_files(force_refresh: bool = False) -> tuple[dict, dict, str]:
+def _build_items_from_game_files(force_refresh: bool = False, game_path_str: str = "") -> tuple[dict, dict, str]:
+    game_path = resolve_game_install(game_path_str)
     cached_data, cached_manifest = _read_cached_items()
-    if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest):
+    if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest, game_path):
         return cached_data, cached_manifest, "game-cache"
-
-    game_path = detect_first_glyph_install()
     last_error = None
     for root in _cache_root_candidates():
         try:
@@ -134,9 +136,9 @@ def clear_items_cache():
 
 @eel.expose
 @standardize_response
-def get_items_data(force_refresh: bool = False):
+def get_items_data(force_refresh: bool = False, game_path_str: str = ""):
     try:
-        data, manifest, source = _build_items_from_game_files(force_refresh=bool(force_refresh))
+        data, manifest, source = _build_items_from_game_files(force_refresh=bool(force_refresh), game_path_str=game_path_str)
         cache_file = _items_cache_file()
         cache_url = f"/api/cache/{cache_file.name}" if cache_file.exists() else ""
         return resp(
