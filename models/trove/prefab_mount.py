@@ -15,6 +15,7 @@ from models.trove.prefab_ally import (
     load_multiplier_file_map,
     parse_item_pet_signature,
     read_archive_content,
+    require_prefabs_root,
     resolve_blueprint_catalog_path,
     resolve_localized_value,
 )
@@ -43,7 +44,7 @@ def item_mount_key_from_prefab_path(prefab_path: str) -> str:
 
 
 def load_collection_mount_category_map(game_path: Path) -> dict[str, str]:
-    prefabs_root = game_path / "prefabs"
+    prefabs_root = require_prefabs_root(game_path)
     target_file = "collections/collection_mount.binfab"
     for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
         if full_path.replace("\\", "/").lower() != target_file:
@@ -133,7 +134,7 @@ def choose_mount_blueprint(parsed: dict) -> str:
 
 
 async def find_mount_prefabs(game_path: Path) -> list[dict]:
-    prefabs_root = game_path / "prefabs"
+    prefabs_root = require_prefabs_root(game_path)
     matches = []
     for tfi_path, prefab_path, file_data in iter_index_entries(prefabs_root):
         lowered = prefab_path.lower()
@@ -153,7 +154,7 @@ async def find_mount_prefabs(game_path: Path) -> list[dict]:
 
 
 async def find_item_mount_prefabs(game_path: Path) -> list[dict]:
-    prefabs_root = game_path / "prefabs"
+    prefabs_root = require_prefabs_root(game_path)
     matches = []
     for tfi_path, prefab_path, file_data in iter_index_entries(prefabs_root):
         lowered = prefab_path.lower()

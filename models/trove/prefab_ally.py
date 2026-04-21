@@ -95,6 +95,13 @@ def iter_index_entries(root: Path):
             yield tfi_path, full_path.replace("\\", "/"), entry
 
 
+def require_prefabs_root(game_path: Path) -> Path:
+    prefabs_root = game_path / "prefabs"
+    if not prefabs_root.exists():
+        raise RuntimeError(f"Prefabs directory was not found: {prefabs_root}")
+    return prefabs_root
+
+
 def ally_key_from_prefab_path(prefab_path: str) -> str:
     normalized = prefab_path.replace("\\", "/")
     if normalized.lower().startswith(PREFAB_PREFIX):
@@ -314,9 +321,7 @@ def resolve_blueprint_catalog_path(blueprint: str, blueprint_map: dict[str, obje
 
 
 async def find_pet_prefabs(game_path: Path) -> list[dict]:
-    prefabs_root = game_path / "prefabs"
-    if not prefabs_root.exists():
-        raise RuntimeError(f"Prefabs directory was not found: {prefabs_root}")
+    prefabs_root = require_prefabs_root(game_path)
 
     matches = []
     for tfi_path, prefab_path, file_data in iter_index_entries(prefabs_root):
@@ -338,9 +343,7 @@ async def find_pet_prefabs(game_path: Path) -> list[dict]:
 
 
 async def find_item_pet_prefabs(game_path: Path) -> list[dict]:
-    prefabs_root = game_path / "prefabs"
-    if not prefabs_root.exists():
-        raise RuntimeError(f"Prefabs directory was not found: {prefabs_root}")
+    prefabs_root = require_prefabs_root(game_path)
 
     matches = []
     for tfi_path, prefab_path, file_data in iter_index_entries(prefabs_root):

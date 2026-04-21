@@ -11,6 +11,7 @@ from models.trove.prefab_ally import (
     load_blueprint_path_map,
     load_language_map,
     read_archive_content,
+    require_prefabs_root,
     resolve_blueprint_catalog_path,
     resolve_localized_value,
 )
@@ -58,7 +59,7 @@ def pretty_name_from_path(path: str) -> str:
 
 
 def build_prefab_entry_map(game_path: Path) -> dict[str, dict]:
-    prefabs_root = game_path / "prefabs"
+    prefabs_root = require_prefabs_root(game_path)
     mapping: dict[str, dict] = {}
     for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
         mapping[full_path.lower()] = {

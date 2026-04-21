@@ -14,6 +14,7 @@ from models.trove.prefab_ally import (
     load_language_map,
     load_multiplier_file_map,
     read_archive_content,
+    require_prefabs_root,
     resolve_blueprint_catalog_path,
     resolve_localized_value,
 )
@@ -262,7 +263,7 @@ def infer_memento_biome_name(
 
 
 def load_collection_memento_category_map(game_path: Path) -> dict[str, str]:
-    prefabs_root = game_path / "prefabs"
+    prefabs_root = require_prefabs_root(game_path)
     target_file = "collections/collection_memento.binfab"
     for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
         if full_path.replace("\\", "/").lower() != target_file:
@@ -291,7 +292,7 @@ def load_memento_multipliers_map(game_path: Path) -> dict[str, dict]:
 
 
 async def find_memento_prefabs(game_path: Path) -> list[dict]:
-    prefabs_root = game_path / "prefabs"
+    prefabs_root = require_prefabs_root(game_path)
     matches = []
     for tfi_path, prefab_path, file_data in iter_index_entries(prefabs_root):
         lowered = prefab_path.lower()

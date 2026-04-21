@@ -32,6 +32,10 @@
             <i class="fa-solid fa-triangle-exclamation"></i>
             <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
         </div>
+        <div v-if="loadError && loadError.includes('Prefabs directory was not found:')" class="codex-warning-banner" style="background: rgba(255, 85, 85, 0.12); border-color: rgba(255, 85, 85, 0.35); color: #ffd7d7;">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ loadError }}</span>
+        </div>
 
         <div class="filters-row">
             <div class="filter-group" style="flex: 0.7;">
@@ -42,7 +46,7 @@
 
         <div class="search-stats">
             <span v-if="isLoading">{{ t('Loading recipes from game files. This may take a few seconds...') }}</span>
-            <span v-else-if="loadError" style="color: #ff5555; font-weight: bold;">{{ loadError }}</span>
+            <span v-else-if="loadError && !loadError.includes('Prefabs directory was not found:')" style="color: #ff5555; font-weight: bold;">{{ loadError }}</span>
             <span v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" style="color: #ff9800; font-weight: bold;">{{ t('Minimum 3 characters to search...') }}</span>
             <span v-else>{{ t('Showing {from}-{to} of {count} filtered recipes ({total} total)').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{count}', filteredRecipes.length).replace('{total}', recipesData.length) }}</span>
         </div>
