@@ -39,6 +39,7 @@ _DELVE_WEEK_CACHE = {}
 _DELVE_HTTP = requests.Session()
 _DELVE_HTTP.trust_env = False
 
+DELVE_SERVER_OFFSET = ServerTime().trove_time
 DELVE_ROTATION_BASE = datetime(2025, 11, 3, tzinfo=UTC)
 DELVE_ROTATION_URL = "https://trovesaurus.aallyn.net/delve_rotations/{week_id}"
 DELVE_CACHE_TTL_SECONDS = 30 * 60
@@ -84,7 +85,8 @@ def _finish_external_request(req_id, success):
 
 
 def _get_current_delve_week_id(now=None):
-    current = now or datetime.now(UTC)
+    # Delve rotations roll over on Trove server reset, not raw UTC midnight.
+    current = (now or datetime.now(UTC)) - DELVE_SERVER_OFFSET
     elapsed = current - DELVE_ROTATION_BASE
     return max(1, int(elapsed.total_seconds() // (7 * 24 * 60 * 60)) + 1)
 
@@ -92,7 +94,7 @@ def _get_current_delve_week_id(now=None):
 def _get_delve_week_window(week_id: int):
     start = DELVE_ROTATION_BASE + timedelta(weeks=max(0, week_id - 1))
     end = start + timedelta(weeks=1)
-    return start, end
+    return start + DELVE_SERVER_OFFSET, end + DELVE_SERVER_OFFSET
 
 
 def _normalize_delve_enemy(enemy):
@@ -144,10 +146,9 @@ def _normalize_delve_depth(depth):
 def _extract_delve_payload(payload):
     if not isinstance(payload, dict):
         return {}
-    data = payload.get("data")
-    if isinstance(data, dict) and isinstance(data.get("depths"), list):
-        return data
-    return payload
+    if isinstance(payload.get("depths"), list):
+        return payload
+    return {}
 
 
 def _fetch_delve_week(week_id: int, current_week_id: int | None = None):
