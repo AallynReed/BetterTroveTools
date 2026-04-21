@@ -35,6 +35,13 @@ RSS_NAMESPACES = {
 
 _HOME_FETCH_GENERATION = 0
 _HOME_FETCH_TASKS = set()
+_DELVE_WEEK_CACHE = {}
+_DELVE_HTTP = requests.Session()
+_DELVE_HTTP.trust_env = False
+
+DELVE_ROTATION_BASE = datetime(2025, 11, 3, tzinfo=UTC)
+DELVE_ROTATION_URL = "https://trovesaurus.aallyn.net/delve_rotations/{week_id}"
+DELVE_CACHE_TTL_SECONDS = 30 * 60
 
 
 def _home_generation() -> int:
@@ -74,6 +81,116 @@ def _finish_external_request(req_id, success):
         eel.remove_external_request(req_id, success)()
     except Exception:
         pass
+
+
+def _get_current_delve_week_id(now=None):
+    current = now or datetime.now(UTC)
+    elapsed = current - DELVE_ROTATION_BASE
+    return max(1, int(elapsed.total_seconds() // (7 * 24 * 60 * 60)) + 1)
+
+
+def _get_delve_week_window(week_id: int):
+    start = DELVE_ROTATION_BASE + timedelta(weeks=max(0, week_id - 1))
+    end = start + timedelta(weeks=1)
+    return start, end
+
+
+def _normalize_delve_enemy(enemy):
+    if not isinstance(enemy, dict):
+        return {"name": "Unknown", "bans": [], "count": 0}
+    return {
+        "name": enemy.get("n", "Unknown"),
+        "bans": enemy.get("b") or [],
+        "count": enemy.get("c", 0),
+    }
+
+
+def _normalize_delve_depth(depth):
+    enemies = [_normalize_delve_enemy(enemy) for enemy in depth.get("enemies", [])]
+    rooms = []
+    for room_index, room in enumerate(depth.get("roomDetails", []), start=1):
+        if not isinstance(room, dict):
+            continue
+        enemy_index = room.get("e")
+        enemy = enemies[enemy_index] if isinstance(enemy_index, int) and 0 <= enemy_index < len(enemies) else None
+        rooms.append({
+            "room": room_index,
+            "enemyIndex": enemy_index,
+            "enemy": enemy,
+        })
+
+    boss = depth.get("boss") or {}
+    return {
+        "id": depth.get("id"),
+        "depth": depth.get("depth"),
+        "biome": depth.get("biome"),
+        "zone": depth.get("zone"),
+        "boss": {
+            "name": boss.get("n", "Unknown"),
+            "bans": boss.get("b") or [],
+        },
+        "objective": depth.get("objective"),
+        "objectiveText": depth.get("objectiveText"),
+        "killType": depth.get("killType"),
+        "killAmount": depth.get("killAmount"),
+        "killString": depth.get("killString"),
+        "isVaultFloor": bool(depth.get("isVaultFloor")),
+        "submittedBy": depth.get("submittedBy"),
+        "enemies": enemies,
+        "rooms": rooms,
+    }
+
+
+def _extract_delve_payload(payload):
+    if not isinstance(payload, dict):
+        return {}
+    data = payload.get("data")
+    if isinstance(data, dict) and isinstance(data.get("depths"), list):
+        return data
+    return payload
+
+
+def _fetch_delve_week(week_id: int, current_week_id: int | None = None):
+    current_week_id = current_week_id or _get_current_delve_week_id()
+    if week_id < 1 or week_id > current_week_id:
+        return None
+
+    cached = _DELVE_WEEK_CACHE.get(week_id)
+    now_ts = datetime.now(UTC).timestamp()
+    if cached and cached["data"].get("depthCount", 0) > 0 and (now_ts - cached["fetched_at"]) < DELVE_CACHE_TTL_SECONDS:
+        return cached["data"]
+
+    start, end = _get_delve_week_window(week_id)
+    try:
+        response = _DELVE_HTTP.get(
+            DELVE_ROTATION_URL.format(week_id=week_id),
+            timeout=15,
+            headers={"User-Agent": "BetterTroveTools/1.0"},
+        )
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        payload = _extract_delve_payload(response.json())
+    except Exception:
+        if cached:
+            return cached["data"]
+        raise
+
+    week_data = {
+        "weekId": week_id,
+        "isCurrent": week_id == current_week_id,
+        "start": int(start.timestamp()),
+        "end": int(end.timestamp()),
+        "depths": [_normalize_delve_depth(depth) for depth in payload.get("depths", [])],
+    }
+    week_data["depthCount"] = len(week_data["depths"])
+    week_data["hasData"] = week_data["depthCount"] > 0
+
+    _DELVE_WEEK_CACHE[week_id] = {
+        "fetched_at": now_ts,
+        "data": week_data,
+    }
+    return week_data
 
 
 @eel.expose
@@ -882,6 +999,48 @@ def get_wild_mana_rotation():
         "future": future_rots,
     }
     return resp(True, data=data, **data)
+
+
+@eel.expose
+@standardize_response
+def get_delve_status():
+    try:
+        current_week_id = _get_current_delve_week_id()
+        start, end = _get_delve_week_window(current_week_id)
+        data = {
+            "currentWeekId": current_week_id,
+            "start": int(start.timestamp()),
+            "end": int(end.timestamp()),
+        }
+        return resp(True, data=data, **data)
+    except Exception as e:
+        traceback.print_exc()
+        return resp(False, error=str(e), code="DELVE_STATUS_FAILED")
+
+
+@eel.expose
+@standardize_response
+def get_delve_rotation():
+    try:
+        current_week_id = _get_current_delve_week_id()
+        weeks = []
+        for week_id in range(current_week_id, 0, -1):
+            week_data = _fetch_delve_week(week_id, current_week_id=current_week_id)
+            if week_data is not None and week_data.get("hasData"):
+                weeks.append(week_data)
+
+        if not weeks:
+            return resp(False, error="No delve data found", code="DELVE_ROTATION_NOT_FOUND")
+
+        data = {
+            "currentWeekId": current_week_id,
+            "current": next((week for week in weeks if week.get("isCurrent")), weeks[0]),
+            "weeks": weeks,
+        }
+        return resp(True, data=data, **data)
+    except Exception as e:
+        traceback.print_exc()
+        return resp(False, error=str(e), code="DELVE_ROTATION_FAILED")
 
 
 @eel.expose

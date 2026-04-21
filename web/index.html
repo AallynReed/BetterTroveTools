@@ -30,30 +30,30 @@
         <div id="external-request-indicator" class="network-status-indicator" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true">
             <i class="fa-solid fa-wifi" :class="{ 'fa-fade': hasActive }"></i>
         </div>
-        <div id="request-log-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center;" :style="{ display: networkState.isModalOpen ? 'flex' : 'none' }" @click.self="networkState.isModalOpen = false">
-            <div style="background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); border-radius: 8px; width: 80%; max-width: 800px; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.7);">
-                <div style="padding: 15px 20px; border-bottom: 1px solid var(--border-color, #444c5e); display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0; color: var(--text-main, #fff); font-size: 1.2em;"><i class="fa-solid fa-list"></i> <span>{{ t('External Request Log') }}</span></h2>
-                    <div>
-                        <button @click="copyLog" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em; margin-right: 15px;" :title="t('Copy entire log')"><i class="fa-regular fa-copy"></i></button>
-                        <button @click="networkState.isModalOpen = false" style="background: transparent; border: none; color: var(--text-muted, #a3adc2); cursor: pointer; font-size: 1.2em;"><i class="fa-solid fa-xmark"></i></button>
+        <div id="request-log-modal" class="app-overlay request-log-overlay" :style="{ display: networkState.isModalOpen ? 'flex' : 'none' }" @click.self="networkState.isModalOpen = false">
+            <div class="app-modal-card request-log-card">
+                <div class="app-modal-header">
+                    <h2 class="app-modal-title"><i class="fa-solid fa-list"></i> <span>{{ t('External Request Log') }}</span></h2>
+                    <div class="app-modal-actions">
+                        <button @click="copyLog" class="icon-btn" :title="t('Copy entire log')"><i class="fa-regular fa-copy"></i></button>
+                        <button @click="networkState.isModalOpen = false" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
-                <div id="request-log-content" style="padding: 20px; overflow-y: auto; flex: 1; color: var(--text-muted, #a3adc2); font-family: monospace; font-size: 0.9em;">
-                    <div v-if="networkState.fullLog.length === 0" style="text-align: center; padding: 20px;">{{ t('No requests made yet.') }}</div>
-                    <ul v-else style="list-style: none; padding: 0; margin: 0;">
-                        <li v-for="req in reversedLog" :key="req.id || req.time.getTime()" style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                            <span style="color: #666;">[{{ formatTime(req.time) }}]</span> 
-                            <span v-if="req.status === 'active'" style="color: var(--accent-blue);" :title="t('Active')"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
-                            <span v-else-if="req.status === 'error'" style="color: #ff5555;" :title="t('Failed')"><i class="fa-solid fa-xmark"></i></span>
-                            <span v-else style="color: #4ade80;" :title="t('Done')"><i class="fa-solid fa-check"></i></span>
+                <div id="request-log-content" class="request-log-content">
+                    <div v-if="networkState.fullLog.length === 0" class="ui-state ui-state-empty ui-state-compact">{{ t('No requests made yet.') }}</div>
+                    <ul v-else class="request-log-list">
+                        <li v-for="req in reversedLog" :key="req.id || req.time.getTime()" class="request-log-entry">
+                            <span class="request-log-time">[{{ formatTime(req.time) }}]</span> 
+                            <span v-if="req.status === 'active'" class="request-log-status is-active" :title="t('Active')"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                            <span v-else-if="req.status === 'error'" class="request-log-status is-error" :title="t('Failed')"><i class="fa-solid fa-xmark"></i></span>
+                            <span v-else class="request-log-status is-success" :title="t('Done')"><i class="fa-solid fa-check"></i></span>
                             
                             <template v-if="req.label === req.url">
-                                <span class="clickable-log-url" style="color: var(--text-muted, rgba(255,255,255,0.6)); word-break: break-word; cursor: pointer;" @click="copyUrl(req.url)" :title="t('Click to copy URL')">{{ req.label }}</span>
+                                <span class="clickable-log-url request-log-url" @click="copyUrl(req.url)" :title="t('Click to copy URL')">{{ req.label }}</span>
                             </template>
                             <template v-else>
-                                <span style="color: var(--text-main, #fff); word-break: break-word;">{{ req.label }}</span>
-                                <br><span class="clickable-log-url" style="font-size: 0.85em; color: var(--text-muted, rgba(255,255,255,0.6)); margin-left: 20px; display: inline-block; word-break: break-all; cursor: pointer;" @click="copyUrl(req.url)" :title="t('Click to copy URL')">↳ {{ req.url }}</span>
+                                <span class="request-log-label">{{ req.label }}</span>
+                                <br><span class="clickable-log-url request-log-url request-log-url-secondary" @click="copyUrl(req.url)" :title="t('Click to copy URL')">↳ {{ req.url }}</span>
                             </template>
                         </li>
                     </ul>
@@ -111,7 +111,7 @@
             </li>
         </ul>
 
-        <ul class="menu" style="margin-top: auto; margin-bottom: 15px;">
+        <ul class="menu sidebar-footer-menu">
             <li>
                 <button class="nav-btn" data-target="settings">
                     <i class="fa-solid fa-gear nav-icon"></i>
@@ -161,10 +161,10 @@
     </nav>
 
     <main id="view-container">
-        <h1 style="padding: 40px; color: #666;" data-i18n>Select a tool from the menu.</h1>
+        <h1 class="view-placeholder" data-i18n>Select a tool from the menu.</h1>
     </main>
 
-    <div id="server-time-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10005; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div id="server-time-modal" class="app-overlay app-overlay-blur" style="display: none;">
         <div class="server-time-modal-card">
             <div class="server-time-modal-header">
                 <div>
@@ -228,15 +228,15 @@
         </div>
     </div>
 
-    <div id="command-palette-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 100000; backdrop-filter: blur(4px); align-items: flex-start; justify-content: center; padding-top: 12vh;">
-        <div id="command-palette" style="background: var(--bg-panel, #1d232b); border: 1px solid var(--accent-blue, #5ec6ff); width: 90%; max-width: 600px; border-radius: 8px; box-shadow: 0 15px 50px rgba(0,0,0,0.7); overflow: hidden; display: flex; flex-direction: column;">
-            <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color, #444c5e);">
-                <i class="fa-solid fa-magnifying-glass" style="color: var(--accent-blue, #5ec6ff); margin-right: 15px; font-size: 1.2em;"></i>
-                <input type="text" id="cmd-input" placeholder="Search commands or jump to tool..." style="flex: 1; background: transparent; border: none; color: #fff; font-size: 1.1em; outline: none;">
-                <div style="font-size: 0.7em; color: var(--text-muted, #a3adc2); background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 4px; font-weight: bold;">ESC</div>
+    <div id="command-palette-overlay" class="app-overlay app-overlay-blur app-overlay-top" style="display: none;">
+        <div id="command-palette" class="command-palette">
+            <div class="command-palette-header">
+                <i class="fa-solid fa-magnifying-glass command-palette-icon"></i>
+                <input type="text" id="cmd-input" placeholder="Search commands or jump to tool..." class="command-palette-input">
+                <div class="command-palette-kbd">ESC</div>
             </div>
-            <div id="cmd-results" style="max-height: 400px; overflow-y: auto; padding: 10px 0;"></div>
-            <div class="shortcut-hint-row" style="padding: 10px 14px; border-top: 1px solid var(--border-color, #444c5e);">
+            <div id="cmd-results" class="command-palette-results"></div>
+            <div class="shortcut-hint-row command-palette-footer">
                 <span class="shortcut-kbd">Ctrl/Cmd+K</span><span>Open</span>
                 <span class="shortcut-kbd">↑/↓</span><span>Navigate</span>
                 <span class="shortcut-kbd">Enter</span><span>Open</span>

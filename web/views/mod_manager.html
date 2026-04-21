@@ -3,7 +3,7 @@
     <link rel="stylesheet" href="css/trovesaurus.css">
 </head>
 
-<div id="mod-manager-unified-root" class="file-manager-container" style="padding-top: 22px;">
+<div id="mod-manager-unified-root" class="file-manager-container mod-manager-root">
     <div class="mm-tabs-container">
         <div class="mm-tab-buttons">
             <button class="mm-tab-btn active" data-mm-tab="mod_manager">
@@ -19,10 +19,10 @@
     <section class="mm-tab-content active" data-mm-panel="mod_manager">
         <div id="mod-manager-vue-app" class="file-manager-container" style="padding: 0;" v-cloak>
             <div class="mod-toolbar">
-                <div class="toolbar-cluster toolbar-cluster-install">
+                <div class="toolbar-cluster toolbar-cluster-install toolbar-cluster-primary">
                     <div class="toolbar-cluster-label">{{ t('Current Trove Path') }}</div>
                     <div class="toolbar-cluster-actions">
-                        <custom-vue-select v-model="selectedInstall" :options="installOptions" :translate-options="false" style="flex-grow: 1;"></custom-vue-select>
+                        <custom-vue-select v-model="selectedInstall" :options="installOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>
                         <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('Open Selected Game Folder')" :disabled="!selectedInstall || isLoading">
                             <i class="fa-solid fa-folder-open"></i>
                             <span>{{ t('Open Folder') }}</span>
@@ -30,7 +30,7 @@
                     </div>
                 </div>
 
-                <div class="toolbar-cluster">
+                <div class="toolbar-cluster toolbar-cluster-primary">
                     <div class="toolbar-cluster-label">{{ t('Refresh') }}</div>
                     <div class="toolbar-cluster-actions">
                         <button @click="scanForGames" class="primary-btn" :title="t('Refresh Detected Games')">
@@ -50,9 +50,12 @@
                     </div>
                 </div>
 
-                <div class="toolbar-cluster toolbar-cluster-repair">
-                    <div class="toolbar-cluster-label">{{ t('Maintenance') }}</div>
-                    <div class="toolbar-cluster-actions">
+                <details class="toolbar-cluster toolbar-cluster-advanced">
+                    <summary class="toolbar-cluster-summary">
+                        <span class="toolbar-cluster-label">{{ t('Maintenance') }}</span>
+                        <span class="toolbar-cluster-summary-copy">{{ t('Advanced actions') }}</span>
+                    </summary>
+                    <div class="toolbar-cluster-actions toolbar-cluster-actions-advanced">
                         <button @click="fixNames" class="primary-btn" :title="t('Rename files to match Mod internal names')" style="background: var(--accent-blue);" :disabled="isFixingNames || !selectedInstall">
                             <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Processing...') }}</template>
                             <template v-else><i class="fa-solid fa-tag"></i> {{ t('Fix Names') }}</template>
@@ -63,19 +66,21 @@
                             <template v-else><i class="fa-solid fa-broom"></i> {{ t('Clear Cache') }}</template>
                         </button>
                     </div>
-                </div>
+                </details>
             </div>
 
             <div class="search-filter-bar">
-                <div class="search-wrapper">
+                <div class="search-wrapper search-wrapper-primary">
                     <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" id="mod-search-input" v-model="searchQuery" :placeholder="t('Search mods by name or author...')">
                 </div>
 
-                <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
-                <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
+                <div class="search-result-nav">
+                    <button class="secondary-btn" @click="prevSearchResult" :title="t('Previous result (Arrow Up)')"><i class="fa-solid fa-arrow-up"></i></button>
+                    <button class="secondary-btn" @click="nextSearchResult" :title="t('Next result (Arrow Down)')"><i class="fa-solid fa-arrow-down"></i></button>
+                </div>
 
-                <div style="width: 200px;">
+                <div class="mod-filter-select">
                     <custom-vue-select v-model="filterStatus" :options="statusOptions"></custom-vue-select>
                 </div>
 
@@ -105,10 +110,10 @@
                 </button>
             </div>
 
-            <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ statusText }}</div>
-            <div v-else-if="!selectedInstall" class="placeholder-box">{{ t('Select a game installation to view installed mods.') }}</div>
-            <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('No mods found in the selected directory.') }}</div>
-            <div v-else-if="filteredMods.length === 0" class="placeholder-box no-results-message">{{ t('No mods match your current filters.') }}</div>
+            <div v-if="isLoading" class="placeholder-box ui-state ui-state-loading"><i class="fa-solid fa-spinner fa-spin"></i> {{ statusText }}</div>
+            <div v-else-if="!selectedInstall" class="placeholder-box ui-state ui-state-empty">{{ t('Select a game installation to view installed mods.') }}</div>
+            <div v-else-if="mods.length === 0" class="placeholder-box ui-state ui-state-empty">{{ t('No mods found in the selected directory.') }}</div>
+            <div v-else-if="filteredMods.length === 0" class="placeholder-box ui-state ui-state-empty no-results-message">{{ t('No mods match your current filters.') }}</div>
             <div v-else>
                 <div class="mod-grid">
                     <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)">

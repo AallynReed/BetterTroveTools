@@ -36,6 +36,33 @@
     color: #fff;
 }
 
+.section-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+}
+
+.section-title-reset {
+    margin: 0;
+}
+
+.section-spaced {
+    margin-top: 40px;
+}
+
+.section-icon-accent {
+    color: var(--accent-blue);
+}
+
+.section-icon-warm {
+    color: #f3b64b;
+}
+
+.section-icon-success {
+    color: #4caf50;
+}
+
 .community-panel {
     padding: 14px 16px;
     border: 1px solid rgba(255,255,255,0.08);
@@ -162,6 +189,21 @@
     background: rgba(0,0,0,0.12);
     border: 1px dashed rgba(255,255,255,0.12);
     border-radius: 10px;
+}
+
+.community-empty-icon {
+    font-size: 32px;
+    opacity: 0.4;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.community-empty-copy {
+    font-size: 14px;
+}
+
+.verified-badge {
+    color: #5ec6ff;
 }
 
 .news-panel {
@@ -423,7 +465,59 @@
 .buff-list { margin: 0; padding-left: 18px; list-style-type: square; }
 .buff-list li { font-size: 0.8em; color: #fff; margin-bottom: 3px; line-height: 1.25; }
 
+.buff-column-icon-muted {
+    opacity: 0.5;
+}
+
+.buff-content-padded {
+    padding: 15px;
+}
+
 .merchants-grid { display: flex; flex-direction: column; gap: 8px; }
+
+.merchant-info-fill {
+    width: 100%;
+}
+
+.merchant-biomes {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.merchant-card.is-clickable {
+    cursor: pointer;
+}
+
+.merchant-card-chaos {
+    --merchant-color: #ab47bc;
+}
+
+.merchant-icon-plain {
+    background: transparent;
+}
+
+.merchant-item-image {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.merchant-name-chaos {
+    color: #ab47bc;
+}
+
+.merchant-warning-icon {
+    color: #fbc02d;
+    font-size: 0.8em;
+    margin-left: 8px;
+    cursor: help;
+}
+
+.event-card-clickable {
+    cursor: pointer;
+}
 
 .calendar-spotlight {
     margin-top: 8px;
@@ -449,6 +543,11 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
+}
+
+.modal-content-wide {
+    max-width: 95%;
+    width: 1200px;
 }
 
 .calendar-spotlight-title {
@@ -684,6 +783,11 @@
     flex-direction: column;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content.modal-content-wide {
+    width: min(96vw, 1400px);
+    max-width: 96vw;
 }
 
 .modal-header {
@@ -1194,6 +1298,191 @@
 
 #home-vue-app .news-card:hover {
     background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.1), rgba(10, 14, 21, 0.38));
+}
+
+.delve-weeks {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.delve-week-card,
+.delve-depth-card {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+    overflow: hidden;
+}
+
+.delve-depth-card-vault {
+    border-color: rgba(255, 202, 40, 0.7);
+    box-shadow: inset 0 0 0 1px rgba(255, 202, 40, 0.18), 0 0 14px rgba(255, 202, 40, 0.12);
+}
+
+.delve-week-summary,
+.delve-depth-summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 10px 12px;
+}
+
+.delve-week-summary::-webkit-details-marker,
+.delve-depth-summary::-webkit-details-marker {
+    display: none;
+}
+
+.delve-week-title,
+.delve-week-meta,
+.delve-depth-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.delve-week-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f3e5f5;
+}
+
+.delve-week-meta,
+.delve-depth-subheading,
+.delve-depth-objective {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+.delve-week-meta {
+    margin-top: 4px;
+}
+
+.delve-current-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f3e5f5;
+    color: #5d2a67;
+    border: 1px solid rgba(93, 42, 103, 0.18);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.delve-depth-list {
+    padding: 0 10px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.delve-depth-heading {
+    justify-content: flex-start;
+}
+
+.delve-depth-heading-inline {
+    flex-wrap: wrap;
+    row-gap: 4px;
+}
+
+.delve-depth-value {
+    font-weight: 700;
+    color: #fff;
+    font-size: 0.92rem;
+}
+
+.delve-depth-separator {
+    color: rgba(255, 255, 255, 0.28);
+    font-size: 0.8rem;
+}
+
+.delve-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+.delve-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 3px 7px;
+    font-size: 0.68rem;
+    background: rgba(171, 71, 188, 0.14);
+    color: #f1d7f6;
+    border: 1px solid rgba(171, 71, 188, 0.28);
+}
+
+.delve-depth-body {
+    padding: 0 12px 12px;
+    display: grid;
+    gap: 8px;
+}
+
+.delve-block {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding-top: 8px;
+}
+
+.delve-block-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #cba8d4;
+    margin-bottom: 6px;
+}
+
+.delve-boss-name,
+.delve-enemy-name,
+.delve-room-number {
+    font-weight: 600;
+    color: #fff;
+}
+
+.delve-enemy-list,
+.delve-room-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px;
+}
+
+.delve-enemy-item,
+.delve-room-pill {
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 7px 9px;
+    min-height: 0;
+}
+
+.delve-enemy-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.delve-enemy-count {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.delve-room-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.delve-room-enemy {
+    color: var(--text-muted);
+    text-align: right;
+    font-size: 0.8rem;
 }
 
 #home-vue-app .media-tabs {

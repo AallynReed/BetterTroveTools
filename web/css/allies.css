@@ -21,6 +21,100 @@
     margin-bottom: 30px;
 }
 
+.codex-toolbar {
+    margin-bottom: 15px;
+}
+
+.codex-search-row {
+    align-items: stretch;
+    margin-bottom: 12px;
+}
+
+.codex-search-input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.codex-toolbar-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.codex-toolbar-actions .primary-btn,
+.codex-toolbar-actions .secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.codex-install-picker {
+    margin-bottom: 12px;
+}
+
+.codex-install-select {
+    flex: 1;
+}
+
+.codex-advanced-actions {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: 4px;
+    padding-top: 12px;
+}
+
+.codex-advanced-actions summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+.codex-advanced-actions summary::-webkit-details-marker {
+    display: none;
+}
+
+.codex-advanced-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+.codex-advanced-action-btn {
+    width: auto;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.codex-search-help {
+    color: var(--text-muted);
+    font-size: 0.84em;
+    line-height: 1.4;
+    flex: 1 1 240px;
+}
+
+.codex-warning-banner-error {
+    background: rgba(255, 85, 85, 0.12);
+    border-color: rgba(255, 85, 85, 0.35);
+    color: #ffd7d7;
+}
+
+.filter-group-compact {
+    flex: 0.7;
+}
+
+.filter-group-narrow {
+    flex: 0.5;
+}
+
+.search-stats-summary {
+    padding: 2px 2px 0;
+}
+
 .codex-warning-banner {
     display: flex;
     align-items: center;
@@ -446,4 +540,26 @@
 .allies-pagination .secondary-btn:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+    .codex-toolbar-actions {
+        width: 100%;
+    }
+
+    .codex-toolbar-actions .primary-btn,
+    .codex-toolbar-actions .secondary-btn,
+    .codex-advanced-grid > button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .codex-advanced-action-btn {
+        width: 100%;
+    }
+
+    .filter-group-compact,
+    .filter-group-narrow {
+        flex: 1 1 100%;
+    }
 }

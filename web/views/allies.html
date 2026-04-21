@@ -3,36 +3,45 @@
 </head>
 <div id="allies-vue-app" class="allies-container" v-cloak>
     <div class="search-section">
-        <div class="search-bar-wrapper">
-            <div style="position: relative; flex: 1;">
+        <div class="codex-toolbar panel-card">
+            <div class="search-bar-wrapper codex-search-row">
+                <div class="codex-search-input-wrap">
                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
                 <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nauthor: (or designer:)\nname:\nability:\ndesc:\ncategory:\n\nExample: author:&quot;Trove Team&quot; ability:jump')" :placeholder="t(`Search by name or keyword (e.g., 'Clownish' or 'nearby enemy')...`)" id="ally-search-input">
+                </div>
+                <div class="codex-toolbar-actions">
+                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <span>{{ t('Open Folder') }}</span>
+                    </button>
+                    <button class="secondary-btn" @click="refreshGamePaths" :title="t('Refresh Detected Games')">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>{{ t('Refresh Paths') }}</span>
+                    </button>
+                </div>
             </div>
-            <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear ally cache and rebuild from game files')">
-                <i class="fa-solid fa-broom"></i>
-            </button>
-            <button @click="resetFilters" class="btn-reset-filters" :title="t('Clear All Filters')">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-        <div class="codexes-install-picker">
-            <label>{{ t('Game Installation') }}</label>
-            <div class="codexes-install-row">
-                <custom-vue-select v-model="selectedGamePath" :options="installOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
-                <button class="secondary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
-                    <i class="fa-solid fa-folder-open"></i>
-                </button>
-                <button class="secondary-btn" @click="refreshGamePaths" :title="t('Refresh Detected Games')">
-                    <i class="fa-solid fa-arrows-rotate"></i>
-                </button>
+            <div class="codexes-install-picker codex-install-picker">
+                <label>{{ t('Game Installation') }}</label>
+                <div class="codexes-install-row">
+                    <custom-vue-select v-model="selectedGamePath" :options="installOptions" :translate-options="false" class="codex-install-select"></custom-vue-select>
+                </div>
             </div>
+            <details class="codex-advanced-actions">
+                <summary>{{ t('More Actions') }}</summary>
+                <div class="codex-advanced-grid">
+                    <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear ally cache and rebuild from game files')">
+                        <i class="fa-solid fa-broom"></i>
+                        <span>{{ t('Rebuild Cache') }}</span>
+                    </button>
+                </div>
+            </details>
+            <div v-if="dataSourceText" class="search-stats cache-status">{{ dataSourceText }}</div>
         </div>
-        <div v-if="dataSourceText" class="search-stats cache-status">{{ dataSourceText }}</div>
         <div class="codex-warning-banner">
             <i class="fa-solid fa-triangle-exclamation"></i>
             <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
         </div>
-        <div v-if="loadError && loadError.includes('Prefabs directory was not found:')" class="codex-warning-banner" style="background: rgba(255, 85, 85, 0.12); border-color: rgba(255, 85, 85, 0.35); color: #ffd7d7;">
+        <div v-if="loadError && loadError.includes('Prefabs directory was not found:')" class="codex-warning-banner codex-warning-banner-error">
             <i class="fa-solid fa-triangle-exclamation"></i>
             <span>{{ loadError }}</span>
         </div>
@@ -59,7 +68,7 @@
         </div>
         
         <div class="filters-row">
-            <div class="filter-group" style="flex: 0.5;">
+            <div class="filter-group filter-group-narrow">
                 <label>{{ t('Category') }}</label>
                 <custom-vue-select v-model="selectedCategory" :options="categoryOptions"></custom-vue-select>
             </div>
@@ -75,11 +84,20 @@
             </div>
         </div>
 
-        <div class="search-stats">
-            <span v-if="isLoading">{{ t('Loading allies from game files. This may take a few seconds...') }}</span>
-            <span v-else-if="loadError && !loadError.includes('Prefabs directory was not found:')" style="color: #ff5555; font-weight: bold;">{{ loadError }}</span>
-            <span v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" style="color: #ff9800; font-weight: bold;">{{ t('Minimum 3 characters to search...') }}</span>
-            <span v-else>{{ t('Showing {from}-{to} of {count} filtered allies ({total} total)').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{count}', filteredAllies.length).replace('{total}', alliesData.length) }}</span>
+        <div v-if="isLoading" class="ui-state ui-state-loading ui-state-compact">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>{{ t('Loading allies from game files. This may take a few seconds...') }}</span>
+        </div>
+        <div v-else-if="loadError && !loadError.includes('Prefabs directory was not found:')" class="ui-state ui-state-error ui-state-compact">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ loadError }}</span>
+        </div>
+        <div v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" class="ui-state ui-state-warning ui-state-compact">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>{{ t('Minimum 3 characters to search...') }}</span>
+        </div>
+        <div v-else class="search-stats search-stats-summary">
+            <span>{{ t('Showing {from}-{to} of {count} filtered allies ({total} total)').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{count}', filteredAllies.length).replace('{total}', alliesData.length) }}</span>
         </div>
     </div>
 

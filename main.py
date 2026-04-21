@@ -11,6 +11,7 @@ from pathlib import Path
 import bottle
 import eel
 import requests
+from gevent.exceptions import ConcurrentObjectUseError
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
@@ -153,6 +154,45 @@ def clean_chromium_startup(exe_path):
     except Exception as e:
         print(f"⚠️ Failed to check/remove startup registry keys: {e}")
 
+def install_safe_eel_websocket():
+    def safe_websocket(ws):
+        for js_function in eel._js_functions:
+            eel._import_js_function(js_function)
+
+        page = bottle.request.query.page
+        if page not in eel._mock_queue_done:
+            for call in eel._mock_queue:
+                eel._repeated_send(ws, eel._safe_json(call))
+            eel._mock_queue_done.add(page)
+
+        eel._websockets += [(page, ws)]
+
+        try:
+            while True:
+                try:
+                    msg = ws.receive()
+                except (ConcurrentObjectUseError, BlockingIOError, OSError):
+                    break
+
+                if msg is None:
+                    break
+
+                message = eel.jsn.loads(msg)
+                eel.spawn(eel._process_message, message, ws)
+        finally:
+            try:
+                eel._websockets.remove((page, ws))
+            except ValueError:
+                pass
+            try:
+                eel._websocket_close(page)
+            except Exception:
+                pass
+
+    eel._websocket = safe_websocket
+    eel.BOTTLE_ROUTES["/eel"] = (safe_websocket, dict(apply=[eel.wbs.websocket]))
+
+
 register_btt_protocol()
 startup_url = check_single_instance_and_send_ipc()
 start_ipc_server()
@@ -280,6 +320,7 @@ else:
     print("✅ Starting app...")
 
 eel.browsers.set_path('chrome', chromium_path)
+install_safe_eel_websocket()
 
 eel.init(os.path.join(base_dir, 'web'))
 

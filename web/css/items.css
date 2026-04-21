@@ -1,6 +1,96 @@
 @import url('./allies.css');
 @import url('./recipes.css');
 
+.items-toolbar {
+    margin-bottom: 15px;
+}
+
+.items-search-row {
+    align-items: stretch;
+    margin-bottom: 12px;
+}
+
+.items-search-input-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.items-toolbar-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.items-toolbar-actions .primary-btn,
+.items-toolbar-actions .secondary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.items-install-picker {
+    margin-bottom: 12px;
+}
+
+.items-install-select {
+    flex: 1;
+}
+
+.advanced-actions-panel {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: 4px;
+    padding-top: 12px;
+}
+
+.advanced-actions-panel summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+.advanced-actions-panel summary::-webkit-details-marker {
+    display: none;
+}
+
+.advanced-actions-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+.advanced-action-btn {
+    width: auto;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.items-search-help {
+    color: var(--text-muted);
+    font-size: 0.84em;
+    line-height: 1.4;
+    flex: 1 1 240px;
+}
+
+.codex-warning-banner-error {
+    background: rgba(255, 85, 85, 0.12);
+    border-color: rgba(255, 85, 85, 0.35);
+    color: #ffd7d7;
+}
+
+.filter-group-compact {
+    flex: 0.7;
+}
+
+.search-stats-summary {
+    padding: 2px 2px 0;
+}
+
 #item-search-input {
     width: 100%;
     background: rgba(0, 0, 0, 0.3);
@@ -41,4 +131,25 @@
 .item-footer {
     flex-wrap: wrap;
     gap: 10px;
+}
+
+@media (max-width: 900px) {
+    .items-toolbar-actions {
+        width: 100%;
+    }
+
+    .items-toolbar-actions .primary-btn,
+    .items-toolbar-actions .secondary-btn,
+    .advanced-actions-grid > button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .advanced-action-btn {
+        width: 100%;
+    }
+
+    .filter-group-compact {
+        flex: 1 1 100%;
+    }
 }

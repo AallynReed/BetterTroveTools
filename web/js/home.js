@@ -64,6 +64,7 @@ document.addEventListener('home_loaded', () => {
             const merchants = ref({});
             const stampy = ref(null);
             const d15 = ref(null);
+            const delve = ref(null);
             const gardening = ref(null);
             const mana = ref(null);
             const chaosChest = ref(null);
@@ -79,7 +80,8 @@ document.addEventListener('home_loaded', () => {
             
             const rotationModal = reactive({
                 show: false, titleHtml: '', color: '', iconClass: '', type: 'list',
-                list: [], d15Cols: [], d15Rows: [], d15ShowFinalName: true, d15AllExpanded: false
+                list: [], d15Cols: [], d15Rows: [], d15ShowFinalName: true, d15AllExpanded: false,
+                delveWeeks: [], delveCurrentWeekId: null, isLoading: false, error: ''
             });
 
             const openUrl = (url) => eel.open_url_in_browser(url)();
@@ -179,6 +181,30 @@ document.addEventListener('home_loaded', () => {
                     ? window.I18nManager.currentLocale.replace('_', '-')
                     : 'en-US';
                 return toDisplayDate(ts).toLocaleString(locale, options);
+            };
+
+            const formatDateRange = (startTs, endTs) => {
+                const start = formatDisplayDate(startTs * 1000, { month: 'short', day: 'numeric' });
+                const end = formatDisplayDate(endTs * 1000, { month: 'short', day: 'numeric' });
+                return `${start} - ${end}`;
+            };
+
+            const formatDelveWeekRange = (startTs, endTs) => {
+                const locale = (window.I18nManager && window.I18nManager.currentLocale)
+                    ? window.I18nManager.currentLocale.replace('_', '-')
+                    : 'en-US';
+                const formatOptions = { weekday: 'long', month: 'short', day: 'numeric', timeZone: 'UTC' };
+                const monday = new Date(startTs * 1000).toLocaleString(locale, formatOptions);
+                const sundayTs = endTs - 86400;
+                const sunday = new Date(sundayTs * 1000).toLocaleString(locale, formatOptions);
+                return `${monday} through ${sunday}`;
+            };
+
+            const getDelveWeekHeading = (week) => {
+                if (!week) return '';
+                if (week.isCurrent) return t("This Week's");
+                if (rotationModal.delveCurrentWeekId && week.weekId === rotationModal.delveCurrentWeekId - 1) return t('Last Week');
+                return formatDelveWeekRange(week.start, week.end);
             };
 
             const displayDateKey = (input) => {
@@ -375,6 +401,19 @@ document.addEventListener('home_loaded', () => {
                     cards.push({ type: 'biome', id: 'mana', name: 'Wild Trovian Mana', color: '#00bcd4', iconClass: 'fa-flask', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(mana.value.current.end, false)}</b>`), biomes: mana.value.current.biomes });
                 }
 
+                if (delve.value && delve.value.currentWeekId) {
+                    cards.push({
+                        type: 'delve',
+                        id: 'delve',
+                        name: 'Delve Index',
+                        color: '#ab47bc',
+                        iconClass: 'fa-dungeon',
+                        active: true,
+                        statusText: 'WEEK',
+                        timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(delve.value.end, false)}</b>`)
+                    });
+                }
+
                 return cards;
             });
 
@@ -421,14 +460,15 @@ document.addEventListener('home_loaded', () => {
                 eel.get_trovesaurus_events()();
                 
                 try {
-                    const [sd, d15d, manad, schedulesd, stampyd, chaosd, gardend] = await Promise.all([
+                    const [sd, d15d, manad, schedulesd, stampyd, chaosd, gardend, delvestatus] = await Promise.all([
                         eel.get_current_server_data()(),
                         eel.get_d15_rotation()(),
                         eel.get_wild_mana_rotation()(),
                         eel.get_merchant_schedules()(),
                         eel.get_stampy_rotation()(),
                         eel.get_chaos_chest_data()(),
-                        eel.get_gardening_rotation()()
+                        eel.get_gardening_rotation()(),
+                        eel.get_delve_status()()
                     ]);
 
                     if (sd && sd.success) {
@@ -442,6 +482,7 @@ document.addEventListener('home_loaded', () => {
                     if (stampyd?.success) stampy.value = stampyd;
                     if (chaosd?.success) chaosChest.value = chaosd;
                     if (gardend?.success) gardening.value = gardend;
+                    if (delvestatus?.success) delve.value = delvestatus;
                 } catch(e) {}
                 if (isDisposed) return;
                 serverData.loading = false;
@@ -503,10 +544,14 @@ document.addEventListener('home_loaded', () => {
                 }
             };
 
-            const openMerchantSchedule = (card) => {
+            const openMerchantSchedule = async (card) => {
                 rotationModal.color = card.color;
                 rotationModal.titleHtml = `<i class="fa-solid ${card.iconClass}" style="color: ${card.color};"></i> ${t("Upcoming {name} Schedule").replace("{name}", t(card.name))}`;
                 rotationModal.list = [];
+                rotationModal.isLoading = false;
+                rotationModal.error = '';
+                rotationModal.delveWeeks = [];
+                rotationModal.delveCurrentWeekId = null;
                 
                 const locale = (window.I18nManager && window.I18nManager.currentLocale) ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
                 
@@ -613,6 +658,24 @@ document.addEventListener('home_loaded', () => {
                     rotationModal.d15Rows = rows;
                     rotationModal.d15AllExpanded = false;
                     rotationModal.d15ShowFinalName = false;
+                } else if (card.type === 'delve') {
+                    rotationModal.type = 'delve';
+                    rotationModal.titleHtml = `<i class="fa-solid fa-dungeon" style="color: ${card.color};"></i> ${t('Delve Index')}`;
+                    rotationModal.isLoading = true;
+                    rotationModal.show = true;
+                    try {
+                        const delveData = await eel.get_delve_rotation()();
+                        if (!delveData?.success) {
+                            throw new Error(delveData?.error || 'Failed to load delve rotation');
+                        }
+                        rotationModal.delveWeeks = delveData.weeks || [];
+                        rotationModal.delveCurrentWeekId = delveData.currentWeekId || null;
+                    } catch (e) {
+                        rotationModal.error = e?.message || 'Failed to load delve rotation';
+                    } finally {
+                        rotationModal.isLoading = false;
+                    }
+                    return;
                 }
                 
                 rotationModal.show = true;
@@ -874,7 +937,7 @@ document.addEventListener('home_loaded', () => {
                 scrollCarousel, scrollNewsCarousel, toggleNewsCollapsed, openUrl, openBuffSchedule, openMerchantSchedule,
                 rotationModal, calendarModal, calendarData, loadYearlyCalendar, centerCalendarToday,
                 timelineWrapperRef, isDraggingTimeline, startDrag, onDrag, stopDrag, onWheel,
-                filteredCalendarTracks, calendarViewFilter, jumpToCalendarTarget,
+                filteredCalendarTracks, calendarViewFilter, jumpToCalendarTarget, formatDisplayDate, formatDelveWeekRange, getDelveWeekHeading, getCountdown,
                 timeMode
             };
         }
