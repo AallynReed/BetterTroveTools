@@ -39,8 +39,13 @@ document.addEventListener('file_manager_loaded', () => {
             let fileCache = [];
             let fullFileTree = {};
             let fileIdCounter = 0;
+            let totalFileBytes = 0;
+            let bulkSelectionMode = 'none';
+            let bulkSelectionExceptions = new Set();
             
             const isSearching = ref(false);
+            const isSearchPending = ref(false);
+            const isSelectionPending = ref(false);
             const searchQuery = ref('');
             const searchCountText = ref('');
             let searchTimeout = null;
@@ -290,9 +295,13 @@ document.addEventListener('file_manager_loaded', () => {
                 
                 fileCache = [];
                 fileIdCounter = 0;
+                totalFileBytes = 0;
                 fullFileTree = {};
+                bulkSelectionMode = 'none';
+                bulkSelectionExceptions = new Set();
                 searchQuery.value = '';
                 isSearching.value = false;
+                isSearchPending.value = false;
                 selectedFilesCount.value = 0;
                 selectedFilesSize.value = 0;
 
@@ -322,7 +331,17 @@ document.addEventListener('file_manager_loaded', () => {
                                     const fullPath = currentPath ? `${currentPath}/${fileNode.name}` : fileNode.name;
                                     fileNode.id = id;
                                     fileNode.fullPath = fullPath;
-                                    fileCache.push({ id, name: fileNode.name.toLowerCase(), path: fullPath.toLowerCase(), fullPath });
+                                    totalFileBytes += fileNode.size || 0;
+                                    fileCache.push({
+                                        id,
+                                        name: fileNode.name.toLowerCase(),
+                                        path: fullPath.toLowerCase(),
+                                        fullPath,
+                                        archive: fileNode.archive_index,
+                                        offset: fileNode.offset,
+                                        tfi: fileNode.tfi_parent,
+                                        size: fileNode.size || 0
+                                    });
                                 }
                             }
                             if (node.children) {
@@ -398,9 +417,10 @@ document.addEventListener('file_manager_loaded', () => {
             const buildFileItemHTML = (fileNode, fullPath) => {
                 const id = fileNode.id;
                 const sizeStr = fileNode.size > 1048576 ? (fileNode.size / 1048576).toFixed(2) + ' MB' : (fileNode.size / 1024).toFixed(2) + ' KB';
+                const isChecked = bulkSelectionMode === 'all' && !bulkSelectionExceptions.has(fullPath);
                 return `<div class="file-item" id="${id}">
                     <div class="checkbox-container">
-                        <input type="checkbox" class="file-check" data-archive="${fileNode.archive_index}" data-offset="${fileNode.offset}" data-tfi="${fileNode.tfi_parent}" data-size="${fileNode.size}" data-filepath="${fullPath}">
+                        <input type="checkbox" class="file-check" ${isChecked ? 'checked' : ''} data-archive="${fileNode.archive_index}" data-offset="${fileNode.offset}" data-tfi="${fileNode.tfi_parent}" data-size="${fileNode.size}" data-filepath="${fullPath}">
                         <div class="file-label">
                             <span class="file-name"><i class="fa-regular fa-file"></i> ${fileNode.name}</span>
                         </div>
@@ -451,6 +471,20 @@ document.addEventListener('file_manager_loaded', () => {
                 }
                 contentElement.innerHTML = childrenHTML;
                 details.dataset.populated = 'true';
+                if (bulkSelectionMode === 'all') {
+                    const content = details.querySelector('.folder-content');
+                    if (content) {
+                        content.querySelectorAll('input[type="checkbox"]').forEach((box) => {
+                            if (box.classList.contains('file-check')) {
+                                box.checked = !bulkSelectionExceptions.has(box.getAttribute('data-filepath'));
+                            } else {
+                                box.checked = true;
+                                box.indeterminate = false;
+                            }
+                        });
+                    }
+                    syncFolderCheckboxStates();
+                }
             };
 
             const onTreeToggle = (e) => {
@@ -464,33 +498,147 @@ document.addEventListener('file_manager_loaded', () => {
                 }
             };
 
-            const onTreeChange = (e) => {
-                if (e.target.classList.contains('folder-check')) {
-                    const isChecked = e.target.checked;
-                    const details = e.target.closest('details');
-                    
-                    if (isChecked) {
-                        const queue = [details];
-                        while(queue.length > 0) {
-                            const current = queue.shift();
-                            populateNode(current);
-                            const childDetails = current.querySelectorAll(':scope > .folder-content > details');
-                            childDetails.forEach(child => queue.push(child));
-                        }
+            const syncFolderCheckboxStates = () => {
+                if (!treeContainerRef.value) return;
+                const allDetails = Array.from(treeContainerRef.value.querySelectorAll('details'));
+
+                allDetails.reverse().forEach((details) => {
+                    const folderCheckbox = details.querySelector(':scope > summary .folder-check');
+                    const content = details.querySelector(':scope > .folder-content');
+                    if (!folderCheckbox || !content) return;
+
+                    const childCheckboxes = Array.from(
+                        content.querySelectorAll(':scope > .file-item .file-check, :scope > details > summary .folder-check')
+                    );
+
+                    if (childCheckboxes.length === 0) {
+                        folderCheckbox.checked = false;
+                        folderCheckbox.indeterminate = false;
+                        return;
                     }
 
-                    const content = e.target.closest('details').querySelector('.folder-content');
-                    content.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = isChecked);
+                    const allChecked = childCheckboxes.every((box) => box.checked);
+                    const anyChecked = childCheckboxes.some((box) => box.checked || box.indeterminate);
+
+                    folderCheckbox.checked = allChecked;
+                    folderCheckbox.indeterminate = anyChecked && !allChecked;
+                });
+            };
+
+            const updateSelectionSummary = () => {
+                if (bulkSelectionMode === 'all') {
+                    let excludedBytes = 0;
+                    bulkSelectionExceptions.forEach((fullPath) => {
+                        const file = fileCache.find((entry) => entry.fullPath === fullPath);
+                        if (file) excludedBytes += file.size;
+                    });
+                    selectedFilesCount.value = Math.max(0, fileCache.length - bulkSelectionExceptions.size);
+                    selectedFilesSize.value = Math.max(0, totalFileBytes - excludedBytes);
+                    return;
                 }
 
-                let totalFiles = 0, totalBytes = 0;
+                if (!treeContainerRef.value) {
+                    selectedFilesCount.value = 0;
+                    selectedFilesSize.value = 0;
+                    return;
+                }
+
+                let totalFiles = 0;
+                let totalBytes = 0;
                 treeContainerRef.value.querySelectorAll('.file-check:checked').forEach(box => {
                     totalFiles++;
                     totalBytes += parseInt(box.getAttribute('data-size'));
                 });
-                
+
                 selectedFilesCount.value = totalFiles;
                 selectedFilesSize.value = totalBytes;
+            };
+
+            const getFileMatchesForDetails = (details) => {
+                const path = details?.dataset?.path || '';
+                const isFilesGroup = details?.dataset?.isFilesGroup === 'true';
+
+                return fileCache.filter((file) => {
+                    if (isFilesGroup) {
+                        const parentPath = file.fullPath.includes('/') ? file.fullPath.substring(0, file.fullPath.lastIndexOf('/')) : '';
+                        return parentPath === path;
+                    }
+                    return path ? file.fullPath.startsWith(`${path}/`) : true;
+                });
+            };
+
+            const yieldToUI = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+            const runSelectionMutation = async (work) => {
+                isSelectionPending.value = true;
+                await nextTick();
+                await yieldToUI();
+                try {
+                    await work();
+                } finally {
+                    syncFolderCheckboxStates();
+                    updateSelectionSummary();
+                    await nextTick();
+                    isSelectionPending.value = false;
+                }
+            };
+
+            const onTreeChange = async (e) => {
+                if (isSelectionPending.value) {
+                    return;
+                }
+
+                if (e.target.classList.contains('folder-check')) {
+                    await runSelectionMutation(async () => {
+                        const isChecked = e.target.checked;
+                        e.target.indeterminate = false;
+                        const details = e.target.closest('details');
+                        
+                        if (isChecked) {
+                            const queue = [details];
+                            let processedNodes = 0;
+                            while(queue.length > 0) {
+                                const current = queue.shift();
+                                populateNode(current);
+                                const childDetails = current.querySelectorAll(':scope > .folder-content > details');
+                                childDetails.forEach(child => queue.push(child));
+                                processedNodes++;
+                                if (processedNodes % 25 === 0) {
+                                    await yieldToUI();
+                                }
+                            }
+                        }
+
+                        const content = e.target.closest('details').querySelector('.folder-content');
+                        content.querySelectorAll('input[type="checkbox"]').forEach(box => box.checked = isChecked);
+
+                        if (bulkSelectionMode === 'all') {
+                            const matchingFiles = getFileMatchesForDetails(details);
+                            matchingFiles.forEach((file) => {
+                                if (isChecked) {
+                                    bulkSelectionExceptions.delete(file.fullPath);
+                                } else {
+                                    bulkSelectionExceptions.add(file.fullPath);
+                                }
+                            });
+                        }
+                    });
+                    return;
+                }
+
+                if (e.target.classList.contains('file-check') && bulkSelectionMode === 'all') {
+                    const fullPath = e.target.getAttribute('data-filepath');
+                    if (fullPath) {
+                        if (e.target.checked) {
+                            bulkSelectionExceptions.delete(fullPath);
+                        } else {
+                            bulkSelectionExceptions.add(fullPath);
+                        }
+                    }
+                }
+
+                syncFolderCheckboxStates();
+                updateSelectionSummary();
             };
 
             const collapseAll = () => {
@@ -506,25 +654,48 @@ document.addEventListener('file_manager_loaded', () => {
             };
 
             const clearSelectedFiles = () => {
+                bulkSelectionMode = 'none';
+                bulkSelectionExceptions = new Set();
                 if (treeContainerRef.value) {
                     treeContainerRef.value.querySelectorAll('input[type="checkbox"]').forEach(b => {
                         b.checked = false;
+                        b.indeterminate = false;
                     });
                 }
-                selectedFilesCount.value = 0;
-                selectedFilesSize.value = 0;
+                syncFolderCheckboxStates();
+                updateSelectionSummary();
             };
 
             const selectVisible = () => {
-                if (!treeContainerRef.value) return;
-                const fileCheckboxes = isSearching.value 
-                    ? treeContainerRef.value.querySelectorAll('.file-item.is-match .file-check')
-                    : treeContainerRef.value.querySelectorAll('.file-check');
+                if (!treeContainerRef.value || !isSearching.value) return;
+                const fileCheckboxes = treeContainerRef.value.querySelectorAll('.file-item.is-match .file-check');
 
                 if (fileCheckboxes.length === 0) return;
                 const shouldCheck = Array.from(fileCheckboxes).some(cb => !cb.checked);
                 fileCheckboxes.forEach(cb => cb.checked = shouldCheck);
-                treeContainerRef.value.dispatchEvent(new Event('change', { bubbles: true }));
+                fileCheckboxes[0].dispatchEvent(new Event('change', { bubbles: true }));
+            };
+
+            const selectAllFiles = () => {
+                if (!treeContainerRef.value || fileCache.length === 0) return;
+                const shouldCheck = selectedFilesCount.value !== fileCache.length;
+
+                if (!shouldCheck) {
+                    clearSelectedFiles();
+                    return;
+                }
+
+                runSelectionMutation(async () => {
+                    bulkSelectionMode = 'all';
+                    bulkSelectionExceptions = new Set();
+                    treeContainerRef.value.querySelectorAll('.file-check').forEach((box) => {
+                        box.checked = true;
+                    });
+                    treeContainerRef.value.querySelectorAll('.folder-check').forEach((box) => {
+                        box.checked = true;
+                        box.indeterminate = false;
+                    });
+                });
             };
 
             const clearSearch = () => {
@@ -622,7 +793,10 @@ document.addEventListener('file_manager_loaded', () => {
             const applySearch = () => {
                 const term = searchQuery.value.toLowerCase().trim();
 
-                if (!treeContainerRef.value) return;
+                if (!treeContainerRef.value) {
+                    isSearchPending.value = false;
+                    return;
+                }
 
                 resetSearchClasses();
                 searchMatchIds.value = [];
@@ -630,6 +804,7 @@ document.addEventListener('file_manager_loaded', () => {
 
                 if (term.length < 4) {
                     isSearching.value = false;
+                    isSearchPending.value = false;
                     searchCountText.value = term.length > 0 ? t("Minimum 4 characters required...") : "";
                     return;
                 }
@@ -653,11 +828,19 @@ document.addEventListener('file_manager_loaded', () => {
                 }
 
                 searchCountText.value = `${t("Found")} ${matches.length} ${t("matches")}`;
+                isSearchPending.value = false;
             };
 
             const debouncedSearch = () => {
                 clearTimeout(searchTimeout);
                 if (!treeContainerRef.value) return;
+
+                const term = searchQuery.value.toLowerCase().trim();
+                isSearchPending.value = term.length >= 4;
+                if (term.length < 4) {
+                    applySearch();
+                    return;
+                }
 
                 searchTimeout = setTimeout(() => {
                     applySearch();
@@ -673,13 +856,23 @@ document.addEventListener('file_manager_loaded', () => {
                 const destDir = destDirResp?.value ?? destDirResp?.data?.value ?? destDirResp;
                 if (!destDir) return;
 
-                const filesToExtract = Array.from(treeContainerRef.value.querySelectorAll('.file-check:checked')).map(box => ({
-                    tfi: box.getAttribute('data-tfi'),
-                    archive: parseInt(box.getAttribute('data-archive')),
-                    offset: parseInt(box.getAttribute('data-offset')),
-                    size: parseInt(box.getAttribute('data-size')),
-                    filepath: box.getAttribute('data-filepath')
-                }));
+                const filesToExtract = bulkSelectionMode === 'all'
+                    ? fileCache
+                        .filter((file) => !bulkSelectionExceptions.has(file.fullPath))
+                        .map((file) => ({
+                            tfi: file.tfi,
+                            archive: parseInt(file.archive),
+                            offset: parseInt(file.offset),
+                            size: parseInt(file.size),
+                            filepath: file.fullPath
+                        }))
+                    : Array.from(treeContainerRef.value.querySelectorAll('.file-check:checked')).map(box => ({
+                        tfi: box.getAttribute('data-tfi'),
+                        archive: parseInt(box.getAttribute('data-archive')),
+                        offset: parseInt(box.getAttribute('data-offset')),
+                        size: parseInt(box.getAttribute('data-size')),
+                        filepath: box.getAttribute('data-filepath')
+                    }));
 
                 filesToExtract.sort((a, b) => a.tfi.localeCompare(b.tfi) || a.archive - b.archive);
 
@@ -1014,11 +1207,11 @@ document.addEventListener('file_manager_loaded', () => {
                 installs, installOptions, selectedInstall, selectedTrackerGame, scanForGames,
                 openSelectedInstallFolder, openSelectedTrackerGameFolder, openSelectedTrackingDirFolder,
                 treeContainerRef, isTreeLoaded, isLoadingTree, treePlaceholderText, loadTree,
-                searchQuery, searchCountText, isSearching, debouncedSearch, clearSearch, nextSearchMatch, prevSearchMatch,
+                searchQuery, searchCountText, isSearching, isSearchPending, isSelectionPending, debouncedSearch, clearSearch, nextSearchMatch, prevSearchMatch,
                 focusSearchInput,
                 showSearchShortcutHint, dismissSearchShortcutHint,
                 showOnboardingTips, dismissOnboardingTips, showTrackerOnboardingTips, dismissTrackerOnboardingTips,
-                onTreeToggle, onTreeChange, collapseAll, selectVisible,
+                onTreeToggle, onTreeChange, collapseAll, selectVisible, selectAllFiles,
                 selectedFilesCount, selectedFilesSize, isMassExtracting, massExtract, clearSelectedFiles, progress,
                 trackingDirs, trackingDirOptions, selectedTrackingDir, runCatalogMode, showTrackerAdvanced,
                 trackerStatus, trackerStatusColor, trackerNextAction, isTrackerWorking, isAnyOperationRunning, isExplorerWorking, buildBaseline, scanUpdates, cancelTrackerOperation,

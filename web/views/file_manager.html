@@ -26,7 +26,15 @@
                 <button @click="collapseAll" class="primary-btn" :title="t('Collapse All Folders')" :disabled="isAnyOperationRunning || !isTreeLoaded">
                     <i class="fa-solid fa-folder-minus"></i> <span>{{ t('Collapse') }}</span>
                 </button>
-                <button @click="selectVisible" class="primary-btn" :disabled="isAnyOperationRunning || !isTreeLoaded">
+                <button @click="selectAllFiles" class="primary-btn" :disabled="isAnyOperationRunning || isSelectionPending || !isTreeLoaded">
+                    <i class="fa-solid fa-check-to-slot"></i> <span>{{ t('Select All') }}</span>
+                </button>
+                <button
+                    @click="selectVisible"
+                    class="primary-btn"
+                    :class="{ 'is-filter-required': !isSearching }"
+                    :title="isSearching ? t('Select only the currently filtered files') : t('Select Visible requires an active search filter')"
+                    :disabled="isAnyOperationRunning || isSelectionPending || !isTreeLoaded || !isSearching">
                     <i class="fa-solid fa-check-double"></i> <span>{{ t('Select Visible') }}</span>
                 </button>
             </div>
@@ -66,7 +74,15 @@
                 </button>
             </div>
             
-            <div id="file-tree" ref="treeContainerRef" @toggle.capture="onTreeToggle" @change="onTreeChange" :class="{ searching: isSearching }"></div>
+            <div class="file-tree-shell">
+                <div id="file-tree" ref="treeContainerRef" @toggle.capture="onTreeToggle" @change="onTreeChange" :class="{ searching: isSearching }"></div>
+                <div v-if="isSearchPending || isSelectionPending" class="file-tree-busy-overlay is-blocking">
+                    <div class="file-tree-busy-card">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>{{ isSelectionPending ? t('Applying selection...') : t('Searching files...') }}</span>
+                    </div>
+                </div>
+            </div>
 
             <div v-show="!isTreeLoaded" class="placeholder-box">
                 <h3 v-if="isLoadingTree"><i class="fa-solid fa-spinner fa-spin"></i> {{ treePlaceholderText }}</h3>

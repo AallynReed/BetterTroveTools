@@ -120,7 +120,41 @@ select:focus { border-color: var(--accent-blue); }
     margin-bottom: 10px;
 }
 
+.file-tree-shell { position: relative; }
 .file-tree { text-align: left; font-size: 14px; background: var(--bg-panel); padding: 10px; border-radius: 0 0 8px 8px; border: 1px solid var(--border-color); max-height: 70vh; overflow-y: auto; contain: content; }
+.file-tree-busy-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 18px;
+    background: linear-gradient(180deg, rgba(7, 11, 18, 0.58), rgba(7, 11, 18, 0.18));
+    border-radius: 0 0 8px 8px;
+    pointer-events: none;
+}
+
+.file-tree-busy-overlay.is-blocking {
+    pointer-events: auto;
+}
+
+.file-tree-busy-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: rgba(10, 16, 24, 0.9);
+    border: 1px solid rgba(var(--accent-rgb), 0.28);
+    color: var(--text-main);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.file-tree-busy-card .fa-spinner {
+    color: var(--accent-blue);
+}
 details.folder { margin: 2px 0; }
 details.folder > summary, details.files-group > summary { cursor: pointer; padding: 6px 10px; border-radius: 4px; user-select: none; color: var(--text-main); font-weight: 500; list-style: none; display: flex; align-items: center; justify-content: space-between; }
 .lazy-placeholder { color: var(--text-muted); padding: 10px 20px; font-style: italic; }
@@ -168,6 +202,24 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 
 .file-controls { flex-wrap: wrap; align-items: center; }
 .file-controls .custom-select-wrapper { flex: 1 1 360px; min-width: 260px; }
+.file-controls .primary-btn:disabled {
+    opacity: 0.45;
+    filter: grayscale(0.35);
+    cursor: not-allowed;
+}
+
+.file-controls .primary-btn.is-filter-required:disabled {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(255, 255, 255, 0.08),
+        rgba(255, 255, 255, 0.08) 8px,
+        rgba(255, 255, 255, 0.03) 8px,
+        rgba(255, 255, 255, 0.03) 16px
+    );
+    border: 1px dashed rgba(255, 255, 255, 0.22);
+    color: rgba(255, 255, 255, 0.72);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
 
 @media (max-width: 900px) {
     .file-manager-container { padding: 20px; }
