@@ -920,11 +920,24 @@
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 6px;
-    padding: 10px;
+    padding: 7px;
     display: flex;
     flex-direction: column;
     gap: 6px;
     transition: border-color 0.2s, background 0.2s;
+}
+
+.schedule-expand-toggle {
+    text-align: center;
+    margin-top: auto;
+    opacity: 0.32;
+    padding-top: 0;
+    line-height: 0;
+}
+
+.schedule-expand-toggle .expand-icon {
+    font-size: 0.62rem;
+    line-height: 0;
 }
 
 .schedule-slot:hover {
