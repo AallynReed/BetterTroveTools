@@ -423,6 +423,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     let isAppUpdateStarting = false;
+    const updateOverlayEl = document.getElementById('app-update-overlay');
+    const updateOverlayTitleEl = document.getElementById('app-update-overlay-title');
+    const updateOverlayMessageEl = document.getElementById('app-update-overlay-message');
+    const setAppUpdateOverlay = (visible, message = '', title = '') => {
+        if (!updateOverlayEl) return;
+        if (title && updateOverlayTitleEl) updateOverlayTitleEl.textContent = title;
+        if (message && updateOverlayMessageEl) updateOverlayMessageEl.textContent = message;
+        updateOverlayEl.style.display = visible ? 'flex' : 'none';
+        document.body.classList.toggle('app-update-active', !!visible);
+    };
 
     try {
         const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('Looking for updates') });
@@ -511,32 +521,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                         isAppUpdateStarting = true;
                         updateButton.disabled = true;
+                        setAppUpdateOverlay(
+                            true,
+                            t('Downloading the installer and preparing the update. Please keep the app open for a moment.'),
+                            t('Updating Better Trove Tools')
+                        );
 
                         try {
-                            const runner = window.JobQueue && typeof window.JobQueue.run === 'function'
-                                ? window.JobQueue.run.bind(window.JobQueue)
-                                : async ({ task }) => task();
-
-                            const response = await runner({
-                                label: t('Updating app to v{version}').replace('{version}', latestVersion),
-                                meta: { details: t('Downloading installer and preparing update...') },
-                                task: async () => window.callBackend(
-                                    eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
-                                    t('Failed to start self-update')
-                                )
-                            });
+                            const response = await window.callBackend(
+                                eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
+                                t('Failed to start self-update')
+                            );
 
                             if (!response.success) {
                                 throw new Error(response.error || t('Failed to start self-update'));
                             }
 
-                            window.showToast(t('Installer downloaded. The app will close to finish the update and reopen after installation.'), false, {
-                                durationMs: 6000,
-                                closeable: true
-                            });
+                            setAppUpdateOverlay(
+                                true,
+                                t('Closing the app window and starting the installer. The app will reopen automatically when the update finishes.'),
+                                t('Installing Update')
+                            );
+
+                            try {
+                                await window.callBackend(
+                                    eel.finalize_self_update_exit(2.2)(),
+                                    t('Failed to close app for update')
+                                );
+                            } catch {}
+
+                            setTimeout(() => {
+                                try { window.close(); } catch {}
+                            }, 100);
+                            setTimeout(() => {
+                                try {
+                                    window.location.replace('about:blank');
+                                } catch {}
+                            }, 350);
                         } catch (err) {
                             isAppUpdateStarting = false;
                             updateButton.disabled = false;
+                            setAppUpdateOverlay(false);
                             window.showToast(String(err?.message || err || t('Failed to start self-update')), true, {
                                 actionLabel: t('Open Release'),
                                 onAction: async () => eel.open_url_in_browser(updateTarget.html_url)()

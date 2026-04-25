@@ -283,6 +283,16 @@ def _schedule_process_exit(delay_seconds=1.5):
 
 
 @eel.expose
+def finalize_self_update_exit(delay_seconds=1.5):
+    try:
+        delay = float(delay_seconds)
+    except Exception:
+        delay = 1.5
+    _schedule_process_exit(max(0.2, delay))
+    return {"success": True}
+
+
+@eel.expose
 def start_self_update(download_url, version_tag="", asset_name=""):
     if sys.platform != "win32":
         return {"success": False, "error": "Self-update is only supported on Windows."}
@@ -344,7 +354,6 @@ def start_self_update(download_url, version_tag="", asset_name=""):
             close_fds=True,
         )
 
-        _schedule_process_exit()
         return {
             "success": True,
             "data": {

@@ -81,6 +81,19 @@ body {
     overscroll-behavior: none;
 }
 
+body.app-update-active {
+    cursor: progress;
+}
+
+body.app-update-active #sidebar,
+body.app-update-active #view-container,
+body.app-update-active #job-queue-toggle,
+body.app-update-active #job-queue-panel,
+body.app-update-active #network-tracker-vue-app {
+    pointer-events: none;
+    user-select: none;
+}
+
 #sidebar {
     width: 260px;
     flex-shrink: 0;
@@ -1610,6 +1623,55 @@ span.flatpickr-weekday {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+.app-update-overlay-card {
+    width: min(92vw, 520px);
+    padding: 30px 28px;
+    border-radius: 18px;
+    border: 1px solid rgba(var(--accent-rgb), 0.28);
+    background:
+        radial-gradient(120% 120% at 0% 0%, rgba(var(--accent-rgb), 0.18), transparent 55%),
+        linear-gradient(160deg, rgba(255,255,255,0.06), rgba(5,10,18,0.92)),
+        var(--bg-panel, #1d232b);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+}
+
+.app-update-overlay-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.85), rgba(var(--accent-rgb), 0.45));
+    box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.28);
+}
+
+.app-update-overlay-card h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.4rem;
+    line-height: 1.2;
+}
+
+.app-update-overlay-card p {
+    margin: 0;
+    color: var(--text-muted);
+    line-height: 1.55;
+    max-width: 42ch;
+}
+
+.app-update-overlay-spinner {
+    font-size: 1.55rem;
+    color: var(--accent-blue);
 }
 
 .onboarding-tour {
