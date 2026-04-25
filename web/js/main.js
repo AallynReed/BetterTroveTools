@@ -422,12 +422,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         return a.isBeta ? -1 : 1;
     };
 
+    let isAppUpdateStarting = false;
+
     try {
         const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('Looking for updates') });
         if (ghResponse.ok) {
             const releases = await ghResponse.json();
+            const hasMsiAsset = (release) => Array.isArray(release?.assets)
+                && release.assets.some(asset => typeof asset?.name === 'string' && asset.name.toLowerCase().endsWith('.msi'));
+
             const validReleases = Array.isArray(releases)
-                ? releases.filter(r => r && !r.draft && parseVersion(r.tag_name))
+                ? releases.filter(r => r && !r.draft && parseVersion(r.tag_name) && hasMsiAsset(r))
                 : [];
 
             let latestStable = null;
@@ -473,18 +478,72 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (updateTarget) {
                 const latestVersion = normalizeVersionTag(updateTarget.tag_name);
+                const updateAsset = Array.isArray(updateTarget.assets)
+                    ? updateTarget.assets.find(asset => typeof asset?.name === 'string' && asset.name.toLowerCase().endsWith('.msi') && typeof asset?.browser_download_url === 'string' && asset.browser_download_url)
+                    : null;
                 const sidebar = document.getElementById('sidebar');
-                if (sidebar) {
+                if (sidebar && updateAsset) {
                     const existingUpdate = sidebar.querySelector('.app-update-container');
                     if (existingUpdate) existingUpdate.remove();
                     const updateContainer = document.createElement('div');
                     updateContainer.className = 'app-update-container';
-                    updateContainer.innerHTML = `
-                        <button class="nav-btn update-app-btn" title="${t("A new version is available! Click to download.")}" onclick="eel.open_url_in_browser('${updateTarget.html_url}')()">
-                            <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
-                            <span class="nav-text">${t("Update v{version}").replace("{version}", latestVersion)}</span>
-                        </button>
+                    const updateButton = document.createElement('button');
+                    updateButton.className = 'nav-btn update-app-btn';
+                    updateButton.title = t("A new version is available! Click to update.");
+                    updateButton.innerHTML = `
+                        <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
+                        <span class="nav-text">${t("Update v{version}").replace("{version}", latestVersion)}</span>
                     `;
+                    updateButton.addEventListener('click', async () => {
+                        if (isAppUpdateStarting) return;
+
+                        let confirmed = true;
+                        if (typeof window.showConfirmModal === 'function') {
+                            confirmed = await window.showConfirmModal({
+                                title: t('Install Update'),
+                                message: t('Download and install v{version} now? The app will close and reopen automatically when the installer finishes.').replace('{version}', latestVersion),
+                                confirmLabel: t('Update Now'),
+                                cancelLabel: t('Cancel'),
+                                danger: false
+                            });
+                        }
+                        if (!confirmed) return;
+
+                        isAppUpdateStarting = true;
+                        updateButton.disabled = true;
+
+                        try {
+                            const runner = window.JobQueue && typeof window.JobQueue.run === 'function'
+                                ? window.JobQueue.run.bind(window.JobQueue)
+                                : async ({ task }) => task();
+
+                            const response = await runner({
+                                label: t('Updating app to v{version}').replace('{version}', latestVersion),
+                                meta: { details: t('Downloading installer and preparing update...') },
+                                task: async () => window.callBackend(
+                                    eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
+                                    t('Failed to start self-update')
+                                )
+                            });
+
+                            if (!response.success) {
+                                throw new Error(response.error || t('Failed to start self-update'));
+                            }
+
+                            window.showToast(t('Installer downloaded. The app will close to finish the update and reopen after installation.'), false, {
+                                durationMs: 6000,
+                                closeable: true
+                            });
+                        } catch (err) {
+                            isAppUpdateStarting = false;
+                            updateButton.disabled = false;
+                            window.showToast(String(err?.message || err || t('Failed to start self-update')), true, {
+                                actionLabel: t('Open Release'),
+                                onAction: async () => eel.open_url_in_browser(updateTarget.html_url)()
+                            });
+                        }
+                    });
+                    updateContainer.appendChild(updateButton);
                     sidebar.appendChild(updateContainer);
                 }
             }

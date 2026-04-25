@@ -2,7 +2,9 @@ import atexit
 import json
 import os
 import socket
+import subprocess
 import sys
+import tempfile
 import threading
 import time
 import winreg
@@ -209,6 +211,161 @@ def get_app_metadata():
             return json.load(f)
     except Exception:
         return {}
+
+
+def get_cache_root():
+    appdata = os.getenv("APPDATA")
+    if appdata:
+        return Path(appdata) / "Trove" / "ModManagerCache"
+    return Path(tempfile.gettempdir()) / "BetterTroveToolsCache"
+
+
+def _safe_asset_name(asset_name, version_tag):
+    candidate = Path(str(asset_name or "").strip()).name
+    if candidate.lower().endswith(".msi"):
+        return candidate
+
+    clean_version = "".join(ch if ch.isalnum() or ch in ("-", "_", ".") else "_" for ch in str(version_tag or "latest"))
+    return f"BetterTroveTools-{clean_version}.msi"
+
+
+def _build_update_script(script_path, msi_path, app_path, installer_log_path):
+    def q(value):
+        return str(value).replace('"', '""')
+
+    return "\n".join([
+        'On Error Resume Next',
+        'Dim shell, fso, service, processes, process, exitCode, success, scriptPath',
+        'Set shell = CreateObject("WScript.Shell")',
+        'Set fso = CreateObject("Scripting.FileSystemObject")',
+        f'scriptPath = "{q(script_path)}"',
+        '',
+        'Function WaitForProcessExit(pid, maxChecks, sleepMs)',
+        '    Dim i, svc, procSet',
+        '    Set svc = GetObject("winmgmts:\\\\.\\root\\cimv2")',
+        '    For i = 1 To maxChecks',
+        '        Set procSet = svc.ExecQuery("Select * from Win32_Process Where ProcessId = " & pid)',
+        '        If procSet.Count = 0 Then',
+        '            WaitForProcessExit = True',
+        '            Exit Function',
+        '        End If',
+        '        WScript.Sleep sleepMs',
+        '    Next',
+        '    WaitForProcessExit = False',
+        'End Function',
+        '',
+        f'Call WaitForProcessExit({os.getpid()}, 240, 500)',
+        f'exitCode = shell.Run("msiexec.exe /i ""{q(msi_path)}"" /passive /norestart /log ""{q(installer_log_path)}""", 0, True)',
+        'success = (exitCode = 0) Or (exitCode = 1641) Or (exitCode = 3010)',
+        '',
+        'If success Then',
+        '    WScript.Sleep 2000',
+        f'    If fso.FileExists("{q(app_path)}") Then',
+        f'        shell.Run """" & "{q(app_path)}" & """", 0, False',
+        '    End If',
+        'Else',
+        f'    shell.Run "explorer.exe /select,""" & "{q(msi_path)}" & """", 1, False',
+        'End If',
+        '',
+        'WScript.Sleep 1000',
+        'If fso.FileExists(scriptPath) Then',
+        '    fso.DeleteFile scriptPath, True',
+        'End If',
+    ])
+
+
+def _schedule_process_exit(delay_seconds=1.5):
+    def _exit_later():
+        time.sleep(delay_seconds)
+        os._exit(0)
+
+    threading.Thread(target=_exit_later, daemon=True).start()
+
+
+@eel.expose
+def start_self_update(download_url, version_tag="", asset_name=""):
+    if sys.platform != "win32":
+        return {"success": False, "error": "Self-update is only supported on Windows."}
+    if not getattr(sys, "frozen", False):
+        return {"success": False, "error": "Self-update is only available in the packaged app build."}
+
+    url = str(download_url or "").strip()
+    if not url.lower().startswith(("https://", "http://")):
+        return {"success": False, "error": "A valid installer download URL is required."}
+
+    cache_root = get_cache_root()
+    update_dir = cache_root / "updates"
+    update_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = _safe_asset_name(asset_name, version_tag)
+    msi_path = update_dir / safe_name
+    installer_log_path = update_dir / f"{msi_path.stem}.log"
+    helper_script_path = update_dir / f"apply_update_{int(time.time())}_{os.getpid()}.vbs"
+    request_id = None
+    download_ok = False
+
+    try:
+        try:
+            request_id = eel.add_external_request(f"Downloading app update {version_tag}".strip(), url)()
+        except Exception:
+            request_id = None
+
+        with requests.get(
+            url,
+            stream=True,
+            timeout=(10, 300),
+            headers={"User-Agent": "BetterTroveTools-Updater", "Accept": "application/octet-stream"},
+        ) as response:
+            response.raise_for_status()
+            with open(msi_path, "wb") as installer_file:
+                for chunk in response.iter_content(chunk_size=1024 * 512):
+                    if chunk:
+                        installer_file.write(chunk)
+
+        download_ok = True
+        helper_script_path.write_text(
+            _build_update_script(
+                helper_script_path,
+                msi_path,
+                Path(sys.executable),
+                installer_log_path,
+            ),
+            encoding="utf-8",
+        )
+
+        subprocess.Popen(
+            [
+                "wscript.exe",
+                "//B",
+                "//NoLogo",
+                str(helper_script_path),
+            ],
+            cwd=str(update_dir),
+            close_fds=True,
+        )
+
+        _schedule_process_exit()
+        return {
+            "success": True,
+            "data": {
+                "installer_path": str(msi_path),
+                "helper_script": str(helper_script_path),
+                "version": str(version_tag or ""),
+            },
+        }
+    except Exception as e:
+        try:
+            if msi_path.exists() and not download_ok:
+                msi_path.unlink(missing_ok=True)
+        except Exception:
+            pass
+        return {"success": False, "error": str(e)}
+    finally:
+        if request_id:
+            try:
+                eel.remove_external_request(request_id, download_ok)()
+            except Exception:
+                pass
 
 
 LOCALE_DIR = Path("web/assets/locale")
