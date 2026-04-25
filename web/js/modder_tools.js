@@ -201,6 +201,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 selectedAssetId: '',
                 dirtyAssetIds: [],
                 dirty: false,
+                decodeInfo: null,
                 header: {
                     version: 257,
                     color_format: 0,
@@ -279,6 +280,35 @@ document.addEventListener('modder_tools_loaded', () => {
                 return qbEditor.fileName || (qbEditor.path ? qbEditor.path.split(/[\\/]/).pop() : 'untitled.qb');
             });
             const qbContainerName = computed(() => qbEditor.containerFileName || qbEditor.fileName || 'untitled.qb');
+            const qbDecodeInfoRows = computed(() => {
+                const info = qbEditor.decodeInfo;
+                if (!info || typeof info !== 'object') return [];
+
+                const rows = [['Source', qbEditor.sourceFormat || qbEditor.sourceFileType || 'qb']];
+                if (info.kind) rows.push(['Decode Kind', String(info.kind)]);
+                if (info.version != null) rows.push(['Blueprint Version', String(info.version)]);
+
+                const geometry = info.geometry || {};
+                if (geometry.strategy) rows.push(['Geometry Strategy', String(geometry.strategy)]);
+                if (Array.isArray(geometry.selected_combo) && geometry.selected_combo.length === 3) {
+                    rows.push(['Byte Combo', geometry.selected_combo.join(', ')]);
+                }
+
+                const selected = geometry.selected || {};
+                if (selected.unique_points != null) rows.push(['Unique Points', String(selected.unique_points)]);
+                if (selected.valid_points != null) rows.push(['Valid Points', String(selected.valid_points)]);
+                if (selected.adjacency_pairs != null) rows.push(['Adjacency Pairs', String(selected.adjacency_pairs)]);
+                if (selected.compactness != null) rows.push(['Compactness', String(selected.compactness)]);
+                if (selected.mirrored_matches != null) rows.push(['Mirror Matches', String(selected.mirrored_matches)]);
+                if (info.decoded_voxel_count != null) rows.push(['Decoded Voxels', String(info.decoded_voxel_count)]);
+                if (info.visible_color_count != null) rows.push(['Visible Colors', String(info.visible_color_count)]);
+                if (info.local_duplicate_resolutions != null) rows.push(['Local Resolutions', String(info.local_duplicate_resolutions)]);
+                if (info.sequential_fill_count != null) rows.push(['Sequential Fill', String(info.sequential_fill_count)]);
+                if (info.used_fallback_fill) rows.push(['Position Fill', 'Fallback cells used']);
+                if (info.used_white_fallback) rows.push(['Color Fill', 'White fallback used']);
+
+                return rows.map(([label, value]) => ({ label, value }));
+            });
             const qbVersionLabel = computed(() => {
                 const version = Number(qbEditor.header.version || 0) >>> 0;
                 return [
@@ -688,6 +718,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     file_name: qbEditor.fileName || currentAsset.file_name || '',
                     source_format: qbEditor.sourceFormat || currentAsset.source_format || 'qb',
                     source_file_type: qbEditor.sourceFileType || currentAsset.source_file_type || 'qb',
+                    decode_info: qbEditor.decodeInfo || currentAsset.decode_info || null,
                     asset_id: currentAsset.asset_id || qbEditor.selectedAssetId,
                     asset_label: currentAsset.asset_label || qbDisplayName.value
                 };
@@ -712,6 +743,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 qbEditor.fileName = normalizedDocument.file_name || (normalizedDocument.path ? normalizedDocument.path.split(/[\\/]/).pop() : 'untitled.qb');
                 qbEditor.sourceFormat = normalizedDocument.source_format || 'qb';
                 qbEditor.sourceFileType = normalizedDocument.source_file_type || 'qb';
+                qbEditor.decodeInfo = normalizedDocument.decode_info || null;
                 qbEditor.header = {
                     version: Number(normalizedDocument.header?.version || 257) >>> 0,
                     color_format: Number(normalizedDocument.header?.color_format || 0),
@@ -1481,7 +1513,8 @@ document.addEventListener('modder_tools_loaded', () => {
                                 path: qbEditor.path,
                                 file_name: qbEditor.fileName,
                                 source_format: qbEditor.sourceFormat,
-                                source_file_type: qbEditor.sourceFileType
+                                source_file_type: qbEditor.sourceFileType,
+                                decode_info: qbEditor.decodeInfo
                             };
                         }
                         window.showToast(t('QB file saved to:\n{path}').replace('{path}', qbEditor.path));
@@ -2317,7 +2350,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 t, activeTab, installs, selectedGamePath, gameOptions,
                 lastBuildOutputPath, lastCompiledProjectPath,
                 tagOptions, build, extract, project, softwareCategories, isWorking,
-                qbEditor, qbMatrixForm, qbCanvasRef, qbViewportCanvasRef, selectedQbMatrix, qbPackageActive, qbHasUnsavedAssets, qbSelectedAsset, qbBlueprintAssetRows, qbDisplayName, qbContainerName, qbVersionLabel, qbTotalVoxelCount, qbVisibleVoxelCount, qbSliceVoxels, qbHoverSummary, qbActiveToolLabel, qbCurrentAttachmentPoint, qbAttachmentStatus, qbHoveredEditableCell,
+                qbEditor, qbMatrixForm, qbCanvasRef, qbViewportCanvasRef, selectedQbMatrix, qbPackageActive, qbHasUnsavedAssets, qbSelectedAsset, qbBlueprintAssetRows, qbDisplayName, qbContainerName, qbDecodeInfoRows, qbVersionLabel, qbTotalVoxelCount, qbVisibleVoxelCount, qbSliceVoxels, qbHoverSummary, qbActiveToolLabel, qbCurrentAttachmentPoint, qbAttachmentStatus, qbHoveredEditableCell,
                 scanForGames, chooseBuildPreview, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
                 chooseBuildConfig,
                 openSelectedGamePath, openProjectFolder, openBuildOutputFolder, openCompileOutputFolder, openBuildFileLocation, openProjectFileLocation,

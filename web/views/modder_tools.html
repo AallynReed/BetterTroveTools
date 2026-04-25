@@ -373,6 +373,21 @@
                             </div>
                         </div>
 
+                        <div v-if="qbDecodeInfoRows.length > 0" class="qb-decode-card">
+                            <div class="qb-sidebar-header">
+                                <div>
+                                    <h4>{{ t('Decode Insight') }}</h4>
+                                    <span>{{ t('How this blueprint payload was interpreted before rendering.') }}</span>
+                                </div>
+                            </div>
+                            <div class="qb-decode-grid">
+                                <div v-for="row in qbDecodeInfoRows" :key="row.label" class="qb-decode-pill">
+                                    <span class="qb-summary-label">{{ t(row.label) }}</span>
+                                    <strong class="qb-summary-value">{{ row.value }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="qb-settings-grid">
                             <div class="form-group">
                                 <label>{{ t('Version') }}</label>
