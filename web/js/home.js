@@ -414,7 +414,12 @@ document.addEventListener('home_loaded', () => {
                     });
                 }
 
-                return cards;
+                return cards.sort((a, b) => {
+                    if (a.id === 'd15' && b.id !== 'd15') return -1;
+                    if (b.id === 'd15' && a.id !== 'd15') return 1;
+                    if (a.active !== b.active) return a.active ? -1 : 1;
+                    return 0;
+                });
             });
 
             const refreshNews = () => {
