@@ -74,6 +74,7 @@ bdist_msi_options = {
     "add_to_path": False,
     "all_users": True,
     "install_icon": "web/favicon.ico",
+    "launch_on_finish": True,
 }
 
 options = {"build_exe": build_exe_options, "bdist_msi": bdist_msi_options}
