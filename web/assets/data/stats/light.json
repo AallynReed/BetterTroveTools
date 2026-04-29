@@ -18,6 +18,12 @@
         "perm": true
     },
     {
+        "name": "Mystic 1 Ring",
+        "value": 450,
+        "type": "switch",
+        "perm": true
+    },
+    {
         "name": "Mystic Cosmic Empowered Gem",
         "value": 1715,
         "type": "switch",
@@ -38,12 +44,6 @@
     {
         "name": "Banner (Leviathan Permanent Torch U10/U11)",
         "value": 900,
-        "type": "switch",
-        "perm": true
-    },
-    {
-        "name": "Crystal 4 Ring",
-        "value": 325,
         "type": "switch",
         "perm": true
     },

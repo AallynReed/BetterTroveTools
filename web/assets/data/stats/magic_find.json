@@ -33,7 +33,7 @@
         "name": "Ring",
         "type": "switch",
         "percentage": false,
-        "value": 300
+        "value": 450
     },
     {
         "name": "Pirate Captain",
