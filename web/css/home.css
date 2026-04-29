@@ -75,6 +75,13 @@
     margin-bottom: 8px;
 }
 
+.community-disclaimer {
+    margin: 0 0 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
 .community-subtitle {
     color: var(--text-muted);
     font-size: 13px;
@@ -204,6 +211,7 @@
 
 .verified-badge {
     color: #5ec6ff;
+    margin-left: 6px;
 }
 
 .news-panel {

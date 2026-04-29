@@ -53,6 +53,11 @@ document.addEventListener('home_loaded', () => {
                 twitch: { loading: true, data: [] },
                 bilibili: { loading: true, data: [] }
             });
+            const activeMediaPlatformKey = computed(() => ({
+                youtube: 'YouTube',
+                twitch: 'Twitch',
+                bilibili: 'BiliBili'
+            }[mediaTab.value] || 'YouTube'));
 
             const nowSec = ref(Math.floor(Date.now() / 1000));
             let timeInterval;
@@ -936,7 +941,7 @@ document.addEventListener('home_loaded', () => {
             });
 
             return {
-                t, settings, isChinese, mediaTab, mediaData, carouselRef,
+                t, settings, isChinese, mediaTab, mediaData, activeMediaPlatformKey, carouselRef,
                 newsCarouselRef, showShopOffers, isNewsCollapsed,
                 serverData, events, mappedEvents, news, mappedNews, merchantCards, chaosChestCard,
                 scrollCarousel, scrollNewsCarousel, toggleNewsCollapsed, openUrl, openBuffSchedule, openMerchantSchedule,

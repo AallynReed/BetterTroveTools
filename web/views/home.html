@@ -11,6 +11,7 @@
                 <button class="media-tab tab-twitch" :class="{ active: mediaTab === 'twitch' }" @click="mediaTab = 'twitch'"><i class="fa-brands fa-twitch"></i> Twitch</button>
             </div>
         </div>
+        <p class="community-disclaimer">{{ t("Results are pulled from {platform} search and may include unrelated content or posts that do not follow Trove's Code of Conduct.").replace('{platform}', t(activeMediaPlatformKey)) }}</p>
         
         <div v-if="mediaData[mediaTab].loading" class="loading-box community-loading-box">
             <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Content...') }}</span>
@@ -31,7 +32,7 @@
                         </div>
                         <div class="stream-info">
                             <div class="stream-title">{{ item.title }}</div>
-                            <div class="stream-user"><i :class="['fa-brands', `fa-${mediaTab}`]" :style="{ color: item.iconColor }"></i> {{ item.channel }}<span v-if="item.verified" class="verified-badge" :title="t('Verified')"> <i class="fa-solid fa-circle-check"></i></span></div>
+                            <div class="stream-user"><i :class="['fa-brands', `fa-${mediaTab}`]" :style="{ color: item.iconColor }"></i> {{ item.channel }}<span v-if="item.verified" class="verified-badge" :title="t('Verified')"><i class="fa-solid fa-circle-check"></i></span></div>
                         </div>
                     </div>
                 </template>
