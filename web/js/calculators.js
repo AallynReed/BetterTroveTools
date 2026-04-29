@@ -177,6 +177,17 @@ document.addEventListener('calculators_loaded', () => {
                 return Number.isInteger(pct) ? pct.toString() : pct.toFixed(2).replace(/\.?0+$/, '');
             };
 
+            const formatLightFlatValue = (value) => {
+                const numeric = Number(value) || 0;
+                if (Number.isInteger(numeric)) {
+                    return numeric.toLocaleString();
+                }
+                return numeric.toLocaleString(undefined, {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 2
+                });
+            };
+
             const fetchLight = async () => {
                 try {
                     const res = await fetch('/assets/data/stats/light.json');
@@ -246,7 +257,7 @@ document.addEventListener('calculators_loaded', () => {
                     return t("+{val}% Light").replace("{val}", formatLightBonusPercent(displayValue));
                 }
 
-                return t("+{val} Light").replace("{val}", Math.round(displayValue).toLocaleString());
+                return t("+{val} Light").replace("{val}", formatLightFlatValue(displayValue));
             };
 
             const mfStats = computed(() => {
