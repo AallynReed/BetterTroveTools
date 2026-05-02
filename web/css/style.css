@@ -98,13 +98,21 @@ body.app-update-active #network-tracker-vue-app {
     width: 260px;
     flex-shrink: 0;
     max-height: 100vh;
-    overflow-y: auto;
+    overflow: hidden;
     background: radial-gradient(120% 100% at 0% 0%, rgba(var(--accent-rgb), 0.08), transparent 55%), var(--bg-panel);
     border-right: 1px solid var(--border-color);
     transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     display: flex;
     flex-direction: column;
     z-index: 100;
+}
+
+.sidebar-nav-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 8px;
 }
 
 #sidebar.collapsed {
@@ -604,8 +612,8 @@ body.app-update-active #network-tracker-vue-app {
 }
 
 .sidebar-footer-menu {
-    margin-top: auto;
-    margin-bottom: 15px;
+    margin-top: 10px;
+    margin-bottom: 8px;
 }
 
 .app-overlay {
@@ -2210,6 +2218,13 @@ span.flatpickr-weekday {
         border-right: none;
         border-bottom: 1px solid var(--border-color);
         overflow: visible;
+    }
+
+    .sidebar-nav-scroll {
+        flex: 0 0 auto;
+        min-height: auto;
+        overflow: visible;
+        padding-bottom: 0;
     }
 
     #sidebar.collapsed #app-title,

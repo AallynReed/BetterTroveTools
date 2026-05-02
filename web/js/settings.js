@@ -26,7 +26,8 @@ document.addEventListener('settings_loaded', async () => {
                 show_community_content: true,
                 show_official_news: true,
                 auto_fix_names: false,
-                show_mod_preview_on_info_side: true
+                show_mod_preview_on_info_side: true,
+                hide_beta_features: false
             });
 
             const customDirs = ref([]);
@@ -53,6 +54,7 @@ document.addEventListener('settings_loaded', async () => {
                     settings.show_official_news = data.show_official_news !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
+                    settings.hide_beta_features = data.hide_beta_features === true;
                     customDirs.value = data.custom_directories || [];
                 }
             };
@@ -87,6 +89,9 @@ document.addEventListener('settings_loaded', async () => {
                 if (window.AppSettings) {
                     window.AppSettings._cache = { ...currentSettings };
                 }
+                document.dispatchEvent(new CustomEvent('app_settings_updated', {
+                    detail: { settings: { ...currentSettings } }
+                }));
             };
 
             const openAddModal = () => {

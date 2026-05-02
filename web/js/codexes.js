@@ -8,7 +8,7 @@ document.addEventListener('codexes_loaded', () => {
     if (!root || root.dataset.codexesInitializing === '1') return;
     root.dataset.codexesInitializing = '1';
 
-    const { createApp, ref, onMounted, watch } = Vue;
+    const { createApp, ref, reactive, onMounted, onBeforeUnmount, watch } = Vue;
 
     const app = createApp({
         setup() {
@@ -17,6 +17,17 @@ document.addEventListener('codexes_loaded', () => {
             const activeTab = ref('allies');
             const installs = ref([]);
             const selectedGamePath = ref('');
+            const loadedTabs = reactive({
+                allies: false,
+                mounts: false,
+                dragons: false,
+                mementos: false,
+                recipes: false,
+                items: false,
+            });
+            const pendingTabAbortControllers = new Map();
+            const pendingTabLoads = new Map();
+            let disposed = false;
             let hydratingState = false;
 
             const unwrapResponse = (resp, key = null, fallback = null) => {
@@ -126,21 +137,81 @@ document.addEventListener('codexes_loaded', () => {
                 };
             };
 
-            const loadSubview = async (targetId, viewPath, rootSelector, eventName) => {
+            const loadSubview = async (tabName, targetId, viewPath, rootSelector, eventName) => {
+                if (disposed || loadedTabs[tabName]) return;
+                if (pendingTabLoads.has(tabName)) return pendingTabLoads.get(tabName);
+
                 const host = document.getElementById(targetId);
-                if (!host || host.childElementCount > 0) return;
-                const response = await fetch(viewPath);
-                if (!response.ok) throw new Error(`Failed to load ${viewPath}`);
-                const html = await response.text();
-                const parsed = new DOMParser().parseFromString(html, 'text/html');
-                const rootNode = parsed.querySelector(rootSelector);
-                if (!rootNode) throw new Error(`Failed to find ${rootSelector} in ${viewPath}`);
-                host.innerHTML = '';
-                host.appendChild(rootNode);
-                document.dispatchEvent(new CustomEvent(eventName));
+                if (!host) return;
+                if (host.childElementCount > 0) {
+                    loadedTabs[tabName] = true;
+                    return;
+                }
+
+                const controller = new AbortController();
+                pendingTabAbortControllers.set(tabName, controller);
+                const loadPromise = (async () => {
+                    const response = await fetch(viewPath, { signal: controller.signal });
+                    if (!response.ok) throw new Error(`Failed to load ${viewPath}`);
+                    const html = await response.text();
+                    if (disposed) return;
+
+                    const latestHost = document.getElementById(targetId);
+                    if (!latestHost) return;
+                    if (latestHost.childElementCount > 0) {
+                        loadedTabs[tabName] = true;
+                        return;
+                    }
+
+                    const parsed = new DOMParser().parseFromString(html, 'text/html');
+                    const rootNode = parsed.querySelector(rootSelector);
+                    if (!rootNode) throw new Error(`Failed to find ${rootSelector} in ${viewPath}`);
+                    latestHost.innerHTML = '';
+                    latestHost.appendChild(rootNode);
+                    loadedTabs[tabName] = true;
+                    document.dispatchEvent(new CustomEvent(eventName));
+                })()
+                    .catch((error) => {
+                        if (!disposed && error?.name !== 'AbortError') {
+                            console.error(`Failed to load codex subview ${tabName}:`, error);
+                        }
+                    })
+                    .finally(() => {
+                        pendingTabAbortControllers.delete(tabName);
+                        pendingTabLoads.delete(tabName);
+                    });
+
+                pendingTabLoads.set(tabName, loadPromise);
+                return loadPromise;
+            };
+
+            const ensureActiveTabLoaded = async (tabName = activeTab.value) => {
+                const loaders = {
+                    allies: () => loadSubview('allies', 'codexes-allies-host', 'views/allies.html', '#allies-vue-app', 'allies_loaded'),
+                    mounts: async () => {
+                        await Promise.all([
+                            loadSubview('mounts', 'codexes-mounts-host', 'views/mounts.html', '#mounts-vue-app', 'mounts_loaded'),
+                            loadSubview('dragons', 'codexes-dragons-host', 'views/dragons.html', '#dragons-vue-app', 'dragons_loaded'),
+                        ]);
+                    },
+                    dragons: async () => {
+                        await Promise.all([
+                            loadSubview('dragons', 'codexes-dragons-host', 'views/dragons.html', '#dragons-vue-app', 'dragons_loaded'),
+                            loadSubview('mounts', 'codexes-mounts-host', 'views/mounts.html', '#mounts-vue-app', 'mounts_loaded'),
+                        ]);
+                    },
+                    mementos: () => loadSubview('mementos', 'codexes-mementos-host', 'views/mementos.html', '#mementos-vue-app', 'mementos_loaded'),
+                    recipes: () => loadSubview('recipes', 'codexes-recipes-host', 'views/recipes.html', '#recipes-vue-app', 'recipes_loaded'),
+                    items: () => loadSubview('items', 'codexes-items-host', 'views/items.html', '#items-vue-app', 'items_loaded'),
+                };
+                const loader = loaders[tabName];
+                if (loader) await loader();
             };
 
             watch([activeTab, selectedGamePath], persistState, { deep: true });
+            watch(activeTab, (tabName) => {
+                void ensureActiveTabLoaded(tabName);
+            });
 
 
             onMounted(async () => {
@@ -168,18 +239,22 @@ document.addEventListener('codexes_loaded', () => {
                     openSelectedPath: async (path = '') => openSelectedGamePath(path),
                 };
 
-                await loadSubview('codexes-allies-host', 'views/allies.html', '#allies-vue-app', 'allies_loaded');
-                await loadSubview('codexes-mounts-host', 'views/mounts.html', '#mounts-vue-app', 'mounts_loaded');
-                await loadSubview('codexes-dragons-host', 'views/dragons.html', '#dragons-vue-app', 'dragons_loaded');
-                await loadSubview('codexes-mementos-host', 'views/mementos.html', '#mementos-vue-app', 'mementos_loaded');
-                await loadSubview('codexes-recipes-host', 'views/recipes.html', '#recipes-vue-app', 'recipes_loaded');
-                await loadSubview('codexes-items-host', 'views/items.html', '#items-vue-app', 'items_loaded');
-
                 hydratingState = false;
+                void ensureActiveTabLoaded(activeTab.value);
+            });
+
+            onBeforeUnmount(() => {
+                disposed = true;
+                pendingTabAbortControllers.forEach((controller) => {
+                    try { controller.abort(); } catch {}
+                });
+                pendingTabAbortControllers.clear();
+                pendingTabLoads.clear();
             });
 
             return {
                 activeTab,
+                loadedTabs,
                 setActiveTab,
                 t,
             };

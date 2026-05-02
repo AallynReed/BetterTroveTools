@@ -120,6 +120,23 @@ select:focus { border-color: var(--accent-blue); }
     margin-bottom: 10px;
 }
 
+.tracker-build-btn {
+    background-color: #e8b031;
+    color: #fff;
+    border: none;
+}
+
+.tracker-build-btn i,
+.tracker-build-btn span {
+    color: inherit;
+}
+
+.tracker-build-btn.is-baseline {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+
 .file-tree-shell { position: relative; }
 .file-tree { text-align: left; font-size: 14px; background: var(--bg-panel); padding: 10px; border-radius: 0 0 8px 8px; border: 1px solid var(--border-color); max-height: 70vh; overflow-y: auto; contain: content; }
 .file-tree-busy-overlay {

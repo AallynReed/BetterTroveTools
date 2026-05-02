@@ -445,12 +445,21 @@ def add_missing_translation_keys(locale_code, missing_keys):
 
 @bottle.route('/api/cache/<filename>')
 def serve_cache(filename):
-    cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
-    
     if ".." in filename or "/" in filename or "\\" in filename:
         return bottle.HTTPError(403, "Forbidden")
-        
-    response = bottle.static_file(filename, root=str(cache_dir))
+
+    cache_root = get_cache_root()
+    direct_path = cache_root / filename
+    if direct_path.is_file():
+        response = bottle.static_file(filename, root=str(cache_root))
+        response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        return response
+
+    matches = list(cache_root.rglob(filename))
+    if not matches:
+        return bottle.HTTPError(404, "Cache file not found")
+
+    response = bottle.static_file(matches[0].name, root=str(matches[0].parent))
     response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
     return response
 

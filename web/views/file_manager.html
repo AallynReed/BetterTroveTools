@@ -186,7 +186,7 @@
                     <p class="help-text" style="margin-top: 5px; white-space: pre-wrap;">{{ trackerStatus.subText }}</p>
                     
                     <div v-show="trackerStatus.state !== 'empty'" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-                        <button @click="buildBaseline" class="primary-btn" :disabled="isAnyOperationRunning" :style="trackerStatus.state === 'baseline' ? 'background-color: transparent; border: 1px solid var(--border-color); color: var(--text-muted);' : 'background-color: #e8b031; color: #111; border: none;'">
+                        <button @click="buildBaseline" class="primary-btn tracker-build-btn" :class="{ 'is-baseline': trackerStatus.state === 'baseline' }" :disabled="isAnyOperationRunning">
                             <template v-if="trackerStatus.isBuilding"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Building Baseline Cache...') }}</template>
                             <template v-else-if="trackerStatus.state === 'baseline'"><i class="fa-solid fa-rotate-right"></i> {{ t('Force Rebuild Cache') }}</template>
                             <template v-else><i class="fa-solid fa-database"></i> {{ t('Build Baseline Cache') }}</template>

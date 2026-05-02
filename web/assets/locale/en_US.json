@@ -2482,6 +2482,18 @@
         "Results are pulled from {platform} search and may include unrelated content or posts that do not follow Trove's Code of Conduct.": "",
         "YouTube": "",
         "Twitch": "",
-        "No Trove streams are live right now. Check back later!": ""
+        "No Trove streams are live right now. Check back later!": "",
+        "Loading Ally Codex...": "",
+        "Loading Mount Codex...": "",
+        "Loading Dragon Codex...": "",
+        "Loading Memento Codex...": "",
+        "Loading Recipe Codex...": "",
+        "Loading Item Codex...": "",
+        "Decay Output": "",
+        "Lootbox Output": "",
+        "Hide Beta Features": "",
+        "Hide tools in the sidebar that are still marked as beta.": "",
+        "Search allies by name or keyword...": "",
+        "Loading detected installations...": ""
     }
 }

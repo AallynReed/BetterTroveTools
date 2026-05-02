@@ -1555,7 +1555,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'gems_and_builds', title: 'Gem Evaluator', icon: 'fa-magnifying-glass-chart', gemsTab: 'gem-evaluator' },
         { id: 'gems_and_builds', title: 'Gem Simulator', icon: 'fa-gem', gemsTab: 'gem-simulator' },
         { id: 'calculators', title: 'Calculators', icon: 'fa-calculator' },
-        { id: 'allies', title: 'Ally Codex', icon: 'fa-paw' },
+        { id: 'allies', title: 'Ally Codex', icon: 'fa-paw', beta: true },
         { id: 'settings', title: 'Settings', icon: 'fa-gear' },
         { id: 'about', title: 'About', icon: 'fa-circle-info' }
     ];
@@ -1594,14 +1594,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sq = query.substring(1).trim();
             if (sq) {
                 displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
-                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+                if (!areBetaFeaturesHidden()) {
+                    displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
+                }
             }
         } else if (query.startsWith('#')) {
             const sq = query.substring(1).trim();
-            if (sq) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+            if (sq && !areBetaFeaturesHidden()) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
         } else {
             const sq = query.startsWith('>') ? query.substring(1).trim() : query;
             displayCommands = commands
+                .filter(isCommandVisible)
                 .map(c => ({
                     ...c,
                     _score: Math.max(
@@ -1614,7 +1617,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (sq.length >= 3 && displayCommands.length === 0) {
                 displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
-                displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq });
+                if (!areBetaFeaturesHidden()) {
+                    displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
+                }
             }
         }
 
@@ -1733,6 +1738,122 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeViewLoadController = null;
     const loadedViewStyles = new Map();
 
+    const areBetaFeaturesHidden = () => window.AppSettings && window.AppSettings.get('hide_beta_features', false) === true;
+
+    const isCommandVisible = (command) => !(command && command.beta === true && areBetaFeaturesHidden());
+
+    const getDirectiveAttributes = (element) => {
+        if (!element) return [];
+        return element.getAttributeNames()
+            .filter((name) => name.startsWith(':') || name.startsWith('@') || name.startsWith('v-'))
+            .map((name) => String(element.getAttribute(name) || ''));
+    };
+
+    const inferTabKeyFromButton = (button) => {
+        if (!button) return '';
+        const sources = [
+            ...getDirectiveAttributes(button),
+            String(button.getAttribute('onclick') || '')
+        ];
+        const patterns = [
+            /activeTab\s*===\s*['"]([^'"]+)['"]/,
+            /activeTab\s*=\s*['"]([^'"]+)['"]/,
+            /setActiveTab\(\s*['"]([^'"]+)['"]\s*\)/
+        ];
+        for (const source of sources) {
+            for (const pattern of patterns) {
+                const match = source.match(pattern);
+                if (match && match[1]) return match[1];
+            }
+        }
+        return '';
+    };
+
+    const findTabContentsForKey = (container, tabKey) => {
+        if (!container || !tabKey) return [];
+        return [...container.querySelectorAll('.tab-content')].filter((content) => {
+            if (content.dataset.bttTabKey === tabKey) return true;
+            return content.getAttributeNames().some((name) => {
+                const value = content.getAttribute(name);
+                return typeof value === 'string' && value.includes(tabKey);
+            });
+        });
+    };
+
+    const setBetaElementHidden = (element, hidden) => {
+        if (!element) return;
+        element.dataset.bttBetaHidden = hidden ? 'true' : 'false';
+        element.style.display = hidden ? 'none' : '';
+        element.hidden = hidden;
+    };
+
+    const applyBetaVisibilityToContainer = (container) => {
+        if (!container) return;
+        const hideBetaFeatures = areBetaFeaturesHidden();
+
+        container.querySelectorAll('.tab-btn').forEach((button) => {
+            const hasBetaLabel = !!button.querySelector('.beta-label');
+            const tabKey = inferTabKeyFromButton(button);
+            if (tabKey) button.dataset.bttTabKey = tabKey;
+            if (!hasBetaLabel) return;
+
+            setBetaElementHidden(button, hideBetaFeatures);
+            findTabContentsForKey(container, tabKey).forEach((content) => {
+                if (tabKey) content.dataset.bttTabKey = tabKey;
+                setBetaElementHidden(content, hideBetaFeatures);
+            });
+        });
+    };
+
+    const enforceVisibleBetaTabFallback = (container) => {
+        if (!container || !areBetaFeaturesHidden()) return;
+
+        const hiddenActiveButton = container.querySelector('.tab-btn.active[data-btt-beta-hidden="true"]');
+        const hiddenActiveContent = container.querySelector('.tab-content.active[data-btt-beta-hidden="true"]');
+        if (!hiddenActiveButton && !hiddenActiveContent) return;
+
+        const fallbackButton = [...container.querySelectorAll('.tab-btn')]
+            .find((button) => button.dataset.bttBetaHidden !== 'true' && button.offsetParent !== null && !button.disabled);
+        if (fallbackButton) {
+            fallbackButton.click();
+        }
+    };
+
+    const isViewVisible = (target) => {
+        const navBtn = document.querySelector(`.nav-btn[data-target="${target}"]`);
+        if (!navBtn) return true;
+        return navBtn.style.display !== 'none' && !navBtn.hidden;
+    };
+
+    const applyBetaFeatureVisibility = async () => {
+        if (window.AppSettings) {
+            await window.AppSettings.load();
+        }
+
+        const hideBetaFeatures = areBetaFeaturesHidden();
+        document.querySelectorAll('#sidebar .nav-btn').forEach((btn) => {
+            if (!btn.querySelector('.beta-label')) return;
+            const menuItem = btn.closest('li');
+            if (menuItem) {
+                menuItem.style.display = hideBetaFeatures ? 'none' : '';
+                menuItem.hidden = hideBetaFeatures;
+            } else {
+                btn.style.display = hideBetaFeatures ? 'none' : '';
+                btn.hidden = hideBetaFeatures;
+            }
+        });
+
+        const currentTarget = document.querySelector('.nav-btn.active')?.getAttribute('data-target');
+        if (currentTarget && !isViewVisible(currentTarget) && typeof window.loadView === 'function') {
+            await window.loadView('home');
+        }
+
+        if (cmdOverlay && cmdOverlay.style.display === 'flex') {
+            activeCmdIndex = 0;
+            renderCmdResults(cmdInput ? cmdInput.value : '');
+        }
+    };
+
     function extractViewContentAndStyles(html) {
         const parser = new DOMParser();
         const parsed = parser.parseFromString(html, 'text/html');
@@ -1824,6 +1945,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (sidebar && window.AppSettings) {
         try {
             await window.AppSettings.load();
+            await applyBetaFeatureVisibility();
             if (window.AppSettings.getPref('sidebar_collapsed', false)) {
                 sidebar.classList.add('collapsed');
             }
@@ -1834,6 +1956,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch {}
     }
+
+    document.addEventListener('app_settings_updated', () => {
+        void applyBetaFeatureVisibility();
+    });
 
     if (burgerBtn && sidebar) {
         burgerBtn.addEventListener('click', () => {
@@ -1860,6 +1986,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return jobs.some(j => j && (j.status === 'running' || j.status === 'cancelling'));
             })();
 
+            if (!isViewVisible(target)) {
+                return false;
+            }
+
             if (isSwitchingTabs && hasBlockingJobs) {
                 const now = Date.now();
                 if (now - lastNavBlockToastAt > 1200) {
@@ -1877,6 +2007,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
+            if (isSwitchingTabs && currentTarget === 'codexes' && target !== 'codexes') {
+                if (window._codexesApp && typeof window._codexesApp.unmount === 'function') {
+                    try { window._codexesApp.unmount(); } catch {}
+                    window._codexesApp = null;
+                }
+                window.CodexGamePathApi = null;
+                window.getSelectedCodexGamePath = null;
+            }
+
             const response = await fetch(`views/${target}.html`, { signal: activeViewLoadController.signal });
             if (loadToken !== activeViewLoadToken) return false;
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -1891,6 +2030,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             viewContainer.innerHTML = contentHtml;
             if (loadToken !== activeViewLoadToken) return false;
+            applyBetaVisibilityToContainer(viewContainer);
 
             navButtons.forEach(btn => {
                 btn.classList.toggle('active', btn.getAttribute('data-target') === target);
@@ -1903,9 +2043,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             window.applyCustomDropdowns();
             if (loadToken !== activeViewLoadToken) return false;
-
+            
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
+            setTimeout(() => {
+                if (loadToken === activeViewLoadToken) {
+                    applyBetaVisibilityToContainer(viewContainer);
+                    enforceVisibleBetaTabFallback(viewContainer);
+                }
+            }, 0);
             
             console.log(`Successfully loaded view: ${target}`);
             return true;

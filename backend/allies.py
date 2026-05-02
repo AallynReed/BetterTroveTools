@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -38,8 +39,8 @@ def _cache_root_candidates() -> list[Path]:
     appdata = os.getenv("APPDATA")
     candidates = []
     if appdata:
-        candidates.append(Path(appdata) / "Trove" / "ModManagerCache")
-    candidates.append(Path(os.getcwd()) / "web" / "cache" / "allies")
+        candidates.append(Path(appdata) / "Trove" / "ModManagerCache" / "codexes_cache")
+    candidates.append(Path(tempfile.gettempdir()) / "BetterTroveToolsCache" / "codexes_cache")
     return candidates
 
 

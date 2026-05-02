@@ -86,6 +86,16 @@
             <div class="settings-section">
                 <h3>{{ t('UX Preferences') }}</h3>
                 <p class="settings-help-text">{{ t('These controls help the app explain itself without becoming noisy.') }}</p>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Hide Beta Features') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Hide tools in the sidebar that are still marked as beta.') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.hide_beta_features" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
                 <div class="settings-action-row" style="margin-top: 15px;">
                     <div>
                         <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Reset Onboarding Tips') }}</div>

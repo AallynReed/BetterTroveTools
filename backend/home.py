@@ -1022,6 +1022,12 @@ def get_delve_status():
 @eel.expose
 @standardize_response
 def get_delve_rotation():
+    req_id = None
+    try:
+        req_id = eel.add_external_request("Fetching Delve Index", DELVE_ROTATION_URL.format(week_id="current"))()
+    except Exception:
+        pass
+
     try:
         current_week_id = _get_current_delve_week_id()
         weeks = []
@@ -1031,6 +1037,7 @@ def get_delve_rotation():
                 weeks.append(week_data)
 
         if not weeks:
+            _finish_external_request(req_id, False)
             return resp(False, error="No delve data found", code="DELVE_ROTATION_NOT_FOUND")
 
         data = {
@@ -1038,8 +1045,10 @@ def get_delve_rotation():
             "current": next((week for week in weeks if week.get("isCurrent")), weeks[0]),
             "weeks": weeks,
         }
+        _finish_external_request(req_id, True)
         return resp(True, data=data, **data)
     except Exception as e:
+        _finish_external_request(req_id, False)
         traceback.print_exc()
         return resp(False, error=str(e), code="DELVE_ROTATION_FAILED")
 
