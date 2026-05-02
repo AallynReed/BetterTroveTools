@@ -50,6 +50,7 @@ Better Trove Tools is a desktop companion for Trove players, collectors, and mod
 ### Modder tools
 - Build `.tmod` packages from loose files.
 - Extract existing `.tmod` files for editing.
+- Edit existing `.tmod` files in memory and compile them back out with title-based file naming.
 - Project manager for persistent mod workspaces.
 - Active version workspaces for project iteration.
 - Preview image and `.cfg` support when building mods.
