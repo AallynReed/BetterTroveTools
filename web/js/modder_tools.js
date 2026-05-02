@@ -38,7 +38,20 @@ document.addEventListener('modder_tools_loaded', () => {
                 {id: 'Fishing', text: 'Fishing'}, {id: 'GUI', text: 'GUI'}, {id: 'Helmets', text: 'Helmets'},
                 {id: 'Language', text: 'Language'}, {id: 'Mag Riders', text: 'Mag Riders'}, {id: 'Mounts', text: 'Mounts'},
                 {id: 'NPCs', text: 'NPCs'}, {id: 'Utility', text: 'Utility'}, {id: 'Waypoint', text: 'Waypoint'},
-                {id: 'Wings', text: 'Wings'}, {id: 'VFX', text: 'VFX'}
+                {id: 'Wings', text: 'Wings'}
+            ]);
+
+            const subtypeOptions = ref([
+                [t('No subtype'), ''],
+                ['Bard', 'Bard'], ['Boomeranger', 'Boomeranger'],
+                ['Candy Barbarian', 'Candy Barbarian'], ['Chloromancer', 'Chloromancer'],
+                ['Dino Tamer', 'Dino Tamer'], ['Dracolyte', 'Dracolyte'],
+                ['Fae Trickster', 'Fae Trickster'], ['Gunslinger', 'Gunslinger'],
+                ['Ice Sage', 'Ice Sage'], ['Knight', 'Knight'],
+                ['Lunar Lancer', 'Lunar Lancer'], ['Neon Ninja', 'Neon Ninja'],
+                ['Pirate Captain', 'Pirate Captain'], ['Revenant', 'Revenant'],
+                ['Shadow Hunter', 'Shadow Hunter'], ['Solarion', 'Solarion'],
+                ['Tomb Raiser', 'Tomb Raiser'], ['Vanguardian', 'Vanguardian']
             ]);
 
             const normalizeInternalPath = (value) => String(value || '').replaceAll('\\', '/').trim().toLowerCase();
@@ -73,17 +86,185 @@ document.addEventListener('modder_tools_loaded', () => {
                 return null;
             };
 
+            const hasIllegalTitleChars = (value) => /[<>:"/\\|?*]/.test(String(value || '').trim());
+
             const build = reactive({
                 title: '', author: '', version: '1.0', notes: '', tags: [], files: [],
-                preview: '', previewName: '', config: '', configName: ''
+                preview: '', previewName: '', config: '', configName: '', subtype: ''
             });
+
+            const resetEditTmod = () => {
+                editTmod.loaded = false;
+                editTmod.fileName = '';
+                editTmod.title = '';
+                editTmod.author = '';
+                editTmod.version = '1.0';
+                editTmod.notes = '';
+                editTmod.tags = [];
+                editTmod.subtype = '';
+                editTmod.files = [];
+                editTmod.preview = '';
+                editTmod.previewName = '';
+                editTmod.config = '';
+                editTmod.configName = '';
+            };
 
             const extract = reactive({
                 source: '', dest: ''
             });
 
+            const editTmod = reactive({
+                loaded: false,
+                tmodPath: '',
+                fileName: '',
+                title: '',
+                author: '',
+                version: '1.0',
+                notes: '',
+                tags: [],
+                subtype: '',
+                files: [],
+                preview: '',
+                previewName: '',
+                config: '',
+                configName: ''
+            });
+
+            const previousEditTmodSnapshot = ref(null);
+            const originalLoadedEditTmodSnapshot = ref(null);
+
+            const createEditTmodSnapshot = () => ({
+                loaded: Boolean(editTmod.loaded),
+                tmodPath: editTmod.tmodPath || '',
+                fileName: editTmod.fileName || '',
+                title: editTmod.title || '',
+                author: editTmod.author || '',
+                version: editTmod.version || '1.0',
+                notes: editTmod.notes || '',
+                tags: Array.isArray(editTmod.tags) ? [...editTmod.tags] : [],
+                subtype: editTmod.subtype || '',
+                files: Array.isArray(editTmod.files)
+                    ? editTmod.files.map(file => ({ ...file }))
+                    : [],
+                preview: editTmod.preview || '',
+                previewName: editTmod.previewName || '',
+                config: editTmod.config || '',
+                configName: editTmod.configName || ''
+            });
+
+            const applyEditTmodSnapshot = (snapshot) => {
+                if (!snapshot || typeof snapshot !== 'object') return;
+                editTmod.loaded = Boolean(snapshot.loaded);
+                editTmod.tmodPath = snapshot.tmodPath || '';
+                editTmod.fileName = snapshot.fileName || '';
+                editTmod.title = snapshot.title || '';
+                editTmod.author = snapshot.author || '';
+                editTmod.version = snapshot.version || '1.0';
+                editTmod.notes = snapshot.notes || '';
+                editTmod.tags = Array.isArray(snapshot.tags) ? [...snapshot.tags] : [];
+                editTmod.subtype = snapshot.subtype || '';
+                editTmod.files = Array.isArray(snapshot.files)
+                    ? snapshot.files.map(file => ({ ...file }))
+                    : [];
+                editTmod.preview = snapshot.preview || '';
+                editTmod.previewName = snapshot.previewName || '';
+                editTmod.config = snapshot.config || '';
+                editTmod.configName = snapshot.configName || '';
+            };
+
+            const restorePreviousEditTmod = () => {
+                if (!previousEditTmodSnapshot.value) return;
+                applyEditTmodSnapshot(previousEditTmodSnapshot.value);
+                window.showToast(t('Previous Edit TMod session restored.'));
+            };
+
+            const cloneEditTmodFile = (file) => ({ ...file });
+            const getActiveEditTmodFiles = (files = editTmod.files) => (files || []).filter(file => !file?.removed);
+
+            const findOriginalEditTmodFile = (internalPath) => {
+                const files = originalLoadedEditTmodSnapshot.value?.files || [];
+                return files.find(file => normalizeInternalPath(file.internal_path) === normalizeInternalPath(internalPath)) || null;
+            };
+
+            const hasEditTmodFieldChanged = (field) => {
+                const original = originalLoadedEditTmodSnapshot.value;
+                if (!original) return false;
+                switch (field) {
+                    case 'title': return editTmod.title !== (original.title || '');
+                    case 'author': return editTmod.author !== (original.author || '');
+                    case 'version': return editTmod.version !== (original.version || '1.0');
+                    case 'notes': return editTmod.notes !== (original.notes || '');
+                    case 'tags': return JSON.stringify(editTmod.tags || []) !== JSON.stringify(original.tags || []);
+                    case 'subtype': return (editTmod.subtype || '') !== (original.subtype || '');
+                    case 'preview': return (editTmod.preview || '') !== (original.preview || '') || (editTmod.previewName || '') !== (original.previewName || '');
+                    case 'config': return (editTmod.config || '') !== (original.config || '') || (editTmod.configName || '') !== (original.configName || '');
+                    default: return false;
+                }
+            };
+
+            const restoreEditTmodField = (field) => {
+                const original = originalLoadedEditTmodSnapshot.value;
+                if (!original) return;
+                switch (field) {
+                    case 'title':
+                        editTmod.title = original.title || '';
+                        break;
+                    case 'author':
+                        editTmod.author = original.author || '';
+                        break;
+                    case 'version':
+                        editTmod.version = original.version || '1.0';
+                        break;
+                    case 'notes':
+                        editTmod.notes = original.notes || '';
+                        break;
+                    case 'tags':
+                        editTmod.tags = Array.isArray(original.tags) ? [...original.tags] : [];
+                        break;
+                    case 'subtype':
+                        editTmod.subtype = original.subtype || '';
+                        break;
+                    case 'preview':
+                        editTmod.preview = original.preview || '';
+                        editTmod.previewName = original.previewName || '';
+                        break;
+                    case 'config':
+                        editTmod.config = original.config || '';
+                        editTmod.configName = original.configName || '';
+                        break;
+                    default:
+                        return;
+                }
+                window.showToast(t('Field restored.'));
+            };
+
+            const canRestoreOriginalEditTmodFile = (file) => {
+                const original = findOriginalEditTmodFile(file?.internal_path);
+                if (!original) return false;
+                return JSON.stringify(file || {}) !== JSON.stringify(original);
+            };
+
+            const isEditTmodFileRemoved = (file) => Boolean(file?.removed);
+
+            const restoreRemovedEditTmodFile = (file) => {
+                const index = editTmod.files.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(file.internal_path));
+                if (index < 0) return;
+                editTmod.files.splice(index, 1, { ...editTmod.files[index], removed: false });
+                window.showToast(t('File restored to in-memory build.'));
+            };
+
+            const restoreOriginalEditTmodFile = (file) => {
+                const original = findOriginalEditTmodFile(file?.internal_path);
+                if (!original) return;
+                const index = editTmod.files.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(file.internal_path));
+                if (index < 0) return;
+                editTmod.files.splice(index, 1, { ...cloneEditTmodFile(original), removed: false });
+                window.showToast(t('Original file restored from loaded archive.'));
+            };
+
             const project = reactive({
                 dir: '', title: '', author: '', notes: '', tags: [],
+                subtype: '',
                 versions: [], activeVersion: '', files: [],
                 preview: '', previewName: '', config: '', configName: '', activeOverrides: []
             });
@@ -95,6 +276,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 autoStructuringBuild: false,
                 buildingTMod: false,
                 extracting: false,
+                loadingEditTmod: false,
+                savingEditTmod: false,
                 refreshProjectFiles: false,
                 autoStructuringProject: false,
                 compilingProject: false,
@@ -102,6 +285,98 @@ document.addEventListener('modder_tools_loaded', () => {
                 removingOverrides: false,
                 savingQb: false
             });
+
+            const validationState = reactive({
+                build: false,
+                extract: false,
+                editTmod: false,
+                project: false
+            });
+
+            const buildValidationError = computed(() => validateSpecialFileSelections({
+                files: build.files,
+                previewName: build.previewName,
+                hasPreview: Boolean(build.preview),
+                hasConfig: Boolean(build.config)
+            }));
+
+            const editTmodValidationError = computed(() => validateSpecialFileSelections({
+                files: getActiveEditTmodFiles(),
+                previewName: editTmod.previewName,
+                hasPreview: Boolean(editTmod.preview),
+                hasConfig: Boolean(editTmod.config)
+            }));
+
+            const editTmodDisplayFiles = computed(() => {
+                const files = Array.isArray(editTmod.files) ? editTmod.files : [];
+                const activeFiles = [];
+                const removedFiles = [];
+                for (const file of files) {
+                    if (file?.removed) {
+                        removedFiles.push(file);
+                    } else {
+                        activeFiles.push(file);
+                    }
+                }
+                return [...activeFiles, ...removedFiles];
+            });
+
+            const projectValidationError = computed(() => validateSpecialFileSelections({
+                files: project.files.map(file => ({ internal_path: file.rel_path })),
+                previewName: project.previewName,
+                hasPreview: Boolean(project.preview),
+                hasConfig: Boolean(project.config)
+            }));
+
+            const isBuildFieldInvalid = (field) => {
+                if (!validationState.build) return false;
+                switch (field) {
+                    case 'gamePath': return !selectedGamePath.value;
+                    case 'title': return !build.title.trim() || hasIllegalTitleChars(build.title);
+                    case 'author': return !build.author.trim();
+                    case 'version': return !build.version.trim();
+                    case 'notes': return !build.notes.trim() || build.notes.trim().length > 220;
+                    case 'tags': return build.tags.length === 0;
+                    case 'files': return build.files.length === 0 || Boolean(buildValidationError.value);
+                    default: return false;
+                }
+            };
+
+            const isExtractFieldInvalid = (field) => {
+                if (!validationState.extract) return false;
+                switch (field) {
+                    case 'source': return !extract.source;
+                    case 'dest': return !extract.dest;
+                    default: return false;
+                }
+            };
+
+            const isEditTmodFieldInvalid = (field) => {
+                if (!validationState.editTmod) return false;
+                switch (field) {
+                    case 'source': return !editTmod.tmodPath || !editTmod.loaded;
+                    case 'title': return !editTmod.title.trim() || hasIllegalTitleChars(editTmod.title);
+                    case 'author': return !editTmod.author.trim();
+                    case 'version': return !editTmod.version.trim();
+                    case 'notes': return !editTmod.notes.trim() || editTmod.notes.trim().length > 220;
+                    case 'tags': return editTmod.tags.length === 0;
+                    case 'files': return getActiveEditTmodFiles().length === 0 || Boolean(editTmodValidationError.value);
+                    default: return false;
+                }
+            };
+
+            const isProjectFieldInvalid = (field) => {
+                if (!validationState.project) return false;
+                switch (field) {
+                    case 'dir': return !project.dir;
+                    case 'gamePath': return !selectedGamePath.value;
+                    case 'activeVersion': return !project.activeVersion;
+                    case 'title': return !project.title.trim();
+                    case 'notes': return project.notes.trim().length > 220;
+                    case 'files': return Boolean(projectValidationError.value);
+                    default: return false;
+                }
+            };
 
             const clampQbByte = (value, fallback = 0) => {
                 const parsed = Number.parseInt(value, 10);
@@ -1870,6 +2145,7 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const buildTMod = async () => {
+                validationState.build = true;
                 if (!selectedGamePath.value) return window.showToast(t("Please select a target game installation."), true);
                 const title = build.title.trim();
                 if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
@@ -1880,13 +2156,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!build.notes.trim()) return window.showToast(t("Please enter mod notes or a description."), true);
                 if (build.tags.length === 0) return window.showToast(t("Please select at least one tag."), true);
                 if (build.files.length === 0) return window.showToast(t("Please add at least one file to your mod!"), true);
-                const buildValidationError = validateSpecialFileSelections({
-                    files: build.files,
-                    previewName: build.previewName,
-                    hasPreview: Boolean(build.preview),
-                    hasConfig: Boolean(build.config)
-                });
-                if (buildValidationError) return window.showToast(t(buildValidationError), true);
+                if (buildValidationError.value) return window.showToast(t(buildValidationError.value), true);
 
                 isWorking.buildingTMod = true;
                 try {
@@ -1908,6 +2178,7 @@ document.addEventListener('modder_tools_loaded', () => {
                         version: build.version.trim(),
                         notes: build.notes.trim(),
                         tags: build.tags,
+                        subtype: build.subtype || '',
                         previewBase64: build.preview || null,
                         previewName: build.previewName || "preview.png",
                         configBase64: build.config || null,
@@ -1967,6 +2238,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (dir) extract.dest = dir;
             };
             const extractTMod = async () => {
+                validationState.extract = true;
                 if (!extract.source) return window.showToast(t("Please select a Source TMod File."), true);
                 if (!extract.dest) return window.showToast(t("Please select a Destination Folder."), true);
                 
@@ -1988,6 +2260,362 @@ document.addEventListener('modder_tools_loaded', () => {
                     window.showToast(t("An unexpected error occurred during extraction."), true);
                 }
                 isWorking.extracting = false;
+            };
+
+            const browseEditTmodSource = async () => {
+                const fileResp = await eel.ask_tmod_file()();
+                const file = fileResp?.value ?? fileResp?.data?.value ?? fileResp;
+                if (!file) return;
+                const priorSnapshot = (editTmod.loaded || editTmod.tmodPath || editTmod.title || editTmod.files.length)
+                    ? createEditTmodSnapshot()
+                    : null;
+                if (priorSnapshot) previousEditTmodSnapshot.value = priorSnapshot;
+                resetEditTmod();
+                editTmod.tmodPath = file;
+                await loadEditTmod();
+                if (editTmod.loaded && priorSnapshot) {
+                    window.showUndoToast(
+                        t('Loaded a new TMod. Restore previous in-memory data?'),
+                        10,
+                        () => restorePreviousEditTmod()
+                    );
+                }
+            };
+
+            const loadEditTmod = async () => {
+                validationState.editTmod = true;
+                if (!editTmod.tmodPath) return window.showToast(t("Please select a Source TMod File."), true);
+                isWorking.loadingEditTmod = true;
+                try {
+                    const result = await eel.load_tmod_for_edit(editTmod.tmodPath)();
+                    if (!result.success) {
+                        window.showToast(t("Failed to load TMod:\n{error}").replace("{error}", result.error), true);
+                        isWorking.loadingEditTmod = false;
+                        return;
+                    }
+
+                    const data = result.data || {};
+                    editTmod.loaded = true;
+                    editTmod.tmodPath = data.tmodPath || editTmod.tmodPath;
+                    editTmod.fileName = data.fileName || '';
+                    editTmod.title = data.title || '';
+                    editTmod.author = data.author || '';
+                    editTmod.version = data.version || '1.0';
+                    editTmod.notes = data.notes || '';
+                    editTmod.tags = Array.isArray(data.tags) ? [...data.tags] : [];
+                    editTmod.subtype = data.subtype || '';
+                    editTmod.preview = data.previewBase64 || '';
+                    editTmod.previewName = data.previewName || '';
+                    editTmod.config = data.configBase64 || '';
+                    editTmod.configName = data.configName || '';
+                    editTmod.files = Array.isArray(data.files) ? data.files.map(file => ({
+                        internal_path: file.internal_path,
+                        name: file.name || '',
+                        source: file.source || 'archive',
+                        path: file.path || '',
+                        data: file.data || '',
+                        removed: false
+                    })) : [];
+                    originalLoadedEditTmodSnapshot.value = createEditTmodSnapshot();
+
+                    window.showToast(t("TMod loaded into memory and ready to edit."));
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while loading the TMod."), true);
+                }
+                isWorking.loadingEditTmod = false;
+            };
+
+            const chooseEditTmodPreview = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                const result = await eel.ask_preview_file(selectedGamePath.value)();
+                const file = result?.file;
+                if (file) {
+                    const previousPreview = editTmod.preview;
+                    const previousPreviewName = editTmod.previewName;
+                    const nextPreviewName = file.name;
+                    const previewPath = normalizeInternalPath(previewInternalPath(nextPreviewName));
+                    if (editTmod.files.some(existing => normalizeInternalPath(existing.internal_path) === previewPath)) {
+                        window.showToast(t("Preview image path cannot also be included in the files list."), true);
+                        return;
+                    }
+                    editTmod.preview = file.data;
+                    editTmod.previewName = nextPreviewName;
+                    window.showUndoToast(
+                        t('Preview updated. Restore previous preview?'),
+                        8,
+                        () => {
+                            editTmod.preview = previousPreview;
+                            editTmod.previewName = previousPreviewName;
+                        }
+                    );
+                }
+            };
+
+            const chooseEditTmodConfig = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                const result = await eel.ask_config_file(selectedGamePath.value)();
+                const file = result?.file;
+                if (file) {
+                    const previousConfig = editTmod.config;
+                    const previousConfigName = editTmod.configName;
+                    editTmod.config = file.data;
+                    editTmod.configName = 'default.cfg';
+                    window.showUndoToast(
+                        t('Config updated. Restore previous config?'),
+                        8,
+                        () => {
+                            editTmod.config = previousConfig;
+                            editTmod.configName = previousConfigName;
+                        }
+                    );
+                }
+            };
+
+            const addEditTmodFiles = async () => {
+                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                try {
+                    const result = await eel.ask_add_files(selectedGamePath.value)();
+                    if (result && result.success) {
+                        if (result.rejected && result.rejected.length > 0) {
+                            window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
+                        }
+                        if (result.rejected_cfg && result.rejected_cfg.length > 0) {
+                            window.showToast(t("Denied {count} file(s):\n.cfg files must be added through the Config File option.").replace("{count}", result.rejected_cfg.length), true);
+                        }
+                        if (result.files && result.files.length > 0) {
+                            const previousFiles = editTmod.files.map(cloneEditTmodFile);
+                            const merged = [...editTmod.files];
+                            result.files.forEach(f => {
+                                const existingIndex = merged.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(f.internal_path));
+                                const nextFile = {
+                                    internal_path: f.internal_path,
+                                    name: f.internal_path.split('/').pop(),
+                                    source: 'disk',
+                                    path: f.path,
+                                    data: '',
+                                    removed: false
+                                };
+                                if (existingIndex >= 0) merged.splice(existingIndex, 1, nextFile);
+                                else merged.push(nextFile);
+                            });
+
+                            const validationError = validateSpecialFileSelections({
+                                files: merged,
+                                previewName: editTmod.previewName,
+                                hasPreview: Boolean(editTmod.preview),
+                                hasConfig: Boolean(editTmod.config)
+                            });
+                            if (validationError) {
+                                window.showToast(t(validationError), true);
+                                return;
+                            }
+                            editTmod.files = merged;
+                            window.showUndoToast(
+                                t('File list updated. Restore previous file state?'),
+                                8,
+                                () => {
+                                    editTmod.files = previousFiles.map(cloneEditTmodFile);
+                                }
+                            );
+                        }
+                    }
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while adding files."), true);
+                }
+            };
+
+            const addEditTmodFilesFromTmod = async () => {
+                if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("Please load a TMod first."), true);
+                try {
+                    const fileResp = await eel.ask_tmod_file()();
+                    const sourcePath = fileResp?.value ?? fileResp?.data?.value ?? fileResp;
+                    if (!sourcePath) return;
+
+                    const result = await eel.load_tmod_for_edit(sourcePath)();
+                    if (!result.success) {
+                        window.showToast(t("Failed to read source TMod:\n{error}").replace("{error}", result.error), true);
+                        return;
+                    }
+
+                    const importedFiles = Array.isArray(result.data?.files)
+                        ? result.data.files.map(file => ({
+                            internal_path: file.internal_path,
+                            name: file.name || file.internal_path.split('/').pop(),
+                            source: 'tmod',
+                            imported_from: sourcePath,
+                            path: '',
+                            data: file.data || '',
+                            removed: false
+                        }))
+                        : [];
+
+                    if (importedFiles.length === 0) {
+                        window.showToast(t("The selected TMod has no regular archive files to import."), true);
+                        return;
+                    }
+
+                    const previousFiles = editTmod.files.map(cloneEditTmodFile);
+                    const merged = [...editTmod.files];
+                    let replaceAllRemaining = false;
+                    for (const file of importedFiles) {
+                        const existingIndex = merged.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(file.internal_path));
+                        if (existingIndex >= 0) {
+                            if (!replaceAllRemaining) {
+                                const decision = await window.showConfirmModal({
+                                    title: t('File Conflict'),
+                                    message: t("A file already exists at:\n{path}\n\nKeep the current file or replace it with the version from:\n{source}").replace("{path}", file.internal_path).replace("{source}", sourcePath),
+                                    confirmLabel: t('Replace'),
+                                    cancelLabel: t('Keep Current'),
+                                    extraActionLabel: t('Replace All Remaining'),
+                                    danger: true
+                                });
+                                if (decision === false) {
+                                    continue;
+                                }
+                                if (decision === 'extra') {
+                                    replaceAllRemaining = true;
+                                }
+                            }
+                            merged.splice(existingIndex, 1, file);
+                        } else {
+                            merged.push(file);
+                        }
+                    }
+
+                    const validationError = validateSpecialFileSelections({
+                        files: merged,
+                        previewName: editTmod.previewName,
+                        hasPreview: Boolean(editTmod.preview),
+                        hasConfig: Boolean(editTmod.config)
+                    });
+                    if (validationError) {
+                        window.showToast(t(validationError), true);
+                        return;
+                    }
+
+                    editTmod.files = merged;
+                    window.showUndoToast(
+                        t('Imported files from another TMod. Restore previous file state?'),
+                        8,
+                        () => {
+                            editTmod.files = previousFiles.map(cloneEditTmodFile);
+                        }
+                    );
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while importing files from another TMod."), true);
+                }
+            };
+
+            const replaceEditTmodFile = async (targetFile) => {
+                const result = await eel.ask_import_file(selectedGamePath.value || null)();
+                const file = result?.file;
+                if (!file) return;
+
+                const index = editTmod.files.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(targetFile.internal_path));
+                if (index < 0) return;
+
+                const previousFile = cloneEditTmodFile(editTmod.files[index]);
+                editTmod.files.splice(index, 1, {
+                    ...editTmod.files[index],
+                    source: 'disk',
+                    path: file.path,
+                    data: file.data,
+                    removed: false
+                });
+                window.showUndoToast(
+                    t('File replaced. Restore previous file data?'),
+                    8,
+                    () => {
+                        editTmod.files.splice(index, 1, previousFile);
+                    }
+                );
+            };
+
+            const removeEditTmodFile = (targetFile) => {
+                editTmod.files = editTmod.files.map(file => {
+                    if (normalizeInternalPath(file.internal_path) !== normalizeInternalPath(targetFile.internal_path)) return file;
+                    return { ...file, removed: true };
+                });
+            };
+
+            const saveEditTmod = async () => {
+                validationState.editTmod = true;
+                if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("Please load a TMod first."), true);
+                const title = editTmod.title.trim();
+                if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
+                if (!title) return window.showToast(t("Please enter a mod title."), true);
+                if (!editTmod.author.trim()) return window.showToast(t("Please enter a mod author."), true);
+                if (!editTmod.version.trim()) return window.showToast(t("Please enter a mod version."), true);
+                if (!editTmod.notes.trim()) return window.showToast(t("Please enter mod notes or a description."), true);
+                if (editTmod.notes.trim().length > 220) return window.showToast(t("Mod notes cannot exceed 220 characters."), true);
+                if (editTmod.tags.length === 0) return window.showToast(t("Please select at least one tag."), true);
+                if (getActiveEditTmodFiles().length === 0) return window.showToast(t("Please keep at least one file in your mod."), true);
+
+                if (editTmodValidationError.value) return window.showToast(t(editTmodValidationError.value), true);
+
+                isWorking.savingEditTmod = true;
+                try {
+                    const runSave = async (requestPayload) => runQueuedModderOperation({
+                        label: t("Compile TMod in place '{name}'").replace('{name}', title),
+                        operation: 'build_tmod',
+                        task: () => eel.save_tmod_in_place(requestPayload)()
+                    });
+
+                    const payload = {
+                        tmodPath: editTmod.tmodPath,
+                        title,
+                        author: editTmod.author.trim(),
+                        version: editTmod.version.trim(),
+                        notes: editTmod.notes.trim(),
+                        tags: [...editTmod.tags],
+                        subtype: editTmod.subtype || '',
+                        previewBase64: editTmod.preview || null,
+                        previewName: editTmod.previewName || 'preview.png',
+                        configBase64: editTmod.config || null,
+                        files: getActiveEditTmodFiles().map(file => ({
+                            internal_path: file.internal_path,
+                            name: file.name || file.internal_path.split('/').pop(),
+                            path: file.path || '',
+                            data: file.data || ''
+                        }))
+                    };
+
+                    let result = await runSave(payload);
+                    if (!result.cancelled && !result.success && result.code === 'FILE_EXISTS') {
+                        const overwriteConfirmed = await window.showConfirmModal({
+                            title: t('Overwrite Existing TMod?'),
+                            message: t('A file with the title-based file name already exists. Do you want to overwrite it?'),
+                            confirmLabel: t('Overwrite'),
+                            cancelLabel: t('Cancel'),
+                            danger: true
+                        });
+
+                        if (!overwriteConfirmed) {
+                            isWorking.savingEditTmod = false;
+                            window.showToast(t('TMod compile cancelled.'));
+                            return;
+                        }
+
+                        result = await runSave({ ...payload, overwrite: true });
+                    }
+
+                    if (result.cancelled) {
+                        window.showToast(t('TMod compile cancelled.'));
+                        isWorking.savingEditTmod = false;
+                        return;
+                    }
+                    if (result.success) {
+                        editTmod.tmodPath = result.path || editTmod.tmodPath;
+                        editTmod.fileName = result.fileName || editTmod.fileName;
+                        window.showToast(t("TMod successfully compiled in place!\nSaved to: {path}").replace("{path}", result.path));
+                        await loadEditTmod();
+                    } else {
+                        window.showToast(t("Failed to compile TMod:\n{error}").replace("{error}", result.error), true);
+                    }
+                } catch (e) {
+                    window.showToast(t("An unexpected error occurred while compiling the TMod."), true);
+                }
+                isWorking.savingEditTmod = false;
             };
 
             const chooseProjectPreview = async () => {
@@ -2035,6 +2663,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     project.author = result.data.author || '';
                     project.notes = result.data.notes || '';
                     project.tags = result.data.tags || [];
+                    project.subtype = result.data.subtype || '';
                     project.preview = result.data.previewBase64 || '';
                     project.previewName = result.data.previewName || '';
                     project.config = result.data.configBase64 || '';
@@ -2065,6 +2694,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     author: project.author.trim(),
                     notes: project.notes.trim(),
                     tags: project.tags,
+                    subtype: project.subtype || '',
                     active_version: project.activeVersion,
                     previewBase64: project.preview || null,
                     previewName: project.previewName || "preview.png",
@@ -2114,16 +2744,11 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const compileProject = async () => {
+                validationState.project = true;
                 if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
                 if (!project.title.trim()) return window.showToast(t("Project title cannot be empty."), true);
                 if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
-                const projectValidationError = validateSpecialFileSelections({
-                    files: project.files.map(file => ({ internal_path: file.rel_path })),
-                    previewName: project.previewName,
-                    hasPreview: Boolean(project.preview),
-                    hasConfig: Boolean(project.config)
-                });
-                if (projectValidationError) return window.showToast(t(projectValidationError), true);
+                if (projectValidationError.value) return window.showToast(t(projectValidationError.value), true);
 
                 await saveProject();
                 
@@ -2349,12 +2974,14 @@ document.addEventListener('modder_tools_loaded', () => {
             return {
                 t, activeTab, installs, selectedGamePath, gameOptions,
                 lastBuildOutputPath, lastCompiledProjectPath,
-                tagOptions, build, extract, project, softwareCategories, isWorking,
+                tagOptions, subtypeOptions, build, extract, editTmod, editTmodDisplayFiles, previousEditTmodSnapshot, project, softwareCategories, isWorking,
+                isBuildFieldInvalid, isExtractFieldInvalid, isEditTmodFieldInvalid, isProjectFieldInvalid, hasEditTmodFieldChanged, restoreEditTmodField, canRestoreOriginalEditTmodFile, restoreOriginalEditTmodFile, isEditTmodFileRemoved,
                 qbEditor, qbMatrixForm, qbCanvasRef, qbViewportCanvasRef, selectedQbMatrix, qbPackageActive, qbHasUnsavedAssets, qbSelectedAsset, qbBlueprintAssetRows, qbDisplayName, qbContainerName, qbDecodeInfoRows, qbVersionLabel, qbTotalVoxelCount, qbVisibleVoxelCount, qbSliceVoxels, qbHoverSummary, qbActiveToolLabel, qbCurrentAttachmentPoint, qbAttachmentStatus, qbHoveredEditableCell,
                 scanForGames, chooseBuildPreview, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
                 chooseBuildConfig,
                 openSelectedGamePath, openProjectFolder, openBuildOutputFolder, openCompileOutputFolder, openBuildFileLocation, openProjectFileLocation,
                 browseExtractSource, browseExtractDest, extractTMod,
+                browseEditTmodSource, loadEditTmod, restorePreviousEditTmod, restoreRemovedEditTmodFile, chooseEditTmodPreview, chooseEditTmodConfig, addEditTmodFiles, addEditTmodFilesFromTmod, replaceEditTmodFile, removeEditTmodFile, saveEditTmod,
                 chooseProjectPreview, chooseProjectConfig, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides,
                 markQbDirty, newQbDocument, openQbDocument, saveQbDocument, saveQbDocumentAs, openQbFileLocation,
                 selectQbMatrix, selectQbPackageAsset, addQbMatrix, removeSelectedQbMatrix, applyQbMatrixForm, fillQbSlice, clearQbSlice, stepQbSlice, setQbTool, setQbViewMode, resetQbView, setCurrentQbAttachmentPoint, clearCurrentQbAttachmentPoints, focusCurrentQbAttachmentPoint, syncAttachmentPointAcrossPackageFamily,

@@ -35,12 +35,37 @@ _MODDER_CANCEL_FLAGS = {
     "compile_project": False,
 }
 
+_KNOWN_MOD_SUBTYPES = {
+    "Bard",
+    "Boomeranger",
+    "Candy Barbarian",
+    "Chloromancer",
+    "Dino Tamer",
+    "Dracolyte",
+    "Fae Trickster",
+    "Gunslinger",
+    "Ice Sage",
+    "Knight",
+    "Lunar Lancer",
+    "Neon Ninja",
+    "Pirate Captain",
+    "Revenant",
+    "Shadow Hunter",
+    "Solarion",
+    "Tomb Raiser",
+    "Vanguardian",
+}
+
 
 def _decode_data_url(data_url):
     if not data_url or "," not in data_url:
         return None
     _, data_str = data_url.split(",", 1)
     return base64.b64decode(data_str)
+
+
+def _encode_data_url(data: bytes, mime_type: str = "application/octet-stream"):
+    return f"data:{mime_type};base64,{base64.b64encode(data).decode('utf-8')}"
 
 
 def _normalize_internal_path(path) -> str | None:
@@ -126,6 +151,28 @@ def _raise_if_cancelled(operation):
         raise OperationCancelled("Operation cancelled by user.")
 
 
+def _split_type_and_subtype(tags, explicit_subtype=""):
+    clean_tags = []
+    found_subtype = str(explicit_subtype or "").strip()
+    for tag in tags or []:
+        clean_tag = str(tag or "").strip()
+        if not clean_tag:
+            continue
+        if not found_subtype and clean_tag in _KNOWN_MOD_SUBTYPES:
+            found_subtype = clean_tag
+            continue
+        clean_tags.append(clean_tag)
+    return clean_tags, found_subtype
+
+
+def _combine_tags_with_subtype(tags, subtype=""):
+    clean_tags, _ = _split_type_and_subtype(tags, "")
+    clean_subtype = str(subtype or "").strip()
+    if clean_subtype:
+        clean_tags.append(clean_subtype)
+    return clean_tags
+
+
 @eel.expose
 @standardize_response
 def cancel_modder_tools_operation(operation):
@@ -155,6 +202,31 @@ def ask_tmod_file():
     file_path = filedialog.askopenfilename(title="Select TMod File", filetypes=[("Trove Mods", "*.tmod")])
     root.destroy()
     return file_path
+
+
+@eel.expose
+@standardize_response
+def ask_import_file(game_path_str=None):
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    file_path = filedialog.askopenfilename(
+        title="Select File",
+        initialdir=game_path_str or None,
+        filetypes=[("All Files", "*.*")],
+    )
+    root.destroy()
+    if not file_path:
+        return {"success": True, "file": None}
+    path = Path(file_path)
+    return {
+        "success": True,
+        "file": {
+            "name": path.name,
+            "path": str(path),
+            "data": _encode_data_url(path.read_bytes()),
+        },
+    }
 
 
 @eel.expose
@@ -401,6 +473,66 @@ def extract_tmod(tmod_path_str, dest_path_str):
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
+
+@eel.expose
+@standardize_response
+def load_tmod_for_edit(tmod_path_str):
+    try:
+        tmod_path = Path(str(tmod_path_str or "").strip())
+        if not tmod_path.exists() or not tmod_path.is_file():
+            return {"success": False, "error": "TMod file does not exist."}
+
+        mod = TMod.read_bytes(tmod_path, tmod_path.read_bytes())
+        regular_files = []
+        preview_data = None
+        preview_name = ""
+        config_data = None
+        config_name = ""
+
+        for file in mod.files:
+            normalized_path = _normalize_internal_path(file.trove_path)
+            if normalized_path and normalized_path == mod.preview_path:
+                preview_data = _encode_data_url(file.data, "image/png")
+                preview_name = Path(file.trove_path).name
+                continue
+            if normalized_path and normalized_path == mod.config_path:
+                config_data = _encode_data_url(file.data, "text/plain")
+                config_name = "default.cfg"
+                continue
+
+            regular_files.append({
+                "internal_path": file.trove_path,
+                "name": Path(file.trove_path).name,
+                "source": "archive",
+                "path": "",
+                "data": _encode_data_url(file.data),
+            })
+
+        tags, subtype = _split_type_and_subtype(mod.tags or [], mod.subtype or "")
+
+        return {
+            "success": True,
+            "data": {
+                "tmodPath": str(tmod_path),
+                "fileName": tmod_path.name,
+                "title": mod.name or tmod_path.stem,
+                "author": mod.author or "",
+                "version": mod.get_property_value("modVersion") or "1.0",
+                "notes": mod.notes or "",
+                "tags": tags,
+                "subtype": subtype,
+                "previewBase64": preview_data,
+                "previewName": preview_name,
+                "configBase64": config_data,
+                "configName": config_name,
+                "files": regular_files,
+            },
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
 @eel.expose
 @standardize_response
 def detect_override_files(source_dir_str):
@@ -570,6 +702,7 @@ def build_tmod(payload):
         if len(notes) > 220:
             return {"success": False, "error": "Mod notes cannot exceed 220 characters."}
         tags = payload.get("tags", [])
+        subtype = payload.get("subtype", "").strip()
         files = payload.get("files", [])
         
         if not author: return {"success": False, "error": "Mod author is required."}
@@ -609,8 +742,8 @@ def build_tmod(payload):
         mod.author = author
         mod.add_property("modVersion", version)
         mod.notes = notes
-            
-        for tag in tags:
+
+        for tag in _combine_tags_with_subtype(tags, subtype):
             mod.add_tag(tag)
 
         mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))
@@ -658,6 +791,128 @@ def build_tmod(payload):
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
+
+@eel.expose
+@standardize_response
+def save_tmod_in_place(payload):
+    try:
+        _reset_cancel_flag("build_tmod")
+
+        tmod_path_str = str(payload.get("tmodPath", "")).strip()
+        if not tmod_path_str:
+            return {"success": False, "error": "No TMod file was selected."}
+
+        source_path = Path(tmod_path_str)
+        if not source_path.exists() or not source_path.is_file():
+            return {"success": False, "error": "Selected TMod file does not exist."}
+
+        title = payload.get("title", "").strip()
+        if title.lower().endswith(".tmod"):
+            title = title[:-5].strip()
+        if not title:
+            return {"success": False, "error": "Mod title is required."}
+        if re.search(r'[<>:"/\\|?*]', title):
+            return {"success": False, "error": "Mod title contains illegal characters (< > : \" / \\ | ? *)."}
+
+        save_path = source_path.with_name(f"{title}.tmod")
+
+        author = payload.get("author", "").strip()
+        version = payload.get("version", "").strip()
+        notes = payload.get("notes", "").strip()
+        tags = payload.get("tags", [])
+        subtype = payload.get("subtype", "").strip()
+        files = payload.get("files", [])
+
+        if not author:
+            return {"success": False, "error": "Mod author is required."}
+        if not version:
+            return {"success": False, "error": "Mod version is required."}
+        if not notes:
+            return {"success": False, "error": "Mod notes are required."}
+        if len(notes) > 220:
+            return {"success": False, "error": "Mod notes cannot exceed 220 characters."}
+        if not tags:
+            return {"success": False, "error": "At least one tag is required."}
+        if not files:
+            return {"success": False, "error": "At least one file is required."}
+
+        overwrite = bool(payload.get("overwrite", False))
+        if save_path.exists() and save_path.resolve() != source_path.resolve() and not overwrite:
+            return {
+                "success": False,
+                "code": "FILE_EXISTS",
+                "error": f"A mod file named '{save_path.name}' already exists.",
+                "path": str(save_path),
+            }
+        if save_path.exists() and save_path.resolve() == source_path.resolve() and not overwrite:
+            return {
+                "success": False,
+                "code": "FILE_EXISTS",
+                "error": f"A mod file named '{save_path.name}' already exists.",
+                "path": str(save_path),
+            }
+
+        preview_name = payload.get("previewName", "preview.png")
+        clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
+        preview_path = Path(f"ui/{clean_preview_name}") if payload.get("previewBase64") else None
+
+        config_data = _decode_data_url(payload.get("configBase64"))
+        config_path = _default_config_path() if config_data is not None else None
+
+        path_error = _validate_special_paths(
+            [f.get("internal_path", f.get("name", "unknown_file")) for f in files],
+            preview_path=preview_path.as_posix() if preview_path else None,
+            include_config=config_data is not None,
+        )
+        if path_error:
+            return {"success": False, "error": path_error}
+
+        mod = TMod()
+        mod.mod_path = save_path
+        mod.name = title
+        mod.author = author
+        mod.add_property("modVersion", version)
+        mod.notes = notes
+        for tag in _combine_tags_with_subtype(tags, subtype):
+            mod.add_tag(tag)
+        mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))
+
+        preview_bytes = _decode_data_url(payload.get("previewBase64"))
+        if preview_bytes is not None and preview_path is not None:
+            mod.add_file(TroveModFile(preview_path, preview_bytes))
+            mod.preview_path = preview_path
+
+        if config_data is not None and config_path is not None:
+            mod.add_file(TroveModFile(config_path, config_data))
+            mod.config_path = config_path
+
+        for file in files:
+            _raise_if_cancelled("build_tmod")
+            internal_path = Path(file.get("internal_path", file.get("name", "unknown_file")))
+            abs_path = str(file.get("path", "")).strip()
+
+            file_bytes = None
+            if abs_path and Path(abs_path).exists():
+                file_bytes = Path(abs_path).read_bytes()
+            else:
+                file_bytes = _decode_data_url(file.get("data"))
+
+            if file_bytes is None:
+                return {"success": False, "error": f"Missing file data for {internal_path.as_posix()}."}
+
+            mod.add_file(TroveModFile(internal_path, file_bytes))
+
+        if save_path.exists() and overwrite:
+            save_path.unlink(missing_ok=True)
+        save_path.write_bytes(mod.compile_tmod())
+        return {"success": True, "path": str(save_path), "fileName": save_path.name}
+    except OperationCancelled as e:
+        return {"success": False, "cancelled": True, "error": str(e)}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
 @eel.expose
 @standardize_response
 def load_mod_project(project_path_str):
@@ -681,6 +936,7 @@ def load_mod_project(project_path_str):
             data = json.loads(project_file.read_text(encoding="utf-8"))
             data.setdefault("configBase64", None)
             data.setdefault("configName", "")
+            data.setdefault("subtype", "")
             data["versions"] = sorted(list(set(versions + data.get("versions", []))))
             return {"success": True, "data": data}
         else:
@@ -689,6 +945,7 @@ def load_mod_project(project_path_str):
                 "author": "",
                 "notes": "",
                 "tags": [],
+                "subtype": "",
                 "versions": versions,
                 "active_version": versions[0],
                 "configBase64": None,
@@ -1003,6 +1260,7 @@ def compile_project(project_path_str, version, game_path_str):
         author = meta.get("author", "Unknown").strip()
         notes = meta.get("notes", "").strip()
         tags = meta.get("tags", [])
+        subtype = meta.get("subtype", "").strip()
 
         if not title:
             return {"success": False, "error": "Project title cannot be empty."}
@@ -1014,7 +1272,7 @@ def compile_project(project_path_str, version, game_path_str):
         mod.author = author
         mod.add_property("modVersion", version.strip())
         mod.notes = notes
-        for tag in tags:
+        for tag in _combine_tags_with_subtype(tags, subtype):
             mod.add_tag(tag)
         
         mod.add_property("compileDate", str(int(datetime.now(UTC).timestamp())))

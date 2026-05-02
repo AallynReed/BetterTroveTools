@@ -25,10 +25,37 @@
 .tool-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 25px; }
 .tool-panel h3 { margin-bottom: 5px; color: var(--text-main); }
 .help-text { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
+.edit-tmod-layout { display: flex; gap: 30px; align-items: flex-start; }
+.edit-tmod-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.edit-tmod-actions { display: inline-flex; gap: 8px; align-items: center; }
+.form-label-with-action { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; }
+.form-label-with-action .icon-btn-small { flex: 0 0 auto; }
+.edit-tmod-file-removed td { opacity: 0.55; text-decoration: line-through; }
+.edit-tmod-file-removed td:last-child { text-decoration: none; opacity: 1; }
 .form-group { margin-bottom: 20px; }
 .form-group label { display: block; margin-bottom: 8px; color: var(--text-main); font-size: 14px; font-weight: 500; }
 .form-group input[type="text"] { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; }
 .form-group input[type="text"]:focus { border-color: var(--accent-blue); }
+.field-invalid,
+.field-invalid input:not(.select2-search__field),
+.field-invalid textarea,
+input.field-invalid,
+textarea.field-invalid {
+    border-color: #ff5555 !important;
+    box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.2) !important;
+}
+
+.field-invalid .custom-select-trigger,
+.field-invalid.custom-select-wrapper .custom-select-trigger {
+    border-color: #ff5555 !important;
+    box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.2) !important;
+}
+
+.field-invalid .select2-container--btt-dark .select2-selection,
+.field-invalid .select2-container .select2-selection {
+    border-color: #ff5555 !important;
+    box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.2) !important;
+}
 .input-row { display: flex; gap: 10px; }
 textarea, select { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; font-family: inherit; resize: vertical; }
 textarea:focus, select:focus { border-color: var(--accent-blue); }
@@ -85,7 +112,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 }
 
 @media (max-width: 1100px) {
-    .build-split-layout { flex-wrap: wrap; }
+    .build-split-layout, .edit-tmod-layout { flex-wrap: wrap; }
     .build-left-col { flex: 1 1 100%; max-width: 420px; }
     .build-right-col { flex: 1 1 100%; }
     .form-row { flex-wrap: wrap; }

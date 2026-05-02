@@ -1609,7 +1609,7 @@ span.flatpickr-weekday {
 }
 
 .global-modal-card {
-    width: min(92vw, 460px);
+    width: min(92vw, 680px);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -1629,8 +1629,16 @@ span.flatpickr-weekday {
 
 .global-modal-actions {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.global-modal-actions-right {
+    display: flex;
     justify-content: flex-end;
     gap: 10px;
+    margin-left: auto;
 }
 
 .app-update-overlay-card {
@@ -2052,6 +2060,11 @@ span.flatpickr-weekday {
     background: var(--bg-panel);
     color: var(--text-main);
     padding: 8px 12px;
+}
+
+.select2-container--btt-dark .select2-results > .select2-results__options {
+    max-height: 280px;
+    overflow-y: auto;
 }
 
 .select2-container--btt-dark .select2-results__option--highlighted[aria-selected] {

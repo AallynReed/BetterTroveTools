@@ -418,8 +418,19 @@ class TroveMod:
     def tags(self):
         tags = self.get_property_value("tags")
         if tags:
-            return tags.split(",")
+            return [tag.strip() for tag in tags.split(",") if tag.strip()]
         return []
+
+    @property
+    def subtype(self):
+        value = self.get_property_value("subtype")
+        if value is None:
+            return ""
+        return value.strip()
+
+    @subtype.setter
+    def subtype(self, value: str):
+        self.add_property("subtype", str(value or "").strip())
 
     def add_tag(self, tag: str):
         tags = self.tags

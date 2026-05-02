@@ -11,6 +11,9 @@
             <button class="tab-btn" :class="{ active: activeTab === 'extract' }" @click="activeTab = 'extract'">
                 <i class="fa-solid fa-box-open"></i> <span>{{ t('Extract TMod') }}</span>
             </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'edit_tmod' }" @click="activeTab = 'edit_tmod'">
+                <i class="fa-solid fa-pen-to-square"></i> <span>{{ t('Edit TMod') }}</span> <span class="beta-label">BETA</span>
+            </button>
             <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('Projects') }}</span>
             </button>
@@ -64,7 +67,7 @@
                         <div class="form-group">
                             <label>{{ t('Target Game Installation') }}</label>
                             <div class="input-row">
-                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
+                                <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;" :class="{ 'field-invalid': isBuildFieldInvalid('gamePath') }"></custom-vue-select>
                                 <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
                                     <i class="fa-solid fa-folder-open"></i>
                                 </button>
@@ -74,15 +77,15 @@
                         <div class="form-row">
                             <div class="form-group" style="flex: 2;">
                                 <label>{{ t('Mod Title') }}</label>
-                                <input type="text" v-model="build.title" :placeholder="t('My Awesome Mod')">
+                                <input type="text" v-model="build.title" :placeholder="t('My Awesome Mod')" :class="{ 'field-invalid': isBuildFieldInvalid('title') }">
                             </div>
                             <div class="form-group" style="flex: 2;">
                                 <label>{{ t('Authors') }}</label>
-                                <input type="text" v-model="build.author" :placeholder="t('Author 1, Author 2')">
+                                <input type="text" v-model="build.author" :placeholder="t('Author 1, Author 2')" :class="{ 'field-invalid': isBuildFieldInvalid('author') }">
                             </div>
                             <div class="form-group" style="flex: 1;">
                                 <label>{{ t('Version') }}</label>
-                                <input type="text" v-model="build.version">
+                                <input type="text" v-model="build.version" :class="{ 'field-invalid': isBuildFieldInvalid('version') }">
                             </div>
                         </div>
 
@@ -95,18 +98,26 @@
                 <div class="form-group">
                     <div class="form-group">
                         <label>{{ t('Notes') }}</label>
-                        <textarea v-model="build.notes" rows="3" maxlength="220" :placeholder="t('Enter mod description or notes...')"></textarea>
+                        <textarea v-model="build.notes" rows="3" maxlength="220" :placeholder="t('Enter mod description or notes...')" :class="{ 'field-invalid': isBuildFieldInvalid('notes') }"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label>{{ t('Tags') }}</label>
-                        <select2 v-model="build.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label>{{ t('Tags') }}</label>
+                            <div :class="{ 'field-invalid': isBuildFieldInvalid('tags') }">
+                                <select2 v-model="build.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>{{ t('Subtype') }}</label>
+                            <custom-vue-select v-model="build.subtype" :options="subtypeOptions" style="flex: 1;"></custom-vue-select>
+                        </div>
                     </div>
                     <div class="input-row" style="margin-bottom: 10px;">
                         <button class="primary-btn" @click="detectBuildOverrides" :disabled="isWorking.detectingOverrides"><i class="fa-solid" :class="isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('Detect Overrides') }}</span></button>
                         <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('Add File') }}</span></button>
                         <button class="primary-btn" @click="autoStructureBuild" :disabled="isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('Auto-Fix file locations') }}</span></button>
                     </div>
-                    <div class="table-container" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                    <div class="table-container" :class="{ 'field-invalid': isBuildFieldInvalid('files') }" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                             <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                 <tr>
@@ -150,7 +161,7 @@
                 <div class="form-group">
                     <label>{{ t('Source TMod File') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="extract.source" :placeholder="t('Select a .tmod file...')" readonly>
+                        <input type="text" v-model="extract.source" :placeholder="t('Select a .tmod file...')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('source') }">
                         <button class="primary-btn" @click="browseExtractSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('Browse') }}</span></button>
                     </div>
                 </div>
@@ -158,7 +169,7 @@
                 <div class="form-group">
                     <label>{{ t('Destination Folder') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="extract.dest" :placeholder="t('Select where to extract the files...')" readonly>
+                        <input type="text" v-model="extract.dest" :placeholder="t('Select where to extract the files...')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('dest') }">
                         <button class="primary-btn" @click="browseExtractDest"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
                     </div>
                 </div>
@@ -170,6 +181,189 @@
             </div>
         </div>
 
+        <div class="tab-content" :class="{ active: activeTab === 'edit_tmod' }">
+            <div class="tool-panel">
+                <h3>{{ t('Edit an existing TMod in place') }}</h3>
+                <p class="help-text">{{ t('Load a .tmod into memory, update its metadata or file list, then compile it back over the same archive.') }}</p>
+
+                <div class="form-group">
+                    <label>{{ t('Source TMod File') }}</label>
+                    <div class="input-row">
+                        <input type="text" v-model="editTmod.tmodPath" :placeholder="t('Select a .tmod file...')" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
+                        <button class="primary-btn" @click="browseEditTmodSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('Browse') }}</span></button>
+                    </div>
+                </div>
+
+                <div v-if="editTmod.loaded" class="edit-tmod-layout">
+                    <div class="build-left-col">
+                        <div class="form-group">
+                            <label class="form-label-with-action">
+                                <span>{{ t('Mod Preview') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('preview')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('preview')" :title="t('Restore original preview')">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </label>
+                            <div class="mod-preview-picker" :title="t('Click to select preview image')" @click="chooseEditTmodPreview">
+                                <img :src="editTmod.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
+                                <div class="preview-overlay">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>{{ t('Change Image') }}</span>
+                                </div>
+                                <button type="button" class="remove-preview-btn" v-show="editTmod.preview" @click.stop="editTmod.preview = ''; editTmod.previewName = ''" :title="t('Remove Preview')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label class="form-label-with-action">
+                                <span>{{ t('Config File (.cfg)') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('config')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('config')" :title="t('Restore original config')">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </label>
+                            <div class="input-row">
+                                <input type="text" :value="editTmod.configName" :placeholder="t('Optional UI config file...')" readonly>
+                                <button class="primary-btn" @click="chooseEditTmodConfig">
+                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('Browse') }}</span>
+                                </button>
+                                <button type="button" class="icon-btn-small danger" v-show="editTmod.config" @click="editTmod.config = ''; editTmod.configName = ''" :title="t('Remove Config File')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="build-right-col">
+                        <div class="form-group">
+                            <label>{{ t('Loaded Archive') }}</label>
+                            <input type="text" :value="editTmod.fileName" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('Mod Title') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('title')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('title')" :title="t('Restore original title')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <input type="text" v-model="editTmod.title" :placeholder="t('My Awesome Mod')" :class="{ 'field-invalid': isEditTmodFieldInvalid('title') }">
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('Authors') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('author')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('author')" :title="t('Restore original authors')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <input type="text" v-model="editTmod.author" :placeholder="t('Author 1, Author 2')" :class="{ 'field-invalid': isEditTmodFieldInvalid('author') }">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('Version') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('version')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('version')" :title="t('Restore original version')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <input type="text" v-model="editTmod.version" :class="{ 'field-invalid': isEditTmodFieldInvalid('version') }">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label-with-action">
+                                <span>{{ t('Notes') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('notes')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('notes')" :title="t('Restore original notes')">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </label>
+                            <textarea v-model="editTmod.notes" rows="3" maxlength="220" :placeholder="t('Enter mod description or notes...')" :class="{ 'field-invalid': isEditTmodFieldInvalid('notes') }"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('Tags') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('tags')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('tags')" :title="t('Restore original tags')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <div :class="{ 'field-invalid': isEditTmodFieldInvalid('tags') }">
+                                    <select2 v-model="editTmod.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                                </div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('Subtype') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('subtype')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('subtype')" :title="t('Restore original subtype')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <custom-vue-select v-model="editTmod.subtype" :options="subtypeOptions" style="flex: 1;"></custom-vue-select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="editTmod.loaded">
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+                    <div class="form-group">
+                        <div class="edit-tmod-toolbar">
+                            <label style="margin: 0;">{{ t('Archive Files') }}</label>
+                            <div class="input-row">
+                                <button class="primary-btn" @click="addEditTmodFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('Add File') }}</span></button>
+                                <button class="primary-btn secondary-btn" @click="addEditTmodFilesFromTmod"><i class="fa-solid fa-file-import"></i> <span>{{ t('Add From TMod') }}</span></button>
+                            </div>
+                        </div>
+                        <div class="table-container" :class="{ 'field-invalid': isEditTmodFieldInvalid('files') }" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                                <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                    <tr>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('File') }}</th>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 180px;">{{ t('Source') }}</th>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 96px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="file in editTmodDisplayFiles" :key="file.internal_path" :class="{ 'edit-tmod-file-removed': isEditTmodFileRemoved(file) }">
+                                        <td style="color: var(--text-main); font-size: 13px; word-break: break-all;">
+                                            <div>{{ file.internal_path }}</div>
+                                            <div style="color: var(--text-muted); font-size: 11px;">{{ file.path || file.imported_from || t('Embedded in archive memory') }}</div>
+                                        </td>
+                                        <td style="padding: 10px; color: var(--text-muted); font-size: 12px;">
+                                            <template v-if="isEditTmodFileRemoved(file)">{{ t('Removed from in-memory build') }}</template>
+                                            <template v-else-if="file.source === 'disk'">{{ t('Replacement from disk') }}</template>
+                                            <template v-else-if="file.source === 'tmod'">{{ t('Imported from another TMod') }}</template>
+                                            <template v-else>{{ t('Original archive data') }}</template>
+                                        </td>
+                                        <td style="padding: 10px; text-align: right;">
+                                            <div class="edit-tmod-actions">
+                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('Replace File')" @click="replaceEditTmodFile(file)"><i class="fa-solid fa-arrows-rotate"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file) && canRestoreOriginalEditTmodFile(file)" class="icon-btn-small" :title="t('Restore Original File')" @click="restoreOriginalEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button v-if="isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('Restore File')" @click="restoreRemovedEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small danger" :title="t('Remove File')" @click="removeEditTmodFile(file)"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="editTmod.files.length === 0">
+                                        <td colspan="3" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files in this archive.') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="margin-top: 10px; align-items: stretch;">
+                        <button class="primary-btn execute-btn" @click="saveEditTmod" :disabled="isWorking.savingEditTmod" style="margin-top: 0; flex: 1;">
+                            <template v-if="isWorking.savingEditTmod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling TMod...') }}</template>
+                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('Compile TMod In Place') }}</span></template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="tab-content" :class="{ active: activeTab === 'projects' }">
             <div class="tool-panel">
                 <h3>{{ t('Mod Project Manager') }}</h3>
@@ -178,7 +372,7 @@
                 <div class="form-group" style="background: var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
                     <label>{{ t('Project Folder') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="project.dir" :placeholder="t('Select or create a project folder...')" readonly>
+                        <input type="text" v-model="project.dir" :placeholder="t('Select or create a project folder...')" readonly :class="{ 'field-invalid': isProjectFieldInvalid('dir') }">
                         <button class="primary-btn" @click="browseProject"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
                         <button class="primary-btn" @click="openProjectFolder" :disabled="!project.dir" :title="t('Open Project Folder')"><i class="fa-solid fa-folder-tree"></i></button>
                     </div>
@@ -214,7 +408,7 @@
                             <div class="form-group" style="margin-top: 15px;">
                                 <label>{{ t('Target Game Installation') }}</label>
                                 <div class="input-row">
-                                    <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
+                                    <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;" :class="{ 'field-invalid': isProjectFieldInvalid('gamePath') }"></custom-vue-select>
                                     <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
                                         <i class="fa-solid fa-folder-open"></i>
                                     </button>
@@ -224,7 +418,7 @@
                             <div class="form-group">
                                 <label>{{ t('Active Version Workspace') }}</label>
                                 <div class="input-row">
-                                    <custom-vue-select v-model="project.activeVersion" :options="project.versions.map(v => [`Version ${v}`, v])" style="flex: 1;"></custom-vue-select>
+                                    <custom-vue-select v-model="project.activeVersion" :options="project.versions.map(v => [`Version ${v}`, v])" style="flex: 1;" :class="{ 'field-invalid': isProjectFieldInvalid('activeVersion') }"></custom-vue-select>
                                     <button class="icon-btn-small" @click="newVersion" :title="t('Create New Version Folder')"><i class="fa-solid fa-plus"></i></button>
                                 </div>
                             </div>
@@ -234,7 +428,7 @@
                             <div class="form-row">
                                 <div class="form-group" style="flex: 2;">
                                     <label>{{ t('Project Title') }}</label>
-                                    <input type="text" v-model="project.title">
+                                    <input type="text" v-model="project.title" :class="{ 'field-invalid': isProjectFieldInvalid('title') }">
                                 </div>
                                 <div class="form-group" style="flex: 2;">
                                     <label>{{ t('Authors') }}</label>
@@ -244,12 +438,18 @@
 
                             <div class="form-group">
                                 <label>{{ t('Notes') }}</label>
-                                <textarea v-model="project.notes" rows="2" maxlength="220"></textarea>
+                                <textarea v-model="project.notes" rows="2" maxlength="220" :class="{ 'field-invalid': isProjectFieldInvalid('notes') }"></textarea>
                             </div>
 
-                            <div class="form-group">
-                                <label>{{ t('Tags') }}</label>
-                                <select2 v-model="project.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 2;">
+                                    <label>{{ t('Tags') }}</label>
+                                    <select2 v-model="project.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>{{ t('Subtype') }}</label>
+                                    <custom-vue-select v-model="project.subtype" :options="subtypeOptions" style="flex: 1;"></custom-vue-select>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -264,7 +464,7 @@
                                 <button class="primary-btn" @click="autoStructureProject" :disabled="isWorking.autoStructuringProject" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid" :class="isWorking.autoStructuringProject ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('Structure Relative to Game') }}</span></button>
                             </div>
                         </div>
-                        <div class="table-container" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                        <div class="table-container" :class="{ 'field-invalid': isProjectFieldInvalid('files') }" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
                             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                                 <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                     <tr>

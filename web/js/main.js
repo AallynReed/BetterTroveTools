@@ -678,18 +678,23 @@ window.showUndoToast = function(message, seconds, onUndo) {
     });
 };
 
-window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', danger = true }) {
+window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', extraActionLabel = '', danger = true }) {
     return new Promise((resolve) => {
         const overlay = document.getElementById('global-confirm-overlay');
         const titleEl = document.getElementById('global-confirm-title');
         const messageEl = document.getElementById('global-confirm-message');
         const cancelBtn = document.getElementById('global-confirm-cancel');
+        const extraBtn = document.getElementById('global-confirm-extra');
         const okBtn = document.getElementById('global-confirm-ok');
         if (!overlay || !titleEl || !messageEl || !cancelBtn || !okBtn) return resolve(false);
 
         titleEl.textContent = title || 'Confirm';
         messageEl.textContent = message || '';
         cancelBtn.textContent = cancelLabel;
+        if (extraBtn) {
+            extraBtn.textContent = extraActionLabel || '';
+            extraBtn.style.display = extraActionLabel ? '' : 'none';
+        }
         okBtn.textContent = confirmLabel;
         okBtn.className = danger ? 'danger-btn' : 'primary-btn';
         overlay.style.display = 'flex';
@@ -714,6 +719,10 @@ window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', c
         const cleanup = () => {
             overlay.style.display = 'none';
             cancelBtn.onclick = null;
+            if (extraBtn) {
+                extraBtn.onclick = null;
+                extraBtn.style.display = 'none';
+            }
             okBtn.onclick = null;
             overlay.onclick = null;
             document.removeEventListener('keydown', onKeyDown, true);
@@ -723,6 +732,12 @@ window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', c
             cleanup();
             resolve(false);
         };
+        if (extraBtn && extraActionLabel) {
+            extraBtn.onclick = () => {
+                cleanup();
+                resolve('extra');
+            };
+        }
         okBtn.onclick = () => {
             cleanup();
             resolve(true);
@@ -1145,6 +1160,11 @@ window.applyCustomDropdowns = function() {
         return `${iconHtml}<span class="custom-select-option-label">${label}</span>`;
     };
 
+    const getDropdownMaxHeight = (optionCount, availableSpace, optionHeight = 40) => {
+        const desiredHeight = Math.max(100, Math.min(7, Math.max(1, optionCount || 0)) * optionHeight);
+        return Math.max(100, Math.min(availableSpace - 20, desiredHeight));
+    };
+
     document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months):not([data-native-select="true"])').forEach(select => {
         if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
@@ -1257,13 +1277,14 @@ window.applyCustomDropdowns = function() {
                 const rect = trigger.getBoundingClientRect();
                 const spaceBelow = window.innerHeight - rect.bottom;
                 const spaceAbove = rect.top;
+                const optionCount = select.options.length;
                 
                 if (spaceBelow < 250 && spaceAbove > spaceBelow) {
                     wrapper.classList.add('drop-up');
-                    optionsContainer.style.maxHeight = Math.max(100, Math.min(spaceAbove - 20, 250)) + 'px';
+                    optionsContainer.style.maxHeight = getDropdownMaxHeight(optionCount, spaceAbove) + 'px';
                 } else {
                     wrapper.classList.remove('drop-up');
-                    optionsContainer.style.maxHeight = Math.max(100, Math.min(spaceBelow - 20, 250)) + 'px';
+                    optionsContainer.style.maxHeight = getDropdownMaxHeight(optionCount, spaceBelow) + 'px';
                 }
 
                 wrapper.classList.add('open');
@@ -1292,6 +1313,7 @@ window.CustomVueSelect = {
         const isDropUp = Vue.ref(false);
         const maxH = Vue.ref(250);
         const wrapperRef = Vue.ref(null);
+        const optionsRef = Vue.ref(null);
         const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
         const shouldTranslateOptions = Vue.computed(() => props.translateOptions !== false);
         const formatLabel = (label) => shouldTranslateOptions.value ? t(label) : label;
@@ -1299,6 +1321,18 @@ window.CustomVueSelect = {
             const found = props.options ? props.options.find(opt => String(opt[1]) === String(props.modelValue)) : null;
             return found ? formatLabel(found[0]) : '';
         });
+
+        const getDropdownMaxHeight = (optionCount, availableSpace, optionHeight = 40) => {
+            const desiredHeight = Math.max(100, Math.min(7, Math.max(1, optionCount || 0)) * optionHeight);
+            return Math.max(100, Math.min(availableSpace - 20, desiredHeight));
+        };
+
+        const scrollSelectedIntoView = () => {
+            if (!optionsRef.value) return;
+            const selected = optionsRef.value.querySelector('.custom-select-option.selected');
+            if (!selected) return;
+            optionsRef.value.scrollTop = selected.offsetTop - (optionsRef.value.clientHeight / 2) + (selected.offsetHeight / 2);
+        };
 
         const onGlobalClose = (evt) => {
             const exceptEl = evt && evt.detail ? evt.detail.exceptEl : null;
@@ -1317,13 +1351,15 @@ window.CustomVueSelect = {
                 const rect = wrapperRef.value.getBoundingClientRect();
                 const spaceBelow = window.innerHeight - rect.bottom;
                 const spaceAbove = rect.top;
+                const optionCount = Array.isArray(props.options) ? props.options.length : 0;
                 if (spaceBelow < 250 && spaceAbove > spaceBelow) {
                     isDropUp.value = true;
-                    maxH.value = Math.max(100, Math.min(spaceAbove - 20, 250));
+                    maxH.value = getDropdownMaxHeight(optionCount, spaceAbove);
                 } else {
                     isDropUp.value = false;
-                    maxH.value = Math.max(100, Math.min(spaceBelow - 20, 250));
+                    maxH.value = getDropdownMaxHeight(optionCount, spaceBelow);
                 }
+                Vue.nextTick(scrollSelectedIntoView);
             }
         };
         const selectOpt = (val) => { emit('update:modelValue', val); isOpen.value = false; };
@@ -1337,7 +1373,15 @@ window.CustomVueSelect = {
                 let currentIdx = props.options.findIndex(opt => String(opt[1]) === String(props.modelValue));
                 if (e.key === 'ArrowDown' && currentIdx < props.options.length - 1) currentIdx++;
                 if (e.key === 'ArrowUp' && currentIdx > 0) currentIdx--;
-                if (currentIdx > -1) selectOpt(props.options[currentIdx][1]);
+                if (currentIdx > -1) {
+                    emit('update:modelValue', props.options[currentIdx][1]);
+                    if (!isOpen.value) {
+                        isOpen.value = true;
+                        Vue.nextTick(scrollSelectedIntoView);
+                    } else {
+                        Vue.nextTick(scrollSelectedIntoView);
+                    }
+                }
             }
         };
         const onDocClick = (e) => {
@@ -1351,15 +1395,15 @@ window.CustomVueSelect = {
             document.removeEventListener('click', onDocClick);
             document.removeEventListener('btt-close-vue-selects', onGlobalClose);
         });
-        return { isOpen, isDropUp, maxH, wrapperRef, formatLabel, currentLabel, toggle, selectOpt, handleKey };
+        return { isOpen, isDropUp, maxH, wrapperRef, optionsRef, formatLabel, currentLabel, toggle, selectOpt, handleKey };
     },
     template: `
-        <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @click.stop="toggle" tabindex="0" @keydown="handleKey">
-            <div class="custom-select-trigger">
+        <div ref="wrapperRef" class="custom-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" tabindex="0" @keydown="handleKey">
+            <div class="custom-select-trigger" @click.stop="toggle">
                 <span class="custom-select-trigger-text">{{ currentLabel }}</span>
                 <i class="fa-solid fa-chevron-down"></i>
             </div>
-            <div class="custom-select-options" :style="{ maxHeight: maxH + 'px' }">
+            <div ref="optionsRef" class="custom-select-options" :style="{ maxHeight: maxH + 'px' }" @click.stop>
                 <div v-for="opt in options" :key="opt[1]" class="custom-select-option" :class="{ selected: String(modelValue) === String(opt[1]) }" @click.stop="selectOpt(opt[1])">
                     {{ formatLabel(opt[0]) }}
                 </div>
