@@ -148,6 +148,9 @@ def _extract_delve_payload(payload):
         return {}
     if isinstance(payload.get("depths"), list):
         return payload
+    nested = payload.get("data")
+    if isinstance(nested, dict) and isinstance(nested.get("depths"), list):
+        return nested
     return {}
 
 
@@ -1031,15 +1034,17 @@ def get_delve_rotation():
     try:
         current_week_id = _get_current_delve_week_id()
         weeks = []
-        for week_id in range(current_week_id, 0, -1):
+        min_week_id = max(1, current_week_id - 7)
+        for week_id in range(current_week_id, min_week_id - 1, -1):
             week_data = _fetch_delve_week(week_id, current_week_id=current_week_id)
-            if week_data is not None and week_data.get("hasData"):
+            if week_data is not None:
                 weeks.append(week_data)
 
         if not weeks:
             _finish_external_request(req_id, False)
             return resp(False, error="No delve data found", code="DELVE_ROTATION_NOT_FOUND")
 
+        weeks.sort(key=lambda week: week.get("weekId", 0), reverse=True)
         data = {
             "currentWeekId": current_week_id,
             "current": next((week for week in weeks if week.get("isCurrent")), weeks[0]),

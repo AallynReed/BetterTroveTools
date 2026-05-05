@@ -275,7 +275,7 @@
 </div>
 
     <div class="modal-overlay" v-show="rotationModal.show" style="display: flex;" @click.self="rotationModal.show = false">
-    <div class="modal-content" :style="{ maxWidth: rotationModal.type === 'd15' ? '95%' : '600px', width: rotationModal.type === 'd15' ? 'max-content' : '90%' }">
+    <div class="modal-content" :key="rotationModal.instanceKey" :style="{ maxWidth: rotationModal.type === 'd15' ? '95%' : '600px', width: rotationModal.type === 'd15' ? 'max-content' : '90%' }">
         <div class="modal-header">
             <div style="display: flex; align-items: center;">
                 <h3 style="margin: 0;" v-html="rotationModal.titleHtml"></h3>
@@ -344,7 +344,7 @@
                         <span>{{ rotationModal.error }}</span>
                     </div>
                     <div v-else class="delve-weeks">
-                        <details v-for="week in rotationModal.delveWeeks" :key="week.weekId" class="delve-week-card" :open="week.isCurrent">
+                        <details v-for="week in rotationModal.delveWeeks" :key="week.weekId" class="delve-week-card">
                             <summary class="delve-week-summary">
                                 <div class="delve-week-title">
                                     <span>{{ getDelveWeekHeading(week) }}</span>

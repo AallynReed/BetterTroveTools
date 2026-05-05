@@ -86,7 +86,7 @@ document.addEventListener('home_loaded', () => {
             const rotationModal = reactive({
                 show: false, titleHtml: '', color: '', iconClass: '', type: 'list',
                 list: [], d15Cols: [], d15Rows: [], d15ShowFinalName: true, d15AllExpanded: false,
-                delveWeeks: [], delveCurrentWeekId: null, isLoading: false, error: ''
+                delveWeeks: [], delveCurrentWeekId: null, isLoading: false, error: '', instanceKey: 0
             });
 
             const openUrl = (url) => eel.open_url_in_browser(url)();
@@ -499,6 +499,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             const openBuffSchedule = async (type) => {
+                rotationModal.instanceKey += 1;
                 rotationModal.type = 'list';
                 const buff = type === 'daily' ? serverData.daily : serverData.weekly;
                 rotationModal.color = `#${buff.color}`;
@@ -555,6 +556,7 @@ document.addEventListener('home_loaded', () => {
             };
 
             const openMerchantSchedule = async (card) => {
+                rotationModal.instanceKey += 1;
                 rotationModal.color = card.color;
                 rotationModal.titleHtml = `<i class="fa-solid ${card.iconClass}" style="color: ${card.color};"></i> ${t("Upcoming {name} Schedule").replace("{name}", t(card.name))}`;
                 rotationModal.list = [];
@@ -678,7 +680,12 @@ document.addEventListener('home_loaded', () => {
                         if (!delveData?.success) {
                             throw new Error(delveData?.error || 'Failed to load delve rotation');
                         }
-                        rotationModal.delveWeeks = delveData.weeks || [];
+                        const delveWeeks = Array.isArray(delveData.weeks) ? delveData.weeks : [];
+                        const currentWeekId = delveData.currentWeekId || null;
+                        rotationModal.delveWeeks = delveWeeks
+                            .filter((week) => week && currentWeekId && week.weekId <= currentWeekId && week.weekId >= currentWeekId - 7)
+                            .sort((a, b) => (b.weekId || 0) - (a.weekId || 0))
+                            .slice(0, 8);
                         rotationModal.delveCurrentWeekId = delveData.currentWeekId || null;
                     } catch (e) {
                         rotationModal.error = e?.message || 'Failed to load delve rotation';
