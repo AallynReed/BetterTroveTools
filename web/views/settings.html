@@ -16,7 +16,7 @@
                         <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('App Accent Color') }}</div>
                         <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Customize the main accent color of the application.') }}</div>
                     </div>
-                    <input type="color" v-model="settings.accent_color" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
+                    <input type="color" v-model="settings.accent_color" @input="previewAccentColor" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>

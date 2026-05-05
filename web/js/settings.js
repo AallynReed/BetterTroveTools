@@ -59,16 +59,18 @@ document.addEventListener('settings_loaded', async () => {
                 }
             };
 
-            const saveGeneralSettings = async () => {
-                document.documentElement.style.setProperty('--accent-blue', settings.accent_color);
-                const hex = settings.accent_color.replace('#', '');
+            const applyAccentColor = (accentColor) => {
+                document.documentElement.style.setProperty('--accent-blue', accentColor);
+                const hex = String(accentColor || '').replace('#', '');
                 if (hex.length === 6) {
                     const r = parseInt(hex.substring(0, 2), 16);
                     const g = parseInt(hex.substring(2, 4), 16);
                     const b = parseInt(hex.substring(4, 6), 16);
                     document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
                 }
-                
+            };
+
+            const applyAppFont = (appFont) => {
                 // Apply font globally
                 const fontMap = {
                     'system': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -79,7 +81,16 @@ document.addEventListener('settings_loaded', async () => {
                     'segoe-ui': '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
                     'arial': 'Arial, Helvetica, sans-serif'
                 };
-                document.documentElement.style.setProperty('--app-font', fontMap[settings.app_font] || fontMap['system']);
+                document.documentElement.style.setProperty('--app-font', fontMap[appFont] || fontMap['system']);
+            };
+
+            const previewAccentColor = () => {
+                applyAccentColor(settings.accent_color);
+            };
+
+            const saveGeneralSettings = async () => {
+                applyAccentColor(settings.accent_color);
+                applyAppFont(settings.app_font);
                 
                 const currentSettings = window.AppSettings
                     ? await window.AppSettings.load()
@@ -224,7 +235,7 @@ document.addEventListener('settings_loaded', async () => {
 
             return {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
-                isBrowsing, isSaving, saveGeneralSettings,
+                isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
                 resetOnboardingTips
             };
