@@ -36,6 +36,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 scTemplate: ""
             });
             const modifiersOpen = ref(false);
+            const tipsDismissed = ref(false);
 
             let hydratingState = false;
 
@@ -44,7 +45,8 @@ document.addEventListener("gem_builds_loaded", () => {
                 window.AppSettings.setPrefSync(PREF_STATE_KEY, {
                     config: JSON.parse(JSON.stringify(config)),
                     ui: {
-                        modifiersOpen: !!modifiersOpen.value
+                        modifiersOpen: !!modifiersOpen.value,
+                        tipsDismissed: !!tipsDismissed.value
                     }
                 });
             };
@@ -66,6 +68,9 @@ document.addEventListener("gem_builds_loaded", () => {
                 });
                 if (savedUi && typeof savedUi.modifiersOpen === 'boolean') {
                     modifiersOpen.value = savedUi.modifiersOpen;
+                }
+                if (savedUi && typeof savedUi.tipsDismissed === 'boolean') {
+                    tipsDismissed.value = savedUi.tipsDismissed;
                 }
                 hydratingState = false;
             };
@@ -106,11 +111,53 @@ document.addEventListener("gem_builds_loaded", () => {
             const nextPage = () => { if (currentPage.value < maxPages.value - 1) currentPage.value++; };
             const prevPage = () => { if (currentPage.value > 0) currentPage.value--; };
 
+            const getTradeoffSummary = (build) => {
+                const best = cachedBuilds.value[0];
+                if (!best || build.rank === 1) {
+                    return t('Best overall coefficient for this setup.');
+                }
+
+                const coeffGap = (((best.coefficient - build.coefficient) / best.coefficient) * 100).toFixed(3);
+                const lightDelta = build.light - best.light;
+                const critDelta = build.crit_dmg - best.crit_dmg;
+                const damageDelta = Math.round(build.total_dmg - best.total_dmg);
+                const tradeoffs = [];
+
+                if (lightDelta > 0) tradeoffs.push(t('gains {value} Light').replace('{value}', lightDelta.toLocaleString()));
+                if (critDelta > 0) tradeoffs.push(t('gains {value}% Crit Damage').replace('{value}', critDelta.toFixed(1)));
+                if (damageDelta > 0) tradeoffs.push(t('gains {value} Total Damage').replace('{value}', damageDelta.toLocaleString()));
+                if (lightDelta < 0) tradeoffs.push(t('gives up {value} Light').replace('{value}', Math.abs(lightDelta).toLocaleString()));
+                if (critDelta < 0) tradeoffs.push(t('gives up {value}% Crit Damage').replace('{value}', Math.abs(critDelta).toFixed(1)));
+
+                const tradeoffText = tradeoffs.length > 0
+                    ? tradeoffs.slice(0, 2).join(', ')
+                    : t('changes the stat spread without a major visible tradeoff');
+
+                return t('This build is {value}% behind the best, but {tradeoff}.')
+                    .replace('{value}', coeffGap)
+                    .replace('{tradeoff}', tradeoffText);
+            };
+
+            const getBuildHeadline = (build) => {
+                if (!build) return '';
+                if (build.rank === 1) {
+                    if (cachedBuilds.value.length > 1) {
+                        const runnerUp = cachedBuilds.value[1];
+                        const edge = (((build.coefficient - runnerUp.coefficient) / runnerUp.coefficient) * 100).toFixed(3);
+                        return t('Highest coefficient for your current setup, leading the next build by {value}%.').replace('{value}', edge);
+                    }
+                    return t('Highest coefficient for your current setup.');
+                }
+                return getTradeoffSummary(build);
+            };
+
             const getTooltipHtml = (build) => {
                 const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
+                const tradeoffText = getTradeoffSummary(build);
                 return `
                     <div style="min-width: 220px;">
                         <h3>${t("Build #{rank} Details").replace("{rank}", build.rank)}</h3>
+                        <p style="margin: 0 0 10px 0; color: var(--text-muted); line-height: 1.45;">${tradeoffText}</p>
                         <ul style="list-style: none; padding: 0; margin: 0;">
                             <li style="margin-bottom: 4px;"><strong>${t("Light")}:</strong> <span style="float: right; color: #fff;">${build.light.toLocaleString()}</span></li>
                             <li style="margin-bottom: 4px;"><strong>${t("Base Dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.base_dmg).toLocaleString()}</span></li>
@@ -133,6 +180,13 @@ document.addEventListener("gem_builds_loaded", () => {
                     if(window.showToast) window.showToast(t("Copied Build Layout to clipboard!"));
                 } catch (err) {
                     console.error("Failed to copy:", err);
+                }
+            };
+
+            const dismissTips = () => {
+                tipsDismissed.value = true;
+                if (!hydratingState && window.AppSettings) {
+                    saveState();
                 }
             };
 
@@ -279,6 +333,12 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
             });
 
+            watch(tipsDismissed, () => {
+                if (!hydratingState && window.AppSettings) {
+                    saveState();
+                }
+            });
+
             onMounted(async () => {
                 try {
                     await restoreState();
@@ -322,9 +382,10 @@ document.addEventListener("gem_builds_loaded", () => {
                 t, config, classesData, foodsData, alliesData, starChartTemplates, starChartSummary,
                 filteredStarChartStats,
                 classIcon, subclassIcon, onImageError,
-                modifiersOpen,
+                modifiersOpen, tipsDismissed,
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff,
-                nextPage, prevPage, getTooltipHtml, copyLayout, exportCsv, showContextMenu
+                nextPage, prevPage, getTooltipHtml, copyLayout, exportCsv, showContextMenu,
+                getBuildHeadline, dismissTips
             };
         }
     });
