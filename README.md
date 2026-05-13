@@ -72,3 +72,14 @@ Better Trove Tools is a desktop companion for Trove players, collectors, and mod
 - Custom Trove directory management for Live, PTS, and custom installs.
 - Local-first design with an external request tracker for transparency.
 - Built-in update checking through GitHub releases.
+
+## Hosted web mode
+
+Run the browser-hosted compatibility server with:
+
+```bash
+pip install -r web-requirements.txt
+uvicorn web_server:app --host 127.0.0.1 --port 8087
+```
+
+For local development, `python web_server.py` also starts uvicorn using `BTT_WEB_HOST` and `BTT_WEB_PORT`. The server hosts `web/` and exposes existing non-file-system backend functions through `/api/eel/<function_name>`. User settings and saved web-mode state remain in browser storage; desktop-only tools such as Mod Manager, Modder Tools, and Codexes are hidden.

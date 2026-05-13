@@ -64,7 +64,7 @@ const I18nManager = {
         this.currentLocale = localeCode;
 
         try {
-            const response = await fetch(`/assets/locale/${localeCode}.json?t=${new Date().getTime()}`);
+            const response = await fetch(`assets/locale/${localeCode}.json?t=${new Date().getTime()}`);
             if (response.ok) {
                 const data = await response.json();
                 this.dictionary = data.keys || {};

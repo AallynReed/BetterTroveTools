@@ -1,11 +1,7 @@
 aiofiles
 aiohttp
 binary-reader
-bottle
 eel
 pydantic
-toml
-vdf
 requests
-
-cx-freeze
+uvicorn

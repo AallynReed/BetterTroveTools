@@ -1,12 +1,12 @@
-document.addEventListener('keydown', function(e) {
-    const blockedKeys = ['F12', 'F5', 'F11'];
-    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+// document.addEventListener('keydown', function(e) {
+//     const blockedKeys = ['F12', 'F5', 'F11'];
+//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-    if (blockedKeys.includes(e.key)) e.preventDefault();
-    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-});
+//     if (blockedKeys.includes(e.key)) e.preventDefault();
+//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+// });
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1637,14 +1637,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (query.startsWith('@')) {
             const sq = query.substring(1).trim();
             if (sq) {
-                displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
-                if (!areBetaFeaturesHidden()) {
+                if (!isWebUnavailableView('mod_manager')) {
+                    displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
+                }
+                if (!areBetaFeaturesHidden() && !isWebUnavailableView('allies')) {
                     displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
                 }
             }
         } else if (query.startsWith('#')) {
             const sq = query.substring(1).trim();
-            if (sq && !areBetaFeaturesHidden()) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
+            if (sq && !areBetaFeaturesHidden() && !isWebUnavailableView('allies')) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
         } else {
             const sq = query.startsWith('>') ? query.substring(1).trim() : query;
             displayCommands = commands
@@ -1660,8 +1662,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .sort((a, b) => b._score - a._score);
             
             if (sq.length >= 3 && displayCommands.length === 0) {
-                displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
-                if (!areBetaFeaturesHidden()) {
+                if (!isWebUnavailableView('mod_manager')) {
+                    displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
+                }
+                if (!areBetaFeaturesHidden() && !isWebUnavailableView('allies')) {
                     displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
                 }
             }
@@ -1687,6 +1691,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function openCommandResult(itemEl) {
         const target = itemEl.getAttribute('data-target');
+        if (isWebUnavailableView(target)) return;
         const modderTab = itemEl.getAttribute('data-modder-tab');
         const mmSection = itemEl.getAttribute('data-mm-section');
         const gemsTab = itemEl.getAttribute('data-gems-tab');
@@ -1782,9 +1787,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     let activeViewLoadController = null;
     const loadedViewStyles = new Map();
 
+    const webUnavailableViews = new Set(window.BTT_UNAVAILABLE_WEB_VIEWS || []);
+    const isWebUnavailableView = (target) => window.BTT_WEB_MODE === true && webUnavailableViews.has(target);
     const areBetaFeaturesHidden = () => window.AppSettings && window.AppSettings.get('hide_beta_features', false) === true;
 
-    const isCommandVisible = (command) => !(command && command.beta === true && areBetaFeaturesHidden());
+    const isCommandVisible = (command) => {
+        if (!command) return false;
+        if (isWebUnavailableView(command.id)) return false;
+        return !(command.beta === true && areBetaFeaturesHidden());
+    };
 
     const getDirectiveAttributes = (element) => {
         if (!element) return [];
@@ -1864,6 +1875,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const isViewVisible = (target) => {
+        if (isWebUnavailableView(target)) return false;
         const navBtn = document.querySelector(`.nav-btn[data-target="${target}"]`);
         if (!navBtn) return true;
         return navBtn.style.display !== 'none' && !navBtn.hidden;
@@ -1876,14 +1888,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const hideBetaFeatures = areBetaFeaturesHidden();
         document.querySelectorAll('#sidebar .nav-btn').forEach((btn) => {
-            if (!btn.querySelector('.beta-label')) return;
+            const target = btn.getAttribute('data-target');
+            const shouldHideForWeb = isWebUnavailableView(target);
+            if (!shouldHideForWeb && !btn.querySelector('.beta-label')) return;
             const menuItem = btn.closest('li');
+            const shouldHide = shouldHideForWeb || hideBetaFeatures;
             if (menuItem) {
-                menuItem.style.display = hideBetaFeatures ? 'none' : '';
-                menuItem.hidden = hideBetaFeatures;
+                menuItem.style.display = shouldHide ? 'none' : '';
+                menuItem.hidden = shouldHide;
             } else {
-                btn.style.display = hideBetaFeatures ? 'none' : '';
-                btn.hidden = hideBetaFeatures;
+                btn.style.display = shouldHide ? 'none' : '';
+                btn.hidden = shouldHide;
             }
         });
 
