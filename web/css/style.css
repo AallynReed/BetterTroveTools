@@ -289,6 +289,26 @@ body.app-update-active #network-tracker-vue-app {
     box-shadow: 0 8px 16px rgba(0,0,0,0.24);
 }
 
+.nav-btn.web-desktop-only-btn {
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(255,255,255,0.015));
+    border-color: rgba(var(--accent-rgb), 0.38);
+    color: rgba(255, 255, 255, 0.72);
+    opacity: 0.82;
+    box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.75);
+}
+
+.nav-btn.web-desktop-only-btn .nav-icon {
+    color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.14);
+}
+
+.nav-btn.web-desktop-only-btn:hover {
+    opacity: 1;
+    color: var(--text-main);
+    border-color: rgba(var(--accent-rgb), 0.62);
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.06));
+}
+
 .nav-icon {
     min-width: 24px;
     width: 24px;
@@ -323,6 +343,21 @@ body.app-update-active #network-tracker-vue-app {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+.desktop-app-label {
+    margin-left: auto;
+    padding: 2px 7px;
+    border: 1px solid rgba(var(--accent-rgb), 0.45);
+    border-radius: 999px;
+    background: rgba(var(--accent-rgb), 0.16);
+    color: var(--accent-blue);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.7px;
+    line-height: 1.2;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
 .nav-btn:hover .beta-label,
 .nav-btn.active .beta-label {
     border-color: rgba(255, 184, 77, 0.4);
@@ -337,7 +372,8 @@ body.app-update-active #network-tracker-vue-app {
     display: none;
 }
 
-#sidebar.collapsed .beta-label {
+#sidebar.collapsed .beta-label,
+#sidebar.collapsed .desktop-app-label {
     display: none;
 }
 

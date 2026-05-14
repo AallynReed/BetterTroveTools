@@ -1918,6 +1918,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             const target = btn.getAttribute('data-target');
             const shouldHideForWeb = isWebUnavailableView(target);
             if (shouldHideForWeb) {
+                btn.classList.add('web-desktop-only-btn');
+                btn.setAttribute('data-tooltip-text', t('Only available in the desktop app'));
+                if (!btn.querySelector('.desktop-app-label')) {
+                    const desktopLabel = document.createElement('span');
+                    desktopLabel.className = 'desktop-app-label';
+                    desktopLabel.textContent = t('Desktop App');
+                    btn.appendChild(desktopLabel);
+                }
                 const menuItem = btn.closest('li');
                 if (menuItem) {
                     menuItem.style.display = '';
@@ -1928,6 +1936,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 return;
             }
+            btn.classList.remove('web-desktop-only-btn');
+            btn.querySelector('.desktop-app-label')?.remove();
             if (!btn.querySelector('.beta-label')) return;
             const menuItem = btn.closest('li');
             if (menuItem) {
