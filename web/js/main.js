@@ -1,12 +1,12 @@
-// document.addEventListener('keydown', function(e) {
-//     const blockedKeys = ['F12', 'F5', 'F11'];
-//     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
-//     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
+document.addEventListener('keydown', function(e) {
+    const blockedKeys = ['F12', 'F5', 'F11'];
+    const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
+    const blockedCtrlShiftKeys = ['i', 'j', 'c'];
     
-//     if (blockedKeys.includes(e.key)) e.preventDefault();
-//     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
-//     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
-// });
+    if (blockedKeys.includes(e.key)) e.preventDefault();
+    if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
+    if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();
+});
 
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -433,6 +433,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateOverlayEl.style.display = visible ? 'flex' : 'none';
         document.body.classList.toggle('app-update-active', !!visible);
     };
+
+    const addWebDownloadButton = () => {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return;
+        const existingDownload = sidebar.querySelector('.app-download-container');
+        if (existingDownload) existingDownload.remove();
+
+        const downloadContainer = document.createElement('div');
+        downloadContainer.className = 'app-download-container app-update-container';
+        const downloadButton = document.createElement('button');
+        downloadButton.className = 'nav-btn download-app-btn update-app-btn';
+        downloadButton.title = t('Download the desktop app');
+        downloadButton.innerHTML = `
+            <i class="fa-solid fa-download nav-icon"></i>
+            <span class="nav-text">${t('Download App')}</span>
+        `;
+        downloadButton.addEventListener('click', () => {
+            window.location.href = 'https://trove.aallyn.net';
+        });
+        downloadContainer.appendChild(downloadButton);
+        sidebar.appendChild(downloadContainer);
+    };
+
+    if (window.BTT_WEB_MODE === true) {
+        addWebDownloadButton();
+        return;
+    }
 
     try {
         const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('Looking for updates') });
@@ -1890,15 +1917,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('#sidebar .nav-btn').forEach((btn) => {
             const target = btn.getAttribute('data-target');
             const shouldHideForWeb = isWebUnavailableView(target);
-            if (!shouldHideForWeb && !btn.querySelector('.beta-label')) return;
+            if (shouldHideForWeb) {
+                const menuItem = btn.closest('li');
+                if (menuItem) {
+                    menuItem.style.display = '';
+                    menuItem.hidden = false;
+                } else {
+                    btn.style.display = '';
+                    btn.hidden = false;
+                }
+                return;
+            }
+            if (!btn.querySelector('.beta-label')) return;
             const menuItem = btn.closest('li');
-            const shouldHide = shouldHideForWeb || hideBetaFeatures;
             if (menuItem) {
-                menuItem.style.display = shouldHide ? 'none' : '';
-                menuItem.hidden = shouldHide;
+                menuItem.style.display = hideBetaFeatures ? 'none' : '';
+                menuItem.hidden = hideBetaFeatures;
             } else {
-                btn.style.display = shouldHide ? 'none' : '';
-                btn.hidden = shouldHide;
+                btn.style.display = hideBetaFeatures ? 'none' : '';
+                btn.hidden = hideBetaFeatures;
             }
         });
 
@@ -2129,9 +2166,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    const showDesktopOnlyPrompt = async () => {
+        let confirmed = true;
+        if (typeof window.showConfirmModal === 'function') {
+            confirmed = await window.showConfirmModal({
+                title: t('Desktop App Required'),
+                message: t('This tool is only available in the desktop app. Install it now?'),
+                confirmLabel: t('Install Now'),
+                cancelLabel: t('Cancel'),
+                danger: false
+            });
+        }
+        if (confirmed) {
+            window.location.href = 'https://trove.aallyn.net';
+        }
+    };
+
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
+            if (isWebUnavailableView(target)) {
+                showDesktopOnlyPrompt();
+                return;
+            }
             if (target) window.loadView(target);
         });
     });

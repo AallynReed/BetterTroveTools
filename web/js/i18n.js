@@ -171,7 +171,7 @@ const I18nManager = {
             }
         });
 
-        if (missingKeys.size > 0 && window.eel && eel.add_missing_translation_keys) {
+        if (!window.BTT_WEB_MODE && missingKeys.size > 0 && window.eel && eel.add_missing_translation_keys) {
             console.log(`Sending ${missingKeys.size} missing DOM translation keys to backend...`);
             await eel.add_missing_translation_keys(this.currentLocale, Array.from(missingKeys))();
         }
@@ -186,16 +186,22 @@ const I18nManager = {
             return this.dictionary[key];
         }
         
-        this.pendingMissingKeys.add(key);
-        this.scheduleSync();
+        if (!window.BTT_WEB_MODE) {
+            this.pendingMissingKeys.add(key);
+            this.scheduleSync();
+        }
         return key;
     },
 
     scheduleSync() {
+        if (window.BTT_WEB_MODE) {
+            this.pendingMissingKeys.clear();
+            return;
+        }
         if (this.syncTimeout) clearTimeout(this.syncTimeout);
         
         this.syncTimeout = setTimeout(() => {
-            if (this.pendingMissingKeys.size > 0 && window.eel && eel.add_missing_translation_keys) {
+            if (!window.BTT_WEB_MODE && this.pendingMissingKeys.size > 0 && window.eel && eel.add_missing_translation_keys) {
                 console.log(`Syncing ${this.pendingMissingKeys.size} missing JS keys to backend...`);
                 eel.add_missing_translation_keys(this.currentLocale, Array.from(this.pendingMissingKeys))();
                 this.pendingMissingKeys.clear();

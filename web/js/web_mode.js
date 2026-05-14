@@ -176,7 +176,6 @@
             return ok(merged);
         }, { localOnly: true }),
         get_available_languages: makeEelFn('get_available_languages', () => languages),
-        add_missing_translation_keys: makeEelFn('add_missing_translation_keys', () => ok()),
         get_app_metadata: makeEelFn('get_app_metadata', () => ({ APP_NAME: 'Better Trove Tools', APP_VERSION: 'Web' })),
         get_startup_url: makeEelFn('get_startup_url', () => null),
         open_url_in_browser: makeEelFn('open_url_in_browser', (url) => {

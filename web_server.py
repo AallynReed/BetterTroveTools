@@ -20,8 +20,10 @@ LOCALE_DIR = WEB_DIR / "assets" / "locale"
 
 
 os.chdir(BASE_DIR)
+sys.argv[0] = str(BASE_DIR / "web_server.py")
 if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
     os.add_dll_directory(str(BASE_DIR))
+    os.environ["PATH"] = f"{BASE_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
 os.environ.setdefault("GOOGLE_API_KEY", "no")
 os.environ.setdefault("GOOGLE_DEFAULT_CLIENT_ID", "no")
 os.environ.setdefault("GOOGLE_DEFAULT_CLIENT_SECRET", "no")
@@ -236,11 +238,6 @@ def get_available_languages():
     return languages
 
 
-@eel.expose
-def add_missing_translation_keys(locale_code, missing_keys):
-    return {"success": True, "added": 0}
-
-
 def call_eel_function(function_name, payload):
     if function_name in DENIED_EEL_FUNCTIONS:
         return 403, {
@@ -411,16 +408,3 @@ async def app(scope, receive, send):
             return
 
     await _send_response(send, 404, b"Not found", "text/plain")
-
-
-def main():
-    import uvicorn
-
-    host = os.getenv("BTT_WEB_HOST", "127.0.0.1")
-    port = int(os.getenv("BTT_WEB_PORT", "8087"))
-    print(f"Better Trove Tools web server: http://{host}:{port}")
-    uvicorn.run(app, host=host, port=port, reload=False)
-
-
-if __name__ == "__main__":
-    sys.exit(main())
