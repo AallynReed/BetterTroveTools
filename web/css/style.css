@@ -345,12 +345,11 @@ body.app-update-active #network-tracker-vue-app {
 
 .desktop-app-label {
     position: absolute;
-    top: 3px;
-    right: 6px;
+    top: -1px;
+    right: -1px;
     margin-left: 0;
     padding: 1px 5px;
     border: 1px solid rgba(255, 193, 7, 0.55);
-    border-radius: 999px;
     background: rgba(255, 193, 7, 0.16);
     color: #ffd76a;
     font-size: 8px;
