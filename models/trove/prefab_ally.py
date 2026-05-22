@@ -37,7 +37,7 @@ def resolve_game_install(game_path: str | Path | None = None) -> Path:
         raw_value = str(game_path).strip()
         if raw_value:
             candidate = Path(raw_value)
-            if candidate.exists() and candidate.joinpath("Trove_64.exe").exists():
+            if candidate.exists() and candidate.joinpath("Trove_x64.exe").exists():
                 return candidate
             raise RuntimeError(f"Selected Trove installation is invalid: {candidate}")
     return detect_first_glyph_install()
