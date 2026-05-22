@@ -88,7 +88,8 @@ class TroveGamePath:
 
     @property
     def executable(self):
-        return self.path.joinpath("Trove_x64.exe")
+        exes = list(self.path.glob("[Tt]rove*.exe"))
+        return exes[0] if exes else self.path.joinpath("Trove_x64.exe")
 
     @property
     def is_valid(self):
@@ -159,8 +160,7 @@ class TroveGamePath:
 
 
 def sanity_check(path):
-    trove_executable = path.joinpath("Trove_x64.exe")
-    if not trove_executable.exists():
+    if not next(path.glob("[Tt]rove*.exe"), None):
         return False
     return True
 
@@ -221,7 +221,7 @@ def get_trove_locations():
                 print(f"[Glyph] ✅ Valid game found at: {game_path}")
                 yield game
             else:
-                print(f"[Glyph] ❌ Invalid game path (missing Trove_x64.exe): {game_path}")
+                print(f"[Glyph] ❌ Invalid game path (missing trove*.exe): {game_path}")
         except OSError as e:
             print(f"[Glyph] Error reading registry value: {e}")
             continue

@@ -93,14 +93,14 @@ def _detect_first_glyph_install() -> Path | None:
 
     for drive_letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         candidate = Path(f"{drive_letter}:\\Glyph\\Games\\Trove\\Live")
-        if candidate.joinpath("Trove_x64.exe").exists():
+        if next(candidate.glob("[Tt]rove*.exe"), None):
             return candidate
     return None
 
 
 def _find_nearest_game_root(path: Path) -> Path | None:
     for parent in [path.parent, *path.parents]:
-        if parent.joinpath("Trove_x64.exe").exists():
+        if next(parent.glob("[Tt]rove*.exe"), None):
             return parent
     return None
 

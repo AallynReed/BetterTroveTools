@@ -113,7 +113,7 @@ def get_detected_game_paths():
         last_game_path = settings.get("last_game_path")
         if isinstance(last_game_path, str) and last_game_path.strip():
             saved_path = Path(last_game_path)
-            if saved_path.exists() and (saved_path / "Trove_x64.exe").exists():
+            if saved_path.exists() and next(saved_path.glob("[Tt]rove*.exe"), None):
                 _add_path("(Saved) Last Used", str(saved_path), False, False)
             
         return resp(True, data={"paths": paths}, paths=paths)
@@ -217,10 +217,10 @@ def browse_for_game_dir():
 
     path = Path(folder_path)
     
-    if (path / "Trove_x64.exe").exists():
+    if next(path.glob("[Tt]rove*.exe"), None):
         return {"success": True, "path": str(path)}
     else:
-        return {"success": False, "error": "Trove_x64.exe was not found in the selected directory."}
+        return {"success": False, "error": "No trove*.exe was found in the selected directory."}
 
 
 @eel.expose
@@ -593,7 +593,8 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                             blueprints_to_catalog.add(bp_name)
         
             if blueprints_to_catalog:
-                trove_exe = game_path / "Trove_x64.exe"
+                trove_exes = list(game_path.glob("[Tt]rove*.exe"))
+                trove_exe = trove_exes[0] if trove_exes else game_path / "Trove_x64.exe"
                 active_processes = []
                 cpu_limit = max(1, (os.cpu_count() or 4) - 1)
 

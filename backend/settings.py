@@ -61,7 +61,7 @@ def get_settings():
                     item_dict = item
 
                 target_path = Path(item_dict.get("path", ""))
-                if target_path.exists() and (target_path / "Trove_x64.exe").exists():
+                if target_path.exists() and next(target_path.glob("[Tt]rove*.exe"), None):
                     migrated.append(item_dict)
                 else:
                     changed = True
