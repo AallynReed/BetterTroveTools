@@ -4,6 +4,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/AallynReed/BetterTroveTools?style=for-the-badge&color=gold)
 ![GitHub last commit](https://img.shields.io/github/last-commit/AallynReed/BetterTroveTools?style=for-the-badge&color=green)
 ![GitHub issues](https://img.shields.io/github/issues/AallynReed/BetterTroveTools?style=for-the-badge)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/AallynReed/BetterTroveTools/total?style=for-the-badge)
 
 Better Trove Tools is a desktop companion for Trove players, collectors, and modders. It combines live game utilities, build planning, mod management, archive tooling, and game-file powered codexes into a single local-first app.
 
