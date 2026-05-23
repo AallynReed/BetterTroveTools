@@ -9,6 +9,7 @@ import json
 from utils.archive_parser import TFIndex, TFArchive, TroveFile
 from utils.registry import get_trove_locations
 from utils.helper import read_storage, write_storage
+from utils.executable import find_trove_executable
 from collections import defaultdict
 from backend.settings import get_settings
 
@@ -113,7 +114,7 @@ def get_detected_game_paths():
         last_game_path = settings.get("last_game_path")
         if isinstance(last_game_path, str) and last_game_path.strip():
             saved_path = Path(last_game_path)
-            if saved_path.exists() and next(saved_path.glob("[Tt]rove*.exe"), None):
+            if find_trove_executable(saved_path):
                 _add_path("(Saved) Last Used", str(saved_path), False, False)
             
         return resp(True, data={"paths": paths}, paths=paths)
@@ -217,7 +218,7 @@ def browse_for_game_dir():
 
     path = Path(folder_path)
     
-    if next(path.glob("[Tt]rove*.exe"), None):
+    if find_trove_executable(path):
         return {"success": True, "path": str(path)}
     else:
         return {"success": False, "error": "No trove*.exe was found in the selected directory."}
@@ -593,8 +594,7 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                             blueprints_to_catalog.add(bp_name)
         
             if blueprints_to_catalog:
-                trove_exes = list(game_path.glob("[Tt]rove*.exe"))
-                trove_exe = trove_exes[0] if trove_exes else game_path / "Trove_x64.exe"
+                trove_exe = find_trove_executable(game_path) or (game_path / "Trove_x64.exe")
                 active_processes = []
                 cpu_limit = max(1, (os.cpu_count() or 4) - 1)
 

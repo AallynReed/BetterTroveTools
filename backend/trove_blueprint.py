@@ -8,6 +8,7 @@ import zlib
 from pathlib import Path
 
 from backend.qubicle_qb import QubicleDocument, QubicleHeader, QubicleMatrix, QubicleVoxel
+from utils.executable import find_trove_executable
 
 
 class BlueprintDecodeError(ValueError):
@@ -93,14 +94,14 @@ def _detect_first_glyph_install() -> Path | None:
 
     for drive_letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
         candidate = Path(f"{drive_letter}:\\Glyph\\Games\\Trove\\Live")
-        if next(candidate.glob("[Tt]rove*.exe"), None):
+        if find_trove_executable(candidate):
             return candidate
     return None
 
 
 def _find_nearest_game_root(path: Path) -> Path | None:
     for parent in [path.parent, *path.parents]:
-        if next(parent.glob("[Tt]rove*.exe"), None):
+        if find_trove_executable(parent):
             return parent
     return None
 

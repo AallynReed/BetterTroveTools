@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
+from utils.executable import find_trove_executable
 import vdf
 
 if os.name == "nt":
@@ -88,8 +89,8 @@ class TroveGamePath:
 
     @property
     def executable(self):
-        exes = list(self.path.glob("[Tt]rove*.exe"))
-        return exes[0] if exes else self.path.joinpath("Trove_x64.exe")
+        exe = find_trove_executable(self.path)
+        return exe if exe else self.path.joinpath("Trove_x64.exe")
 
     @property
     def is_valid(self):
@@ -160,9 +161,7 @@ class TroveGamePath:
 
 
 def sanity_check(path):
-    if not next(path.glob("[Tt]rove*.exe"), None):
-        return False
-    return True
+    return bool(find_trove_executable(path))
 
 
 def get_keys(key, path, look_for):

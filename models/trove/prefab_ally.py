@@ -11,6 +11,7 @@ from binary_reader import BinaryReader
 
 from utils.ally_binfab import extract_strings, parse_ally_binfab_content
 from utils.registry import get_trove_locations
+from utils.executable import find_trove_executable
 
 
 PREFAB_PREFIX = "collections/pet/"
@@ -37,7 +38,7 @@ def resolve_game_install(game_path: str | Path | None = None) -> Path:
         raw_value = str(game_path).strip()
         if raw_value:
             candidate = Path(raw_value)
-            if candidate.exists() and next(candidate.glob("[Tt]rove*.exe"), None):
+            if find_trove_executable(candidate):
                 return candidate
             raise RuntimeError(f"Selected Trove installation is invalid: {candidate}")
     return detect_first_glyph_install()

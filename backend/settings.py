@@ -5,6 +5,7 @@ from pathlib import Path
 import eel
 
 from backend.response import resp, standardize_response
+from utils.executable import find_trove_executable
 
 
 def _normalize_settings_payload(payload):
@@ -61,7 +62,7 @@ def get_settings():
                     item_dict = item
 
                 target_path = Path(item_dict.get("path", ""))
-                if target_path.exists() and next(target_path.glob("[Tt]rove*.exe"), None):
+                if find_trove_executable(target_path):
                     migrated.append(item_dict)
                 else:
                     changed = True
