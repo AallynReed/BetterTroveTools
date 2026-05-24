@@ -115,6 +115,25 @@ _MEMO: dict = {}   # (resolved_path, size, mtime_ns) -> fps  (per-process read c
 
 
 # -- structural slot detection ----------------------------------------------
+# The descriptor shape differs by architecture:
+#   * Trove_x64.exe (PE32+): [ptr8][ptr8][value8][zero8] -- validated by the two
+#     leading image pointers and the trailing zero qword.
+#   * Trove.exe (PE32, 32-bit): the value lives in a packed table of frame-time
+#     constants (1/1500, 1/300, 1/120, ...) with no pointer anchor, so we instead
+#     require the value AND both neighbouring qwords to be frame-time doubles.
+# Either way only the value's 8 bytes change when we patch, so the surrounding
+# bytes (the "anchor") stay stable for cache-based recovery.
+
+def _is_64bit(content: bytes) -> bool:
+    try:
+        pe = struct.unpack_from("<I", content, 0x3C)[0]
+        if content[pe:pe + 4] != b"PE\0\0":
+            return True
+        return struct.unpack_from("<H", content, pe + 4)[0] == 0x8664
+    except Exception:
+        return True
+
+
 def _is_image_ptr(data: bytes, i: int) -> bool:
     # 8-byte little-endian pointer into the image (base 0x1'4000'0000 .. 0x1'42xx'xxxx).
     return (
@@ -127,17 +146,36 @@ def _is_image_ptr(data: bytes, i: int) -> bool:
     )
 
 
-def _is_cap_slot(data: bytes, p: int) -> bool:
-    # Descriptor shape: [ptr8][ptr8][value8 @ p][zero8]. We validate the two
-    # leading pointers and the trailing zero qword; the value itself is wild.
+def _is_frametime_double(data: bytes, i: int) -> bool:
+    # A plausible 1/fps frame-time value: finite double in ~[1fps .. 1,000,000fps].
+    if i < 0 or i + 8 > len(data):
+        return False
+    try:
+        x = struct.unpack_from("<d", data, i)[0]
+    except Exception:
+        return False
+    return 1e-6 <= x < 1.0
+
+
+def _is_cap_slot(data: bytes, p: int, is64: bool) -> bool:
     if p < 16 or p + 16 > len(data):
         return False
-    if data[p + 8:p + 16] != b"\x00" * 8:
-        return False
-    return _is_image_ptr(data, p - 16) and _is_image_ptr(data, p - 8)
+    if is64:
+        # [ptr8][ptr8][value8 @ p][zero8]
+        if data[p + 8:p + 16] != b"\x00" * 8:
+            return False
+        return _is_image_ptr(data, p - 16) and _is_image_ptr(data, p - 8)
+    # 32-bit: value sits inside a cluster of frame-time-constant doubles. This
+    # rejects coincidental 1/fps doubles embedded in string/data regions, whose
+    # neighbouring qwords decode as absurd (out-of-range) doubles.
+    return (
+        _is_frametime_double(data, p)
+        and _is_frametime_double(data, p - 8)
+        and _is_frametime_double(data, p + 8)
+    )
 
 
-def _find_fps_slot(content: bytes) -> int | None:
+def _find_fps_slot(content: bytes, is64: bool) -> int | None:
     """Locate the 8-byte FPS value by content search, or None if not findable."""
     for fps in _LOCATE_FPS:
         needle = struct.pack("<d", 1.0 / fps)
@@ -146,7 +184,7 @@ def _find_fps_slot(content: bytes) -> int | None:
             i = content.find(needle, start)
             if i < 0:
                 break
-            if _is_cap_slot(content, i):
+            if _is_cap_slot(content, i, is64):
                 valid.append(i)
             start = i + 1
         if len(valid) == 1:
@@ -213,7 +251,7 @@ def _backup_file(key: str) -> Path:
 def _resolve_slot(exe_path: Path, content: bytes) -> int | None:
     """Find the slot offset for `content`. Tries a content search first, then the
     cached offset/anchor for the same build. None => caller should ask for repair."""
-    offset = _find_fps_slot(content)
+    offset = _find_fps_slot(content, _is_64bit(content))
     if offset is not None:
         return offset
 
