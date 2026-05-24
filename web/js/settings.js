@@ -27,10 +27,14 @@ document.addEventListener('settings_loaded', async () => {
                 show_official_news: true,
                 auto_fix_names: false,
                 show_mod_preview_on_info_side: true,
-                hide_beta_features: false
+                hide_beta_features: false,
+                fps_caps: {}
             });
 
             const customDirs = ref([]);
+            const gameInstalls = ref([]);
+            const fpsRepair = ref([]);
+            const isFpsRepair = (path) => fpsRepair.value.includes(path);
 
             const modals = reactive({
                 add: false,
@@ -55,7 +59,10 @@ document.addEventListener('settings_loaded', async () => {
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
+                    settings.fps_caps = data.fps_caps || {};
                     customDirs.value = data.custom_directories || [];
+                    gameInstalls.value = data.game_installs || [];
+                    fpsRepair.value = Array.isArray(data.fps_repair) ? data.fps_repair : [];
                 }
             };
 
@@ -96,12 +103,18 @@ document.addEventListener('settings_loaded', async () => {
                     ? await window.AppSettings.load()
                     : unwrap(await eel.get_settings()());
                 Object.assign(currentSettings, settings);
-                await eel.save_settings(currentSettings)();
+                
+                const response = await eel.save_settings(currentSettings)();
+                const response_data = unwrap(response);
+                
                 if (window.AppSettings) {
-                    window.AppSettings._cache = { ...currentSettings };
+                    window.AppSettings._cache = { ...response_data };
                 }
+                
+                gameInstalls.value = response_data.game_installs || [];
+                fpsRepair.value = Array.isArray(response_data.fps_repair) ? response_data.fps_repair : [];
                 document.dispatchEvent(new CustomEvent('app_settings_updated', {
-                    detail: { settings: { ...currentSettings } }
+                    detail: { settings: { ...response_data } }
                 }));
             };
 
@@ -237,7 +250,7 @@ document.addEventListener('settings_loaded', async () => {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
-                resetOnboardingTips
+                resetOnboardingTips, gameInstalls, isFpsRepair
             };
         }
     });

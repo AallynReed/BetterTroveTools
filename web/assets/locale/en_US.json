@@ -2566,6 +2566,21 @@
         "Infineon Kite": "",
         "The Pinzo Roller": "",
         "Rainbow Kite": "",
-        "Select a game installation to view installed mods.": ""
+        "Select a game installation to view installed mods.": "",
+        "Arcanium Automantis": "",
+        "Game Settings": "",
+        "Modifications applied directly to the game client.": "",
+        "Uncap Trove FPS": "",
+        "Removes the default 120 FPS cap by patching Trove.exe.": "",
+        "Target FPS": "",
+        "The maximum framerate limit to apply.": "",
+        "No game installations found.": "",
+        "Uncapped": "",
+        "Default": "",
+        "Could not read the FPS cap for one or more Trove installs. Use Glyph to Verify/Repair the game, then reopen settings.": "",
+        "Could not read the FPS cap for this install. Verify/Repair it in Glyph, then reopen Settings.": "",
+        "Locked — repair this install in Glyph first.": "",
+        "Disclaimer": "",
+        "These features alter the game client directly and are not officially supported by gamigo or the Trove development team. Use them at your own discretion.": ""
     }
 }
