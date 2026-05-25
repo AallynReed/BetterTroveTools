@@ -35,6 +35,8 @@ document.addEventListener('settings_loaded', async () => {
             const gameInstalls = ref([]);
             const fpsRepair = ref([]);
             const isFpsRepair = (path) => fpsRepair.value.includes(path);
+            // Game-client settings (FPS cap) require local file access -> hide in hosted web mode.
+            const isWebMode = window.BTT_WEB_MODE === true;
 
             const modals = reactive({
                 add: false,
@@ -250,7 +252,7 @@ document.addEventListener('settings_loaded', async () => {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
-                resetOnboardingTips, gameInstalls, isFpsRepair
+                resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode
             };
         }
     });
