@@ -50,6 +50,12 @@ else:
 
 IPC_LOCK_FILE = Path(os.getenv('APPDATA', '')) / 'Trove' / 'btt_ipc.lock'
 
+try:
+    with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as _meta_file:
+        WINDOW_TITLE = json.load(_meta_file).get("APP_NAME", "Better Trove Tools")
+except Exception:
+    WINDOW_TITLE = "Better Trove Tools"
+
 def get_free_port():
     """Ask the OS for an available port by binding to port 0."""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -121,6 +127,10 @@ def start_ipc_server():
             data = conn.recv(1024).decode('utf-8')
             if data and data.startswith('btt://'):
                 eel.handle_deep_link(data)()
+            # Any second-launch ping (deep link or WAKE_UP) should surface the
+            # already-running window instead of silently doing nothing.
+            if data:
+                _surface_app_window(only_if_hidden=False)
             conn.close()
 
     threading.Thread(target=listen, daemon=True).start()
@@ -157,6 +167,72 @@ def webview2_runtime_installed():
         except OSError:
             continue
     return False
+
+
+def _surface_app_window(only_if_hidden=False, retries=1):
+    """Find this process's main window by title and bring it to the front.
+
+    The post-update relaunch can start the app hidden (the updater uses a
+    minimized/hidden show flag), and a second launch should focus the running
+    window. This works directly on the Win32 handle so it doesn't depend on the
+    window-show state pywebview thinks it has.
+    """
+    if sys.platform != 'win32':
+        return
+
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.windll.user32
+    WNDENUMPROC = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows.argtypes = [WNDENUMPROC, wintypes.LPARAM]
+    user32.EnumWindows.restype = wintypes.BOOL
+    user32.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    user32.GetWindowThreadProcessId.restype = wintypes.DWORD
+    user32.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+    user32.GetWindowTextLengthW.restype = ctypes.c_int
+    user32.GetWindowTextW.argtypes = [wintypes.HWND, wintypes.LPWSTR, ctypes.c_int]
+    user32.GetWindowTextW.restype = ctypes.c_int
+    user32.IsWindowVisible.argtypes = [wintypes.HWND]
+    user32.IsWindowVisible.restype = wintypes.BOOL
+    user32.IsIconic.argtypes = [wintypes.HWND]
+    user32.IsIconic.restype = wintypes.BOOL
+    user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+    user32.ShowWindow.restype = wintypes.BOOL
+    user32.SetForegroundWindow.argtypes = [wintypes.HWND]
+    user32.SetForegroundWindow.restype = wintypes.BOOL
+
+    my_pid = os.getpid()
+    SW_SHOW, SW_RESTORE = 5, 9
+
+    def find_hwnd():
+        match = []
+
+        def callback(hwnd, _):
+            pid = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+            if pid.value == my_pid:
+                length = user32.GetWindowTextLengthW(hwnd)
+                if length:
+                    buffer = ctypes.create_unicode_buffer(length + 1)
+                    user32.GetWindowTextW(hwnd, buffer, length + 1)
+                    if buffer.value == WINDOW_TITLE:
+                        match.append(hwnd)
+                        return False
+            return True
+
+        user32.EnumWindows(WNDENUMPROC(callback), 0)
+        return match[0] if match else None
+
+    for _ in range(max(1, retries)):
+        hwnd = find_hwnd()
+        if hwnd:
+            if only_if_hidden and user32.IsWindowVisible(hwnd):
+                return
+            user32.ShowWindow(hwnd, SW_RESTORE if user32.IsIconic(hwnd) else SW_SHOW)
+            user32.SetForegroundWindow(hwnd)
+            return
+        time.sleep(0.2)
 
 
 def install_safe_eel_websocket():
@@ -264,7 +340,7 @@ def _build_update_script(script_path, msi_path, app_path, installer_log_path):
         'If success Then',
         '    WScript.Sleep 2000',
         f'    If fso.FileExists("{q(app_path)}") Then',
-        f'        shell.Run """" & "{q(app_path)}" & """", 0, False',
+        f'        shell.Run """" & "{q(app_path)}" & """", 1, False',
         '    End If',
         'Else',
         f'    shell.Run "explorer.exe /select,""" & "{q(msi_path)}" & """", 1, False',
@@ -509,12 +585,6 @@ if not webview2_runtime_installed():
             pass
     sys.exit(1)
 
-try:
-    with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as meta_file:
-        window_title = json.load(meta_file).get("APP_NAME", "Better Trove Tools")
-except Exception:
-    window_title = "Better Trove Tools"
-
 webview_storage_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'WebView2')
 
 print("✅ Starting app...")
@@ -559,12 +629,20 @@ if not wait_for_server(eel_port):
 
 print("✅ Server ready. Opening window...")
 webview.create_window(
-    window_title,
+    WINDOW_TITLE,
     f'http://localhost:{eel_port}/index.html',
     width=1700,
     height=1000,
     min_size=(1100, 700),
 )
+
+# Safety net: if a launcher (e.g. an older self-updater) starts us hidden,
+# bring the window to the foreground once it exists.
+threading.Thread(
+    target=lambda: _surface_app_window(only_if_hidden=True, retries=50),
+    daemon=True,
+).start()
+
 webview.start(
     private_mode=False,
     storage_path=webview_storage_path,
