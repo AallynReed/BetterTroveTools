@@ -280,6 +280,9 @@ def _build_update_script(script_path, msi_path, app_path, installer_log_path):
 def _schedule_process_exit(delay_seconds=1.5):
     def _exit_later():
         time.sleep(delay_seconds)
+        # os._exit skips atexit, so drop the single-instance lock ourselves
+        # before exiting — otherwise the post-update relaunch sees a stale lock.
+        IPC_LOCK_FILE.unlink(missing_ok=True)
         os._exit(0)
 
     threading.Thread(target=_exit_later, daemon=True).start()
