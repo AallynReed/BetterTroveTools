@@ -12,6 +12,15 @@ APP_DESCRIPTION = meta["APP_DESCRIPTION"]
 APP_GUID = meta["APP_GUID"]
 
 build_exe_options = {
+    "packages": [
+        # pywebview loads its Windows backend and WebView2 bridge dynamically,
+        # so cx_Freeze can't discover these by following imports.
+        "webview",
+        "webview.platforms.winforms",
+        "webview.platforms.edgechromium",
+        "clr_loader",
+        "pythonnet",
+    ],
     "excludes": [
         "wheel",
         "cx_Freeze",
@@ -23,6 +32,9 @@ build_exe_options = {
         ("LICENSE", "LICENSE"),
         ("README.md", "README.md"),
     ],
+    # Keep these out of library.zip: they carry .NET/native DLLs that must sit
+    # on disk for pythonnet and the WebView2 bridge to load.
+    "zip_exclude_packages": ["webview", "pythonnet", "clr_loader"],
     "optimize": 2,
     "include_msvcr": True,
 }

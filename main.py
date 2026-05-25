@@ -1,5 +1,4 @@
 import atexit
-import glob
 import json
 import os
 import socket
@@ -14,6 +13,7 @@ from pathlib import Path
 import bottle
 import eel
 import requests
+import webview
 from gevent.exceptions import ConcurrentObjectUseError
 
 os.environ["GOOGLE_API_KEY"] = "no"
@@ -125,51 +125,38 @@ def start_ipc_server():
 
     threading.Thread(target=listen, daemon=True).start()
 
-def find_system_edge():
-    """Locate the system-installed Microsoft Edge executable, or None.
+WEBVIEW2_RUNTIME_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
+WEBVIEW2_CLIENT_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
 
-    Handles both the classic Application\\msedge.exe layout and the newer
-    versioned EdgeCore layout, plus the canonical App Paths registry entry.
+
+def webview2_runtime_installed():
+    """Return True if the Evergreen WebView2 runtime is installed.
+
+    The runtime registers a version (`pv`) under the EdgeUpdate Clients key,
+    either per-machine (HKLM, both registry views) or per-user (HKCU).
     """
     if sys.platform != 'win32':
-        return None
+        return True
 
-    for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+    locations = [
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY),
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY),
+        (winreg.HKEY_CURRENT_USER, 0),
+    ]
+    for root, view in locations:
         try:
             with winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe",
+                root,
+                rf"SOFTWARE\Microsoft\EdgeUpdate\Clients\{WEBVIEW2_CLIENT_GUID}",
                 0,
                 winreg.KEY_READ | view,
             ) as key:
-                path, _ = winreg.QueryValueEx(key, None)
-                if path and os.path.exists(path):
-                    return path
+                version, _ = winreg.QueryValueEx(key, "pv")
+                if version and version != "0.0.0.0":
+                    return True
         except OSError:
-            pass
-
-    pf = os.environ.get('ProgramFiles', r'C:\Program Files')
-    pf86 = os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)')
-
-    for base in (pf86, pf):
-        candidate = os.path.join(base, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
-        if os.path.exists(candidate):
-            return candidate
-
-    candidates = []
-    for base in (pf86, pf):
-        candidates.extend(glob.glob(os.path.join(base, 'Microsoft', 'EdgeCore', '*', 'msedge.exe')))
-
-    def version_key(p):
-        try:
-            return tuple(int(x) for x in os.path.basename(os.path.dirname(p)).split('.'))
-        except ValueError:
-            return (0,)
-
-    if candidates:
-        return max(candidates, key=version_key)
-
-    return None
+            continue
+    return False
 
 
 def install_safe_eel_websocket():
@@ -296,20 +283,6 @@ def _schedule_process_exit(delay_seconds=1.5):
         os._exit(0)
 
     threading.Thread(target=_exit_later, daemon=True).start()
-
-
-def handle_window_closed(page, open_websockets):
-    """Eel close hook: when the UI window is gone, stop the server and exit.
-
-    A page reload briefly drops the websocket, so wait a short grace period and
-    only shut down if no client has reconnected.
-    """
-    def _shutdown_if_no_clients():
-        if len(eel._websockets) == 0:
-            IPC_LOCK_FILE.unlink(missing_ok=True)
-            os._exit(0)
-
-    threading.Timer(1.0, _shutdown_if_no_clients).start()
 
 
 @eel.expose
@@ -511,53 +484,90 @@ def proxy_bilibili_image():
     except Exception as e:
         return bottle.HTTPError(500, str(e))
 
-appdata_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'ModManagerCache', 'profile')
+# pywebview renders the UI in the Microsoft Edge WebView2 runtime, so we don't
+# ship or depend on a full browser install. Eel runs as a server only.
+if not webview2_runtime_installed():
+    # base="gui" has no console, so a printed message is never seen — show a
+    # native dialog and offer to open the download page.
+    import ctypes
 
-# Render the UI in the system-installed Microsoft Edge so we don't ship a
-# browser binary. If Edge can't be found, fall back to the default browser.
-browser_mode = 'chrome'
-edge_path = find_system_edge()
-if edge_path:
-    print(f"✅ Using system Edge at: {edge_path}")
-    eel.browsers.set_path('chrome', edge_path)
-else:
-    browser_mode = 'default'
-    print("⚠️ System Edge not found; opening in the default browser.")
+    message = (
+        "Better Trove Tools needs the Microsoft Edge WebView2 runtime, "
+        "but it isn't installed on this PC.\n\n"
+        f"Download and install it from:\n{WEBVIEW2_RUNTIME_URL}\n\n"
+        "Open the download page now?"
+    )
+    # MB_YESNO (0x4) | MB_ICONERROR (0x10) | MB_SETFOREGROUND (0x10000)
+    choice = ctypes.windll.user32.MessageBoxW(0, message, "WebView2 runtime required", 0x4 | 0x10 | 0x10000)
+    if choice == 6:  # IDYES
+        try:
+            os.startfile(WEBVIEW2_RUNTIME_URL)
+        except Exception:
+            pass
+    sys.exit(1)
+
+try:
+    with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as meta_file:
+        window_title = json.load(meta_file).get("APP_NAME", "Better Trove Tools")
+except Exception:
+    window_title = "Better Trove Tools"
+
+webview_storage_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'WebView2')
 
 print("✅ Starting app...")
 
 install_safe_eel_websocket()
-
 eel.init(os.path.join(base_dir, 'web'))
 
 eel_port = get_free_port()
-print(f"Launching UI on port {eel_port}...")
-try:
-    eel.start('index.html', mode=browser_mode, size=(1700, 1000), port=eel_port, close_callback=handle_window_closed, cmdline_args=[
-        '--disable-infobars',
-        '--no-default-browser-check',
-        '--no-first-run',
-        '--disable-background-mode',
-        '--disable-features=BackgroundMode,AutoLaunchAtStartup',
-        '--disable-background-networking',
-        '--disable-component-update',
-        '--disable-extensions',
-        '--disable-sync',
-        '--disable-translate',
-        '--disable-default-apps',
-        '--metrics-recording-only',
-        f'--user-data-dir={appdata_path}',
-        '--incognito',
-        '--disable-cache',
-        '--disk-cache-size=0',
-        '--media-cache-size=0',
-        '--disable-application-cache',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-client-side-phishing-detection',
-        '--disable-breakpad',
-    ])
-except OSError as e:
-    print(f"❌ ERROR: Could not bind UI port {eel_port}: {e}")
+print(f"Launching UI server on port {eel_port}...")
+
+
+def run_eel_server():
+    # mode=None serves the app without launching a browser. The no-op
+    # close_callback stops Eel from shutting the server down when the websocket
+    # drops — pywebview owns the window lifecycle below.
+    eel.start(
+        'index.html',
+        mode=None,
+        port=eel_port,
+        block=True,
+        close_callback=lambda *args: None,
+        suppress_error=True,
+    )
+
+
+def wait_for_server(port, timeout=15.0):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with socket.create_connection(('localhost', port), timeout=0.5):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
+
+
+threading.Thread(target=run_eel_server, daemon=True).start()
+
+if not wait_for_server(eel_port):
+    print("❌ ERROR: UI server failed to start.")
     sys.exit(1)
-except (SystemExit, MemoryError, KeyboardInterrupt):
-    sys.exit(0)
+
+print("✅ Server ready. Opening window...")
+webview.create_window(
+    window_title,
+    f'http://localhost:{eel_port}/index.html',
+    width=1700,
+    height=1000,
+    min_size=(1100, 700),
+)
+webview.start(
+    private_mode=False,
+    storage_path=webview_storage_path,
+    icon=os.path.join(base_dir, 'web', 'favicon.ico'),
+)
+
+# webview.start() returns once the user closes the window — shut everything down.
+IPC_LOCK_FILE.unlink(missing_ok=True)
+os._exit(0)
