@@ -1,4 +1,5 @@
 import atexit
+import glob
 import json
 import os
 import socket
@@ -124,37 +125,52 @@ def start_ipc_server():
 
     threading.Thread(target=listen, daemon=True).start()
 
-def clean_chromium_startup(exe_path):
-    """
-    Checks the HKCU Run registry key for entries containing the specific
-    Chromium executable path and removes them.
+def find_system_edge():
+    """Locate the system-installed Microsoft Edge executable, or None.
+
+    Handles both the classic Application\\msedge.exe layout and the newer
+    versioned EdgeCore layout, plus the canonical App Paths registry entry.
     """
     if sys.platform != 'win32':
-        return
+        return None
 
-    run_key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, run_key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
-        
-        values_to_delete = []
-        i = 0
-        
-        while True:
-            try:
-                name, value, _ = winreg.EnumValue(key, i)
-                if exe_path.lower() in value.lower():
-                    values_to_delete.append(name)
-                i += 1
-            except OSError:
-                break
-                
-        for name in values_to_delete:
-            winreg.DeleteValue(key, name)
-            print(f"✅ Removed unwanted Chromium startup entry: '{name}'")
-            
-        winreg.CloseKey(key)
-    except Exception as e:
-        print(f"⚠️ Failed to check/remove startup registry keys: {e}")
+    for view in (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY):
+        try:
+            with winreg.OpenKey(
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\msedge.exe",
+                0,
+                winreg.KEY_READ | view,
+            ) as key:
+                path, _ = winreg.QueryValueEx(key, None)
+                if path and os.path.exists(path):
+                    return path
+        except OSError:
+            pass
+
+    pf = os.environ.get('ProgramFiles', r'C:\Program Files')
+    pf86 = os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)')
+
+    for base in (pf86, pf):
+        candidate = os.path.join(base, 'Microsoft', 'Edge', 'Application', 'msedge.exe')
+        if os.path.exists(candidate):
+            return candidate
+
+    candidates = []
+    for base in (pf86, pf):
+        candidates.extend(glob.glob(os.path.join(base, 'Microsoft', 'EdgeCore', '*', 'msedge.exe')))
+
+    def version_key(p):
+        try:
+            return tuple(int(x) for x in os.path.basename(os.path.dirname(p)).split('.'))
+        except ValueError:
+            return (0,)
+
+    if candidates:
+        return max(candidates, key=version_key)
+
+    return None
+
 
 def install_safe_eel_websocket():
     def safe_websocket(ws):
@@ -280,6 +296,20 @@ def _schedule_process_exit(delay_seconds=1.5):
         os._exit(0)
 
     threading.Thread(target=_exit_later, daemon=True).start()
+
+
+def handle_window_closed(page, open_websockets):
+    """Eel close hook: when the UI window is gone, stop the server and exit.
+
+    A page reload briefly drops the websocket, so wait a short grace period and
+    only shut down if no client has reconnected.
+    """
+    def _shutdown_if_no_clients():
+        if len(eel._websockets) == 0:
+            IPC_LOCK_FILE.unlink(missing_ok=True)
+            os._exit(0)
+
+    threading.Timer(1.0, _shutdown_if_no_clients).start()
 
 
 @eel.expose
@@ -481,20 +511,21 @@ def proxy_bilibili_image():
     except Exception as e:
         return bottle.HTTPError(500, str(e))
 
-chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
 appdata_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'ModManagerCache', 'profile')
 
-print(f"Looking for Chromium at: {chromium_path}")
-if not os.path.exists(chromium_path):
-    print("❌ ERROR: Chromium .exe not found at the path above!")
-    print("Please check your 'bin' folder and update the folder names in main.py.")
-    sys.exit(1)
+# Render the UI in the system-installed Microsoft Edge so we don't ship a
+# browser binary. If Edge can't be found, fall back to the default browser.
+browser_mode = 'chrome'
+edge_path = find_system_edge()
+if edge_path:
+    print(f"✅ Using system Edge at: {edge_path}")
+    eel.browsers.set_path('chrome', edge_path)
 else:
-    print("✅ Chromium found! Cleaning up startup registry...")
-    clean_chromium_startup(chromium_path)
-    print("✅ Starting app...")
+    browser_mode = 'default'
+    print("⚠️ System Edge not found; opening in the default browser.")
 
-eel.browsers.set_path('chrome', chromium_path)
+print("✅ Starting app...")
+
 install_safe_eel_websocket()
 
 eel.init(os.path.join(base_dir, 'web'))
@@ -502,7 +533,7 @@ eel.init(os.path.join(base_dir, 'web'))
 eel_port = get_free_port()
 print(f"Launching UI on port {eel_port}...")
 try:
-    eel.start('index.html', mode='chrome', size=(1700, 1000), port=eel_port, cmdline_args=[
+    eel.start('index.html', mode=browser_mode, size=(1700, 1000), port=eel_port, close_callback=handle_window_closed, cmdline_args=[
         '--disable-infobars',
         '--no-default-browser-check',
         '--no-first-run',
@@ -530,8 +561,3 @@ except OSError as e:
     sys.exit(1)
 except (SystemExit, MemoryError, KeyboardInterrupt):
     sys.exit(0)
-
-try:
-    clean_chromium_startup(chromium_path)
-except Exception as e:
-    print(f"⚠️ Failed to clean up startup registry: {e}")

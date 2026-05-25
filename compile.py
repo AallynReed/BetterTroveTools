@@ -1,8 +1,4 @@
-import urllib.request
-import zipfile
-import os
 import json
-from pathlib import Path
 from cx_Freeze import setup, Executable
 
 with open("metadata.json", "r", encoding="utf-8") as f:
@@ -15,42 +11,6 @@ APP_AUTHOR = meta["APP_AUTHOR"]
 APP_DESCRIPTION = meta["APP_DESCRIPTION"]
 APP_GUID = meta["APP_GUID"]
 
-def download_chromium():
-    bin_dir = Path("bin")
-    chrome_win_dir = bin_dir / "chrome-win"
-    
-    if chrome_win_dir.exists() and (chrome_win_dir / "chrome.exe").exists():
-        print("✅ Chromium already exists in bin/chrome-win. Skipping download.")
-        return
-
-    print("🔍 Fetching latest Chromium revision...")
-    revision_url = "https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2FLAST_CHANGE?alt=media"
-    
-    try:
-        req = urllib.request.Request(revision_url)
-        with urllib.request.urlopen(req) as response:
-            revision = response.read().decode('utf-8').strip()
-            
-        print(f"📥 Downloading Chromium revision {revision} (This may take a minute)...")
-        zip_url = f"https://www.googleapis.com/download/storage/v1/b/chromium-browser-snapshots/o/Win_x64%2F{revision}%2Fchrome-win.zip?alt=media"
-        zip_path = "chrome-win.zip"
-        
-        urllib.request.urlretrieve(zip_url, zip_path)
-        
-        print("📦 Extracting Chromium...")
-        bin_dir.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(bin_dir)
-        
-        os.remove(zip_path)
-        print("✅ Chromium download and extraction complete!")
-        
-    except Exception as e:
-        print(f"❌ Failed to download Chromium: {e}")
-        exit(1)
-
-download_chromium()
-
 build_exe_options = {
     "excludes": [
         "wheel",
@@ -58,7 +18,6 @@ build_exe_options = {
     ],
     "include_files": [
         ("web/", "web/"),
-        ("bin/", "bin/"),
         ("trove.dll", "trove.dll"),
         ("metadata.json", "metadata.json"),
         ("LICENSE", "LICENSE"),
