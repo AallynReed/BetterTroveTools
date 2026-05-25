@@ -13,6 +13,7 @@ from pathlib import Path
 import bottle
 import eel
 import requests
+import webview
 from gevent.exceptions import ConcurrentObjectUseError
 
 os.environ["GOOGLE_API_KEY"] = "no"
@@ -124,37 +125,39 @@ def start_ipc_server():
 
     threading.Thread(target=listen, daemon=True).start()
 
-def clean_chromium_startup(exe_path):
-    """
-    Checks the HKCU Run registry key for entries containing the specific
-    Chromium executable path and removes them.
+WEBVIEW2_RUNTIME_URL = "https://developer.microsoft.com/microsoft-edge/webview2/"
+WEBVIEW2_CLIENT_GUID = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+
+
+def webview2_runtime_installed():
+    """Return True if the Evergreen WebView2 runtime is installed.
+
+    The runtime registers a version (`pv`) under the EdgeUpdate Clients key,
+    either per-machine (HKLM, both registry views) or per-user (HKCU).
     """
     if sys.platform != 'win32':
-        return
+        return True
 
-    run_key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
-    try:
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, run_key_path, 0, winreg.KEY_READ | winreg.KEY_WRITE)
-        
-        values_to_delete = []
-        i = 0
-        
-        while True:
-            try:
-                name, value, _ = winreg.EnumValue(key, i)
-                if exe_path.lower() in value.lower():
-                    values_to_delete.append(name)
-                i += 1
-            except OSError:
-                break
-                
-        for name in values_to_delete:
-            winreg.DeleteValue(key, name)
-            print(f"✅ Removed unwanted Chromium startup entry: '{name}'")
-            
-        winreg.CloseKey(key)
-    except Exception as e:
-        print(f"⚠️ Failed to check/remove startup registry keys: {e}")
+    locations = [
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_64KEY),
+        (winreg.HKEY_LOCAL_MACHINE, winreg.KEY_WOW64_32KEY),
+        (winreg.HKEY_CURRENT_USER, 0),
+    ]
+    for root, view in locations:
+        try:
+            with winreg.OpenKey(
+                root,
+                rf"SOFTWARE\Microsoft\EdgeUpdate\Clients\{WEBVIEW2_CLIENT_GUID}",
+                0,
+                winreg.KEY_READ | view,
+            ) as key:
+                version, _ = winreg.QueryValueEx(key, "pv")
+                if version and version != "0.0.0.0":
+                    return True
+        except OSError:
+            continue
+    return False
+
 
 def install_safe_eel_websocket():
     def safe_websocket(ws):
@@ -481,57 +484,90 @@ def proxy_bilibili_image():
     except Exception as e:
         return bottle.HTTPError(500, str(e))
 
-chromium_path = os.path.join(base_dir, 'bin', 'chrome-win', 'chrome.exe')
-appdata_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'ModManagerCache', 'profile')
+# pywebview renders the UI in the Microsoft Edge WebView2 runtime, so we don't
+# ship or depend on a full browser install. Eel runs as a server only.
+if not webview2_runtime_installed():
+    # base="gui" has no console, so a printed message is never seen — show a
+    # native dialog and offer to open the download page.
+    import ctypes
 
-print(f"Looking for Chromium at: {chromium_path}")
-if not os.path.exists(chromium_path):
-    print("❌ ERROR: Chromium .exe not found at the path above!")
-    print("Please check your 'bin' folder and update the folder names in main.py.")
+    message = (
+        "Better Trove Tools needs the Microsoft Edge WebView2 runtime, "
+        "but it isn't installed on this PC.\n\n"
+        f"Download and install it from:\n{WEBVIEW2_RUNTIME_URL}\n\n"
+        "Open the download page now?"
+    )
+    # MB_YESNO (0x4) | MB_ICONERROR (0x10) | MB_SETFOREGROUND (0x10000)
+    choice = ctypes.windll.user32.MessageBoxW(0, message, "WebView2 runtime required", 0x4 | 0x10 | 0x10000)
+    if choice == 6:  # IDYES
+        try:
+            os.startfile(WEBVIEW2_RUNTIME_URL)
+        except Exception:
+            pass
     sys.exit(1)
-else:
-    print("✅ Chromium found! Cleaning up startup registry...")
-    clean_chromium_startup(chromium_path)
-    print("✅ Starting app...")
 
-eel.browsers.set_path('chrome', chromium_path)
+try:
+    with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as meta_file:
+        window_title = json.load(meta_file).get("APP_NAME", "Better Trove Tools")
+except Exception:
+    window_title = "Better Trove Tools"
+
+webview_storage_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'WebView2')
+
+print("✅ Starting app...")
+
 install_safe_eel_websocket()
-
 eel.init(os.path.join(base_dir, 'web'))
 
 eel_port = get_free_port()
-print(f"Launching UI on port {eel_port}...")
-try:
-    eel.start('index.html', mode='chrome', size=(1700, 1000), port=eel_port, cmdline_args=[
-        '--disable-infobars',
-        '--no-default-browser-check',
-        '--no-first-run',
-        '--disable-background-mode',
-        '--disable-features=BackgroundMode,AutoLaunchAtStartup',
-        '--disable-background-networking',
-        '--disable-component-update',
-        '--disable-extensions',
-        '--disable-sync',
-        '--disable-translate',
-        '--disable-default-apps',
-        '--metrics-recording-only',
-        f'--user-data-dir={appdata_path}',
-        '--incognito',
-        '--disable-cache',
-        '--disk-cache-size=0',
-        '--media-cache-size=0',
-        '--disable-application-cache',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-client-side-phishing-detection',
-        '--disable-breakpad',
-    ])
-except OSError as e:
-    print(f"❌ ERROR: Could not bind UI port {eel_port}: {e}")
-    sys.exit(1)
-except (SystemExit, MemoryError, KeyboardInterrupt):
-    sys.exit(0)
+print(f"Launching UI server on port {eel_port}...")
 
-try:
-    clean_chromium_startup(chromium_path)
-except Exception as e:
-    print(f"⚠️ Failed to clean up startup registry: {e}")
+
+def run_eel_server():
+    # mode=None serves the app without launching a browser. The no-op
+    # close_callback stops Eel from shutting the server down when the websocket
+    # drops — pywebview owns the window lifecycle below.
+    eel.start(
+        'index.html',
+        mode=None,
+        port=eel_port,
+        block=True,
+        close_callback=lambda *args: None,
+        suppress_error=True,
+    )
+
+
+def wait_for_server(port, timeout=15.0):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with socket.create_connection(('localhost', port), timeout=0.5):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
+
+
+threading.Thread(target=run_eel_server, daemon=True).start()
+
+if not wait_for_server(eel_port):
+    print("❌ ERROR: UI server failed to start.")
+    sys.exit(1)
+
+print("✅ Server ready. Opening window...")
+webview.create_window(
+    window_title,
+    f'http://localhost:{eel_port}/index.html',
+    width=1700,
+    height=1000,
+    min_size=(1100, 700),
+)
+webview.start(
+    private_mode=False,
+    storage_path=webview_storage_path,
+    icon=os.path.join(base_dir, 'web', 'favicon.ico'),
+)
+
+# webview.start() returns once the user closes the window — shut everything down.
+IPC_LOCK_FILE.unlink(missing_ok=True)
+os._exit(0)

@@ -3,9 +3,11 @@ aiohttp
 binary-reader
 bottle
 eel
+gevent
 pydantic
+pywebview
+requests
 toml
 vdf
-requests
 
 cx-freeze

@@ -74,6 +74,17 @@ Better Trove Tools is a desktop companion for Trove players, collectors, and mod
 - Local-first design with an external request tracker for transparency.
 - Built-in update checking through GitHub releases.
 
+## Requirements
+
+The desktop app renders its interface in the **Microsoft Edge WebView2 runtime** instead of bundling a browser, keeping the download small and the engine automatically security-patched.
+
+- **Windows 11** — WebView2 is preinstalled; nothing to do.
+- **Windows 10 and earlier** — usually delivered through Windows Update, but if the app reports the runtime as missing, install the free **Evergreen WebView2 Runtime** from Microsoft:
+  - Download page: https://developer.microsoft.com/microsoft-edge/webview2/
+  - Direct Evergreen Bootstrapper: https://go.microsoft.com/fwlink/p/?LinkId=2124703
+
+WebView2 is a standalone component, so it stays installed even if Microsoft Edge itself is removed.
+
 ## Hosted web mode
 
 Run the browser-hosted compatibility server with:
