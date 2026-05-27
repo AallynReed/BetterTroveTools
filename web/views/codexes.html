@@ -29,6 +29,9 @@
             <button class="tab-btn" :class="{ active: activeTab === 'items' }" @click="setActiveTab('items')">
                 <i class="fa-solid fa-box"></i> <span>{{ t('Item Codex') }}</span>
             </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'fish' }" @click="setActiveTab('fish')">
+                <i class="fa-solid fa-fish"></i> <span>{{ t('Fish Codex') }}</span>
+            </button>
         </div>
 
         <div v-show="activeTab === 'allies'" class="tab-content" :class="{ active: activeTab === 'allies' }">
@@ -233,6 +236,16 @@
                 </div>
             </div>
             <div id="codexes-items-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'fish'" class="tab-content" :class="{ active: activeTab === 'fish' }">
+            <div v-if="!loadedTabs.fish" class="codex-preload-shell">
+                <div class="ui-state ui-state-loading ui-state-compact">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>{{ t('Loading Fish Codex...') }}</span>
+                </div>
+            </div>
+            <div id="codexes-fish-host" class="view-container" v-cloak></div>
         </div>
     </div>
 </div>

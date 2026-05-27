@@ -16,6 +16,7 @@ from models.trove.prefab_ally import (
     resolve_localized_value,
 )
 from utils.mount_binfab import extract_strings, zig_zag_decode
+from utils.binfab_reader import decode_identity
 
 
 RECIPE_PREFIX = "recipes/"
@@ -240,10 +241,30 @@ def extract_prefab_metadata(
     raw_strings = [normalize_recipe_string(row["text"]) for row in extract_strings(content)]
     strings = [row for row in raw_strings if row]
 
+    # Grounded read of the identity component (exe-derived wire format). Falls back
+    # to regex string-scan for prefab families without an identity component.
+    identity = decode_identity(content)
     name_key = ""
     desc_key = ""
+    literal_name = ""
+    display_category = ""
+    tradable = None
+    if identity:
+        display_category = identity.get("category") or ""
+        tradable = identity.get("tradable")
+        gname = identity.get("name_key") or ""
+        gdesc = identity.get("desc_key") or ""
+        if gname.startswith("$"):
+            name_key = clean_localized_text(gname)
+        elif gname:
+            literal_name = gname  # already a display name, not a localization key
+        if gdesc.startswith("$"):
+            desc_key = clean_localized_text(gdesc)
+
     for text in strings:
-        if not name_key:
+        if name_key and desc_key:
+            break
+        if not name_key and not literal_name:
             match = NAME_KEY_RE.search(text)
             if match:
                 name_key = clean_localized_text(match.group(1))
@@ -251,8 +272,6 @@ def extract_prefab_metadata(
             match = DESC_KEY_RE.search(text)
             if match:
                 desc_key = clean_localized_text(match.group(1))
-        if name_key and desc_key:
-            break
 
     blueprint = choose_blueprint_from_strings(strings)
     blueprint_source = "decoded" if blueprint else ""
@@ -264,7 +283,11 @@ def extract_prefab_metadata(
         blueprint_source = "fallback"
 
     resolved_blueprint = resolve_blueprint_catalog_path(blueprint, blueprint_map)
-    name = resolve_localized_value(language_map, name_key) or pretty_name_from_path(prefab_path)
+    name = (
+        resolve_localized_value(language_map, name_key)
+        or literal_name
+        or pretty_name_from_path(prefab_path)
+    )
     desc = resolve_localized_value(language_map, desc_key)
 
     return {
@@ -275,6 +298,8 @@ def extract_prefab_metadata(
         "designer": extract_designer_from_blueprint(resolved_blueprint) or "Trove Team",
         "name_key": name_key,
         "desc_key": desc_key,
+        "display_category": display_category,
+        "tradable": tradable,
         "strings": strings,
     }
 

@@ -24,6 +24,7 @@ import backend.about
 import backend.allies
 import backend.calculators
 import backend.file_manager
+import backend.fish
 import backend.gems_and_builds.gem_builds
 import backend.gems_and_builds.gem_evaluator
 import backend.gems_and_builds.gem_simulator

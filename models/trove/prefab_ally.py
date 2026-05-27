@@ -12,6 +12,7 @@ from binary_reader import BinaryReader
 from utils.ally_binfab import extract_strings, parse_ally_binfab_content
 from utils.registry import get_trove_locations
 from utils.executable import find_trove_executable
+from utils.binfab_reader import parse_collection_table, read_uleb
 
 
 PREFAB_PREFIX = "collections/pet/"
@@ -231,17 +232,12 @@ def load_collection_pet_category_map(game_path: Path) -> dict[str, str]:
         archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
         archive_content = read_archive_content(archive_path)
         content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
-        strings = [row["text"] for row in extract_strings(content)]
+        # Grounded: decode the collection table as real category groups (verified
+        # byte-identical to the old string-scan grouping) and key by member stem.
         category_map: dict[str, str] = {}
-        current_category = ""
-        for index, text in enumerate(strings):
-            next_text = strings[index + 1] if index + 1 < len(strings) else ""
-            if next_text.startswith("$CollectionName_"):
-                current_category = text
-                continue
-            normalized = text.lstrip("$")
-            if normalized.startswith("collections/pet/") and current_category:
-                category_map[Path(normalized).stem] = current_category
+        for group in parse_collection_table(content):
+            for member in group["members"]:
+                category_map[Path(member.replace("\\", "/")).stem] = group["id"]
         return category_map
     return {}
 
@@ -655,21 +651,36 @@ def parse_item_pet_signature(content: bytes) -> dict:
     return {}
 
 
-KNOWN_POWER_RANK_PATTERNS = (
-    (bytes.fromhex("30EC044001"), "50"),
-    (bytes.fromhex("30D8044001"), "50"),
-    (bytes.fromhex("30A4064001"), "75"),
-    (bytes.fromhex("2E0008300040011EE205"), "30"),
-    (bytes.fromhex("30A2064001"), "20"),
-    (bytes.fromhex("30A0064001"), "5"),
-    (bytes.fromhex("30004001"), "0"),
-)
+# Power Rank is the collectible PR component: field 3 (key 0x30, wt0 varint) holds a
+# small tier value, immediately followed by field 4 == 1 (key 0x40 0x01). The tier
+# value -> PR mapping (data, not a magic byte sequence). Live-confirmed in-game:
+# 800->5 (Lovely Hollywing/Gordito), 802->20 (Buccaneer Booty); 804->75, 600/620->50,
+# and the special "2E" structural case (->30) carried over from the prior byte patterns.
+POWER_RANK_BY_TIER = {0: "0", 600: "50", 620: "50", 800: "5", 802: "20", 804: "75"}
+
+# A distinct structural context where field3 reads 0 but the PR is 30 (must be checked
+# before the generic field3 scan, which would otherwise map the embedded 0x30 00 40 01 -> 0).
+_PR_SPECIAL_30 = bytes.fromhex("2E0008300040011EE205")
 
 
 def decode_known_power_rank(content: bytes) -> str:
-    for pattern, value in KNOWN_POWER_RANK_PATTERNS:
-        if pattern in content:
-            return value
+    if _PR_SPECIAL_30 in content:
+        return "30"
+    # Grounded read: scan for the PR component block  <0x30 varint V> <0x40 0x01>.
+    n = len(content)
+    i = 0
+    while i < n - 2:
+        if content[i] == 0x30:
+            try:
+                value, j = read_uleb(content, i + 1)
+            except (IndexError, ValueError):
+                i += 1
+                continue
+            if j + 1 < n and content[j] == 0x40 and content[j + 1] == 0x01:
+                return POWER_RANK_BY_TIER.get(value, "")
+            i = j
+        else:
+            i += 1
     return ""
 
 

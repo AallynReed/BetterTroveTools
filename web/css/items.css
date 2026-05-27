@@ -91,7 +91,8 @@
     padding: 2px 2px 0;
 }
 
-#item-search-input {
+#item-search-input,
+#fish-search-input {
     width: 100%;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color, #444c5e);
@@ -102,14 +103,16 @@
     transition: all 0.2s ease;
 }
 
-#item-search-input:focus {
+#item-search-input:focus,
+#fish-search-input:focus {
     outline: none;
     border-color: #5ec6ff;
     background: rgba(0, 0, 0, 0.5);
     box-shadow: 0 0 10px rgba(94, 198, 255, 0.2);
 }
 
-#items-vue-app .custom-select-trigger {
+#items-vue-app .custom-select-trigger,
+#fish-vue-app .custom-select-trigger {
     height: 42px;
     min-height: 42px;
     padding: 10px 12px;

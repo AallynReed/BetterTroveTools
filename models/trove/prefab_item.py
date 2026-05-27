@@ -9,6 +9,7 @@ from models.trove.prefab_ally import (
     read_archive_content,
 )
 from models.trove.prefab_recipe import build_prefab_entry_map, extract_prefab_metadata
+from utils.binfab_reader import decode_identity
 
 
 ITEM_PREFIX = "item/"
@@ -47,6 +48,12 @@ def tradability_from_item_path(identifier: str) -> str:
 
 
 def tradability_from_item_content(content: bytes, identifier: str = "") -> str:
+    # Grounded: tradability is identity-component field 14 (== 2 means Tradable),
+    # read via the exe-derived wire format. Falls back to the old marker/byte scan
+    # and finally the _trade/_notrade filename convention.
+    identity = decode_identity(content)
+    if identity and identity.get("tradable") is not None:
+        return "Tradable" if identity["tradable"] else "Untradable"
     marker = b"\xE0\x01"
     pos = content.find(marker)
     if pos != -1 and pos + len(marker) < len(content):
