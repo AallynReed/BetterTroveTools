@@ -1,8 +1,27 @@
+// Browser shortcuts (devtools, refresh, etc.) are only blocked in the packaged
+// build. In dev (running from source) and hosted web mode they stay enabled, so
+// there's no need to comment this out by hand while developing. The backend
+// reports dev_mode via get_system_info (sys.frozen); until that resolves we
+// assume dev and block nothing.
+window.BTT_IS_COMPILED = false;
+(async () => {
+    try {
+        if (window.eel && eel.get_system_info) {
+            const info = await eel.get_system_info()();
+            const devMode = info && (info.dev_mode ?? (info.data && info.data.dev_mode));
+            window.BTT_IS_COMPILED = devMode === false;
+        }
+    } catch (e) {
+        // Leave as dev (no blocking) if detection fails.
+    }
+})();
+
 document.addEventListener('keydown', function(e) {
+    if (!window.BTT_IS_COMPILED) return;
     const blockedKeys = ['F12', 'F5', 'F11'];
     const blockedCtrlKeys = ['t', 'n', 'w', 'r', 'p', 's', 'o', 'j', 'd', 'u', 'h'];
     const blockedCtrlShiftKeys = ['i', 'j', 'c'];
-    
+
     if (blockedKeys.includes(e.key)) e.preventDefault();
     if (e.ctrlKey && blockedCtrlKeys.includes(e.key.toLowerCase())) e.preventDefault();
     if (e.ctrlKey && e.shiftKey && blockedCtrlShiftKeys.includes(e.key.toLowerCase())) e.preventDefault();

@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 
 import eel
 from backend.response import resp, standardize_response
@@ -15,6 +16,8 @@ def get_system_info():
             "os_version": platform.version(),
             "architecture": platform.machine(),
             "processor": platform.processor(),
+            # True when running from source; False in the packaged (frozen) build.
+            "dev_mode": not getattr(sys, "frozen", False),
         }
         return resp(True, data=data, **data)
     except Exception as e:
