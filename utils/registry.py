@@ -41,6 +41,7 @@ class TroveGamePath:
         self._clean_name = None
         self.clean_name = name or self.path.name
         self._is_custom = bool(name)
+        self._executable = None
 
     def __str__(self):
         return str(self.path)
@@ -89,8 +90,12 @@ class TroveGamePath:
 
     @property
     def executable(self):
-        exe = find_trove_executable(self.path)
-        return exe if exe else self.path.joinpath("Trove_x64.exe")
+        # Resolved once per instance: is_valid / get_current_fps / patch_fps all
+        # touch this, and instances are short-lived (rebuilt each get_settings).
+        if self._executable is None:
+            exe = find_trove_executable(self.path)
+            self._executable = exe if exe else self.path.joinpath("Trove_x64.exe")
+        return self._executable
 
     @property
     def is_valid(self):
