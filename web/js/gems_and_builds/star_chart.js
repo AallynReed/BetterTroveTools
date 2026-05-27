@@ -105,6 +105,17 @@ document.addEventListener('star_chart_loaded', async () => {
             const templates = ref({});
             const selectedTemplate = ref("");
             const selectedStatFilter = ref("");
+            const nodeSearchQuery = ref("");
+
+            // Pan & zoom: the SVG viewBox is reactive so the wheel/drag handlers can
+            // move and scale the visible window over the (fixed) chart geometry.
+            const DEFAULT_VIEWBOX = { x: 0, y: 0, w: 1000, h: 800 };
+            const VIEWBOX_ASPECT = DEFAULT_VIEWBOX.w / DEFAULT_VIEWBOX.h;
+            const MIN_VIEW_W = 250;
+            const MAX_VIEW_W = 1400;
+            const viewBox = reactive({ ...DEFAULT_VIEWBOX });
+            const viewBoxStr = computed(() => `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+            const importTemplatesRef = ref(null);
 
             const summarySectionState = reactive({
                 stats: true,
@@ -112,7 +123,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 obtainables: true
             });
 
-            const modal = reactive({ show: false, title: '', msg: '', showInput: false, inputValue: '', action: null });
+            const modal = reactive({ show: false, title: '', msg: '', showInput: false, inputValue: '', action: null, renameFrom: '' });
             const modalInputRef = ref(null);
 
             const tooltip = reactive({ show: false, node: null, x: 0, y: 0 });
@@ -182,20 +193,42 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const highlightedStatNodeCount = computed(() => highlightedStatPaths.value.size);
 
-            const getSelectablePathList = () => {
-                return Object.keys(nodeMap)
+            const searchMatchedPaths = computed(() => {
+                const query = String(nodeSearchQuery.value || '').trim().toLowerCase();
+                if (query.length < 2) return new Set();
+                const matches = new Set();
+                nodesList.value.forEach((node) => {
+                    if (node.Type === 'Root') return;
+                    const haystack = [];
+                    if (node.Name) haystack.push(t(node.Name), node.Name);
+                    if (node.Description) haystack.push(t(node.Description), node.Description);
+                    if (Array.isArray(node.Abilities)) node.Abilities.forEach(a => haystack.push(t(a), a));
+                    if (Array.isArray(node.Obtainables)) node.Obtainables.forEach(o => haystack.push(t(o), o));
+                    if (Array.isArray(node.Stats)) node.Stats.forEach(s => { if (s && s.name) haystack.push(t(s.name), s.name); });
+                    if (haystack.some(text => String(text || '').toLowerCase().includes(query))) {
+                        matches.add(node.Path);
+                    }
+                });
+                return matches;
+            });
+
+            const searchMatchCount = computed(() => searchMatchedPaths.value.size);
+            const clearNodeSearch = () => { nodeSearchQuery.value = ""; };
+
+            // The selectable-path list is static once the chart is loaded, so build
+            // the id<->path maps once instead of on every selection change.
+            let _codecMapsCache = null;
+            const getCodecMaps = () => {
+                if (_codecMapsCache) return _codecMapsCache;
+                const selectablePaths = Object.keys(nodeMap)
                     .filter(path => nodeMap[path] && nodeMap[path].Type !== 'Root')
                     .sort();
-            };
-
-            const getCodecMaps = () => {
-                const selectablePaths = getSelectablePathList();
                 const pathToId = new Map();
-                selectablePaths.forEach((path, index) => {
-                    pathToId.set(path, index);
-                });
-                return { selectablePaths, pathToId };
+                selectablePaths.forEach((path, index) => pathToId.set(path, index));
+                _codecMapsCache = { selectablePaths, pathToId };
+                return _codecMapsCache;
             };
+            const getSelectablePathList = () => getCodecMaps().selectablePaths;
 
             const toBase64Url = (binary) => {
                 return btoa(binary)
@@ -416,19 +449,22 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (!window.AppSettings) return;
                 window.AppSettings.setPrefSync(PREF_STATE_KEY, {
                     buildCode: buildCode.value || "",
-                    cheatModeEnabled: cheatModeEnabled.value
+                    cheatModeEnabled: cheatModeEnabled.value,
+                    summarySections: { ...summarySectionState }
                 });
             };
 
             const renderNodes = computed(() => {
                 const replacementTips = replacementInfo.value.tipSet;
-                const hasStatFilter = Boolean(selectedStatFilter.value);
-                const matchingPaths = highlightedStatPaths.value;
+                const statPaths = highlightedStatPaths.value;
+                const searchPaths = searchMatchedPaths.value;
+                const searchActive = String(nodeSearchQuery.value || '').trim().length >= 2;
+                const hasStatFilter = Boolean(selectedStatFilter.value) || searchActive;
                 return nodesList.value.map(node => {
                     const isSelected = selectedPaths.has(node.Path);
                     const isOverwritten = overwrites.value.has(node.Path);
                     const isReplacementTip = replacementTips.has(node.Path);
-                    const isStatHighlighted = matchingPaths.has(node.Path);
+                    const isStatHighlighted = statPaths.has(node.Path) || searchPaths.has(node.Path);
                     const baseColor = node.fill;
                     
                     let rootActive = false;
@@ -715,9 +751,89 @@ document.addEventListener('star_chart_loaded', async () => {
                 selectedStatFilter.value = "";
             };
 
+            const _svgPointFromEvent = (e) => {
+                const svg = document.getElementById('chart-svg');
+                if (!svg) return null;
+                const rect = svg.getBoundingClientRect();
+                if (!rect.width || !rect.height) return null;
+                const relX = (e.clientX - rect.left) / rect.width;
+                const relY = (e.clientY - rect.top) / rect.height;
+                return { x: viewBox.x + relX * viewBox.w, y: viewBox.y + relY * viewBox.h, relX, relY };
+            };
+
+            const onChartWheel = (e) => {
+                const pt = _svgPointFromEvent(e);
+                if (!pt) return;
+                const factor = e.deltaY < 0 ? 0.85 : 1.0 / 0.85;
+                const newW = Math.min(MAX_VIEW_W, Math.max(MIN_VIEW_W, viewBox.w * factor));
+                const newH = newW / VIEWBOX_ASPECT;
+                // Keep the point under the cursor stationary while zooming.
+                viewBox.x = pt.x - pt.relX * newW;
+                viewBox.y = pt.y - pt.relY * newH;
+                viewBox.w = newW;
+                viewBox.h = newH;
+            };
+
+            let panState = null;
+            const _onPanMove = (e) => {
+                if (!panState) return;
+                viewBox.x = panState.startVbX - (e.clientX - panState.startClientX) * panState.unitsPerPxX;
+                viewBox.y = panState.startVbY - (e.clientY - panState.startClientY) * panState.unitsPerPxY;
+            };
+            const _onPanUp = () => {
+                window.removeEventListener('mousemove', _onPanMove);
+                window.removeEventListener('mouseup', _onPanUp);
+                const svg = document.getElementById('chart-svg');
+                if (svg) svg.classList.remove('panning');
+                panState = null;
+            };
+            const onChartMouseDown = (e) => {
+                // Pan only from empty chart background, never when grabbing a node/anchor
+                // (those keep their own click handlers).
+                const target = e.target;
+                if (e.button !== 0 || (target && target.classList &&
+                    (target.classList.contains('star-node') || target.classList.contains('center-clear-anchor')))) {
+                    return;
+                }
+                const svg = document.getElementById('chart-svg');
+                const rect = svg ? svg.getBoundingClientRect() : null;
+                if (!rect || !rect.width || !rect.height) return;
+                e.preventDefault();
+                panState = {
+                    startClientX: e.clientX,
+                    startClientY: e.clientY,
+                    startVbX: viewBox.x,
+                    startVbY: viewBox.y,
+                    unitsPerPxX: viewBox.w / rect.width,
+                    unitsPerPxY: viewBox.h / rect.height
+                };
+                svg.classList.add('panning');
+                window.addEventListener('mousemove', _onPanMove);
+                window.addEventListener('mouseup', _onPanUp);
+            };
+
+            const zoomBy = (factor) => {
+                const cx = viewBox.x + viewBox.w / 2;
+                const cy = viewBox.y + viewBox.h / 2;
+                const newW = Math.min(MAX_VIEW_W, Math.max(MIN_VIEW_W, viewBox.w * factor));
+                const newH = newW / VIEWBOX_ASPECT;
+                viewBox.x = cx - newW / 2;
+                viewBox.y = cy - newH / 2;
+                viewBox.w = newW;
+                viewBox.h = newH;
+            };
+
+            const resetView = () => {
+                viewBox.x = DEFAULT_VIEWBOX.x;
+                viewBox.y = DEFAULT_VIEWBOX.y;
+                viewBox.w = DEFAULT_VIEWBOX.w;
+                viewBox.h = DEFAULT_VIEWBOX.h;
+            };
+
             const toggleSummarySection = (sectionKey) => {
                 if (!Object.prototype.hasOwnProperty.call(summarySectionState, sectionKey)) return;
                 summarySectionState[sectionKey] = !summarySectionState[sectionKey];
+                persistState();
             };
 
             const normalizeCode = (code) => {
@@ -840,17 +956,49 @@ document.addEventListener('star_chart_loaded', async () => {
                 modal.show = true;
             };
 
+            const confirmOverwrite = async (name) => {
+                if (!templates.value[name]) return true;
+                if (!window.showConfirmModal) return true;
+                return await window.showConfirmModal({
+                    title: t('Overwrite Template'),
+                    message: t("A template named '{name}' already exists. Overwrite it?").replace("{name}", name),
+                    confirmLabel: t('Overwrite'),
+                    cancelLabel: t('Cancel'),
+                    danger: true
+                });
+            };
+
             const confirmModal = async () => {
                 if (modal.action === 'save') {
                     const name = modal.inputValue.trim();
                     if (!name) return window.showToast(t("Please enter a name."), true);
                     const code = buildCode.value.trim();
+                    modal.show = false;
+                    if (!(await confirmOverwrite(name))) return;
                     const res = await eel.save_star_chart_template(name, code)();
                     if (res.success) {
                         window.showToast(t("Template '{name}' saved!").replace("{name}", name));
                         await fetchTemplates();
                         selectedTemplate.value = name;
                     } else window.showToast(t("Error saving template."), true);
+                    return;
+                } else if (modal.action === 'rename') {
+                    const newName = modal.inputValue.trim();
+                    const oldName = modal.renameFrom;
+                    modal.show = false;
+                    if (!newName) return window.showToast(t("Please enter a name."), true);
+                    if (newName === oldName) return;
+                    const code = templates.value[oldName];
+                    if (code === undefined) return;
+                    if (!(await confirmOverwrite(newName))) return;
+                    const saveRes = await eel.save_star_chart_template(newName, code)();
+                    if (saveRes.success) {
+                        await eel.delete_star_chart_template(oldName)();
+                        await fetchTemplates();
+                        selectedTemplate.value = newName;
+                        window.showToast(t("Template renamed to '{name}'.").replace("{name}", newName));
+                    } else window.showToast(t("Error renaming template."), true);
+                    return;
                 } else if (modal.action === 'delete') {
                     const name = selectedTemplate.value;
                     const res = await eel.delete_star_chart_template(name)();
@@ -861,6 +1009,58 @@ document.addEventListener('star_chart_loaded', async () => {
                     } else window.showToast(t("Error deleting template."), true);
                 }
                 modal.show = false;
+            };
+
+            const renameTemplate = () => {
+                const name = selectedTemplate.value;
+                if (!name) return;
+                modal.action = 'rename';
+                modal.renameFrom = name;
+                modal.title = t('Rename Template');
+                modal.msg = t('Enter a new name:');
+                modal.showInput = true;
+                modal.inputValue = name;
+                modal.show = true;
+                nextTick(() => { if (modalInputRef.value) { modalInputRef.value.focus(); modalInputRef.value.select(); } });
+            };
+
+            const exportTemplates = () => {
+                const names = Object.keys(templates.value || {});
+                if (names.length === 0) { window.showToast(t("No templates to export."), true); return; }
+                const blob = new Blob([JSON.stringify(templates.value, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'star_chart_templates.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 0);
+            };
+
+            const triggerImportTemplates = () => {
+                if (importTemplatesRef.value) importTemplatesRef.value.click();
+            };
+
+            const onImportTemplatesFile = async (e) => {
+                const file = e.target && e.target.files && e.target.files[0];
+                if (e.target) e.target.value = '';
+                if (!file) return;
+                try {
+                    const parsed = JSON.parse(await file.text());
+                    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('bad');
+                    const entries = Object.entries(parsed).filter(([key, value]) => key && typeof value === 'string');
+                    if (entries.length === 0) { window.showToast(t("No valid templates in file."), true); return; }
+                    let imported = 0;
+                    for (const [name, code] of entries) {
+                        const res = await eel.save_star_chart_template(name, code)();
+                        if (res && res.success) imported++;
+                    }
+                    await fetchTemplates();
+                    window.showToast(t("Imported {count} templates.").replace("{count}", imported));
+                } catch (err) {
+                    window.showToast(t("Invalid templates file."), true);
+                }
             };
 
             const showTooltip = (e, node) => {
@@ -951,6 +1151,13 @@ document.addEventListener('star_chart_loaded', async () => {
                         const savedState = window.AppSettings.getPref(PREF_STATE_KEY, null);
                         if (savedState && typeof savedState === 'object') {
                             cheatModeEnabled.value = savedState.cheatModeEnabled === true;
+                            if (savedState.summarySections && typeof savedState.summarySections === 'object') {
+                                ['stats', 'abilities', 'obtainables'].forEach(key => {
+                                    if (typeof savedState.summarySections[key] === 'boolean') {
+                                        summarySectionState[key] = savedState.summarySections[key];
+                                    }
+                                });
+                            }
                             if (savedState.buildCode) {
                                 buildCode.value = savedState.buildCode;
                                 loadCode(true);
@@ -983,6 +1190,8 @@ document.addEventListener('star_chart_loaded', async () => {
                     chartResizeObserver = null;
                 }
                 window.removeEventListener('resize', syncSummaryPanelHeight);
+                window.removeEventListener('mousemove', _onPanMove);
+                window.removeEventListener('mouseup', _onPanUp);
             });
 
             return {
@@ -992,7 +1201,10 @@ document.addEventListener('star_chart_loaded', async () => {
                 summarySectionState, toggleSummarySection,
                 buildCode, codeInputFocused, loadCode, copyCode,
                 selectedStatFilter, statFilterOptions, highlightedStatNodeCount, clearStatFilter,
-                selectedTemplate, templateOptions, saveTemplate, deleteTemplate,
+                nodeSearchQuery, searchMatchCount, clearNodeSearch,
+                viewBoxStr, onChartWheel, onChartMouseDown, zoomBy, resetView,
+                selectedTemplate, templateOptions, saveTemplate, deleteTemplate, renameTemplate,
+                exportTemplates, triggerImportTemplates, onImportTemplatesFile, importTemplatesRef,
                 modal, modalInputRef, confirmModal,
                 tooltip, showTooltip, moveTooltip, hideTooltip, showContextMenu
             };

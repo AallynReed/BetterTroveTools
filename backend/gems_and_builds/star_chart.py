@@ -41,15 +41,29 @@ def rotate_branch(star, origin, angle, distance):
         child["Coords"] = rotate(origin, child.get("Coords", [0, 0]), angle)
         rotate_branch(child, origin, angle, distance)
 
+_chart_cache = None  # (mtime, computed_chart, origin)
+
+
 @eel.expose
 @standardize_response
 def get_calculated_star_chart():
     try:
         json_path = os.path.join(os.getcwd(), "web", "assets", "data", "star_chart.json")
+
+        # The geometry is a deterministic function of the static star_chart.json,
+        # so compute it once and reuse until the source file changes.
+        global _chart_cache
+        try:
+            mtime = os.path.getmtime(json_path)
+        except OSError:
+            mtime = 0
+        if _chart_cache is not None and _chart_cache[0] == mtime:
+            return resp(True, data=_chart_cache[1], origin=_chart_cache[2])
+
         with open(json_path, "r", encoding="utf-8") as f:
             star_chart = json.load(f)
 
-        origin = (500, 500) 
+        origin = (500, 500)
         point_distance = 60
         constellations = ["Combat", "Gathering", "Pve"]
         constell_backs = [0, -2, -4]
@@ -72,6 +86,7 @@ def get_calculated_star_chart():
             build_branch(back_rotate, position, distance, constell.get("Stars", []))
             rotate_branch(constell, origin, radians(branch_rotation), distance)
 
+        _chart_cache = (mtime, star_chart, origin)
         return resp(True, data=star_chart, origin=origin)
     except Exception as e:
         import traceback

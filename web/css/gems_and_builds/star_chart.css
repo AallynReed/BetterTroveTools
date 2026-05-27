@@ -81,9 +81,41 @@
 
 #chart-svg {
     width: 100%;
-    max-width: 1000px; 
+    max-width: 1000px;
     height: auto;
-    background-color: transparent; 
+    background-color: transparent;
+    cursor: grab;
+    touch-action: none;
+}
+
+#chart-svg.panning {
+    cursor: grabbing;
+}
+
+.chart-zoom-controls {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.chart-zoom-controls .secondary-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.node-search-controls input {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 10px;
+    border-radius: 4px;
+    outline: none;
+    font-size: 12px;
+}
+
+.node-search-controls input:focus {
+    border-color: var(--accent-blue);
 }
 
 .chart-line {

@@ -11,10 +11,16 @@
                 <div class="chart-toolbar-hints">
                     <span class="chart-hint-chip"><i class="fa-solid fa-computer-mouse"></i> {{ t('Click nodes to select path') }}</span>
                     <span class="chart-hint-chip"><i class="fa-solid fa-circle-dot"></i> {{ t('Click center to clear all') }}</span>
+                    <span class="chart-hint-chip"><i class="fa-solid fa-up-down-left-right"></i> {{ t('Scroll to zoom, drag to pan') }}</span>
+                </div>
+                <div class="chart-zoom-controls">
+                    <button class="secondary-btn" :title="t('Zoom in')" @click="zoomBy(0.85)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button class="secondary-btn" :title="t('Zoom out')" @click="zoomBy(1.176)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button class="secondary-btn" :title="t('Reset view')" @click="resetView"><i class="fa-solid fa-expand"></i></button>
                 </div>
             </div>
 
-            <svg id="chart-svg" viewBox="0 0 1000 800">
+            <svg id="chart-svg" :view-box.camel="viewBoxStr" @wheel.prevent="onChartWheel" @mousedown="onChartMouseDown">
                 <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" class="chart-line" :class="{'line-selected': line.selected}" />
                 <path v-for="curve in replacementCurves" :key="curve.id" :d="curve.d" class="replacement-line" :class="{ 'replacement-line-active': curve.isTipEdge }" />
                 
@@ -47,6 +53,16 @@
                 </div>
             </div>
 
+            <div class="node-search-controls" style="display: flex; gap: 5px; margin-bottom: 8px;">
+                <input type="text" v-model="nodeSearchQuery" :placeholder="t('Search nodes & abilities...')" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0;" />
+                <button class="secondary-btn" :disabled="!nodeSearchQuery" :title="t('Clear Search')" @click="clearNodeSearch">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="stat-filter-meta" v-if="nodeSearchQuery && nodeSearchQuery.trim().length >= 2">
+                {{ t('Matches') }}: {{ searchMatchCount }}
+            </div>
+
             <div class="stat-filter-controls">
                 <custom-vue-select v-model="selectedStatFilter" :options="statFilterOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
                 <button class="secondary-btn" :disabled="!selectedStatFilter" :title="t('Clear Stat Highlight')" @click="clearStatFilter">
@@ -57,10 +73,16 @@
                 {{ t('Highlighted Nodes') }}: {{ highlightedStatNodeCount }}
             </div>
             
-            <div class="build-template-controls" style="display: flex; gap: 5px; margin-top: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
+            <div class="build-template-controls" style="display: flex; gap: 5px; margin-top: 10px;">
                 <custom-vue-select v-model="selectedTemplate" :options="templateOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
                 <button class="primary-btn" @click="saveTemplate" :disabled="cheatModeEnabled" :title="cheatModeEnabled ? t('Disable Cheat Mode before saving templates') : t('Save Template')"><i class="fa-solid fa-floppy-disk"></i> {{ t('Save') }}</button>
-                <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate"><i class="fa-solid fa-trash"></i></button>
+                <button class="secondary-btn" v-if="selectedTemplate" @click="renameTemplate" :title="t('Rename Template')"><i class="fa-solid fa-pen"></i></button>
+                <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate" :title="t('Delete Template')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            <div class="build-template-io" style="display: flex; gap: 5px; margin-top: 5px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
+                <button class="secondary-btn" style="flex: 1;" @click="exportTemplates" :title="t('Export all templates to a file')"><i class="fa-solid fa-file-export"></i> {{ t('Export') }}</button>
+                <button class="secondary-btn" style="flex: 1;" @click="triggerImportTemplates" :title="t('Import templates from a file')"><i class="fa-solid fa-file-import"></i> {{ t('Import') }}</button>
+                <input ref="importTemplatesRef" type="file" accept="application/json,.json" style="display: none;" @change="onImportTemplatesFile" />
             </div>
             
             <div id="summary-content">
