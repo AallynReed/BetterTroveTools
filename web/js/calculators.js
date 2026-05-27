@@ -469,6 +469,37 @@ document.addEventListener('calculators_loaded', () => {
                 return t("+{val} PR").replace("{val}", v);
             };
 
+            const sliderFillPct = (value, min, max) => {
+                const lo = Number(min) || 0;
+                const hi = Number(max) || 0;
+                const v = Number(value) || 0;
+                if (hi <= lo) return '0%';
+                return Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100)) + '%';
+            };
+
+            const starChartTemplateOptions = computed(() => {
+                const opts = [[t('-- Load Saved Star Chart --'), '']];
+                for (const name in starChartTemplates.value) opts.push([name, name]);
+                return opts;
+            });
+
+            const prBreakdown = computed(() => {
+                let masteryPR = 0;
+                let patronActive = false;
+                prData.value.forEach((item) => {
+                    if (item.type === 'pr_mastery') {
+                        const c = Math.min(item.currentValue || 0, 1000);
+                        masteryPR += (Math.min(c, 500) * 4) + (Math.max(0, c - 500) * 1);
+                    } else if (item.type === 'pr_geode_mastery') {
+                        masteryPR += Math.min(item.currentValue || 0, 100) * 5;
+                    }
+                    if (item.type === 'switch' && String(item.name || '').toLowerCase().includes('patron') && item.currentValue) {
+                        patronActive = true;
+                    }
+                });
+                return { masteryPR, patronActive };
+            });
+
             watch(starChartCode, (newVal) => {
                 syncStarChartTemplateSelection(newVal);
                 parseStarChartMf(newVal);
@@ -503,15 +534,18 @@ document.addEventListener('calculators_loaded', () => {
                 t, activeTab,
                 troveMastery, geodeMastery, masteryPR, masteryDmg, masteryHp, masteryLight, masteryMf, resetMastery, clampMastery,
                 mfData, mfStats, resetMf, getMfBadgeText, clampMfValue,
-                starChartCode, starChartTemplate, starChartTemplates, starChartMf,
-                prData, totalPR, resetPr, getPrBadgeText, clampPrValue,
-                lightData, lightStats, resetLight, getLightBadgeText, clampLightValue, isLightGeodeMastery, getLightSliderMax, getLightNumberMax, getLightStep
+                starChartCode, starChartTemplate, starChartTemplates, starChartTemplateOptions, starChartMf,
+                prData, totalPR, resetPr, getPrBadgeText, clampPrValue, prBreakdown,
+                lightData, lightStats, resetLight, getLightBadgeText, clampLightValue, isLightGeodeMastery, getLightSliderMax, getLightNumberMax, getLightStep,
+                sliderFillPct
             };
         }
     });
 
     if (window._calculatorsApp) window._calculatorsApp.unmount();
     window._calculatorsApp = app;
-    
+
+    if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
+
     app.mount('#calculators-vue-app');
 });
