@@ -79,23 +79,70 @@ def read_index_entries(tfi_path: Path) -> list[dict]:
     return entries
 
 
-_archive_cache: dict[Path, bytes] = {}
+_archive_cache: dict[tuple[Path, int], bytes] = {}
 
 
 def read_archive_content(archive_path: Path) -> bytes:
-    cached = _archive_cache.get(archive_path)
+    # Key by mtime so a game patch that rewrites an archive can't be served from
+    # stale decompressed bytes (the entry offsets would no longer line up).
+    try:
+        mtime = archive_path.stat().st_mtime_ns
+    except OSError:
+        mtime = 0
+    key = (archive_path, mtime)
+    cached = _archive_cache.get(key)
     if cached is None:
         cached = zlib.decompressobj(wbits=zlib.MAX_WBITS).decompress(archive_path.read_bytes())
-        _archive_cache[archive_path] = cached
+        _archive_cache[key] = cached
     return cached
 
 
-def iter_index_entries(root: Path):
+# Parsed index.tfi entries are reused many times per build (find_* scans plus the
+# single-file lookups below) and across every codex in a session. Parsing them is
+# the dominant first-load cost, so cache the parse per game subtree and invalidate
+# only when an index.tfi actually changes (mtime/size).
+_index_cache: dict[Path, tuple[tuple, list, dict]] = {}
+
+
+def _load_index(root: Path) -> tuple[list, dict]:
+    found = []
     for tfi_path in root.rglob("index.tfi"):
+        try:
+            st = tfi_path.stat()
+        except OSError:
+            continue
+        found.append((tfi_path, st.st_mtime_ns, st.st_size))
+    found.sort(key=lambda item: str(item[0]))
+    signature = tuple((str(p), m, s) for p, m, s in found)
+
+    cached = _index_cache.get(root)
+    if cached is not None and cached[0] == signature:
+        return cached[1], cached[2]
+
+    entries_list: list = []
+    entries_map: dict = {}
+    for tfi_path, _mtime, _size in found:
         prefix = tfi_path.parent.relative_to(root).as_posix()
         for entry in read_index_entries(tfi_path):
-            full_path = f"{prefix}/{entry['name']}" if prefix != "." else entry["name"]
-            yield tfi_path, full_path.replace("\\", "/"), entry
+            full_path = (f"{prefix}/{entry['name']}" if prefix != "." else entry["name"]).replace("\\", "/")
+            triple = (tfi_path, full_path, entry)
+            entries_list.append(triple)
+            entries_map.setdefault(full_path, (tfi_path, entry))
+            entries_map.setdefault(full_path.lower(), (tfi_path, entry))
+    _index_cache[root] = (signature, entries_list, entries_map)
+    return entries_list, entries_map
+
+
+def iter_index_entries(root: Path):
+    entries_list, _ = _load_index(root)
+    yield from entries_list
+
+
+def find_index_entry(root: Path, target_path: str):
+    """O(1) lookup of one file by its full prefab path -> (tfi_path, entry) or None."""
+    _, entries_map = _load_index(root)
+    key = target_path.replace("\\", "/")
+    return entries_map.get(key) or entries_map.get(key.lower())
 
 
 def require_prefabs_root(game_path: Path) -> Path:
@@ -165,54 +212,54 @@ def infer_mastery_base(identifier: str) -> tuple[str, int]:
 
 def load_multiplier_file_map(game_path: Path, target_file: str, *, geode_mode: bool = False) -> dict[str, dict]:
     prefabs_root = game_path / "prefabs"
-    for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
-        if full_path.replace("\\", "/").lower() != target_file:
-            continue
-        archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
-        archive_content = read_archive_content(archive_path)
-        content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
+    found = find_index_entry(prefabs_root, target_file)
+    if not found:
+        return {}
+    tfi_path, entry = found
+    archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
+    archive_content = read_archive_content(archive_path)
+    content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
 
-        position = 9
-        groups = (0, 2, 3, 5)
-        rows: dict[str, dict] = {}
-        for multiplier in groups:
-            marker = b"\xBE\x01\xAE"
-            marker_pos = content.find(marker, position)
-            if marker_pos < 0:
+    position = 9
+    groups = (0, 2, 3, 5)
+    rows: dict[str, dict] = {}
+    for multiplier in groups:
+        marker = b"\xBE\x01\xAE"
+        marker_pos = content.find(marker, position)
+        if marker_pos < 0:
+            break
+        position = marker_pos + len(marker)
+        element_count = read_leb128(BinaryReader(content), position)
+        while position < len(content) and content[position] & 0x80:
+            position += 1
+        position += 1
+
+        for index in range(1, element_count + 1):
+            pattern = encode_varint(4 + 16 * (index - 1)) + b"\x00"
+            next_pos = content.find(pattern, position)
+            if next_pos < 0:
                 break
-            position = marker_pos + len(marker)
-            element_count = read_leb128(BinaryReader(content), position)
+            position = next_pos + len(pattern)
+            position += 2
+
+            string_length = read_leb128(BinaryReader(content), position)
             while position < len(content) and content[position] & 0x80:
                 position += 1
             position += 1
 
-            for index in range(1, element_count + 1):
-                pattern = encode_varint(4 + 16 * (index - 1)) + b"\x00"
-                next_pos = content.find(pattern, position)
-                if next_pos < 0:
-                    break
-                position = next_pos + len(pattern)
-                position += 2
-
-                string_length = read_leb128(BinaryReader(content), position)
-                while position < len(content) and content[position] & 0x80:
-                    position += 1
-                position += 1
-
-                raw_identifier = content[position : position + string_length].decode("ascii", errors="ignore")
-                position += string_length
-                identifier, base = infer_mastery_base(raw_identifier)
-                predicted = base * multiplier
-                if geode_mode and identifier.startswith("collections/pet/") and multiplier == 0:
-                    predicted = base
-                rows[identifier] = {
-                    "identifier": identifier,
-                    "multiplier": multiplier,
-                    "base": base,
-                    "predicted": predicted,
-                }
-        return rows
-    return {}
+            raw_identifier = content[position : position + string_length].decode("ascii", errors="ignore")
+            position += string_length
+            identifier, base = infer_mastery_base(raw_identifier)
+            predicted = base * multiplier
+            if geode_mode and identifier.startswith("collections/pet/") and multiplier == 0:
+                predicted = base
+            rows[identifier] = {
+                "identifier": identifier,
+                "multiplier": multiplier,
+                "base": base,
+                "predicted": predicted,
+            }
+    return rows
 
 
 def load_multipliers_map(game_path: Path) -> dict[str, dict]:
@@ -226,20 +273,20 @@ def load_geode_multipliers_map(game_path: Path) -> dict[str, dict]:
 def load_collection_pet_category_map(game_path: Path) -> dict[str, str]:
     prefabs_root = game_path / "prefabs"
     target_file = "collections/collection_pet.binfab"
-    for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
-        if full_path.replace("\\", "/").lower() != target_file:
-            continue
-        archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
-        archive_content = read_archive_content(archive_path)
-        content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
-        # Grounded: decode the collection table as real category groups (verified
-        # byte-identical to the old string-scan grouping) and key by member stem.
-        category_map: dict[str, str] = {}
-        for group in parse_collection_table(content):
-            for member in group["members"]:
-                category_map[Path(member.replace("\\", "/")).stem] = group["id"]
-        return category_map
-    return {}
+    found = find_index_entry(prefabs_root, target_file)
+    if not found:
+        return {}
+    tfi_path, entry = found
+    archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
+    archive_content = read_archive_content(archive_path)
+    content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
+    # Grounded: decode the collection table as real category groups (verified
+    # byte-identical to the old string-scan grouping) and key by member stem.
+    category_map: dict[str, str] = {}
+    for group in parse_collection_table(content):
+        for member in group["members"]:
+            category_map[Path(member.replace("\\", "/")).stem] = group["id"]
+    return category_map
 
 
 def extract_designer_from_blueprint(blueprint: str) -> str:
@@ -453,10 +500,11 @@ def resolve_ability_prefabs(game_path: Path, language_map: dict[str, str], abili
 
     resolved: dict[str, dict] = {}
     prefabs_root = game_path / "prefabs"
-    for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
-        matched = wanted.get(full_path)
-        if not matched:
+    for full_path, matched in wanted.items():
+        found = find_index_entry(prefabs_root, full_path)
+        if not found:
             continue
+        tfi_path, entry = found
         archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
         archive_content = read_archive_content(archive_path)
         content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
@@ -477,8 +525,6 @@ def resolve_ability_prefabs(game_path: Path, language_map: dict[str, str], abili
             "name": language_map.get(name_key or "", ""),
             "description": description,
         }
-        if len(resolved) == len(wanted):
-            break
     return resolved
 
 

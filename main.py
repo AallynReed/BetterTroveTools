@@ -611,6 +611,42 @@ def run_eel_server():
     )
 
 
+def warm_codex_caches():
+    """Pre-build any missing/stale codex caches in the background so the first
+    open of a codex tab is instant. All codexes share the parsed game-file index
+    (built once, reused), so warming them in sequence is far cheaper than building
+    each one cold on demand. Best-effort: silently skipped when no game install."""
+    try:
+        from models.trove.prefab_ally import resolve_game_install
+        resolve_game_install("")
+    except Exception:
+        return  # no valid Trove install detected -> nothing to warm
+
+    try:
+        from backend.allies import _build_allies_from_game_files
+        from backend.mounts import _build_mounts_from_game_files
+        from backend.mementos import _build_mementos_from_game_files
+        from backend.recipes import _build_recipes_from_game_files
+        from backend.items import _build_items_from_game_files
+        from backend.fish import _build_fish_from_game_files
+    except Exception:
+        return
+
+    builders = (
+        _build_allies_from_game_files,
+        _build_mounts_from_game_files,
+        _build_mementos_from_game_files,
+        _build_recipes_from_game_files,
+        _build_items_from_game_files,
+        _build_fish_from_game_files,
+    )
+    for build in builders:
+        try:
+            build(force_refresh=False)
+        except Exception:
+            pass
+
+
 def wait_for_server(port, timeout=15.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -629,6 +665,11 @@ if not wait_for_server(eel_port):
     sys.exit(1)
 
 print("✅ Server ready. Opening window...")
+
+# Warm codex caches in the background once the UI server is up, so opening a
+# codex tab for the first time doesn't pay the full game-file scan inline.
+threading.Thread(target=warm_codex_caches, daemon=True, name="codex-warmup").start()
+
 webview.create_window(
     WINDOW_TITLE,
     f'http://localhost:{eel_port}/index.html',

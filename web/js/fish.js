@@ -196,6 +196,7 @@ function initFishView() {
 
                 const source = (response && response.source) || '';
                 if (source === 'game-cache') dataSourceText.value = t('Loaded fish data from cached game-file scan.');
+                else if (source === 'game-cache-stale') dataSourceText.value = t('Loaded fish data from cache. Refreshing in the background…');
                 else if (source === 'game-live') dataSourceText.value = t('Loaded fish data from live game files.');
                 else dataSourceText.value = '';
             };

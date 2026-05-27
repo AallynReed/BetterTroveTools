@@ -7,6 +7,7 @@ from pathlib import Path
 
 import eel
 
+from backend import codex_cache
 from backend.response import resp, standardize_response
 from models.trove.prefab_ally import resolve_game_install
 from models.trove.prefab_item import build_items_dataset
@@ -16,6 +17,7 @@ ITEMS_CACHE_EXPIRY_SECONDS = 60 * 60 * 12
 ITEMS_CACHE_FILENAME = "items_game_cache.json"
 ITEMS_CACHE_MANIFEST_FILENAME = "items_game_cache_manifest.json"
 ITEMS_CACHE_SCHEMA_VERSION = 2
+_BUILD_LOCK = codex_cache.make_lock()
 
 
 def _cache_root() -> Path:
@@ -76,46 +78,51 @@ def _cache_age_seconds(manifest: dict) -> int | None:
     return max(0, int(time.time() - generated_at))
 
 
-def _cache_is_fresh(manifest: dict, game_path: Path) -> bool:
+def _cache_is_compatible(manifest: dict, game_path: Path) -> bool:
     if int(manifest.get("cache_schema_version", 0) or 0) != ITEMS_CACHE_SCHEMA_VERSION:
         return False
     manifest_game_path = str(manifest.get("game_path", "")).strip()
-    if manifest_game_path and Path(manifest_game_path) != game_path:
+    return not manifest_game_path or Path(manifest_game_path) == game_path
+
+
+def _cache_is_fresh(manifest: dict, game_path: Path) -> bool:
+    if not _cache_is_compatible(manifest, game_path):
         return False
     age = _cache_age_seconds(manifest)
     return age is not None and age < ITEMS_CACHE_EXPIRY_SECONDS
 
 
 def _write_cached_items(data: dict, manifest: dict) -> None:
-    _items_cache_file().write_text(json.dumps(data, indent=4), encoding="utf-8")
+    _items_cache_file().write_text(codex_cache.compact_dumps(data), encoding="utf-8")
     _items_cache_manifest_file().write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+
+def _build_items_dataset(game_path: Path) -> tuple[dict, dict]:
+    data, manifest = asyncio.run(build_items_dataset(game_path=game_path, locale="en"))
+    generated_at = int(time.time())
+    full_manifest = {
+        **manifest,
+        "cache_schema_version": ITEMS_CACHE_SCHEMA_VERSION,
+        "generated_at": generated_at,
+        "expires_at": generated_at + ITEMS_CACHE_EXPIRY_SECONDS,
+        "cache_file": str(_items_cache_file()),
+        "cache_expiry_seconds": ITEMS_CACHE_EXPIRY_SECONDS,
+    }
+    return data, full_manifest
 
 
 def _build_items_from_game_files(force_refresh: bool = False, game_path_str: str = "") -> tuple[dict, dict, str]:
     game_path = resolve_game_install(game_path_str)
-    cached_data, cached_manifest = _read_cached_items()
-    if not force_refresh and cached_data is not None and _cache_is_fresh(cached_manifest, game_path):
-        return cached_data, cached_manifest, "game-cache"
-    last_error = None
-    for root in _cache_root_candidates():
-        try:
-            root.mkdir(parents=True, exist_ok=True)
-            data, manifest = asyncio.run(build_items_dataset(game_path=game_path, locale="en"))
-            generated_at = int(time.time())
-            full_manifest = {
-                **manifest,
-                "cache_schema_version": ITEMS_CACHE_SCHEMA_VERSION,
-                "generated_at": generated_at,
-                "expires_at": generated_at + ITEMS_CACHE_EXPIRY_SECONDS,
-                "cache_file": str(_items_cache_file()),
-                "cache_expiry_seconds": ITEMS_CACHE_EXPIRY_SECONDS,
-            }
-            _write_cached_items(data, full_manifest)
-            return data, full_manifest, "game-live"
-        except Exception as exc:
-            last_error = exc
-            continue
-    raise last_error or RuntimeError("Failed to build item data from game files.")
+    return codex_cache.resolve_cached_or_build(
+        read_cached=_read_cached_items,
+        is_fresh=_cache_is_fresh,
+        is_compatible=_cache_is_compatible,
+        build=_build_items_dataset,
+        write=_write_cached_items,
+        lock=_BUILD_LOCK,
+        force_refresh=bool(force_refresh),
+        game_path=game_path,
+    )
 
 
 @eel.expose

@@ -272,6 +272,7 @@ function initItemsView() {
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
                 if (source === 'game-cache') dataSourceText.value = t('Loaded item data from cached game-file scan.');
+                else if (source === 'game-cache-stale') dataSourceText.value = t('Loaded item data from cache. Refreshing in the background…');
                 else if (source === 'game-live') dataSourceText.value = t('Loaded item data from live game files.');
                 else dataSourceText.value = '';
                 if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {

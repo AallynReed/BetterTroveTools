@@ -8,6 +8,7 @@ from models.trove.prefab_ally import (
     clean_localized_text,
     detect_first_glyph_install,
     extract_designer_from_blueprint,
+    find_index_entry,
     infer_mastery_base,
     iter_index_entries,
     load_blueprint_path_map,
@@ -46,25 +47,25 @@ def item_mount_key_from_prefab_path(prefab_path: str) -> str:
 def load_collection_mount_category_map(game_path: Path) -> dict[str, str]:
     prefabs_root = require_prefabs_root(game_path)
     target_file = "collections/collection_mount.binfab"
-    for tfi_path, full_path, entry in iter_index_entries(prefabs_root):
-        if full_path.replace("\\", "/").lower() != target_file:
+    found = find_index_entry(prefabs_root, target_file)
+    if not found:
+        return {}
+    tfi_path, entry = found
+    archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
+    archive_content = read_archive_content(archive_path)
+    content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
+    strings = [row["text"] for row in extract_strings(content)]
+    category_map: dict[str, str] = {}
+    current_category = ""
+    for index, text in enumerate(strings):
+        next_text = strings[index + 1] if index + 1 < len(strings) else ""
+        if next_text.startswith("$CollectionName_"):
+            current_category = text
             continue
-        archive_path = tfi_path.parent / f"archive{entry['archive_index']}.tfa"
-        archive_content = read_archive_content(archive_path)
-        content = archive_content[entry["offset"] : entry["offset"] + entry["size"]]
-        strings = [row["text"] for row in extract_strings(content)]
-        category_map: dict[str, str] = {}
-        current_category = ""
-        for index, text in enumerate(strings):
-            next_text = strings[index + 1] if index + 1 < len(strings) else ""
-            if next_text.startswith("$CollectionName_"):
-                current_category = text
-                continue
-            normalized = text.lstrip("$")
-            if normalized.startswith("collections/mount/") and current_category:
-                category_map[Path(normalized).stem] = current_category
-        return category_map
-    return {}
+        normalized = text.lstrip("$")
+        if normalized.startswith("collections/mount/") and current_category:
+            category_map[Path(normalized).stem] = current_category
+    return category_map
 
 
 def load_mount_multipliers_map(game_path: Path) -> dict[str, dict]:

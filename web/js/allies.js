@@ -379,7 +379,18 @@ function initAlliesView() {
                     if (!response || response.success === false) {
                         throw new Error((response && response.error) || 'Failed to retrieve allies data from backend');
                     }
-                    data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                    const cacheUrl = String(
+                        (response && response.cache_file)
+                        || (response && response.meta && response.meta.cache && response.meta.cache.cache_url)
+                        || ''
+                    ).trim();
+                    if (cacheUrl) {
+                        const cacheResp = await fetch(cacheUrl, { cache: 'no-store' });
+                        if (!cacheResp.ok) throw new Error(`Failed to load ally cache file (${cacheResp.status})`);
+                        data = await cacheResp.json();
+                    } else {
+                        data = (response && response.data && typeof response.data === 'object') ? response.data : response;
+                    }
                 } else {
                     throw new Error('Backend allies endpoint is unavailable');
                 }
@@ -436,6 +447,8 @@ function initAlliesView() {
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
                 if (source === 'game-cache') {
                     dataSourceText.value = t('Loaded ally data from cached game-file scan.');
+                } else if (source === 'game-cache-stale') {
+                    dataSourceText.value = t('Loaded ally data from cache. Refreshing in the background…');
                 } else if (source === 'game-live') {
                     dataSourceText.value = t('Loaded ally data from live game files.');
                 } else {
