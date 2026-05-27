@@ -512,6 +512,9 @@ document.addEventListener('modder_tools_loaded', () => {
                 pos_z: 0
             });
 
+            // Named material presets per strict map layer, loaded once from the backend.
+            const materialPresets = ref(null);
+
             const qbCanvasRef = ref(null);
             const qbViewportCanvasRef = ref(null);
             const qbPointerMode = ref(null);
@@ -550,6 +553,21 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!qbPackageActive.value || !qbEditor.selectedAssetId) return null;
                 return qbEditor.packageAssets?.[qbEditor.selectedAssetId] || null;
             });
+            // Active layer of the selected blueprint asset ('base'|'type'|'alpha'|'specular'|'rendered').
+            const qbActiveLayer = computed(() => qbSelectedAsset.value?.layer || '');
+            // The "Rendered (decos)" composite is a read-only preview, not an editable source.
+            const qbLayerReadOnly = computed(() => Boolean(qbSelectedAsset.value?.read_only)
+                || qbActiveLayer.value === 'rendered');
+            // Named material presets for the strict map layers (loaded once from the backend).
+            const activeLayerPresets = computed(() => {
+                const layer = qbActiveLayer.value;
+                if (!materialPresets.value) return [];
+                return materialPresets.value[layer] || [];
+            });
+            const rgbToHex = (rgb) => {
+                if (!Array.isArray(rgb) || rgb.length < 3) return '#000000';
+                return '#' + rgb.map((c) => Math.max(0, Math.min(255, c | 0)).toString(16).padStart(2, '0')).join('');
+            };
             const qbDisplayName = computed(() => {
                 if (qbSelectedAsset.value?.asset_label) return qbSelectedAsset.value.asset_label;
                 return qbEditor.fileName || (qbEditor.path ? qbEditor.path.split(/[\\/]/).pop() : 'untitled.qb');
@@ -1074,13 +1092,73 @@ document.addEventListener('modder_tools_loaded', () => {
                 qbEditor.selectedMatrixIndex = index;
             };
 
-            const selectQbPackageAsset = (assetId) => {
+            const selectQbPackageAsset = async (assetId) => {
                 if (!assetId || !qbPackageActive.value || assetId === qbEditor.selectedAssetId) return;
-                const asset = qbEditor.packageAssets?.[assetId];
+                let asset = qbEditor.packageAssets?.[assetId];
                 if (!asset) return;
+                // The "Rendered (decos)" layer is built on demand (it can be hundreds
+                // of thousands of voxels -- 1 block explodes to 12^3). Fetch it the
+                // first time it's selected.
+                if (asset.lazy && !asset._built) {
+                    if (typeof eel.build_blueprint_render !== 'function') {
+                        window.showToast(t('Full render needs a restart: the build_blueprint_render endpoint is not loaded yet. Restart the app/backend and try again.'), true);
+                        return;
+                    }
+                    try {
+                        window.showToast(t('Building full render (this can take a moment)...'));
+                        const res = await eel.build_blueprint_render(
+                            asset.path, selectedGamePath.value || null)();
+                        if (res && res.success && res.document) {
+                            asset = { ...asset, ...res.document, lazy: false, _built: true };
+                            qbEditor.packageAssets[assetId] = asset;
+                            const ri = res.document.render_info || {};
+                            const note = ri.structure_omitted
+                                ? t('Rendered {n} decos (structure omitted — build too large to explode fully).').replace('{n}', ri.decos_placed ?? '?')
+                                : t('Rendered {n} decos + structure ({v} voxels).').replace('{n}', ri.decos_placed ?? '?').replace('{v}', (ri.voxel_count ?? 0).toLocaleString());
+                            window.showToast(note);
+                        } else {
+                            const msg = (res && res.error) ? res.error
+                                : t('Could not build the full render.');
+                            window.showToast(msg, true);
+                            return;
+                        }
+                    } catch (e) {
+                        window.showToast((t('Could not build the full render: ') + (e && e.errorText ? e.errorText : e)), true);
+                        return;
+                    }
+                }
                 storeCurrentQbAssetState();
                 qbEditor.selectedAssetId = assetId;
                 applyQbDocument(asset, { preservePackage: true, selectedAssetId: assetId });
+            };
+
+            // Export the FULL, uncapped exploded render (build body + every deco at
+            // 12 voxels/block, full detail) to a .qb file. The live 2D viewport can't
+            // draw a whole house, but a GPU voxel viewer opens the exported .qb fine.
+            const exportFullBlueprintRender = async () => {
+                const bpPath = qbEditor.containerPath || qbEditor.path;
+                if (!bpPath) { window.showToast(t('Open a Trove blueprint first.'), true); return; }
+                if (typeof eel.export_blueprint_render !== 'function') {
+                    window.showToast(t('Export needs a restart: the export_blueprint_render endpoint is not loaded yet. Restart the app/backend and try again.'), true);
+                    return;
+                }
+                const stem = String(qbEditor.containerFileName || 'blueprint').replace(/\.[^.]+$/, '');
+                const dialogResult = await eel.ask_qb_save_file(bpPath, stem + '_fullrender.qb')();
+                const outPath = dialogResult?.value ?? dialogResult?.data?.value ?? dialogResult;
+                if (!outPath) return;
+                window.showToast(t('Exporting full render to .qb (this can take a moment)...'));
+                try {
+                    const res = await eel.export_blueprint_render(bpPath, outPath, selectedGamePath.value || null)();
+                    if (res && res.success) {
+                        window.showToast(t('Exported {n} voxels to {f}')
+                            .replace('{n}', (res.voxel_count || 0).toLocaleString())
+                            .replace('{f}', res.file_name || outPath));
+                    } else {
+                        window.showToast((res && res.error) || t('Export failed.'), true);
+                    }
+                } catch (e) {
+                    window.showToast(t('Export failed: ') + (e && e.errorText ? e.errorText : e), true);
+                }
             };
 
             const addQbMatrix = () => {
@@ -1155,6 +1233,14 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (removed > 0) {
                     window.showToast(t('{count} voxel(s) were clipped by the new matrix bounds.').replace('{count}', removed));
                 }
+            };
+
+            // Set the paint colour to a named material preset (Metal, Glass, 50% ...).
+            // Painting that colour into the active map layer makes recompile derive the
+            // matching voxel (type, w) via the verified material tables.
+            const applyMaterialPreset = (preset) => {
+                if (!preset || !Array.isArray(preset.rgb)) return;
+                qbEditor.paintColor = rgbToHex(preset.rgb);
             };
 
             const hexToRgb = (hex) => {
@@ -1773,7 +1859,19 @@ document.addEventListener('modder_tools_loaded', () => {
                 isWorking.savingQb = true;
                 try {
                     storeCurrentQbAssetState();
-                    const result = await eel.save_qb_file(path, serializeQbDocument())();
+                    // Saving a Trove blueprint package: send all layer assets
+                    // (base + type/alpha/specular) so the backend recompiles them
+                    // into one .blueprint. Otherwise save the single QB document.
+                    const isBlueprintTarget = String(path).toLowerCase().endsWith('.blueprint');
+                    const savePayload = (isBlueprintTarget && qbPackageActive.value)
+                        ? {
+                            assets: qbEditor.packageAssets,
+                            source_format: 'trove_blueprint_package',
+                            container_path: qbEditor.containerPath,
+                            file_name: qbEditor.containerFileName || qbEditor.fileName,
+                        }
+                        : serializeQbDocument();
+                    const result = await eel.save_qb_file(path, savePayload)();
                     if (result && result.success) {
                         qbEditor.path = result.path || path;
                         qbEditor.fileName = result.file_name || qbDisplayName.value;
@@ -1833,7 +1931,9 @@ document.addEventListener('modder_tools_loaded', () => {
                 const filePath = dialogResult?.value ?? dialogResult?.data?.value ?? dialogResult;
                 if (!filePath) return;
 
-                const result = await eel.load_qb_file(filePath)();
+                // Pass the selected game path so blueprints get exact procedural
+                // tints + resolved block names from the live game registry.
+                const result = await eel.load_qb_file(filePath, selectedGamePath.value || null)();
                 if (!result || !result.success) {
                     window.showToast(t('Failed to open voxel file:\n{error}').replace('{error}', result?.error || t('Unknown error occurred')), true);
                     return;
@@ -2952,6 +3052,11 @@ document.addEventListener('modder_tools_loaded', () => {
                 }
                 await scanForGames();
                 await loadModdingSoftware();
+                // Load the named material presets for the strict map layers (once).
+                try {
+                    const res = await eel.get_material_presets()();
+                    if (res && res.success && res.presets) materialPresets.value = res.presets;
+                } catch (e) { /* presets are optional */ }
                 applyQbDocument(createEmptyQbDocument());
                 await handleEmbeddedTabSelection(activeTab.value);
                 window.addEventListener('mouseup', qbMouseUpHandler);
@@ -2977,6 +3082,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 tagOptions, subtypeOptions, build, extract, editTmod, editTmodDisplayFiles, previousEditTmodSnapshot, project, softwareCategories, isWorking,
                 isBuildFieldInvalid, isExtractFieldInvalid, isEditTmodFieldInvalid, isProjectFieldInvalid, hasEditTmodFieldChanged, restoreEditTmodField, canRestoreOriginalEditTmodFile, restoreOriginalEditTmodFile, isEditTmodFileRemoved,
                 qbEditor, qbMatrixForm, qbCanvasRef, qbViewportCanvasRef, selectedQbMatrix, qbPackageActive, qbHasUnsavedAssets, qbSelectedAsset, qbBlueprintAssetRows, qbDisplayName, qbContainerName, qbDecodeInfoRows, qbVersionLabel, qbTotalVoxelCount, qbVisibleVoxelCount, qbSliceVoxels, qbHoverSummary, qbActiveToolLabel, qbCurrentAttachmentPoint, qbAttachmentStatus, qbHoveredEditableCell,
+                qbActiveLayer, qbLayerReadOnly, activeLayerPresets, applyMaterialPreset, rgbToHex,
                 scanForGames, chooseBuildPreview, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod,
                 chooseBuildConfig,
                 openSelectedGamePath, openProjectFolder, openBuildOutputFolder, openCompileOutputFolder, openBuildFileLocation, openProjectFileLocation,
@@ -2984,7 +3090,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 browseEditTmodSource, loadEditTmod, restorePreviousEditTmod, restoreRemovedEditTmodFile, chooseEditTmodPreview, chooseEditTmodConfig, addEditTmodFiles, addEditTmodFilesFromTmod, replaceEditTmodFile, removeEditTmodFile, saveEditTmod,
                 chooseProjectPreview, chooseProjectConfig, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides,
                 markQbDirty, newQbDocument, openQbDocument, saveQbDocument, saveQbDocumentAs, openQbFileLocation,
-                selectQbMatrix, selectQbPackageAsset, addQbMatrix, removeSelectedQbMatrix, applyQbMatrixForm, fillQbSlice, clearQbSlice, stepQbSlice, setQbTool, setQbViewMode, resetQbView, setCurrentQbAttachmentPoint, clearCurrentQbAttachmentPoints, focusCurrentQbAttachmentPoint, syncAttachmentPointAcrossPackageFamily,
+                selectQbMatrix, selectQbPackageAsset, exportFullBlueprintRender, addQbMatrix, removeSelectedQbMatrix, applyQbMatrixForm, fillQbSlice, clearQbSlice, stepQbSlice, setQbTool, setQbViewMode, resetQbView, setCurrentQbAttachmentPoint, clearCurrentQbAttachmentPoints, focusCurrentQbAttachmentPoint, syncAttachmentPointAcrossPackageFamily,
                 onQbCanvasMouseDown, onQbCanvasMouseMove, onQbCanvasMouseLeave,
                 onQbViewportMouseDown, onQbViewportMouseMove, onQbViewportMouseLeave, onQbViewportWheel,
                 toggleQbVisibilityMaskMode, sampleQbVoxel, removeQbVoxel

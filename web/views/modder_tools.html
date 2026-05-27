@@ -721,6 +721,31 @@
                                         <div class="qb-color-code">{{ qbEditor.paintColor.toUpperCase() }}</div>
                                     </div>
                                 </div>
+
+                                <div class="form-group" v-if="qbLayerReadOnly">
+                                    <div class="qb-readonly-note">
+                                        <i class="fa-solid fa-eye"></i>
+                                        {{ t('Read-only composite preview (deco fill). Edits here are not saved; edit the Base / map layers instead.') }}
+                                    </div>
+                                </div>
+
+                                <div class="form-group" v-if="activeLayerPresets.length">
+                                    <label>{{ t('Material Presets') }} <small>({{ qbActiveLayer }})</small></label>
+                                    <div class="qb-material-presets">
+                                        <button
+                                            v-for="opt in activeLayerPresets"
+                                            :key="opt.label"
+                                            type="button"
+                                            class="qb-material-chip"
+                                            :class="{ active: qbEditor.paintColor.toUpperCase() === rgbToHex(opt.rgb).toUpperCase() }"
+                                            :title="opt.description"
+                                            @click="applyMaterialPreset(opt)"
+                                        >
+                                            <span class="qb-material-swatch" :style="{ background: rgbToHex(opt.rgb) }"></span>
+                                            <span>{{ opt.label }}</span>
+                                        </button>
+                                    </div>
+                                </div>
                                 <div class="qb-paint-actions">
                                     <button class="primary-btn" @click="fillQbSlice">
                                         <i class="fa-solid fa-fill-drip"></i> <span>{{ t('Fill Slice') }}</span>

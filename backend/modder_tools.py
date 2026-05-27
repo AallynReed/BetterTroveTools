@@ -12,7 +12,16 @@ from tkinter import filedialog
 import eel
 
 from backend.qubicle_qb import QubicleDocument
-from backend.trove_blueprint import BlueprintDecodeError, blueprint_to_document, blueprint_to_package
+from backend.trove_blueprint import (
+    BlueprintDecodeError,
+    blueprint_render_document,
+    blueprint_to_document,
+    blueprint_to_package,
+    document_to_blueprint,
+    export_blueprint_render as _bp_export_render,
+    recompile_blueprint_package,
+)
+from backend.trove_block_mapping import load_block_mapping, load_full_block_catalogue
 from backend.response import standardize_response
 from binary_reader import BinaryReader
 
@@ -254,18 +263,22 @@ def ask_qb_save_file(current_path_str=None, suggested_name="untitled.qb"):
     current_path = Path(str(current_path_str or "").strip()) if current_path_str else None
     initial_dir = str(current_path.parent) if current_path and current_path.parent.exists() else None
     initial_name = current_path.name if current_path and current_path.name else str(suggested_name or "untitled.qb")
-    if not initial_name.lower().endswith(".qb"):
+    if not initial_name.lower().endswith((".qb", ".blueprint")):
         initial_name = f"{initial_name}.qb"
 
     root = tk.Tk()
     root.attributes('-topmost', True)
     root.withdraw()
     file_path = filedialog.asksaveasfilename(
-        title="Save Qubicle QB File",
+        title="Save Voxel File",
         initialdir=initial_dir,
         initialfile=initial_name,
         defaultextension=".qb",
-        filetypes=[("Qubicle Binary", "*.qb"), ("All Files", "*.*")],
+        filetypes=[
+            ("Qubicle Binary", "*.qb"),
+            ("Trove Blueprint", "*.blueprint"),
+            ("All Files", "*.*"),
+        ],
     )
     root.destroy()
     return file_path
@@ -283,14 +296,15 @@ def ask_extract_destination():
 
 @eel.expose
 @standardize_response
-def load_qb_file(path_str):
+def load_qb_file(path_str, game_path_str=None):
     path = Path(str(path_str or "").strip())
     if not path.exists() or not path.is_file():
         return {"success": False, "error": "QB file does not exist."}
 
     if path.suffix.lower() == ".blueprint":
         try:
-            package = blueprint_to_package(path)
+            # game_path (when known) enables exact procedural tints + block names.
+            package = blueprint_to_package(path, game_path=game_path_str or None)
         except BlueprintDecodeError as exc:
             raw_data = path.read_bytes()
             try:
@@ -315,9 +329,24 @@ def load_qb_file(path_str):
 def save_qb_file(path_str, payload):
     raw_path = str(path_str or "").strip()
     if not raw_path:
-        return {"success": False, "error": "No QB output path was provided."}
+        return {"success": False, "error": "No output path was provided."}
 
     path = Path(raw_path)
+
+    if path.suffix.lower() == ".blueprint":
+        # Native Trove blueprint save (no QB round-trip needed).
+        try:
+            if isinstance(payload, dict) and payload.get("assets"):
+                # Multi-layer package: recombine base + type/alpha/specular maps.
+                data = recompile_blueprint_package(payload)
+            else:
+                data = document_to_blueprint(payload)
+        except BlueprintDecodeError as exc:
+            return {"success": False, "error": f"Could not encode blueprint: {exc}"}
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        return {"success": True, "path": str(path), "file_name": path.name}
+
     if path.suffix.lower() != ".qb":
         path = path.with_suffix(".qb")
 
@@ -326,6 +355,105 @@ def save_qb_file(path_str, payload):
     path.write_bytes(document)
 
     return {"success": True, "path": str(path), "file_name": path.name}
+
+
+@eel.expose
+@standardize_response
+def build_blueprint_render(path_str, game_path_str=None):
+    """On-demand full-detail render of a blueprint (the "Rendered (decos)" layer).
+
+    Explodes the block-resolution build by 12 and drops each resolved deco model in
+    at full voxel detail. Returns the QB document, or an error string when the build
+    is too large to render (the cap protects the editor from tens of millions of
+    voxels). Built lazily because it is expensive (hundreds of thousands of voxels).
+    """
+    path = Path(str(path_str or "").strip())
+    if not path.exists() or path.suffix.lower() != ".blueprint":
+        return {"success": False, "error": "Blueprint file does not exist."}
+    try:
+        doc = blueprint_render_document(path, game_path=game_path_str or None)
+    except BlueprintDecodeError as exc:
+        return {"success": False, "error": f"Could not render blueprint: {exc}"}
+    except Exception as exc:
+        return {"success": False, "error": f"Render failed: {exc}"}
+    if "error" in doc:
+        return {"success": False, "error": doc["error"],
+                "voxel_estimate": doc.get("voxel_estimate")}
+    return {"success": True, "document": doc}
+
+
+@eel.expose
+@standardize_response
+def export_blueprint_render(path_str, out_path_str, game_path_str=None):
+    """Write the FULL uncapped exploded render (body + all decos at 12³/block) to a
+    .qb file. The live editor can't draw a whole house (its 2D viewport builds a
+    face per voxel), but a GPU voxel viewer opens the exported .qb with no limit."""
+    path = Path(str(path_str or "").strip())
+    out = str(out_path_str or "").strip()
+    if not path.exists() or path.suffix.lower() != ".blueprint":
+        return {"success": False, "error": "Blueprint file does not exist."}
+    if not out:
+        return {"success": False, "error": "No output path was provided."}
+    try:
+        result = _bp_export_render(path, out, game_path=game_path_str or None)
+    except BlueprintDecodeError as exc:
+        return {"success": False, "error": f"Could not render blueprint: {exc}"}
+    except Exception as exc:
+        return {"success": False, "error": f"Render export failed: {exc}"}
+    if "error" in result:
+        return {"success": False, "error": result["error"],
+                "voxel_estimate": result.get("voxel_estimate")}
+    return {"success": True, **result}
+
+
+@eel.expose
+@standardize_response
+def get_block_mapping(game_path_str=None):
+    """Dynamic block registry read straight from the game's mapping.binfab.
+
+    Returns every placeable block's (index, type, style, colour, identifier),
+    so the editor can name blocks / build the colour palette without a static
+    JSON. New blocks shipped in game updates are picked up automatically.
+    """
+    if not game_path_str:
+        return {"success": False, "error": "No game path was provided."}
+    try:
+        records = load_block_mapping(game_path_str)
+    except Exception as exc:
+        return {"success": False, "error": f"Could not read block mapping: {exc}"}
+    if not records:
+        return {"success": False, "error": "mapping.binfab not found in this game install."}
+    return {"success": True, "count": len(records), "blocks": records}
+
+
+@eel.expose
+@standardize_response
+def get_block_catalogue(game_path_str=None):
+    """Full block/deco prefab catalogue from prefabs/blocks/blocks.binfab:
+    every prefab identifier + the paths it references (item given, models,
+    localization keys, ...). Dynamic -- picks up new prefabs from updates."""
+    if not game_path_str:
+        return {"success": False, "error": "No game path was provided."}
+    try:
+        records = load_full_block_catalogue(game_path_str)
+    except Exception as exc:
+        return {"success": False, "error": f"Could not read block catalogue: {exc}"}
+    if not records:
+        return {"success": False, "error": "blocks.binfab not found in this game install."}
+    return {"success": True, "count": len(records), "prefabs": records}
+
+
+@eel.expose
+@standardize_response
+def get_material_presets():
+    """Named presets for the strict blueprint map layers so the editor can offer
+    clickable options ("Metal", "Glass", "50%") instead of raw RGB. Values come
+    from the verified material tables (no hardcoded magic in the UI)."""
+    try:
+        from backend.trove_blueprint_maps import material_presets
+        return {"success": True, "presets": material_presets()}
+    except Exception as exc:
+        return {"success": False, "error": f"Could not build material presets: {exc}"}
 
 
 @eel.expose

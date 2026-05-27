@@ -683,6 +683,64 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     color: var(--text-main);
 }
 
+.qb-export-render-btn {
+    width: 100%;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.qb-material-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.qb-material-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.qb-material-chip:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.qb-material-chip.active {
+    border-color: var(--accent-color, #6b9bff);
+    background: rgba(107, 155, 255, 0.18);
+}
+
+.qb-material-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(0, 0, 0, 0.35);
+    flex: 0 0 auto;
+}
+
+.qb-readonly-note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(107, 155, 255, 0.12);
+    border: 1px solid rgba(107, 155, 255, 0.35);
+    color: var(--text-main);
+    font-size: 0.82rem;
+}
+
 .qb-slice-toolbar {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-color);
