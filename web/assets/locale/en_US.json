@@ -2851,6 +2851,21 @@
         "Zapparapa Eel": "",
         "Zephyr Angler": "",
         "Zephyr Muscle": "",
-        "Zephyr Nautiloid": ""
+        "Zephyr Nautiloid": "",
+        "Build baseline cache": "",
+        "Building Baseline Cache...": "",
+        "Cancel Current Operation": "",
+        "ETA:": "",
+        "Cannot switch tabs while a job is running.": "",
+        "Baseline built successfully!": "",
+        "Baseline ready.": "",
+        "Last Scanned:": "",
+        "Tracking Game:": "",
+        "You can now compare future patches against this baseline.": "",
+        "Next step: Scan & Extract Updates": "",
+        "Force Rebuild Cache": "",
+        "Scan and extract game updates": "",
+        "Scanning for Updates...": "",
+        "Scan complete. No game updates detected since the last baseline.": ""
     }
 }
