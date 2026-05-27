@@ -124,20 +124,70 @@ def get_detected_game_paths():
         return resp(False, error=str(e), code="DETECT_GAME_PATHS_FAILED", data={"paths": []}, paths=[])
     
 
+def _stat_sig(path: Path) -> str:
+    """Cheap content-change proxy for a file: modification time + size. A Trove
+    patch always rewrites archives (new mtime/size), so this reliably flags real
+    changes without reading or decompressing the file. Empty on stat failure so
+    it never matches a cached signature (forcing the content-hash path)."""
+    try:
+        st = path.stat()
+    except OSError:
+        return ""
+    return f"{st.st_mtime_ns}:{st.st_size}"
+
+
+def _index_signature(game_path: Path) -> str:
+    """Cheap fingerprint of every index.tfi (path + mtime + size). Globbing and
+    statting is fast; it's the per-index parsing that's slow, so when this is
+    unchanged we can skip rebuilding the tree entirely."""
+    import hashlib
+
+    parts = []
+    for tfi_path in game_path.rglob("index.tfi"):
+        try:
+            st = tfi_path.stat()
+        except OSError:
+            continue
+        parts.append(f"{tfi_path.relative_to(game_path).as_posix()}|{st.st_mtime_ns}|{st.st_size}")
+    parts.sort()
+    return hashlib.md5("\n".join(parts).encode("utf-8")).hexdigest()
+
+
 @eel.expose
 @standardize_response
-def load_entire_game_tree(game_path_str):
+def load_entire_game_tree(game_path_str, force_refresh=False):
     try:
         _reset_cancel_flag("load_tree")
-        tree = _run_async(_build_full_tree_async(game_path_str))
         cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / "temp_tree.json"
-        
+        manifest_file = cache_dir / "temp_tree_manifest.json"
+
+        game_path = Path(game_path_str)
+        if not game_path.exists():
+            raise FileNotFoundError("Game path does not exist.")
+
+        signature = _index_signature(game_path)
+
+        # Reuse the previously built tree when no index.tfi has changed.
+        if not force_refresh and cache_file.exists() and manifest_file.exists():
+            try:
+                manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
+            except Exception:
+                manifest = {}
+            if manifest.get("game_path") == str(game_path) and manifest.get("signature") == signature:
+                return {"success": True, "cached_file": "/api/cache/temp_tree.json", "from_cache": True}
+
+        tree = _run_async(_build_full_tree_async(game_path_str))
+
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump(tree, f)
+        manifest_file.write_text(
+            json.dumps({"game_path": str(game_path), "signature": signature}),
+            encoding="utf-8",
+        )
 
-        return {"success": True, "cached_file": "/api/cache/temp_tree.json"}
+        return {"success": True, "cached_file": "/api/cache/temp_tree.json", "from_cache": False}
     except OperationCancelled as e:
         return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:
@@ -413,31 +463,34 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
         "last_scan_date": datetime.utcnow().isoformat() + "Z",
         "game_path": game_path_str,
         "archives": {},
-        "files": {}
+        "files": {},
+        "stats": {}
     }
-    
+
     tfi_files = list(game_path.rglob("index.tfi"))
     total_tfis = len(tfi_files)
     start_time = time.time()
-    
+
     for i, tfi_path in enumerate(tfi_files):
         _raise_if_cancelled("build_baseline")
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
         elapsed = time.time() - start_time
-        
+
         eta_secs = ""
         if elapsed > 0.5 and (i + 1) > 0:
             rate = (i + 1) / elapsed
             eta_secs = int((total_tfis - (i + 1)) / rate)
-            
+
         eel.update_progress_ui(i + 1, total_tfis, rel_tfi, "Building Baseline Cache...", eta_secs, int(elapsed))()
-        
+
         index = TFIndex(tfi_path)
+        cache["stats"][rel_tfi] = _stat_sig(tfi_path)
         cache["archives"][rel_tfi] = await index.content_hash
-        
+
         archives_dict = {}
         for archive in index.archives:
             rel_tfa = archive.path.relative_to(game_path).as_posix()
+            cache["stats"][rel_tfa] = _stat_sig(archive.path)
             cache["archives"][rel_tfa] = await archive.content_hash
             archives_dict[archive.id] = archive
             
@@ -458,10 +511,10 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
 
 @eel.expose
 @standardize_response
-def scan_and_extract_updates(game_path_str, tracking_dir_str, run_catalog=False):
+def scan_and_extract_updates(game_path_str, tracking_dir_str, run_catalog=False, full_rescan=False):
     try:
         _reset_cancel_flag("scan_updates")
-        result = _run_async(_scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog))
+        result = _run_async(_scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog, full_rescan))
         return {"success": True, "details": result}
     except OperationCancelled as e:
         return {"success": False, "cancelled": True, "error": str(e)}
@@ -470,19 +523,22 @@ def scan_and_extract_updates(game_path_str, tracking_dir_str, run_catalog=False)
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
-async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog):
+async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_catalog, full_rescan=False):
     game_path = Path(game_path_str)
     tracking_dir = Path(tracking_dir_str)
     data_path = tracking_dir / "extraction_data.json"
     
     with open(data_path, "r", encoding="utf-8") as f:
         old_cache = json.load(f)
-        
+
+    old_stats = old_cache.get("stats", {})
+
     new_cache = {
         "last_scan_date": datetime.utcnow().isoformat() + "Z",
         "game_path": game_path_str,
         "archives": {},
-        "files": {}
+        "files": {},
+        "stats": {}
     }
     
     date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -509,20 +565,52 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
             eta_secs = int((total_tfis - (i + 1)) / rate)
             
         eel.update_progress_ui(i + 1, total_tfis, rel_tfi, "Scanning for Updates...", eta_secs, int(elapsed))()
-        
+
         index = TFIndex(tfi_path)
+        archive_list = list(index.archives)
+
+        # Cheap fast-gate: if the index and every archive match their cached
+        # modification time + size, nothing changed on disk — carry the cached
+        # hashes forward and skip reading/decompressing the archives entirely.
+        # (A real game patch always changes mtime/size; content hashing below
+        # still runs whenever the stat differs, so there are no false positives.)
+        tfi_sig = _stat_sig(tfi_path)
+        new_cache["stats"][rel_tfi] = tfi_sig
+        archive_rels = {}
+        stat_unchanged = (not full_rescan) and bool(old_stats) and (old_stats.get(rel_tfi) == tfi_sig)
+        for archive in archive_list:
+            rel_tfa = archive.path.relative_to(game_path).as_posix()
+            archive_rels[id(archive)] = rel_tfa
+            sig = _stat_sig(archive.path)
+            new_cache["stats"][rel_tfa] = sig
+            if old_stats.get(rel_tfa) != sig:
+                stat_unchanged = False
+
+        if stat_unchanged:
+            if rel_tfi in old_cache.get("archives", {}):
+                new_cache["archives"][rel_tfi] = old_cache["archives"][rel_tfi]
+            for archive in archive_list:
+                rel_tfa = archive_rels[id(archive)]
+                if rel_tfa in old_cache.get("archives", {}):
+                    new_cache["archives"][rel_tfa] = old_cache["archives"][rel_tfa]
+            prefix = f"{rel_tfi}::"
+            for k, v in old_cache["files"].items():
+                if k.startswith(prefix):
+                    new_cache["files"][k] = v
+            continue
+
         new_tfi_hash = await index.content_hash
         new_cache["archives"][rel_tfi] = new_tfi_hash
-        
+
         archives_dict = {}
         tfa_changed = False
-        
-        for archive in index.archives:
-            rel_tfa = archive.path.relative_to(game_path).as_posix()
+
+        for archive in archive_list:
+            rel_tfa = archive_rels[id(archive)]
             new_tfa_hash = await archive.content_hash
             new_cache["archives"][rel_tfa] = new_tfa_hash
             archives_dict[archive.id] = archive
-            
+
             if old_cache["archives"].get(rel_tfa) != new_tfa_hash:
                 tfa_changed = True
                 

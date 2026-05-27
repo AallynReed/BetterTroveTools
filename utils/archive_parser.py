@@ -17,6 +17,23 @@ from utils.functions import read_leb128
 archive_id = re.compile(r"^archive(\d+)")
 
 
+def _read_uleb(data: bytes, pos: int) -> tuple[int, int]:
+    """Read a uleb128 directly from a bytes buffer. Much faster than seeking a
+    BinaryReader one byte at a time, which matters when parsing every index.tfi
+    in a game install. Masks to 32 bits to match the previous decoder exactly."""
+    result = 0
+    shift = 0
+    while True:
+        byte = data[pos]
+        pos += 1
+        result |= (byte & 0x7F) << shift
+        if not (byte & 0x80):
+            return result & 0xFFFFFFFF, pos
+        shift += 7
+        if shift >= 64:
+            raise ValueError("Too many bytes when decoding varint.")
+
+
 class FileStatus(Enum):
     unchanged = "Unchanged"
     added = "Added"
@@ -200,16 +217,26 @@ class TFIndex:
         return self._files
 
     async def get_files_list(self) -> AsyncGenerator[dict]:
-        reader = BinaryReader(await self.content)
-        while reader.pos() < reader.size():
-            file = dict()
-            file["name"] = reader.read_str(read_leb128(reader, reader.pos()))
-            file["path"] = self.directory.joinpath(file["name"])
-            file["archive_index"] = read_leb128(reader, reader.pos())
-            file["offset"] = read_leb128(reader, reader.pos())
-            file["size"] = read_leb128(reader, reader.pos())
-            file["hash"] = read_leb128(reader, reader.pos())
-            yield file
+        data = await self.content
+        directory = self.directory
+        pos = 0
+        n = len(data)
+        while pos < n:
+            name_len, pos = _read_uleb(data, pos)
+            name = data[pos:pos + name_len].split(b"\x00", 1)[0].decode("utf-8")
+            pos += name_len
+            archive_index, pos = _read_uleb(data, pos)
+            offset, pos = _read_uleb(data, pos)
+            size, pos = _read_uleb(data, pos)
+            file_hash, pos = _read_uleb(data, pos)
+            yield {
+                "name": name,
+                "path": directory.joinpath(name),
+                "archive_index": archive_index,
+                "offset": offset,
+                "size": size,
+                "hash": file_hash,
+            }
 
 
 async def find_all_indexes(
