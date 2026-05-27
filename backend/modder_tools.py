@@ -6,7 +6,7 @@ import shutil
 import uuid
 import tkinter as tk
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from tkinter import filedialog
 
 import eel
@@ -568,6 +568,32 @@ def ask_add_files(game_path_str=None):
             
     return {"success": True, "files": files, "rejected": rejected, "rejected_cfg": rejected_cfg}
 
+def _safe_extract_target(dest_root: Path, internal_path: str):
+    """Resolve a .tmod's internal file path under dest_root, refusing anything
+    that would escape it. .tmod headers are untrusted input, so a path that is
+    absolute, has a drive, or contains '..' must not be allowed to write outside
+    the chosen destination. Returns the target Path or None if it's unsafe."""
+    raw = str(internal_path or "").replace("\\", "/")
+    parts = []
+    for part in PurePosixPath(raw).parts:
+        if part in ("", "/", "."):
+            continue
+        if part == ".." or ":" in part:
+            return None
+        parts.append(part)
+    if not parts:
+        return None
+    candidate = dest_root.joinpath(*parts)
+    try:
+        resolved = candidate.resolve()
+        root_resolved = dest_root.resolve()
+    except OSError:
+        return None
+    if resolved != root_resolved and root_resolved not in resolved.parents:
+        return None
+    return candidate
+
+
 @eel.expose
 @standardize_response
 def extract_tmod(tmod_path_str, dest_path_str):
@@ -575,25 +601,32 @@ def extract_tmod(tmod_path_str, dest_path_str):
         _reset_cancel_flag("extract_tmod")
         tmod_path = Path(tmod_path_str)
         dest_path = Path(dest_path_str)
-        
+
         if not tmod_path.exists() or not tmod_path.is_file():
             return {"success": False, "error": "TMod file does not exist."}
-            
+
         dest_path.mkdir(parents=True, exist_ok=True)
-        
+
         file_data = tmod_path.read_bytes()
         mod = TMod.read_bytes(tmod_path, file_data)
-        
+
         extracted_count = 0
+        skipped = []
         for file in mod.files:
             _raise_if_cancelled("extract_tmod")
-            out_path = dest_path / Path(file.trove_path.replace("\\", "/"))
+            out_path = _safe_extract_target(dest_path, file.trove_path)
+            if out_path is None:
+                skipped.append(str(file.trove_path))
+                continue
             out_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             out_path.write_bytes(file.data)
             extracted_count += 1
-            
-        return {"success": True, "count": extracted_count}
+
+        result = {"success": True, "count": extracted_count}
+        if skipped:
+            result["skipped"] = skipped
+        return result
     except OperationCancelled as e:
         return {"success": False, "cancelled": True, "error": str(e)}
     except Exception as e:

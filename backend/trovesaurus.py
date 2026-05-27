@@ -164,11 +164,10 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
                         trove_path = TroveGamePath(Path(game_path_str))
                         mod_list = TroveModList(path=trove_path, partial=True)
                         local_hashes = mod_list.all_hashes
-                        
-                        if local_hashes:
-                            hash_to_id = {}
-                            hash_batches = [local_hashes[i:i + 200] for i in range(0, len(local_hashes), 200)]
-                            
+
+                        hash_to_id = {}
+                        hash_batches = [local_hashes[i:i + 200] for i in range(0, len(local_hashes), 200)] if local_hashes else []
+
                         for batch in hash_batches:
                             payload = {"hashes": ",".join(batch)}
                             req_id = None
@@ -315,7 +314,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
             except Exception:
                 pass
             try:
-                resp = requests.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"})
+                resp = requests.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"}, timeout=(10, 300))
                 if req_id:
                     eel.remove_external_request(req_id, resp.status_code == 200)()
                     req_id = None

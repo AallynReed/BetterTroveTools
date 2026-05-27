@@ -252,6 +252,24 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 }
             };
 
+            // draggingState is set on dragstart and is authoritative for same-window
+            // drags, so prefer it. Only fall back to the serialized dataTransfer
+            // payload (and guard JSON.parse) so a drop can never be silently killed
+            // by dataTransfer carrying non-JSON text (e.g. a native image-drag URL).
+            const readDragPayload = (e) => {
+                if (draggingState.pane !== null) {
+                    return { pane: draggingState.pane, idx: draggingState.idx };
+                }
+                try {
+                    const raw = e && e.dataTransfer ? e.dataTransfer.getData('text/plain') : '';
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    return parsed && typeof parsed === 'object' ? parsed : null;
+                } catch {
+                    return null;
+                }
+            };
+
             const handleGlobalDragEnd = () => {
                 clearDragTarget();
                 clearDraggingState();
@@ -374,9 +392,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
             const onDropInventory = (e, toIdx) => {
                 clearDragTarget();
-                const data = e.dataTransfer.getData('text/plain');
-                if (!data) return;
-                const parsed = JSON.parse(data);
+                const parsed = readDragPayload(e);
+                if (!parsed) return;
                 const { source, gem: draggedGem, fromDetachedSelected } = resolveDraggedGem(parsed.pane, parsed.idx);
                 if (!draggedGem || !source || (source.pane === 'inventory' && source.idx === toIdx)) return;
 
@@ -408,9 +425,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
             const onDropEquipped = (e, reqElementId, reqType, toIdx) => {
                 clearDragTarget();
-                const data = e.dataTransfer.getData('text/plain');
-                if (!data) return;
-                const parsed = JSON.parse(data);
+                const parsed = readDragPayload(e);
+                if (!parsed) return;
                 const { source, gem: draggedGem, fromDetachedSelected } = resolveDraggedGem(parsed.pane, parsed.idx);
                 if (!draggedGem || !source || (source.pane === 'equipped' && source.idx === toIdx)) return;
 
@@ -440,9 +456,8 @@ document.addEventListener('gem_simulator_loaded', async () => {
             };
 
             const onDropTrash = async (e) => {
-                const data = e.dataTransfer.getData('text/plain');
-                if (!data) return;
-                const parsed = JSON.parse(data);
+                const parsed = readDragPayload(e);
+                if (!parsed) return;
                 const { source, gem: draggedGem } = resolveDraggedGem(parsed.pane, parsed.idx);
                 if (!draggedGem) return;
 

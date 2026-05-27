@@ -187,7 +187,7 @@
         browse_for_game_dir: makeEelFn('browse_for_game_dir', () => fail(localOnlyMessage), { localOnly: true }),
         get_detected_game_paths: makeEelFn('get_detected_game_paths', () => ok({ paths: [], detected: [] })),
         get_system_info: makeEelFn('get_system_info', () => ok({ app_mode: 'web', platform: navigator.platform || 'browser' })),
-        get_app_license: makeEelFn('get_app_license', async () => ok({ license: await fetch('LICENSE').then(r => r.ok ? r.text() : '').catch(() => '') })),
+        get_app_license: makeEelFn('get_app_license', async () => ok({ text: await fetch('LICENSE').then(r => r.ok ? r.text() : '').catch(() => '') })),
         load_gem_storage: makeEelFn('load_gem_storage', () => {
             const gemData = readJson(GEM_STORAGE_KEY, {});
             return { success: true, data: gemData, gem_simulator: gemData };

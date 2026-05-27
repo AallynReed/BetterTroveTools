@@ -148,7 +148,13 @@ class TroveModFile:
     @property
     def header_format(self) -> bytes:
         data = BinaryReader(bytearray())
-        data.write_int8(len(str(self.trove_path)))
+        name_length = len(str(self.trove_path))
+        # The format stores the name length in a single byte read back as uint8,
+        # so it must be written unsigned (write_int8 caps at 127 and raises for
+        # 128-255). Byte-identical to the old write_int8 for lengths <= 127.
+        if name_length > 255:
+            raise ValueError(f"Mod internal path is too long for the .tmod format (>255 chars): {self.trove_path}")
+        data.write_uint8(name_length)
         data.write_str(str(self.trove_path))
         data.extend(write_leb128(self.index))
         data.extend(write_leb128(self.offset if self.content.buffer() else 0))
@@ -262,7 +268,7 @@ class TroveMod:
 
     @property
     def has_wrong_name(self):
-        stem = str(self.mod_path).split(".tmod")[0]
+        stem = self.mod_path.name.split(".tmod")[0]
         return stem != self.name
 
     @property
@@ -302,7 +308,8 @@ class TroveMod:
 
     def check_conflicts(self, mods: list[TroveMod], force=False):
         if force:
-            self.conflicts.clear()
+            self.name_conflicts.clear()
+            self.file_conflicts.clear()
         for mod in mods:
             if mod == self:
                 continue

@@ -34,7 +34,7 @@ def _normalize_settings_payload(payload):
     allowed_keys = [
         "accent_color", "show_community_content", "show_official_news",
         "auto_fix_names", "show_mod_preview_on_info_side", "hide_beta_features",
-        "last_game_path"
+        "last_game_path", "locale"
     ]
     for key in allowed_keys:
         if key in payload:

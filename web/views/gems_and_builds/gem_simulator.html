@@ -13,8 +13,8 @@
                             <div class="slot" :class="slotDragClass('equipped', slot.idx)" :data-has-item="!!equipped[slot.idx]" @dragenter.prevent="onEquippedDragEnter($event, slot.idx)" @dragover.prevent="onEquippedDragOver($event, slot.idx)" @dragleave="onSlotDragLeave('equipped', slot.idx, $event)" @drop="onDropEquipped($event, row.elementId, slot.typeRestriction, slot.idx)">
                                 <div v-if="equipped[slot.idx]" class="item" draggable="true" @dragstart="onDragStart($event, 'equipped', slot.idx)" @click="selectGem(equipped[slot.idx], 'equipped', slot.idx)" @contextmenu.prevent.stop="showContextMenu($event, equipped[slot.idx], 'equipped', slot.idx)" @mouseenter="showTooltip($event, equipped[slot.idx])" @mousemove="moveTooltip" @mouseleave="hideTooltip">
                                     <div class="item-img-holder">
-                                        <img class="item-tier-bg" :src="gemTierBgUrl(equipped[slot.idx])">
-                                        <img class="item-gem-img" :src="gemImageUrl(equipped[slot.idx])">
+                                        <img class="item-tier-bg" :src="gemTierBgUrl(equipped[slot.idx])" draggable="false">
+                                        <img class="item-gem-img" :src="gemImageUrl(equipped[slot.idx])" draggable="false">
                                         <div class="item-lv">Lv.{{ equipped[slot.idx].level }}</div>
                                         <div class="item-power">{{ equipped[slot.idx].power_rank }}</div>
                                     </div>
@@ -107,8 +107,8 @@
                 <div class="selected-container">
                     <div class="big-slot" draggable="true" @dragstart="onDragStart($event, 'selected', 0)">
                         <div class="big-slot-inner-holder">
-                            <img class="big-slot-tier-bg" :src="gemTierBgUrl(selected)">
-                            <img class="big-slot-gem-img" :src="gemImageUrl(selected)">
+                            <img class="big-slot-tier-bg" :src="gemTierBgUrl(selected)" draggable="false">
+                            <img class="big-slot-gem-img" :src="gemImageUrl(selected)" draggable="false">
                             <div class="big-slot-lv">Lv.{{ selected.level }}</div>
                             <div class="big-slot-power">{{ selected.power_rank }}</div>
                         </div>
@@ -189,8 +189,8 @@
                 <div v-for="(item, idx) in inventory" :key="'inv-'+idx" class="slot" :data-has-item="!!item" @dragenter.prevent="onInventoryDragEnter($event, idx)" @dragover.prevent="onInventoryDragOver($event, idx)" @dragleave="onSlotDragLeave('inventory', idx, $event)" @drop="onDropInventory($event, idx)">
                     <div v-if="item" class="item" draggable="true" @dragstart="onDragStart($event, 'inventory', idx)" @click="selectGem(item, 'inventory', idx)" @contextmenu.prevent.stop="showContextMenu($event, item, 'inventory', idx)" @mouseenter="showTooltip($event, item)" @mousemove="moveTooltip" @mouseleave="hideTooltip">
                         <div class="item-img-holder">
-                            <img class="item-tier-bg" :src="gemTierBgUrl(item)">
-                            <img class="item-gem-img" :src="gemImageUrl(item)">
+                            <img class="item-tier-bg" :src="gemTierBgUrl(item)" draggable="false">
+                            <img class="item-gem-img" :src="gemImageUrl(item)" draggable="false">
                             <div class="item-lv">Lv.{{ item.level }}</div>
                             <div class="item-power">{{ item.power_rank }}</div>
                         </div>

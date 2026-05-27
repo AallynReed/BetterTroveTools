@@ -126,8 +126,9 @@ document.addEventListener('home_loaded', () => {
             };
 
             const getCountdown = (targetTs, showLeft = true) => {
-                const diff = targetTs - nowSec.value;
-                if (diff <= 0) return null; // changed: return null if ended
+                // Clamp to 0 so an already-elapsed timestamp renders "0 minutes"
+                // instead of the literal "null" (callers interpolate this directly).
+                const diff = Math.max(0, targetTs - nowSec.value);
                 const days = Math.floor(diff / 86400);
                 const hours = Math.floor((diff % 86400) / 3600);
                 const mins = Math.floor((diff % 3600) / 60);
@@ -869,11 +870,11 @@ document.addEventListener('home_loaded', () => {
             };
 
             function getNextServerResetSec() {
-                // Server reset is at 00:00 UTC-11 (13:00 UTC)
+                // Server day rolls over at 00:00 server time (UTC-11), i.e. 11:00 UTC.
                 const now = new Date();
                 const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
                 const nextReset = new Date(utcNow);
-                nextReset.setUTCHours(13, 0, 0, 0);
+                nextReset.setUTCHours(11, 0, 0, 0);
                 if (utcNow >= nextReset) nextReset.setUTCDate(nextReset.getUTCDate() + 1);
                 return Math.floor(nextReset.getTime() / 1000);
             }
