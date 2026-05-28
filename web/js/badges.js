@@ -1,11 +1,11 @@
-function initFishView() {
-    const root = document.getElementById('fish-vue-app');
-    if (!root || root.dataset.fishInitializing === '1') return;
-    root.dataset.fishInitializing = '1';
+function initBadgesView() {
+    const root = document.getElementById('badges-vue-app');
+    if (!root || root.dataset.badgesInitializing === '1') return;
+    root.dataset.badgesInitializing = '1';
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Fish Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Badge Codex.</div>`;
         return;
     }
 
@@ -14,32 +14,32 @@ function initFishView() {
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
-            const PREF_STATE_KEY = 'state_fish';
+            const PREF_STATE_KEY = 'state_badges';
             let hydratingState = false;
 
             const isLoading = ref(true);
             const loadError = ref('');
-            const fishData = ref([]);
+            const badgesData = ref([]);
             const dataSourceText = ref('');
-            const sourceOptions = ref([['All Sources', 'All']]);
-            const rarityOptions = ref([['All Rarities', 'All']]);
+            const tierOptions = ref([['All Tiers', 'All']]);
+            const categoryOptions = ref([['All Categories', 'All']]);
             const searchQuery = ref('');
-            const selectedSource = ref('All');
-            const selectedRarity = ref('All');
+            const selectedTier = ref('All');
+            const selectedCategory = ref('All');
             const currentPage = ref(1);
-            const pageSize = ref(8);   // groups per page in grouped view (5 sources fit on page 1)
+            const pageSize = ref(8);   // groups per page in grouped view
 
-            const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Relic'];
-            const RARITY_COLORS = {
-                Common: '#b0bec5', Uncommon: '#7ed957', Rare: '#5ec6ff',
-                Epic: '#b066ff', Legendary: '#ffd54f', Relic: '#ff8a65'
+            const TIER_ORDER = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'Obsidian', 'Trovium'];
+            const TIER_COLORS = {
+                Bronze: '#cd7f32', Silver: '#c0c0c0', Gold: '#ffd54f',
+                Platinum: '#e5e4e2', Diamond: '#b9f2ff', Obsidian: '#7a4dff', Trovium: '#ff8a65'
             };
 
             const applyStateSnapshot = (saved) => {
                 if (!saved || typeof saved !== 'object') return;
                 if (typeof saved.searchQuery === 'string') searchQuery.value = saved.searchQuery;
-                if (typeof saved.selectedSource === 'string') selectedSource.value = saved.selectedSource;
-                if (typeof saved.selectedRarity === 'string') selectedRarity.value = saved.selectedRarity;
+                if (typeof saved.selectedTier === 'string') selectedTier.value = saved.selectedTier;
+                if (typeof saved.selectedCategory === 'string') selectedCategory.value = saved.selectedCategory;
                 if (saved.currentPage !== undefined) {
                     const p = parseInt(saved.currentPage, 10);
                     currentPage.value = Number.isFinite(p) && p > 0 ? p : 1;
@@ -49,8 +49,8 @@ function initFishView() {
                 if (hydratingState || !window.AppSettings) return;
                 window.AppSettings.setPrefSync(PREF_STATE_KEY, {
                     searchQuery: searchQuery.value,
-                    selectedSource: selectedSource.value,
-                    selectedRarity: selectedRarity.value,
+                    selectedTier: selectedTier.value,
+                    selectedCategory: selectedCategory.value,
                     currentPage: currentPage.value
                 });
             };
@@ -85,7 +85,7 @@ function initFishView() {
                 try {
                     isLoading.value = true;
                     await syncGamePathPicker();
-                    await loadFish(false);
+                    await loadBadges(false);
                 } catch (err) {
                     loadError.value = String((err && err.message) || err || 'Failed to load data from game files.');
                 } finally {
@@ -105,69 +105,95 @@ function initFishView() {
                 const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 return safe.replace(new RegExp(`(${escaped})`, 'ig'), '<mark>$1</mark>');
             };
-            const rarityColor = (r) => RARITY_COLORS[r] || '#9aa7b4';
-            const trophyCount = (fish) => fish.trophies ? Object.keys(fish.trophies).length : 0;
-            const weightText = (fish) => (fish.weight_min != null && fish.weight_max != null)
-                ? `${fish.weight_min} - ${fish.weight_max}` : '';
+            const tierColor = (t) => TIER_COLORS[t] || '#9aa7b4';
+            const masteryText = (b) => (b.base && b.multiplier > 1)
+                ? `${b.mastery} (${b.base} × ${b.multiplier})` : `${b.mastery}`;
 
-            const filteredFish = computed(() => {
-                let result = fishData.value.slice();
+            const filteredBadges = computed(() => {
+                let result = badgesData.value.slice();
                 const sq = searchQuery.value.toLowerCase().trim();
                 if (sq.length >= 3) {
                     let general = sq;
-                    const filters = { name: null, source: null, rarity: null, path: null };
-                    const regex = /(name|source|rarity|path):("([^"]+)"|([^\s]+))/g;
+                    const filters = { name: null, group: null, tier: null, category: null };
+                    const regex = /(name|group|tier|category):("([^"]+)"|([^\s]+))/g;
                     let m;
                     while ((m = regex.exec(sq)) !== null) {
                         filters[m[1]] = (m[3] || m[4] || '').toLowerCase();
                         general = general.replace(m[0], '');
                     }
                     general = general.trim();
-                    result = result.filter(f => {
-                        const name = String(f.name || '').toLowerCase();
-                        const source = String(f.source || '').toLowerCase();
-                        const rarity = String(f.rarity || '').toLowerCase();
-                        const path = String(f.filename || '').toLowerCase();
-                        const desc = String(f.desc || '').toLowerCase();
+                    result = result.filter(b => {
+                        const name = String(b.name || '').toLowerCase();
+                        const group = String(b.group || '').toLowerCase();
+                        const tier = String(b.tier || '').toLowerCase();
+                        const category = String(b.in_game_category || '').toLowerCase();
+                        const path = String(b.filename || '').toLowerCase();
                         if (filters.name && !name.includes(filters.name)) return false;
-                        if (filters.source && !source.includes(filters.source)) return false;
-                        if (filters.rarity && !rarity.includes(filters.rarity)) return false;
-                        if (filters.path && !path.includes(filters.path)) return false;
-                        if (general.length > 0 && !`${name} ${source} ${rarity} ${path} ${desc}`.includes(general)) return false;
+                        if (filters.group && !group.includes(filters.group)) return false;
+                        if (filters.tier && !tier.includes(filters.tier)) return false;
+                        if (filters.category && !category.includes(filters.category)) return false;
+                        if (general.length > 0 && !`${name} ${group} ${tier} ${category} ${path}`.includes(general)) return false;
                         return true;
                     });
                 }
-                if (selectedSource.value !== 'All') result = result.filter(f => f.source === selectedSource.value);
-                if (selectedRarity.value !== 'All') result = result.filter(f => f.rarity === selectedRarity.value);
-                return [...result].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+                if (selectedTier.value !== 'All') {
+                    result = (selectedTier.value === '(none)')
+                        ? result.filter(b => !b.tier)
+                        : result.filter(b => b.tier === selectedTier.value);
+                }
+                if (selectedCategory.value !== 'All') {
+                    result = (selectedCategory.value === '(uncategorized)')
+                        ? result.filter(b => !b.in_game_category)
+                        : result.filter(b => b.in_game_category === selectedCategory.value);
+                }
+                return [...result].sort((a, b) => {
+                    // sort by category, then group, then tier order
+                    const ca = String(a.in_game_category || '~').localeCompare(String(b.in_game_category || '~'));
+                    if (ca !== 0) return ca;
+                    const ga = String(a.group || '').localeCompare(String(b.group || ''));
+                    if (ga !== 0) return ga;
+                    const ta = TIER_ORDER.indexOf(a.tier) + 1 || 99;
+                    const tb = TIER_ORDER.indexOf(b.tier) + 1 || 99;
+                    return ta - tb;
+                });
             });
 
-            // Group the filtered fish by liquid (source). Inside each group, sort by
-            // rarity Common -> Rare so the section reads naturally.
-            const groupedFish = computed(() => {
+            // Pretty-print a snake_case group id ("dragon_beard" -> "Dragon Beard")
+            const prettifyGroup = (s) => String(s || '').split('_')
+                .map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : '').join(' ').trim();
+
+            // Group the filtered badges by family (prefer the in-game category from
+            // collection_badge.binfab, fall back to the group id). Inside each group,
+            // sort by tier order so Bronze..Trovium reads naturally.
+            const groupedBadges = computed(() => {
                 const groups = new Map();
-                for (const f of filteredFish.value) {
-                    const label = f.source || 'Other';
+                for (const b of filteredBadges.value) {
+                    const label = b.in_game_category || prettifyGroup(b.group) || 'Other';
                     if (!groups.has(label)) groups.set(label, []);
-                    groups.get(label).push(f);
+                    groups.get(label).push(b);
                 }
                 const arr = Array.from(groups.entries()).map(([label, list]) => {
                     list.sort((a, b) => {
-                        const ra = (RARITY_ORDER.indexOf(String(a.rarity || '').toLowerCase()) + 1) || 99;
-                        const rb = (RARITY_ORDER.indexOf(String(b.rarity || '').toLowerCase()) + 1) || 99;
-                        if (ra !== rb) return ra - rb;
+                        const ta = (TIER_ORDER.indexOf(a.tier) + 1) || 99;
+                        const tb = (TIER_ORDER.indexOf(b.tier) + 1) || 99;
+                        if (ta !== tb) return ta - tb;
                         return String(a.name || '').localeCompare(String(b.name || ''));
                     });
-                    return { label, fish: list, count: list.length };
+                    return {
+                        label,
+                        badges: list,
+                        count: list.length,
+                        totalMastery: list.reduce((s, x) => s + (x.mastery || 0), 0),
+                    };
                 });
                 arr.sort((a, b) => a.label.localeCompare(b.label));
                 return arr;
             });
 
-            const totalPages = computed(() => Math.max(1, Math.ceil(groupedFish.value.length / pageSize.value)));
-            const paginatedGroups = computed(() => groupedFish.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
-            const visibleStart = computed(() => groupedFish.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
-            const visibleEnd = computed(() => groupedFish.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, groupedFish.value.length));
+            const totalPages = computed(() => Math.max(1, Math.ceil(groupedBadges.value.length / pageSize.value)));
+            const paginatedGroups = computed(() => groupedBadges.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
+            const visibleStart = computed(() => groupedBadges.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
+            const visibleEnd = computed(() => groupedBadges.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, groupedBadges.value.length));
             const pageNumbers = computed(() => {
                 const total = totalPages.value, current = currentPage.value;
                 const pages = new Set([1, total, current - 1, current, current + 1]);
@@ -177,58 +203,59 @@ function initFishView() {
             const nextPage = () => setPage(currentPage.value + 1);
             const prevPage = () => setPage(currentPage.value - 1);
 
-            watch([searchQuery, selectedSource, selectedRarity], () => { currentPage.value = 1; });
+            watch([searchQuery, selectedTier, selectedCategory], () => { currentPage.value = 1; });
             watch(totalPages, (n) => { if (currentPage.value > n) currentPage.value = n; });
-            watch([searchQuery, selectedSource, selectedRarity, currentPage], persistState, { deep: true });
+            watch([searchQuery, selectedTier, selectedCategory, currentPage], persistState, { deep: true });
             watch(selectedGamePath, async (newVal, oldVal) => {
                 if (syncingGamePath || !window.CodexGamePathApi || !window.CodexGamePathApi.setSelectedPath || newVal === oldVal) return;
                 applyGamePathState((await window.CodexGamePathApi.setSelectedPath(newVal)) || {});
             });
 
-            const loadFish = async (forceRefresh = false) => {
+            const totalMastery = computed(() => filteredBadges.value.reduce((s, b) => s + (b.mastery || 0), 0));
+
+            const loadBadges = async (forceRefresh = false) => {
                 loadError.value = '';
-                if (!(window.eel && eel.get_fish_data)) throw new Error('Backend fish endpoint is unavailable');
-                const response = await eel.get_fish_data(forceRefresh, getSelectedGamePath())();
+                if (!(window.eel && eel.get_badges_data)) throw new Error('Backend badges endpoint is unavailable');
+                const response = await eel.get_badges_data(forceRefresh, getSelectedGamePath())();
                 if (!response || response.success === false) {
-                    throw new Error((response && response.error) || 'Failed to retrieve fish data from backend');
+                    throw new Error((response && response.error) || 'Failed to retrieve badge data from backend');
                 }
                 const cacheUrl = String((response && response.cache_file) || (response && response.meta && response.meta.cache && response.meta.cache.cache_url) || '').trim();
                 let data;
                 if (cacheUrl) {
                     const cacheResp = await fetch(cacheUrl, { cache: 'no-store' });
-                    if (!cacheResp.ok) throw new Error(`Failed to load fish cache file (${cacheResp.status})`);
+                    if (!cacheResp.ok) throw new Error(`Failed to load badge cache file (${cacheResp.status})`);
                     data = await cacheResp.json();
                 } else {
                     data = (response && response.data && typeof response.data === 'object') ? response.data : response;
                 }
 
-                const sources = new Set(), rarities = new Set();
-                fishData.value = Object.keys(data).map(key => {
+                const tiers = new Set(), cats = new Set();
+                badgesData.value = Object.keys(data).map(key => {
                     const row = data[key];
-                    if (row.source) sources.add(row.source);
-                    if (row.rarity) rarities.add(row.rarity);
+                    if (row.tier) tiers.add(row.tier);
+                    if (row.in_game_category) cats.add(row.in_game_category);
                     return {
                         id: key, ...row,
                         imagePath: `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || row.filename || key)}.png`,
                     };
                 });
-                sourceOptions.value = [['All Sources', 'All'], ...Array.from(sources).sort().map(s => [s, s])];
-                rarityOptions.value = [['All Rarities', 'All'], ...Array.from(rarities)
-                    .sort((a, b) => (RARITY_ORDER.indexOf(a) + 1 || 99) - (RARITY_ORDER.indexOf(b) + 1 || 99))
-                    .map(r => [r, r])];
+                tierOptions.value = [['All Tiers', 'All'], ...Array.from(tiers)
+                    .sort((a, b) => (TIER_ORDER.indexOf(a) + 1 || 99) - (TIER_ORDER.indexOf(b) + 1 || 99))
+                    .map(t => [t, t]), ['(no tier)', '(none)']];
+                categoryOptions.value = [['All Categories', 'All'], ...Array.from(cats).sort().map(c => [c, c]), ['(uncategorized)', '(uncategorized)']];
 
                 const source = (response && response.source) || '';
-                if (source === 'game-cache') dataSourceText.value = t('Loaded fish data from cached game-file scan.');
-                else if (source === 'game-cache-stale') dataSourceText.value = t('Loaded fish data from cache. Refreshing in the background…');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded fish data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('Loaded badge data from cached game-file scan.');
+                else if (source === 'game-live') dataSourceText.value = t('Loaded badge data from live game files.');
                 else dataSourceText.value = '';
             };
 
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
-                    if (window.eel && eel.clear_fish_cache) await eel.clear_fish_cache()();
-                    await loadFish(true);
+                    if (window.eel && eel.clear_badges_cache) await eel.clear_badges_cache()();
+                    await loadBadges(true);
                 } finally {
                     isLoading.value = false;
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
@@ -242,8 +269,8 @@ function initFishView() {
                     applyStateSnapshot(window.AppSettings.getPref(PREF_STATE_KEY, null));
                 }
                 await syncGamePathPicker();
-                try { await loadFish(false); }
-                catch (err) { loadError.value = String((err && err.message) || err || 'Failed to load fish from game files.'); }
+                try { await loadBadges(false); }
+                catch (err) { loadError.value = String((err && err.message) || err || 'Failed to load badges from game files.'); }
                 isLoading.value = false;
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 hydratingState = false;
@@ -254,11 +281,11 @@ function initFishView() {
             });
 
             return {
-                t, isLoading, loadError, fishData, filteredFish,
-                groupedFish, paginatedGroups,
-                searchQuery, selectedSource, selectedRarity, sourceOptions, rarityOptions,
+                t, isLoading, loadError, badgesData, filteredBadges,
+                groupedBadges, paginatedGroups,
+                searchQuery, selectedTier, selectedCategory, tierOptions, categoryOptions,
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
-                setPage, nextPage, prevPage, rarityColor, trophyCount, weightText,
+                setPage, nextPage, prevPage, tierColor, masteryText, totalMastery,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
                 highlightSearch, clearCacheAndReload, dataSourceText
             };
@@ -267,17 +294,17 @@ function initFishView() {
 
     try {
         if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
-        if (window._fishApp) window._fishApp.unmount();
-        window._fishApp = app;
-        app.mount('#fish-vue-app');
+        if (window._badgesApp) window._badgesApp.unmount();
+        window._badgesApp = app;
+        app.mount('#badges-vue-app');
     } catch (err) {
-        console.error("Failed to initialize Fish Codex app:", err);
+        console.error("Failed to initialize Badge Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Fish Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Badge Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
-        delete root.dataset.fishInitializing;
+        delete root.dataset.badgesInitializing;
     }
 }
 
-document.addEventListener('fish_loaded', initFishView);
-if (document.readyState !== 'loading') initFishView();
+document.addEventListener('badges_loaded', initBadgesView);
+if (document.readyState !== 'loading') initBadgesView();

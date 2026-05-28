@@ -12,25 +12,28 @@
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'allies' }" @click="setActiveTab('allies')">
-                <i class="fa-solid fa-paw"></i> <span>{{ t('Ally Codex') }}</span>
+                <i class="fa-solid fa-paw"></i> <span>{{ t('Allies') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'mounts' }" @click="setActiveTab('mounts')">
-                <i class="fa-solid fa-horse"></i> <span>{{ t('Mount Codex') }}</span>
+                <i class="fa-solid fa-horse"></i> <span>{{ t('Mounts') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'dragons' }" @click="setActiveTab('dragons')">
-                <i class="fa-solid fa-dragon"></i> <span>{{ t('Dragon Codex') }}</span>
+                <i class="fa-solid fa-dragon"></i> <span>{{ t('Dragons') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'mementos' }" @click="setActiveTab('mementos')">
-                <i class="fa-solid fa-scroll"></i> <span>{{ t('Memento Codex') }}</span>
+                <i class="fa-solid fa-scroll"></i> <span>{{ t('Mementos') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'recipes' }" @click="setActiveTab('recipes')">
-                <i class="fa-solid fa-book"></i> <span>{{ t('Recipe Codex') }}</span>
+                <i class="fa-solid fa-book"></i> <span>{{ t('Recipes') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'items' }" @click="setActiveTab('items')">
-                <i class="fa-solid fa-box"></i> <span>{{ t('Item Codex') }}</span>
+                <i class="fa-solid fa-box"></i> <span>{{ t('Items') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'fish' }" @click="setActiveTab('fish')">
-                <i class="fa-solid fa-fish"></i> <span>{{ t('Fish Codex') }}</span>
+                <i class="fa-solid fa-fish"></i> <span>{{ t('Fish') }}</span>
+            </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'badges' }" @click="setActiveTab('badges')">
+                <i class="fa-solid fa-shield-halved"></i> <span>{{ t('Badges') }}</span>
             </button>
         </div>
 
@@ -246,6 +249,16 @@
                 </div>
             </div>
             <div id="codexes-fish-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'badges'" class="tab-content" :class="{ active: activeTab === 'badges' }">
+            <div v-if="!loadedTabs.badges" class="codex-preload-shell">
+                <div class="ui-state ui-state-loading ui-state-compact">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>{{ t('Loading Badge Codex...') }}</span>
+                </div>
+            </div>
+            <div id="codexes-badges-host" class="view-container" v-cloak></div>
         </div>
     </div>
 </div>

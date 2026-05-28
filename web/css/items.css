@@ -92,7 +92,8 @@
 }
 
 #item-search-input,
-#fish-search-input {
+#fish-search-input,
+#badges-search-input {
     width: 100%;
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color, #444c5e);
@@ -104,7 +105,8 @@
 }
 
 #item-search-input:focus,
-#fish-search-input:focus {
+#fish-search-input:focus,
+#badges-search-input:focus {
     outline: none;
     border-color: #5ec6ff;
     background: rgba(0, 0, 0, 0.5);
@@ -112,11 +114,44 @@
 }
 
 #items-vue-app .custom-select-trigger,
-#fish-vue-app .custom-select-trigger {
+#fish-vue-app .custom-select-trigger,
+#badges-vue-app .custom-select-trigger {
     height: 42px;
     min-height: 42px;
     padding: 10px 12px;
     border-radius: 8px;
+}
+
+/* Grouped-codex sections (used by Fish and Badge codexes) */
+.codex-group-section {
+    margin-bottom: 22px;
+}
+.codex-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    margin: 18px 0 10px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.28);
+    border-left: 3px solid #5ec6ff;
+    border-radius: 6px;
+    font-size: 1.05rem;
+    color: #e0e6ed;
+    font-weight: 600;
+}
+.codex-group-header .codex-group-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.codex-group-header .codex-group-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted, #9aa7b4);
+    font-weight: normal;
+    white-space: nowrap;
 }
 
 .item-card .ally-body {
