@@ -1,111 +1,336 @@
-﻿<head>
+<head>
     <link rel="stylesheet" href="../css/gems_and_builds/gem_evaluator.css">
 </head>
 <div id="gem-evaluator-vue-app-inner" class="gem-evaluator-shell" :class="{ 'has-results': results.length > 0 }" v-cloak @keydown.enter.prevent="submitActiveEvaluator">
-    <div class="gem-evaluator-panel">
-        <div class="evaluator-mode-tabs">
-            <button class="mode-tab-btn" :class="{ active: activeMode === 'simple' }" @click="setActiveMode('simple')">{{ t('Simple Evaluator') }}</button>
-            <button class="mode-tab-btn" :class="{ active: activeMode === 'full' }" @click="setActiveMode('full')">{{ t('Full Evaluator') }}</button>
+
+    <aside class="gem-evaluator-history" :class="{ 'is-empty': !history.length }">
+        <header class="gem-evaluator-history-head">
+            <span><i class="fa-solid fa-clock-rotate-left"></i> {{ t('Recent Gems') }}</span>
+            <button v-if="history.length"
+                    class="gem-history-clear-btn"
+                    type="button"
+                    :title="t('Clear history')"
+                    @click="clearHistory()">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+        </header>
+        <div v-if="!history.length" class="gem-history-empty">
+            <i class="fa-solid fa-gem"></i>
+            <span>{{ t('Evaluate a gem to save it here.') }}</span>
         </div>
+        <ul v-else class="gem-history-list">
+            <li v-for="entry in history" :key="entry.hash" class="gem-history-item">
+                <button type="button" class="gem-history-restore" @click="restoreFromHistory(entry)" :title="t('Click to re-evaluate this gem')">
+                    <div class="gem-history-icon">
+                        <img :src="Number(entry.summary.type) === 2 ? 'assets/gems/misc/empowered.png' : 'assets/gems/misc/lesser.png'" alt="">
+                    </div>
+                    <div class="gem-history-body">
+                        <div class="gem-history-title">{{ entry.summary.quality_percent.toFixed(1) }}% · {{ t('PR') }} {{ entry.summary.calculated_power_rank }}</div>
+                        <div class="gem-history-sub">{{ t(tierName(entry.summary.tier)) }} · {{ t(entry.summary.type_name) }} · {{ t('Lv.') }} {{ entry.summary.level }}</div>
+                        <div class="gem-history-stats">{{ (entry.summary.stat_names || []).map(t).join(' · ') }}</div>
+                    </div>
+                </button>
+                <div class="gem-history-actions">
+                    <button type="button" class="gem-history-pin" :title="t('Pin to compare A')" @click.stop="pinHistoryToSlot(entry, 'A')">A</button>
+                    <button type="button" class="gem-history-pin" :title="t('Pin to compare B')" @click.stop="pinHistoryToSlot(entry, 'B')">B</button>
+                    <button type="button" class="gem-history-delete" :title="t('Delete')" @click.stop="deleteHistoryEntry(entry.hash)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </li>
+        </ul>
+    </aside>
 
-        <div class="gem-evaluator-header">
-            <div>
-                <h3><i class="fa-solid fa-magnifying-glass-chart"></i> {{ t('Gem Evaluator') }}</h3>
-                <p v-if="activeMode === 'simple'">{{ t('Estimate gem quality using only Power Rank and level.') }}</p>
-                <p v-else>{{ t('Back-calculate a gem\'s quality from its level and stat values with automatic stat and proc guessing.') }}</p>
-            </div>
-        </div>
-
-        <template v-if="activeMode === 'simple'">
-            <div class="gem-evaluator-grid simple-evaluator-grid">
-                <label>
-                    <span>{{ t('Type') }}</span>
-                    <custom-vue-select v-model="simpleForm.type" :options="typeOptions"></custom-vue-select>
-                </label>
-                <label>
-                    <span>{{ t('Rarity') }}</span>
-                    <custom-vue-select v-model="simpleForm.tier" :options="tierOptions"></custom-vue-select>
-                </label>
-                <label>
-                    <span>{{ t('Power Rank') }}</span>
-                    <input type="number" class="calc-number-input evaluator-input" v-model="simpleForm.powerRank" min="0" step="1">
-                </label>
-            </div>
-            <div class="gem-evaluator-grid gem-evaluator-grid-secondary simple-evaluator-grid-secondary">
-                <label>
-                    <span>{{ t('Level') }}</span>
-                    <input type="number" class="calc-number-input evaluator-input" v-model="simpleForm.level" min="1" max="35" step="1">
-                </label>
-            </div>
-        </template>
-
-        <template v-else>
-            <div class="gem-evaluator-grid">
-                <label>
-                    <span>{{ t('Type') }}</span>
-                    <custom-vue-select v-model="form.type" :options="typeOptions"></custom-vue-select>
-                </label>
-                <label>
-                    <span>{{ t('Rarity') }}</span>
-                    <custom-vue-select v-model="form.tier" :options="tierOptions"></custom-vue-select>
-                </label>
-                <label>
-                    <span>{{ t('Level') }}</span>
-                    <input type="number" class="calc-number-input evaluator-input" v-model="form.level" min="1" max="35" step="1">
-                </label>
+    <div class="gem-evaluator-main">
+        <div class="gem-evaluator-panel">
+            <div class="evaluator-mode-tabs">
+                <button class="mode-tab-btn" :class="{ active: activeMode === 'simple' }" @click="setActiveMode('simple')">{{ t('Simple Evaluator') }}</button>
+                <button class="mode-tab-btn" :class="{ active: activeMode === 'full' }" @click="setActiveMode('full')">{{ t('Full Evaluator') }}</button>
             </div>
 
-            <div class="gem-evaluator-proc-summary">
-                <span>{{ t('Guessed Proc Spread') }}: <b>{{ procSpreadSummary }}</b></span>
-                <button type="button" class="stepper-btn auto-proc-btn" @click="guessStats" :disabled="isGuessingStats || !canGuessStats">
-                    <template v-if="!isGuessingStats">{{ t('Guess Stats') }}</template>
-                    <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
+            <div class="gem-evaluator-header">
+                <div>
+                    <h3><i class="fa-solid fa-magnifying-glass-chart"></i> {{ t('Gem Evaluator') }}</h3>
+                    <p v-if="activeMode === 'simple'">{{ t('Estimate gem quality using only Power Rank and level.') }}</p>
+                    <p v-else>{{ t('Back-calculate a gem\'s quality from its level and stat values with automatic stat and proc guessing.') }}</p>
+                </div>
+            </div>
+
+            <template v-if="activeMode === 'simple'">
+                <div class="gem-evaluator-grid simple-evaluator-grid">
+                    <label>
+                        <span>{{ t('Type') }}</span>
+                        <custom-vue-select v-model="simpleForm.type" :options="typeOptions"></custom-vue-select>
+                    </label>
+                    <label>
+                        <span>{{ t('Rarity') }}</span>
+                        <custom-vue-select v-model="simpleForm.tier" :options="tierOptions"></custom-vue-select>
+                    </label>
+                    <label>
+                        <span>{{ t('Power Rank') }}</span>
+                        <input type="number" class="calc-number-input evaluator-input" v-model="simpleForm.powerRank" min="0" step="1">
+                    </label>
+                </div>
+                <div class="gem-evaluator-grid gem-evaluator-grid-secondary simple-evaluator-grid-secondary">
+                    <label>
+                        <span>{{ t('Level') }}</span>
+                        <input type="number" class="calc-number-input evaluator-input" v-model="simpleForm.level" min="1" max="35" step="1">
+                    </label>
+                </div>
+            </template>
+
+            <template v-else>
+                <div class="gem-evaluator-grid">
+                    <label>
+                        <span>{{ t('Type') }}</span>
+                        <custom-vue-select v-model="form.type" :options="typeOptions"></custom-vue-select>
+                    </label>
+                    <label>
+                        <span>{{ t('Rarity') }}</span>
+                        <custom-vue-select v-model="form.tier" :options="tierOptions"></custom-vue-select>
+                    </label>
+                    <label>
+                        <span>{{ t('Level') }}</span>
+                        <input type="number" class="calc-number-input evaluator-input" v-model="form.level" min="1" max="35" step="1">
+                    </label>
+                </div>
+
+                <div class="gem-evaluator-proc-summary">
+                    <span>{{ t('Guessed Proc Spread') }}: <b>{{ procSpreadSummary }}</b></span>
+                    <button type="button" class="stepper-btn auto-proc-btn" @click="guessStats" :disabled="isGuessingStats || !canGuessStats" :title="t('Hotkey') + ': Ctrl+G'">
+                        <template v-if="!isGuessingStats">{{ t('Guess Stats') }}</template>
+                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
+                    </button>
+                </div>
+
+                <div class="gem-evaluator-stat-list">
+                    <div v-for="(stat, index) in form.stats" :key="index" class="gem-evaluator-stat-block">
+                        <div class="gem-evaluator-stat-row stat-row-full">
+                            <input type="number" class="calc-number-input evaluator-input" v-model="stat.value" min="0" step="any" :placeholder="t('Stat Value')">
+                            <custom-vue-select v-model="stat.type" :options="statOptionsFor(index)"></custom-vue-select>
+                        </div>
+                        <div v-if="statRanges[index] && stat.type" class="gem-stat-range-hint" :class="{ 'out-of-range': Number(stat.value) && (Number(stat.value) < statRanges[index].min_value || Number(stat.value) > statRanges[index].max_value) }">
+                            <span class="gem-stat-range-text">
+                                {{ t('Typical range') }}: <b>{{ formatNumber(statRanges[index].min_value) }} – {{ formatNumber(statRanges[index].max_value) }}</b>
+                            </span>
+                            <span v-if="Number(stat.value) > 0" class="gem-stat-range-percent">
+                                <i class="fa-solid fa-location-arrow"></i>
+                                {{ statRangePercent(index, Number(stat.value)) === null ? '' : statRangePercent(index, Number(stat.value)).toFixed(0) + '%' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <div class="evaluator-actions">
+                <button class="primary-btn bottom-calc-btn" @click="submitActiveEvaluator" :disabled="isEvaluating">
+                    <template v-if="!isEvaluating">{{ t('Calculate Gem') }}</template>
+                    <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
                 </button>
             </div>
+        </div>
 
-            <div class="gem-evaluator-stat-list">
-                <div v-for="(stat, index) in form.stats" :key="index" class="gem-evaluator-stat-row stat-row-full">
-                    <input type="number" class="calc-number-input evaluator-input" v-model="stat.value" min="0" step="any" :placeholder="t('Stat Value')">
-                    <custom-vue-select v-model="stat.type" :options="statOptionsFor(index)"></custom-vue-select>
+        <div class="gem-evaluator-results">
+            <div v-if="!results.length && !showCompare" class="gem-evaluator-placeholder">
+                <span v-if="activeMode === 'simple'">{{ t('Enter Power Rank and level to estimate possible gem matches.') }}</span>
+                <span v-else>{{ t('Enter your gem details and calculate to see how good the gem is.') }}</span>
+            </div>
+
+            <div v-if="showCompare && (compareA || compareB)" class="gem-compare-panel">
+                <div class="gem-compare-head">
+                    <strong><i class="fa-solid fa-scale-balanced"></i> {{ t('Compare') }}</strong>
+                    <div class="gem-compare-actions">
+                        <button type="button" @click="swapCompare()" :disabled="!compareA || !compareB" :title="t('Swap A and B')"><i class="fa-solid fa-arrow-right-arrow-left"></i></button>
+                        <button type="button" @click="clearCompare()" :title="t('Close compare')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div class="gem-compare-grid">
+                    <div class="gem-compare-slot" :class="{ 'is-empty': !compareA }">
+                        <div class="gem-compare-slot-label">A</div>
+                        <template v-if="compareA">
+                            <div class="gem-compare-slot-icon">
+                                <img :src="Number(compareA.summary.type) === 2 ? 'assets/gems/misc/empowered.png' : 'assets/gems/misc/lesser.png'" alt="">
+                            </div>
+                            <div class="gem-compare-slot-body">
+                                <div class="gem-compare-slot-title">{{ compareA.summary.quality_percent.toFixed(2) }}%</div>
+                                <div class="gem-compare-slot-sub">{{ t('PR') }} {{ compareA.summary.calculated_power_rank }}</div>
+                                <div class="gem-compare-slot-meta">{{ t(tierName(compareA.summary.tier)) }} · {{ t(compareA.summary.type_name) }} · {{ t('Lv.') }} {{ compareA.summary.level }}</div>
+                            </div>
+                        </template>
+                        <div v-else class="gem-compare-slot-empty">{{ t('Pin a gem to slot A') }}</div>
+                    </div>
+                    <div class="gem-compare-delta">
+                        <template v-if="compareDiff">
+                            <div :class="['gem-compare-delta-row', compareDiff.quality_delta >= 0 ? 'pos' : 'neg']">
+                                <span>{{ t('Quality') }}</span>
+                                <strong>{{ compareDiff.quality_delta >= 0 ? '+' : '' }}{{ compareDiff.quality_delta }}%</strong>
+                            </div>
+                            <div :class="['gem-compare-delta-row', compareDiff.pr_delta >= 0 ? 'pos' : 'neg']">
+                                <span>{{ t('PR') }}</span>
+                                <strong>{{ compareDiff.pr_delta >= 0 ? '+' : '' }}{{ compareDiff.pr_delta }}</strong>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <span class="gem-compare-delta-hint">{{ t('Pin gems to A and B to compare') }}</span>
+                        </template>
+                    </div>
+                    <div class="gem-compare-slot" :class="{ 'is-empty': !compareB }">
+                        <div class="gem-compare-slot-label">B</div>
+                        <template v-if="compareB">
+                            <div class="gem-compare-slot-icon">
+                                <img :src="Number(compareB.summary.type) === 2 ? 'assets/gems/misc/empowered.png' : 'assets/gems/misc/lesser.png'" alt="">
+                            </div>
+                            <div class="gem-compare-slot-body">
+                                <div class="gem-compare-slot-title">{{ compareB.summary.quality_percent.toFixed(2) }}%</div>
+                                <div class="gem-compare-slot-sub">{{ t('PR') }} {{ compareB.summary.calculated_power_rank }}</div>
+                                <div class="gem-compare-slot-meta">{{ t(tierName(compareB.summary.tier)) }} · {{ t(compareB.summary.type_name) }} · {{ t('Lv.') }} {{ compareB.summary.level }}</div>
+                            </div>
+                        </template>
+                        <div v-else class="gem-compare-slot-empty">{{ t('Pin a gem to slot B') }}</div>
+                    </div>
                 </div>
             </div>
-        </template>
 
-        <div class="evaluator-actions">
-            <button class="primary-btn bottom-calc-btn" @click="submitActiveEvaluator" :disabled="isEvaluating">
-                <template v-if="!isEvaluating">{{ t('Calculate Gem') }}</template>
-                <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
-            </button>
-        </div>
-    </div>
+            <div v-if="activeMode === 'simple' && results.length" class="simple-results-grid" :class="{ 'single-result': results.length === 1 }">
+                <div v-for="result in results" :key="`${result.type}-${result.tier}`" class="simple-result-card" :class="{ best: bestMatch && bestMatch.type === result.type && bestMatch.tier === result.tier, invalid: !result.is_within_range }">
+                    <div class="simple-result-head">
+                        <img class="focus-plan-gem-icon" :src="Number(result.type) === 2 ? 'assets/gems/misc/empowered.png' : 'assets/gems/misc/lesser.png'" alt="">
+                        <div>
+                            <div class="focus-plan-label">{{ t(result.tier_name) }} {{ t(result.type_name) }}</div>
+                            <div class="simple-result-sub">{{ t('Level') }} {{ result.level }}</div>
+                        </div>
+                    </div>
+                    <div class="result-meta simple-meta">
+                        <div>
+                            <span>{{ t('Power Rank Range') }}</span>
+                            <strong>{{ formatNumber(result.min_power_rank) }} - {{ formatNumber(result.max_power_rank) }}</strong>
+                        </div>
+                        <div>
+                            <span>{{ t('Estimated Quality') }}</span>
+                            <strong>{{ result.quality_percent.toFixed(2) }}%</strong>
+                        </div>
+                    </div>
 
-    <div class="gem-evaluator-results">
-        <div v-if="!results.length" class="gem-evaluator-placeholder">
-            <span v-if="activeMode === 'simple'">{{ t('Enter Power Rank and level to estimate possible gem matches.') }}</span>
-            <span v-else>{{ t('Enter your gem details and calculate to see how good the gem is.') }}</span>
-        </div>
+                    <div class="focus-plan-card compact-focus-card">
+                        <div class="focus-plan-title">{{ t('Focuses To Finish Upgrading') }}</div>
+                        <div v-if="!hasAnyFocusCost(result)" class="focus-plan-empty">
+                            <img class="focus-plan-gem-icon" :src="gemPreviewIcon(result)" alt="">
+                            <div>
+                                <strong>{{ t('No more focuses needed') }}</strong>
+                                <span>{{ t('This gem is already fully upgraded for the selected estimate.') }}</span>
+                            </div>
+                        </div>
+                        <div v-else class="focus-plan-grid">
+                            <div v-for="plan in focusPlanEntries(result)" :key="plan.key" class="focus-plan-tile">
+                                <div class="focus-plan-tile-header">
+                                    <img class="focus-plan-gem-icon" :src="gemPreviewIcon(result)" alt="">
+                                    <div>
+                                        <div class="focus-plan-label">{{ t(plan.label) }}</div>
+                                        <div class="focus-plan-total">{{ plan.total }} {{ t('Focuses') }}</div>
+                                    </div>
+                                </div>
 
-        <div v-if="activeMode === 'simple' && results.length" class="simple-results-grid" :class="{ 'single-result': results.length === 1 }">
-            <div v-for="result in results" :key="`${result.type}-${result.tier}`" class="simple-result-card" :class="{ best: bestMatch && bestMatch.type === result.type && bestMatch.tier === result.tier, invalid: !result.is_within_range }">
-                <div class="simple-result-head">
-                    <img class="focus-plan-gem-icon" :src="Number(result.type) === 2 ? 'assets/gems/misc/empowered.png' : 'assets/gems/misc/lesser.png'" alt="">
-                    <div>
-                        <div class="focus-plan-label">{{ t(result.tier_name) }} {{ t(result.type_name) }}</div>
-                        <div class="simple-result-sub">{{ t('Level') }} {{ result.level }}</div>
+                                <div class="focus-plan-focuses">
+                                    <div v-for="focus in focusCountEntries(plan)" :key="focus.key" class="focus-chip">
+                                        <img :src="focusIcon(focus.key)" alt="">
+                                        <span>{{ focus.count }} {{ t(focus.label) }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="focus-plan-divider"></div>
+
+                                <div class="focus-plan-recipes">
+                                    <div v-for="material in recipeEntries(plan)" :key="material.key" class="recipe-chip" :class="{ flux: material.key === 'flux' }">
+                                        <img :src="itemIcon(material.key)" alt="">
+                                        <span>{{ formatNumber(material.amount) }} {{ t(material.label) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="result-meta simple-meta">
-                    <div>
-                        <span>{{ t('Power Rank Range') }}</span>
-                        <strong>{{ formatNumber(result.min_power_rank) }} - {{ formatNumber(result.max_power_rank) }}</strong>
+            </div>
+
+            <div v-for="result in activeMode === 'full' ? results : []" :key="result.type" class="gem-evaluator-result-card" :class="{ best: bestMatch && bestMatch.type === result.type, invalid: result.has_issues }">
+
+                <div class="gem-result-sticky-bar">
+                    <div class="gem-result-sticky-icon">
+                        <img :src="gemPreviewIcon(result)" alt="">
                     </div>
-                    <div>
-                        <span>{{ t('Estimated Quality') }}</span>
-                        <strong>{{ result.quality_percent.toFixed(2) }}%</strong>
+                    <div class="gem-result-sticky-metrics">
+                        <div class="gem-result-sticky-metric">
+                            <span>{{ t('Quality') }}</span>
+                            <strong>{{ result.quality_percent.toFixed(2) }}%</strong>
+                        </div>
+                        <div class="gem-result-sticky-metric">
+                            <span>{{ t('Power Rank') }}</span>
+                            <strong>{{ result.calculated_power_rank }}</strong>
+                        </div>
+                    </div>
+                    <div class="gem-result-sticky-actions">
+                        <button type="button" class="gem-pin-btn" :title="t('Pin to compare slot A')" @click="pinCurrentToSlot('A')">{{ t('Pin A') }}</button>
+                        <button type="button" class="gem-pin-btn" :title="t('Pin to compare slot B')" @click="pinCurrentToSlot('B')">{{ t('Pin B') }}</button>
                     </div>
                 </div>
 
-                <div class="focus-plan-card compact-focus-card">
+                <div class="result-card-header">
+                    <div>
+                        <h4>{{ t(result.type_name) }}</h4>
+                        <p>{{ t('Element') }}: <b>{{ t(result.element_name) }}</b><span v-if="result.restriction_name"> · {{ t('Restriction') }}: <b>{{ t(result.restriction_name) }}</b></span></p>
+                    </div>
+                </div>
+
+                <div class="result-meta">
+                    <div>
+                        <span>{{ t('Gem Type') }}</span>
+                        <strong>{{ t(result.type_name) }}</strong>
+                    </div>
+                    <div>
+                        <span>{{ t('Power Rank') }}</span>
+                        <strong>{{ result.calculated_power_rank }}</strong>
+                    </div>
+                    <div>
+                        <span>{{ t('Restriction') }}</span>
+                        <strong>{{ t(result.restriction_name) }}</strong>
+                    </div>
+                </div>
+
+                <div v-if="result.has_issues" class="result-warning">
+                    <strong>{{ t('Input Warning') }}</strong>
+                    <div v-for="(issue, issueIndex) in result.issues" :key="issueIndex">{{ t(issue) }}</div>
+                </div>
+
+                <div v-if="nextFocusSim && nextFocusSim.per_stat && nextFocusSim.per_stat.length" class="gem-next-focus-panel">
+                    <div class="gem-next-focus-head">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> {{ t('Best stat to focus next') }}
+                    </div>
+                    <div class="gem-next-focus-grid">
+                        <div class="gem-next-focus-card">
+                            <div class="gem-next-focus-card-label"><i class="fa-solid fa-percent"></i> {{ t('Biggest Quality lift') }}</div>
+                            <div class="gem-next-focus-card-stat">{{ t(nextFocusSim.best_for_quality.stat_display_name) }}</div>
+                            <div class="gem-next-focus-card-detail">
+                                <span class="gem-next-focus-delta pos">+{{ nextFocusSim.best_for_quality.quality_gain_percent }}%</span>
+                                <span class="gem-next-focus-target">→ {{ nextFocusSim.best_for_quality.resulting_quality_percent.toFixed(2) }}%</span>
+                            </div>
+                        </div>
+                        <div class="gem-next-focus-card">
+                            <div class="gem-next-focus-card-label"><i class="fa-solid fa-bolt"></i> {{ t('Biggest Power Rank lift') }}</div>
+                            <div class="gem-next-focus-card-stat">{{ t(nextFocusSim.best_for_power_rank.stat_display_name) }}</div>
+                            <div class="gem-next-focus-card-detail">
+                                <span class="gem-next-focus-delta pos">+{{ nextFocusSim.best_for_power_rank.pr_gain }} PR</span>
+                                <span class="gem-next-focus-target">→ {{ nextFocusSim.best_for_power_rank.resulting_power_rank }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="hasAnyFocusCost(result) && result.headline_cost" class="gem-total-cost-line">
+                    <i class="fa-solid fa-coins"></i>
+                    <span>{{ t('Total to perfect') }} ({{ t(result.headline_cost.label) }}):</span>
+                    <strong>{{ result.headline_cost.total }} {{ t('Focuses') }}</strong>
+                </div>
+
+                <div class="focus-plan-card">
                     <div class="focus-plan-title">{{ t('Focuses To Finish Upgrading') }}</div>
                     <div v-if="!hasAnyFocusCost(result)" class="focus-plan-empty">
                         <img class="focus-plan-gem-icon" :src="gemPreviewIcon(result)" alt="">
@@ -142,95 +367,31 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <div v-for="result in activeMode === 'full' ? results : []" :key="result.type" class="gem-evaluator-result-card" :class="{ best: bestMatch && bestMatch.type === result.type, invalid: result.has_issues }">
-            <div class="result-card-header">
-                <div>
-                    <h4>{{ t(result.type_name) }}</h4>
-                    <p>{{ t('Element') }}: <b>{{ t(result.element_name) }}</b><span v-if="result.restriction_name"> · {{ t('Restriction') }}: <b>{{ t(result.restriction_name) }}</b></span></p>
-                </div>
-                <div class="result-quality">
-                    <span>{{ t('Quality') }}</span>
-                    <strong>{{ result.quality_percent.toFixed(2) }}%</strong>
-                </div>
-            </div>
-
-            <div class="result-meta">
-                <div>
-                    <span>{{ t('Gem Type') }}</span>
-                    <strong>{{ t(result.type_name) }}</strong>
-                </div>
-                <div>
-                    <span>{{ t('Power Rank') }}</span>
-                    <strong>{{ result.calculated_power_rank }}</strong>
-                </div>
-                <div>
-                    <span>{{ t('Restriction') }}</span>
-                    <strong>{{ t(result.restriction_name) }}</strong>
-                </div>
-            </div>
-
-            <div v-if="result.has_issues" class="result-warning">
-                <strong>{{ t('Input Warning') }}</strong>
-                <div v-for="(issue, issueIndex) in result.issues" :key="issueIndex">{{ t(issue) }}</div>
-            </div>
-
-            <div class="focus-plan-card">
-                <div class="focus-plan-title">{{ t('Focuses To Finish Upgrading') }}</div>
-                <div v-if="!hasAnyFocusCost(result)" class="focus-plan-empty">
-                    <img class="focus-plan-gem-icon" :src="gemPreviewIcon(result)" alt="">
-                    <div>
-                        <strong>{{ t('No more focuses needed') }}</strong>
-                        <span>{{ t('This gem is already fully upgraded for the selected estimate.') }}</span>
+                <div class="result-stat-table">
+                    <div class="result-stat-row result-stat-head">
+                        <span>{{ t('Stat') }}</span>
+                        <span>{{ t('Value') }}</span>
+                        <span>{{ t('Containers') }}</span>
+                        <span>{{ t('Quality') }}</span>
+                    </div>
+                    <div v-for="stat in result.stats" :key="stat.type" class="result-stat-row" :class="{ 'result-stat-row-invalid': !stat.is_within_range }">
+                        <span>{{ t(stat.display_name) }}</span>
+                        <span>{{ formatNumber(stat.entered_value) }}</span>
+                        <span>{{ stat.containers }}</span>
+                        <span>
+                            {{ stat.quality_percent.toFixed(2) }}%
+                            <i v-if="!stat.is_within_range" class="fa-solid fa-triangle-exclamation result-stat-flag" :title="t('This stat is outside the valid range for the selected level and proc spread.')"></i>
+                        </span>
                     </div>
                 </div>
-                <div v-else class="focus-plan-grid">
-                    <div v-for="plan in focusPlanEntries(result)" :key="plan.key" class="focus-plan-tile">
-                        <div class="focus-plan-tile-header">
-                            <img class="focus-plan-gem-icon" :src="gemPreviewIcon(result)" alt="">
-                            <div>
-                                <div class="focus-plan-label">{{ t(plan.label) }}</div>
-                                <div class="focus-plan-total">{{ plan.total }} {{ t('Focuses') }}</div>
-                            </div>
-                        </div>
 
-                        <div class="focus-plan-focuses">
-                            <div v-for="focus in focusCountEntries(plan)" :key="focus.key" class="focus-chip">
-                                <img :src="focusIcon(focus.key)" alt="">
-                                <span>{{ focus.count }} {{ t(focus.label) }}</span>
-                            </div>
-                        </div>
-
-                        <div class="focus-plan-divider"></div>
-
-                        <div class="focus-plan-recipes">
-                            <div v-for="material in recipeEntries(plan)" :key="material.key" class="recipe-chip" :class="{ flux: material.key === 'flux' }">
-                                <img :src="itemIcon(material.key)" alt="">
-                                <span>{{ formatNumber(material.amount) }} {{ t(material.label) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="result-stat-table">
-                <div class="result-stat-row result-stat-head">
-                    <span>{{ t('Stat') }}</span>
-                    <span>{{ t('Value') }}</span>
-                    <span>{{ t('Containers') }}</span>
-                    <span>{{ t('Quality') }}</span>
-                </div>
-                <div v-for="stat in result.stats" :key="stat.type" class="result-stat-row" :class="{ 'result-stat-row-invalid': !stat.is_within_range }">
-                    <span>{{ t(stat.display_name) }}</span>
-                    <span>{{ formatNumber(stat.entered_value) }}</span>
-                    <span>{{ stat.containers }}</span>
-                    <span>
-                        {{ stat.quality_percent.toFixed(2) }}%
-                        <i v-if="!stat.is_within_range" class="fa-solid fa-triangle-exclamation result-stat-flag" :title="t('This stat is outside the valid range for the selected level and proc spread.')"></i>
-                    </span>
-                </div>
+                <details class="gem-math-expander" :open="showMathExpander" @toggle="showMathExpander = $event.target.open">
+                    <summary><i class="fa-solid fa-square-root-variable"></i> {{ t('How was this computed?') }}</summary>
+                    <ul class="gem-math-lines">
+                        <li v-for="(line, lineIndex) in mathLines" :key="lineIndex">{{ line }}</li>
+                    </ul>
+                </details>
             </div>
         </div>
     </div>

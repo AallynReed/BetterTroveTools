@@ -20,6 +20,13 @@ from models.trove.gem_constants import (GEM_STAT_RESTRICTIONS, GemElement,
 from models.trove.gems import PartialGem
 
 
+# How far outside the [0, 1] normalized progress range we still treat as
+# "valid input" — the game displays rounded values, so typed/copied stat
+# numbers can fall a few hundredths beyond the theoretical bounds even on a
+# perfect roll. Widened from 0.02 so realistic gems don't trip false warnings.
+PROGRESS_TOLERANCE = 0.05
+
+
 FOCUS_OPTIONS = {
     "optimized_all": {
         "label": "Superior + Precise + Rough",
@@ -247,15 +254,15 @@ def _evaluate_gem_candidate(
             "progress": round(display_progress, 4),
             "quality_percent": round(display_progress * 100, 2),
             "estimated_pr_contribution": round(pr_contribution, 2),
-            "is_within_range": -0.02 <= raw_progress <= 1.02,
+            "is_within_range": -PROGRESS_TOLERANCE <= raw_progress <= 1 + PROGRESS_TOLERANCE,
             "raw_progress": round(raw_progress, 4),
             "threshold_progress": round(threshold_progress, 4),
             "focus_plan": _build_focus_plan(display_progress, containers),
         })
 
-        if raw_progress < -0.02:
+        if raw_progress < -PROGRESS_TOLERANCE:
             issues.append(f"{stat_type.display_name} is below the minimum possible value for this level and proc spread.")
-        elif raw_progress > 1.02:
+        elif raw_progress > 1 + PROGRESS_TOLERANCE:
             issues.append(f"{stat_type.display_name} is above the maximum possible value for this level and proc spread.")
 
     rounded_pr = round(estimated_power_rank)
@@ -278,6 +285,14 @@ def _evaluate_gem_candidate(
             "total": superior_total + precise_total + rough_total,
             "recipe_totals": recipe_totals,
         }
+    # Headline "total cost to perfect" — pick the cheapest realistic strategy
+    # (precise+rough; superior is rare so we don't suggest the all-optimized
+    # path as the default headline). Sum of focuses across stats with their
+    # full material recipe.
+    headline_strategy = "optimized_precise_rough"
+    headline = dict(gem_focus_totals[headline_strategy])
+    headline["strategy"] = headline_strategy
+
     return {
         "type": gem_type.value,
         "type_name": gem_type.display_name,
@@ -291,7 +306,10 @@ def _evaluate_gem_candidate(
         "has_issues": len(issues) > 0,
         "issues": issues,
         "focus_totals": gem_focus_totals,
+        "headline_cost": headline,
         "stats": per_stat,
+        "level": level,
+        "tier": gem_tier.value,
     }
 
 
@@ -310,21 +328,21 @@ def _build_candidate_with_distribution(
     return _evaluate_gem_candidate(gem_tier, gem_type, level, normalized_stats)
 
 
-def _distribution_score(candidate: dict) -> tuple:
-    raw_progress = [stat["raw_progress"] for stat in candidate["stats"]]
-    clamped_progress = [stat["progress"] for stat in candidate["stats"]]
-    out_of_range_penalty = sum(
-        abs(progress - min(max(progress, 0.0), 1.0))
-        for progress in raw_progress
-    )
-    spread_penalty = max(clamped_progress) - min(clamped_progress)
-    overcap_penalty = sum(max(progress - 1.0, 0.0) for progress in raw_progress)
-    undercap_penalty = sum(max(0.0 - progress, 0.0) for progress in raw_progress)
-    return (
-        round(out_of_range_penalty, 6),
-        round(spread_penalty, 6),
-        round(overcap_penalty + undercap_penalty, 6),
-    )
+def _distribution_score(candidate: dict) -> float:
+    # Smooth squared-distance loss: each stat's distance outside [0, 1] is
+    # squared (so a stat slightly out of range costs little, but a wildly bad
+    # assignment is heavily penalized). Spread between stats is a secondary
+    # signal with a smaller weight, so near-ties on out-of-range don't flip
+    # purely because of small spread differences.
+    score = 0.0
+    for stat in candidate["stats"]:
+        raw = stat["raw_progress"]
+        clamped = max(0.0, min(1.0, raw))
+        score += (raw - clamped) ** 2
+    progresses = [stat["progress"] for stat in candidate["stats"]]
+    spread = max(progresses) - min(progresses)
+    score += spread * spread * 0.25
+    return round(score, 9)
 
 
 def _guess_distribution(
@@ -541,3 +559,135 @@ def evaluate_gem_simple(data):
     except Exception as e:
         traceback.print_exc()
         return resp(False, error=str(e), code="GEM_EVALUATOR_SIMPLE_FAILED")
+
+
+def _resolve_element_from_stat_types(stat_type_values):
+    types = []
+    for value in stat_type_values:
+        try:
+            types.append(GemStatType(int(value)))
+        except (TypeError, ValueError):
+            continue
+    return _infer_element(types) if types else GemElement.WATER
+
+
+@eel.expose
+@standardize_response
+def get_gem_stat_range(data):
+    """Typical (min, max) value range a stat can roll at, for a given gem
+    configuration. Used by the UI to show inline hints next to each stat
+    input so users know if their typed value is plausible.
+    """
+    try:
+        gem_tier = GemTier(int(data.get("tier", GemTier.MYSTIC.value)))
+        gem_type = GemType(int(data.get("type", GemType.LESSER.value)))
+        stat_type = GemStatType(int(data.get("stat_type")))
+        level = max(1, int(data.get("level", 1)))
+        extra_containers = max(0, int(data.get("extra_containers", 0)))
+        containers = 1 + extra_containers
+
+        element_raw = data.get("element")
+        if element_raw is not None:
+            element = GemElement(int(element_raw))
+        else:
+            element = _resolve_element_from_stat_types(data.get("companion_stat_types", []) + [stat_type.value])
+
+        pr_increments_total = _gem_pr_increment_total(gem_tier, gem_type, level)
+
+        if gem_type == GemType.LESSER:
+            stat_base = get_stat_base_lesser(gem_tier, element, stat_type)
+            thresholds = get_stat_threshold_lesser(gem_tier, element, stat_type)
+        else:
+            stat_base = get_stat_base_empowered(gem_tier, element, stat_type)
+            thresholds = get_stat_threshold_empowered(gem_tier, element, stat_type)
+
+        min_value = stat_base * (thresholds[0] * containers + pr_increments_total)
+        max_value = stat_base * (thresholds[1] * containers + pr_increments_total)
+
+        return resp(True, data={
+            "stat_type": stat_type.value,
+            "stat_display_name": stat_type.display_name,
+            "element": element.value,
+            "containers": containers,
+            "min_value": min_value,
+            "max_value": max_value,
+            "stat_base": stat_base,
+            "thresholds": list(thresholds),
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return resp(False, error=str(e), code="GEM_STAT_RANGE_FAILED")
+
+
+@eel.expose
+@standardize_response
+def simulate_next_focus(data):
+    """Given a gem's current stat values, simulate focusing each stat to its
+    theoretical max and report which stat yields the biggest quality % gain
+    and which yields the biggest Power Rank gain. The two answers can differ
+    when one stat is currently dragging the average down vs. another that
+    contributes more PR per container.
+    """
+    try:
+        gem_tier = GemTier(int(data.get("tier", GemTier.MYSTIC.value)))
+        gem_type = GemType(int(data.get("type", GemType.LESSER.value)))
+        level = max(1, int(data.get("level", 1)))
+        stats_payload = data.get("stats", [])
+
+        if len(stats_payload) != 3:
+            return resp(False, error="Exactly 3 stats are required.", code="GEM_EVALUATOR_INVALID_STATS")
+
+        for stat in stats_payload:
+            if not stat.get("type"):
+                return resp(False, error="All three stat types are required.", code="GEM_EVALUATOR_INVALID_STATS")
+
+        baseline = _evaluate_gem_candidate(gem_tier, gem_type, level, stats_payload)
+        baseline_quality_pct = baseline["quality_percent"]
+        baseline_pr = baseline["calculated_power_rank"]
+        element = GemElement(baseline["element"])
+        pr_increments_total = _gem_pr_increment_total(gem_tier, gem_type, level)
+
+        per_stat_sims = []
+        for index, stat in enumerate(stats_payload):
+            stat_type = GemStatType(int(stat["type"]))
+            extra_containers = int(stat.get("extra_containers", 0))
+            containers = 1 + extra_containers
+
+            if gem_type == GemType.LESSER:
+                stat_base = get_stat_base_lesser(gem_tier, element, stat_type)
+                thresholds = get_stat_threshold_lesser(gem_tier, element, stat_type)
+            else:
+                stat_base = get_stat_base_empowered(gem_tier, element, stat_type)
+                thresholds = get_stat_threshold_empowered(gem_tier, element, stat_type)
+
+            maxed_value = stat_base * (thresholds[1] * containers + pr_increments_total)
+            simulated_stats = [dict(s) for s in stats_payload]
+            simulated_stats[index]["value"] = maxed_value
+            simulated = _evaluate_gem_candidate(gem_tier, gem_type, level, simulated_stats)
+
+            per_stat_sims.append({
+                "stat_index": index,
+                "stat_type": stat_type.value,
+                "stat_display_name": stat_type.display_name,
+                "current_quality_percent": baseline["stats"][index]["quality_percent"],
+                "current_value": float(stat.get("value", 0)),
+                "maxed_value": round(maxed_value, 4),
+                "resulting_quality_percent": simulated["quality_percent"],
+                "resulting_power_rank": simulated["calculated_power_rank"],
+                "quality_gain_percent": round(simulated["quality_percent"] - baseline_quality_pct, 2),
+                "pr_gain": round(simulated["calculated_power_rank"] - baseline_pr, 2),
+            })
+
+        best_quality = max(per_stat_sims, key=lambda s: s["quality_gain_percent"]) if per_stat_sims else None
+        best_pr = max(per_stat_sims, key=lambda s: s["pr_gain"]) if per_stat_sims else None
+
+        return resp(True, data={
+            "baseline_quality_percent": baseline_quality_pct,
+            "baseline_power_rank": baseline_pr,
+            "per_stat": per_stat_sims,
+            "best_for_quality": best_quality,
+            "best_for_power_rank": best_pr,
+        })
+    except Exception as e:
+        traceback.print_exc()
+        return resp(False, error=str(e), code="GEM_EVALUATOR_SIM_FAILED")

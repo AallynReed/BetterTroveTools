@@ -4,18 +4,30 @@ document.addEventListener('gem_evaluator_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+    const { createApp, ref, reactive, computed, onMounted, onUnmounted, watch } = Vue;
 
     const app = createApp({
         setup() {
             const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
             const PREF_STATE_KEY = 'state_gem_evaluator';
+            const HISTORY_PREF_KEY = 'gem_evaluator_history_v1';
+            const HISTORY_LIMIT = 20;
             const lookups = ref({});
             const results = ref([]);
             const bestMatch = ref(null);
             const isEvaluating = ref(false);
             const isGuessingStats = ref(false);
             const activeMode = ref('simple');
+
+            const history = ref([]);
+            const compareA = ref(null);
+            const compareB = ref(null);
+            const showCompare = ref(false);
+            const nextFocusSim = ref(null);
+            const isSimulatingFocus = ref(false);
+            const showMathExpander = ref(false);
+            const statRanges = reactive({ 0: null, 1: null, 2: null });
+            const inferredElement = ref(0);
 
             const simpleForm = reactive({
                 type: 1,
@@ -164,6 +176,228 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 }))
             });
 
+            const inferElementFromStats = () => {
+                // Cosmic if any stat is Light (value 7), else Water. Mirrors backend _infer_element.
+                const hasLight = form.stats.some((stat) => Number(stat.type) === 7);
+                return hasLight ? 4 : 1; // GemElement.COSMIC = 4, WATER = 1
+            };
+
+            const fetchStatRange = async (statIndex) => {
+                const stat = form.stats[statIndex];
+                if (!stat || !stat.type) {
+                    statRanges[statIndex] = null;
+                    return;
+                }
+                const element = inferElementFromStats();
+                try {
+                    const response = await eel.get_gem_stat_range({
+                        tier: Number(form.tier),
+                        type: Number(form.type),
+                        stat_type: Number(stat.type),
+                        element,
+                        level: levelNumber.value,
+                        extra_containers: Number(stat.extraContainers || 0)
+                    })();
+                    if (response && response.success) {
+                        statRanges[statIndex] = response.data || null;
+                    } else {
+                        statRanges[statIndex] = null;
+                    }
+                } catch {
+                    statRanges[statIndex] = null;
+                }
+            };
+
+            const refreshAllStatRanges = async () => {
+                inferredElement.value = inferElementFromStats();
+                await Promise.all([0, 1, 2].map((i) => fetchStatRange(i)));
+            };
+
+            const statRangePercent = (statIndex, currentValue) => {
+                const range = statRanges[statIndex];
+                if (!range || !Number.isFinite(currentValue)) return null;
+                const span = range.max_value - range.min_value;
+                if (span <= 0) return null;
+                const pct = ((currentValue - range.min_value) / span) * 100;
+                return Math.max(0, Math.min(100, pct));
+            };
+
+            const runNextFocusSim = async () => {
+                if (!results.value.length || activeMode.value !== 'full') {
+                    nextFocusSim.value = null;
+                    return;
+                }
+                isSimulatingFocus.value = true;
+                try {
+                    const response = await eel.simulate_next_focus(buildPayload())();
+                    if (response && response.success) {
+                        nextFocusSim.value = response.data || response || null;
+                    } else {
+                        nextFocusSim.value = null;
+                    }
+                } catch {
+                    nextFocusSim.value = null;
+                }
+                isSimulatingFocus.value = false;
+            };
+
+            // ---- History (auto-saved on each successful Full evaluation) ----
+            const hashGemInputs = (payload) => {
+                const stats = (payload.stats || []).map((s) => `${s.type}:${s.value}:${s.extra_containers}`).join('|');
+                return `${payload.type}:${payload.tier}:${payload.level}:${stats}`;
+            };
+
+            const persistHistory = () => {
+                if (!window.AppSettings) return;
+                window.AppSettings.setPrefSync(HISTORY_PREF_KEY, history.value.slice(0, HISTORY_LIMIT));
+            };
+
+            const addHistoryEntry = (payload, result) => {
+                if (!payload || !result) return;
+                const hash = hashGemInputs(payload);
+                const filtered = history.value.filter((entry) => entry.hash !== hash);
+                const entry = {
+                    hash,
+                    savedAt: Date.now(),
+                    payload,
+                    summary: {
+                        type: result.type,
+                        type_name: result.type_name,
+                        tier: result.tier,
+                        level: result.level,
+                        quality_percent: result.quality_percent,
+                        calculated_power_rank: result.calculated_power_rank,
+                        element: result.element,
+                        restriction_name: result.restriction_name,
+                        stat_names: (result.stats || []).map((s) => s.display_name)
+                    }
+                };
+                history.value = [entry, ...filtered].slice(0, HISTORY_LIMIT);
+                persistHistory();
+            };
+
+            const restoreFromHistory = (entry) => {
+                if (!entry || !entry.payload) return;
+                const p = entry.payload;
+                form.type = p.type;
+                form.tier = p.tier;
+                form.level = p.level;
+                (p.stats || []).forEach((stat, index) => {
+                    if (!form.stats[index]) return;
+                    form.stats[index].type = stat.type;
+                    form.stats[index].value = stat.value;
+                    form.stats[index].extraContainers = stat.extra_containers || 0;
+                });
+                activeMode.value = 'full';
+                results.value = [];
+                bestMatch.value = null;
+                nextFocusSim.value = null;
+                evaluateGem();
+            };
+
+            const deleteHistoryEntry = (hash) => {
+                history.value = history.value.filter((entry) => entry.hash !== hash);
+                if (compareA.value && compareA.value.hash === hash) compareA.value = null;
+                if (compareB.value && compareB.value.hash === hash) compareB.value = null;
+                persistHistory();
+            };
+
+            const clearHistory = () => {
+                history.value = [];
+                compareA.value = null;
+                compareB.value = null;
+                persistHistory();
+            };
+
+            // ---- Compare ----
+            const pinCurrentToSlot = (slot) => {
+                if (!results.value.length) return;
+                const result = results.value[0];
+                const payload = buildPayload();
+                const entry = {
+                    hash: hashGemInputs(payload),
+                    savedAt: Date.now(),
+                    payload,
+                    summary: {
+                        type: result.type,
+                        type_name: result.type_name,
+                        tier: result.tier,
+                        level: result.level,
+                        quality_percent: result.quality_percent,
+                        calculated_power_rank: result.calculated_power_rank,
+                        element: result.element,
+                        restriction_name: result.restriction_name,
+                        stat_names: (result.stats || []).map((s) => s.display_name)
+                    },
+                    result
+                };
+                if (slot === 'A') compareA.value = entry;
+                else compareB.value = entry;
+                showCompare.value = true;
+            };
+
+            const pinHistoryToSlot = (entry, slot) => {
+                if (!entry) return;
+                if (slot === 'A') compareA.value = entry;
+                else compareB.value = entry;
+                showCompare.value = true;
+            };
+
+            const swapCompare = () => {
+                const tmp = compareA.value;
+                compareA.value = compareB.value;
+                compareB.value = tmp;
+            };
+
+            const clearCompare = () => {
+                compareA.value = null;
+                compareB.value = null;
+                showCompare.value = false;
+            };
+
+            const compareDiff = computed(() => {
+                if (!compareA.value || !compareB.value) return null;
+                const a = compareA.value.summary;
+                const b = compareB.value.summary;
+                return {
+                    quality_delta: +(b.quality_percent - a.quality_percent).toFixed(2),
+                    pr_delta: b.calculated_power_rank - a.calculated_power_rank
+                };
+            });
+
+            const tierName = (tierValue) => {
+                const entry = (tierOptions.value || []).find((opt) => opt[1] === tierValue);
+                return entry ? entry[0] : '';
+            };
+            const typeName = (typeValue) => {
+                const entry = (typeOptions.value || []).find((opt) => opt[1] === typeValue);
+                return entry ? entry[0] : '';
+            };
+
+            // ---- Math explainer (collapsed by default) ----
+            const mathLines = computed(() => {
+                if (!results.value.length) return [];
+                const result = results.value[0];
+                const lines = [];
+                lines.push(t('Quality % is the average of each stat\'s normalized progress within its tier thresholds.'));
+                (result.stats || []).forEach((stat) => {
+                    lines.push(
+                        `${t(stat.display_name)}: ${t('value')} ${formatNumber(stat.entered_value)} → ` +
+                        `${t('progress')} ${(stat.progress * 100).toFixed(2)}% ` +
+                        `(${t('containers')}: ${stat.containers})`
+                    );
+                });
+                const avg = (result.stats || []).reduce((sum, s) => sum + s.progress * s.containers, 0);
+                const tot = (result.stats || []).reduce((sum, s) => sum + s.containers, 0);
+                lines.push(
+                    `${t('Overall')}: (${(result.stats || []).map((s) => `${(s.progress * 100).toFixed(2)}%×${s.containers}`).join(' + ')}) / ${tot} = ${result.quality_percent.toFixed(2)}%`
+                );
+                lines.push(
+                    `${t('Power Rank')}: ${t('base')} + ${t('level increments')} + ${t('per-stat contributions')} = ${result.calculated_power_rank}`
+                );
+                return lines;
+            });
+
             const applyGuessedDistribution = (distribution) => {
                 if (!Array.isArray(distribution) || distribution.length !== form.stats.length) return;
                 distribution.forEach((extraContainers, index) => {
@@ -246,6 +480,11 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                         results.value = response.results || response.data?.results || [];
                         bestMatch.value = response.best_match || response.data?.best_match || null;
                         applyGuessedDistribution(response.guessed_distribution || response.data?.guessed_distribution || []);
+                        if (results.value.length) {
+                            addHistoryEntry(payload, results.value[0]);
+                            runNextFocusSim();
+                            refreshAllStatRanges();
+                        }
                     } else {
                         window.showToast(
                             t('Could not evaluate gem: {error}').replace('{error}', response?.error || t('Unknown Error')),
@@ -315,8 +554,39 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 }
             );
 
+            // Refresh stat range hints whenever a stat-relevant field changes.
+            watch(
+                () => [
+                    form.type,
+                    form.tier,
+                    form.level,
+                    ...form.stats.map((stat) => `${stat.type}|${stat.extraContainers}`)
+                ],
+                () => { refreshAllStatRanges(); },
+                { immediate: false }
+            );
+
+            // Ctrl+G triggers "Guess Stats" while the evaluator is focused.
+            const onHotkey = (e) => {
+                if (!(e.ctrlKey || e.metaKey)) return;
+                if (e.key.toLowerCase() !== 'g') return;
+                if (activeMode.value !== 'full' || !canGuessStats.value || isGuessingStats.value) return;
+                e.preventDefault();
+                guessStats();
+            };
+
+            const loadHistoryFromPrefs = () => {
+                if (!window.AppSettings) return;
+                const saved = window.AppSettings.getPref(HISTORY_PREF_KEY, []);
+                if (Array.isArray(saved)) {
+                    history.value = saved.slice(0, HISTORY_LIMIT);
+                }
+            };
+
             onMounted(async () => {
                 await restoreState();
+                loadHistoryFromPrefs();
+                document.addEventListener('keydown', onHotkey);
                 try {
                     const response = await eel.get_gem_lookups()();
                     if (response && response.success) {
@@ -325,6 +595,10 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 } catch (error) {
                     console.error('Failed to load gem evaluator lookups:', error);
                 }
+            });
+
+            onUnmounted(() => {
+                document.removeEventListener('keydown', onHotkey);
             });
 
             return {
@@ -357,7 +631,28 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 focusPlanEntries,
                 hasAnyFocusCost,
                 focusCountEntries,
-                recipeEntries
+                recipeEntries,
+                // New bindings
+                history,
+                restoreFromHistory,
+                deleteHistoryEntry,
+                clearHistory,
+                compareA,
+                compareB,
+                showCompare,
+                pinCurrentToSlot,
+                pinHistoryToSlot,
+                swapCompare,
+                clearCompare,
+                compareDiff,
+                nextFocusSim,
+                isSimulatingFocus,
+                showMathExpander,
+                statRanges,
+                statRangePercent,
+                tierName,
+                typeName,
+                mathLines
             };
         }
     });

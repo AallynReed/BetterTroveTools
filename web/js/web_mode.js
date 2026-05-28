@@ -222,6 +222,8 @@
         get_food_data: makeEelFn('get_food_data', async () => ok(await fetchJson('assets/data/builds/food.json', {}))),
         get_ally_data: makeEelFn('get_ally_data', async () => ok(await fetchJson('assets/data/builds/ally.json', {}))),
         get_gem_lookups: makeEelFn('get_gem_lookups', () => fail('Gem simulation needs the desktop gem engine.')),
+        get_gem_stat_range: makeEelFn('get_gem_stat_range', () => fail('Gem stat range needs the desktop calculation engine.')),
+        simulate_next_focus: makeEelFn('simulate_next_focus', () => fail('Focus simulation needs the desktop calculation engine.')),
         create_gem: makeEelFn('create_gem', () => fail('Gem simulation needs the desktop gem engine.')),
         mass_update_gems: makeEelFn('mass_update_gems', (gems) => ({ success: true, data: { gems }, gems })),
         level_up_gem: makeEelFn('level_up_gem', () => fail('Gem simulation needs the desktop gem engine.')),
