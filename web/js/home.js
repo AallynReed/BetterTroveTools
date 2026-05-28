@@ -8,6 +8,44 @@ document.addEventListener('home_loaded', () => {
     const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
     const NEWS_COLLAPSED_PREF_KEY = 'home_official_news_collapsed_v1';
     const NEWS_REFRESH_MS = 30 * 60 * 1000;
+    const SECTION_ORDER_PREF_KEY = 'home_section_order_v1';
+    const SECTION_COLLAPSED_PREF_KEY = 'home_section_collapsed_v1';
+    const DENSITY_PREF_KEY = 'home_density_v1';
+    const QUICK_TOOLS_PREF_KEY = 'home_quick_tools_v1';
+    const WHATS_NEW_PREF_KEY = 'home_whats_new_seen_version_v1';
+    const NAV_VISITS_PREF_KEY = 'home_nav_visits';
+    const NEWS_CATEGORY_PREF_KEY = 'home_news_category_v1';
+    const DEFAULT_SECTION_ORDER = ['streams', 'news', 'rotations'];
+    const URGENT_THRESHOLD_SEC = 2 * 60 * 60;
+
+    const QUICK_TOOLS_CATALOG = [
+        { id: 'gems_and_builds:gem-builds', label: 'Gem Builds', icon: 'fa-dice-five', target: 'gems_and_builds', gemsTab: 'gem-builds' },
+        { id: 'gems_and_builds:star-chart', label: 'Star Chart', icon: 'fa-star', target: 'gems_and_builds', gemsTab: 'star-chart' },
+        { id: 'gems_and_builds:gem-evaluator', label: 'Gem Evaluator', icon: 'fa-magnifying-glass-chart', target: 'gems_and_builds', gemsTab: 'gem-evaluator' },
+        { id: 'gems_and_builds:gem-simulator', label: 'Gem Simulator', icon: 'fa-gem', target: 'gems_and_builds', gemsTab: 'gem-simulator' },
+        { id: 'mod_manager:mod_manager', label: 'My Mods', icon: 'fa-cubes', target: 'mod_manager', mmSection: 'mod_manager' },
+        { id: 'mod_manager:trovesaurus', label: 'Trovesaurus', icon: 'fa-folder-open', target: 'mod_manager', mmSection: 'trovesaurus' },
+        { id: 'modder_tools:file_explorer', label: 'File Explorer', icon: 'fa-folder-tree', target: 'modder_tools', modderTab: 'file_explorer' },
+        { id: 'modder_tools:update_tracker', label: 'Update Tracker', icon: 'fa-satellite-dish', target: 'modder_tools', modderTab: 'update_tracker' },
+        { id: 'modder_tools:build', label: 'Build TMod', icon: 'fa-hammer', target: 'modder_tools', modderTab: 'build' },
+        { id: 'modder_tools:extract', label: 'Extract TMod', icon: 'fa-box-open', target: 'modder_tools', modderTab: 'extract' },
+        { id: 'calculators', label: 'Calculators', icon: 'fa-calculator', target: 'calculators' },
+        { id: 'codexes:allies', label: 'Ally Codex', icon: 'fa-paw', target: 'codexes', codexTab: 'allies', beta: true },
+        { id: 'codexes:mounts', label: 'Mount Codex', icon: 'fa-horse', target: 'codexes', codexTab: 'mounts', beta: true },
+        { id: 'codexes:dragons', label: 'Dragon Codex', icon: 'fa-dragon', target: 'codexes', codexTab: 'dragons', beta: true },
+        { id: 'codexes:mementos', label: 'Memento Codex', icon: 'fa-scroll', target: 'codexes', codexTab: 'mementos', beta: true },
+        { id: 'codexes:recipes', label: 'Recipe Codex', icon: 'fa-book', target: 'codexes', codexTab: 'recipes', beta: true },
+        { id: 'codexes:items', label: 'Item Codex', icon: 'fa-box', target: 'codexes', codexTab: 'items', beta: true },
+        { id: 'codexes:fish', label: 'Fish Codex', icon: 'fa-fish', target: 'codexes', codexTab: 'fish', beta: true },
+        { id: 'codexes:badges', label: 'Badge Codex', icon: 'fa-shield-halved', target: 'codexes', codexTab: 'badges', beta: true }
+    ];
+    const DEFAULT_QUICK_TOOLS = [
+        'gems_and_builds:gem-builds',
+        'gems_and_builds:star-chart',
+        'mod_manager:trovesaurus',
+        'calculators'
+    ];
+    const QUICK_TOOL_SLOT_COUNT = 4;
 
     const app = createApp({
         setup() {
@@ -89,12 +127,272 @@ document.addEventListener('home_loaded', () => {
                 delveWeeks: [], delveCurrentWeekId: null, isLoading: false, error: '', instanceKey: 0
             });
 
+            const sectionOrder = ref([...DEFAULT_SECTION_ORDER]);
+            const sectionCollapsed = reactive({ streams: false, news: false, rotations: false });
+            const quickToolsMode = ref('auto');
+            const quickToolsCustom = ref([...DEFAULT_QUICK_TOOLS]);
+            const quickToolsEditingSlot = ref(-1);
+            const navVisits = ref({});
+            const whatsNewRelease = ref(null);
+            const whatsNewDismissed = ref(false);
+            const newsActiveCategory = ref('all');
+            const draggingSectionId = ref(null);
+            const dragInsertBefore = ref(null);
+            const serverTimeNowText = ref('--:--:--');
+            let hydratingHomePrefs = false;
+
             const openUrl = (url) => eel.open_url_in_browser(url)();
             const scrollCarousel = (amount) => { if (carouselRef.value) carouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
             const scrollNewsCarousel = (amount) => { if (newsCarouselRef.value) newsCarouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
             const toggleNewsCollapsed = () => {
                 isNewsCollapsed.value = !isNewsCollapsed.value;
                 if (window.AppSettings) window.AppSettings.setPrefSync(NEWS_COLLAPSED_PREF_KEY, isNewsCollapsed.value);
+            };
+
+            const persistSectionState = () => {
+                if (!window.AppSettings || hydratingHomePrefs) return;
+                window.AppSettings.setPrefSync(SECTION_ORDER_PREF_KEY, sectionOrder.value.slice());
+                window.AppSettings.setPrefSync(SECTION_COLLAPSED_PREF_KEY, { ...sectionCollapsed });
+            };
+
+            const isSectionCollapsed = (id) => !!sectionCollapsed[id];
+            const toggleSectionCollapsed = (id) => {
+                sectionCollapsed[id] = !sectionCollapsed[id];
+                persistSectionState();
+            };
+
+            const onSectionDragStart = (id, e) => {
+                draggingSectionId.value = id;
+                dragInsertBefore.value = null;
+                if (e?.dataTransfer) {
+                    e.dataTransfer.effectAllowed = 'move';
+                    try { e.dataTransfer.setData('text/plain', id); } catch {}
+                }
+            };
+            const computeInsertBeforeId = (hoverId, clientY, rect) => {
+                const order = sectionOrder.value;
+                const idx = order.indexOf(hoverId);
+                if (idx < 0) return hoverId;
+                const midY = rect.top + rect.height / 2;
+                if (clientY < midY) return hoverId;
+                const nextId = order[idx + 1];
+                return nextId || null;
+            };
+            const onSectionDragOver = (id, e) => {
+                if (!draggingSectionId.value) return;
+                if (e?.preventDefault) e.preventDefault();
+                if (e?.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                const target = e.currentTarget;
+                if (!target || !target.getBoundingClientRect) return;
+                const rect = target.getBoundingClientRect();
+                let insertBefore = computeInsertBeforeId(id, e.clientY, rect);
+                const from = draggingSectionId.value;
+                const order = sectionOrder.value;
+                const fromIdx = order.indexOf(from);
+                const insertIdx = insertBefore === null ? order.length : order.indexOf(insertBefore);
+                if (fromIdx === insertIdx || fromIdx + 1 === insertIdx) {
+                    dragInsertBefore.value = null;
+                    return;
+                }
+                dragInsertBefore.value = insertBefore;
+            };
+            const onSectionDrop = (e) => {
+                if (e?.preventDefault) e.preventDefault();
+                const from = draggingSectionId.value;
+                const insertBefore = dragInsertBefore.value;
+                draggingSectionId.value = null;
+                dragInsertBefore.value = null;
+                if (!from) return;
+                const order = sectionOrder.value.slice();
+                const fromIdx = order.indexOf(from);
+                if (fromIdx < 0) return;
+                order.splice(fromIdx, 1);
+                let insertIdx = insertBefore === null ? order.length : order.indexOf(insertBefore);
+                if (insertIdx < 0) insertIdx = order.length;
+                order.splice(insertIdx, 0, from);
+                sectionOrder.value = order;
+                persistSectionState();
+            };
+            const onSectionDragEnd = () => {
+                draggingSectionId.value = null;
+                dragInsertBefore.value = null;
+            };
+            const showDropLine = (id, edge) => {
+                if (!draggingSectionId.value) return false;
+                if (edge === 'before') return dragInsertBefore.value === id;
+                if (edge === 'after') {
+                    const order = sectionOrder.value;
+                    return dragInsertBefore.value === null && order[order.length - 1] === id;
+                }
+                return false;
+            };
+            const onTailDragOver = (e) => {
+                if (!draggingSectionId.value) return;
+                if (e?.preventDefault) e.preventDefault();
+                if (e?.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                const order = sectionOrder.value;
+                const lastId = order[order.length - 1];
+                if (lastId === draggingSectionId.value) {
+                    dragInsertBefore.value = null;
+                    return;
+                }
+                dragInsertBefore.value = null;
+            };
+
+            const persistQuickToolsPref = () => {
+                if (!window.AppSettings || hydratingHomePrefs) return;
+                window.AppSettings.setPrefSync(QUICK_TOOLS_PREF_KEY, {
+                    mode: quickToolsMode.value,
+                    custom: quickToolsCustom.value.slice()
+                });
+            };
+
+            const visitsKey = ref(0);
+            const refreshNavVisits = () => {
+                if (!window.AppSettings) return;
+                const v = window.AppSettings.getPref(NAV_VISITS_PREF_KEY, {});
+                navVisits.value = v && typeof v === 'object' ? { ...v } : {};
+                visitsKey.value += 1;
+            };
+
+            const topVisitedToolIds = computed(() => {
+                void visitsKey.value;
+                const visits = navVisits.value || {};
+                const ranked = ['mod_manager', 'modder_tools', 'gems_and_builds', 'calculators', 'codexes']
+                    .filter(id => (visits[id] || 0) > 0)
+                    .sort((a, b) => (visits[b] || 0) - (visits[a] || 0));
+                const tools = [];
+                const seen = new Set();
+                for (const id of ranked) {
+                    const tool = QUICK_TOOLS_CATALOG.find(c => c.target === id);
+                    if (tool && !seen.has(tool.id)) { tools.push(tool.id); seen.add(tool.id); }
+                    if (tools.length >= QUICK_TOOL_SLOT_COUNT) break;
+                }
+                for (const def of DEFAULT_QUICK_TOOLS) {
+                    if (tools.length >= QUICK_TOOL_SLOT_COUNT) break;
+                    if (!seen.has(def)) { tools.push(def); seen.add(def); }
+                }
+                return tools;
+            });
+
+            const quickToolsList = computed(() => {
+                const ids = quickToolsMode.value === 'custom'
+                    ? quickToolsCustom.value
+                    : topVisitedToolIds.value;
+                const out = [];
+                for (let i = 0; i < QUICK_TOOL_SLOT_COUNT; i++) {
+                    const id = ids[i];
+                    const tool = id ? QUICK_TOOLS_CATALOG.find(t => t.id === id) : null;
+                    out.push(tool || null);
+                }
+                return out;
+            });
+
+            const isWebUnavailable = (target) => {
+                if (!target) return false;
+                const blocked = window.BTT_UNAVAILABLE_WEB_VIEWS || [];
+                return window.BTT_WEB_MODE === true && blocked.includes(target);
+            };
+
+            const navigateToTool = (tool) => {
+                if (!tool || isWebUnavailable(tool.target)) return;
+                document.dispatchEvent(new CustomEvent('btt_navigate', {
+                    detail: {
+                        target: tool.target,
+                        modderTab: tool.modderTab,
+                        mmSection: tool.mmSection,
+                        gemsTab: tool.gemsTab,
+                        codexTab: tool.codexTab
+                    }
+                }));
+            };
+
+            const toggleQuickToolsMode = () => {
+                quickToolsMode.value = quickToolsMode.value === 'auto' ? 'custom' : 'auto';
+                quickToolsEditingSlot.value = -1;
+                if (quickToolsMode.value === 'custom' && (!quickToolsCustom.value || quickToolsCustom.value.length === 0)) {
+                    quickToolsCustom.value = topVisitedToolIds.value.slice();
+                }
+                persistQuickToolsPref();
+            };
+
+            const openQuickToolSlotEditor = (slotIdx) => {
+                if (quickToolsMode.value !== 'custom') return;
+                quickToolsEditingSlot.value = quickToolsEditingSlot.value === slotIdx ? -1 : slotIdx;
+            };
+
+            const setQuickToolAtSlot = (slotIdx, toolId) => {
+                const arr = quickToolsCustom.value.slice();
+                while (arr.length < QUICK_TOOL_SLOT_COUNT) arr.push(null);
+                arr[slotIdx] = toolId || null;
+                quickToolsCustom.value = arr;
+                quickToolsEditingSlot.value = -1;
+                persistQuickToolsPref();
+            };
+
+            const clearQuickToolSlot = (slotIdx) => setQuickToolAtSlot(slotIdx, null);
+
+            const quickToolsCatalogVisible = computed(() => {
+                const betaHidden = window.AppSettings ? window.AppSettings.get('hide_beta_features', false) === true : false;
+                return QUICK_TOOLS_CATALOG.filter(t => !isWebUnavailable(t.target) && !(t.beta && betaHidden));
+            });
+
+            const loadWhatsNew = async () => {
+                if (window.BTT_WEB_MODE) return;
+                try {
+                    let releases = window.BTT_GH_RELEASES;
+                    if (!releases) {
+                        const res = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=3');
+                        if (!res.ok) return;
+                        releases = await res.json();
+                        window.BTT_GH_RELEASES = releases;
+                    }
+                    const latest = Array.isArray(releases)
+                        ? releases.find(r => r && !r.draft && !r.prerelease)
+                        : null;
+                    if (!latest) return;
+                    const body = (latest.body || '').split(/\r?\n/)
+                        .map(line => line.replace(/^[#\-*\s>]+/, '').trim())
+                        .filter(Boolean);
+                    whatsNewRelease.value = {
+                        tag: latest.tag_name,
+                        name: latest.name || latest.tag_name,
+                        url: latest.html_url,
+                        headline: body[0] || (latest.name || latest.tag_name),
+                        publishedAt: latest.published_at
+                    };
+                    if (window.AppSettings) {
+                        const seen = window.AppSettings.getPref(WHATS_NEW_PREF_KEY, '');
+                        whatsNewDismissed.value = seen === latest.tag_name;
+                    }
+                } catch {}
+            };
+            const dismissWhatsNew = () => {
+                if (!whatsNewRelease.value) return;
+                whatsNewDismissed.value = true;
+                if (window.AppSettings) {
+                    window.AppSettings.setPrefSync(WHATS_NEW_PREF_KEY, whatsNewRelease.value.tag);
+                }
+            };
+            const whatsNewVisible = computed(() => !!whatsNewRelease.value && !whatsNewDismissed.value);
+
+            const newsCategoriesAvailable = computed(() => {
+                const counts = new Map();
+                (news.data || []).forEach((item) => {
+                    (item.categories || []).forEach((cat) => {
+                        if (!cat) return;
+                        if (!showShopOffers.value && cat === 'Shop Offers') return;
+                        counts.set(cat, (counts.get(cat) || 0) + 1);
+                    });
+                });
+                return Array.from(counts.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([cat, count]) => ({ id: cat, label: cat, count }));
+            });
+
+            const setNewsCategory = (cat) => {
+                newsActiveCategory.value = cat || 'all';
+                if (window.AppSettings) window.AppSettings.setPrefSync(NEWS_CATEGORY_PREF_KEY, newsActiveCategory.value);
             };
 
             const saveShopOfferPreference = async () => {
@@ -309,7 +607,11 @@ document.addEventListener('home_loaded', () => {
             });
 
             const mappedNews = computed(() => {
-                const filtered = news.data.filter((item) => showShopOffers.value || !((item.categories || []).includes('Shop Offers')));
+                const filtered = news.data.filter((item) => {
+                    if (!showShopOffers.value && (item.categories || []).includes('Shop Offers')) return false;
+                    if (newsActiveCategory.value !== 'all' && !(item.categories || []).includes(newsActiveCategory.value)) return false;
+                    return true;
+                });
                 return filtered.slice(0, 10).map((item, index) => ({
                     ...item,
                     id: item.url || `${item.title}-${index}`,
@@ -365,18 +667,19 @@ document.addEventListener('home_loaded', () => {
             const merchantCards = computed(() => {
                 const cards = [];
                 const m = merchants.value;
-                
-                if (m.corruxion) cards.push({ type: 'merchant', id: 'corruxion', name: 'Corruxion', color: '#9c27b0', iconClass: 'fa-dragon', active: m.corruxion.active, statusText: m.corruxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.corruxion.action)} <b>${m.corruxion.time_str}</b>` });
-                if (m.fluxion) cards.push({ type: 'merchant', id: 'fluxion', name: m.fluxion.active ? t("Fluxion ({state})").replace("{state}", t(m.fluxion.state)) : 'Fluxion', color: '#4fc3f7', iconClass: 'fa-scale-balanced', active: m.fluxion.active, statusText: m.fluxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.fluxion.action)} <b>${m.fluxion.time_str}</b>` });
+                const now = nowSec.value;
+
+                if (m.corruxion) cards.push({ type: 'merchant', id: 'corruxion', name: 'Corruxion', color: '#9c27b0', iconClass: 'fa-dragon', active: m.corruxion.active, statusText: m.corruxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.corruxion.action)} <b>${m.corruxion.time_str}</b>`, endTs: null });
+                if (m.fluxion) cards.push({ type: 'merchant', id: 'fluxion', name: m.fluxion.active ? t("Fluxion ({state})").replace("{state}", t(m.fluxion.state)) : 'Fluxion', color: '#4fc3f7', iconClass: 'fa-scale-balanced', active: m.fluxion.active, statusText: m.fluxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.fluxion.action)} <b>${m.fluxion.time_str}</b>`, endTs: null });
 
                 if (stampy.value && stampy.value.current) {
                     const s = stampy.value.current;
-                    const isActive = nowSec.value >= s.start && nowSec.value < s.end;
-                    cards.push({ type: 'biome', id: 'stampy', name: 'Stampy', color: '#ff9800', iconClass: 'fa-paw', active: isActive, statusText: isActive ? 'ACTIVE' : 'AWAY', timeHtml: isActive ? t("Leaves in {time}").replace("{time}", `<b>${getCountdown(s.end, false)}</b>`) : t("Arrives in {time}").replace("{time}", `<b>${getCountdown(s.start, false)}</b>`), biomes: s.biomes });
+                    const isActive = now >= s.start && now < s.end;
+                    cards.push({ type: 'biome', id: 'stampy', name: 'Stampy', color: '#ff9800', iconClass: 'fa-paw', active: isActive, statusText: isActive ? 'ACTIVE' : 'AWAY', timeHtml: isActive ? t("Leaves in {time}").replace("{time}", `<b>${getCountdown(s.end, false)}</b>`) : t("Arrives in {time}").replace("{time}", `<b>${getCountdown(s.start, false)}</b>`), biomes: s.biomes, endTs: isActive ? s.end : null });
                 }
 
                 if (d15.value && d15.value.current) {
-                    cards.push({ type: 'd15', id: 'd15', name: 'D15 Biomes', color: '#4caf50', iconClass: 'fa-leaf', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(d15.value.current.end, false)}</b>`), biomes: d15.value.current.biomes });
+                    cards.push({ type: 'd15', id: 'd15', name: 'D15 Biomes', color: '#4caf50', iconClass: 'fa-leaf', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(d15.value.current.end, false)}</b>`), biomes: d15.value.current.biomes, endTs: d15.value.current.end });
                 }
 
                 if (gardening.value) {
@@ -400,11 +703,14 @@ document.addEventListener('home_loaded', () => {
                         let nextName = soonerStart === g.two_day.start ? "2-day plants" : "3-day plants";
                         timeHtml = (g.two_day.start === g.three_day.start) ? `${t("2-day plants")} &amp; ${t("3-day plants")} - ` + t("Starts in {time}").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`) : `${t(nextName)} - ` + t("Starts in {time}").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`);
                     }
-                    cards.push({ type: 'gardening', id: 'gardening', name: titleStr, color: gColor, iconClass: 'fa-seedling', active: isActive, statusText: isActive ? 'HARVEST' : 'GROWING', timeHtml: timeHtml });
+                    const gEnd = isActive
+                        ? (g.two_day.active && g.three_day.active ? Math.min(g.two_day.end, g.three_day.end) : (g.two_day.active ? g.two_day.end : g.three_day.end))
+                        : null;
+                    cards.push({ type: 'gardening', id: 'gardening', name: titleStr, color: gColor, iconClass: 'fa-seedling', active: isActive, statusText: isActive ? 'HARVEST' : 'GROWING', timeHtml: timeHtml, endTs: gEnd });
                 }
 
                 if (mana.value && mana.value.current) {
-                    cards.push({ type: 'biome', id: 'mana', name: 'Wild Trovian Mana', color: '#00bcd4', iconClass: 'fa-flask', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(mana.value.current.end, false)}</b>`), biomes: mana.value.current.biomes });
+                    cards.push({ type: 'biome', id: 'mana', name: 'Wild Trovian Mana', color: '#00bcd4', iconClass: 'fa-flask', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(mana.value.current.end, false)}</b>`), biomes: mana.value.current.biomes, endTs: mana.value.current.end });
                 }
 
                 if (delve.value && delve.value.currentWeekId) {
@@ -416,16 +722,87 @@ document.addEventListener('home_loaded', () => {
                         iconClass: 'fa-dungeon',
                         active: true,
                         statusText: 'WEEK',
-                        timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(delve.value.end, false)}</b>`)
+                        timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(delve.value.end, false)}</b>`),
+                        endTs: delve.value.end
                     });
                 }
 
-                return cards.sort((a, b) => {
+                const sorted = cards.sort((a, b) => {
                     if (a.id === 'd15' && b.id !== 'd15') return -1;
                     if (b.id === 'd15' && a.id !== 'd15') return 1;
                     if (a.active !== b.active) return a.active ? -1 : 1;
                     return 0;
                 });
+
+                let urgentEnd = Infinity;
+                sorted.forEach((card) => {
+                    if (card.active && typeof card.endTs === 'number' && card.endTs > now && (card.endTs - now) <= URGENT_THRESHOLD_SEC) {
+                        if (card.endTs < urgentEnd) urgentEnd = card.endTs;
+                    }
+                });
+                sorted.forEach((card) => {
+                    card.isUrgent = card.active && card.endTs === urgentEnd && urgentEnd !== Infinity;
+                });
+
+                return sorted;
+            });
+
+            const nowStripItems = computed(() => {
+                const items = [];
+                const now = nowSec.value;
+                if (serverData.daily) {
+                    items.push({
+                        key: 'daily',
+                        label: t('Daily Buff'),
+                        title: t(serverData.daily.name),
+                        emoji: serverData.daily.emoji || '',
+                        icon: serverData.daily.icon || '',
+                        color: serverData.daily.color ? `#${serverData.daily.color}` : 'var(--accent-blue)',
+                        meta: t('Resets in {time}').replace('{time}', getCountdown(getNextServerResetSec(), false)),
+                        action: () => openBuffSchedule('daily')
+                    });
+                }
+                if (serverData.weekly) {
+                    items.push({
+                        key: 'weekly',
+                        label: t('Weekly Buff'),
+                        title: t(serverData.weekly.name),
+                        emoji: serverData.weekly.emoji || '',
+                        icon: serverData.weekly.icon || '',
+                        color: serverData.weekly.color ? `#${serverData.weekly.color}` : 'var(--accent-blue)',
+                        meta: '',
+                        action: () => openBuffSchedule('weekly')
+                    });
+                }
+                const chaos = chaosChestCard.value;
+                if (chaos) {
+                    items.push({
+                        key: 'chaos',
+                        label: t('Chaos Chest'),
+                        title: t(chaos.name),
+                        emoji: '',
+                        icon: chaos.iconUrl,
+                        color: '#ffb74d',
+                        metaHtml: chaos.timeHtml,
+                        action: () => chaos.identifier && openUrl(`https://trovesaurus.com/${chaos.identifier}`)
+                    });
+                }
+                const candidates = (merchantCards.value || []).filter((c) => c.active && typeof c.endTs === 'number' && c.endTs > now);
+                if (candidates.length) {
+                    candidates.sort((a, b) => a.endTs - b.endTs);
+                    const next = candidates[0];
+                    items.push({
+                        key: 'next-merchant',
+                        label: t('Departing Soon'),
+                        title: t(next.name),
+                        iconClass: next.iconClass,
+                        color: next.color,
+                        meta: t('Leaves in {time}').replace('{time}', getCountdown(next.endTs, false)),
+                        isUrgent: !!next.isUrgent,
+                        action: () => openMerchantSchedule(next)
+                    });
+                }
+                return items;
             });
 
             const refreshNews = () => {
@@ -941,11 +1318,60 @@ document.addEventListener('home_loaded', () => {
                 cancelHomeWork();
             });
 
+            const refreshServerTime = () => {
+                const utcNow = new Date(Date.now());
+                const troveDate = new Date(utcNow.getTime() - (11 * 3600000));
+                serverTimeNowText.value = troveDate.toLocaleTimeString(
+                    (window.I18nManager && window.I18nManager.currentLocale)
+                        ? window.I18nManager.currentLocale.replace('_', '-')
+                        : 'en-US',
+                    { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC', hour12: false }
+                );
+            };
+
+            const visitsTickInterval = ref(null);
+
             onMounted(async () => {
+                refreshServerTime();
                 if (window.AppSettings) {
                     await window.AppSettings.load();
+                    hydratingHomePrefs = true;
                     isNewsCollapsed.value = window.AppSettings.getPref(NEWS_COLLAPSED_PREF_KEY, false) === true;
+
+                    const savedOrder = window.AppSettings.getPref(SECTION_ORDER_PREF_KEY, null);
+                    if (Array.isArray(savedOrder)) {
+                        const filtered = savedOrder.filter(id => DEFAULT_SECTION_ORDER.includes(id));
+                        DEFAULT_SECTION_ORDER.forEach(id => { if (!filtered.includes(id)) filtered.push(id); });
+                        sectionOrder.value = filtered;
+                    }
+                    const savedCollapsed = window.AppSettings.getPref(SECTION_COLLAPSED_PREF_KEY, null);
+                    if (savedCollapsed && typeof savedCollapsed === 'object') {
+                        DEFAULT_SECTION_ORDER.forEach(id => {
+                            if (typeof savedCollapsed[id] === 'boolean') sectionCollapsed[id] = savedCollapsed[id];
+                        });
+                    }
+                    const savedQuick = window.AppSettings.getPref(QUICK_TOOLS_PREF_KEY, null);
+                    if (savedQuick && typeof savedQuick === 'object') {
+                        if (savedQuick.mode === 'custom' || savedQuick.mode === 'auto') quickToolsMode.value = savedQuick.mode;
+                        if (Array.isArray(savedQuick.custom)) quickToolsCustom.value = savedQuick.custom.slice();
+                    }
+
+                    const savedCategory = window.AppSettings.getPref(NEWS_CATEGORY_PREF_KEY, 'all');
+                    if (typeof savedCategory === 'string') newsActiveCategory.value = savedCategory;
+
+                    refreshNavVisits();
+                    hydratingHomePrefs = false;
                 }
+                loadWhatsNew();
+                visitsTickInterval.value = setInterval(refreshNavVisits, 5000);
+            });
+
+            onUnmounted(() => {
+                if (visitsTickInterval.value) clearInterval(visitsTickInterval.value);
+            });
+
+            watch(nowSec, () => {
+                refreshServerTime();
             });
 
             return {
@@ -956,7 +1382,15 @@ document.addEventListener('home_loaded', () => {
                 rotationModal, calendarModal, calendarData, loadYearlyCalendar, centerCalendarToday,
                 timelineWrapperRef, isDraggingTimeline, startDrag, onDrag, stopDrag, onWheel,
                 filteredCalendarTracks, calendarViewFilter, jumpToCalendarTarget, formatDisplayDate, formatDelveWeekRange, getDelveWeekHeading, getCountdown,
-                timeMode
+                timeMode,
+                sectionOrder, sectionCollapsed, isSectionCollapsed, toggleSectionCollapsed,
+                onSectionDragStart, onSectionDragOver, onSectionDrop, onSectionDragEnd, onTailDragOver,
+                draggingSectionId, dragInsertBefore, showDropLine,
+                quickToolsMode, quickToolsList, quickToolsCatalogVisible, quickToolsEditingSlot,
+                toggleQuickToolsMode, openQuickToolSlotEditor, setQuickToolAtSlot, clearQuickToolSlot, navigateToTool,
+                whatsNewRelease, whatsNewVisible, dismissWhatsNew,
+                nowStripItems, newsCategoriesAvailable, newsActiveCategory, setNewsCategory,
+                serverTimeNowText, isWebUnavailable
             };
         }
     });

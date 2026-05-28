@@ -1,204 +1,383 @@
 <head>
     <link rel="stylesheet" href="css/home.css">
 </head>
-<div id="home-vue-app" class="home-container" v-cloak>
-    <div v-show="settings.show_community_content" class="community-panel">
-        <div class="section-header community-header section-header-row">
-            <h2 class="section-title-reset"><i class="fa-solid fa-video section-icon-accent"></i> <span>{{ t('Community Content') }}</span></h2>
-            <div class="media-tabs">
-                <button v-if="isChinese" class="media-tab tab-bilibili" :class="{ active: mediaTab === 'bilibili' }" @click="mediaTab = 'bilibili'"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
-                <button class="media-tab tab-youtube" :class="{ active: mediaTab === 'youtube' }" @click="mediaTab = 'youtube'"><i class="fa-brands fa-youtube"></i> YouTube</button>
-                <button class="media-tab tab-twitch" :class="{ active: mediaTab === 'twitch' }" @click="mediaTab = 'twitch'"><i class="fa-brands fa-twitch"></i> Twitch</button>
+<div id="home-vue-app" class="home-container home-density-compact" v-cloak>
+
+    <div v-if="whatsNewVisible" class="home-whats-new" role="region" :aria-label="t('What’s new')">
+        <span class="home-whats-new-icon"><i class="fa-solid fa-sparkles"></i></span>
+        <div class="home-whats-new-body" role="link" tabindex="0" @click="openUrl(whatsNewRelease.url)" @keydown.enter.prevent="openUrl(whatsNewRelease.url)">
+            <span class="home-whats-new-tag">{{ whatsNewRelease.tag }}</span>
+            <span class="home-whats-new-text">{{ whatsNewRelease.headline }}</span>
+        </div>
+        <button class="home-whats-new-dismiss" :title="t('Dismiss')" :aria-label="t('Dismiss')" @click.stop="dismissWhatsNew()">&times;</button>
+    </div>
+
+    <div class="home-quick-tools">
+        <div class="home-quick-tools-header">
+            <div class="home-quick-tools-title">
+                <i class="fa-solid fa-bolt"></i>
+                <span>{{ t('Quick Tools') }}</span>
+                <span class="home-quick-tools-mode" :class="'mode-' + quickToolsMode">
+                    <i class="fa-solid" :class="quickToolsMode === 'auto' ? 'fa-wand-magic-sparkles' : 'fa-sliders'"></i>
+                    {{ quickToolsMode === 'auto' ? t('Most visited') : t('Custom') }}
+                </span>
             </div>
+            <button class="home-section-btn home-quick-tools-toggle" @click="toggleQuickToolsMode()" :title="t('Switch between auto and custom mode')">
+                <i class="fa-solid" :class="quickToolsMode === 'auto' ? 'fa-pen-to-square' : 'fa-wand-magic-sparkles'"></i>
+                <span>{{ quickToolsMode === 'auto' ? t('Customize') : t('Use Auto') }}</span>
+            </button>
         </div>
-        <p class="community-disclaimer">{{ t("Results are pulled from {platform} search and may include unrelated content or posts that do not follow Trove's Code of Conduct.").replace('{platform}', t(activeMediaPlatformKey)) }}</p>
-        
-        <div v-if="mediaData[mediaTab].loading" class="loading-box community-loading-box">
-            <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Content...') }}</span>
-        </div>
-        
-        <div v-else class="carousel-wrapper community-carousel-wrapper">
-            <button class="carousel-btn left" @click="scrollCarousel(-260)"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="streams-carousel" ref="carouselRef">
-                <div v-if="mediaData[mediaTab].data.length === 0" class="community-empty">
-                    <i :class="['fa-brands', `fa-${mediaTab}`]" class="community-empty-icon"></i>
-                    <span class="community-empty-copy">{{ t('No Trove streams are live right now. Check back later!') }}</span>
-                </div>
-                <template v-else>
-                    <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" @click="openUrl(item.url)">
-                        <div class="stream-thumb">
-                            <img :src="item.thumb" alt="">
-                            <div class="stream-badges"><span class="badge viewers" v-html="item.badgeHtml"></span></div>
-                        </div>
-                        <div class="stream-info">
-                            <div class="stream-title">{{ item.title }}</div>
-                            <div class="stream-user"><i :class="['fa-brands', `fa-${mediaTab}`]" :style="{ color: item.iconColor }"></i> {{ item.channel }}<span v-if="item.verified" class="verified-badge" :title="t('Verified')"><i class="fa-solid fa-circle-check"></i></span></div>
-                        </div>
+        <div class="home-quick-tools-grid">
+            <div v-for="(tool, idx) in quickToolsList"
+                 :key="idx"
+                 class="home-quick-tool-slot"
+                 :class="{ 'is-empty': !tool, 'is-editing': quickToolsEditingSlot === idx, 'is-custom-mode': quickToolsMode === 'custom' }">
+                <button v-if="tool"
+                        class="home-quick-tool"
+                        :class="{ 'is-web-disabled': isWebUnavailable(tool.target) }"
+                        :disabled="isWebUnavailable(tool.target)"
+                        @click="quickToolsMode === 'custom' ? openQuickToolSlotEditor(idx) : navigateToTool(tool)">
+                    <i class="home-quick-tool-icon fa-solid" :class="tool.icon"></i>
+                    <span class="home-quick-tool-label">{{ t(tool.label) }}</span>
+                    <span v-if="quickToolsMode === 'custom'" class="home-quick-tool-edit-hint"><i class="fa-solid fa-pen"></i></span>
+                </button>
+                <button v-else
+                        class="home-quick-tool home-quick-tool-empty"
+                        :disabled="quickToolsMode !== 'custom'"
+                        @click="openQuickToolSlotEditor(idx)">
+                    <i class="home-quick-tool-icon fa-solid fa-plus"></i>
+                    <span class="home-quick-tool-label">{{ t('Add tool') }}</span>
+                </button>
+
+                <div v-if="quickToolsEditingSlot === idx" class="home-quick-tool-picker">
+                    <div class="home-quick-tool-picker-header">
+                        <strong>{{ t('Pick a tool') }}</strong>
+                        <button class="home-quick-tool-picker-close" @click="quickToolsEditingSlot = -1"><i class="fa-solid fa-xmark"></i></button>
                     </div>
-                </template>
+                    <div class="home-quick-tool-picker-list">
+                        <button v-for="opt in quickToolsCatalogVisible"
+                                :key="opt.id"
+                                class="home-quick-tool-picker-item"
+                                @click="setQuickToolAtSlot(idx, opt.id)">
+                            <i class="fa-solid" :class="opt.icon"></i>
+                            <span>{{ t(opt.label) }}</span>
+                        </button>
+                        <button class="home-quick-tool-picker-item home-quick-tool-picker-clear" @click="clearQuickToolSlot(idx)">
+                            <i class="fa-solid fa-ban"></i>
+                            <span>{{ t('Clear slot') }}</span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <button class="carousel-btn right" @click="scrollCarousel(260)"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
     </div>
 
-    <div v-show="settings.show_official_news" class="news-panel">
-        <div class="section-header news-header">
-            <div class="news-header-row">
-                <h2><i class="fa-solid fa-newspaper section-icon-warm"></i> <span>{{ t('Official News') }}</span></h2>
-                <div class="news-header-actions">
+    <div v-if="nowStripItems.length" class="home-now-strip">
+        <div v-for="item in nowStripItems"
+             :key="item.key"
+             class="now-cell"
+             :class="{ 'now-cell-urgent': item.isUrgent }"
+             role="button"
+             tabindex="0"
+             @click="item.action && item.action()"
+             @keydown.enter.prevent="item.action && item.action()">
+            <div class="now-cell-icon" :style="{ '--now-color': item.color }">
+                <img v-if="item.icon" :src="item.icon" alt="" @error="$event.target.style.display='none'">
+                <i v-else-if="item.iconClass" :class="['fa-solid', item.iconClass]"></i>
+                <span v-else-if="item.emoji" class="now-cell-emoji">{{ item.emoji }}</span>
+            </div>
+            <div class="now-cell-body">
+                <div class="now-cell-label">{{ item.label }}</div>
+                <div class="now-cell-title">{{ item.title }}</div>
+                <div v-if="item.metaHtml" class="now-cell-meta" v-html="item.metaHtml"></div>
+                <div v-else-if="item.meta" class="now-cell-meta">{{ item.meta }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="home-section-controls">
+        <span class="home-section-controls-hint">{{ t('Drag section headers to reorder. Click the chevron to collapse.') }}</span>
+    </div>
+
+    <template v-for="sectionId in sectionOrder" :key="sectionId">
+        <div class="home-section-drop-line" :class="{ active: showDropLine(sectionId, 'before') }"></div>
+
+        <section v-if="sectionId === 'streams'"
+                 class="home-section home-section-streams"
+                 :class="{ 'is-collapsed': isSectionCollapsed('streams'), 'is-dragging': draggingSectionId === 'streams' }"
+                 v-show="settings.show_community_content"
+                 data-section-id="streams"
+                 @dragover.prevent="onSectionDragOver('streams', $event)"
+                 @drop.prevent="onSectionDrop($event)"
+                 @dragend="onSectionDragEnd()">
+            <header class="home-section-header">
+                <div class="home-section-title-row">
+                    <span class="home-section-drag"
+                          :title="t('Drag to reorder')"
+                          draggable="true"
+                          @dragstart="onSectionDragStart('streams', $event)"><i class="fa-solid fa-grip-vertical"></i></span>
+                    <button class="home-section-collapse" @click.stop="toggleSectionCollapsed('streams')" :aria-expanded="!isSectionCollapsed('streams')">
+                        <i class="fa-solid" :class="isSectionCollapsed('streams') ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                    </button>
+                    <h2><i class="fa-solid fa-video section-icon-accent"></i> <span>{{ t('Community Content') }}</span></h2>
+                </div>
+                <div class="media-tabs" v-show="!isSectionCollapsed('streams')" @click.stop>
+                    <button v-if="isChinese" class="media-tab tab-bilibili" :class="{ active: mediaTab === 'bilibili' }" @click="mediaTab = 'bilibili'"><i class="fa-brands fa-bilibili"></i> BiliBili</button>
+                    <button class="media-tab tab-youtube" :class="{ active: mediaTab === 'youtube' }" @click="mediaTab = 'youtube'"><i class="fa-brands fa-youtube"></i> YouTube</button>
+                    <button class="media-tab tab-twitch" :class="{ active: mediaTab === 'twitch' }" @click="mediaTab = 'twitch'"><i class="fa-brands fa-twitch"></i> Twitch</button>
+                </div>
+            </header>
+            <div class="home-section-body" v-show="!isSectionCollapsed('streams')">
+                <p class="community-disclaimer">{{ t("Results are pulled from {platform} search and may include unrelated content or posts that do not follow Trove's Code of Conduct.").replace('{platform}', t(activeMediaPlatformKey)) }}</p>
+
+                <div v-if="mediaData[mediaTab].loading" class="loading-box community-loading-box">
+                    <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Content...') }}</span>
+                </div>
+                <div v-else-if="mediaData[mediaTab].data.length === 0" class="home-empty-row">
+                    <i :class="['fa-brands', `fa-${mediaTab}`]"></i>
+                    <span>{{ t('No content available right now — check back soon.') }}</span>
+                </div>
+                <div v-else class="carousel-wrapper community-carousel-wrapper">
+                    <button class="carousel-btn left" @click="scrollCarousel(-260)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <div class="streams-carousel" ref="carouselRef">
+                        <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" @click="openUrl(item.url)">
+                            <div class="stream-thumb">
+                                <img :src="item.thumb" alt="">
+                                <div class="stream-badges"><span class="badge viewers" v-html="item.badgeHtml"></span></div>
+                            </div>
+                            <div class="stream-info">
+                                <div class="stream-title">{{ item.title }}</div>
+                                <div class="stream-user"><i :class="['fa-brands', `fa-${mediaTab}`]" :style="{ color: item.iconColor }"></i> {{ item.channel }}<span v-if="item.verified" class="verified-badge" :title="t('Verified')"><i class="fa-solid fa-circle-check"></i></span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="carousel-btn right" @click="scrollCarousel(260)"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <section v-else-if="sectionId === 'news'"
+                 class="home-section home-section-news"
+                 :class="{ 'is-collapsed': isSectionCollapsed('news'), 'is-dragging': draggingSectionId === 'news' }"
+                 v-show="settings.show_official_news"
+                 data-section-id="news"
+                 @dragover.prevent="onSectionDragOver('news', $event)"
+                 @drop.prevent="onSectionDrop($event)"
+                 @dragend="onSectionDragEnd()">
+            <header class="home-section-header">
+                <div class="home-section-title-row">
+                    <span class="home-section-drag"
+                          :title="t('Drag to reorder')"
+                          draggable="true"
+                          @dragstart="onSectionDragStart('news', $event)"><i class="fa-solid fa-grip-vertical"></i></span>
+                    <button class="home-section-collapse" @click.stop="toggleSectionCollapsed('news')" :aria-expanded="!isSectionCollapsed('news')">
+                        <i class="fa-solid" :class="isSectionCollapsed('news') ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                    </button>
+                    <h2><i class="fa-solid fa-newspaper section-icon-warm"></i> <span>{{ t('Official News') }}</span></h2>
+                </div>
+                <div class="news-header-actions" v-show="!isSectionCollapsed('news')" @click.stop>
                     <button class="news-filter-btn" :class="{ active: showShopOffers }" @click="showShopOffers = !showShopOffers">
                         <i class="fa-solid" :class="showShopOffers ? 'fa-store-slash' : 'fa-store'"></i>
                         <span>{{ showShopOffers ? t('Hide Shop Offers') : t('Show Shop Offers') }}</span>
                     </button>
-                    <button class="news-collapse-btn" :class="{ active: isNewsCollapsed }" @click="toggleNewsCollapsed">
-                        <i class="fa-solid" :class="isNewsCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'"></i>
-                        <span>{{ isNewsCollapsed ? t('Expand') : t('Collapse') }}</span>
+                </div>
+            </header>
+            <div class="home-section-body" v-show="!isSectionCollapsed('news')">
+                <div v-if="newsCategoriesAvailable.length" class="home-news-chips">
+                    <button class="home-news-chip" :class="{ active: newsActiveCategory === 'all' }" @click="setNewsCategory('all')">
+                        <i class="fa-solid fa-list"></i> {{ t('All') }}
+                    </button>
+                    <button v-for="cat in newsCategoriesAvailable"
+                            :key="cat.id"
+                            class="home-news-chip"
+                            :class="{ active: newsActiveCategory === cat.id }"
+                            @click="setNewsCategory(cat.id)">
+                        <span>{{ t(cat.label) }}</span>
+                        <span class="home-news-chip-count">{{ cat.count }}</span>
                     </button>
                 </div>
-            </div>
-        </div>
-        <div v-if="isNewsCollapsed" class="news-state news-collapsed-state">
-            <i class="fa-regular fa-newspaper"></i>
-            <span>{{ t('Official news is collapsed.') }}</span>
-        </div>
-        <div v-else-if="news.loading" class="loading-box ui-state ui-state-loading">
-            <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trove News...') }}</span>
-        </div>
-        <div v-else-if="!isNewsCollapsed && news.error" class="news-state news-state-error">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span>{{ t('Failed to fetch Trove news.') }}</span>
-        </div>
-        <div v-else-if="!isNewsCollapsed && mappedNews.length === 0" class="news-state">
-            <i class="fa-regular fa-newspaper"></i>
-            <span>{{ t('No news articles are available right now.') }}</span>
-        </div>
-        <div v-else-if="!isNewsCollapsed" class="carousel-wrapper news-carousel-wrapper">
-            <button class="carousel-btn left" @click="scrollNewsCarousel(-320)"><i class="fa-solid fa-chevron-left"></i></button>
-            <div class="news-carousel" ref="newsCarouselRef">
-                <article v-for="item in mappedNews" :key="item.id" class="news-card" @click="openUrl(item.url)">
-                    <div class="news-image-wrap">
-                        <img class="news-image" :src="item.image" alt="">
-                        <span class="news-category">{{ t(item.category) }}</span>
-                    </div>
-                    <div class="news-body">
-                        <div class="news-meta">
-                            <span><i class="fa-regular fa-clock"></i> {{ item.publishedLabel }}</span>
-                            <span><i class="fa-regular fa-user"></i> {{ item.author }}</span>
-                        </div>
-                        <h3 class="news-title">{{ item.title }}</h3>
-                        <p class="news-summary">{{ item.summary }}</p>
-                        <div class="news-link">{{ t('Read article') }} <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
-                    </div>
-                </article>
-            </div>
-            <button class="carousel-btn right" @click="scrollNewsCarousel(320)"><i class="fa-solid fa-chevron-right"></i></button>
-        </div>
-    </div>
 
-    <div class="split-layout">
-        
-        <div class="split-column">
-            
-            <div class="section-header section-spaced">
-                <h2><i class="fa-solid fa-bolt section-icon-accent"></i> <span>{{ t('Live Rotations') }}</span></h2>
-            </div>
-            <div v-if="serverData.loading" class="loading-box ui-state ui-state-loading">
-                <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Server Data...') }}</span>
-            </div>
-            <div v-else class="buffs-grid">
-                <div v-if="serverData.daily" class="buff-card" :style="{ '--buff-color': '#' + serverData.daily.color }">
-                    <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.daily.banner}') center/cover` }">
-                        <img v-if="serverData.daily.icon" :src="serverData.daily.icon" alt="">
-                        <span>{{ serverData.daily.emoji || '' }} {{ t('Daily: {name}').replace('{name}', t(serverData.daily.name)) }}</span>
-                    </div>
-                    <div class="buff-content">
-                        <div class="buff-split-container">
-                            <div class="buff-column normal-buffs">
-                                <div class="buff-column-title"><i class="fa-solid fa-crown buff-column-icon-muted"></i> BASIC</div>
-                                <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.normal_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
+                <div v-if="news.loading" class="loading-box ui-state ui-state-loading">
+                    <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trove News...') }}</span>
+                </div>
+                <div v-else-if="news.error" class="home-empty-row home-empty-row-error">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>{{ t('Failed to fetch Trove news.') }}</span>
+                </div>
+                <div v-else-if="mappedNews.length === 0" class="home-empty-row">
+                    <i class="fa-regular fa-newspaper"></i>
+                    <span>{{ newsActiveCategory === 'all' ? t('No news articles are available right now.') : t('No news articles match this filter.') }}</span>
+                </div>
+                <div v-else class="carousel-wrapper news-carousel-wrapper">
+                    <button class="carousel-btn left" @click="scrollNewsCarousel(-320)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <div class="news-carousel" ref="newsCarouselRef">
+                        <article v-for="item in mappedNews" :key="item.id" class="news-card" @click="openUrl(item.url)">
+                            <div class="news-image-wrap">
+                                <img class="news-image" :src="item.image" alt="">
+                                <span class="news-category">{{ t(item.category) }}</span>
                             </div>
-                            <div class="buff-column patron-buffs">
-                                <div class="buff-column-title"><i class="fa-solid fa-crown"></i> {{ t('Patron') }}</div>
-                                <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.premium_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
+                            <div class="news-body">
+                                <div class="news-meta">
+                                    <span><i class="fa-regular fa-clock"></i> {{ item.publishedLabel }}</span>
+                                    <span><i class="fa-regular fa-user"></i> {{ item.author }}</span>
+                                </div>
+                                <h3 class="news-title">{{ item.title }}</h3>
+                                <p class="news-summary">{{ item.summary }}</p>
+                                <div class="news-link">{{ t('Read article') }} <i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                            </div>
+                        </article>
+                    </div>
+                    <button class="carousel-btn right" @click="scrollNewsCarousel(320)"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <section v-else-if="sectionId === 'rotations'"
+                 class="home-section home-section-rotations"
+                 :class="{ 'is-collapsed': isSectionCollapsed('rotations'), 'is-dragging': draggingSectionId === 'rotations' }"
+                 data-section-id="rotations"
+                 @dragover.prevent="onSectionDragOver('rotations', $event)"
+                 @drop.prevent="onSectionDrop($event)"
+                 @dragend="onSectionDragEnd()">
+            <header class="home-section-header">
+                <div class="home-section-title-row">
+                    <span class="home-section-drag"
+                          :title="t('Drag to reorder')"
+                          draggable="true"
+                          @dragstart="onSectionDragStart('rotations', $event)"><i class="fa-solid fa-grip-vertical"></i></span>
+                    <button class="home-section-collapse" @click.stop="toggleSectionCollapsed('rotations')" :aria-expanded="!isSectionCollapsed('rotations')">
+                        <i class="fa-solid" :class="isSectionCollapsed('rotations') ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                    </button>
+                    <h2><i class="fa-solid fa-rotate section-icon-success"></i> <span>{{ t('Today in Trove') }}</span></h2>
+                </div>
+                <div class="home-server-time-inline" v-show="!isSectionCollapsed('rotations')">
+                    <i class="fa-regular fa-clock"></i>
+                    <span class="home-server-time-label">{{ t('Trove time') }}</span>
+                    <span class="home-server-time-value">{{ serverTimeNowText }}</span>
+                </div>
+            </header>
+            <div class="home-section-body" v-show="!isSectionCollapsed('rotations')">
+                <div class="split-layout">
+                    <div class="split-column">
+
+                        <div class="section-header section-spaced">
+                            <h2><i class="fa-solid fa-bolt section-icon-accent"></i> <span>{{ t('Active Buffs') }}</span></h2>
+                        </div>
+                        <div v-if="serverData.loading" class="loading-box ui-state ui-state-loading">
+                            <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Fetching Server Data...') }}</span>
+                        </div>
+                        <div v-else class="buffs-grid">
+                            <div v-if="serverData.daily" class="buff-card" :style="{ '--buff-color': '#' + serverData.daily.color }">
+                                <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.daily.banner}') center/cover` }">
+                                    <img v-if="serverData.daily.icon" :src="serverData.daily.icon" alt="">
+                                    <span>{{ serverData.daily.emoji || '' }} {{ t('Daily: {name}').replace('{name}', t(serverData.daily.name)) }}</span>
+                                </div>
+                                <div class="buff-content">
+                                    <div class="buff-split-container">
+                                        <div class="buff-column normal-buffs">
+                                            <div class="buff-column-title"><i class="fa-solid fa-crown buff-column-icon-muted"></i> BASIC</div>
+                                            <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.normal_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
+                                        </div>
+                                        <div class="buff-column patron-buffs">
+                                            <div class="buff-column-title"><i class="fa-solid fa-crown"></i> {{ t('Patron') }}</div>
+                                            <ul class="buff-list"><li v-for="(b, i) in (serverData.daily.premium_buffs || serverData.daily.buffs)" :key="i">{{ t(b) }}</li></ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-if="serverData.weekly" class="buff-card" :style="{ '--buff-color': '#' + serverData.weekly.color }">
+                                <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.weekly.banner}') center/cover` }">
+                                    <img v-if="serverData.weekly.icon" :src="serverData.weekly.icon" alt="">
+                                    <span>{{ serverData.weekly.emoji || '' }} {{ t('Weekly: {name}').replace('{name}', t(serverData.weekly.name)) }}</span>
+                                </div>
+                                <div class="buff-content buff-content-padded">
+                                    <ul class="buff-list"><li v-for="(b, i) in serverData.weekly.buffs" :key="i">{{ t(b) }}</li></ul>
+                                </div>
+                            </div>
+
+                            <div v-if="chaosChestCard" class="merchant-card merchant-card-chaos" :class="{ 'hover-card': chaosChestCard.identifier, 'is-clickable': chaosChestCard.identifier }" :title="chaosChestCard.identifier ? t('{name} (Click to view on Trovesaurus)').replace('{name}', t(chaosChestCard.name)) : ''" @click="chaosChestCard.identifier && openUrl(`https://trovesaurus.com/${chaosChestCard.identifier}`)">
+                                <div class="merchant-icon merchant-icon-plain"><img :src="chaosChestCard.iconUrl" class="merchant-item-image" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
+                                <div class="merchant-info merchant-info-fill">
+                                    <div class="merchant-name merchant-name-chaos">{{ t(chaosChestCard.name) }} <i v-if="chaosChestCard.unknown" class="fa-solid fa-triangle-exclamation merchant-warning-icon" :title="t(`We don't know the item yet`)"></i></div>
+                                    <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="chaosChestCard.timeHtml"></span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-header section-spaced">
+                            <h2><i class="fa-solid fa-calendar-days section-icon-accent"></i> <span>{{ t('Community Events') }}</span></h2>
+                        </div>
+                        <div v-if="events.loading" class="loading-box ui-state ui-state-loading">
+                            <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trovesaurus Calendar...') }}</span>
+                        </div>
+                        <div v-else-if="events.error" class="home-empty-row home-empty-row-error">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            <span>{{ t('Failed to fetch events from Trovesaurus.') }}</span>
+                        </div>
+                        <div v-else-if="mappedEvents.length === 0" class="home-empty-row">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span>{{ t('No community events scheduled right now.') }}</span>
+                        </div>
+                        <div v-else class="events-list">
+                            <div v-for="event in mappedEvents" :key="event.id || event.name" class="event-card event-card-clickable" @click="openUrl(event.url)">
+                                <div class="event-image"><img :src="event.img" alt=""></div>
+                                <div class="event-main">
+                                    <div class="event-name-row"><span class="event-name">{{ t(event.name) }}</span><span class="event-category">{{ t(event.category) }}</span></div>
+                                    <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> {{ event.startStr }} - {{ event.endStr }}</span>
+                                    <span class="event-status-pill" :class="event.statusClass"><i class="fa-solid fa-hourglass-half"></i> {{ event.statusText }}</span></div>
+                                </div>
+                                <div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="split-column">
+                        <div class="section-header section-header-row section-spaced">
+                            <h2 class="section-title-reset"><i class="fa-solid fa-store section-icon-success"></i> <span>{{ t('Merchants & Schedules') }}</span></h2>
+                        </div>
+
+                        <div class="calendar-spotlight" @click="calendarModal.show = true; loadYearlyCalendar()" role="button" tabindex="0" @keydown.enter.prevent="calendarModal.show = true; loadYearlyCalendar()">
+                            <div class="calendar-spotlight-copy">
+                                <div class="calendar-spotlight-title"><i class="fa-solid fa-calendar-week"></i> {{ t('Yearly Rotation Calendar') }}</div>
+                                <div class="calendar-spotlight-subtitle">{{ t('See the full merchant and buff timeline with quick filters and jumps.') }}</div>
+                            </div>
+                            <span class="calendar-spotlight-cta">{{ t('Open') }} <i class="fa-solid fa-arrow-right"></i></span>
+                        </div>
+
+                        <div v-if="!serverData.loading" class="merchants-grid">
+                            <div v-for="m in merchantCards"
+                                 :key="m.id"
+                                 class="merchant-card"
+                                 :class="{ inactive: !m.active, 'hover-card': m.type === 'd15' || m.type === 'delve', 'is-clickable': m.type === 'd15' || m.type === 'delve', 'is-urgent': m.isUrgent }"
+                                 :style="{ '--merchant-color': m.color }"
+                                 :title="m.type === 'd15' || m.type === 'delve' ? t('Click to see upcoming schedule') : ''"
+                                 @click="(m.type === 'd15' || m.type === 'delve') && openMerchantSchedule(m)">
+                                <div class="merchant-icon"><i class="fa-solid" :class="m.iconClass"></i></div>
+                                <div class="merchant-info merchant-info-fill">
+                                    <div class="merchant-name">{{ m.name }} <span class="merchant-status-badge">{{ t(m.statusText) }}</span><span v-if="m.isUrgent" class="merchant-urgent-pill" :title="t('Leaves soon')"><i class="fa-solid fa-bolt"></i> {{ t('Leaves soon') }}</span></div>
+                                    <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="m.timeHtml"></span></div>
+                                    <div v-if="m.biomes" class="merchant-biomes">
+                                        <span v-for="b in m.biomes" :key="b.name" class="biome-pill" :title="t('Biome: {name}').replace('{name}', t(b.name))">
+                                            <img :src="`/assets/images/biomes/${b.icon}.png`" @error="$event.target.style.display='none'" alt="">
+                                            {{ t(b.final_name) }}
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
 
-                <div v-if="serverData.weekly" class="buff-card" :style="{ '--buff-color': '#' + serverData.weekly.color }">
-                    <div class="buff-header" :style="{ background: `linear-gradient(to right, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 100%), url('${serverData.weekly.banner}') center/cover` }">
-                        <img v-if="serverData.weekly.icon" :src="serverData.weekly.icon" alt="">
-                        <span>{{ serverData.weekly.emoji || '' }} {{ t('Weekly: {name}').replace('{name}', t(serverData.weekly.name)) }}</span>
-                    </div>
-                    <div class="buff-content buff-content-padded">
-                        <ul class="buff-list"><li v-for="(b, i) in serverData.weekly.buffs" :key="i">{{ t(b) }}</li></ul>
-                    </div>
-                </div>
+    </template>
 
-                <div v-if="chaosChestCard" class="merchant-card merchant-card-chaos" :class="{ 'hover-card': chaosChestCard.identifier, 'is-clickable': chaosChestCard.identifier }" :title="chaosChestCard.identifier ? t('{name} (Click to view on Trovesaurus)').replace('{name}', t(chaosChestCard.name)) : ''" @click="chaosChestCard.identifier && openUrl(`https://trovesaurus.com/${chaosChestCard.identifier}`)">
-                    <div class="merchant-icon merchant-icon-plain"><img :src="chaosChestCard.iconUrl" class="merchant-item-image" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
-                    <div class="merchant-info merchant-info-fill">
-                        <div class="merchant-name merchant-name-chaos">{{ t(chaosChestCard.name) }} <i v-if="chaosChestCard.unknown" class="fa-solid fa-triangle-exclamation merchant-warning-icon" :title="t(`We don't know the item yet`)"></i></div>
-                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="chaosChestCard.timeHtml"></span></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="section-header section-spaced">
-                <h2><i class="fa-solid fa-calendar-days section-icon-accent"></i> <span>{{ t('Community Events') }}</span></h2>
-            </div>
-            <div v-if="events.loading" class="loading-box ui-state ui-state-loading">
-                <i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading Trovesaurus Calendar...') }}</span>
-            </div>
-            <div v-else-if="events.error" class="ui-state ui-state-error ui-state-stacked">
-                <i class="fa-solid fa-triangle-exclamation ui-state-icon"></i>
-                <span>{{ t('Failed to fetch events from Trovesaurus.') }}</span>
-            </div>
-            <div v-else class="events-list">
-                <div v-for="event in mappedEvents" :key="event.id || event.name" class="event-card event-card-clickable" @click="openUrl(event.url)">
-                    <div class="event-image"><img :src="event.img" alt=""></div>
-                    <div class="event-main">
-                        <div class="event-name-row"><span class="event-name">{{ t(event.name) }}</span><span class="event-category">{{ t(event.category) }}</span></div>
-                        <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> {{ event.startStr }} - {{ event.endStr }}</span>
-                        <span class="event-status-pill" :class="event.statusClass"><i class="fa-solid fa-hourglass-half"></i> {{ event.statusText }}</span></div>
-                    </div>
-                    <div class="event-link-icon"><i class="fa-solid fa-arrow-up-right-from-square"></i></div>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="split-column">
-            <div class="section-header section-header-row section-spaced">
-                <h2 class="section-title-reset"><i class="fa-solid fa-rotate section-icon-success"></i> <span>{{ t('Rotations') }}</span></h2>
-            </div>
-
-            <div class="calendar-spotlight" @click="calendarModal.show = true; loadYearlyCalendar()" role="button" tabindex="0" @keydown.enter.prevent="calendarModal.show = true; loadYearlyCalendar()">
-                <div class="calendar-spotlight-copy">
-                    <div class="calendar-spotlight-title"><i class="fa-solid fa-calendar-week"></i> {{ t('Yearly Rotation Calendar') }}</div>
-                    <div class="calendar-spotlight-subtitle">{{ t('See the full merchant and buff timeline with quick filters and jumps.') }}</div>
-                </div>
-                <span class="calendar-spotlight-cta">{{ t('Open') }} <i class="fa-solid fa-arrow-right"></i></span>
-            </div>
-            
-            <div v-if="!serverData.loading" class="merchants-grid">
-                <div v-for="m in merchantCards" :key="m.id" class="merchant-card" :class="{ inactive: !m.active, 'hover-card': m.type === 'd15' || m.type === 'delve', 'is-clickable': m.type === 'd15' || m.type === 'delve' }" :style="{ '--merchant-color': m.color }" :title="m.type === 'd15' || m.type === 'delve' ? t('Click to see upcoming schedule') : ''" @click="(m.type === 'd15' || m.type === 'delve') && openMerchantSchedule(m)">
-                    <div class="merchant-icon"><i class="fa-solid" :class="m.iconClass"></i></div>
-                    <div class="merchant-info merchant-info-fill">
-                        <div class="merchant-name">{{ m.name }} <span class="merchant-status-badge">{{ t(m.statusText) }}</span></div>
-                        <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="m.timeHtml"></span></div>
-                        <div v-if="m.biomes" class="merchant-biomes">
-                            <span v-for="b in m.biomes" :key="b.name" class="biome-pill" :title="t('Biome: {name}').replace('{name}', t(b.name))">
-                                <img :src="`/assets/images/biomes/${b.icon}.png`" @error="$event.target.style.display='none'" alt="">
-                                {{ t(b.final_name) }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
+    <div v-if="draggingSectionId" class="home-section-drop-line home-section-drop-line-tail"
+         :class="{ active: sectionOrder.length > 0 && sectionOrder[sectionOrder.length - 1] !== draggingSectionId && showDropLine(sectionOrder[sectionOrder.length - 1], 'after') }"
+         @dragover.prevent="onTailDragOver($event)"
+         @drop.prevent="onSectionDrop($event)"></div>
 
     <div class="modal-overlay" v-show="calendarModal.show" @click.self="calendarModal.show = false">
     <div class="modal-content modal-content-wide">
@@ -235,11 +414,11 @@
                     </div>
                 </div>
                 <div v-else-if="calendarModal.error" class="ui-state ui-state-error">{{ t('Error loading calendar data.') }}</div>
-                
+
                 <div v-else class="calendar-timeline-wrapper" :class="{ draggable: true, dragging: isDraggingTimeline }" id="timeline-wrapper" ref="timelineWrapperRef" @mousedown="startDrag" @mousemove="onDrag" @mouseup="stopDrag" @mouseleave="stopDrag" @wheel.prevent="onWheel">
                     <div class="calendar-today-band" :style="{ left: (calendarData.todayPx + 136) + 'px' }"></div>
                     <div class="calendar-today-line" :style="{ left: (calendarData.todayPx + 140) + 'px' }"></div>
-                    
+
                     <div class="calendar-timeline-header" :style="{ width: calendarData.totalWidth + 'px', flexDirection: 'column' }">
                         <div class="calendar-months-row" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
                             <div class="calendar-track-label" style="min-width: 140px; width: 140px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>
@@ -247,7 +426,7 @@
                                 <div class="calendar-month-label" style="left: 140px;">{{ m.name }} {{ m.year }}</div>
                             </div>
                         </div>
-                        
+
                         <div class="calendar-days-row" style="display: flex;">
                             <div class="calendar-track-label" style="min-width: 140px; width: 140px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>
                             <div v-for="(d, i) in calendarData.days" :key="'d'+i" class="calendar-day-col" :class="{ 'is-today': d.isToday }">
@@ -256,7 +435,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="calendar-tracks" :style="{ width: calendarData.totalWidth + 'px' }">
                         <div v-for="track in filteredCalendarTracks" :key="track.id" class="calendar-track" style="width: 100%;">
                             <div class="calendar-track-label" style="min-width: 140px; width: 140px;">
@@ -297,7 +476,7 @@
                         <div class="modal-biomes-col" :style="row.contentColStyle" v-html="row.contentHtml"></div>
                     </div>
                 </template>
-                
+
                 <template v-if="rotationModal.type === 'd15'">
                     <div class="weekly-schedule-grid">
                         <div class="schedule-row schedule-header-row">
@@ -306,12 +485,12 @@
                                 {{ col.label }}
                             </div>
                         </div>
-                        
+
                         <div v-for="(row, r) in rotationModal.d15Rows" :key="'d15r'+r" class="schedule-row">
                             <div class="schedule-time-col" style="cursor: pointer;" :title="t('Click to toggle row')" @click="row.expanded = !row.expanded; row.slots.forEach(slot => { if (!slot.empty) slot.expanded = row.expanded; })">
                                 <span style="white-space: nowrap;">{{ row.label }}</span>
                             </div>
-                            
+
                             <div v-for="(slot, i) in row.slots" :key="'d15s'+i" class="schedule-slot" :style="{ visibility: slot.empty ? 'hidden' : 'visible', opacity: (slot.hasPassed && r === 0) ? '0.5' : '1', borderColor: slot.isCurrent ? rotationModal.color : '', boxShadow: slot.isCurrent ? `inset 0 0 10px rgba(0,0,0,0.5), 0 0 8px -2px ${rotationModal.color}` : '', cursor: 'pointer' }" @click="slot.expanded = !slot.expanded">
                                 <template v-if="!slot.empty">
                                     <div class="schedule-biomes-collapsed" :style="{ display: (slot.expanded || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'none' : 'flex', flexDirection: 'row', gap: '6px' }">

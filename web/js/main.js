@@ -2264,6 +2264,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    const NAV_VISITS_PREF_KEY = 'home_nav_visits';
+    const trackNavVisit = (target) => {
+        if (!target || target === 'home' || !window.AppSettings) return;
+        const visits = { ...(window.AppSettings.getPref(NAV_VISITS_PREF_KEY, {}) || {}) };
+        visits[target] = (Number(visits[target]) || 0) + 1;
+        window.AppSettings.setPrefSync(NAV_VISITS_PREF_KEY, visits);
+    };
+
     navButtons.forEach(btn => {
         btn.addEventListener('click', () => {
             const target = btn.getAttribute('data-target');
@@ -2271,8 +2279,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showDesktopOnlyPrompt();
                 return;
             }
-            if (target) window.loadView(target);
+            if (target) {
+                trackNavVisit(target);
+                window.loadView(target);
+            }
         });
+    });
+
+    document.addEventListener('btt_navigate', (e) => {
+        const target = e?.detail?.target;
+        if (!target) return;
+        if (isWebUnavailableView(target)) {
+            showDesktopOnlyPrompt();
+            return;
+        }
+        if (e.detail.modderTab) window.pendingModderToolsTab = e.detail.modderTab;
+        if (e.detail.mmSection) window.pendingModManagerSection = e.detail.mmSection;
+        if (e.detail.gemsTab) window.pendingGemsTab = e.detail.gemsTab;
+        if (e.detail.codexTab) window.pendingCodexTab = e.detail.codexTab;
+        trackNavVisit(target);
+        window.loadView(target);
     });
 
     const langSelect = document.getElementById('global-language-select');
