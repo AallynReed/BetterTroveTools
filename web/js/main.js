@@ -1574,7 +1574,7 @@ document.addEventListener('contextmenu', (e) => {
 
 window.executePendingSearch = function() {
     if (!window.pendingSearch) return;
-    
+
     let handled = false;
 
     const tsInput = document.getElementById('ts-search-input');
@@ -1592,10 +1592,21 @@ window.executePendingSearch = function() {
         handled = true;
     }
 
-    const allyInput = document.getElementById('ally-search-input');
-    if (allyInput) {
-        allyInput.value = window.pendingSearch;
-        allyInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const codexSearchInputIds = [
+        'ally-search-input',
+        'mount-search-input',
+        'dragon-search-input',
+        'memento-search-input',
+        'recipe-search-input',
+        'item-search-input',
+        'fish-search-input',
+        'badges-search-input'
+    ];
+    for (const id of codexSearchInputIds) {
+        const input = document.getElementById(id);
+        if (!input || input.offsetParent === null) continue;
+        input.value = window.pendingSearch;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
         handled = true;
     }
 
@@ -1604,7 +1615,9 @@ window.executePendingSearch = function() {
 
 document.addEventListener('trovesaurus_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
 document.addEventListener('mod_manager_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
-document.addEventListener('allies_loaded', () => setTimeout(() => window.executePendingSearch(), 100));
+['allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items', 'fish', 'badges'].forEach((name) => {
+    document.addEventListener(`${name}_loaded`, () => setTimeout(() => window.executePendingSearch(), 100));
+});
 
 document.addEventListener('DOMContentLoaded', async () => {
     await window.AppSettings.load();
@@ -1638,14 +1651,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Update Tracker', icon: 'fa-satellite-dish', modderTab: 'update_tracker' },
         { id: 'modder_tools', title: 'Build TMod', icon: 'fa-hammer', modderTab: 'build' },
         { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
+        { id: 'modder_tools', title: 'Edit TMod', icon: 'fa-pen-to-square', modderTab: 'edit_tmod' },
         { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects' },
+        { id: 'modder_tools', title: 'QB Editor', icon: 'fa-code', modderTab: 'qb_editor' },
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
         { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
         { id: 'gems_and_builds', title: 'Star Chart', icon: 'fa-star', gemsTab: 'star-chart' },
         { id: 'gems_and_builds', title: 'Gem Evaluator', icon: 'fa-magnifying-glass-chart', gemsTab: 'gem-evaluator' },
         { id: 'gems_and_builds', title: 'Gem Simulator', icon: 'fa-gem', gemsTab: 'gem-simulator' },
         { id: 'calculators', title: 'Calculators', icon: 'fa-calculator' },
-        { id: 'allies', title: 'Ally Codex', icon: 'fa-paw', beta: true },
+        { id: 'codexes', title: 'Ally Codex', icon: 'fa-paw', codexTab: 'allies', beta: true },
+        { id: 'codexes', title: 'Mount Codex', icon: 'fa-horse', codexTab: 'mounts', beta: true },
+        { id: 'codexes', title: 'Dragon Codex', icon: 'fa-dragon', codexTab: 'dragons', beta: true },
+        { id: 'codexes', title: 'Memento Codex', icon: 'fa-scroll', codexTab: 'mementos', beta: true },
+        { id: 'codexes', title: 'Recipe Codex', icon: 'fa-book', codexTab: 'recipes', beta: true },
+        { id: 'codexes', title: 'Item Codex', icon: 'fa-box', codexTab: 'items', beta: true },
+        { id: 'codexes', title: 'Fish Codex', icon: 'fa-fish', codexTab: 'fish', beta: true },
+        { id: 'codexes', title: 'Badge Codex', icon: 'fa-shield-halved', codexTab: 'badges', beta: true },
         { id: 'settings', title: 'Settings', icon: 'fa-gear' },
         { id: 'about', title: 'About', icon: 'fa-circle-info' }
     ];
@@ -1680,19 +1702,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         const query = filter.trim();
         let displayCommands = [];
 
+        const codexSearchTargets = [
+            { codexTab: 'allies', label: 'Allies', icon: 'fa-paw' },
+            { codexTab: 'mounts', label: 'Mounts', icon: 'fa-horse' },
+            { codexTab: 'dragons', label: 'Dragons', icon: 'fa-dragon' },
+            { codexTab: 'mementos', label: 'Mementos', icon: 'fa-scroll' },
+            { codexTab: 'recipes', label: 'Recipes', icon: 'fa-book' },
+            { codexTab: 'items', label: 'Items', icon: 'fa-box' },
+            { codexTab: 'fish', label: 'Fish', icon: 'fa-fish' },
+            { codexTab: 'badges', label: 'Badges', icon: 'fa-shield-halved' }
+        ];
+        const buildCodexSearchCommands = (sq) => {
+            if (areBetaFeaturesHidden() || isWebUnavailableView('codexes')) return [];
+            return codexSearchTargets.map(target => ({
+                id: 'codexes',
+                title: `Search ${target.label}: "${sq}"`,
+                icon: target.icon,
+                codexTab: target.codexTab,
+                query: sq,
+                beta: true
+            }));
+        };
+
         if (query.startsWith('@')) {
             const sq = query.substring(1).trim();
-            if (sq) {
-                if (!isWebUnavailableView('mod_manager')) {
-                    displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
-                }
-                if (!areBetaFeaturesHidden() && !isWebUnavailableView('allies')) {
-                    displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
-                }
+            if (sq && !isWebUnavailableView('mod_manager')) {
+                displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
             }
         } else if (query.startsWith('#')) {
             const sq = query.substring(1).trim();
-            if (sq && !areBetaFeaturesHidden() && !isWebUnavailableView('allies')) displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
+            if (sq) displayCommands.push(...buildCodexSearchCommands(sq));
         } else {
             const sq = query.startsWith('>') ? query.substring(1).trim() : query;
             displayCommands = commands
@@ -1706,14 +1745,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }))
                 .filter(c => !sq || c._score > 0)
                 .sort((a, b) => b._score - a._score);
-            
+
             if (sq.length >= 3 && displayCommands.length === 0) {
                 if (!isWebUnavailableView('mod_manager')) {
                     displayCommands.push({ id: 'mod_manager', title: `Search Trovesaurus: "${sq}"`, imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus', query: sq });
                 }
-                if (!areBetaFeaturesHidden() && !isWebUnavailableView('allies')) {
-                    displayCommands.push({ id: 'allies', title: `Search Allies: "${sq}"`, icon: 'fa-paw', query: sq, beta: true });
-                }
+                displayCommands.push(...buildCodexSearchCommands(sq));
             }
         }
 
@@ -1725,7 +1762,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
         cmdResults.innerHTML = displayCommands.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-query="${c.query || ''}">
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-codex-tab="${c.codexTab || ''}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -1741,6 +1778,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const modderTab = itemEl.getAttribute('data-modder-tab');
         const mmSection = itemEl.getAttribute('data-mm-section');
         const gemsTab = itemEl.getAttribute('data-gems-tab');
+        const codexTab = itemEl.getAttribute('data-codex-tab');
         if (modderTab) {
             window.pendingModderToolsTab = modderTab;
         }
@@ -1749,6 +1787,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (gemsTab) {
             window.pendingGemsTab = gemsTab;
+        }
+        if (codexTab) {
+            window.pendingCodexTab = codexTab;
         }
         window.loadView(target);
     }
@@ -1774,7 +1815,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } else if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f')) && !e.target.matches('input, textarea')) {
             e.preventDefault();
-            const searchInputs = ['ts-search-input', 'mod-search-input', 'ally-search-input', 'tree-search'];
+            const searchInputs = [
+                'ts-search-input',
+                'mod-search-input',
+                'ally-search-input',
+                'mount-search-input',
+                'dragon-search-input',
+                'memento-search-input',
+                'recipe-search-input',
+                'item-search-input',
+                'fish-search-input',
+                'badges-search-input',
+                'tree-search'
+            ];
             for (let id of searchInputs) {
                 const input = document.getElementById(id);
                 if (input && input.offsetParent !== null) {
