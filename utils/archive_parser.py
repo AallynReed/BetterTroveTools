@@ -17,6 +17,30 @@ from utils.functions import read_leb128
 archive_id = re.compile(r"^archive(\d+)")
 
 
+def hash_archive_blocking(tfa_path_str, file_entries):
+    """Synchronous: read + zlib-decompress one .tfa, then md5 the whole archive
+    and each requested file slice.
+
+    Intended to run inside a thread-pool worker. Both ``zlib.decompress`` and
+    ``hashlib.md5`` release the GIL while crunching large buffers, so dispatching
+    many archives to a ThreadPoolExecutor lets them decompress + hash in true
+    parallel across CPU cores -- which is the bottleneck for baseline builds
+    (the work is CPU-bound on decompression + hashing, not disk I/O).
+
+    ``file_entries`` is an iterable of ``(key, offset, size)``. Returns
+    ``(archive_md5_hex, [(key, file_md5_hex), ...])``.
+    """
+    with open(tfa_path_str, "rb") as f:
+        raw = f.read()
+    content = zlib.decompressobj(wbits=zlib.MAX_WBITS).decompress(raw)
+    archive_hash = md5(content).hexdigest()
+    file_hashes = [
+        (key, md5(content[offset:offset + size]).hexdigest())
+        for key, offset, size in file_entries
+    ]
+    return archive_hash, file_hashes
+
+
 def _read_uleb(data: bytes, pos: int) -> tuple[int, int]:
     """Read a uleb128 directly from a bytes buffer. Much faster than seeking a
     BinaryReader one byte at a time, which matters when parsing every index.tfi

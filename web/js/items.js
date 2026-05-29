@@ -340,5 +340,7 @@ function initItemsView() {
     }
 }
 
+// Driven solely by the `items_loaded` event dispatched after lazy-load; the
+// old readyState self-call double-initialized (mount + remount + duplicate
+// fetch) once these scripts became lazy-loaded. Removed.
 document.addEventListener('items_loaded', initItemsView);
-if (document.readyState !== 'loading') initItemsView();

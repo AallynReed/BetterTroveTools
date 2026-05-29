@@ -36,49 +36,30 @@ document.addEventListener('gems_and_builds_loaded', () => {
             };
 
             const loadSubviewContent = async () => {
-                try {
-                    // Load Gem Builds view
-                    const gemBuildsResponse = await fetch('views/gems_and_builds/gem_builds.html');
-                    if (gemBuildsResponse.ok) {
-                        const gemBuildsHtml = await gemBuildsResponse.text();
-                        const gemBuildsContainer = document.getElementById('gem-builds-vue-app-inner');
-                        if (gemBuildsContainer) {
-                            gemBuildsContainer.innerHTML = gemBuildsHtml;
-                        }
+                // Fetch all four sub-view HTMLs in parallel — they're independent and the
+                // sequential fetch was costing several round-trips before the user could
+                // interact with the gems tab.
+                const subviews = [
+                    { url: 'views/gems_and_builds/gem_builds.html', host: 'gem-builds-vue-app-inner' },
+                    { url: 'views/gems_and_builds/star_chart.html', host: 'star-chart-vue-app-inner' },
+                    { url: 'views/gems_and_builds/gem_evaluator.html', host: 'gem-evaluator-vue-app-inner' },
+                    { url: 'views/gems_and_builds/gem_simulator.html', host: 'gem-simulator-vue-app-inner' },
+                ];
+                const fetched = await Promise.all(subviews.map(async ({ url, host }) => {
+                    try {
+                        const response = await fetch(url);
+                        if (!response.ok) return null;
+                        return { host, html: await response.text() };
+                    } catch (e) {
+                        console.error(`Failed to fetch ${url}:`, e);
+                        return null;
                     }
-
-                    // Load Star Chart view
-                    const starChartResponse = await fetch('views/gems_and_builds/star_chart.html');
-                    if (starChartResponse.ok) {
-                        const starChartHtml = await starChartResponse.text();
-                        const starChartContainer = document.getElementById('star-chart-vue-app-inner');
-                        if (starChartContainer) {
-                            starChartContainer.innerHTML = starChartHtml;
-                        }
-                    }
-
-                    // Load Gem Evaluator view
-                    const gemEvaluatorResponse = await fetch('views/gems_and_builds/gem_evaluator.html');
-                    if (gemEvaluatorResponse.ok) {
-                        const gemEvaluatorHtml = await gemEvaluatorResponse.text();
-                        const gemEvaluatorContainer = document.getElementById('gem-evaluator-vue-app-inner');
-                        if (gemEvaluatorContainer) {
-                            gemEvaluatorContainer.innerHTML = gemEvaluatorHtml;
-                        }
-                    }
-
-                    // Load Gem Simulator view
-                    const gemSimulatorResponse = await fetch('views/gems_and_builds/gem_simulator.html');
-                    if (gemSimulatorResponse.ok) {
-                        const gemSimulatorHtml = await gemSimulatorResponse.text();
-                        const gemSimulatorContainer = document.getElementById('gem-simulator-vue-app-inner');
-                        if (gemSimulatorContainer) {
-                            gemSimulatorContainer.innerHTML = gemSimulatorHtml;
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error loading subview content:', error);
-                }
+                }));
+                fetched.forEach((entry) => {
+                    if (!entry) return;
+                    const el = document.getElementById(entry.host);
+                    if (el) el.innerHTML = entry.html;
+                });
             };
 
             onMounted(async () => {
@@ -125,11 +106,5 @@ document.addEventListener('gems_and_builds_loaded', () => {
     app.mount('#gems-and-builds-vue-app');
 });
 
-// Ensure the event is fired when the script loads
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        document.dispatchEvent(new CustomEvent('gems_and_builds_loaded'));
-    });
-} else {
-    document.dispatchEvent(new CustomEvent('gems_and_builds_loaded'));
-}
+// Auto-dispatch removed: window.loadView() now dispatches `gems_and_builds_loaded`
+// after this script finishes loading.

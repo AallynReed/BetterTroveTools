@@ -90,6 +90,9 @@ document.addEventListener('settings_loaded', async () => {
                     'segoe-ui': '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
                     'arial': 'Arial, Helvetica, sans-serif'
                 };
+                // Pull in the matching Google Fonts stylesheet if needed (no-op for
+                // system / segoe-ui / arial / product-sans).
+                if (window.ensureGoogleFont) window.ensureGoogleFont(appFont);
                 document.documentElement.style.setProperty('--app-font', fontMap[appFont] || fontMap['system']);
             };
 

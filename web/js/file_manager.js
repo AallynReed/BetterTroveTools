@@ -324,14 +324,25 @@ document.addEventListener('file_manager_loaded', () => {
                         }
                         fullFileTree = await fetchRes.json();
                         
-                        const cacheAllFiles = (node, currentPath = "") => {
-                            if (node.files) {
-                                for (const fileNode of node.files) {
+                        // Iterative walk: large game installs can hold hundreds of
+                        // thousands of files. The previous recursion built a fresh
+                        // closure per folder and pushed deep call stacks, which
+                        // showed up as 1-2 s of "Load tree" stutter on the largest
+                        // installs. An explicit stack with one allocation per node
+                        // keeps the work in tight loops the JIT can unroll.
+                        const stack = [{ node: fullFileTree, path: '' }];
+                        while (stack.length > 0) {
+                            const { node, path } = stack.pop();
+                            const files = node.files;
+                            if (files) {
+                                for (let i = 0; i < files.length; i++) {
+                                    const fileNode = files[i];
                                     const id = `f-${fileIdCounter++}`;
-                                    const fullPath = currentPath ? `${currentPath}/${fileNode.name}` : fileNode.name;
+                                    const fullPath = path ? `${path}/${fileNode.name}` : fileNode.name;
                                     fileNode.id = id;
                                     fileNode.fullPath = fullPath;
-                                    totalFileBytes += fileNode.size || 0;
+                                    const size = fileNode.size || 0;
+                                    totalFileBytes += size;
                                     fileCache.push({
                                         id,
                                         name: fileNode.name.toLowerCase(),
@@ -340,18 +351,17 @@ document.addEventListener('file_manager_loaded', () => {
                                         archive: fileNode.archive_index,
                                         offset: fileNode.offset,
                                         tfi: fileNode.tfi_parent,
-                                        size: fileNode.size || 0
+                                        size,
                                     });
                                 }
                             }
-                            if (node.children) {
-                                for (const key in node.children) {
-                                    const childPath = currentPath ? `${currentPath}/${key}` : key;
-                                    cacheAllFiles(node.children[key], childPath);
+                            const children = node.children;
+                            if (children) {
+                                for (const key in children) {
+                                    stack.push({ node: children[key], path: path ? `${path}/${key}` : key });
                                 }
                             }
-                        };
-                        cacheAllFiles(fullFileTree);
+                        }
 
                         renderLazyTree(fullFileTree, treeContainerRef.value);
                         isTreeLoaded.value = true;
@@ -1189,8 +1199,10 @@ document.addEventListener('file_manager_loaded', () => {
                     const saved = window.AppSettings.getPref(PREF_STATE_KEY, null);
                     applyStateSnapshot(saved);
                 }
-                await scanForGames();
-                await loadTrackingDirectories();
+                // Installs detection and tracking-directory loading don't depend on
+                // each other -- the previous sequential await chain doubled cold
+                // open time. Promise.all halves it.
+                await Promise.all([scanForGames(), loadTrackingDirectories()]);
                 document.addEventListener('keydown', onKeyDown);
                 document.addEventListener('file_manager_set_tab', onExternalSetTab);
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });

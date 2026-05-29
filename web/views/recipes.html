@@ -74,7 +74,7 @@
         <div v-for="(recipe, idx) in paginatedRecipes" :key="recipe.id" class="ally-card recipe-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
             <div class="ally-header">
                 <div class="ally-icon">
-                    <img :src="recipe.imagePath" alt="">
+                    <img :src="recipe.imagePath" alt="" loading="lazy" decoding="async">
                 </div>
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(recipe.name))"></div>

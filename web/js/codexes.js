@@ -81,9 +81,12 @@ document.addEventListener('codexes_loaded', () => {
                 }
             };
 
-            const scanForGames = async () => {
+            const scanForGames = async (forceRefresh = false) => {
                 try {
-                    const response = await eel.get_detected_game_paths()();
+                    // forceRefresh=true is reserved for the explicit "refresh game paths"
+                    // button in each codex sub-view -- it tells the backend to bust the
+                    // cached registry scan and walk it again.
+                    const response = await eel.get_detected_game_paths(!!forceRefresh)();
                     const settings = await readSettings();
                     installs.value = formatInstalls(unwrapResponse(response, 'paths', []));
 
@@ -170,6 +173,13 @@ document.addEventListener('codexes_loaded', () => {
                     if (!rootNode) throw new Error(`Failed to find ${rootSelector} in ${viewPath}`);
                     latestHost.innerHTML = '';
                     latestHost.appendChild(rootNode);
+
+                    const subviewScript = window.BTT_CODEX_SUBVIEW_SCRIPTS && window.BTT_CODEX_SUBVIEW_SCRIPTS[tabName];
+                    if (subviewScript && window.loadScript) {
+                        try { await window.loadScript(subviewScript); } catch (e) { console.error(`Failed to lazy-load codex sub-view script for ${tabName}:`, e); }
+                        if (disposed) return;
+                    }
+
                     loadedTabs[tabName] = true;
                     document.dispatchEvent(new CustomEvent(eventName));
                 })()
@@ -235,7 +245,7 @@ document.addEventListener('codexes_loaded', () => {
                         selectedGamePath: selectedGamePath.value || ''
                     }),
                     refresh: async () => {
-                        const state = await scanForGames();
+                        const state = await scanForGames(true);
                         emitGamePathChanged();
                         return state;
                     },
@@ -274,10 +284,6 @@ document.addEventListener('codexes_loaded', () => {
     }
 });
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        document.dispatchEvent(new CustomEvent('codexes_loaded'));
-    });
-} else {
-    document.dispatchEvent(new CustomEvent('codexes_loaded'));
-}
+// Auto-dispatch removed: window.loadView() now dispatches `codexes_loaded`
+// after this script finishes loading, so the listener above is guaranteed
+// to be in place when the event fires.

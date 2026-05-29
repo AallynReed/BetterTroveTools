@@ -808,8 +808,10 @@ document.addEventListener('star_chart_loaded', async () => {
                     unitsPerPxY: viewBox.h / rect.height
                 };
                 svg.classList.add('panning');
-                window.addEventListener('mousemove', _onPanMove);
-                window.addEventListener('mouseup', _onPanUp);
+                // Pan/release handlers don't preventDefault; passive lets the
+                // browser keep its hands free for compositor-driven scrolling.
+                window.addEventListener('mousemove', _onPanMove, { passive: true });
+                window.addEventListener('mouseup', _onPanUp, { passive: true });
             };
 
             const zoomBy = (factor) => {

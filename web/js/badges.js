@@ -306,5 +306,7 @@ function initBadgesView() {
     }
 }
 
+// Driven solely by the `badges_loaded` event dispatched after lazy-load; the
+// old readyState self-call double-initialized (mount + remount + duplicate
+// fetch) once these scripts became lazy-loaded. Removed.
 document.addEventListener('badges_loaded', initBadgesView);
-if (document.readyState !== 'loading') initBadgesView();

@@ -1275,13 +1275,42 @@ document.addEventListener('home_loaded', () => {
                 cancelHomeWork();
             };
 
+            // Visibility-aware tickers: every interval below checks document.hidden
+            // before doing work. When the user minimizes the window or switches to
+            // another OS app the home tab still has these timers attached (it's
+            // the active view) but burning a frame per second on a Vue reactive
+            // update + 8 backend calls per 30 s while nobody is looking is pure
+            // waste. The "snap back" on focus is handled by the visibilitychange
+            // listener below, which forces a fresh refreshAllData when the window
+            // becomes visible again so the user sees current data without waiting
+            // for the next 30 s tick.
+            const isHidden = () => typeof document !== 'undefined' && document.hidden;
+            let pendingRefreshOnVisible = false;
+
+            const onVisibilityChange = () => {
+                if (isDisposed) return;
+                if (!document.hidden && pendingRefreshOnVisible) {
+                    pendingRefreshOnVisible = false;
+                    refreshAllData();
+                }
+            };
+
             onMounted(() => {
                 isDisposed = false;
                 resetHomeAbortController();
                 refreshAllData({ refreshOfficialNews: true });
-                refreshInterval = setInterval(refreshAllData, 30000);
-                newsRefreshInterval = setInterval(() => refreshNews(), NEWS_REFRESH_MS);
-                timeInterval = setInterval(() => nowSec.value = Math.floor(Date.now() / 1000), 1000);
+                refreshInterval = setInterval(() => {
+                    if (isHidden()) { pendingRefreshOnVisible = true; return; }
+                    refreshAllData();
+                }, 30000);
+                newsRefreshInterval = setInterval(() => {
+                    if (isHidden()) return;
+                    refreshNews();
+                }, NEWS_REFRESH_MS);
+                timeInterval = setInterval(() => {
+                    if (isHidden()) return;
+                    nowSec.value = Math.floor(Date.now() / 1000);
+                }, 1000);
                 scheduleResetRefresh();
 
                 window._homeLangListener = (e) => {
@@ -1289,6 +1318,7 @@ document.addEventListener('home_loaded', () => {
                 };
                 document.addEventListener('change', window._homeLangListener);
                 document.addEventListener('home_unloading', handleHomeUnloading);
+                document.addEventListener('visibilitychange', onVisibilityChange);
             });
 
             watch(timeMode, async () => {
@@ -1312,6 +1342,7 @@ document.addEventListener('home_loaded', () => {
                 clearInterval(refreshInterval);
                 clearInterval(newsRefreshInterval);
                 clearInterval(timeInterval);
+                document.removeEventListener('visibilitychange', onVisibilityChange);
                 if (resetTimer) clearTimeout(resetTimer);
                 document.removeEventListener('change', window._homeLangListener);
                 document.removeEventListener('home_unloading', handleHomeUnloading);

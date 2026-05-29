@@ -142,7 +142,7 @@
                     <div class="streams-carousel" ref="carouselRef">
                         <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" @click="openUrl(item.url)">
                             <div class="stream-thumb">
-                                <img :src="item.thumb" alt="">
+                                <img :src="item.thumb" alt="" loading="lazy" decoding="async">
                                 <div class="stream-badges"><span class="badge viewers" v-html="item.badgeHtml"></span></div>
                             </div>
                             <div class="stream-info">
@@ -213,7 +213,7 @@
                     <div class="news-carousel" ref="newsCarouselRef">
                         <article v-for="item in mappedNews" :key="item.id" class="news-card" @click="openUrl(item.url)">
                             <div class="news-image-wrap">
-                                <img class="news-image" :src="item.image" alt="">
+                                <img class="news-image" :src="item.image" alt="" loading="lazy" decoding="async">
                                 <span class="news-category">{{ t(item.category) }}</span>
                             </div>
                             <div class="news-body">
@@ -321,7 +321,7 @@
                         </div>
                         <div v-else class="events-list">
                             <div v-for="event in mappedEvents" :key="event.id || event.name" class="event-card event-card-clickable" @click="openUrl(event.url)">
-                                <div class="event-image"><img :src="event.img" alt=""></div>
+                                <div class="event-image"><img :src="event.img" alt="" loading="lazy" decoding="async"></div>
                                 <div class="event-main">
                                     <div class="event-name-row"><span class="event-name">{{ t(event.name) }}</span><span class="event-category">{{ t(event.category) }}</span></div>
                                     <div class="event-dates"><span><i class="fa-regular fa-calendar"></i> {{ event.startStr }} - {{ event.endStr }}</span>

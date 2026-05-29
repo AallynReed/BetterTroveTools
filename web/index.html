@@ -4,27 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Better Trove Tools</title>
-    
-    <!-- Google Fonts for multilingual support -->
+
+    <!-- Warm up CDN connections early so blocking stylesheet/script downloads land faster. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://unpkg.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+    <!-- Google Fonts are lazy-loaded by main.js's ensureGoogleFont(), keyed on the
+         saved font preference. Default 'system' loads no Google Fonts at all. -->
+
+
     <link rel="stylesheet" href="css/style.css">
-    
-    <script type="text/javascript" src="/eel.js"></script>
-    <script src="js/web_mode.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+    <!-- Defer all scripts so they don't block HTML parsing. Order is preserved by `defer`. -->
+    <script defer src="/eel.js"></script>
+    <script defer src="js/web_mode.js"></script>
+    <script defer src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script defer src="js/i18n.js"></script>
+    <script defer src="js/main.js"></script>
+
+    <!-- jQuery + Select2 are lazy-loaded by window.ensureSelect2Loaded() the first
+         time the Select2Component mounts (Trovesaurus filter dropdowns). -->
+    <!-- Flatpickr is lazy-loaded by window.ensureFlatpickrLoaded() the first
+         time the server-time converter modal opens. -->
 </head>
 <body>
     <div id="network-tracker-vue-app" v-cloak>
@@ -285,29 +291,8 @@
         <div id="job-queue-list" class="job-queue-list"></div>
     </div>
 
-    <script src="js/i18n.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/home.js"></script>
-    <script src="js/mod_manager.js"></script>
-    <script src="js/file_manager.js"></script>
-    <script src="js/trovesaurus.js"></script>
-    <script src="js/settings.js"></script>
-    <script src="js/modder_tools.js"></script>
-    <script src="js/gems_and_builds/index.js"></script>
-    <script src="js/gems_and_builds/gem_builds.js"></script>
-    <script src="js/gems_and_builds/star_chart.js"></script>
-    <script src="js/gems_and_builds/gem_evaluator.js"></script>
-    <script src="js/gems_and_builds/gem_simulator.js"></script>
-    <script src="js/calculators.js"></script>
-    <script src="js/codexes.js"></script>
-    <script src="js/allies.js"></script>
-    <script src="js/mounts.js"></script>
-    <script src="js/dragons.js"></script>
-    <script src="js/mementos.js"></script>
-    <script src="js/recipes.js"></script>
-    <script src="js/items.js"></script>
-    <script src="js/fish.js"></script>
-    <script src="js/badges.js"></script>
-    <script src="js/about.js"></script>
+    <!-- i18n.js + main.js are loaded with `defer` from the <head> so they don't block
+         HTML parsing but still run before DOMContentLoaded, in declaration order.
+         View-specific scripts are lazy-loaded by window.loadView() on demand. -->
 </body>
 </html>
