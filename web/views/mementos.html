@@ -74,7 +74,7 @@
         <div v-for="(memento, idx) in paginatedMementos" :key="memento.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
             <div class="ally-header">
                 <div class="ally-icon">
-                    <img :src="memento.imagePath" alt="">
+                    <img :src="memento.imagePath" alt="" loading="lazy" decoding="async">
                 </div>
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(memento.displayName || memento.name || memento.fallbackName))"></div>

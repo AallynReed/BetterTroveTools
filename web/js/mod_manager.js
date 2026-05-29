@@ -16,7 +16,15 @@ document.addEventListener('mod_manager_loaded', async () => {
 
         if (section === 'trovesaurus' && !trovesaurusInitialized) {
             trovesaurusInitialized = true;
-            document.dispatchEvent(new CustomEvent('trovesaurus_loaded'));
+            const fire = () => document.dispatchEvent(new CustomEvent('trovesaurus_loaded'));
+            if (window.loadScript) {
+                window.loadScript('js/trovesaurus.js').then(fire).catch((e) => {
+                    console.error('Failed to lazy-load trovesaurus.js:', e);
+                    fire();
+                });
+            } else {
+                fire();
+            }
         }
 
         if (previousSection !== section) {
@@ -485,7 +493,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 menuItems.push({
                     label: 'Copy Mod Name',
                     icon: 'fa-copy',
-                    action: () => navigator.clipboard.writeText(mod.name).then(() => window.showToast(t('Copied to clipboard!')))
+                    action: () => navigator.clipboard.writeText(mod.name)
+                        .then(() => window.showToast(t('Copied to clipboard!')))
+                        .catch(() => window.showToast(t('Could not copy to clipboard.'), true))
                 });
 
                 window.ContextMenu.show(e, menuItems);

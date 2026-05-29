@@ -105,7 +105,7 @@
         <div v-for="(ally, idx) in paginatedAllies" :key="ally.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
             <div class="ally-header">
                 <div class="ally-icon">
-                    <img :src="ally.imagePath" alt="">
+                    <img :src="ally.imagePath" alt="" loading="lazy" decoding="async">
                 </div>
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(ally.name))"></div>

@@ -497,9 +497,16 @@ def get_available_languages():
 
 @eel.expose
 def add_missing_translation_keys(locale_code, missing_keys):
+    # Auto-populating missing translation keys is a DEV-ONLY convenience for
+    # seeding locale files while building the UI. It must never write in the
+    # packaged build shipped to users -- this is the authoritative guard, so
+    # even if a frontend path calls it the shipped app is a no-op.
+    if getattr(sys, "frozen", False):
+        return {"success": True, "added": 0, "skipped": "not_dev_mode"}
+
     if not missing_keys:
         return {"success": True}
-    
+
     file_path = LOCALE_DIR / f"{locale_code}.json"
     if not file_path.exists():
         return {"success": False, "error": "Locale file not found."}

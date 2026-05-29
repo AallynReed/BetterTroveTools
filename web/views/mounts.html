@@ -79,7 +79,7 @@
         <div v-for="(mount, idx) in paginatedMounts" :key="mount.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
             <div class="ally-header">
                 <div class="ally-icon">
-                    <img :src="mount.imagePath" alt="">
+                    <img :src="mount.imagePath" alt="" loading="lazy" decoding="async">
                 </div>
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(mount.name))"></div>

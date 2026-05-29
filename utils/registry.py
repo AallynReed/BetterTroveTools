@@ -1,9 +1,30 @@
 import os
+import threading
 from pathlib import Path
 from typing import Optional
 
 from utils.executable import find_trove_executable, patch_trove_fps, restore_trove_fps, get_current_fps
 import vdf
+
+# Cached result of the registry + Steam-library scan. The scan touches the
+# Windows registry, parses libraryfolders.vdf, and runs find_trove_executable
+# per discovered directory -- none of that changes during the lifetime of
+# the app unless the user installs/uninstalls Trove or edits their custom
+# directories. Many frontend views call get_detected_game_paths() / get_settings()
+# at init time, so caching this turned ~5-10 redundant registry scans per
+# session into a single one at startup.
+_TROVE_LOCATIONS_CACHE: Optional[list] = None
+_TROVE_LOCATIONS_LOCK = threading.Lock()
+
+
+def invalidate_trove_locations_cache() -> None:
+    """Drop the cached scan. Call this when something that could change which
+    installs are detected actually changes (e.g. custom_directories saved).
+    The next get_trove_locations() call performs a fresh scan."""
+    global _TROVE_LOCATIONS_CACHE
+    with _TROVE_LOCATIONS_LOCK:
+        _TROVE_LOCATIONS_CACHE = None
+
 
 if os.name == "nt":
     import winreg
@@ -225,11 +246,16 @@ def search_steam_registry():
                 ...
 
 
-def get_trove_locations():
+def _scan_trove_locations():
+    """Actual scan -- registry + Steam library walk. Not called directly; go
+    through get_trove_locations() so the result is cached for the rest of the
+    process lifetime."""
     print("\n--- STARTING TROVE LOCATION SCAN ---")
     if os.name != "nt":
         print("Not running on Windows (nt). Aborting.")
         return []
+
+    results = []
 
     print("\n--- Scanning for Glyph ---")
     for Key in search_glyph_registry():
@@ -237,11 +263,11 @@ def get_trove_locations():
             game_path_str = winreg.QueryValueEx(Key, TroveInstallValue)[0]
             game_path = Path(game_path_str)
             print(f"[Glyph] Found registry path: {game_path}")
-            
+
             game = TroveGamePath(game_path)
             if game.is_valid:
                 print(f"[Glyph] ✅ Valid game found at: {game_path}")
-                yield game
+                results.append(game)
             else:
                 print(f"[Glyph] ❌ Invalid game path (missing trove*.exe): {game_path}")
         except OSError as e:
@@ -256,7 +282,7 @@ def get_trove_locations():
                 try:
                     steam_path_str = winreg.QueryValueEx(Key, "SteamPath")[0]
                 except FileNotFoundError:
-                    continue 
+                    continue
 
             steam_path = Path(steam_path_str)
             steam_libraries_path = steam_path.joinpath("steamapps", "libraryfolders.vdf")
@@ -272,7 +298,7 @@ def get_trove_locations():
             for lib_index, library in libraries.items():
                 lib_path_str = library.get("path")
                 library_path = Path(lib_path_str)
-                
+
                 local_trove_path = library_path.joinpath("steamapps", "common", "Trove", "Games", "Trove")
 
                 if not local_trove_path.exists():
@@ -282,7 +308,27 @@ def get_trove_locations():
                     if game_path.is_dir():
                         game = TroveGamePath(game_path, library_path)
                         if game.is_valid:
-                            yield game
+                            results.append(game)
 
         except OSError:
             continue
+
+    return results
+
+
+def get_trove_locations():
+    """Return the cached list of detected Trove installs. The expensive scan
+    (registry + Steam VDF + per-dir PE checks) runs at most once per process
+    -- subsequent calls return the same list instantly. Call
+    invalidate_trove_locations_cache() to force a rescan."""
+    global _TROVE_LOCATIONS_CACHE
+    cached = _TROVE_LOCATIONS_CACHE
+    if cached is not None:
+        return cached
+
+    with _TROVE_LOCATIONS_LOCK:
+        if _TROVE_LOCATIONS_CACHE is not None:
+            return _TROVE_LOCATIONS_CACHE
+        scanned = _scan_trove_locations()
+        _TROVE_LOCATIONS_CACHE = scanned
+        return scanned

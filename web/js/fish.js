@@ -279,5 +279,9 @@ function initFishView() {
     }
 }
 
+// Init is driven solely by the `fish_loaded` event, which codexes.js dispatches
+// right after lazy-loading this script (the listener above is already attached
+// by then). The old `if (document.readyState !== 'loading') initFishView()`
+// self-call fired an extra time on load, causing a full mount + immediate
+// unmount/remount and a duplicate data fetch on first open. Removed.
 document.addEventListener('fish_loaded', initFishView);
-if (document.readyState !== 'loading') initFishView();

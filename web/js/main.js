@@ -4,15 +4,24 @@
 // reports dev_mode via get_system_info (sys.frozen); until that resolves we
 // assume dev and block nothing.
 window.BTT_IS_COMPILED = false;
+// BTT_DEV_MODE is the POSITIVE dev signal used to gate dev-only conveniences
+// like auto-populating missing translation keys. Unlike BTT_IS_COMPILED (which
+// defaults to "dev" so we never accidentally block shortcuts), this defaults to
+// false and only flips true once the backend confirms we're running from source
+// AND we're not in hosted web mode. That way the missing-translation capture is
+// strictly off everywhere except the developer's source build.
+window.BTT_DEV_MODE = false;
 (async () => {
     try {
         if (window.eel && eel.get_system_info) {
             const info = await eel.get_system_info()();
             const devMode = info && (info.dev_mode ?? (info.data && info.data.dev_mode));
             window.BTT_IS_COMPILED = devMode === false;
+            window.BTT_DEV_MODE = devMode === true && window.BTT_WEB_MODE !== true;
         }
     } catch (e) {
-        // Leave as dev (no blocking) if detection fails.
+        // Leave as dev (no blocking) if detection fails. BTT_DEV_MODE stays
+        // false so the translation-capture convenience never runs on a guess.
     }
 })();
 
@@ -50,6 +59,103 @@ document.head.appendChild(tooltipStyle);
 
 // Feature flags
 window.BTT_ENABLE_ONBOARDING_TOURS = false;
+
+// --- Lazy script + stylesheet loader -----------------------------------
+// View-specific JS modules are no longer loaded eagerly from index.html.
+// `window.loadScript(src)` caches by src and dedupes concurrent requests,
+// so each module is fetched/parsed at most once. `BTT_VIEW_SCRIPTS` maps
+// the top-level views to the scripts that must be in place before the
+// `<view>_loaded` event fires.
+(function () {
+    const scriptCache = new Map(); // absolute href -> Promise<void>
+    const styleCache = new Map();
+
+    const absolutize = (src) => new URL(src, document.baseURI).href;
+
+    window.loadScript = function (src) {
+        const href = absolutize(src);
+        const cached = scriptCache.get(href);
+        if (cached) return cached;
+
+        const existing = document.querySelector(`script[src="${src}"], script[data-lazy-src="${href}"]`);
+        if (existing) {
+            const p = Promise.resolve();
+            scriptCache.set(href, p);
+            return p;
+        }
+
+        const promise = new Promise((resolve, reject) => {
+            const el = document.createElement('script');
+            el.src = src;
+            el.async = false; // preserve evaluation order when several are queued together
+            el.dataset.lazySrc = href;
+            el.onload = () => resolve();
+            el.onerror = () => {
+                scriptCache.delete(href);
+                reject(new Error(`Failed to load script: ${src}`));
+            };
+            document.head.appendChild(el);
+        });
+        scriptCache.set(href, promise);
+        return promise;
+    };
+
+    window.loadScripts = function (srcs) {
+        return Promise.all((srcs || []).map((s) => window.loadScript(s)));
+    };
+
+    window.loadStyle = function (href) {
+        const abs = absolutize(href);
+        const cached = styleCache.get(abs);
+        if (cached) return cached;
+
+        const promise = new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.onload = () => resolve();
+            link.onerror = () => {
+                styleCache.delete(abs);
+                reject(new Error(`Failed to load stylesheet: ${href}`));
+            };
+            document.head.appendChild(link);
+        });
+        styleCache.set(abs, promise);
+        return promise;
+    };
+})();
+
+// Map top-level views to the scripts they need. Anything that listens for a
+// `<view>_loaded` event must be in here, otherwise the listener won't have
+// attached by the time the event fires.
+window.BTT_VIEW_SCRIPTS = {
+    home: ['js/home.js'],
+    mod_manager: ['js/mod_manager.js'],
+    modder_tools: ['js/modder_tools.js'],
+    gems_and_builds: [
+        'js/gems_and_builds/index.js',
+        'js/gems_and_builds/gem_builds.js',
+        'js/gems_and_builds/star_chart.js',
+        'js/gems_and_builds/gem_evaluator.js',
+        'js/gems_and_builds/gem_simulator.js',
+    ],
+    calculators: ['js/calculators.js'],
+    codexes: ['js/codexes.js'],
+    settings: ['js/settings.js'],
+    about: ['js/about.js'],
+};
+
+// Codex sub-tabs are loaded lazily by codexes.js's loadSubview.
+window.BTT_CODEX_SUBVIEW_SCRIPTS = {
+    allies: 'js/allies.js',
+    mounts: 'js/mounts.js',
+    dragons: 'js/dragons.js',
+    mementos: 'js/mementos.js',
+    recipes: 'js/recipes.js',
+    items: 'js/items.js',
+    fish: 'js/fish.js',
+    badges: 'js/badges.js',
+};
 
 window.AppSettings = {
     _cache: null,
@@ -145,47 +251,72 @@ window.AppSettings = {
     }
 };
 
+// Tooltip listeners are document-wide and fire constantly. The mousemove handler
+// in particular used to do width/height reads + style writes on every mouse pixel
+// while the tooltip was visible. Now:
+//   - mouseover does the (cheap) `closest()` match and shows the tooltip
+//   - mousemove bails immediately when no tooltip is showing, and otherwise
+//     defers position updates to the next animation frame so we paint at most
+//     once per frame instead of once per mouse event.
+let tooltipVisible = false;
+let pendingTooltipX = 0;
+let pendingTooltipY = 0;
+let tooltipRafId = 0;
+
+const positionTooltip = (clientX, clientY) => {
+    let x = clientX + 15;
+    let y = clientY + 15;
+    const w = globalTooltip.offsetWidth;
+    const h = globalTooltip.offsetHeight;
+    if (x + w > window.innerWidth) x = clientX - w - 15;
+    if (y + h > window.innerHeight) y = clientY - h - 15;
+    globalTooltip.style.left = x + 'px';
+    globalTooltip.style.top = y + 'px';
+};
+
+const hideTooltip = () => {
+    if (!tooltipVisible) return;
+    tooltipVisible = false;
+    globalTooltip.style.display = 'none';
+};
+
 document.addEventListener('mouseover', (e) => {
-    let target = e.target.closest('[title], [data-tooltip], [data-tooltip-text]');
+    const target = e.target.closest('[title], [data-tooltip], [data-tooltip-text]');
     if (!target) return;
 
-    if (target.hasAttribute('title') && target.getAttribute('title').trim() !== "") {
-        target.setAttribute('data-tooltip-text', target.getAttribute('title').replace(/\n/g, '<br>'));
+    const rawTitle = target.getAttribute('title');
+    if (rawTitle && rawTitle.trim() !== "") {
+        target.setAttribute('data-tooltip-text', rawTitle.replace(/\n/g, '<br>'));
         target.removeAttribute('title');
     }
 
     const content = target.getAttribute('data-tooltip') || target.getAttribute('data-tooltip-text');
-    if (content) {
-        globalTooltip.innerHTML = content;
-        globalTooltip.style.display = 'block';
-        
-        let x = e.clientX + 15;
-        let y = e.clientY + 15;
-        if (x + globalTooltip.offsetWidth > window.innerWidth) x = e.clientX - globalTooltip.offsetWidth - 15;
-        if (y + globalTooltip.offsetHeight > window.innerHeight) y = e.clientY - globalTooltip.offsetHeight - 15;
-        globalTooltip.style.left = x + 'px';
-        globalTooltip.style.top = y + 'px';
-    }
+    if (!content) return;
+
+    globalTooltip.innerHTML = content;
+    globalTooltip.style.display = 'block';
+    tooltipVisible = true;
+    positionTooltip(e.clientX, e.clientY);
 });
 
 document.addEventListener('mousemove', (e) => {
-    if (globalTooltip.style.display === 'block') {
-        if (e.buttons > 0) { globalTooltip.style.display = 'none'; return; }
-        let x = e.clientX + 15;
-        let y = e.clientY + 15;
-        if (x + globalTooltip.offsetWidth > window.innerWidth) x = e.clientX - globalTooltip.offsetWidth - 15;
-        if (y + globalTooltip.offsetHeight > window.innerHeight) y = e.clientY - globalTooltip.offsetHeight - 15;
-        globalTooltip.style.left = x + 'px';
-        globalTooltip.style.top = y + 'px';
-    }
-});
+    if (!tooltipVisible) return;
+    if (e.buttons > 0) { hideTooltip(); return; }
+    pendingTooltipX = e.clientX;
+    pendingTooltipY = e.clientY;
+    if (tooltipRafId) return;
+    tooltipRafId = requestAnimationFrame(() => {
+        tooltipRafId = 0;
+        if (tooltipVisible) positionTooltip(pendingTooltipX, pendingTooltipY);
+    });
+}, { passive: true });
 
 document.addEventListener('mouseout', (e) => {
-    let target = e.target.closest('[data-tooltip], [data-tooltip-text]');
-    if (target) globalTooltip.style.display = 'none';
+    if (!tooltipVisible) return;
+    if (e.target.closest('[data-tooltip], [data-tooltip-text]')) hideTooltip();
 });
 
-document.addEventListener('click', () => globalTooltip.style.display = 'none');
+document.addEventListener('click', hideTooltip);
 
 const networkState = Vue.reactive({
     activeRequests: [],
@@ -372,14 +503,34 @@ XMLHttpRequest.prototype.send = function(...args) {
 document.addEventListener('DOMContentLoaded', async () => {
     const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
 
-    // Load and apply saved font preference
+    // Google Fonts families used to be loaded eagerly from index.html for every
+    // launch, but most users keep the default 'system' font and never need
+    // Inter / Noto Sans / Roboto. Now we fetch a Google Fonts stylesheet only
+    // for the family the user actually picked, and only once per session.
+    const GOOGLE_FONT_URLS = {
+        'inter': 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+        'noto-sans': 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap',
+        'roboto': 'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap',
+    };
+    const loadedGoogleFonts = new Set();
+    const ensureGoogleFont = (key) => {
+        const url = GOOGLE_FONT_URLS[key];
+        if (!url || loadedGoogleFonts.has(key)) return;
+        loadedGoogleFonts.add(key);
+        if (window.loadStyle) window.loadStyle(url).catch(() => loadedGoogleFonts.delete(key));
+    };
+
     const applyFont = async () => {
         try {
+            // Drop force=true: this runs once at startup before any other AppSettings
+            // user, so the cache is empty and the regular load() spawns the fresh
+            // backend call. Forcing was creating a second in-flight load that raced
+            // with handler 3's first call, causing duplicate get_settings traffic.
             const settings = window.AppSettings
-                ? await window.AppSettings.load(true)
+                ? await window.AppSettings.load()
                 : await eel.get_settings()();
             const appFont = settings?.app_font || 'system';
-            
+
             const fontMap = {
                 'system': 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 'product-sans': '"Product Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -389,12 +540,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 'segoe-ui': '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
                 'arial': 'Arial, Helvetica, sans-serif'
             };
+            ensureGoogleFont(appFont);
             document.documentElement.style.setProperty('--app-font', fontMap[appFont] || fontMap['system']);
         } catch (e) {
             console.error('Failed to load font preference:', e);
         }
     };
-    
+
+    // Expose so the settings screen can pre-load the new family before swapping.
+    window.ensureGoogleFont = ensureGoogleFont;
+
     await applyFont();
 
     const metaResponse = await eel.get_app_metadata()();
@@ -1458,6 +1613,24 @@ window.CustomVueSelect = {
     `
 };
 
+// jQuery + Select2 are loaded lazily the first time a Select2Component mounts.
+// They were the heaviest non-Vue dependencies in the eager bundle and the
+// multi-select wrapper below is their only consumer.
+window.ensureSelect2Loaded = function () {
+    if (window.BTT_SELECT2_READY) return Promise.resolve();
+    if (!window.BTT_SELECT2_PROMISE) {
+        window.BTT_SELECT2_PROMISE = (async () => {
+            await window.loadScript('https://code.jquery.com/jquery-3.7.0.min.js');
+            await Promise.all([
+                window.loadScript('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js'),
+                window.loadStyle('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css'),
+            ]);
+            window.BTT_SELECT2_READY = true;
+        })();
+    }
+    return window.BTT_SELECT2_PROMISE;
+};
+
 window.Select2Component = {
     props: ['options', 'modelValue', 'placeholder', 'maxSelectionLength', 'limitReachedMessage'],
     template: '<select multiple style="width: 100%;"></select>',
@@ -1466,7 +1639,9 @@ window.Select2Component = {
             const parsed = Number(this.maxSelectionLength);
             return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
         },
-        setupSelect2() {
+        async setupSelect2() {
+            await window.ensureSelect2Loaded();
+            if (this._isUnmounted || !this.$el) return;
             const vm = this;
             const maxSelectionLength = this.getMaxSelectionLength();
             const $el = $(this.$el);
@@ -1498,16 +1673,22 @@ window.Select2Component = {
         }
     },
     mounted() {
+        this._isUnmounted = false;
         this.setupSelect2();
     },
     watch: {
-        modelValue(value) { if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change'); },
+        modelValue(value) {
+            if (!window.BTT_SELECT2_READY || !this.$el) return;
+            if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change');
+        },
         options() { this.setupSelect2(); },
         maxSelectionLength() { this.setupSelect2(); },
         placeholder() { this.setupSelect2(); },
         limitReachedMessage() { this.setupSelect2(); }
     },
     unmounted() {
+        this._isUnmounted = true;
+        if (!window.BTT_SELECT2_READY || !this.$el) return;
         const $el = $(this.$el);
         if ($el.hasClass('select2-hidden-accessible')) {
             $el.off('.bttSelect2');
@@ -1621,6 +1802,13 @@ document.addEventListener('mod_manager_loaded', () => setTimeout(() => window.ex
 
 document.addEventListener('DOMContentLoaded', async () => {
     await window.AppSettings.load();
+    // Kick off the startup-URL check (deep-link routing) in parallel with the
+    // sidebar/command-palette/server-time setup that follows. By the time we
+    // actually need the value to decide between loadView('home') and
+    // handle_deep_link, it's almost always already resolved.
+    const startupUrlPromise = (window.eel && eel.get_startup_url)
+        ? eel.get_startup_url()().catch(() => null)
+        : Promise.resolve(null);
     if (window.JobQueue && typeof window.JobQueue.syncFromSettings === 'function') {
         window.JobQueue.syncFromSettings();
     }
@@ -1653,7 +1841,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
         { id: 'modder_tools', title: 'Edit TMod', icon: 'fa-pen-to-square', modderTab: 'edit_tmod' },
         { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects' },
-        { id: 'modder_tools', title: 'QB Editor', icon: 'fa-code', modderTab: 'qb_editor' },
+        { id: 'modder_tools', title: 'Blueprint Editor', icon: 'fa-code', modderTab: 'qb_editor' },
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
         { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
         { id: 'gems_and_builds', title: 'Star Chart', icon: 'fa-star', gemsTab: 'star-chart' },
@@ -2218,10 +2406,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await window.I18nManager.translatePage();
                 if (loadToken !== activeViewLoadToken) return false;
             }
-            
+
             window.applyCustomDropdowns();
             if (loadToken !== activeViewLoadToken) return false;
-            
+
+            const viewScripts = (window.BTT_VIEW_SCRIPTS && window.BTT_VIEW_SCRIPTS[target]) || [];
+            if (viewScripts.length) {
+                try { await window.loadScripts(viewScripts); } catch (e) { console.error(`Failed to lazy-load scripts for ${target}:`, e); }
+                if (loadToken !== activeViewLoadToken) return false;
+            }
+
             const event = new CustomEvent(`${target}_loaded`);
             document.dispatchEvent(event);
             setTimeout(() => {
@@ -2313,6 +2507,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const dateEl = document.getElementById('server-time-date');
     const clockEl = document.getElementById('server-time-clock');
+    // Cache hero + modal refs once. They live in index.html so they're always
+    // present; we don't need to re-query them every second.
+    const heroDateEl = document.getElementById('st-hero-date');
+    const heroClockEl = document.getElementById('st-hero-clock');
+    const timeModalEl = document.getElementById('server-time-modal');
+    const modalListEl = document.getElementById('st-timezones-list');
+
+    // Track last-rendered values so we skip textContent writes (which dirty the
+    // layout) when the displayed string hasn't actually changed.
+    let lastSidebarDate = '';
+    let lastSidebarClock = '';
+    let lastHeroDate = '';
+    let lastHeroClock = '';
 
     function updateServerTime() {
         if (!dateEl || !clockEl) return;
@@ -2322,52 +2529,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         const troveTime = new Date(troveMs);
 
         const locale = window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US';
-        dateEl.textContent = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
-        clockEl.textContent = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const sidebarDate = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+        const sidebarClock = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-        const heroDate = document.getElementById('st-hero-date');
-        const heroClock = document.getElementById('st-hero-clock');
-        if (heroDate) heroDate.textContent = dateEl.textContent;
-        if (heroClock) heroClock.textContent = clockEl.textContent;
+        if (sidebarDate !== lastSidebarDate) { dateEl.textContent = sidebarDate; lastSidebarDate = sidebarDate; }
+        if (sidebarClock !== lastSidebarClock) { clockEl.textContent = sidebarClock; lastSidebarClock = sidebarClock; }
 
-        const modalList = document.getElementById('st-timezones-list');
-        const modal = document.getElementById('server-time-modal');
-        
-        if (modal && modal.style.display === 'flex' && modalList) {
+        // Only touch hero + modal DOM when the modal is actually open.
+        const modalOpen = timeModalEl && timeModalEl.style.display === 'flex';
+        if (!modalOpen) return;
 
-            let html = '';
-            window.globalTimezones.forEach(tz => {
-                let timeStr, dateStr;
-                try {
-                    if (tz.id === 'trove') {
-                        timeStr = troveTime.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                        dateStr = troveTime.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
-                    } else if (tz.id === 'local') {
-                        timeStr = now.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                        dateStr = now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
-                    } else {
-                        timeStr = now.toLocaleTimeString(locale, { timeZone: tz.id, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                        dateStr = now.toLocaleDateString(locale, { timeZone: tz.id, weekday: 'short', month: 'short', day: 'numeric' });
-                    }
-                } catch(e) {
-                    timeStr = "--:--:--";
-                    dateStr = "---";
+        if (heroDateEl && sidebarDate !== lastHeroDate) { heroDateEl.textContent = sidebarDate; lastHeroDate = sidebarDate; }
+        if (heroClockEl && sidebarClock !== lastHeroClock) { heroClockEl.textContent = sidebarClock; lastHeroClock = sidebarClock; }
+
+        if (!modalListEl) return;
+        let html = '';
+        window.globalTimezones.forEach(tz => {
+            let timeStr, dateStr;
+            try {
+                if (tz.id === 'trove') {
+                    timeStr = sidebarClock;
+                    dateStr = sidebarDate;
+                } else if (tz.id === 'local') {
+                    timeStr = now.toLocaleTimeString(locale, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    dateStr = now.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
+                } else {
+                    timeStr = now.toLocaleTimeString(locale, { timeZone: tz.id, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    dateStr = now.toLocaleDateString(locale, { timeZone: tz.id, weekday: 'short', month: 'short', day: 'numeric' });
                 }
+            } catch(e) {
+                timeStr = "--:--:--";
+                dateStr = "---";
+            }
 
-                const isMain = tz.id === 'trove';
-                
-                html += `
-                    <div class="tz-row ${isMain ? 'highlight' : ''}">
-                        <div class="tz-name">${t(tz.name)}</div>
-                        <div style="text-align: right;">
-                            <div class="tz-time">${timeStr}</div>
-                            <div class="tz-date">${dateStr}</div>
-                        </div>
+            const isMain = tz.id === 'trove';
+            html += `
+                <div class="tz-row ${isMain ? 'highlight' : ''}">
+                    <div class="tz-name">${t(tz.name)}</div>
+                    <div style="text-align: right;">
+                        <div class="tz-time">${timeStr}</div>
+                        <div class="tz-date">${dateStr}</div>
                     </div>
-                `;
-            });
-            modalList.innerHTML = html;
-        }
+                </div>
+            `;
+        });
+        modalListEl.innerHTML = html;
     }
     
     window.globalTimezones = [
@@ -2416,16 +2622,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         const nowLocal = new Date();
         nowLocal.setMinutes(nowLocal.getMinutes() - nowLocal.getTimezoneOffset());
         convInput.value = nowLocal.toISOString().slice(0, 16);
-        
-        if (window.flatpickr) {
-            flatpickr(convInput, {
-                enableTime: true,
-                dateFormat: "Y-m-d\\TH:i",
-                time_24hr: true,
-                onChange: doTimeConversion
-            });
-        }
     }
+
+    // Flatpickr is only used by the server-time converter input. Load it
+    // lazily the first time the user opens the modal — saves ~50KB JS + CSS
+    // for everyone who never opens it.
+    window.ensureFlatpickrLoaded = function () {
+        if (window.BTT_FLATPICKR_READY) return Promise.resolve();
+        if (!window.BTT_FLATPICKR_PROMISE) {
+            window.BTT_FLATPICKR_PROMISE = (async () => {
+                await Promise.all([
+                    window.loadScript('https://cdn.jsdelivr.net/npm/flatpickr'),
+                    window.loadStyle('https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css'),
+                    window.loadStyle('https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css'),
+                ]);
+                window.BTT_FLATPICKR_READY = true;
+                if (convInput && window.flatpickr) {
+                    flatpickr(convInput, {
+                        enableTime: true,
+                        dateFormat: "Y-m-d\\TH:i",
+                        time_24hr: true,
+                        onChange: doTimeConversion
+                    });
+                }
+            })();
+        }
+        return window.BTT_FLATPICKR_PROMISE;
+    };
 
     function doTimeConversion() {
         if (!convInput || !convInput.value) return;
@@ -2523,6 +2746,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const openServerTimeModal = () => {
             timeModal.style.display = 'flex';
             updateServerTime();
+            if (window.ensureFlatpickrLoaded) {
+                window.ensureFlatpickrLoaded().catch((e) => console.error('Failed to lazy-load flatpickr:', e));
+            }
         };
 
         const closeServerTimeModal = () => {
@@ -2546,7 +2772,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const startupUrl = await eel.get_startup_url()();
+    const startupUrl = await startupUrlPromise;
     if (startupUrl) {
         window.handle_deep_link(startupUrl);
     } else {

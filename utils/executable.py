@@ -463,6 +463,16 @@ def patch_trove_fps(exe_path: Path, target_fps: int) -> tuple[bool, str]:
     elif target_fps < 0:
         return False, "invalid_args"
 
+    # No-op fast path: every save_settings echoes the current fps_caps back to
+    # the backend even when the user only changed an unrelated setting (font,
+    # accent, locale). Before this guard we'd read the entire ~21 MB exe just
+    # to discover the value is already correct. get_current_fps() hits the
+    # in-process memo + index.json fast path on an unchanged build, so this
+    # turns "patch every game every save" into a single stat call per game.
+    current_fps = get_current_fps(exe_path)
+    if current_fps == target_fps:
+        return True, ""
+
     target_bytes = struct.pack("<d", 1.0 / target_fps)
 
     try:

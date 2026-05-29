@@ -81,7 +81,34 @@ const I18nManager = {
     },
 
     startObserver() {
+        // The observer used to schedule a full translatePage() (three
+        // document.querySelectorAll passes) on ANY DOM mutation -- every Vue
+        // re-render of a heavy view (file tree updates, modder tools repaints,
+        // mod list filtering) re-translated the entire page even when none of
+        // the changed nodes had a [data-i18n] attribute. Now we cheap-check
+        // each batch of mutations for i18n-relevant additions first and skip
+        // the heavy pass when there's nothing to translate.
+        const hasI18nNode = (node) => {
+            if (!node || node.nodeType !== 1) return false;
+            if (node.hasAttribute && (
+                node.hasAttribute('data-i18n')
+                || node.hasAttribute('data-i18n-placeholder')
+                || node.hasAttribute('data-i18n-title')
+            )) return true;
+            return !!(node.querySelector && node.querySelector('[data-i18n], [data-i18n-placeholder], [data-i18n-title]'));
+        };
+
         this.observer = new MutationObserver((mutations) => {
+            let relevant = false;
+            for (let i = 0; i < mutations.length && !relevant; i++) {
+                const m = mutations[i];
+                if (m.type !== 'childList') continue;
+                const added = m.addedNodes;
+                for (let j = 0; j < added.length; j++) {
+                    if (hasI18nNode(added[j])) { relevant = true; break; }
+                }
+            }
+            if (!relevant) return;
             if (this.translateTimeout) clearTimeout(this.translateTimeout);
             this.translateTimeout = setTimeout(() => {
                 this.translatePage();
@@ -171,22 +198,34 @@ const I18nManager = {
             }
         });
 
-        if (!window.BTT_WEB_MODE && missingKeys.size > 0 && window.eel && eel.add_missing_translation_keys) {
-            console.log(`Sending ${missingKeys.size} missing DOM translation keys to backend...`);
-            await eel.add_missing_translation_keys(this.currentLocale, Array.from(missingKeys))();
+        // Auto-capturing missing keys is a dev-only convenience for seeding
+        // locale files. Funnel the DOM-pass misses through the same debounced
+        // sync as the JS t() path so a single gate (and the async dev-mode
+        // detection) governs both -- nothing is sent in the packaged app or in
+        // hosted web mode.
+        if (this._canCaptureTranslations() && missingKeys.size > 0) {
+            missingKeys.forEach(key => this.pendingMissingKeys.add(key));
+            this.scheduleSync();
         }
 
         this.resumeObserver();
     },
 
+    // True only when the backend confirmed we're running from source (not the
+    // packaged build) and we're not in hosted web mode. Defaults to false until
+    // detection resolves, so the capture never runs on a guess.
+    _canCaptureTranslations() {
+        return window.BTT_DEV_MODE === true && !!window.eel && !!window.eel.add_missing_translation_keys;
+    },
+
     t(key) {
         if (!key) return "";
-        
+
         if (this.dictionary[key] !== undefined && this.dictionary[key] !== "") {
             return this.dictionary[key];
         }
-        
-        if (!window.BTT_WEB_MODE) {
+
+        if (this._canCaptureTranslations()) {
             this.pendingMissingKeys.add(key);
             this.scheduleSync();
         }
@@ -194,15 +233,15 @@ const I18nManager = {
     },
 
     scheduleSync() {
-        if (window.BTT_WEB_MODE) {
+        if (!this._canCaptureTranslations()) {
             this.pendingMissingKeys.clear();
             return;
         }
         if (this.syncTimeout) clearTimeout(this.syncTimeout);
-        
+
         this.syncTimeout = setTimeout(() => {
-            if (!window.BTT_WEB_MODE && this.pendingMissingKeys.size > 0 && window.eel && eel.add_missing_translation_keys) {
-                console.log(`Syncing ${this.pendingMissingKeys.size} missing JS keys to backend...`);
+            if (this._canCaptureTranslations() && this.pendingMissingKeys.size > 0) {
+                console.log(`Syncing ${this.pendingMissingKeys.size} missing translation keys to backend (dev mode)...`);
                 eel.add_missing_translation_keys(this.currentLocale, Array.from(this.pendingMissingKeys))();
                 this.pendingMissingKeys.clear();
             }

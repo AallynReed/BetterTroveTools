@@ -6,8 +6,9 @@ import asyncio
 from pathlib import Path
 import os
 import json
-from utils.archive_parser import TFIndex, TFArchive, TroveFile
-from utils.registry import get_trove_locations
+from utils.archive_parser import TFIndex, TFArchive, TroveFile, hash_archive_blocking
+import concurrent.futures
+from utils.registry import get_trove_locations, invalidate_trove_locations_cache
 from utils.helper import read_storage, write_storage
 from utils.executable import find_trove_executable
 from collections import defaultdict
@@ -51,8 +52,16 @@ def _raise_if_cancelled(operation):
         raise OperationCancelled("Operation cancelled by user.")
 
 def _run_async(coro):
+    """Run an async coroutine on a worker thread so the calling eel handler
+    stays cooperative. Polls with a threading.Event so we wake up the instant
+    the work is done -- the previous 50 ms eel.sleep cap added 0-50 ms of
+    pure idle latency to every short call (single-file extract, cache-hit
+    tree loads, etc.). 10 ms keeps the eel server responsive without that
+    floor."""
     result = []
     error = []
+    done = threading.Event()
+
     def _thread_target():
         try:
             loop = asyncio.new_event_loop()
@@ -60,10 +69,13 @@ def _run_async(coro):
             result.append(loop.run_until_complete(coro))
         except Exception as e:
             error.append(e)
+        finally:
+            done.set()
+
     t = threading.Thread(target=_thread_target)
     t.start()
-    while t.is_alive():
-        eel.sleep(0.05)
+    while not done.is_set():
+        eel.sleep(0.01)
     if error:
         raise error[0]
     return result[0] if result else None
@@ -80,7 +92,13 @@ def cancel_file_manager_operation(operation):
 
 @eel.expose
 @standardize_response
-def get_detected_game_paths():
+def get_detected_game_paths(force_refresh=False):
+    # `force_refresh=True` is for the explicit "scan again" code paths. Without
+    # it we reuse the cached registry/Steam scan -- the second through Nth
+    # caller in a session hits an in-memory list instead of re-walking the
+    # registry, parsing libraryfolders.vdf, and re-running PE checks per dir.
+    if force_refresh:
+        invalidate_trove_locations_cache()
     paths = []
     try:
         seen_paths = set()
@@ -203,27 +221,45 @@ async def _build_full_tree_async(game_path_str):
 
     master_tree = {"type": "folder", "children": {}, "files": []}
 
-    for tfi_path in game_path.rglob("index.tfi"):
+    # Reading every index.tfi sequentially was a major share of "Load tree"
+    # latency: each await yields the event loop but we still hit the disk
+    # one index at a time. Pre-list them, then asyncio.gather a bounded
+    # batch of reads so the OS can pipeline the I/O. The cap on concurrent
+    # readers keeps file handle / memory pressure predictable on very large
+    # installs.
+    tfi_paths = list(game_path.rglob("index.tfi"))
+    _raise_if_cancelled("load_tree")
+
+    sem = asyncio.Semaphore(16)
+
+    async def read_one(tfi_path):
+        async with sem:
+            _raise_if_cancelled("load_tree")
+            index = TFIndex(tfi_path)
+            return tfi_path, await index.files_list
+
+    parsed = await asyncio.gather(*(read_one(p) for p in tfi_paths))
+
+    for tfi_path, files_from_index in parsed:
         _raise_if_cancelled("load_tree")
         relative_dir = tfi_path.parent.relative_to(game_path)
         base_parts = list(relative_dir.parts)
+        tfi_parent_str = str(tfi_path)
 
-        index = TFIndex(tfi_path)
-        files_from_index = await index.files_list
-        
         for file_data in files_from_index:
-            _raise_if_cancelled("load_tree")
             internal_path = file_data["name"].replace('\\', '/')
             internal_parts = internal_path.split('/')
             full_parts = base_parts + internal_parts
-            
+
             current_node = master_tree
-            
-            for part in full_parts[:-1]: 
-                if part not in current_node["children"]:
-                    current_node["children"][part] = {"type": "folder", "children": {}, "files": []}
-                current_node = current_node["children"][part]
-                
+
+            for part in full_parts[:-1]:
+                child = current_node["children"].get(part)
+                if child is None:
+                    child = {"type": "folder", "children": {}, "files": []}
+                    current_node["children"][part] = child
+                current_node = child
+
             file_name = full_parts[-1]
             current_node["files"].append({
                 "name": file_name,
@@ -232,7 +268,7 @@ async def _build_full_tree_async(game_path_str):
                 "archive_index": file_data["archive_index"],
                 "offset": file_data["offset"],
                 "hash": file_data["hash"],
-                "tfi_parent": str(tfi_path)
+                "tfi_parent": tfi_parent_str
             })
             
     def process_node(node):
@@ -458,7 +494,7 @@ def build_baseline_cache(game_path_str, tracking_dir_str):
 async def _build_baseline_async(game_path_str, tracking_dir_str):
     game_path = Path(game_path_str)
     tracking_dir = Path(tracking_dir_str)
-    
+
     cache = {
         "last_scan_date": datetime.utcnow().isoformat() + "Z",
         "game_path": game_path_str,
@@ -468,41 +504,73 @@ async def _build_baseline_async(game_path_str, tracking_dir_str):
     }
 
     tfi_files = list(game_path.rglob("index.tfi"))
-    total_tfis = len(tfi_files)
-    start_time = time.time()
 
-    for i, tfi_path in enumerate(tfi_files):
+    # ---- Pass 1: parse every index (small files), record stat signatures and
+    # the index hashes, and build a FLAT list of archive work items across all
+    # indexes. Most Trove directories ship a single archive (archive0.tfa), so
+    # parallelizing within one index buys almost nothing -- the real win is
+    # decompressing + hashing archives from many different directories at once.
+    work_items = []  # (rel_tfa, tfa_path_str, [(file_key, offset, size), ...])
+    for tfi_path in tfi_files:
         _raise_if_cancelled("build_baseline")
         rel_tfi = tfi_path.relative_to(game_path).as_posix()
-        elapsed = time.time() - start_time
-
-        eta_secs = ""
-        if elapsed > 0.5 and (i + 1) > 0:
-            rate = (i + 1) / elapsed
-            eta_secs = int((total_tfis - (i + 1)) / rate)
-
-        eel.update_progress_ui(i + 1, total_tfis, rel_tfi, "Building Baseline Cache...", eta_secs, int(elapsed))()
-
         index = TFIndex(tfi_path)
-        cache["stats"][rel_tfi] = _stat_sig(tfi_path)
-        cache["archives"][rel_tfi] = await index.content_hash
+        archive_list = list(index.archives)
 
-        archives_dict = {}
-        for archive in index.archives:
+        cache["stats"][rel_tfi] = _stat_sig(tfi_path)
+        files = await index.files_list               # reads + parses index.tfi
+        cache["archives"][rel_tfi] = await index.content_hash  # cached by files_list, instant
+
+        files_by_archive = defaultdict(list)
+        for f in files:
+            file_key = f"{rel_tfi}::{f['name'].replace(chr(92), '/')}"
+            files_by_archive[f["archive_index"]].append((file_key, f["offset"], f["size"]))
+
+        for archive in archive_list:
             rel_tfa = archive.path.relative_to(game_path).as_posix()
             cache["stats"][rel_tfa] = _stat_sig(archive.path)
-            cache["archives"][rel_tfa] = await archive.content_hash
-            archives_dict[archive.id] = archive
-            
-        files = await index.files_list
-        for f in files:
-            _raise_if_cancelled("build_baseline")
-            arch_id = f["archive_index"]
-            if arch_id in archives_dict:
-                archive = archives_dict[arch_id]
-                file_obj = TroveFile(offset=f["offset"], size=f["size"], archive=archive)
-                file_key = f"{rel_tfi}::{f['name'].replace(chr(92), '/')}"
-                cache["files"][file_key] = await file_obj.content_hash
+            work_items.append((rel_tfa, str(archive.path), files_by_archive.get(archive.id, [])))
+
+    # ---- Pass 2: decompress + hash archives in parallel across CPU cores.
+    # zlib.decompress and hashlib.md5 release the GIL on large buffers, so a
+    # thread pool gives genuine multi-core speedup here. Concurrency is bounded
+    # so we never hold more than `workers` decompressed archives in memory at
+    # once (each can be tens-to-hundreds of MB).
+    total = len(work_items)
+    start_time = time.time()
+    workers = max(2, min((os.cpu_count() or 4), 6))
+    loop = asyncio.get_running_loop()
+    done = 0
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        sem = asyncio.Semaphore(workers)
+
+        async def process(item):
+            rel_tfa, tfa_path_str, file_entries = item
+            async with sem:
+                _raise_if_cancelled("build_baseline")
+                result = await loop.run_in_executor(pool, hash_archive_blocking, tfa_path_str, file_entries)
+                return rel_tfa, result
+
+        tasks = [asyncio.ensure_future(process(it)) for it in work_items]
+        try:
+            for coro in asyncio.as_completed(tasks):
+                rel_tfa, (archive_hash, file_hashes) = await coro
+                cache["archives"][rel_tfa] = archive_hash
+                for key, file_hash in file_hashes:
+                    cache["files"][key] = file_hash
+
+                done += 1
+                elapsed = time.time() - start_time
+                eta_secs = ""
+                if elapsed > 0.5 and done > 0:
+                    rate = done / elapsed
+                    eta_secs = int((total - done) / rate)
+                eel.update_progress_ui(done, total, rel_tfa, "Building Baseline Cache...", eta_secs, int(elapsed))()
+        except BaseException:
+            for tk in tasks:
+                tk.cancel()
+            raise
 
     data_path = tracking_dir / "extraction_data.json"
     with open(data_path, "w", encoding="utf-8") as f:
@@ -599,15 +667,20 @@ async def _scan_and_extract_updates_async(game_path_str, tracking_dir_str, run_c
                     new_cache["files"][k] = v
             continue
 
-        new_tfi_hash = await index.content_hash
+        # Same parallel-hash pattern as the baseline build: the index + every
+        # archive's content_hash can be gathered so the file reads overlap
+        # while decompress/hash work fills the CPU pauses between them.
+        new_tfi_hash, *new_archive_hashes = await asyncio.gather(
+            index.content_hash,
+            *(archive.content_hash for archive in archive_list),
+        )
         new_cache["archives"][rel_tfi] = new_tfi_hash
 
         archives_dict = {}
         tfa_changed = False
 
-        for archive in archive_list:
+        for archive, new_tfa_hash in zip(archive_list, new_archive_hashes):
             rel_tfa = archive_rels[id(archive)]
-            new_tfa_hash = await archive.content_hash
             new_cache["archives"][rel_tfa] = new_tfa_hash
             archives_dict[archive.id] = archive
 

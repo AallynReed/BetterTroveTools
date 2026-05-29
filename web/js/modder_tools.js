@@ -3008,6 +3008,10 @@ document.addEventListener('modder_tools_loaded', () => {
                     host.innerHTML = '';
                     host.appendChild(root);
 
+                    if (window.loadScript) {
+                        try { await window.loadScript('js/file_manager.js'); } catch (e) { console.error('Failed to lazy-load file_manager.js:', e); }
+                    }
+
                     document.dispatchEvent(new CustomEvent('file_manager_loaded'));
                     embeddedFileManagerLoaded = true;
                 })();
@@ -3050,18 +3054,28 @@ document.addEventListener('modder_tools_loaded', () => {
                     activeTab.value = window.pendingModderToolsTab;
                     window.pendingModderToolsTab = null;
                 }
-                await scanForGames();
-                await loadModdingSoftware();
-                // Load the named material presets for the strict map layers (once).
-                try {
-                    const res = await eel.get_material_presets()();
-                    if (res && res.success && res.presets) materialPresets.value = res.presets;
-                } catch (e) { /* presets are optional */ }
+                // These three startup fetches are independent -- scanning installs
+                // doesn't depend on the modding-software JSON or the material-preset
+                // list. Running them as a Promise.all cuts modder tools' first-paint
+                // time to the slowest of the three instead of the sum.
+                await Promise.all([
+                    scanForGames(),
+                    loadModdingSoftware(),
+                    (async () => {
+                        try {
+                            const res = await eel.get_material_presets()();
+                            if (res && res.success && res.presets) materialPresets.value = res.presets;
+                        } catch (e) { /* presets are optional */ }
+                    })(),
+                ]);
                 applyQbDocument(createEmptyQbDocument());
                 await handleEmbeddedTabSelection(activeTab.value);
-                window.addEventListener('mouseup', qbMouseUpHandler);
-                window.addEventListener('mousemove', qbGlobalMouseMoveHandler);
-                window.addEventListener('resize', qbResizeHandler);
+                // None of these handlers call preventDefault; marking them passive
+                // lets the browser fast-path scroll/touch events that overlap with
+                // the QB editor without waiting for our listener to return.
+                window.addEventListener('mouseup', qbMouseUpHandler, { passive: true });
+                window.addEventListener('mousemove', qbGlobalMouseMoveHandler, { passive: true });
+                window.addEventListener('resize', qbResizeHandler, { passive: true });
                 nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 hydratingState = false;
             });

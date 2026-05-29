@@ -83,7 +83,7 @@
             <div v-for="(fish, idx) in group.fish" :key="fish.id" class="ally-card item-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
                 <div class="ally-header">
                     <div class="ally-icon">
-                        <img :src="fish.imagePath" alt="" onerror="this.style.visibility='hidden'">
+                        <img :src="fish.imagePath" alt="" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
                     </div>
                     <div class="ally-title-area">
                         <div class="ally-name" v-html="highlightSearch(t(fish.name))"></div>
