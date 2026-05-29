@@ -1857,7 +1857,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'codexes', title: 'Fish Codex', icon: 'fa-fish', codexTab: 'fish', beta: true },
         { id: 'codexes', title: 'Badge Codex', icon: 'fa-shield-halved', codexTab: 'badges', beta: true },
         { id: 'settings', title: 'Settings', icon: 'fa-gear' },
-        { id: 'about', title: 'About', icon: 'fa-circle-info' }
+        { id: 'about', title: 'About', icon: 'fa-circle-info' },
+        { id: 'documentation', title: 'Documentation', icon: 'fa-book', url: 'https://trove.aallyn.net/documentation' }
     ];
 
     let activeCmdIndex = 0;
@@ -1950,7 +1951,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
         cmdResults.innerHTML = displayCommands.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-codex-tab="${c.codexTab || ''}" data-query="${c.query || ''}">
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-url="${c.url || ''}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-codex-tab="${c.codexTab || ''}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -1962,6 +1963,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function openCommandResult(itemEl) {
         const target = itemEl.getAttribute('data-target');
+        const url = itemEl.getAttribute('data-url');
+        if (url) {
+            try {
+                if (window.eel && eel.open_url_in_browser) eel.open_url_in_browser(url)();
+                else window.open(url, '_blank', 'noopener');
+            } catch (e) {
+                window.open(url, '_blank', 'noopener');
+            }
+            return;
+        }
         if (isWebUnavailableView(target)) return;
         const modderTab = itemEl.getAttribute('data-modder-tab');
         const mmSection = itemEl.getAttribute('data-mm-section');
@@ -2479,6 +2490,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     });
+
+    // Documentation shortcut — opens the hosted user manual in the browser
+    // (works in both the desktop app via eel and in hosted web mode).
+    const docsLinkBtn = document.getElementById('docs-link-btn');
+    if (docsLinkBtn) {
+        const DOCS_URL = 'https://trove.aallyn.net/documentation';
+        docsLinkBtn.addEventListener('click', () => {
+            try {
+                if (window.eel && eel.open_url_in_browser) eel.open_url_in_browser(DOCS_URL)();
+                else window.open(DOCS_URL, '_blank', 'noopener');
+            } catch (e) {
+                window.open(DOCS_URL, '_blank', 'noopener');
+            }
+        });
+    }
 
     document.addEventListener('btt_navigate', (e) => {
         const target = e?.detail?.target;

@@ -328,6 +328,20 @@ body.app-update-active #network-tracker-vue-app {
     transform: translateX(0);
 }
 
+/* Small "opens externally" indicator on the Documentation shortcut */
+.nav-external-icon {
+    margin-left: auto;
+    font-size: 10px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    transition: opacity 0.18s ease, color 0.18s ease;
+}
+.nav-btn:hover .nav-external-icon {
+    opacity: 1;
+    color: var(--accent-blue);
+}
+#sidebar.collapsed .nav-external-icon { display: none; }
+
 .beta-label {
     margin-left: auto;
     padding: 2px 7px;
