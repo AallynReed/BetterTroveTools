@@ -7,9 +7,9 @@
         <div class="config-panel-wrapper">
             <div class="card config-panel">
             <div class="config-section">
-                <h4><i class="fa-solid fa-user-astronaut"></i> {{ t('Character') }}</h4>
+                <h4><i class="fa-solid fa-user-astronaut"></i> {{ t('gems.gem_builds.character') }}</h4>
                 <div class="input-group">
-                    <label>{{ t('Class') }}</label>
+                    <label>{{ t('gems.gem_builds.class') }}</label>
                     <div class="select-with-icon">
                         <img class="select-icon" :src="classIcon" @error="onImageError" alt="">
                         <select v-model="config.character" style="flex: 1;">
@@ -19,7 +19,7 @@
                 </div>
     
                 <div class="input-group">
-                    <label>{{ t('Subclass') }}</label>
+                    <label>{{ t('gems.gem_builds.subclass') }}</label>
                     <div class="select-with-icon">
                         <img class="select-icon" :src="subclassIcon" @error="onImageError" alt="">
                         <select v-model="config.subclass" style="flex: 1;">
@@ -30,35 +30,35 @@
             </div>
 
             <div class="config-section">
-                <h4><i class="fa-solid fa-shield-halved"></i> {{ t('Build & Gear') }}</h4>
+                <h4><i class="fa-solid fa-shield-halved"></i> {{ t('gems.gem_builds.build_gear') }}</h4>
                 <div class="input-row build-gear-row">
                     <div class="input-group">
                         <label class="label-inline-controls">
-                            {{ t('Build Goal') }}
-                            <button type="button" class="info-icon-btn" :title="t('Choose what you want to optimize for. Light focuses on pushing Light, while Farm weighs damage against your current Light.')">
+                            {{ t('gems.gem_builds.build_goal') }}
+                            <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.choose_what_you_want_to_optimize_for_lig_b193c0')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
                         </label>
                         <select v-model="config.build_type">
-                            <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('Light') }}</option>
-                            <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('Farm') }}</option>
-                            <option value="Health" data-icon="fa-solid fa-shield-halved" disabled title="Need review">{{ t('Health') }} ({{ t('Need review') }})</option>
+                            <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('common.light') }}</option>
+                            <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('gems.gem_builds.farm') }}</option>
+                            <option value="Health" data-icon="fa-solid fa-shield-halved" disabled title="Need review">{{ t('common.health') }} ({{ t('gems.gem_builds.need_review') }})</option>
                         </select>
                     </div>
 
                     <div class="input-group">
-                        <label>{{ t('Food') }}</label>
+                        <label>{{ t('gems.gem_builds.food') }}</label>
                         <select v-model="config.food">
-                            <option value="">{{ t('None') }}</option>
+                            <option value="">{{ t('common.none') }}</option>
                             <option v-for="(data, key) in foodsData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
                         </select>
                     </div>
                 </div>
     
                 <div class="input-group">
-                    <label>{{ t('Ally') }}</label>
+                    <label>{{ t('gems.gem_builds.ally') }}</label>
                     <select v-model="config.ally">
-                        <option value="boot_clown">{{ t('None (Auto-Optimal)') }}</option>
+                        <option value="boot_clown">{{ t('gems.gem_builds.none_auto_optimal') }}</option>
                         <option v-for="(data, key) in alliesData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
                     </select>
                 </div>
@@ -66,8 +66,8 @@
                 <div class="input-row">
                     <div class="input-group" v-if="config.build_type === 'Farm'">
                         <label class="label-inline-controls">
-                            {{ t('Current Base Light') }}
-                            <button type="button" class="info-icon-btn" :title="t('Only used for Farm builds. Enter your current Light before gem changes so the calculator can judge Light tradeoffs correctly.')">
+                            {{ t('gems.gem_builds.current_base_light') }}
+                            <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.only_used_for_farm_builds_enter_your_cur_990e1f')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
                         </label>
@@ -75,8 +75,8 @@
                     </div>
                     <div class="input-group" v-if="config.build_type !== 'Health'">
                         <label class="label-inline-controls slider-label-tight">
-                            <span class="label-inline-start">{{ t('Gear Crit Damage Rolls') }}</span>
-                            <button type="button" class="info-icon-btn" :title="t('How many of your gear rolls are Crit Damage. Most endgame damage builds run 3.')">
+                            <span class="label-inline-start">{{ t('gems.gem_builds.gear_crit_damage_rolls') }}</span>
+                            <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.how_many_of_your_gear_rolls_are_crit_dam_f442e1')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
                             <span class="label-inline-value" style="color: var(--accent-orange); font-weight: bold;">{{ config.critical_damage_count }}</span>
@@ -85,37 +85,37 @@
                     </div>
                 </div>
 
-                <label class="toggle-container toggle-inline" :title="t('Simulates a face slot without damage stats. Useful if your real gear is missing that line or if you want to test edge cases.')">
+                <label class="toggle-container toggle-inline" :title="t('gems.gem_builds.simulates_a_face_slot_without_damage_sta_9b332f')">
                     <input type="checkbox" v-model="config.no_face">
                     <span class="checkmark"></span>
-                    <span>{{ t('Face Slot Has No Damage Stat') }}</span>
+                    <span>{{ t('gems.gem_builds.face_slot_has_no_damage_stat') }}</span>
                 </label>
             </div>
 
             <div class="config-section">
-                <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart') }}</h4>
+                <h4><i class="fa-solid fa-chart-network"></i> {{ t('common.star_chart') }}</h4>
                 <div class="input-group star-chart-controls">
                     <label class="label-inline-controls">
-                        {{ t('Star Chart Build Code') }}
-                        <button type="button" class="info-icon-btn" :title="t('Paste your saved star chart code here. The calculator reads Light, damage, and crit bonuses from it automatically.')">
+                        {{ t('gems.gem_builds.star_chart_build_code') }}
+                        <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.paste_your_saved_star_chart_code_here_th_ce37eb')">
                             <i class="fa-solid fa-circle-info"></i>
                         </button>
                     </label>
                     <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%;">
-                        <option value="">{{ t('-- Load Saved Star Chart --') }}</option>
+                        <option value="">{{ t('common.load_saved_star_chart') }}</option>
                         <option v-for="(code, name) in starChartTemplates" :key="name" :value="code">{{ name }}</option>
                     </select>
-                    <input type="text" v-model="config.star_chart" :placeholder="t('e.g. Y29tYmF0LmEkY29t...')">
+                    <input type="text" v-model="config.star_chart" :placeholder="t('gems.gem_builds.e_g_y29tymf0lmeky29t')">
                 </div>
                 
                 <div v-if="starChartSummary" class="star-chart-summary">
                     <template v-if="starChartSummary.error">
-                        <span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Invalid Build Code') }}</span>
+                        <span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('common.invalid_build_code') }}</span>
                     </template>
                     <template v-else>
-                        <h4><i class="fa-solid fa-chart-network"></i> {{ t('Star Chart Loaded') }}</h4>
+                        <h4><i class="fa-solid fa-chart-network"></i> {{ t('gems.gem_builds.star_chart_loaded') }}</h4>
                         <ul style="margin-bottom: 8px;">
-                            <li v-html="t('{count} Nodes Detected').replace('{count}', `<strong>${starChartSummary.pathsCount}</strong>`)"></li>
+                            <li v-html="t('gems.gem_builds.count_nodes_detected').replace('{count}', `<strong>${starChartSummary.pathsCount}</strong>`)"></li>
                         </ul>
                         <template v-if="Object.keys(filteredStarChartStats).length > 0">
                             <hr class="divider" style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">
@@ -135,28 +135,28 @@
             </div>
 
             <div class="config-section modifiers-section" :class="{ 'is-open': modifiersOpen }">
-                <button type="button" class="section-collapse-btn" @click="modifiersOpen = !modifiersOpen" :aria-expanded="modifiersOpen ? 'true' : 'false'" :title="t('Extra toggles for temporary buffs and niche comparisons.')">
-                    <h4><i class="fa-solid fa-sliders"></i> {{ t('Advanced Buffs & Toggles') }}</h4>
+                <button type="button" class="section-collapse-btn" @click="modifiersOpen = !modifiersOpen" :aria-expanded="modifiersOpen ? 'true' : 'false'" :title="t('gems.gem_builds.extra_toggles_for_temporary_buffs_and_ni_5f516b')">
+                    <h4><i class="fa-solid fa-sliders"></i> {{ t('gems.gem_builds.advanced_buffs_toggles') }}</h4>
                     <i class="fa-solid fa-chevron-down collapse-caret" :class="{ 'is-open': modifiersOpen }"></i>
                 </button>
-                <p v-show="modifiersOpen" class="section-intro">{{ t('Only turn these on if they are active in the exact situation you care about.') }}</p>
+                <p v-show="modifiersOpen" class="section-intro">{{ t('gems.gem_builds.only_turn_these_on_if_they_are_active_in_926b9b') }}</p>
                 <div v-show="modifiersOpen" class="toggles-grid">
-                    <label class="toggle-container" :title="t('Treats Berserker Battler as active while comparing builds.')">
+                    <label class="toggle-container" :title="t('gems.gem_builds.treats_berserker_battler_as_active_while_1a800b')">
                         <input type="checkbox" v-model="config.berserker_battler">
                         <span class="checkmark"></span>
-                        <span>{{ t('Berserker Battler') }}</span>
+                        <span>{{ t('gems.gem_builds.berserker_battler') }}</span>
                     </label>
     
-                    <label class="toggle-container" :title="t('Adds the Light from Enlightened, also called Litany.')">
+                    <label class="toggle-container" :title="t('gems.gem_builds.adds_the_light_from_enlightened_also_cal_4082d5')">
                         <input type="checkbox" v-model="config.litany">
                         <span class="checkmark"></span>
-                        <span>{{ t('Enlightened (Litany)') }}</span>
+                        <span>{{ t('gems.gem_builds.enlightened_litany') }}</span>
                     </label>
     
-                    <label class="toggle-container" :title="t('Includes the passive stats from your chosen subclass.')">
+                    <label class="toggle-container" :title="t('gems.gem_builds.includes_the_passive_stats_from_your_cho_76a69d')">
                         <input type="checkbox" v-model="config.subclass_active">
                         <span class="checkmark"></span>
-                        <span>{{ t('Subclass Active') }}</span>
+                        <span>{{ t('gems.gem_builds.subclass_active') }}</span>
                     </label>
                 </div>
             </div>
@@ -166,58 +166,58 @@
         <div class="card results-panel">
             <div v-if="cachedBuilds.length > 0" class="recommended-build-card">
                 <div class="recommended-build-copy">
-                    <div class="eyebrow">{{ t('Top Build') }}</div>
+                    <div class="eyebrow">{{ t('gems.gem_builds.top_build') }}</div>
                     <div class="recommended-build-layout" @click="copyLayout(cachedBuilds[0].layout, $event)">{{ cachedBuilds[0].layout }}</div>
                     <p class="recommended-build-reason">{{ getBuildHeadline(cachedBuilds[0]) }}</p>
                 </div>
                 <div class="recommended-build-stats">
                     <div class="recommended-stat">
-                        <span>{{ t('Coefficient') }}</span>
+                        <span>{{ t('gems.gem_builds.coefficient') }}</span>
                         <strong>{{ cachedBuilds[0].coefficient.toLocaleString() }}</strong>
                     </div>
                     <div class="recommended-stat">
-                        <span>{{ t('Light') }}</span>
+                        <span>{{ t('common.light') }}</span>
                         <strong>{{ cachedBuilds[0].light.toLocaleString() }}</strong>
                     </div>
                     <div class="recommended-stat">
-                        <span>{{ t('Crit Dmg') }}</span>
+                        <span>{{ t('gems.gem_builds.crit_dmg') }}</span>
                         <strong>{{ cachedBuilds[0].crit_dmg.toFixed(1) }}%</strong>
                     </div>
                     <div class="recommended-stat" v-if="cachedBuilds[1]">
-                        <span>{{ t('Lead vs #2') }}</span>
+                        <span>{{ t('gems.gem_builds.lead_vs_2') }}</span>
                         <strong>+{{ (((cachedBuilds[0].coefficient - cachedBuilds[1].coefficient) / cachedBuilds[1].coefficient) * 100).toFixed(3) }}%</strong>
                     </div>
                 </div>
             </div>
 
             <div v-if="cachedBuilds.length > 0" class="mobile-build-summary">
-                <strong>{{ t('Best') }}: {{ cachedBuilds[0].layout }}</strong>
-                <span>{{ t('Coeff') }} {{ cachedBuilds[0].coefficient.toLocaleString() }}</span>
+                <strong>{{ t('gems.gem_builds.best') }}: {{ cachedBuilds[0].layout }}</strong>
+                <span>{{ t('gems.gem_builds.coeff') }} {{ cachedBuilds[0].coefficient.toLocaleString() }}</span>
             </div>
 
             <div v-if="!tipsDismissed" class="tips-card">
                 <div>
-                    <div class="tips-card-title"><i class="fa-solid fa-lightbulb"></i> {{ t('Quick Tips') }}</div>
+                    <div class="tips-card-title"><i class="fa-solid fa-lightbulb"></i> {{ t('gems.gem_builds.quick_tips') }}</div>
                     <ul class="tips-list">
-                        <li>{{ t('Right-click any build row to copy the layout, coefficient, or full stat block.') }}</li>
-                        <li>{{ t('Star chart bonuses can change the winning layout, so paste your real build code when possible.') }}</li>
-                        <li>{{ t('Farm builds use your current Base Light to decide whether extra Light is worth giving up damage.') }}</li>
+                        <li>{{ t('gems.gem_builds.right_click_any_build_row_to_copy_the_la_a33153') }}</li>
+                        <li>{{ t('gems.gem_builds.star_chart_bonuses_can_change_the_winnin_d046d4') }}</li>
+                        <li>{{ t('gems.gem_builds.farm_builds_use_your_current_base_light_ec5d9f') }}</li>
                     </ul>
                 </div>
-                <button type="button" class="tips-dismiss-btn" @click="dismissTips" :title="t('Hide tips')">
+                <button type="button" class="tips-dismiss-btn" @click="dismissTips" :title="t('gems.gem_builds.hide_tips')">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
             <div class="results-toolbar">
                 <div class="results-metrics">
-                    <span class="metric-chip"><i class="fa-solid fa-list-ol"></i> {{ t('Builds') }}: {{ cachedBuilds.length }}</span>
-                    <span class="metric-chip" v-if="cachedBuilds.length > 0"><i class="fa-solid fa-trophy"></i> {{ t('Best Coeff') }}: {{ bestCoeff.toLocaleString() }}</span>
+                    <span class="metric-chip"><i class="fa-solid fa-list-ol"></i> {{ t('gems.gem_builds.builds') }}: {{ cachedBuilds.length }}</span>
+                    <span class="metric-chip" v-if="cachedBuilds.length > 0"><i class="fa-solid fa-trophy"></i> {{ t('gems.gem_builds.best_coeff') }}: {{ bestCoeff.toLocaleString() }}</span>
                     <span class="metric-chip"><i class="fa-solid fa-gem"></i> {{ t(config.build_type) }}</span>
                 </div>
                 <div class="results-state" :class="{ busy: isCalculating }">
                     <i class="fa-solid" :class="isCalculating ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
-                    <span>{{ isCalculating ? t('Calculating...') : t('Ready') }}</span>
+                    <span>{{ isCalculating ? t('gems.gem_builds.calculating') : t('common.ready') }}</span>
                 </div>
             </div>
 
@@ -226,26 +226,26 @@
                     <thead>
                         <tr>
                             <th class="text-center">{{ t('#') }}</th>
-                            <th class="text-left">{{ t('Build') }}</th>
-                            <th class="text-right">{{ t('Light') }}</th>
-                            <th class="text-right">{{ t('Base Dmg') }}</th>
-                            <th class="text-right">{{ t('Bonus Dmg') }}</th>
-                            <th class="text-right">{{ t('Total Dmg') }}</th>
-                            <th class="text-right">{{ t('Crit Dmg') }}</th>
-                            <th class="text-right sort-col">{{ t('Coefficient') }}</th>
-                            <th class="text-right">{{ t('Diff.') }}</th>
+                            <th class="text-left">{{ t('gems.gem_builds.build') }}</th>
+                            <th class="text-right">{{ t('common.light') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.base_dmg') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.bonus_dmg') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.total_dmg') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.crit_dmg') }}</th>
+                            <th class="text-right sort-col">{{ t('gems.gem_builds.coefficient') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.diff') }}</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr v-if="isCalculating">
-                            <td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Crunching Math...') }}</td>
+                            <td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('gems.gem_builds.crunching_math') }}</td>
                         </tr>
                         <tr v-else-if="cachedBuilds.length === 0">
-                            <td colspan="9" class="text-center text-muted">{{ t('No builds generated. Check your config.') }}</td>
+                            <td colspan="9" class="text-center text-muted">{{ t('gems.gem_builds.no_builds_generated_check_your_config') }}</td>
                         </tr>
                         <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :class="{ 'row-best': build.rank === 1 }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
                             <td class="text-center">{{ build.rank }}</td>
-                            <td class="build-layout-cell text-left" :title="t('Click to copy')" @click="copyLayout(build.layout, $event)">
+                            <td class="build-layout-cell text-left" :title="t('gems.gem_builds.click_to_copy')" @click="copyLayout(build.layout, $event)">
                                 {{ build.layout }}
                             </td>
                             <td class="text-right">{{ build.light.toLocaleString() }}</td>
@@ -257,7 +257,7 @@
                             <td class="text-right">{{ build.crit_dmg.toFixed(1) }}%</td>
                             <td class="text-right sort-col" style="font-weight: bold; color: #fff;">{{ build.coefficient.toLocaleString() }}</td>
                             <td class="text-right">
-                                <span v-if="build.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('Best') }}</span>
+                                <span v-if="build.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('gems.gem_builds.best') }}</span>
                                 <span v-else style="color: #e57373;">-{{ (((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3) }}%</span>
                             </td>
                         </tr>
@@ -266,10 +266,10 @@
             </div>
             
             <div class="pagination-container">
-                <button class="btn-icon" :title="t('Export to CSV')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('Export') }}</span></button>
+                <button class="btn-icon" :title="t('gems.gem_builds.export_to_csv')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('common.export') }}</span></button>
                 <div class="pagination">
                     <button class="btn-icon" @click="prevPage" :disabled="currentPage === 0"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span><span>{{ t('Page') }}</span> <span>{{ currentPage + 1 }}</span> / <span>{{ maxPages }}</span></span>
+                    <span><span>{{ t('common.page') }}</span> <span>{{ currentPage + 1 }}</span> / <span>{{ maxPages }}</span></span>
                     <button class="btn-icon" @click="nextPage" :disabled="currentPage >= maxPages - 1"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>

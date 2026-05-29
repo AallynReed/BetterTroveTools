@@ -3,7 +3,7 @@
 </head>
 <div id="gem-simulator-vue-app-inner" class="gem-sim-container" v-cloak>
     <div class="gem-sim-column left-column">
-        <div class="column-header" data-i18n>Equipped Gems & Stats</div>
+        <div class="column-header" data-i18n="gems.gem_simulator.equipped_gems_stats">Equipped Gems & Stats</div>
         <div class="column-scroll-area">
             <div id="equipped">
                 <div v-for="(row, rowIdx) in equippedRows" :key="row.elementId">
@@ -19,7 +19,7 @@
                                         <div class="item-power">{{ equipped[slot.idx].power_rank }}</div>
                                     </div>
                                 </div>
-                                <div v-else class="equipped-slot-placeholder" :title="t('Expected slot gem')">
+                                <div v-else class="equipped-slot-placeholder" :title="t('gems.gem_simulator.expected_slot_gem')">
                                     <img :src="equippedPlaceholderUrl(row.elementId, slot.typeRestriction)" alt="" draggable="false">
                                 </div>
                             </div>
@@ -39,7 +39,7 @@
 
                     <div class="selected-stats-square" style="width: 100%; max-width: 100%; box-sizing: border-box;">
                         <div style="text-align:center; font-weight:bold; font-size:1.1em; margin-bottom:10px; color:var(--accent-blue);">
-                            {{ t("Total Power Rank: {pr}").replace("{pr}", totalPRBuffed) }}
+                            {{ t("gems.gem_simulator.total_power_rank_pr").replace("{pr}", totalPRBuffed) }}
                         </div>
                         <hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">
@@ -55,27 +55,27 @@
     </div>
     
     <div class="gem-sim-column center-column">
-        <div class="column-header" data-i18n>Gem Forge</div>
+        <div class="column-header" data-i18n="gems.gem_simulator.gem_forge">Gem Forge</div>
         <div class="column-scroll-area">
             <div class="gem-form" id="gem-creator-panel">
                 <div class="gem-form-row">
-                    <label><span>{{ t('Type') }}</span><custom-vue-select v-model="creatorParams.type" :options="formattedObj(lookups.types)"></custom-vue-select></label>
-                    <label><span>{{ t('Tier') }}</span><custom-vue-select v-model="creatorParams.tier" :options="formattedObj(lookups.tiers)"></custom-vue-select></label>
+                    <label><span>{{ t('common.type') }}</span><custom-vue-select v-model="creatorParams.type" :options="formattedObj(lookups.types)"></custom-vue-select></label>
+                    <label><span>{{ t('common.tier') }}</span><custom-vue-select v-model="creatorParams.tier" :options="formattedObj(lookups.tiers)"></custom-vue-select></label>
                 </div>
                 <div class="gem-form-row">
-                    <label><span>{{ t('Element') }}</span><custom-vue-select v-model="creatorParams.element" :options="formattedObj(lookups.elements)"></custom-vue-select></label>
-                    <label><span>{{ t('Restriction') }}</span><custom-vue-select v-model="creatorParams.restriction" :options="formattedObj(lookups.restrictions)" :disabled="creatorParams.type !== 1"></custom-vue-select></label>
+                    <label><span>{{ t('common.element') }}</span><custom-vue-select v-model="creatorParams.element" :options="formattedObj(lookups.elements)"></custom-vue-select></label>
+                    <label><span>{{ t('common.restriction') }}</span><custom-vue-select v-model="creatorParams.restriction" :options="formattedObj(lookups.restrictions)" :disabled="creatorParams.type !== 1"></custom-vue-select></label>
                 </div>
                 <div class="gem-form-row creator-advanced-row">
                     <label class="slider-field">
-                        <span data-i18n>Level</span>
+                        <span data-i18n="common.level">Level</span>
                         <div class="slider-inline">
                             <input class="slider-input" type="range" v-model.number="creatorParams.level" min="1" max="35">
                             <span class="slider-value">{{ creatorParams.level }}</span>
                         </div>
                     </label>
                     <label class="slider-field augment-field">
-                        <span>{{ t('Augment') }}</span>
+                        <span>{{ t('gems.gem_simulator.augment') }}</span>
                         <div class="slider-inline">
                             <input class="slider-input" type="range" v-model.number="creatorParams.augment" min="0" max="100">
                             <span class="slider-value">{{ creatorParams.augment }}</span>
@@ -85,10 +85,10 @@
                 <div class="creator-generate-row">
                     <label class="augment-toggle-inline">
                         <input type="checkbox" v-model="creatorParams.augmentNull">
-                        <span>{{ t('Random Augment') }}</span>
+                        <span>{{ t('gems.gem_simulator.random_augment') }}</span>
                     </label>
                     <button @click="generateGem" class="primary-btn creator-generate-btn" :disabled="isGenerating">
-                        <template v-if="!isGenerating">{{ t('Generate Random Gem') }}</template>
+                        <template v-if="!isGenerating">{{ t('gems.gem_simulator.generate_random_gem') }}</template>
                         <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
                     </button>
                 </div>
@@ -97,11 +97,11 @@
             <hr class="panel-divider">
             
             <div v-if="!selected">
-                <div class="placeholder-text">{{ t('Select a gem to view details') }}</div>
+                <div class="placeholder-text">{{ t('gems.gem_simulator.select_a_gem_to_view_details') }}</div>
             </div>
             <div v-else>
                 <div style="text-align: center; font-weight: bold; font-size: 1.2em; margin-bottom: 15px;">
-                    {{ selected.gem_name ? t(selected.gem_name) : `(${t('Unnamed Gem')})` }}
+                    {{ selected.gem_name ? t(selected.gem_name) : `(${t('gems.gem_simulator.unnamed_gem')})` }}
                 </div>
 
                 <div class="selected-container">
@@ -116,11 +116,11 @@
 
                     <div class="selected-stats-square" style="flex: 1;">
                         <div style="font-size: 0.9em; line-height: 1.6;">
-                            <div><span style="color:var(--text-muted)">{{ t('Power:') }}</span> <b>{{ selected.power_rank }}</b></div>
-                            <div><span style="color:var(--text-muted)">{{ t('Level:') }}</span> <b>{{ selected.level }}</b></div>
-                            <div><span style="color:var(--text-muted)">{{ t('Type:') }}</span> <b>{{ getTypeDisplayName(selected.type) }}</b></div>
-                            <div><span style="color:var(--text-muted)">{{ t('Tier:') }}</span> <b>{{ getTierDisplayName(selected.tier) }}</b></div>
-                            <div><span style="color:var(--text-muted)">{{ t('Quality:') }}</span> <b>{{ (selected.quality * 100).toFixed(1) }}%</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.power') }}</span> <b>{{ selected.power_rank }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.level') }}</span> <b>{{ selected.level }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.type') }}</span> <b>{{ getTypeDisplayName(selected.type) }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.tier') }}</span> <b>{{ getTierDisplayName(selected.tier) }}</b></div>
+                            <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.quality') }}</span> <b>{{ (selected.quality * 100).toFixed(1) }}%</b></div>
                         </div>
                     </div>
                 </div>
@@ -160,8 +160,8 @@
                 <div class="gem-actions-row">
                     <button class="gem-action-btn" :disabled="selected.is_max_level || isLevelingUp" @click="levelUpSelected">
                         <template v-if="isLevelingUp"><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
-                        <template v-else-if="selected.is_max_level">{{ t('Max Level') }}</template>
-                        <template v-else>{{ t('Level Up') }}</template>
+                        <template v-else-if="selected.is_max_level">{{ t('gems.gem_simulator.max_level') }}</template>
+                        <template v-else>{{ t('gems.gem_simulator.level_up') }}</template>
                     </button>
                     
                     <button class="gem-action-btn" :disabled="!selectedActionKey || isActioning" @click="doSelectedAction">
@@ -170,20 +170,20 @@
                     </button>
                 </div>
 
-                <button v-if="!isSelectedInStorage" class="save-gem-btn" style="margin-top: 10px;" @click="saveSelectedToInventory">{{ t('Add to Inventory') }}</button>
+                <button v-if="!isSelectedInStorage" class="save-gem-btn" style="margin-top: 10px;" @click="saveSelectedToInventory">{{ t('gems.gem_simulator.add_to_inventory') }}</button>
             </div>
             
             <div id="trash-slot-container">
-                <div class="trash-slot" :title="t('Click to delete selected gem, or drag a gem here')" @click="trashSelected" @dragover.prevent @drop="onDropTrash">
+                <div class="trash-slot" :title="t('gems.gem_simulator.click_to_delete_selected_gem_or_drag_a_g_7dbcf1')" @click="trashSelected" @dragover.prevent @drop="onDropTrash">
                     <svg viewBox="0 0 24 24" class="trash-icon"><path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6Z"/></svg>
                 </div>
-                <div class="trash-label">{{ t('Trash') }}</div>
+                <div class="trash-label">{{ t('gems.gem_simulator.trash') }}</div>
             </div>
         </div>
     </div>
     
     <div class="gem-sim-column right-column">
-        <div class="column-header" data-i18n>Inventory</div>
+        <div class="column-header" data-i18n="gems.gem_simulator.inventory">Inventory</div>
         <div class="column-scroll-area">
             <div class="slots right-slots">
                 <div v-for="(item, idx) in inventory" :key="'inv-'+idx" class="slot" :data-has-item="!!item" @dragenter.prevent="onInventoryDragEnter($event, idx)" @dragover.prevent="onInventoryDragOver($event, idx)" @dragleave="onSlotDragLeave('inventory', idx, $event)" @drop="onDropInventory($event, idx)">
@@ -199,7 +199,7 @@
             </div>
             
             <button class="primary-btn" style="width: 100%; margin-top: 20px;" :disabled="isSyncing" @click="syncGems">
-                <template v-if="!isSyncing">{{ t('Sync Inventory Bases') }}</template>
+                <template v-if="!isSyncing">{{ t('gems.gem_simulator.sync_inventory_bases') }}</template>
                 <template v-else><i class="fa-solid fa-spinner fa-spin"></i> ...</template>
             </button>
         </div>
@@ -207,12 +207,12 @@
 
     <div id="gem-tooltip" class="gem-tooltip" v-show="tooltip.show" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
         <template v-if="tooltip.item">
-            <div class="gem-tooltip-title">{{ tooltip.item.gem_name ? t(tooltip.item.gem_name) : `(${t('Unnamed Gem')})` }}</div>
-            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Power Rank:') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.power_rank }}</span></div>
-            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Level:') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.level }}</span></div>
-            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Type:') }}</span> <span class="gem-tooltip-stat">{{ getTypeDisplayName(tooltip.item.type) }}</span></div>
-            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Tier:') }}</span> <span class="gem-tooltip-stat">{{ getTierDisplayName(tooltip.item.tier) }}</span></div>
-            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('Quality:') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.quality !== undefined ? (tooltip.item.quality * 100).toFixed(1) + '%' : '0.0%' }}</span></div>
+            <div class="gem-tooltip-title">{{ tooltip.item.gem_name ? t(tooltip.item.gem_name) : `(${t('gems.gem_simulator.unnamed_gem')})` }}</div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('gems.gem_simulator.power_rank') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.power_rank }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('gems.gem_simulator.level') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.level }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('gems.gem_simulator.type') }}</span> <span class="gem-tooltip-stat">{{ getTypeDisplayName(tooltip.item.type) }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('gems.gem_simulator.tier') }}</span> <span class="gem-tooltip-stat">{{ getTierDisplayName(tooltip.item.tier) }}</span></div>
+            <div class="gem-tooltip-row"><span class="gem-tooltip-muted">{{ t('gems.gem_simulator.quality') }}</span> <span class="gem-tooltip-stat">{{ tooltip.item.quality !== undefined ? (tooltip.item.quality * 100).toFixed(1) + '%' : '0.0%' }}</span></div>
             <hr style="border-color: var(--border-color); margin: 5px 0; width: 100%;">
             <div v-for="(stat, i) in tooltip.item.stats" :key="'tt-stat-'+i" class="gem-tooltip-row">
                 <span class="gem-tooltip-muted">{{ t(getStatName(tooltip.item, i)) }} ({{ ((stat.augmentation_progress || 0) * 100).toFixed(1) }}%)</span>

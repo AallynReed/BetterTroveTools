@@ -326,13 +326,13 @@ const networkState = Vue.reactive({
 
 const networkTrackerApp = Vue.createApp({
     setup() {
-        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
 
         const hasActive = Vue.computed(() => networkState.activeRequests.some(r => r.status === 'active'));
 
         const tooltipContent = Vue.computed(() => {
             if (networkState.activeRequests.length > 0) {
-                let content = `<h3>${t('Recent Requests')}</h3><ul style="margin-bottom: 0;">`;
+                let content = `<h3>${t('app.recent_requests')}</h3><ul style="margin-bottom: 0;">`;
                 const reversedList = [...networkState.activeRequests].reverse();
                 const displayList = reversedList.slice(0, 10);
                 
@@ -342,22 +342,22 @@ const networkTrackerApp = Vue.createApp({
                     const safeLabel = labelStr.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     
                     let statusHtml = '';
-                    if (req.status === 'active') statusHtml = `<span style="color: var(--accent-blue);" title="${t('Active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
-                    else if (req.status === 'error') statusHtml = `<span style="color: #ff5555;" title="${t('Failed')}"><i class="fa-solid fa-xmark"></i></span> `;
-                    else statusHtml = `<span style="color: #4ade80;" title="${t('Done')}"><i class="fa-solid fa-check"></i></span> `;
+                    if (req.status === 'active') statusHtml = `<span style="color: var(--accent-blue);" title="${t('common.active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
+                    else if (req.status === 'error') statusHtml = `<span style="color: #ff5555;" title="${t('app.failed')}"><i class="fa-solid fa-xmark"></i></span> `;
+                    else statusHtml = `<span style="color: #4ade80;" title="${t('common.done')}"><i class="fa-solid fa-check"></i></span> `;
                     
                     content += `<li>${statusHtml}${safeLabel}</li>`;
                 });
                 
                 if (networkState.activeRequests.length > 10) {
-                    content += `<li><i>...${t('and {count} more').replace('{count}', networkState.activeRequests.length - 10)}</i></li>`;
+                    content += `<li><i>...${t('app.and_count_more').replace('{count}', networkState.activeRequests.length - 10)}</i></li>`;
                 }
-                content += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('Total requests made:')} ${networkState.fullLog.length}</div>`;
+                content += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('app.total_requests_made')} ${networkState.fullLog.length}</div>`;
                 return content;
             } else {
                 return networkState.fullLog.length > 0 
-                    ? `${t('No active requests.')}<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('Total requests made:')} ${networkState.fullLog.length}</div>` 
-                    : t('No external requests made yet.');
+                    ? `${t('app.no_active_requests')}<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('app.total_requests_made')} ${networkState.fullLog.length}</div>` 
+                    : t('app.no_external_requests_made_yet');
             }
         });
 
@@ -373,10 +373,10 @@ const networkTrackerApp = Vue.createApp({
 
         const copyLog = () => {
             if (networkState.fullLog.length === 0) {
-                window.showToast(t('No requests to copy!'), true);
+                window.showToast(t('app.no_requests_to_copy'), true);
                 return;
             }
-            let logText = `--- ${t('External Request Log')} ---\n\n`;
+            let logText = `--- ${t('app.external_request_log')} ---\n\n`;
             reversedLog.value.forEach(req => {
                 const timeStr = req.time ? req.time.toLocaleTimeString() : 'Unknown Time';
                 const statusStr = req.status.toUpperCase();
@@ -386,13 +386,13 @@ const networkTrackerApp = Vue.createApp({
                 }
             });
             navigator.clipboard.writeText(logText).then(() => {
-                window.showToast(t('Entire request log copied to clipboard!'));
+                window.showToast(t('app.entire_request_log_copied_to_clipboard'));
             });
         };
 
         const copyUrl = (url) => {
             navigator.clipboard.writeText(url).then(() => {
-                window.showToast(t('URL copied to clipboard!'));
+                window.showToast(t('app.url_copied_to_clipboard'));
             });
         };
 
@@ -501,7 +501,7 @@ XMLHttpRequest.prototype.send = function(...args) {
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+    const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
 
     // Google Fonts families used to be loaded eagerly from index.html for every
     // launch, but most users keep the default 'system' font and never need
@@ -618,10 +618,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         downloadContainer.className = 'app-download-container app-update-container';
         const downloadButton = document.createElement('button');
         downloadButton.className = 'nav-btn download-app-btn update-app-btn';
-        downloadButton.title = t('Download the desktop app');
+        downloadButton.title = t('app.download_the_desktop_app');
         downloadButton.innerHTML = `
             <i class="fa-solid fa-download nav-icon"></i>
-            <span class="nav-text">${t('Download App')}</span>
+            <span class="nav-text">${t('app.download_app')}</span>
         `;
         downloadButton.addEventListener('click', () => {
             window.location.href = 'https://trove.aallyn.net';
@@ -636,7 +636,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('Looking for updates') });
+        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('app.looking_for_updates') });
         if (ghResponse.ok) {
             const releases = await ghResponse.json();
             const hasMsiAsset = (release) => Array.isArray(release?.assets)
@@ -700,10 +700,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     updateContainer.className = 'app-update-container';
                     const updateButton = document.createElement('button');
                     updateButton.className = 'nav-btn update-app-btn';
-                    updateButton.title = t("A new version is available! Click to update.");
+                    updateButton.title = t("app.a_new_version_is_available_click_to_upda_1d6574");
                     updateButton.innerHTML = `
                         <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
-                        <span class="nav-text">${t("Update v{version}").replace("{version}", latestVersion)}</span>
+                        <span class="nav-text">${t("app.update_v_version").replace("{version}", latestVersion)}</span>
                     `;
                     updateButton.addEventListener('click', async () => {
                         if (isAppUpdateStarting) return;
@@ -711,10 +711,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                         let confirmed = true;
                         if (typeof window.showConfirmModal === 'function') {
                             confirmed = await window.showConfirmModal({
-                                title: t('Install Update'),
-                                message: t('Download and install v{version} now? The app will close and reopen automatically when the installer finishes.').replace('{version}', latestVersion),
-                                confirmLabel: t('Update Now'),
-                                cancelLabel: t('Cancel'),
+                                title: t('app.install_update'),
+                                message: t('app.download_and_install_v_version_now_the_a_2231eb').replace('{version}', latestVersion),
+                                confirmLabel: t('app.update_now'),
+                                cancelLabel: t('common.cancel'),
                                 danger: false
                             });
                         }
@@ -724,30 +724,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                         updateButton.disabled = true;
                         setAppUpdateOverlay(
                             true,
-                            t('Downloading the installer and preparing the update. Please keep the app open for a moment.'),
-                            t('Updating Better Trove Tools')
+                            t('app.downloading_the_installer_and_preparing_6c20a2'),
+                            t('app.updating_better_trove_tools')
                         );
 
                         try {
                             const response = await window.callBackend(
                                 eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
-                                t('Failed to start self-update')
+                                t('app.failed_to_start_self_update')
                             );
 
                             if (!response.success) {
-                                throw new Error(response.error || t('Failed to start self-update'));
+                                throw new Error(response.error || t('app.failed_to_start_self_update'));
                             }
 
                             setAppUpdateOverlay(
                                 true,
-                                t('Closing the app window and starting the installer. The app will reopen automatically when the update finishes.'),
-                                t('Installing Update')
+                                t('app.closing_the_app_window_and_starting_the_e43133'),
+                                t('app.installing_update')
                             );
 
                             try {
                                 await window.callBackend(
                                     eel.finalize_self_update_exit(2.2)(),
-                                    t('Failed to close app for update')
+                                    t('app.failed_to_close_app_for_update')
                                 );
                             } catch {}
 
@@ -763,8 +763,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                             isAppUpdateStarting = false;
                             updateButton.disabled = false;
                             setAppUpdateOverlay(false);
-                            window.showToast(String(err?.message || err || t('Failed to start self-update')), true, {
-                                actionLabel: t('Open Release'),
+                            window.showToast(String(err?.message || err || t('app.failed_to_start_self_update')), true, {
+                                actionLabel: t('app.open_release'),
                                 onAction: async () => eel.open_url_in_browser(updateTarget.html_url)()
                             });
                         }
@@ -1515,7 +1515,7 @@ window.CustomVueSelect = {
         const maxH = Vue.ref(250);
         const wrapperRef = Vue.ref(null);
         const optionsRef = Vue.ref(null);
-        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
         const shouldTranslateOptions = Vue.computed(() => props.translateOptions !== false);
         const formatLabel = (label) => shouldTranslateOptions.value ? t(label) : label;
         const currentLabel = Vue.computed(() => {
@@ -1704,7 +1704,7 @@ window.ContextMenu = {
         if (!contextMenuEl) return;
         
         contextMenuEl.innerHTML = '';
-        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
         
         items.forEach(item => {
             if (item.separator) {
@@ -1887,7 +1887,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     function renderCmdResults(filter = "") {
-        const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+        const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
         const query = filter.trim();
         let displayCommands = [];
 
@@ -1944,7 +1944,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         if (displayCommands.length === 0) {
-            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">${t("No results found.")}</div>`;
+            cmdResults.innerHTML = `<div style="padding: 20px; text-align: center; color: var(--text-muted);">${t("app.no_results_found")}</div>`;
             return;
         }
         
@@ -2076,7 +2076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
-    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+    const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
     let lastNavBlockToastAt = 0;
 
     const burgerBtn = document.getElementById('burger-btn');
@@ -2190,11 +2190,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             const shouldHideForWeb = isWebUnavailableView(target);
             if (shouldHideForWeb) {
                 btn.classList.add('web-desktop-only-btn');
-                btn.setAttribute('data-tooltip-text', t('Only available in the desktop app'));
+                btn.setAttribute('data-tooltip-text', t('app.only_available_in_the_desktop_app'));
                 if (!btn.querySelector('.desktop-app-label')) {
                     const desktopLabel = document.createElement('span');
                     desktopLabel.className = 'desktop-app-label';
-                    desktopLabel.textContent = t('Desktop App');
+                    desktopLabel.textContent = t('app.desktop_app');
                     btn.appendChild(desktopLabel);
                 }
                 const menuItem = btn.closest('li');
@@ -2370,7 +2370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (isSwitchingTabs && hasBlockingJobs) {
                 const now = Date.now();
                 if (now - lastNavBlockToastAt > 1200) {
-                    window.showToast(t('Cannot switch tabs while a job is running.'), true);
+                    window.showToast(t('app.cannot_switch_tabs_while_a_job_is_runnin_b3bddf'), true);
                     lastNavBlockToastAt = now;
                 }
                 return false;
@@ -2443,7 +2443,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return false;
             }
             console.error("View loading error:", err);
-            const errorMsg = t("Failed to load view: {error}").replace("{error}", err.message);
+            const errorMsg = t("app.failed_to_load_view_error").replace("{error}", err.message);
             viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">${errorMsg}</div>`;
             return false;
         } finally {
@@ -2457,10 +2457,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         let confirmed = true;
         if (typeof window.showConfirmModal === 'function') {
             confirmed = await window.showConfirmModal({
-                title: t('Desktop App Required'),
-                message: t('This tool is only available in the desktop app. Install it now?'),
-                confirmLabel: t('Install Now'),
-                cancelLabel: t('Cancel'),
+                title: t('app.desktop_app_required'),
+                message: t('app.this_tool_is_only_available_in_the_deskt_47d907'),
+                confirmLabel: t('app.install_now'),
+                cancelLabel: t('common.cancel'),
                 danger: false
             });
         }
@@ -2730,13 +2730,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     else if (val === 'F') preview = targetDate.toLocaleDateString(locale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                     else if (val === 'R') preview = fmt_R;
 
-                    if (val === 't') opt.textContent = t("Short Time") + ` (${preview})`;
-                    else if (val === 'T') opt.textContent = t("Long Time") + ` (${preview})`;
-                    else if (val === 'd') opt.textContent = t("Short Date") + ` (${preview})`;
-                    else if (val === 'D') opt.textContent = t("Long Date") + ` (${preview})`;
-                    else if (val === 'f') opt.textContent = t("Short D/T") + ` (${preview})`;
-                    else if (val === 'F') opt.textContent = t("Long D/T") + ` (${preview})`;
-                    else if (val === 'R') opt.textContent = t("Relative") + ` (${preview})`;
+                    if (val === 't') opt.textContent = t("app.short_time") + ` (${preview})`;
+                    else if (val === 'T') opt.textContent = t("app.long_time") + ` (${preview})`;
+                    else if (val === 'd') opt.textContent = t("app.short_date") + ` (${preview})`;
+                    else if (val === 'D') opt.textContent = t("app.long_date") + ` (${preview})`;
+                    else if (val === 'f') opt.textContent = t("app.short_d_t") + ` (${preview})`;
+                    else if (val === 'F') opt.textContent = t("app.long_d_t") + ` (${preview})`;
+                    else if (val === 'R') opt.textContent = t("app.relative") + ` (${preview})`;
                 });
             } catch(e) {}
         }
@@ -2747,11 +2747,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btnCopyNormal) btnCopyNormal.addEventListener('click', () => {
         if (!currentUnixSeconds) return;
         navigator.clipboard.writeText(formatUtcTimestamp(currentUnixSeconds)).then(() => {
-            if(window.showToast) window.showToast(t("Timestamp copied!"));
+            if(window.showToast) window.showToast(t("app.timestamp_copied"));
         });
     });
     if (btnCopyDiscord) btnCopyDiscord.addEventListener('click', () => {
-        navigator.clipboard.writeText(`<t:${currentUnixSeconds}:${discordFormat.value}>`).then(() => { if(window.showToast) window.showToast(t("Discord timestamp copied!")); });
+        navigator.clipboard.writeText(`<t:${currentUnixSeconds}:${discordFormat.value}>`).then(() => { if(window.showToast) window.showToast(t("app.discord_timestamp_copied")); });
     });
     setTimeout(doTimeConversion, 500);
 
@@ -2764,7 +2764,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const payload = [dateEl?.textContent, clockEl?.textContent].filter(Boolean).join(' ');
         if (!payload) return;
         navigator.clipboard.writeText(payload).then(() => {
-            if (window.showToast) window.showToast(t('Server time copied to clipboard!'));
+            if (window.showToast) window.showToast(t('app.server_time_copied_to_clipboard'));
         });
     };
 
@@ -2811,8 +2811,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (window.AppSettings.getPref(commandHintKey, '') !== 'dismissed') {
             window.AppSettings.setPrefSync(commandHintKey, 'dismissed');
-            window.showToast(t('Quick Open is available from the sidebar or with Ctrl/Cmd+K.'), false, {
-                actionLabel: t('Open'),
+            window.showToast(t('app.quick_open_is_available_from_the_sidebar_1dc9fd'), false, {
+                actionLabel: t('common.open'),
                 onAction: async () => openCommandPalette(),
                 durationMs: 7000,
                 closeable: true
@@ -2822,8 +2822,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (window.AppSettings.getPref(requestHintKey, '') !== 'dismissed') {
             window.AppSettings.setPrefSync(requestHintKey, 'dismissed');
-            window.showToast(t('The Requests button shows every external call the app makes.'), false, {
-                actionLabel: t('View'),
+            window.showToast(t('app.the_requests_button_shows_every_external_035e62'), false, {
+                actionLabel: t('app.view'),
                 onAction: async () => { networkState.isModalOpen = true; },
                 durationMs: 7000
             });

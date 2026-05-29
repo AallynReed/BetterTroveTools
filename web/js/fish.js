@@ -13,7 +13,7 @@ function initFishView() {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_fish';
             let hydratingState = false;
 
@@ -218,9 +218,9 @@ function initFishView() {
                     .map(r => [r, r])];
 
                 const source = (response && response.source) || '';
-                if (source === 'game-cache') dataSourceText.value = t('Loaded fish data from cached game-file scan.');
-                else if (source === 'game-cache-stale') dataSourceText.value = t('Loaded fish data from cache. Refreshing in the background…');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded fish data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('fish.loaded_fish_data_from_cached_game_file_s_1562da');
+                else if (source === 'game-cache-stale') dataSourceText.value = t('fish.loaded_fish_data_from_cache_refreshing_i_e9df1d');
+                else if (source === 'game-live') dataSourceText.value = t('fish.loaded_fish_data_from_live_game_files');
                 else dataSourceText.value = '';
             };
 

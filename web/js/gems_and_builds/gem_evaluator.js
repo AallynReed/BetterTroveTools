@@ -8,7 +8,7 @@ document.addEventListener('gem_evaluator_loaded', async () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_gem_evaluator';
             const HISTORY_PREF_KEY = 'gem_evaluator_history_v1';
             const HISTORY_LIMIT = 20;
@@ -63,7 +63,7 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                     .sort((a, b) => a[1] - b[1])
                     .filter(([, value]) => value <= 7)
                     .map(([name, value]) => [name, value]);
-                return [[`(${t('Select Stat')})`, ''], ...options];
+                return [[`(${t('gems.gem_evaluator.select_stat')})`, ''], ...options];
             });
 
             const levelNumber = computed(() => {
@@ -379,21 +379,21 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 if (!results.value.length) return [];
                 const result = results.value[0];
                 const lines = [];
-                lines.push(t('Quality % is the average of each stat\'s normalized progress within its tier thresholds.'));
+                lines.push(t('gems.gem_evaluator.quality_is_the_average_of_each_stat_s_no_a6a7f0'));
                 (result.stats || []).forEach((stat) => {
                     lines.push(
-                        `${t(stat.display_name)}: ${t('value')} ${formatNumber(stat.entered_value)} → ` +
-                        `${t('progress')} ${(stat.progress * 100).toFixed(2)}% ` +
-                        `(${t('containers')}: ${stat.containers})`
+                        `${t(stat.display_name)}: ${t('gems.gem_evaluator.value_f32b67')} ${formatNumber(stat.entered_value)} → ` +
+                        `${t('gems.gem_evaluator.progress')} ${(stat.progress * 100).toFixed(2)}% ` +
+                        `(${t('gems.gem_evaluator.containers_642b5c')}: ${stat.containers})`
                     );
                 });
                 const avg = (result.stats || []).reduce((sum, s) => sum + s.progress * s.containers, 0);
                 const tot = (result.stats || []).reduce((sum, s) => sum + s.containers, 0);
                 lines.push(
-                    `${t('Overall')}: (${(result.stats || []).map((s) => `${(s.progress * 100).toFixed(2)}%×${s.containers}`).join(' + ')}) / ${tot} = ${result.quality_percent.toFixed(2)}%`
+                    `${t('gems.gem_evaluator.overall')}: (${(result.stats || []).map((s) => `${(s.progress * 100).toFixed(2)}%×${s.containers}`).join(' + ')}) / ${tot} = ${result.quality_percent.toFixed(2)}%`
                 );
                 lines.push(
-                    `${t('Power Rank')}: ${t('base')} + ${t('level increments')} + ${t('per-stat contributions')} = ${result.calculated_power_rank}`
+                    `${t('common.power_rank')}: ${t('gems.gem_evaluator.base')} + ${t('gems.gem_evaluator.level_increments')} + ${t('gems.gem_evaluator.per_stat_contributions')} = ${result.calculated_power_rank}`
                 );
                 return lines;
             });
@@ -445,14 +445,14 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                         applyGuessedDistribution(response.guessed_distribution || response.data?.guessed_distribution || []);
                     } else if (!silent) {
                         window.showToast(
-                            t('Could not guess stats: {error}').replace('{error}', response?.error || t('Unknown Error')),
+                            t('gems.gem_evaluator.could_not_guess_stats_error').replace('{error}', response?.error || t('common.unknown_error')),
                             true
                         );
                     }
                 } catch (error) {
                     if (!silent) {
                         window.showToast(
-                            t('Connection error: {error}').replace('{error}', error),
+                            t('common.connection_error_error').replace('{error}', error),
                             true
                         );
                     }
@@ -468,7 +468,7 @@ document.addEventListener('gem_evaluator_loaded', async () => {
 
                 const stillInvalidStat = form.stats.find((stat) => !stat.type || stat.value === '' || Number(stat.value) < 0);
                 if (stillInvalidStat) {
-                    window.showToast(t('Fill in all three stat rows before evaluating.'), true);
+                    window.showToast(t('gems.gem_evaluator.fill_in_all_three_stat_rows_before_evalu_03eb62'), true);
                     return;
                 }
 
@@ -487,13 +487,13 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                         }
                     } else {
                         window.showToast(
-                            t('Could not evaluate gem: {error}').replace('{error}', response?.error || t('Unknown Error')),
+                            t('gems.gem_evaluator.could_not_evaluate_gem_error').replace('{error}', response?.error || t('common.unknown_error')),
                             true
                         );
                     }
                 } catch (error) {
                     window.showToast(
-                        t('Connection error: {error}').replace('{error}', error),
+                        t('common.connection_error_error').replace('{error}', error),
                         true
                     );
                 }
@@ -504,7 +504,7 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 const powerRank = Number(simpleForm.powerRank || 0);
                 const level = Number(simpleForm.level || 1);
                 if (powerRank <= 0 || level <= 0) {
-                    window.showToast(t('Fill in Power Rank and Level before evaluating.'), true);
+                    window.showToast(t('gems.gem_evaluator.fill_in_power_rank_and_level_before_eval_8bc743'), true);
                     return;
                 }
                 isEvaluating.value = true;
@@ -520,13 +520,13 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                         bestMatch.value = response.best_match || response.data?.best_match || null;
                     } else {
                         window.showToast(
-                            t('Could not evaluate gem: {error}').replace('{error}', response?.error || t('Unknown Error')),
+                            t('gems.gem_evaluator.could_not_evaluate_gem_error').replace('{error}', response?.error || t('common.unknown_error')),
                             true
                         );
                     }
                 } catch (error) {
                     window.showToast(
-                        t('Connection error: {error}').replace('{error}', error),
+                        t('common.connection_error_error').replace('{error}', error),
                         true
                     );
                 }

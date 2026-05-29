@@ -13,7 +13,7 @@ function initBadgesView() {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_badges';
             let hydratingState = false;
 
@@ -246,8 +246,8 @@ function initBadgesView() {
                 categoryOptions.value = [['All Categories', 'All'], ...Array.from(cats).sort().map(c => [c, c]), ['(uncategorized)', '(uncategorized)']];
 
                 const source = (response && response.source) || '';
-                if (source === 'game-cache') dataSourceText.value = t('Loaded badge data from cached game-file scan.');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded badge data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('badges.loaded_badge_data_from_cached_game_file_a0e7e4');
+                else if (source === 'game-live') dataSourceText.value = t('badges.loaded_badge_data_from_live_game_files');
                 else dataSourceText.value = '';
             };
 

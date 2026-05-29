@@ -9,7 +9,7 @@ document.addEventListener('about_loaded', async () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
 
             const appVersion = ref("...");
             const appAuthor = ref("Aallyn Reed");
@@ -41,7 +41,7 @@ document.addEventListener('about_loaded', async () => {
                 navigator.clipboard.writeText(debugInfo).then(() => {
                     debugCopied.value = true;
                     setTimeout(() => debugCopied.value = false, 2000);
-                    if (window.showToast) window.showToast(t("Copied Debug Info to clipboard!"));
+                    if (window.showToast) window.showToast(t("about.copied_debug_info_to_clipboard"));
                 });
             };
 
@@ -51,17 +51,17 @@ document.addEventListener('about_loaded', async () => {
                         const licenseResp = await eel.get_app_license()();
                         appLicenseText.value = licenseResp?.text ?? licenseResp?.data?.text ?? licenseResp?.value ?? licenseResp;
                     } 
-                    catch (e) { appLicenseText.value = t("Failed to load license."); }
+                    catch (e) { appLicenseText.value = t("about.failed_to_load_license"); }
                 }
             };
 
             const loadChangelog = async () => {
                 if (changelogLoaded.value) return;
                 try {
-                    const tagsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/tags', { bttLabel: t('Fetching Changelog Tags') });
+                    const tagsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/tags', { bttLabel: t('about.fetching_changelog_tags') });
                     const tags = await tagsRes.json();
                     
-                    const commitsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/commits?per_page=100', { bttLabel: t('Fetching Changelog Commits') });
+                    const commitsRes = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/commits?per_page=100', { bttLabel: t('about.fetching_changelog_commits') });
                     const commits = await commitsRes.json();
                     
                     if (commits.message && commits.message.includes("API rate limit exceeded")) {
@@ -73,7 +73,7 @@ document.addEventListener('about_loaded', async () => {
                     const tagMap = {};
                     if (Array.isArray(tags)) tags.forEach(tag => tagMap[tag.commit.sha] = tag.name);
 
-                    let currentVersion = t("Unreleased");
+                    let currentVersion = t("about.unreleased");
                     const groups = [];
                     let currentGroup = { version: currentVersion, commits: [] };
                     groups.push(currentGroup);
@@ -132,14 +132,14 @@ document.addEventListener('about_loaded', async () => {
                 } catch (e) {}
 
                 try {
-                    const res = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/contributors', { bttLabel: t('Fetching Contributors') });
+                    const res = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/contributors', { bttLabel: t('about.fetching_contributors') });
                     const data = await res.json();
                     if (Array.isArray(data)) contributors.value = data;
                 } catch (e) {}
                 contributorsLoaded.value = true;
 
                 try {
-                    const res = await fetch('/assets/data/supporters.json?t=' + Date.now(), { bttLabel: t('Fetching Supporters') });
+                    const res = await fetch('/assets/data/supporters.json?t=' + Date.now(), { bttLabel: t('about.fetching_supporters') });
                     if (res.ok) {
                         const data = await res.json();
                         if (Array.isArray(data)) {

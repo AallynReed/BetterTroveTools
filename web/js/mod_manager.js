@@ -55,7 +55,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str);
+            const t = (str, p) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str);
             const uiState = readUiState();
 
             const installs = ref([]);
@@ -63,7 +63,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const mods = ref([]);
             const isLoading = ref(false);
-            const statusText = ref(t('Scanning Mod Directory...'));
+            const statusText = ref(t('mod_manager.scanning_mod_directory'));
 
             const searchQuery = ref(uiState.searchQuery || '');
             const activeResultIndex = ref(-1);
@@ -90,9 +90,9 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
 
             const installOptions = computed(() => {
-                if (installs.value.length === 0) return [[t('Searching for Game Installs...'), '']];
+                if (installs.value.length === 0) return [[t('mod_manager.searching_for_game_installs'), '']];
                 return installs.value.map(g => [
-                    t('{name} - {path}')
+                    t('common.name_path')
                         .replace('{name}', t(g.name))
                         .replace('{path}', g.path),
                     g.path
@@ -100,12 +100,12 @@ document.addEventListener('mod_manager_loaded', async () => {
             });
 
             const statusOptions = computed(() => [
-                [t('All Mods'), 'all'],
-                [t('Enabled Only'), 'enabled'],
-                [t('Disabled Only'), 'disabled'],
-                [t('Has Conflicts'), 'conflicts'],
-                [t('Has Updates'), 'has_updates'],
-                [t('From Trovesaurus Only'), 'trovesaurus_only']
+                [t('mod_manager.all_mods'), 'all'],
+                [t('mod_manager.enabled_only'), 'enabled'],
+                [t('mod_manager.disabled_only'), 'disabled'],
+                [t('mod_manager.has_conflicts'), 'conflicts'],
+                [t('mod_manager.has_updates'), 'has_updates'],
+                [t('mod_manager.from_trovesaurus_only'), 'trovesaurus_only']
             ]);
 
             const hasActiveConflict = (mod) => mod.status === 'enabled' && mod.conflicts_with && mod.conflicts_with.some(c => c.enabled);
@@ -161,19 +161,19 @@ document.addEventListener('mod_manager_loaded', async () => {
                     installs.value = [];
                     selectedInstall.value = '';
                     if (!response.success && response.error) {
-                        window.showToast(t('Game path detection failed: {error}').replace('{error}', response.error), true);
+                        window.showToast(t('common.game_path_detection_failed_error').replace('{error}', response.error), true);
                     }
                 }
             };
 
             const openSelectedInstallFolder = async () => {
                 if (!selectedInstall.value) {
-                    window.showToast(t('No path selected.'), true);
+                    window.showToast(t('common.no_path_selected'), true);
                     return;
                 }
                 const response = await eel.open_path_in_explorer(selectedInstall.value)();
                 if (!response || !response.success) {
-                    window.showToast(t('Failed to open folder: {error}').replace('{error}', response?.error || t('Unknown error occurred')), true);
+                    window.showToast(t('common.failed_to_open_folder_error').replace('{error}', response?.error || t('common.unknown_error_occurred')), true);
                 }
             };
 
@@ -201,14 +201,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const response = await window.callBackend(eel.check_mod_updates(selectedInstall.value)(), 'Failed to check updates');
                 if (!loadGuard.isCurrent(token)) return;
                 if (!response.success) {
-                    if (notify) window.showToast(t('Failed to refresh updates: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                    if (notify) window.showToast(t('mod_manager.failed_to_refresh_updates_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     return;
                 }
                 const updates = response.data.updates || response.raw?.updates || {};
                 mods.value.forEach(mod => {
                     mod.hasUpdate = !!updates[mod.path];
                 });
-                if (notify) window.showToast(t('Update state refreshed.'));
+                if (notify) window.showToast(t('mod_manager.update_state_refreshed'));
             };
 
             const loadMods = async () => {
@@ -222,8 +222,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                 showPreviewOnInfoSide.value = settings.show_mod_preview_on_info_side !== false;
 
                 let stText = settings.auto_fix_names
-                    ? t('Scanning mods and auto-fixing names...')
-                    : t('Scanning mods and verifying configs...');
+                    ? t('mod_manager.scanning_mods_and_auto_fixing_names')
+                    : t('mod_manager.scanning_mods_and_verifying_configs');
                 statusText.value = stText;
 
                 const response = await window.callBackend(
@@ -250,10 +250,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                         await Promise.all([applyModUrls(token), applyUpdateFlags(token, false)]);
                     } catch (err) {
                         if (!loadGuard.isCurrent(token)) return;
-                        statusText.value = t('Error reading mod data from cache.');
+                        statusText.value = t('mod_manager.error_reading_mod_data_from_cache');
                     }
                 } else {
-                    statusText.value = t('Error loading mods: {error}').replace('{error}', response.error || t('Unknown error occurred'));
+                    statusText.value = t('mod_manager.error_loading_mods_error').replace('{error}', response.error || t('common.unknown_error_occurred'));
                 }
 
                 if (loadGuard.isCurrent(token)) isLoading.value = false;
@@ -261,7 +261,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const refreshInstallState = async () => {
                 await window.JobQueue.run({
-                    label: t('Refresh mod install state'),
+                    label: t('mod_manager.refresh_mod_install_state'),
                     task: async () => {
                         await loadMods();
                     },
@@ -276,7 +276,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 isRefreshingUpdates.value = true;
                 const token = loadGuard.next();
                 await window.JobQueue.run({
-                    label: t('Refresh mod updates'),
+                    label: t('mod_manager.refresh_mod_updates'),
                     task: async () => {
                         await applyUpdateFlags(token, true);
                     },
@@ -290,10 +290,10 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const clearCache = async () => {
                 const confirmed = await window.showConfirmModal({
-                    title: t('Clear Cache'),
-                    message: t('Clear Mod Manager cache files now?'),
-                    confirmLabel: t('Clear'),
-                    cancelLabel: t('Cancel'),
+                    title: t('common.clear_cache'),
+                    message: t('mod_manager.clear_mod_manager_cache_files_now'),
+                    confirmLabel: t('common.clear'),
+                    cancelLabel: t('common.cancel'),
                     danger: false
                 });
                 if (!confirmed) return;
@@ -301,13 +301,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                 isClearingCache.value = true;
                 try {
                     const response = await runManagedJob({
-                        label: t('Clear Mod Manager cache'),
+                        label: t('mod_manager.clear_mod_manager_cache'),
                         task: async () => window.callBackend(eel.clear_mod_manager_cache()(), 'Failed to clear cache')
                     });
                     if (!response.success) {
-                        window.showToast(t('Failed to clear cache: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                        window.showToast(t('common.failed_to_clear_cache_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     } else {
-                        window.showToast(t('Mod Manager cache cleared.'));
+                        window.showToast(t('mod_manager.mod_manager_cache_cleared'));
                     }
                 } finally {
                     isClearingCache.value = false;
@@ -319,14 +319,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                 mod.isUpdating = true;
                 try {
                     const response = await runManagedJob({
-                        label: t("Update mod '{name}'").replace('{name}', mod.name),
+                        label: t("common.update_mod_name").replace('{name}', mod.name),
                         task: async () => window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod')
                     });
                     if (!response.success) {
-                        window.showToast(t('Failed to update mod: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                        window.showToast(t('mod_manager.failed_to_update_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     } else {
                         mod.hasUpdate = false;
-                        window.showToast(t("Updated '{name}'.").replace('{name}', mod.name));
+                        window.showToast(t("mod_manager.updated_name").replace('{name}', mod.name));
                         await loadMods();
                     }
                 } finally {
@@ -338,13 +338,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (mod.isToggling) return;
                 mod.isToggling = true;
                 try {
-                    const nextStateLabel = mod.status === 'enabled' ? t('Disable') : t('Enable');
+                    const nextStateLabel = mod.status === 'enabled' ? t('mod_manager.disable') : t('mod_manager.enable');
                     const response = await runManagedJob({
-                        label: t("{action} mod '{name}'").replace('{action}', nextStateLabel).replace('{name}', mod.name),
+                        label: t("mod_manager.action_mod_name").replace('{action}', nextStateLabel).replace('{name}', mod.name),
                         task: async () => window.callBackend(eel.toggle_mod(selectedInstall.value, mod.path)(), 'Failed to toggle mod')
                     });
                     if (!response.success) {
-                        window.showToast(t('Failed to toggle mod: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                        window.showToast(t('mod_manager.failed_to_toggle_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                         return;
                     }
 
@@ -362,8 +362,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                     });
                     window.showToast(
                         mod.status === 'enabled'
-                            ? t("Enabled '{name}'.").replace('{name}', mod.name)
-                            : t("Disabled '{name}'.").replace('{name}', mod.name)
+                            ? t("mod_manager.enabled_name").replace('{name}', mod.name)
+                            : t("mod_manager.disabled_name").replace('{name}', mod.name)
                     );
                 } finally {
                     mod.isToggling = false;
@@ -382,23 +382,23 @@ document.addEventListener('mod_manager_loaded', async () => {
             const deleteMod = async (mod) => {
                 if (mod.isDeleting) return;
                 const confirmed = await window.showConfirmModal({
-                    title: t('Delete Mod'),
-                    message: t("Are you sure you want to permanently delete '{name}'?").replace('{name}', mod.name),
-                    confirmLabel: t('Delete'),
-                    cancelLabel: t('Cancel'),
+                    title: t('common.delete_mod'),
+                    message: t("common.are_you_sure_you_want_to_permanently_del_7a0256").replace('{name}', mod.name),
+                    confirmLabel: t('common.delete'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
                 if (!confirmed) return;
 
                 mod.isDeleting = true;
                 const response = await runManagedJob({
-                    label: t("Delete mod '{name}'").replace('{name}', mod.name),
+                    label: t("common.delete_mod_name").replace('{name}', mod.name),
                     task: async () => window.callBackend(eel.delete_mod(selectedInstall.value, mod.path)(), 'Failed to delete mod')
                 });
                 mod.isDeleting = false;
 
                 if (!response.success) {
-                    window.showToast(t('Failed to delete mod: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                    window.showToast(t('common.failed_to_delete_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     return;
                 }
 
@@ -408,37 +408,37 @@ document.addEventListener('mod_manager_loaded', async () => {
 
                 if (undoToken) {
                     window.showUndoToast(
-                        t("Deleted '{name}'").replace('{name}', mod.name),
+                        t("common.deleted_name").replace('{name}', mod.name),
                         8,
                         async () => {
                             const undoResp = await window.callBackend(eel.undo_delete_mod(undoToken)(), 'Failed to undo delete');
                             if (!undoResp.success) {
-                                window.showToast(t('Undo failed: {error}').replace('{error}', undoResp.error || t('Unknown error occurred')), true);
+                                window.showToast(t('common.undo_failed_error').replace('{error}', undoResp.error || t('common.unknown_error_occurred')), true);
                                 return;
                             }
                             mods.value.unshift(snapshot);
-                            window.showToast(t('Deletion undone.'));
+                            window.showToast(t('common.deletion_undone'));
                         }
                     );
                 } else {
-                    window.showToast(t("Deleted '{name}'").replace('{name}', mod.name));
+                    window.showToast(t("common.deleted_name").replace('{name}', mod.name));
                 }
             };
 
             const fixNames = async () => {
-                if (!selectedInstall.value) return window.showToast(t('Select a game first.'), true);
+                if (!selectedInstall.value) return window.showToast(t('common.select_a_game_first'), true);
                 isFixingNames.value = true;
                 try {
                     const response = await runManagedJob({
-                        label: t('Fix mod file names'),
+                        label: t('mod_manager.fix_mod_file_names'),
                         task: async () => window.callBackend(eel.fix_mod_names(selectedInstall.value)(), 'Failed to fix names')
                     });
                     if (response.success) {
                         const count = response.data.fixed_count || response.raw?.fixed_count || 0;
-                        window.showToast(t('Fixed {count} mod file names.').replace('{count}', count));
+                        window.showToast(t('mod_manager.fixed_count_mod_file_names').replace('{count}', count));
                         await loadMods();
                     } else {
-                        window.showToast(t('Failed to fix names: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                        window.showToast(t('mod_manager.failed_to_fix_names_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     }
                 } finally {
                     isFixingNames.value = false;
@@ -446,8 +446,8 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
 
             const getConflictTitle = (mod) => {
-                const title = hasActiveConflict(mod) ? t('CRITICAL CONFLICT') : t('POTENTIAL CONFLICT');
-                const names = (mod.conflicts_with || []).map(c => `${c.name} (${c.enabled ? t('ENABLED') : t('Disabled')})`).join('\n• ');
+                const title = hasActiveConflict(mod) ? t('mod_manager.critical_conflict') : t('mod_manager.potential_conflict');
+                const names = (mod.conflicts_with || []).map(c => `${c.name} (${c.enabled ? t('mod_manager.enabled') : t('mod_manager.disabled')})`).join('\n• ');
                 return `${title}\n• ${names}`;
             };
 
@@ -494,8 +494,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                     label: 'Copy Mod Name',
                     icon: 'fa-copy',
                     action: () => navigator.clipboard.writeText(mod.name)
-                        .then(() => window.showToast(t('Copied to clipboard!')))
-                        .catch(() => window.showToast(t('Could not copy to clipboard.'), true))
+                        .then(() => window.showToast(t('common.copied_to_clipboard')))
+                        .catch(() => window.showToast(t('mod_manager.could_not_copy_to_clipboard'), true))
                 });
 
                 window.ContextMenu.show(e, menuItems);

@@ -14,7 +14,7 @@ document.addEventListener('trovesaurus_loaded', () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str);
+            const t = (str, p) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str);
             const getLocale = () => (window.I18nManager && window.I18nManager.currentLocale
                 ? window.I18nManager.currentLocale.replace('_', '-')
                 : undefined);
@@ -59,27 +59,27 @@ document.addEventListener('trovesaurus_loaded', () => {
             };
 
             const categoryOptions = computed(() => [
-                [t('All Categories'), ''],
+                [t('trovesaurus.all_categories'), ''],
                 [t('UI & HUD'), 'ui'],
-                [t('VFX'), 'vfx'],
-                [t('Mounts'), 'mount'],
-                [t('Allies'), 'ally'],
-                [t('Costumes'), 'costume'],
-                [t('Dragons'), 'dragon']
+                [t('trovesaurus.vfx'), 'vfx'],
+                [t('common.mounts'), 'mount'],
+                [t('common.allies'), 'ally'],
+                [t('trovesaurus.costumes'), 'costume'],
+                [t('common.dragons'), 'dragon']
             ]);
 
             const sortOptions = computed(() => [
-                [t('Hot Mods (Default)'), 'hot'],
-                [t('Most Liked'), 'likes_desc'],
-                [t('Most Downloaded'), 'downloads_desc'],
-                [t('Newest First'), 'date_desc'],
-                [t('Oldest First'), 'date_asc']
+                [t('trovesaurus.hot_mods_default'), 'hot'],
+                [t('trovesaurus.most_liked'), 'likes_desc'],
+                [t('trovesaurus.most_downloaded'), 'downloads_desc'],
+                [t('trovesaurus.newest_first'), 'date_desc'],
+                [t('trovesaurus.oldest_first'), 'date_asc']
             ]);
 
             const gameOptions = computed(() => {
-                if (games.value.length === 0) return [[t('Auto-detecting...'), '']];
+                if (games.value.length === 0) return [[t('trovesaurus.auto_detecting'), '']];
                 return games.value.map(g => [
-                    t('{name} - {path}')
+                    t('common.name_path')
                         .replace('{name}', t(g.name))
                         .replace('{path}', g.path),
                     g.path
@@ -137,7 +137,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                     error.value = '';
                 } else {
                     mods.value = [];
-                    error.value = response?.error || t('Unknown error occurred');
+                    error.value = response?.error || t('common.unknown_error_occurred');
                 }
                 isLoading.value = false;
 
@@ -169,9 +169,9 @@ document.addEventListener('trovesaurus_loaded', () => {
                 }
 
                 if (response.success) {
-                    window.showToast(t('Installed'));
+                    window.showToast(t('common.installed'));
                 } else {
-                    window.showToast(t('Error: {error}').replace('{error}', response?.error || t('Unknown error occurred')), true);
+                    window.showToast(t('trovesaurus.error_error').replace('{error}', response?.error || t('common.unknown_error_occurred')), true);
                 }
             };
 
@@ -179,8 +179,8 @@ document.addEventListener('trovesaurus_loaded', () => {
                 const modId = String(mod.id);
                 await window.JobQueue.run({
                     label: mod.needs_update
-                        ? t("Update mod '{name}'").replace('{name}', mod.name)
-                        : t("Install mod '{name}'").replace('{name}', mod.name),
+                        ? t("common.update_mod_name").replace('{name}', mod.name)
+                        : t("trovesaurus.install_mod_name").replace('{name}', mod.name),
                     task: async () => {
                         await new Promise((resolve, reject) => {
                             installResolvers.set(modId, { resolve, reject });
@@ -199,7 +199,7 @@ document.addEventListener('trovesaurus_loaded', () => {
             const installMod = async (mod) => {
                 if (mod.is_installing || (mod.is_installed && !mod.needs_update)) return;
                 if (!selectedGame.value) {
-                    window.showToast(t('Could not automatically detect your Trove installation folder! Please check your game install.'), true);
+                    window.showToast(t('trovesaurus.could_not_automatically_detect_your_trov_34717f'), true);
                     return;
                 }
 
@@ -214,26 +214,26 @@ document.addEventListener('trovesaurus_loaded', () => {
             const deleteInstalledMod = async (mod) => {
                 if (mod.is_deleting) return;
                 if (!mod.is_installed) {
-                    window.showToast(t('This mod is not installed.'), true);
+                    window.showToast(t('trovesaurus.this_mod_is_not_installed'), true);
                     return;
                 }
                 if (!selectedGame.value) {
-                    window.showToast(t('Select a game installation first.'), true);
+                    window.showToast(t('trovesaurus.select_a_game_installation_first'), true);
                     return;
                 }
 
                 const confirmed = await window.showConfirmModal({
-                    title: t('Delete Mod'),
-                    message: t("Are you sure you want to permanently delete '{name}'?").replace('{name}', mod.name),
-                    confirmLabel: t('Delete'),
-                    cancelLabel: t('Cancel'),
+                    title: t('common.delete_mod'),
+                    message: t("common.are_you_sure_you_want_to_permanently_del_7a0256").replace('{name}', mod.name),
+                    confirmLabel: t('common.delete'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
                 if (!confirmed) return;
 
                 mod.is_deleting = true;
                 const response = await window.JobQueue.run({
-                    label: t("Delete mod '{name}'").replace('{name}', mod.name),
+                    label: t("common.delete_mod_name").replace('{name}', mod.name),
                     task: async () => window.callBackend(
                         eel.delete_trovesaurus_installed_mod(selectedGame.value, mod.id)(),
                         'Failed to delete installed mod'
@@ -246,7 +246,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                 mod.is_deleting = false;
 
                 if (!response.success) {
-                    window.showToast(t('Failed to delete mod: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                    window.showToast(t('common.failed_to_delete_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     return;
                 }
 
@@ -256,20 +256,20 @@ document.addEventListener('trovesaurus_loaded', () => {
 
                 if (undoToken) {
                     window.showUndoToast(
-                        t("Deleted '{name}'").replace('{name}', mod.name),
+                        t("common.deleted_name").replace('{name}', mod.name),
                         8,
                         async () => {
                             const undoResp = await window.callBackend(eel.undo_delete_mod(undoToken)(), 'Failed to undo delete');
                             if (!undoResp.success) {
-                                window.showToast(t('Undo failed: {error}').replace('{error}', undoResp.error || t('Unknown error occurred')), true);
+                                window.showToast(t('common.undo_failed_error').replace('{error}', undoResp.error || t('common.unknown_error_occurred')), true);
                                 return;
                             }
                             mod.is_installed = true;
-                            window.showToast(t('Deletion undone.'));
+                            window.showToast(t('common.deletion_undone'));
                         }
                     );
                 } else {
-                    window.showToast(t("Deleted '{name}'").replace('{name}', mod.name));
+                    window.showToast(t("common.deleted_name").replace('{name}', mod.name));
                 }
             };
 
@@ -278,7 +278,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                 isRefreshing.value = true;
                 try {
                     await window.JobQueue.run({
-                        label: t('Refresh Trovesaurus results'),
+                        label: t('trovesaurus.refresh_trovesaurus_results'),
                         task: async () => {
                             await fetchMods(currentPage.value, true, { awaitResult: true });
                         },
@@ -286,7 +286,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                             await fetchMods(currentPage.value, true, { awaitResult: true });
                         }
                     });
-                    window.showToast(t('Refreshed Trovesaurus results.'));
+                    window.showToast(t('trovesaurus.refreshed_trovesaurus_results'));
                 } finally {
                     isRefreshing.value = false;
                 }
@@ -294,10 +294,10 @@ document.addEventListener('trovesaurus_loaded', () => {
 
             const clearCache = async () => {
                 const confirmed = await window.showConfirmModal({
-                    title: t('Clear Cache'),
-                    message: t('Clear Trovesaurus cache and reload?'),
-                    confirmLabel: t('Clear'),
-                    cancelLabel: t('Cancel'),
+                    title: t('common.clear_cache'),
+                    message: t('trovesaurus.clear_trovesaurus_cache_and_reload'),
+                    confirmLabel: t('common.clear'),
+                    cancelLabel: t('common.cancel'),
                     danger: false
                 });
                 if (!confirmed) return;
@@ -305,14 +305,14 @@ document.addEventListener('trovesaurus_loaded', () => {
                 isClearingCache.value = true;
                 try {
                     const response = await window.JobQueue.run({
-                        label: t('Clear Trovesaurus cache'),
+                        label: t('common.clear_trovesaurus_cache'),
                         task: async () => window.callBackend(eel.clear_trovesaurus_cache()(), 'Failed to clear Trovesaurus cache'),
                         retryTask: async () => window.callBackend(eel.clear_trovesaurus_cache()(), 'Failed to clear Trovesaurus cache')
                     });
                     if (!response.success) {
-                        window.showToast(t('Failed to clear cache: {error}').replace('{error}', response.error || t('Unknown error occurred')), true);
+                        window.showToast(t('common.failed_to_clear_cache_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
                     } else {
-                        window.showToast(t('Trovesaurus cache cleared.'));
+                        window.showToast(t('trovesaurus.trovesaurus_cache_cleared'));
                         fetchMods(1, true);
                     }
                 } finally {
@@ -322,12 +322,12 @@ document.addEventListener('trovesaurus_loaded', () => {
 
             const openSelectedGameFolder = async () => {
                 if (!selectedGame.value) {
-                    window.showToast(t('No path selected.'), true);
+                    window.showToast(t('common.no_path_selected'), true);
                     return;
                 }
                 const response = await eel.open_path_in_explorer(selectedGame.value)();
                 if (!response || !response.success) {
-                    window.showToast(t('Failed to open folder: {error}').replace('{error}', response?.error || t('Unknown error occurred')), true);
+                    window.showToast(t('common.failed_to_open_folder_error').replace('{error}', response?.error || t('common.unknown_error_occurred')), true);
                 }
             };
 
@@ -347,7 +347,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                 }
 
                 items.push({ label: 'View on Trovesaurus', icon: 'fa-arrow-up-right-from-square', action: () => openUrl(`https://trovesaurus.com/mod=${mod.id}`) });
-                items.push({ label: 'Copy Mod Name', icon: 'fa-copy', action: () => navigator.clipboard.writeText(mod.name).then(() => window.showToast(t('Copied to clipboard!'))) });
+                items.push({ label: 'Copy Mod Name', icon: 'fa-copy', action: () => navigator.clipboard.writeText(mod.name).then(() => window.showToast(t('common.copied_to_clipboard'))) });
                 window.ContextMenu.show(e, items);
             };
 
@@ -390,7 +390,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                         selectedGame.value = liveInstall ? liveInstall.path : paths[0].path;
                     }
                 } else if (!response.success && response.error) {
-                    window.showToast(t('Game path detection failed: {error}').replace('{error}', response.error), true);
+                    window.showToast(t('common.game_path_detection_failed_error').replace('{error}', response.error), true);
                 }
 
                 watch(selectedGame, async (newVal) => {

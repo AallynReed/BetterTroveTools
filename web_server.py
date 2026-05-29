@@ -42,6 +42,7 @@ from backend.home import RSS_NAMESPACES, _safe_strip_html, _truncate_text  # noq
 
 
 DENIED_EEL_FUNCTIONS = {
+    "add_missing_translation_keys",
     "browse_for_game_dir",
     "build_baseline_cache",
     "cancel_file_manager_operation",
@@ -212,6 +213,30 @@ def get_app_metadata():
         }
 
 
+def _is_locale_file(file_path):
+    # Only <lang>_<REGION>.json; skips engine aux files (_ui_ids.json, schema).
+    parts = file_path.stem.split("_")
+    return (
+        len(parts) == 2
+        and 2 <= len(parts[0]) <= 3 and parts[0].islower()
+        and 2 <= len(parts[1]) <= 4 and parts[1].isalpha()
+    )
+
+
+def _completion(data):
+    # User-facing coverage over everything visible: UI strings + content.
+    strings = data.get("strings")
+    if strings is None:
+        values = list(data.get("keys", {}).values())  # legacy
+    else:
+        values = list(strings.values()) + list(data.get("content", {}).values())
+    total = len(values)
+    if total == 0:
+        return 0
+    empty = sum(1 for value in values if value == "" or value is None)
+    return int(((total - empty) / total) * 100)
+
+
 @eel.expose
 def get_available_languages():
     languages = []
@@ -219,22 +244,14 @@ def get_available_languages():
         return [{"code": "en_US", "name": "English", "percent": 100}]
 
     for file_path in LOCALE_DIR.glob("*.json"):
+        if not _is_locale_file(file_path):
+            continue
         try:
             data = json.loads(file_path.read_text(encoding="utf-8"))
-            keys = data.get("keys", {})
-            total_keys = len(keys)
-            if file_path.stem == "en_US":
-                percent = 100
-            elif total_keys == 0:
-                percent = 0
-            else:
-                empty_keys = sum(1 for value in keys.values() if str(value).strip() == "")
-                percent = int(((total_keys - empty_keys) / total_keys) * 100)
-            languages.append({
-                "code": file_path.stem,
-                "name": data.get("language_name", file_path.stem),
-                "percent": percent,
-            })
+            meta = data.get("meta") or {}
+            name = meta.get("name") or data.get("language_name") or file_path.stem
+            percent = 100 if file_path.stem == "en_US" else _completion(data)
+            languages.append({"code": file_path.stem, "name": name, "percent": percent})
         except Exception:
             continue
 

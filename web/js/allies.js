@@ -15,7 +15,7 @@ function initAlliesView() {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_allies';
             let hydratingState = false;
 
@@ -26,7 +26,7 @@ function initAlliesView() {
             
             const categoryOptions = ref([]);
             const statsOptions = ref([]);
-            const abilitiesOptions = ref([[t('All Abilities'), '']]);
+            const abilitiesOptions = ref([[t('allies.all_abilities'), '']]);
 
             const searchQuery = ref('');
             const activeResultIndex = ref(-1);
@@ -151,7 +151,7 @@ function initAlliesView() {
                 if (typeof stat.display === 'string' && stat.display.trim()) return stat.display.trim();
                 if (typeof stat.value !== 'number' || !Number.isFinite(stat.value)) return '';
                 return stat.is_percent
-                    ? t('{value}%').replace('{value}', formatNumberWithSeparators(stat.value))
+                    ? t('common.value').replace('{value}', formatNumberWithSeparators(stat.value))
                     : formatNumberWithSeparators(stat.value);
             };
 
@@ -160,7 +160,7 @@ function initAlliesView() {
                 const statName = translateText(stat.name || '');
                 const formattedValue = formatStatValue(stat);
                 if (formattedValue && statName) {
-                    return t('{value} {stat}')
+                    return t('common.value_stat')
                         .replace('{value}', formattedValue)
                         .replace('{stat}', statName);
                 }
@@ -441,22 +441,22 @@ function initAlliesView() {
                 categoryOptions.value = catOpts;
 
                 statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
-                abilitiesOptions.value = [[t('All Abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
+                abilitiesOptions.value = [[t('allies.all_abilities'), '']].concat(Array.from(uniqueAbilities).sort().map(a => [t(a), a]));
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
                 if (source === 'game-cache') {
-                    dataSourceText.value = t('Loaded ally data from cached game-file scan.');
+                    dataSourceText.value = t('allies.loaded_ally_data_from_cached_game_file_s_3ece41');
                 } else if (source === 'game-cache-stale') {
-                    dataSourceText.value = t('Loaded ally data from cache. Refreshing in the background…');
+                    dataSourceText.value = t('allies.loaded_ally_data_from_cache_refreshing_i_13cb40');
                 } else if (source === 'game-live') {
-                    dataSourceText.value = t('Loaded ally data from live game files.');
+                    dataSourceText.value = t('allies.loaded_ally_data_from_live_game_files');
                 } else {
                     dataSourceText.value = '';
                 }
                 if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
                     const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
-                    if (hours > 0) dataSourceText.value += ` ${t('Cache age')}: ${hours}h.`;
+                    if (hours > 0) dataSourceText.value += ` ${t('common.cache_age')}: ${hours}h.`;
                 }
             };
 

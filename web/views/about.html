@@ -5,8 +5,8 @@
     <div class="about-header-hero">
         <img src="assets/favicon.png" alt="Logo" class="about-logo">
         <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 5px;">
-            <p class="version-tag" style="margin: 0;">{{ t('Version {version}').replace('{version}', appVersion) }}</p>
-            <button @click="copyDebug" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1em; transition: color 0.2s;" :title="t('Copy Debug Info')">
+            <p class="version-tag" style="margin: 0;">{{ t('about.version_version').replace('{version}', appVersion) }}</p>
+            <button @click="copyDebug" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1em; transition: color 0.2s;" :title="t('about.copy_debug_info')">
                 <i class="fa-solid" :class="debugCopied ? 'fa-check' : 'fa-clipboard'" :style="{ color: debugCopied ? '#4ade80' : '' }"></i>
             </button>
         </div>
@@ -17,111 +17,111 @@
     <div class="about-grid">
         <div class="about-section">
             <div class="section-title"><i class="fa-solid fa-users"></i> <span>{{ t('Community & Support') }}</span></div>
-            <p>{{ t('Better Trove Tools is built for the community. If you encounter bugs, have suggestions, or just want to chat with other modders, join our Discord.') }}</p>
+            <p>{{ t('about.better_trove_tools_is_built_for_the_comm_e41dba') }}</p>
             <div class="link-buttons">
                 <button @click="modals.changelog = true; loadChangelog()" class="about-link changelog">
-                    <i class="fa-solid fa-list-ul"></i> <span>{{ t('View Changelog') }}</span>
+                    <i class="fa-solid fa-list-ul"></i> <span>{{ t('about.view_changelog') }}</span>
                 </button>
                 <button @click="modals.appLicense = true; loadAppLicense()" class="about-link app-license">
-                    <i class="fa-solid fa-file-contract"></i> <span>{{ t('App License (MIT)') }}</span>
+                    <i class="fa-solid fa-file-contract"></i> <span>{{ t('about.app_license_mit') }}</span>
                 </button>
                 <button @click="modals.licenses = true" class="about-link licenses">
-                    <i class="fa-solid fa-certificate"></i> <span>{{ t('Open Source Licenses') }}</span>
+                    <i class="fa-solid fa-certificate"></i> <span>{{ t('about.open_source_licenses') }}</span>
                 </button>
                 <a href="#" @click.prevent="openUrl('https://github.com/AallynReed/BetterTroveTools')" class="about-link github">
-                    <i class="fa-brands fa-github"></i> <span>{{ t('GitHub Repository') }}</span>
+                    <i class="fa-brands fa-github"></i> <span>{{ t('about.github_repository') }}</span>
                 </a>
                 <a href="#" @click.prevent="openUrl('https://discord.gg/Y7P2k99zAz')" class="about-link discord">
-                    <i class="fa-brands fa-discord"></i> <span>{{ t('Join Discord Support') }}</span>
+                    <i class="fa-brands fa-discord"></i> <span>{{ t('about.join_discord_support') }}</span>
                 </a>
             </div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 30px;">
             <div class="about-section">
-                <div class="section-title"><i class="fa-solid fa-heart"></i> <span>{{ t('Support the Developer') }}</span></div>
-                <p>{{ t('Developing and maintaining these tools takes a lot of time. If you find them useful, any support is greatly appreciated!') }}</p>
+                <div class="section-title"><i class="fa-solid fa-heart"></i> <span>{{ t('about.support_the_developer') }}</span></div>
+                <p>{{ t('about.developing_and_maintaining_these_tools_t_af111c') }}</p>
                 <div class="donation-row">
-                    <a href="#" @click.prevent="openUrl('https://paypal.me/waterin')" class="donate-icon paypal" :title="t('PayPal')"><i class="fa-brands fa-paypal"></i></a>
-                    <a href="#" @click.prevent="openUrl('https://buymeacoffee.com/aallyn')" class="donate-icon bmac" :title="t('Buy Me a Coffee')"><i class="fa-solid fa-mug-saucer"></i></a>
-                    <a href="#" @click.prevent="openUrl('https://ko-fi.com/aallyn')" class="donate-icon kofi" :title="t('Ko-fi')"><i class="fa-solid fa-mug-hot"></i></a>
+                    <a href="#" @click.prevent="openUrl('https://paypal.me/waterin')" class="donate-icon paypal" :title="t('about.paypal')"><i class="fa-brands fa-paypal"></i></a>
+                    <a href="#" @click.prevent="openUrl('https://buymeacoffee.com/aallyn')" class="donate-icon bmac" :title="t('about.buy_me_a_coffee')"><i class="fa-solid fa-mug-saucer"></i></a>
+                    <a href="#" @click.prevent="openUrl('https://ko-fi.com/aallyn')" class="donate-icon kofi" :title="t('about.ko_fi')"><i class="fa-solid fa-mug-hot"></i></a>
                 </div>
             </div>
 
             <div class="about-section">
-                <div class="section-title"><i class="fa-solid fa-code-merge"></i> <span>{{ t('GitHub Contributors') }}</span></div>
-                <p>{{ t('A huge thank you to everyone who has contributed code to Better Trove Tools!') }}</p>
+                <div class="section-title"><i class="fa-solid fa-code-merge"></i> <span>{{ t('about.github_contributors') }}</span></div>
+                <p>{{ t('about.a_huge_thank_you_to_everyone_who_has_con_6720dc') }}</p>
                 <div class="contributors-container">
                     <div v-if="!contributorsLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     <template v-else>
                         <a v-for="c in contributors" :key="c.login" href="#" @click.prevent="openUrl(c.html_url)" :title="`${c.login} (${c.contributions} contributions)`" class="contributor-avatar">
                             <img :src="c.avatar_url" :alt="c.login">
                         </a>
-                        <span v-if="contributors.length === 0" class="special-thanks">{{ t('Failed to load contributors.') }}</span>
+                        <span v-if="contributors.length === 0" class="special-thanks">{{ t('about.failed_to_load_contributors') }}</span>
                     </template>
                 </div>
             </div>
 
             <div class="about-section">
-                <div class="section-title"><i class="fa-solid fa-star"></i> <span>{{ t('Supporters') }}</span></div>
-                <p>{{ t('Thank you to everyone supporting the project and helping it grow.') }}</p>
+                <div class="section-title"><i class="fa-solid fa-star"></i> <span>{{ t('about.supporters') }}</span></div>
+                <p>{{ t('about.thank_you_to_everyone_supporting_the_pro_5ab5ad') }}</p>
                 <div class="supporters-container">
                     <div v-if="!supportersLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     <template v-else>
                         <span v-for="name in supporters" :key="name" class="supporter-chip">{{ name }}</span>
-                        <span v-if="supporters.length === 0" class="special-thanks">{{ t('No supporters listed yet.') }}</span>
+                        <span v-if="supporters.length === 0" class="special-thanks">{{ t('about.no_supporters_listed_yet') }}</span>
                     </template>
                 </div>
             </div>
         </div>
 
         <div class="about-section full-width">
-            <div class="section-title"><i class="fa-solid fa-language"></i> <span>{{ t('Translation Contributors') }}</span></div>
-            <p>{{ t('Thank you to the community members helping localize Better Trove Tools.') }}</p>
+            <div class="section-title"><i class="fa-solid fa-language"></i> <span>{{ t('about.translation_contributors') }}</span></div>
+            <p>{{ t('about.thank_you_to_the_community_members_helpi_fa816e') }}</p>
             <div class="translation-region">
-                <div class="translation-region-title">{{ t('Chinese') }}</div>
+                <div class="translation-region-title">{{ t('about.chinese') }}</div>
                 <div class="translation-pill-list">
                     <div class="translation-pill">
-                        <span class="translation-pill-name">{{ t('LiuLianF') }}</span>
-                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                        <span class="translation-pill-name">{{ t('about.liulianf') }}</span>
+                        <span class="translation-pill-role">{{ t('about.translation_proofreading_technical_frame_738d06') }}</span>
                     </div>
                     <div class="translation-pill">
-                        <span class="translation-pill-name">{{ t('MewsCat') }}</span>
-                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                        <span class="translation-pill-name">{{ t('about.mewscat') }}</span>
+                        <span class="translation-pill-role">{{ t('about.translation_proofreading_technical_frame_738d06') }}</span>
                     </div>
                     <div class="translation-pill">
                         <span class="translation-pill-name">{{ t('D_FairyTail') }}</span>
-                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                        <span class="translation-pill-role">{{ t('about.translation_proofreading_technical_frame_738d06') }}</span>
                     </div>
                     <div class="translation-pill">
-                        <span class="translation-pill-name">{{ t('star_ss') }}</span>
-                        <span class="translation-pill-role">{{ t('Translation, Proofreading & Technical Framework') }}</span>
+                        <span class="translation-pill-name">{{ t('about.star_ss') }}</span>
+                        <span class="translation-pill-role">{{ t('about.translation_proofreading_technical_frame_738d06') }}</span>
                     </div>
                     <div class="translation-pill">
-                        <span class="translation-pill-name">{{ t('LeafGreen_Snake') }}</span>
-                        <span class="translation-pill-role">{{ t('Translation Contributor') }}</span>
+                        <span class="translation-pill-name">{{ t('about.leafgreen_snake') }}</span>
+                        <span class="translation-pill-role">{{ t('about.translation_contributor') }}</span>
                     </div>
                 </div>
-                <p class="translation-note">{{ t('Hover over a contributor to see their role.') }}</p>
+                <p class="translation-note">{{ t('about.hover_over_a_contributor_to_see_their_ro_0c7aa2') }}</p>
             </div>
         </div>
     </div>
 
     <div class="credits-footer">
-        <p v-html="t('Created by {name}').replace('{name}', `<strong>${appAuthor}</strong>`)"></p>
-        <p class="special-thanks">{{ t('Special thanks to Trovesaurus and all project contributors.') }}</p>
+        <p v-html="t('about.created_by_name').replace('{name}', `<strong>${appAuthor}</strong>`)"></p>
+        <p class="special-thanks">{{ t('about.special_thanks_to_trovesaurus_and_all_pr_3e7a4d') }}</p>
     </div>
 
     <div class="modal-overlay" v-show="modals.changelog" style="display: flex;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>{{ t('Changelog') }}</h2>
+                <h2>{{ t('about.changelog') }}</h2>
                 <button @click="modals.changelog = false" class="close-btn"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <div v-if="!changelogLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Loading commits...') }}</span></div>
+                <div v-if="!changelogLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('about.loading_commits') }}</span></div>
                 <p v-else-if="changelogError" style="color: #ff5e5b;">{{ changelogError }}</p>
-                <p v-else-if="changelogGroups.length === 0">{{ t('No commits found.') }}</p>
+                <p v-else-if="changelogGroups.length === 0">{{ t('about.no_commits_found') }}</p>
                 <template v-else>
                     <div v-for="group in changelogGroups" :key="group.version" class="version-group">
                         <h3 class="version-title">{{ group.version }}</h3>
@@ -138,26 +138,26 @@
     <div class="modal-overlay" v-show="modals.licenses" style="display: flex;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>{{ t('Open Source Licenses') }}</h2>
+                <h2>{{ t('about.open_source_licenses') }}</h2>
                 <button @click="modals.licenses = false" class="close-btn"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body" style="gap: 15px;">
-                <p>{{ t('This project is made possible thanks to the following open-source software:') }}</p>
+                <p>{{ t('about.this_project_is_made_possible_thanks_to_9331fe') }}</p>
                 <div class="license-item">
                     <div class="license-title">Python Eel <a href="#" @click.prevent="openUrl('https://github.com/python-eel/Eel')"><i class="fa-solid fa-up-right-from-square"></i></a></div>
-                    <div class="license-desc">{{ t('For little HTML/JS GUI applications.') }}</div>
+                    <div class="license-desc">{{ t('about.for_little_html_js_gui_applications') }}</div>
                 </div>
                 <div class="license-item">
                     <div class="license-title">Bottle <a href="#" @click.prevent="openUrl('https://github.com/bottlepy/bottle')"><i class="fa-solid fa-up-right-from-square"></i></a></div>
-                    <div class="license-desc">{{ t('A fast and simple micro-framework for small web applications.') }}</div>
+                    <div class="license-desc">{{ t('about.a_fast_and_simple_micro_framework_for_sm_66880e') }}</div>
                 </div>
                 <div class="license-item">
                     <div class="license-title">jQuery <a href="#" @click.prevent="openUrl('https://jquery.com/')"><i class="fa-solid fa-up-right-from-square"></i></a></div>
-                    <div class="license-desc">{{ t('Fast, small, and feature-rich JavaScript library.') }}</div>
+                    <div class="license-desc">{{ t('about.fast_small_and_feature_rich_javascript_l_9f6247') }}</div>
                 </div>
                 <div class="license-item">
                     <div class="license-title">FontAwesome <a href="#" @click.prevent="openUrl('https://fontawesome.com/')"><i class="fa-solid fa-up-right-from-square"></i></a></div>
-                    <div class="license-desc">{{ t("The web's most popular icon set and toolkit.") }}</div>
+                    <div class="license-desc">{{ t("about.the_web_s_most_popular_icon_set_and_tool_242b24") }}</div>
                 </div>
             </div>
         </div>
@@ -166,11 +166,11 @@
     <div class="modal-overlay" v-show="modals.appLicense" style="display: flex;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>{{ t('App License') }}</h2>
+                <h2>{{ t('about.app_license') }}</h2>
                 <button @click="modals.appLicense = false" class="close-btn"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <pre style="color: #fff; font-family: monospace; white-space: pre-wrap; font-size: 0.9em; line-height: 1.5; margin: 0;">{{ appLicenseText || t('Loading license...') }}</pre>
+                <pre style="color: #fff; font-family: monospace; white-space: pre-wrap; font-size: 0.9em; line-height: 1.5; margin: 0;">{{ appLicenseText || t('about.loading_license') }}</pre>
             </div>
         </div>
     </div>

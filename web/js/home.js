@@ -49,7 +49,7 @@ document.addEventListener('home_loaded', () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             let isDisposed = false;
             let homeViewAbortController = new AbortController();
             
@@ -417,10 +417,10 @@ document.addEventListener('home_loaded', () => {
                 const diffDays = Math.floor(diffHours / 24);
             
                 if (diffDays > 7) return date.toLocaleDateString(window.I18nManager ? window.I18nManager.currentLocale.replace("_", "-") : 'en-US', { month: 'short', day: 'numeric' });
-                if (diffDays > 0) return t('{count} days ago').replace('{count}', diffDays);
-                if (diffHours > 0) return t('{count} hours ago').replace('{count}', diffHours);
-                if (diffMinutes > 0) return t('{count} minutes ago').replace('{count}', diffMinutes);
-                return t('Just now');
+                if (diffDays > 0) return t('home.count_days_ago').replace('{count}', diffDays);
+                if (diffHours > 0) return t('home.count_hours_ago').replace('{count}', diffHours);
+                if (diffMinutes > 0) return t('home.count_minutes_ago').replace('{count}', diffMinutes);
+                return t('common.just_now');
             };
 
             const getCountdown = (targetTs, showLeft = true) => {
@@ -431,11 +431,11 @@ document.addEventListener('home_loaded', () => {
                 const hours = Math.floor((diff % 86400) / 3600);
                 const mins = Math.floor((diff % 3600) / 60);
                 let parts = [];
-                if (days > 0) { parts.push(t("{count} days").replace("{count}", days)); if (hours > 0) parts.push(t("{count} hours").replace("{count}", hours)); }
-                else if (hours > 0) { parts.push(t("{count} hours").replace("{count}", hours)); if (mins > 0) parts.push(t("{count} minutes").replace("{count}", mins)); }
-                else parts.push(t("{count} minutes").replace("{count}", mins));
+                if (days > 0) { parts.push(t("home.count_days").replace("{count}", days)); if (hours > 0) parts.push(t("home.count_hours").replace("{count}", hours)); }
+                else if (hours > 0) { parts.push(t("home.count_hours").replace("{count}", hours)); if (mins > 0) parts.push(t("common.count_minutes").replace("{count}", mins)); }
+                else parts.push(t("common.count_minutes").replace("{count}", mins));
                 const timeStr = parts.join(" ");
-                return showLeft ? t("{time} left").replace("{time}", timeStr) : timeStr;
+                return showLeft ? t("home.time_left").replace("{time}", timeStr) : timeStr;
             };
 
             const TROVE_OFFSET_MS = 11 * 3600000;
@@ -506,8 +506,8 @@ document.addEventListener('home_loaded', () => {
 
             const getDelveWeekHeading = (week) => {
                 if (!week) return '';
-                if (week.isCurrent) return t("This Week's");
-                if (rotationModal.delveCurrentWeekId && week.weekId === rotationModal.delveCurrentWeekId - 1) return t('Last Week');
+                if (week.isCurrent) return t("home.this_week_s");
+                if (rotationModal.delveCurrentWeekId && week.weekId === rotationModal.delveCurrentWeekId - 1) return t('home.last_week');
                 return formatDelveWeekRange(week.start, week.end);
             };
 
@@ -585,13 +585,13 @@ document.addEventListener('home_loaded', () => {
                     let statusClass = '';
 
                     if (nowSec.value < startTs) {
-                        statusText = t("Starts in {time}").replace("{time}", getCountdown(startTs, false));
+                        statusText = t("home.starts_in_time").replace("{time}", getCountdown(startTs, false));
                         statusClass = 'is-upcoming';
                     } else if (nowSec.value < endTs) {
-                        statusText = t("Ends in {time}").replace("{time}", getCountdown(endTs, false));
+                        statusText = t("home.ends_in_time").replace("{time}", getCountdown(endTs, false));
                         statusClass = 'is-active';
                     } else {
-                        statusText = t("Ended");
+                        statusText = t("home.ended");
                         statusClass = 'is-ended';
                     }
 
@@ -645,11 +645,11 @@ document.addEventListener('home_loaded', () => {
                 // If Trovesaurus endpoint failed, or end is in the past, show fallback/unknown
                 if (!c.data || !c.data.end || end < now) {
                     return {
-                        name: t('Chaos Chest'),
+                        name: t('home.chaos_chest'),
                         identifier: null,
                         unknown: true,
                         iconUrl: "https://trovesaurus.com/data/catalog/item_chaos_box.png",
-                        timeHtml: t("Dates: {start} - {end}")
+                        timeHtml: t("home.dates_start_end")
                             .replace("{start}", new Date((c.fallback_times?.start || 0) * 1000).toLocaleDateString())
                             .replace("{end}", new Date((c.fallback_times?.end || 0) * 1000).toLocaleDateString())
                     };
@@ -660,7 +660,7 @@ document.addEventListener('home_loaded', () => {
                     identifier: c.data?.identifier,
                     unknown: !c.data?.blueprint,
                     iconUrl: c.data?.blueprint ? `https://trovesaurus.com/data/catalog/${c.data.blueprint.toLowerCase()}.png` : "https://trovesaurus.com/data/catalog/item_chaos_box.png",
-                    timeHtml: t("Changes in {time}").replace("{time}", `<b>${getCountdown(end, false)}</b>`)
+                    timeHtml: t("home.changes_in_time").replace("{time}", `<b>${getCountdown(end, false)}</b>`)
                 };
             });
 
@@ -670,16 +670,16 @@ document.addEventListener('home_loaded', () => {
                 const now = nowSec.value;
 
                 if (m.corruxion) cards.push({ type: 'merchant', id: 'corruxion', name: 'Corruxion', color: '#9c27b0', iconClass: 'fa-dragon', active: m.corruxion.active, statusText: m.corruxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.corruxion.action)} <b>${m.corruxion.time_str}</b>`, endTs: null });
-                if (m.fluxion) cards.push({ type: 'merchant', id: 'fluxion', name: m.fluxion.active ? t("Fluxion ({state})").replace("{state}", t(m.fluxion.state)) : 'Fluxion', color: '#4fc3f7', iconClass: 'fa-scale-balanced', active: m.fluxion.active, statusText: m.fluxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.fluxion.action)} <b>${m.fluxion.time_str}</b>`, endTs: null });
+                if (m.fluxion) cards.push({ type: 'merchant', id: 'fluxion', name: m.fluxion.active ? t("home.fluxion_state").replace("{state}", t(m.fluxion.state)) : 'Fluxion', color: '#4fc3f7', iconClass: 'fa-scale-balanced', active: m.fluxion.active, statusText: m.fluxion.active ? 'ACTIVE' : 'AWAY', timeHtml: `${t(m.fluxion.action)} <b>${m.fluxion.time_str}</b>`, endTs: null });
 
                 if (stampy.value && stampy.value.current) {
                     const s = stampy.value.current;
                     const isActive = now >= s.start && now < s.end;
-                    cards.push({ type: 'biome', id: 'stampy', name: 'Stampy', color: '#ff9800', iconClass: 'fa-paw', active: isActive, statusText: isActive ? 'ACTIVE' : 'AWAY', timeHtml: isActive ? t("Leaves in {time}").replace("{time}", `<b>${getCountdown(s.end, false)}</b>`) : t("Arrives in {time}").replace("{time}", `<b>${getCountdown(s.start, false)}</b>`), biomes: s.biomes, endTs: isActive ? s.end : null });
+                    cards.push({ type: 'biome', id: 'stampy', name: 'Stampy', color: '#ff9800', iconClass: 'fa-paw', active: isActive, statusText: isActive ? 'ACTIVE' : 'AWAY', timeHtml: isActive ? t("home.leaves_in_time").replace("{time}", `<b>${getCountdown(s.end, false)}</b>`) : t("home.arrives_in_time").replace("{time}", `<b>${getCountdown(s.start, false)}</b>`), biomes: s.biomes, endTs: isActive ? s.end : null });
                 }
 
                 if (d15.value && d15.value.current) {
-                    cards.push({ type: 'd15', id: 'd15', name: 'D15 Biomes', color: '#4caf50', iconClass: 'fa-leaf', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(d15.value.current.end, false)}</b>`), biomes: d15.value.current.biomes, endTs: d15.value.current.end });
+                    cards.push({ type: 'd15', id: 'd15', name: 'D15 Biomes', color: '#4caf50', iconClass: 'fa-leaf', active: true, statusText: 'ACTIVE', timeHtml: t("home.ends_in_time").replace("{time}", `<b>${getCountdown(d15.value.current.end, false)}</b>`), biomes: d15.value.current.biomes, endTs: d15.value.current.end });
                 }
 
                 if (gardening.value) {
@@ -693,15 +693,15 @@ document.addEventListener('home_loaded', () => {
                     if (activeNames.length === 1 && activeNames[0].includes('3')) gColor = '#4caf50';
                     if (activeNames.length === 2) gColor = '#ff9800';
 
-                    let titleStr = isActive ? activeNames.map(n => t(n)).join(" &amp; ") : t("Gardening Cycles");
+                    let titleStr = isActive ? activeNames.map(n => t(n)).join(" &amp; ") : t("home.gardening_cycles");
                     let timeHtml = "";
                     if (isActive) {
                         let endTs = g.two_day.active && g.three_day.active ? Math.min(g.two_day.end, g.three_day.end) : (g.two_day.active ? g.two_day.end : g.three_day.end);
-                        timeHtml = t("Ends in {time}").replace("{time}", `<b>${getCountdown(endTs, false)}</b>`);
+                        timeHtml = t("home.ends_in_time").replace("{time}", `<b>${getCountdown(endTs, false)}</b>`);
                     } else {
                         let soonerStart = Math.min(g.two_day.start, g.three_day.start);
                         let nextName = soonerStart === g.two_day.start ? "2-day plants" : "3-day plants";
-                        timeHtml = (g.two_day.start === g.three_day.start) ? `${t("2-day plants")} &amp; ${t("3-day plants")} - ` + t("Starts in {time}").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`) : `${t(nextName)} - ` + t("Starts in {time}").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`);
+                        timeHtml = (g.two_day.start === g.three_day.start) ? `${t("home.2_day_plants")} &amp; ${t("home.3_day_plants")} - ` + t("home.starts_in_time").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`) : `${t(nextName)} - ` + t("home.starts_in_time").replace("{time}", `<b>${getCountdown(soonerStart, false)}</b>`);
                     }
                     const gEnd = isActive
                         ? (g.two_day.active && g.three_day.active ? Math.min(g.two_day.end, g.three_day.end) : (g.two_day.active ? g.two_day.end : g.three_day.end))
@@ -710,7 +710,7 @@ document.addEventListener('home_loaded', () => {
                 }
 
                 if (mana.value && mana.value.current) {
-                    cards.push({ type: 'biome', id: 'mana', name: 'Wild Trovian Mana', color: '#00bcd4', iconClass: 'fa-flask', active: true, statusText: 'ACTIVE', timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(mana.value.current.end, false)}</b>`), biomes: mana.value.current.biomes, endTs: mana.value.current.end });
+                    cards.push({ type: 'biome', id: 'mana', name: 'Wild Trovian Mana', color: '#00bcd4', iconClass: 'fa-flask', active: true, statusText: 'ACTIVE', timeHtml: t("home.ends_in_time").replace("{time}", `<b>${getCountdown(mana.value.current.end, false)}</b>`), biomes: mana.value.current.biomes, endTs: mana.value.current.end });
                 }
 
                 if (delve.value && delve.value.currentWeekId) {
@@ -722,7 +722,7 @@ document.addEventListener('home_loaded', () => {
                         iconClass: 'fa-dungeon',
                         active: true,
                         statusText: 'WEEK',
-                        timeHtml: t("Ends in {time}").replace("{time}", `<b>${getCountdown(delve.value.end, false)}</b>`),
+                        timeHtml: t("home.ends_in_time").replace("{time}", `<b>${getCountdown(delve.value.end, false)}</b>`),
                         endTs: delve.value.end
                     });
                 }
@@ -753,19 +753,19 @@ document.addEventListener('home_loaded', () => {
                 if (serverData.daily) {
                     items.push({
                         key: 'daily',
-                        label: t('Daily Buff'),
+                        label: t('home.daily_buff'),
                         title: t(serverData.daily.name),
                         emoji: serverData.daily.emoji || '',
                         icon: serverData.daily.icon || '',
                         color: serverData.daily.color ? `#${serverData.daily.color}` : 'var(--accent-blue)',
-                        meta: t('Resets in {time}').replace('{time}', getCountdown(getNextServerResetSec(), false)),
+                        meta: t('home.resets_in_time').replace('{time}', getCountdown(getNextServerResetSec(), false)),
                         action: () => openBuffSchedule('daily')
                     });
                 }
                 if (serverData.weekly) {
                     items.push({
                         key: 'weekly',
-                        label: t('Weekly Buff'),
+                        label: t('home.weekly_buff'),
                         title: t(serverData.weekly.name),
                         emoji: serverData.weekly.emoji || '',
                         icon: serverData.weekly.icon || '',
@@ -778,7 +778,7 @@ document.addEventListener('home_loaded', () => {
                 if (chaos) {
                     items.push({
                         key: 'chaos',
-                        label: t('Chaos Chest'),
+                        label: t('home.chaos_chest'),
                         title: t(chaos.name),
                         emoji: '',
                         icon: chaos.iconUrl,
@@ -793,11 +793,11 @@ document.addEventListener('home_loaded', () => {
                     const next = candidates[0];
                     items.push({
                         key: 'next-merchant',
-                        label: t('Departing Soon'),
+                        label: t('home.departing_soon'),
                         title: t(next.name),
                         iconClass: next.iconClass,
                         color: next.color,
-                        meta: t('Leaves in {time}').replace('{time}', getCountdown(next.endTs, false)),
+                        meta: t('home.leaves_in_time').replace('{time}', getCountdown(next.endTs, false)),
                         isUrgent: !!next.isUrgent,
                         action: () => openMerchantSchedule(next)
                     });
@@ -881,7 +881,7 @@ document.addEventListener('home_loaded', () => {
                 rotationModal.type = 'list';
                 const buff = type === 'daily' ? serverData.daily : serverData.weekly;
                 rotationModal.color = `#${buff.color}`;
-                rotationModal.titleHtml = `<i class="fa-solid fa-calendar-week" style="color: ${rotationModal.color};"></i> ${t("{title} Schedule").replace("{title}", type === 'daily' ? t("Daily: {name}").replace("{name}", t(buff.name)) : t("Weekly: {name}").replace("{name}", t(buff.name)))}`;
+                rotationModal.titleHtml = `<i class="fa-solid fa-calendar-week" style="color: ${rotationModal.color};"></i> ${t("home.title_schedule").replace("{title}", type === 'daily' ? t("home.daily_name").replace("{name}", t(buff.name)) : t("home.weekly_name").replace("{name}", t(buff.name)))}`;
                 rotationModal.list = [];
                 rotationModal.show = true;
                 
@@ -920,7 +920,7 @@ document.addEventListener('home_loaded', () => {
                             const isActive = i === 0;
                             rotationModal.list.push({
                                 isNext: isActive, isActive: isActive, style: isActive ? `border-left: 4px solid #${w.color}; background: rgba(255,255,255,0.05);` : '',
-                                timeColStyle: 'min-width: 120px;', titleLabel: isActive ? t('Current Week') : t("Week +{num}").replace("{num}", i), timeText: '',
+                                timeColStyle: 'min-width: 120px;', titleLabel: isActive ? t('home.current_week') : t("home.week_num").replace("{num}", i), timeText: '',
                                 contentColStyle: 'flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;',
                                 contentHtml: `<div style="font-weight: bold; color: #fff;">${w.emoji} ${t(w.name)}</div>
                                               <div style="font-size: 0.85em; color: var(--text-muted);"><ul style="margin: 0; padding-left: 15px;">
@@ -936,7 +936,7 @@ document.addEventListener('home_loaded', () => {
             const openMerchantSchedule = async (card) => {
                 rotationModal.instanceKey += 1;
                 rotationModal.color = card.color;
-                rotationModal.titleHtml = `<i class="fa-solid ${card.iconClass}" style="color: ${card.color};"></i> ${t("Upcoming {name} Schedule").replace("{name}", t(card.name))}`;
+                rotationModal.titleHtml = `<i class="fa-solid ${card.iconClass}" style="color: ${card.color};"></i> ${t("home.upcoming_name_schedule").replace("{name}", t(card.name))}`;
                 rotationModal.list = [];
                 rotationModal.isLoading = false;
                 rotationModal.error = '';
@@ -955,10 +955,10 @@ document.addEventListener('home_loaded', () => {
                             const startStr = formatDisplayDate(rot.start * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             const endStr = formatDisplayDate(rot.end * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             
-                            let arriveStr = actionType === 'event' ? t("Starts in {time}") : t("Arrives in {time}");
-                            let leaveStr = actionType === 'event' ? t("Ends in {time}") : t("Leaves in {time}");
-                            let nextStr = actionType === 'event' ? t('Next Event') : t('Next Arrival');
-                            let futureStr = actionType === 'event' ? t("Event +{num}") : t("Arrival +{num}");
+                            let arriveStr = actionType === 'event' ? t("home.starts_in_time") : t("home.arrives_in_time");
+                            let leaveStr = actionType === 'event' ? t("home.ends_in_time") : t("home.leaves_in_time");
+                            let nextStr = actionType === 'event' ? t('home.next_event') : t('home.next_arrival');
+                            let futureStr = actionType === 'event' ? t("home.event_num") : t("home.arrival_num");
 
                             let timeText = arriveStr.replace("{time}", getCountdown(rot.start, false));
                             if (rot.start * 1000 < Date.now()) timeText = leaveStr.replace("{time}", getCountdown(rot.end, false));
@@ -981,12 +981,12 @@ document.addEventListener('home_loaded', () => {
                     if (dataSrc) {
                         dataSrc.forEach((rot, index) => {
                             const isNext = index === 0;
-                            const timeText = t("Starts in {time}").replace("{time}", getCountdown(rot.start, false));
-                            let pills = rot.biomes.map(b => `<span class="biome-pill modal-pill" title="${t("Biome: {name}").replace("{name}", t(b.name))}"><img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt=""> ${t(b.final_name)}</span>`).join('');
+                            const timeText = t("home.starts_in_time").replace("{time}", getCountdown(rot.start, false));
+                            let pills = rot.biomes.map(b => `<span class="biome-pill modal-pill" title="${t("home.biome_name").replace("{name}", t(b.name))}"><img src="/assets/images/biomes/${b.icon}.png" onerror="this.style.display='none'" alt=""> ${t(b.final_name)}</span>`).join('');
                             
                             rotationModal.list.push({
                                 isNext, isActive: false, style: '', timeColStyle: '',
-                                titleLabel: isNext ? t('Next Rotation') : t("Rotation +{num}").replace("{num}", index + 1), timeText,
+                                titleLabel: isNext ? t('home.next_rotation') : t("home.rotation_num").replace("{num}", index + 1), timeText,
                                 contentColStyle: '', contentHtml: pills
                             });
                         });
@@ -998,12 +998,12 @@ document.addEventListener('home_loaded', () => {
                             const isNext = index === 0;
                             const startStr = formatDisplayDate(rot.start * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             const endStr = formatDisplayDate(rot.end * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-                            let timeText = rot.start * 1000 < Date.now() ? t("Ends in {time}").replace("{time}", getCountdown(rot.end, false)) : t("Starts in {time}").replace("{time}", getCountdown(rot.start, false));
+                            let timeText = rot.start * 1000 < Date.now() ? t("home.ends_in_time").replace("{time}", getCountdown(rot.end, false)) : t("home.starts_in_time").replace("{time}", getCountdown(rot.start, false));
                             const phaseColor = rot.name.includes('3') ? '#4caf50' : '#8bc34a';
                             
                             rotationModal.list.push({
                                 isNext, isActive: false, style: '', timeColStyle: 'min-width: 150px;',
-                                titleLabel: isNext ? t('Next Cycle') : t("Cycle +{num}").replace("{num}", index + 1), timeText,
+                                titleLabel: isNext ? t('home.next_cycle') : t("home.cycle_num").replace("{num}", index + 1), timeText,
                                 contentColStyle: 'flex-direction: column; justify-content: center; gap: 4px;',
                                 contentHtml: `<div style="font-weight: bold; color: ${phaseColor}; margin-bottom: 2px;">${t(rot.name)}</div><div style="font-size: 0.9em; color: #eee;"><i class="fa-solid fa-play"></i> ${startStr}</div><div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid fa-stop"></i> ${endStr}</div>`
                             });
@@ -1011,7 +1011,7 @@ document.addEventListener('home_loaded', () => {
                     }
                 } else if (card.type === 'd15') {
                     rotationModal.type = 'd15';
-                    rotationModal.titleHtml = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("Upcoming D15 Biomes")}`;
+                    rotationModal.titleHtml = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("home.upcoming_d15_biomes")}`;
                     
                     const daysData = [];
                     let maxCols = 0;
@@ -1021,7 +1021,7 @@ document.addEventListener('home_loaded', () => {
                         const dayEndTs = dayStart.getTime() + 86400000;
                         const dayRots = rotations.filter(rot => (rot.start * 1000 < dayEndTs && rot.end * 1000 > dayStart.getTime())).sort((a,b) => a.start - b.start);
                         if (dayRots.length > maxCols) maxCols = dayRots.length;
-                        daysData.push({ label: i === 0 ? t("Today") : formatDisplayDate(dayStart, { weekday: 'short', month: 'short', day: 'numeric' }), rots: dayRots });
+                        daysData.push({ label: i === 0 ? t("home.today") : formatDisplayDate(dayStart, { weekday: 'short', month: 'short', day: 'numeric' }), rots: dayRots });
                     }
                     
                     const cols = [];
@@ -1050,7 +1050,7 @@ document.addEventListener('home_loaded', () => {
                     rotationModal.d15ShowFinalName = false;
                 } else if (card.type === 'delve') {
                     rotationModal.type = 'delve';
-                    rotationModal.titleHtml = `<i class="fa-solid fa-dungeon" style="color: ${card.color};"></i> ${t('Delve Index')}`;
+                    rotationModal.titleHtml = `<i class="fa-solid fa-dungeon" style="color: ${card.color};"></i> ${t('home.delve_index')}`;
                     rotationModal.isLoading = true;
                     rotationModal.show = true;
                     try {
@@ -1095,7 +1095,7 @@ document.addEventListener('home_loaded', () => {
                 });
 
                 if (!matches.length) {
-                    window.showToast(t('No timeline entries found for this target right now.'), true);
+                    window.showToast(t('home.no_timeline_entries_found_for_this_targe_018634'), true);
                     return;
                 }
 
@@ -1205,7 +1205,7 @@ document.addEventListener('home_loaded', () => {
                                 
                                 let showText = "";
                                 if (track.id === 'weekly_buff' && widthPx > 40) showText = t(ev.name);
-                                else if (track.id === 'dragon_merchants' && widthPx > 40) showText = `<span style="font-weight: normal; text-transform: uppercase; margin-left: 4px;">${ev.type === 'fluxion' ? (ev.name.includes('Voting') ? t("Voting") : t("Selling")) : t(ev.type.charAt(0).toUpperCase() + ev.type.slice(1))}</span>`;
+                                else if (track.id === 'dragon_merchants' && widthPx > 40) showText = `<span style="font-weight: normal; text-transform: uppercase; margin-left: 4px;">${ev.type === 'fluxion' ? (ev.name.includes('Voting') ? t("home.voting") : t("home.selling")) : t(ev.type.charAt(0).toUpperCase() + ev.type.slice(1))}</span>`;
                                 
                                 const fullStyle = `left: ${leftPx + 140}px; width: ${widthPx}px; top: 6px; ${customStyle}`;
                                 mapped.push({

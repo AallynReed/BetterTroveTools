@@ -7,31 +7,31 @@
             <div class="search-bar-wrapper items-search-row">
                 <div class="items-search-input-wrap">
                     <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                    <input type="text" v-model="searchQuery" :title="t('Advanced Search Keywords:\nname:\nsource:\nrarity:\npath:')" :placeholder="t('Search fish by name, source, rarity, or path...')" id="fish-search-input">
+                    <input type="text" v-model="searchQuery" :title="t('fish.advanced_search_keywords_name_source_rar_0fbf36')" :placeholder="t('fish.search_fish_by_name_source_rarity_or_pat_5a5579')" id="fish-search-input">
                 </div>
                 <div class="items-toolbar-actions">
-                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('common.open_selected_game_folder')">
                         <i class="fa-solid fa-folder-open"></i>
-                        <span>{{ t('Open Folder') }}</span>
+                        <span>{{ t('common.open_folder') }}</span>
                     </button>
-                    <button class="secondary-btn" @click="refreshGamePaths" :title="t('Refresh Detected Games')">
+                    <button class="secondary-btn" @click="refreshGamePaths" :title="t('common.refresh_detected_games')">
                         <i class="fa-solid fa-arrows-rotate"></i>
-                        <span>{{ t('Refresh Paths') }}</span>
+                        <span>{{ t('common.refresh_paths') }}</span>
                     </button>
                 </div>
             </div>
             <div class="codexes-install-picker items-install-picker">
-                <label>{{ t('Game Installation') }}</label>
+                <label>{{ t('common.game_installation') }}</label>
                 <div class="codexes-install-row">
                     <custom-vue-select v-model="selectedGamePath" :options="installOptions" :translate-options="false" class="items-install-select"></custom-vue-select>
                 </div>
             </div>
             <details class="advanced-actions-panel">
-                <summary>{{ t('More Actions') }}</summary>
+                <summary>{{ t('common.more_actions') }}</summary>
                 <div class="advanced-actions-grid">
-                    <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('Clear fish cache and rebuild from game files')">
+                    <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('fish.clear_fish_cache_and_rebuild_from_game_f_5f668b')">
                         <i class="fa-solid fa-broom"></i>
-                        <span>{{ t('Rebuild Cache') }}</span>
+                        <span>{{ t('common.rebuild_cache') }}</span>
                     </button>
                 </div>
             </details>
@@ -39,7 +39,7 @@
         </div>
         <div class="codex-warning-banner">
             <i class="fa-solid fa-triangle-exclamation"></i>
-            <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+            <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
         </div>
         <div v-if="loadError && loadError.includes('Prefabs directory was not found:')" class="codex-warning-banner codex-warning-banner-error">
             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -48,18 +48,18 @@
 
         <div class="filters-row">
             <div class="filter-group filter-group-compact">
-                <label>{{ t('Source') }}</label>
+                <label>{{ t('common.source') }}</label>
                 <custom-vue-select v-model="selectedSource" :options="sourceOptions"></custom-vue-select>
             </div>
             <div class="filter-group filter-group-compact">
-                <label>{{ t('Rarity') }}</label>
+                <label>{{ t('common.rarity') }}</label>
                 <custom-vue-select v-model="selectedRarity" :options="rarityOptions"></custom-vue-select>
             </div>
         </div>
 
         <div v-if="isLoading" class="ui-state ui-state-loading ui-state-compact">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            <span>{{ t('Loading fish from game files. This may take a few seconds...') }}</span>
+            <span>{{ t('fish.loading_fish_from_game_files_this_may_ta_77e064') }}</span>
         </div>
         <div v-else-if="loadError && !loadError.includes('Prefabs directory was not found:')" class="ui-state ui-state-error ui-state-compact">
             <i class="fa-solid fa-triangle-exclamation"></i>
@@ -67,17 +67,17 @@
         </div>
         <div v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" class="ui-state ui-state-warning ui-state-compact">
             <i class="fa-solid fa-circle-info"></i>
-            <span>{{ t('Minimum 3 characters to search...') }}</span>
+            <span>{{ t('common.minimum_3_characters_to_search') }}</span>
         </div>
         <div v-else class="search-stats search-stats-summary">
-            <span>{{ t('Showing groups {from}-{to} of {gcount} · {count} fish in filter ({total} total)').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{gcount}', groupedFish.length).replace('{count}', filteredFish.length).replace('{total}', fishData.length) }}</span>
+            <span>{{ t('fish.showing_groups_from_to_of_gcount_count_f_dab94f').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{gcount}', groupedFish.length).replace('{count}', filteredFish.length).replace('{total}', fishData.length) }}</span>
         </div>
     </div>
 
     <div v-for="group in paginatedGroups" :key="group.label" class="codex-group-section">
         <h3 class="codex-group-header">
             <span class="codex-group-title">{{ t(group.label) }}</span>
-            <span class="codex-group-meta">{{ group.count }} {{ t('fish') }}</span>
+            <span class="codex-group-meta">{{ group.count }} {{ t('fish.fish') }}</span>
         </h3>
         <div class="allies-grid">
             <div v-for="(fish, idx) in group.fish" :key="fish.id" class="ally-card item-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
@@ -97,11 +97,11 @@
                     <div class="item-path" v-html="highlightSearch(fish.filename)"></div>
                 </div>
                 <div class="ally-footer item-footer">
-                    <span v-if="weightText(fish)" class="footer-stat" :title="t('Weight range (lbs)')">
+                    <span v-if="weightText(fish)" class="footer-stat" :title="t('fish.weight_range_lbs')">
                         <i class="fa-solid fa-weight-hanging" style="color:#5ec6ff;"></i> {{ weightText(fish) }}
                     </span>
-                    <span v-if="trophyCount(fish)" class="footer-stat" :title="t('Trophy variants: basic / silver / gold')">
-                        <i class="fa-solid fa-trophy" style="color:#ffd54f;"></i> {{ t('{count} Trophies').replace('{count}', trophyCount(fish)) }}
+                    <span v-if="trophyCount(fish)" class="footer-stat" :title="t('fish.trophy_variants_basic_silver_gold')">
+                        <i class="fa-solid fa-trophy" style="color:#ffd54f;"></i> {{ t('fish.count_trophies').replace('{count}', trophyCount(fish)) }}
                     </span>
                     <span v-if="fish.tradable !== null && fish.tradable !== undefined" class="footer-stat">
                         <i class="fa-solid" :class="fish.tradable ? 'fa-right-left' : 'fa-lock'" :style="{ color: fish.tradable ? '#7ed957' : '#b0bec5' }"></i>
@@ -114,13 +114,13 @@
 
     <div class="allies-pagination" v-if="!isLoading && groupedFish.length > 0 && totalPages > 1">
         <button class="secondary-btn" @click="prevPage" :disabled="currentPage === 1">
-            <i class="fa-solid fa-chevron-left"></i> {{ t('Prev') }}
+            <i class="fa-solid fa-chevron-left"></i> {{ t('common.prev') }}
         </button>
         <button v-for="page in pageNumbers" :key="'page-' + page" class="secondary-btn pagination-page-btn" :class="{ active: page === currentPage }" @click="setPage(page)">
             {{ page }}
         </button>
         <button class="secondary-btn" @click="nextPage" :disabled="currentPage === totalPages">
-            {{ t('Next') }} <i class="fa-solid fa-chevron-right"></i>
+            {{ t('common.next') }} <i class="fa-solid fa-chevron-right"></i>
         </button>
     </div>
 </div>
