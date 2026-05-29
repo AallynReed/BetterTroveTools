@@ -6,7 +6,7 @@ import asyncio
 from pathlib import Path
 import os
 import json
-from utils.archive_parser import TFIndex, TFArchive, TroveFile, hash_archive_blocking
+from utils.archive_parser import TFIndex, TFArchive, TroveFile, hash_archive_blocking, extract_archive_files_blocking
 import concurrent.futures
 from utils.registry import get_trove_locations, invalidate_trove_locations_cache
 from utils.helper import read_storage, write_storage
@@ -406,49 +406,62 @@ def mass_extract_files(dest_dir, files_to_extract):
 async def _mass_extract_async(dest_dir_str, file_list):
     dest_path = Path(dest_dir_str)
     total_files = len(file_list)
-    processed_count = 0
     start_time = time.time()
-    
+
+    # Group by (tfi, archive) so each .tfa is read + decompressed exactly once,
+    # then flatten into per-archive work items. Each archive is then extracted
+    # by a thread-pool worker that decompresses once and writes all of its
+    # files -- with NO md5 hashing (the old per-file `await file_obj.content`
+    # hashed every extracted byte for nothing). zlib + file writes release the
+    # GIL, so archives extract in parallel across cores instead of serially on
+    # the event loop thread.
     groups = defaultdict(lambda: defaultdict(list))
     for f in file_list:
         groups[f["tfi"]][f["archive"]].append(f)
 
+    work_items = []  # (tfa_path_str, [(offset, size, relative_path), ...])
     for tfi_path_str, archives in groups.items():
-        _raise_if_cancelled("mass_extract")
-        tfi_path = Path(tfi_path_str)
-        index = TFIndex(tfi_path)
-        
+        tfi_parent = Path(tfi_path_str).parent
         for archive_idx, files in archives.items():
-            _raise_if_cancelled("mass_extract")
-            tfa_name = f"archive{archive_idx}.tfa"
-            tfa_path = tfi_path.parent / tfa_name
-            
-            archive = TFArchive(index, tfa_path)
-            
-            for f in files:
+            tfa_path = tfi_parent / f"archive{archive_idx}.tfa"
+            specs = [(f["offset"], f["size"], f["filepath"].replace("\\", "/")) for f in files]
+            work_items.append((str(tfa_path), specs))
+
+    workers = max(2, min((os.cpu_count() or 4), 6))
+    loop = asyncio.get_running_loop()
+    processed_count = 0
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        sem = asyncio.Semaphore(workers)
+
+        async def process(item):
+            tfa_path_str, specs = item
+            async with sem:
                 _raise_if_cancelled("mass_extract")
-                file_obj = TroveFile(offset=f["offset"], size=f["size"], archive=archive)
-                file_bytes = await file_obj.content
-                
-                clean_relative_path = Path(f["filepath"].replace("\\", "/"))
-                out_file_path = dest_path / clean_relative_path
-                out_file_path.parent.mkdir(parents=True, exist_ok=True)
-                
-                with open(out_file_path, "wb") as out:
-                    out.write(file_bytes)
-                
-                processed_count += 1
-                if processed_count % 50 == 0 or processed_count == total_files:
-                    elapsed = time.time() - start_time
-                    
-                    eta_secs = ""
-                    rate = 0
-                    if elapsed > 0.5:
-                        rate = processed_count / elapsed
-                    if rate > 0:
-                        eta_secs = int((total_files - processed_count) / rate)
-                    eel.update_progress_ui(processed_count, total_files, f["filepath"], "Extracting...", eta_secs, int(elapsed))()
-                    eel.sleep(0.001)
+                written = await loop.run_in_executor(
+                    pool, extract_archive_files_blocking, tfa_path_str, str(dest_path), specs
+                )
+                return written, tfa_path_str
+
+        tasks = [asyncio.ensure_future(process(it)) for it in work_items]
+        try:
+            for coro in asyncio.as_completed(tasks):
+                written, tfa_path_str = await coro
+                processed_count += written
+
+                elapsed = time.time() - start_time
+                eta_secs = ""
+                rate = processed_count / elapsed if elapsed > 0.5 else 0
+                if rate > 0:
+                    eta_secs = int((total_files - processed_count) / rate)
+                eel.update_progress_ui(
+                    processed_count, total_files,
+                    Path(tfa_path_str).name, "Extracting...", eta_secs, int(elapsed)
+                )()
+        except BaseException:
+            for tk in tasks:
+                tk.cancel()
+            raise
 
 @eel.expose
 @standardize_response

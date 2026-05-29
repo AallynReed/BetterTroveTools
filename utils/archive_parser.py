@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import zlib
 from copy import copy
@@ -39,6 +40,36 @@ def hash_archive_blocking(tfa_path_str, file_entries):
         for key, offset, size in file_entries
     ]
     return archive_hash, file_hashes
+
+
+def extract_archive_files_blocking(tfa_path_str, dest_root_str, file_specs):
+    """Read + zlib-decompress one .tfa once, then write each requested file slice
+    straight to disk. Runs in a thread-pool worker.
+
+    Unlike the normal TroveFile.content path, this does NO md5 hashing --
+    extraction doesn't need a content hash, and skipping it removes a full pass
+    of md5 over every extracted byte. zlib.decompress and the file writes both
+    release the GIL, so many archives extract truly in parallel across cores.
+
+    ``file_specs`` is an iterable of ``(offset, size, relative_path)``. Returns
+    the number of files written.
+    """
+    with open(tfa_path_str, "rb") as f:
+        raw = f.read()
+    content = zlib.decompressobj(wbits=zlib.MAX_WBITS).decompress(raw)
+
+    written = 0
+    made_dirs = set()  # avoid a redundant mkdir syscall per file in the same dir
+    for offset, size, relative_path in file_specs:
+        out_path = os.path.join(dest_root_str, relative_path)
+        parent = os.path.dirname(out_path)
+        if parent and parent not in made_dirs:
+            os.makedirs(parent, exist_ok=True)
+            made_dirs.add(parent)
+        with open(out_path, "wb") as out:
+            out.write(content[offset:offset + size])
+        written += 1
+    return written
 
 
 def _read_uleb(data: bytes, pos: int) -> tuple[int, int]:
