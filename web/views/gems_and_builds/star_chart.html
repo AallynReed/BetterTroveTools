@@ -4,19 +4,19 @@
 <div id="star-chart-vue-app-inner" class="star-chart-container" v-cloak>    
     <div class="chart-layout">
         <div id="chart-wrapper" :class="{ 'placeholder-box': isLoading }">
-            <h3 v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('Calculating Constellations...') }}</span></h3>
+            <h3 v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('gems.star_chart.calculating_constellations') }}</span></h3>
             <template v-else>
             <div class="chart-toolbar">
-                <div class="chart-toolbar-title"><i class="fa-solid fa-star"></i> {{ t('Interactive Star Chart') }}</div>
+                <div class="chart-toolbar-title"><i class="fa-solid fa-star"></i> {{ t('gems.star_chart.interactive_star_chart') }}</div>
                 <div class="chart-toolbar-hints">
-                    <span class="chart-hint-chip"><i class="fa-solid fa-computer-mouse"></i> {{ t('Click nodes to select path') }}</span>
-                    <span class="chart-hint-chip"><i class="fa-solid fa-circle-dot"></i> {{ t('Click center to clear all') }}</span>
-                    <span class="chart-hint-chip"><i class="fa-solid fa-up-down-left-right"></i> {{ t('Scroll to zoom, drag to pan') }}</span>
+                    <span class="chart-hint-chip"><i class="fa-solid fa-computer-mouse"></i> {{ t('gems.star_chart.click_nodes_to_select_path') }}</span>
+                    <span class="chart-hint-chip"><i class="fa-solid fa-circle-dot"></i> {{ t('gems.star_chart.click_center_to_clear_all') }}</span>
+                    <span class="chart-hint-chip"><i class="fa-solid fa-up-down-left-right"></i> {{ t('gems.star_chart.scroll_to_zoom_drag_to_pan') }}</span>
                 </div>
                 <div class="chart-zoom-controls">
-                    <button class="secondary-btn" :title="t('Zoom in')" @click="zoomBy(0.85)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
-                    <button class="secondary-btn" :title="t('Zoom out')" @click="zoomBy(1.176)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
-                    <button class="secondary-btn" :title="t('Reset view')" @click="resetView"><i class="fa-solid fa-expand"></i></button>
+                    <button class="secondary-btn" :title="t('gems.star_chart.zoom_in')" @click="zoomBy(0.85)"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button class="secondary-btn" :title="t('gems.star_chart.zoom_out')" @click="zoomBy(1.176)"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button class="secondary-btn" :title="t('gems.star_chart.reset_view')" @click="resetView"><i class="fa-solid fa-expand"></i></button>
                 </div>
             </div>
 
@@ -24,7 +24,7 @@
                 <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" class="chart-line" :class="{'line-selected': line.selected}" />
                 <path v-for="curve in replacementCurves" :key="curve.id" :d="curve.d" class="replacement-line" :class="{ 'replacement-line-active': curve.isTipEdge }" />
                 
-                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="cheatModeEnabled ? t('Click center to clear all. Double-click to activate every node.') : t('Quick Clear: Remove all active nodes')" @click="onCenterAnchorClick" />
+                <circle id="center-anchor" :cx="origin[0]" :cy="origin[1]" r="18" fill="var(--bg-panel)" stroke="var(--border-color)" stroke-width="4" class="center-clear-anchor" :class="{'root-active': hasAnySelection}" :title="cheatModeEnabled ? t('gems.star_chart.click_center_to_clear_all_double_click_t_f6a45c') : t('gems.star_chart.quick_clear_remove_all_active_nodes')" @click="onCenterAnchorClick" />
 
                 <template v-for="node in renderNodes" :key="node.id">
                     <polygon v-if="node.Type === 'Root'" :points="node.points" :style="node.style" stroke-width="4" class="star-node root-node" :class="{'node-selected': node.selected, 'root-active': node.rootActive, 'node-replacement-tip': node.replacementTip}" @click.left="onRootClick(node, $event)" @contextmenu.prevent.stop="showContextMenu($event, node)" @mouseenter="showTooltip($event, node)" @mousemove="moveTooltip" @mouseleave="hideTooltip" />
@@ -36,63 +36,63 @@
         </div>
 
         <div id="build-summary-panel">
-            <h3>{{ t('Current Build') }}</h3>
+            <h3>{{ t('gems.star_chart.current_build') }}</h3>
             <div class="build-meta-row">
-                <span class="build-meta-chip"><i class="fa-solid fa-diagram-project"></i> {{ t('Nodes') }}: {{ selectedNodeCount }}/{{ maxNodeLimit }}</span>
-                <span class="build-meta-chip" :class="{ active: hasAnySelection }"><i class="fa-solid" :class="hasAnySelection ? 'fa-circle-check' : 'fa-circle' "></i> {{ hasAnySelection ? t('Active') : t('Empty') }}</span>
+                <span class="build-meta-chip"><i class="fa-solid fa-diagram-project"></i> {{ t('common.nodes') }}: {{ selectedNodeCount }}/{{ maxNodeLimit }}</span>
+                <span class="build-meta-chip" :class="{ active: hasAnySelection }"><i class="fa-solid" :class="hasAnySelection ? 'fa-circle-check' : 'fa-circle' "></i> {{ hasAnySelection ? t('common.active') : t('common.empty') }}</span>
                 <span class="build-meta-chip cheat-mode-chip" :class="{ active: cheatModeEnabled }" role="button" tabindex="0" @click="toggleCheatMode" @keydown.enter.prevent="toggleCheatMode" @keydown.space.prevent="toggleCheatMode">
                     <i class="fa-solid" :class="cheatModeEnabled ? 'fa-bolt' : 'fa-lock'"></i>
-                    {{ t('Cheat Mode') }}: {{ cheatModeEnabled ? t('On') : t('Off') }}
+                    {{ t('gems.star_chart.cheat_mode') }}: {{ cheatModeEnabled ? t('gems.star_chart.on') : t('gems.star_chart.off') }}
                 </span>
             </div>
             
             <div class="build-share-controls">
-                <input type="text" id="build-code-input" v-model="buildCode" :placeholder="t('Paste build code here...')" autocomplete="off" spellcheck="false" @focus="codeInputFocused = true" @blur="codeInputFocused = false" />
+                <input type="text" id="build-code-input" v-model="buildCode" :placeholder="t('gems.star_chart.paste_build_code_here')" autocomplete="off" spellcheck="false" @focus="codeInputFocused = true" @blur="codeInputFocused = false" />
                 <div class="build-buttons">
-                    <button class="secondary-btn" :title="t('Copy Build Code')" @click="copyCode"><i class="fa-regular fa-copy"></i></button>
+                    <button class="secondary-btn" :title="t('gems.star_chart.copy_build_code')" @click="copyCode"><i class="fa-regular fa-copy"></i></button>
                 </div>
             </div>
 
             <div class="node-search-controls" style="display: flex; gap: 5px; margin-bottom: 8px;">
-                <input type="text" v-model="nodeSearchQuery" :placeholder="t('Search nodes & abilities...')" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0;" />
-                <button class="secondary-btn" :disabled="!nodeSearchQuery" :title="t('Clear Search')" @click="clearNodeSearch">
+                <input type="text" v-model="nodeSearchQuery" :placeholder="t('gems.star_chart.search_nodes_abilities')" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0;" />
+                <button class="secondary-btn" :disabled="!nodeSearchQuery" :title="t('gems.star_chart.clear_search')" @click="clearNodeSearch">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
             <div class="stat-filter-meta" v-if="nodeSearchQuery && nodeSearchQuery.trim().length >= 2">
-                {{ t('Matches') }}: {{ searchMatchCount }}
+                {{ t('gems.star_chart.matches') }}: {{ searchMatchCount }}
             </div>
 
             <div class="stat-filter-controls">
                 <custom-vue-select v-model="selectedStatFilter" :options="statFilterOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
-                <button class="secondary-btn" :disabled="!selectedStatFilter" :title="t('Clear Stat Highlight')" @click="clearStatFilter">
+                <button class="secondary-btn" :disabled="!selectedStatFilter" :title="t('gems.star_chart.clear_stat_highlight')" @click="clearStatFilter">
                     <i class="fa-solid fa-filter-circle-xmark"></i>
                 </button>
             </div>
             <div class="stat-filter-meta" v-if="selectedStatFilter">
-                {{ t('Highlighted Nodes') }}: {{ highlightedStatNodeCount }}
+                {{ t('gems.star_chart.highlighted_nodes') }}: {{ highlightedStatNodeCount }}
             </div>
             
             <div class="build-template-controls" style="display: flex; gap: 5px; margin-top: 10px;">
                 <custom-vue-select v-model="selectedTemplate" :options="templateOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
-                <button class="primary-btn" @click="saveTemplate" :disabled="cheatModeEnabled" :title="cheatModeEnabled ? t('Disable Cheat Mode before saving templates') : t('Save Template')"><i class="fa-solid fa-floppy-disk"></i> {{ t('Save') }}</button>
-                <button class="secondary-btn" v-if="selectedTemplate" @click="renameTemplate" :title="t('Rename Template')"><i class="fa-solid fa-pen"></i></button>
-                <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate" :title="t('Delete Template')"><i class="fa-solid fa-trash"></i></button>
+                <button class="primary-btn" @click="saveTemplate" :disabled="cheatModeEnabled" :title="cheatModeEnabled ? t('gems.star_chart.disable_cheat_mode_before_saving_templat_aaf290') : t('gems.star_chart.save_template')"><i class="fa-solid fa-floppy-disk"></i> {{ t('common.save') }}</button>
+                <button class="secondary-btn" v-if="selectedTemplate" @click="renameTemplate" :title="t('gems.star_chart.rename_template')"><i class="fa-solid fa-pen"></i></button>
+                <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate" :title="t('gems.star_chart.delete_template')"><i class="fa-solid fa-trash"></i></button>
             </div>
             <div class="build-template-io" style="display: flex; gap: 5px; margin-top: 5px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
-                <button class="secondary-btn" style="flex: 1;" @click="exportTemplates" :title="t('Export all templates to a file')"><i class="fa-solid fa-file-export"></i> {{ t('Export') }}</button>
-                <button class="secondary-btn" style="flex: 1;" @click="triggerImportTemplates" :title="t('Import templates from a file')"><i class="fa-solid fa-file-import"></i> {{ t('Import') }}</button>
+                <button class="secondary-btn" style="flex: 1;" @click="exportTemplates" :title="t('gems.star_chart.export_all_templates_to_a_file')"><i class="fa-solid fa-file-export"></i> {{ t('common.export') }}</button>
+                <button class="secondary-btn" style="flex: 1;" @click="triggerImportTemplates" :title="t('gems.star_chart.import_templates_from_a_file')"><i class="fa-solid fa-file-import"></i> {{ t('gems.star_chart.import') }}</button>
                 <input ref="importTemplatesRef" type="file" accept="application/json,.json" style="display: none;" @change="onImportTemplatesFile" />
             </div>
             
             <div id="summary-content">
-                <p v-if="selectedNodeCount === 0" class="file-meta">{{ t('Select nodes to calculate stats.') }}</p>
+                <p v-if="selectedNodeCount === 0" class="file-meta">{{ t('gems.star_chart.select_nodes_to_calculate_stats') }}</p>
                 <template v-else>
-                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">{{ t('Nodes Active: {count} / {limit}').replace('{count}', selectedNodeCount).replace('{limit}', maxNodeLimit) }}</div>
+                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">{{ t('gems.star_chart.nodes_active_count_limit').replace('{count}', selectedNodeCount).replace('{limit}', maxNodeLimit) }}</div>
                     
                     <div v-if="summaryStats.length > 0" class="summary-section">
                         <button type="button" class="summary-section-toggle" :class="{ expanded: summarySectionState.stats }" @click="toggleSummarySection('stats')" :aria-expanded="summarySectionState.stats">
-                            <span>{{ t('Aggregated Stats') }}</span>
+                            <span>{{ t('gems.star_chart.aggregated_stats') }}</span>
                             <i class="fa-solid" :class="summarySectionState.stats ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                         </button>
                         <ul v-show="summarySectionState.stats"><li v-for="s in summaryStats" :key="s.name"><strong>{{ t(s.name) }}:</strong> +{{ s.value }}{{ s.percentage ? '%' : '' }}</li></ul>
@@ -100,7 +100,7 @@
 
                     <div v-if="summaryAbilities.length > 0" class="summary-section">
                         <button type="button" class="summary-section-toggle" :class="{ expanded: summarySectionState.abilities }" @click="toggleSummarySection('abilities')" :aria-expanded="summarySectionState.abilities">
-                            <span>{{ t('Active Abilities') }}</span>
+                            <span>{{ t('gems.star_chart.active_abilities') }}</span>
                             <i class="fa-solid" :class="summarySectionState.abilities ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                         </button>
                         <ul v-show="summarySectionState.abilities"><li v-for="a in summaryAbilities" :key="a">{{ t(a) }}</li></ul>
@@ -108,7 +108,7 @@
 
                     <div v-if="summaryObtainables.length > 0" class="summary-section">
                         <button type="button" class="summary-section-toggle" :class="{ expanded: summarySectionState.obtainables }" @click="toggleSummarySection('obtainables')" :aria-expanded="summarySectionState.obtainables">
-                            <span>{{ t('Obtainables') }}</span>
+                            <span>{{ t('gems.star_chart.obtainables') }}</span>
                             <i class="fa-solid" :class="summarySectionState.obtainables ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
                         </button>
                         <ul v-show="summarySectionState.obtainables"><li v-for="(o, idx) in summaryObtainables" :key="idx">{{ o.count > 1 ? o.count + 'x ' : '' }}{{ t(o.name) }}</li></ul>
@@ -121,7 +121,7 @@
     <div id="star-tooltip" v-show="tooltip.show" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
         <template v-if="tooltip.node">
             <h3>{{ t(tooltip.node.Name || tooltip.node.Constellation) }}</h3>
-            <span class="type">{{ t('{type} Node').replace('{type}', t(tooltip.node.Type)) }}</span>
+            <span class="type">{{ t('gems.star_chart.type_node').replace('{type}', t(tooltip.node.Type)) }}</span>
             <template v-if="tooltip.node.Description"><p>{{ t(tooltip.node.Description) }}</p><hr/></template>
             <template v-if="tooltip.node.Stats && tooltip.node.Stats.length > 0">
                 <ul><li v-for="(s, idx) in tooltip.node.Stats" :key="'ts-'+idx"><strong>{{ t(s.name) }}:</strong> +{{ s.value }}{{ s.percentage ? '%' : '' }}</li></ul>
@@ -137,10 +137,10 @@
         <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             <h3 style="margin-top:0; color:var(--text-main, #fff);">{{ modal.title }}</h3>
             <p style="color:var(--text-muted, #aaa); margin-bottom:15px; font-size:14px;">{{ modal.msg }}</p>
-            <input v-if="modal.showInput" type="text" v-model="modal.inputValue" style="width:calc(100% - 22px); margin-bottom:15px; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px; outline: none;" :placeholder="t('Template Name')" ref="modalInputRef" />
+            <input v-if="modal.showInput" type="text" v-model="modal.inputValue" style="width:calc(100% - 22px); margin-bottom:15px; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px; outline: none;" :placeholder="t('gems.star_chart.template_name')" ref="modalInputRef" />
             <div style="display:flex; gap:10px; justify-content:center;">
-                <button class="primary-btn" style="flex:1;" @click="confirmModal">{{ t('Confirm') }}</button>
-                <button class="secondary-btn" style="flex:1;" @click="modal.show = false">{{ t('Cancel') }}</button>
+                <button class="primary-btn" style="flex:1;" @click="confirmModal">{{ t('gems.star_chart.confirm') }}</button>
+                <button class="secondary-btn" style="flex:1;" @click="modal.show = false">{{ t('common.cancel') }}</button>
             </div>
         </div>
     </div>

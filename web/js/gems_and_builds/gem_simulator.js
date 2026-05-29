@@ -11,7 +11,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
 
             const lookups = ref({});
             const inventory = ref(new Array(104).fill(null));
@@ -62,9 +62,9 @@ document.addEventListener('gem_simulator_loaded', async () => {
             const equippedPlaceholderUrl = (elementId, typeRestriction) => `assets/gems/gem_types/${typeRestriction}/elements/${elementId}.png`;
 
             const formattedObj = (obj) => {
-                if (!obj) return [[`(${t('None')})`, '']];
+                if (!obj) return [[`(${t('common.none')})`, '']];
                 const opts = Object.entries(obj).sort((a,b) => a[1]-b[1]).map(([k, v]) => [formatGemName(k), v]);
-                opts.unshift([`(${t('None')})`, '']);
+                opts.unshift([`(${t('common.none')})`, '']);
                 return opts;
             };
 
@@ -381,11 +381,11 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     if (s) { targetElement = row.elementId; targetType = s.typeRestriction; break; }
                 }
                 if (String(gem.element) !== String(targetElement) || String(gem.type) !== String(targetType)) {
-                    return { valid: false, error: String(gem.element) !== String(targetElement) ? t("Requires {element}.").replace("{element}", getElementNameById(targetElement)) : t("Requires {type} gem.").replace("{type}", getTypeDisplayName(targetType)) };
+                    return { valid: false, error: String(gem.element) !== String(targetElement) ? t("gems.gem_simulator.requires_element").replace("{element}", getElementNameById(targetElement)) : t("gems.gem_simulator.requires_type_gem").replace("{type}", getTypeDisplayName(targetType)) };
                 }
                 if (gem.ability) {
                     const isDup = equipped.value.some((g, i) => g && i !== slotIdx && String(g.ability) === String(gem.ability));
-                    if (isDup) return { valid: false, error: t("Cannot equip multiple Empowered Gems with the same ability.") };
+                    if (isDup) return { valid: false, error: t("gems.gem_simulator.cannot_equip_multiple_empowered_gems_wit_a8e37a") };
                 }
                 return { valid: true };
             };
@@ -462,10 +462,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 if (!draggedGem) return;
 
                 const confirmed = await window.showConfirmModal({
-                    title: t('Trash Gem'),
-                    message: t('Are you sure you want to permanently delete this gem?'),
-                    confirmLabel: t('Delete'),
-                    cancelLabel: t('Cancel'),
+                    title: t('gems.gem_simulator.trash_gem'),
+                    message: t('gems.gem_simulator.are_you_sure_you_want_to_permanently_del_c3cfbb'),
+                    confirmLabel: t('common.delete'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
                 if (!confirmed) return;
@@ -476,16 +476,16 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     selected.value = null;
                     selectedSource.value = null;
                 }
-                window.showToast(t('Gem deleted.'));
+                window.showToast(t('gems.gem_simulator.gem_deleted'));
             };
 
             const trashSelected = async () => {
-                if (!selected.value) return window.showToast(t("No gem selected to trash."), true);
+                if (!selected.value) return window.showToast(t("gems.gem_simulator.no_gem_selected_to_trash"), true);
                 const confirmed = await window.showConfirmModal({
-                    title: t('Trash Gem'),
-                    message: t('Are you sure you want to permanently delete the selected gem?'),
-                    confirmLabel: t('Delete'),
-                    cancelLabel: t('Cancel'),
+                    title: t('gems.gem_simulator.trash_gem'),
+                    message: t('gems.gem_simulator.are_you_sure_you_want_to_permanently_del_5d2ff5'),
+                    confirmLabel: t('common.delete'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
                 if (!confirmed) return;
@@ -496,12 +496,12 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 }
                 selected.value = null;
                 selectedSource.value = null;
-                window.showToast(t("Gem deleted."));
+                window.showToast(t("gems.gem_simulator.gem_deleted"));
             };
 
             const saveSelectedToInventory = () => {
                 const emptyIdx = inventory.value.findIndex(i => !i);
-                if (emptyIdx === -1) return window.showToast(t('Inventory is full.'), true);
+                if (emptyIdx === -1) return window.showToast(t('gems.gem_simulator.inventory_is_full'), true);
                 inventory.value[emptyIdx] = JSON.parse(JSON.stringify(selected.value));
             };
 
@@ -512,10 +512,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                     { separator: true },
                     { label: 'Trash Gem', icon: 'fa-trash', danger: true, action: async () => {
                         const confirmed = await window.showConfirmModal({
-                            title: t('Trash Gem'),
-                            message: t('Are you sure you want to permanently delete this gem?'),
-                            confirmLabel: t('Delete'),
-                            cancelLabel: t('Cancel'),
+                            title: t('gems.gem_simulator.trash_gem'),
+                            message: t('gems.gem_simulator.are_you_sure_you_want_to_permanently_del_c3cfbb'),
+                            confirmLabel: t('common.delete'),
+                            cancelLabel: t('common.cancel'),
                             danger: true
                         });
                         if (!confirmed) return;
@@ -525,7 +525,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                             selected.value = null;
                             selectedSource.value = null;
                         }
-                        window.showToast(t('Gem deleted.'));
+                        window.showToast(t('gems.gem_simulator.gem_deleted'));
                     }}
                 ]);
             };
@@ -568,10 +568,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                         selected.value = resp.gem;
                         selectedSource.value = null;
                     } else {
-                        window.showToast(t("Could not generate gem: {error}").replace("{error}", resp?.error || t("Unknown Error")), true);
+                        window.showToast(t("gems.gem_simulator.could_not_generate_gem_error").replace("{error}", resp?.error || t("common.unknown_error")), true);
                     }
                 } catch(err) {
-                    window.showToast(t("Connection error: {error}").replace("{error}", err), true);
+                    window.showToast(t("common.connection_error_error").replace("{error}", err), true);
                 }
                 isGenerating.value = false;
             };
@@ -587,10 +587,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                             if (selectedSource.value.pane === 'equipped') equipped.value[selectedSource.value.idx] = resp.gem;
                         }
                     } else {
-                        window.showToast(t("Could not level up gem: {error}").replace("{error}", resp?.error || t("Unknown Error")), true);
+                        window.showToast(t("gems.gem_simulator.could_not_level_up_gem_error").replace("{error}", resp?.error || t("common.unknown_error")), true);
                     }
                 } catch(e) {
-                    window.showToast(t("Connection error: {error}").replace("{error}", e), true);
+                    window.showToast(t("common.connection_error_error").replace("{error}", e), true);
                 }
                 isLevelingUp.value = false;
             };
@@ -617,10 +617,10 @@ document.addEventListener('gem_simulator_loaded', async () => {
                             if (selectedSource.value.pane === 'equipped') equipped.value[selectedSource.value.idx] = resp.gem;
                         }
                     } else {
-                        window.showToast(t("Action failed: {error}").replace("{error}", resp?.error || t("Unknown Error")), true);
+                        window.showToast(t("gems.gem_simulator.action_failed_error").replace("{error}", resp?.error || t("common.unknown_error")), true);
                     }
                 } catch(e) {
-                    window.showToast(t("Connection error: {error}").replace("{error}", e), true);
+                    window.showToast(t("common.connection_error_error").replace("{error}", e), true);
                 }
                 isActioning.value = false;
             };
@@ -636,7 +636,7 @@ document.addEventListener('gem_simulator_loaded', async () => {
                         else if (selectedSource.value.pane === "equipped" && equipped.value[selectedSource.value.idx]?.id === selected.value.id) selected.value = equipped.value[selectedSource.value.idx];
                         else { selected.value = null; selectedSource.value = null; }
                     }
-                    window.showToast(t("Gems synced with backend!"));
+                    window.showToast(t("gems.gem_simulator.gems_synced_with_backend"));
                 } catch(e) {}
                 isSyncing.value = false;
             };

@@ -9,7 +9,7 @@ document.addEventListener('settings_loaded', async () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_settings';
             const unwrap = (raw) => {
                 if (raw && typeof raw === 'object' && raw.success !== undefined && raw.data && typeof raw.data === 'object') {
@@ -135,7 +135,7 @@ document.addEventListener('settings_loaded', async () => {
                 if (response.success) {
                     addForm.path = response.path;
                     if (!addForm.name.trim()) {
-                        addForm.name = response.path.split(/[\\/]/).pop() || t("Custom Trove");
+                        addForm.name = response.path.split(/[\\/]/).pop() || t("settings.custom_trove");
                     }
                 } else if (response.error) {
                     window.showToast(response.error, true);
@@ -145,7 +145,7 @@ document.addEventListener('settings_loaded', async () => {
 
             const saveNewDir = async () => {
                 isSaving.value = true;
-                const name = addForm.name.trim() || t("Custom Trove");
+                const name = addForm.name.trim() || t("settings.custom_trove");
                 const exists = customDirs.value.some(d => d.path === addForm.path);
                 if (!exists) {
                     const currentSettings = window.AppSettings
@@ -160,7 +160,7 @@ document.addEventListener('settings_loaded', async () => {
                     await loadSettings();
                     modals.add = false;
                 } else {
-                    window.showToast(t("This directory is already in your custom list."), true);
+                    window.showToast(t("settings.this_directory_is_already_in_your_custom_23315c"), true);
                 }
                 isSaving.value = false;
             };
@@ -185,7 +185,7 @@ document.addEventListener('settings_loaded', async () => {
 
             const saveEditDir = async () => {
                 isSaving.value = true;
-                const newName = editForm.name.trim() || t("Custom Trove");
+                const newName = editForm.name.trim() || t("settings.custom_trove");
                 const currentSettings = window.AppSettings
                     ? await window.AppSettings.load()
                     : unwrap(await eel.get_settings()());
@@ -205,10 +205,10 @@ document.addEventListener('settings_loaded', async () => {
                 let confirmed = true;
                 if (typeof window.showConfirmModal === 'function') {
                     confirmed = await window.showConfirmModal({
-                        title: t('Reset Onboarding Tips'),
-                        message: t('Show tutorial hint chips again for supported tools?'),
-                        confirmLabel: t('Reset Tips'),
-                        cancelLabel: t('Cancel'),
+                        title: t('settings.reset_onboarding_tips'),
+                        message: t('settings.show_tutorial_hint_chips_again_for_suppo_4aebcf'),
+                        confirmLabel: t('settings.reset_tips'),
+                        cancelLabel: t('common.cancel'),
                         danger: false
                     });
                 }
@@ -225,7 +225,7 @@ document.addEventListener('settings_loaded', async () => {
                     settingsData.ui_preferences = prefs;
                     await window.AppSettings.save();
                 }
-                window.showToast(t('Onboarding tips have been reset. They will appear again in supported tools.'));
+                window.showToast(t('settings.onboarding_tips_have_been_reset_they_wil_dbc086'));
             };
 
             const persistState = () => {

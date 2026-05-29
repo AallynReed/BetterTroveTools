@@ -10,7 +10,7 @@ document.addEventListener('calculators_loaded', () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_calculators';
             const unwrapResp = (resp, key = null, fallback = null) => {
                 if (key) {
@@ -254,10 +254,10 @@ document.addEventListener('calculators_loaded', () => {
                     : (isLightGeodeMastery(item) ? getLightAppliedValue(item) : Number(item.currentValue || 0));
 
                 if (isPercentBonusValue(rawValue)) {
-                    return t("+{val}% Light").replace("{val}", formatLightBonusPercent(displayValue));
+                    return t("calculators.val_light_6dd238").replace("{val}", formatLightBonusPercent(displayValue));
                 }
 
-                return t("+{val} Light").replace("{val}", formatLightFlatValue(displayValue));
+                return t("calculators.val_light").replace("{val}", formatLightFlatValue(displayValue));
             };
 
             const mfStats = computed(() => {
@@ -308,10 +308,10 @@ document.addEventListener('calculators_loaded', () => {
             const clampMfValue = (item) => item.currentValue = Math.max(0, Math.min(parseInt(item.currentValue) || 0, item.max || item.value));
             
             const getMfBadgeText = (item) => {
-                if (item.type === 'patron_switch') return t("+{val}% Multiplier").replace("{val}", item.value);
-                if (item.type === 'switch') return item.percentage ? t("+{val}% MF").replace("{val}", item.value) : t("+{val} MF").replace("{val}", item.value);
+                if (item.type === 'patron_switch') return t("calculators.val_multiplier").replace("{val}", item.value);
+                if (item.type === 'switch') return item.percentage ? t("calculators.val_mf_c4ae44").replace("{val}", item.value) : t("calculators.val_mf").replace("{val}", item.value);
                 let v = item.type === 'mastery' ? Math.max(0, (item.currentValue || 0) - 500) : (item.currentValue || 0);
-                return item.percentage ? t("+{val}% MF").replace("{val}", v) : t("+{val} MF").replace("{val}", v);
+                return item.percentage ? t("calculators.val_mf_c4ae44").replace("{val}", v) : t("calculators.val_mf").replace("{val}", v);
             };
 
             const prData = ref([]);
@@ -466,7 +466,7 @@ document.addEventListener('calculators_loaded', () => {
                 } else {
                     v = item.currentValue || 0;
                 }
-                return t("+{val} PR").replace("{val}", v);
+                return t("calculators.val_pr").replace("{val}", v);
             };
 
             const sliderFillPct = (value, min, max) => {
@@ -478,7 +478,7 @@ document.addEventListener('calculators_loaded', () => {
             };
 
             const starChartTemplateOptions = computed(() => {
-                const opts = [[t('-- Load Saved Star Chart --'), '']];
+                const opts = [[t('common.load_saved_star_chart'), '']];
                 for (const name in starChartTemplates.value) opts.push([name, name]);
                 return opts;
             });

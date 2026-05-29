@@ -13,7 +13,7 @@ function initItemsView() {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_items';
             let hydratingState = false;
 
@@ -271,13 +271,13 @@ function initItemsView() {
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
-                if (source === 'game-cache') dataSourceText.value = t('Loaded item data from cached game-file scan.');
-                else if (source === 'game-cache-stale') dataSourceText.value = t('Loaded item data from cache. Refreshing in the background…');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded item data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('items.loaded_item_data_from_cached_game_file_s_3ebc82');
+                else if (source === 'game-cache-stale') dataSourceText.value = t('items.loaded_item_data_from_cache_refreshing_i_cd0a43');
+                else if (source === 'game-live') dataSourceText.value = t('items.loaded_item_data_from_live_game_files');
                 else dataSourceText.value = '';
                 if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
                     const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
-                    if (hours > 0) dataSourceText.value += ` ${t('Cache age')}: ${hours}h.`;
+                    if (hours > 0) dataSourceText.value += ` ${t('common.cache_age')}: ${hours}h.`;
                 }
             };
 

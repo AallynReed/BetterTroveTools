@@ -463,37 +463,55 @@ def start_self_update(download_url, version_tag="", asset_name=""):
 
 LOCALE_DIR = Path("web/assets/locale")
 
+
+def _is_locale_file(file_path):
+    # Only treat <lang>_<REGION>.json as a language file; skips engine aux files
+    # like _ui_ids.json and locale.schema.json that also live in the locale dir.
+    parts = file_path.stem.split("_")
+    return (
+        len(parts) == 2
+        and 2 <= len(parts[0]) <= 3 and parts[0].islower()
+        and 2 <= len(parts[1]) <= 4 and parts[1].isalpha()
+    )
+
+
+def _completion(data):
+    # User-facing coverage over everything visible: UI strings + content. (The
+    # contributor-facing validator reports UI-only separately.)
+    strings = data.get("strings")
+    if strings is None:
+        values = list(data.get("keys", {}).values())  # legacy { language_name, keys }
+    else:
+        values = list(strings.values()) + list(data.get("content", {}).values())
+    total = len(values)
+    if total == 0:
+        return 0
+    empty = sum(1 for v in values if v == "" or v is None)
+    return int(((total - empty) / total) * 100)
+
+
 @eel.expose
 def get_available_languages():
     LOCALE_DIR.mkdir(parents=True, exist_ok=True)
     languages = []
-    
+
     for file_path in LOCALE_DIR.glob("*.json"):
+        if not _is_locale_file(file_path):
+            continue
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                keys = data.get("keys", {})
-                total_keys = len(keys)
-                
-                if file_path.stem == "en_US":
-                    percent = 100
-                elif total_keys == 0:
-                    percent = 0
-                else:
-                    empty_keys = sum(1 for v in keys.values() if str(v).strip() == "")
-                    percent = int(((total_keys - empty_keys) / total_keys) * 100)
-
-                languages.append({
-                    "code": file_path.stem,
-                    "name": data.get("language_name", file_path.stem),
-                    "percent": percent
-                })
+            meta = data.get("meta") or {}
+            name = meta.get("name") or data.get("language_name") or file_path.stem
+            percent = 100 if file_path.stem == "en_US" else _completion(data)
+            languages.append({"code": file_path.stem, "name": name, "percent": percent})
         except Exception as e:
             print(f"⚠️ Error reading locale file {file_path}: {e}")
-            
+
     languages.sort(key=lambda x: (x["code"] != "en_US", x["name"]))
-    
+
     return languages
+
 
 @eel.expose
 def add_missing_translation_keys(locale_code, missing_keys):
@@ -510,25 +528,49 @@ def add_missing_translation_keys(locale_code, missing_keys):
     file_path = LOCALE_DIR / f"{locale_code}.json"
     if not file_path.exists():
         return {"success": False, "error": "Locale file not found."}
-        
+
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        
-        if "keys" not in data:
-            data["keys"] = {}
-            
-        added_count = 0
-        for key in missing_keys:
-            if key not in data["keys"]:
-                data["keys"][key] = ""
-                added_count += 1
-                
-        if added_count > 0:
+
+        # Normalize payload to (token, kind). Tolerate the old bare-string list
+        # (treated as source-text/content) for one release.
+        items = []
+        for item in missing_keys:
+            if isinstance(item, dict):
+                token, kind = item.get("token"), item.get("kind", "content")
+            else:
+                token, kind = item, "content"
+            if token:
+                items.append((token, kind if kind in ("ui", "content") else "content"))
+
+        is_new_shape = any(k in data for k in ("strings", "content", "meta"))
+        added = 0
+
+        if is_new_shape:
+            strings = data.setdefault("strings", {})
+            content = data.setdefault("content", {})
+            for token, kind in items:
+                target = strings if kind == "ui" else content
+                if token not in target:
+                    target[token] = ""
+                    added += 1
+        else:
+            # legacy { language_name, keys }: only source-text tokens belong here;
+            # symbolic UI ids must not be seeded into a legacy English-keyed map.
+            keys = data.setdefault("keys", {})
+            for token, kind in items:
+                if kind == "ui":
+                    continue
+                if token not in keys:
+                    keys[token] = ""
+                    added += 1
+
+        if added > 0:
             with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4, ensure_ascii=False)
-                
-        return {"success": True, "added": added_count}
+
+        return {"success": True, "added": added}
     except Exception as e:
         import traceback
         traceback.print_exc()

@@ -4,27 +4,27 @@
 <div id="settings-vue-app" class="settings-container" v-cloak>
     <div class="tabs-container">
         <div class="tab-buttons">
-            <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('General') }}</span></button>
-            <button class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('Directories') }}</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('settings.general') }}</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('settings.directories') }}</span></button>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'general' }">
             <div class="settings-section">
-                <h3>{{ t('Appearance') }}</h3>
+                <h3>{{ t('settings.appearance') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('App Accent Color') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Customize the main accent color of the application.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.app_accent_color') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.customize_the_main_accent_color_of_the_a_666684') }}</div>
                     </div>
                     <input type="color" v-model="settings.accent_color" @input="previewAccentColor" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('App Font') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Select a font family that supports your language.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.app_font') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.select_a_font_family_that_supports_your_448276') }}</div>
                     </div>
                     <select v-model="settings.app_font" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 8px 12px; cursor: pointer; min-width: 180px; outline: none;">
-                        <option value="system">{{ t('System Font') }}</option>
+                        <option value="system">{{ t('settings.system_font') }}</option>
                         <option value="product-sans">Product Sans</option>
                         <option value="noto-sans">Noto Sans</option>
                         <option value="inter">Inter</option>
@@ -36,11 +36,11 @@
             </div>
             
             <div class="settings-section">
-                <h3>{{ t('Home Page Preferences') }}</h3>
+                <h3>{{ t('settings.home_page_preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Community Content') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Show livestreams and videos on Home. Turn this off if you prefer a calmer dashboard with less motion.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_community_content') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_livestreams_and_videos_on_home_turn_5a3438') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_community_content" @change="saveGeneralSettings">
@@ -49,8 +49,8 @@
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Official News') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Show the official Trove news carousel on Home. Turn this off if you want a cleaner dashboard.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_official_news') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_the_official_trove_news_carousel_on_f9bd20') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_official_news" @change="saveGeneralSettings">
@@ -60,11 +60,11 @@
             </div>
             
             <div class="settings-section">
-                <h3>{{ t('Mod Manager Preferences') }}</h3>
+                <h3>{{ t('settings.mod_manager_preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Auto-Fix Mod Names') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Keeps local mod filenames aligned with their internal titles so your mod list stays easier to read.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.auto_fix_mod_names') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.keeps_local_mod_filenames_aligned_with_t_1760b6') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.auto_fix_names" @change="saveGeneralSettings">
@@ -73,8 +73,8 @@
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Show Mod Preview on Info Side') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Shows thumbnails directly on each mod card. Turn it off if you prefer a denser list with less visual noise.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_mod_preview_on_info_side') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.shows_thumbnails_directly_on_each_mod_ca_61f774') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_mod_preview_on_info_side" @change="saveGeneralSettings">
@@ -84,12 +84,12 @@
             </div>
 
             <div class="settings-section">
-                <h3>{{ t('UX Preferences') }}</h3>
-                <p class="settings-help-text">{{ t('These controls help the app explain itself without becoming noisy.') }}</p>
+                <h3>{{ t('settings.ux_preferences') }}</h3>
+                <p class="settings-help-text">{{ t('settings.these_controls_help_the_app_explain_itse_e05a64') }}</p>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Hide Beta Features') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Hide tools in the sidebar that are still marked as beta.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.hide_beta_features') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.hide_tools_in_the_sidebar_that_are_still_f580f5') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.hide_beta_features" @change="saveGeneralSettings">
@@ -98,20 +98,20 @@
                 </div>
                 <div class="settings-action-row" style="margin-top: 15px;">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('Reset Onboarding Tips') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('Show quick tours, shortcut reminders, and first-run discoverability hints again across supported tools.') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.reset_onboarding_tips') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_quick_tours_shortcut_reminders_and_6bfdbd') }}</div>
                     </div>
-                    <button class="secondary-btn" @click="resetOnboardingTips"><i class="fa-solid fa-rotate-left"></i> <span>{{ t('Reset Tips') }}</span></button>
+                    <button class="secondary-btn" @click="resetOnboardingTips"><i class="fa-solid fa-rotate-left"></i> <span>{{ t('settings.reset_tips') }}</span></button>
                 </div>
             </div>
 
             <div class="settings-section" v-if="!isWebMode">
-                <h3>{{ t('Game Settings') }} <span class="beta-label">BETA</span></h3>
-                <p class="settings-help-text">{{ t('Modifications applied directly to the game client.') }}</p>
+                <h3>{{ t('settings.game_settings') }} <span class="beta-label">BETA</span></h3>
+                <p class="settings-help-text">{{ t('settings.modifications_applied_directly_to_the_ga_7b242c') }}</p>
                 <div style="padding: 10px; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; border-radius: 4px; margin-top: 10px; margin-bottom: 20px;">
-                    <div style="color: #ff9800; font-weight: bold; font-size: 13px; margin-bottom: 5px;"><i class="fa-solid fa-circle-info"></i> {{ t('Disclaimer') }}</div>
+                    <div style="color: #ff9800; font-weight: bold; font-size: 13px; margin-bottom: 5px;"><i class="fa-solid fa-circle-info"></i> {{ t('settings.disclaimer') }}</div>
                     <div style="color: var(--text-muted); font-size: 13px; line-height: 1.4;">
-                        {{ t('These features alter the game client directly and are not officially supported by gamigo or the Trove development team. Use them at your own discretion.') }}
+                        {{ t('settings.these_features_alter_the_game_client_dir_4ede91') }}
                     </div>
                 </div>
                 
@@ -121,14 +121,14 @@
                         <div style="color: var(--text-muted); font-size: 12px; margin-top: 5px; font-family: monospace; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" :title="install.path">{{ install.path }}</div>
                         <div v-if="isFpsRepair(install.path)" style="color: #ff5c5c; font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 6px; white-space: normal;">
                             <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>{{ t('Could not read the FPS cap for this install. Verify/Repair it in Glyph, then reopen Settings.') }}</span>
+                            <span>{{ t('settings.could_not_read_the_fps_cap_for_this_inst_cfe57c') }}</span>
                         </div>
                     </div>
-                    <select v-model.number="settings.fps_caps[install.path]" @change="saveGeneralSettings" :disabled="isFpsRepair(install.path)" :title="isFpsRepair(install.path) ? t('Locked — repair this install in Glyph first.') : ''" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 6px 12px; min-width: 120px; outline: none; margin-left: auto; flex-shrink: 0;" :style="isFpsRepair(install.path) ? { borderColor: '#ff5c5c', color: '#ff5c5c', cursor: 'not-allowed', opacity: '0.6' } : {}">
-                        <option :value="9999">{{ t('Uncapped') }}</option>
+                    <select v-model.number="settings.fps_caps[install.path]" @change="saveGeneralSettings" :disabled="isFpsRepair(install.path)" :title="isFpsRepair(install.path) ? t('settings.locked_repair_this_install_in_glyph_firs_f7dc8e') : ''" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 6px 12px; min-width: 120px; outline: none; margin-left: auto; flex-shrink: 0;" :style="isFpsRepair(install.path) ? { borderColor: '#ff5c5c', color: '#ff5c5c', cursor: 'not-allowed', opacity: '0.6' } : {}">
+                        <option :value="9999">{{ t('settings.uncapped') }}</option>
                         <option :value="60">60 FPS</option>
                         <option :value="90">90 FPS</option>
-                        <option :value="120">120 FPS ({{ t('Default') }})</option>
+                        <option :value="120">120 FPS ({{ t('settings.default') }})</option>
                         <option :value="144">144 FPS</option>
                         <option :value="165">165 FPS</option>
                         <option :value="180">180 FPS</option>
@@ -139,18 +139,18 @@
                     </select>
                 </div>
 
-                <div v-if="gameInstalls && gameInstalls.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('No game installations found.') }}</div>
+                <div v-if="gameInstalls && gameInstalls.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('settings.no_game_installations_found') }}</div>
 
             </div>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'directories' }">
             <div class="settings-section">
-                <h3>{{ t('Custom Game Directories') }}</h3>
-                <p class="settings-help-text">{{ t('Add custom Trove installations here. They will automatically appear in the game selection dropdowns across the app.') }}</p>
+                <h3>{{ t('settings.custom_game_directories') }}</h3>
+                <p class="settings-help-text">{{ t('settings.add_custom_trove_installations_here_they_c088d8') }}</p>
                 
                 <div class="custom-dirs-list">
-                    <div v-if="customDirs.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('No custom directories added.') }}</div>
+                    <div v-if="customDirs.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('settings.no_custom_directories_added') }}</div>
                     <div v-else v-for="(dir, idx) in customDirs" :key="idx" class="custom-dir-item">
                         <div style="display: flex; flex-direction: column; overflow: hidden; margin-right: 15px;">
                             <span style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--text-main);">{{ dir.name }}</span>
@@ -164,7 +164,7 @@
                 </div>
                 
                 <button class="primary-btn" @click="openAddModal" style="margin-top: 15px;">
-                    <i class="fa-solid fa-folder-plus"></i> <span>{{ t('Add Custom Directory') }}</span>
+                    <i class="fa-solid fa-folder-plus"></i> <span>{{ t('settings.add_custom_directory') }}</span>
                 </button>
             </div>
         </div>
@@ -173,28 +173,28 @@
     <div class="settings-modal-overlay" :class="{ active: modals.add }">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
-                <h2>{{ t('Add Custom Directory') }}</h2>
+                <h2>{{ t('settings.add_custom_directory') }}</h2>
                 <button class="settings-close-modal" @click="modals.add = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
             <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('Display Name') }}</label>
-                    <input type="text" v-model="addForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('e.g. PTS Server')">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('settings.display_name') }}</label>
+                    <input type="text" v-model="addForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('settings.e_g_pts_server')">
             </div>
             <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('Folder Path') }}</label>
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('settings.folder_path') }}</label>
                 <div style="display: flex; gap: 10px;">
-                        <input type="text" v-model="addForm.path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" :placeholder="t('No folder selected')">
+                        <input type="text" v-model="addForm.path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" :placeholder="t('settings.no_folder_selected')">
                         <button class="primary-btn" @click="browseDir" :disabled="isBrowsing">
-                            <template v-if="!isBrowsing"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></template>
+                            <template v-if="!isBrowsing"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></template>
                             <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
                         </button>
                 </div>
             </div>
             <div style="display: flex; justify-content: flex-end;">
                     <button class="primary-btn" @click="saveNewDir" :disabled="!addForm.path || isSaving" :style="{ opacity: (!addForm.path || isSaving) ? 0.5 : 1 }">
-                        <template v-if="!isSaving">{{ t('Save Directory') }}</template>
-                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Saving...') }}</template>
+                        <template v-if="!isSaving">{{ t('settings.save_directory') }}</template>
+                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
                     </button>
             </div>
         </div>
@@ -204,18 +204,18 @@
     <div class="settings-modal-overlay" :class="{ active: modals.edit }">
     <div class="settings-modal-content">
         <div class="settings-modal-header">
-                <h2>{{ t('Edit Directory Name') }}</h2>
+                <h2>{{ t('settings.edit_directory_name') }}</h2>
                 <button class="settings-close-modal" @click="modals.edit = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
             <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('Display Name') }}</label>
-                    <input type="text" v-model="editForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('e.g. PTS Server')">
+                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('settings.display_name') }}</label>
+                    <input type="text" v-model="editForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('settings.e_g_pts_server')">
             </div>
             <div style="display: flex; justify-content: flex-end;">
                     <button class="primary-btn" @click="saveEditDir" :disabled="isSaving" :style="{ opacity: isSaving ? 0.5 : 1 }">
-                        <template v-if="!isSaving">{{ t('Save Name') }}</template>
-                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Saving...') }}</template>
+                        <template v-if="!isSaving">{{ t('settings.save_name') }}</template>
+                        <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
                     </button>
             </div>
         </div>

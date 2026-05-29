@@ -12,7 +12,7 @@ document.addEventListener('codexes_loaded', () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_codexes';
             const activeTab = ref('allies');
             const installs = ref([]);
@@ -110,7 +110,7 @@ document.addEventListener('codexes_loaded', () => {
                 } catch (error) {
                     installs.value = [];
                     selectedGamePath.value = '';
-                    window.showToast?.(t('Game path detection failed.'), true);
+                    window.showToast?.(t('common.game_path_detection_failed'), true);
                     return { installs: [], installOptions: [], selectedGamePath: '' };
                 }
             };
@@ -120,7 +120,7 @@ document.addEventListener('codexes_loaded', () => {
                 if (!targetPath) return;
                 const result = await eel.open_path_in_explorer(targetPath)();
                 if (!result || !result.success) {
-                    window.showToast?.(t('Failed to open folder.'), true);
+                    window.showToast?.(t('codexes.failed_to_open_folder'), true);
                 }
             };
 

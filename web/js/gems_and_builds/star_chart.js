@@ -19,7 +19,7 @@ document.addEventListener('star_chart_loaded', async () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_star_chart';
             const unwrapResp = (resp, key = null, fallback = null) => {
                 if (key) {
@@ -666,7 +666,7 @@ document.addEventListener('star_chart_loaded', async () => {
                         }
                     }
                 });
-                if (limitHit) window.showToast(t("Cannot exceed maximum of {limit} active nodes.").replace("{limit}", maxNodeLimit.value), true);
+                if (limitHit) window.showToast(t("gems.star_chart.cannot_exceed_maximum_of_limit_active_no_a1d299").replace("{limit}", maxNodeLimit.value), true);
             };
 
             let clickTimer = null;
@@ -694,7 +694,7 @@ document.addEventListener('star_chart_loaded', async () => {
                     }
                 });
                 if (limitHit) {
-                    window.showToast(t("Cannot exceed maximum of {limit} active nodes.").replace("{limit}", maxNodeLimit.value), true);
+                    window.showToast(t("gems.star_chart.cannot_exceed_maximum_of_limit_active_no_a1d299").replace("{limit}", maxNodeLimit.value), true);
                 }
             };
 
@@ -716,7 +716,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 } else {
                     const nodesToAdd = getAncestorsToSelect(node.Path, []);
                     if (selectedPaths.size + nodesToAdd.length > maxNodeLimit.value) {
-                        window.showToast(t("Cannot exceed maximum of {limit} active nodes.").replace("{limit}", maxNodeLimit.value), true);
+                        window.showToast(t("gems.star_chart.cannot_exceed_maximum_of_limit_active_no_a1d299").replace("{limit}", maxNodeLimit.value), true);
                         return;
                     }
                     nodesToAdd.forEach(p => selectedPaths.add(p));
@@ -725,7 +725,7 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const toggleCheatMode = () => {
                 if (cheatModeEnabled.value && selectedPaths.size > 40) {
-                    window.showToast(t("Reduce active nodes to 40 or fewer before disabling Cheat Mode."), true);
+                    window.showToast(t("gems.star_chart.reduce_active_nodes_to_40_or_fewer_befor_db38a4"), true);
                     return;
                 }
 
@@ -735,8 +735,8 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (window.showToast) {
                     window.showToast(
                         cheatModeEnabled.value
-                            ? t("Cheat Mode enabled. Node limit set to 120.")
-                            : t("Cheat Mode disabled. Node limit set to 40.")
+                            ? t("gems.star_chart.cheat_mode_enabled_node_limit_set_to_120")
+                            : t("gems.star_chart.cheat_mode_disabled_node_limit_set_to_40")
                     );
                 }
             };
@@ -744,7 +744,7 @@ document.addEventListener('star_chart_loaded', async () => {
             const clearAllSelectedNodes = () => {
                 if (selectedPaths.size === 0) return;
                 selectedPaths.clear();
-                if (window.showToast) window.showToast(t('All active nodes cleared.'));
+                if (window.showToast) window.showToast(t('gems.star_chart.all_active_nodes_cleared'));
             };
 
             const clearStatFilter = () => {
@@ -874,7 +874,7 @@ document.addEventListener('star_chart_loaded', async () => {
                     let hasValid = paths.length > 0;
                     
                     if (!hasValid) {
-                        if (!isSilent) window.showToast(t("No valid nodes found in build code."), true);
+                        if (!isSilent) window.showToast(t("gems.star_chart.no_valid_nodes_found_in_build_code"), true);
                         return;
                     }
 
@@ -895,11 +895,11 @@ document.addEventListener('star_chart_loaded', async () => {
                     });
                     
                     if (!isSilent) {
-                        if (skipped > 0) window.showToast(t("Loaded {loaded} nodes. Skipped {skipped} (Max {limit} limit).").replace("{loaded}", loaded).replace("{skipped}", skipped).replace("{limit}", maxNodeLimit.value), true);
-                        else if (loaded > 0) window.showToast(t("Successfully loaded {loaded} nodes!").replace("{loaded}", loaded));
+                        if (skipped > 0) window.showToast(t("gems.star_chart.loaded_loaded_nodes_skipped_skipped_max_f84184").replace("{loaded}", loaded).replace("{skipped}", skipped).replace("{limit}", maxNodeLimit.value), true);
+                        else if (loaded > 0) window.showToast(t("gems.star_chart.successfully_loaded_loaded_nodes").replace("{loaded}", loaded));
                     }
                 } catch (e) {
-                    if (!isSilent) window.showToast(t("Invalid build code format."), true);
+                    if (!isSilent) window.showToast(t("gems.star_chart.invalid_build_code_format"), true);
                 }
             };
 
@@ -915,8 +915,8 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const copyCode = () => {
                 const code = buildCode.value;
-                if (!code) { window.showToast(t("No nodes selected to copy."), true); return; }
-                navigator.clipboard.writeText(code).then(() => window.showToast(t("Build code copied to clipboard!"))).catch(err => window.showToast(t("Failed to copy: {error}").replace("{error}", err), true));
+                if (!code) { window.showToast(t("gems.star_chart.no_nodes_selected_to_copy"), true); return; }
+                navigator.clipboard.writeText(code).then(() => window.showToast(t("gems.star_chart.build_code_copied_to_clipboard"))).catch(err => window.showToast(t("gems.star_chart.failed_to_copy_error").replace("{error}", err), true));
             };
 
             watch(selectedTemplate, (newVal) => {
@@ -934,14 +934,14 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const saveTemplate = () => {
                 if (cheatModeEnabled.value) {
-                    window.showToast(t("Disable Cheat Mode before saving templates."), true);
+                    window.showToast(t("gems.star_chart.disable_cheat_mode_before_saving_templat_24905f"), true);
                     return;
                 }
                 const code = buildCode.value.trim();
-                if (!code) { window.showToast(t("No active build to save."), true); return; }
+                if (!code) { window.showToast(t("gems.star_chart.no_active_build_to_save"), true); return; }
                 modal.action = 'save';
-                modal.title = t('Save Template');
-                modal.msg = t('Enter a name for your build:');
+                modal.title = t('gems.star_chart.save_template');
+                modal.msg = t('gems.star_chart.enter_a_name_for_your_build');
                 modal.showInput = true;
                 modal.inputValue = '';
                 modal.show = true;
@@ -952,8 +952,8 @@ document.addEventListener('star_chart_loaded', async () => {
                 const name = selectedTemplate.value;
                 if (!name) return;
                 modal.action = 'delete';
-                modal.title = t('Delete Template');
-                modal.msg = t("Are you sure you want to delete '{name}'?").replace("{name}", name);
+                modal.title = t('gems.star_chart.delete_template');
+                modal.msg = t("gems.star_chart.are_you_sure_you_want_to_delete_name").replace("{name}", name);
                 modal.showInput = false;
                 modal.show = true;
             };
@@ -962,10 +962,10 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (!templates.value[name]) return true;
                 if (!window.showConfirmModal) return true;
                 return await window.showConfirmModal({
-                    title: t('Overwrite Template'),
-                    message: t("A template named '{name}' already exists. Overwrite it?").replace("{name}", name),
-                    confirmLabel: t('Overwrite'),
-                    cancelLabel: t('Cancel'),
+                    title: t('gems.star_chart.overwrite_template'),
+                    message: t("gems.star_chart.a_template_named_name_already_exists_ove_0e5c9a").replace("{name}", name),
+                    confirmLabel: t('common.overwrite'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
             };
@@ -973,22 +973,22 @@ document.addEventListener('star_chart_loaded', async () => {
             const confirmModal = async () => {
                 if (modal.action === 'save') {
                     const name = modal.inputValue.trim();
-                    if (!name) return window.showToast(t("Please enter a name."), true);
+                    if (!name) return window.showToast(t("gems.star_chart.please_enter_a_name"), true);
                     const code = buildCode.value.trim();
                     modal.show = false;
                     if (!(await confirmOverwrite(name))) return;
                     const res = await eel.save_star_chart_template(name, code)();
                     if (res.success) {
-                        window.showToast(t("Template '{name}' saved!").replace("{name}", name));
+                        window.showToast(t("gems.star_chart.template_name_saved").replace("{name}", name));
                         await fetchTemplates();
                         selectedTemplate.value = name;
-                    } else window.showToast(t("Error saving template."), true);
+                    } else window.showToast(t("gems.star_chart.error_saving_template"), true);
                     return;
                 } else if (modal.action === 'rename') {
                     const newName = modal.inputValue.trim();
                     const oldName = modal.renameFrom;
                     modal.show = false;
-                    if (!newName) return window.showToast(t("Please enter a name."), true);
+                    if (!newName) return window.showToast(t("gems.star_chart.please_enter_a_name"), true);
                     if (newName === oldName) return;
                     const code = templates.value[oldName];
                     if (code === undefined) return;
@@ -998,17 +998,17 @@ document.addEventListener('star_chart_loaded', async () => {
                         await eel.delete_star_chart_template(oldName)();
                         await fetchTemplates();
                         selectedTemplate.value = newName;
-                        window.showToast(t("Template renamed to '{name}'.").replace("{name}", newName));
-                    } else window.showToast(t("Error renaming template."), true);
+                        window.showToast(t("gems.star_chart.template_renamed_to_name").replace("{name}", newName));
+                    } else window.showToast(t("gems.star_chart.error_renaming_template"), true);
                     return;
                 } else if (modal.action === 'delete') {
                     const name = selectedTemplate.value;
                     const res = await eel.delete_star_chart_template(name)();
                     if (res.success) {
-                        window.showToast(t("Template '{name}' deleted!").replace("{name}", name));
+                        window.showToast(t("gems.star_chart.template_name_deleted").replace("{name}", name));
                         await fetchTemplates();
                         selectedTemplate.value = '';
-                    } else window.showToast(t("Error deleting template."), true);
+                    } else window.showToast(t("gems.star_chart.error_deleting_template"), true);
                 }
                 modal.show = false;
             };
@@ -1018,8 +1018,8 @@ document.addEventListener('star_chart_loaded', async () => {
                 if (!name) return;
                 modal.action = 'rename';
                 modal.renameFrom = name;
-                modal.title = t('Rename Template');
-                modal.msg = t('Enter a new name:');
+                modal.title = t('gems.star_chart.rename_template');
+                modal.msg = t('gems.star_chart.enter_a_new_name');
                 modal.showInput = true;
                 modal.inputValue = name;
                 modal.show = true;
@@ -1028,7 +1028,7 @@ document.addEventListener('star_chart_loaded', async () => {
 
             const exportTemplates = () => {
                 const names = Object.keys(templates.value || {});
-                if (names.length === 0) { window.showToast(t("No templates to export."), true); return; }
+                if (names.length === 0) { window.showToast(t("gems.star_chart.no_templates_to_export"), true); return; }
                 const blob = new Blob([JSON.stringify(templates.value, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1052,16 +1052,16 @@ document.addEventListener('star_chart_loaded', async () => {
                     const parsed = JSON.parse(await file.text());
                     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('bad');
                     const entries = Object.entries(parsed).filter(([key, value]) => key && typeof value === 'string');
-                    if (entries.length === 0) { window.showToast(t("No valid templates in file."), true); return; }
+                    if (entries.length === 0) { window.showToast(t("gems.star_chart.no_valid_templates_in_file"), true); return; }
                     let imported = 0;
                     for (const [name, code] of entries) {
                         const res = await eel.save_star_chart_template(name, code)();
                         if (res && res.success) imported++;
                     }
                     await fetchTemplates();
-                    window.showToast(t("Imported {count} templates.").replace("{count}", imported));
+                    window.showToast(t("gems.star_chart.imported_count_templates").replace("{count}", imported));
                 } catch (err) {
-                    window.showToast(t("Invalid templates file."), true);
+                    window.showToast(t("gems.star_chart.invalid_templates_file"), true);
                 }
             };
 
@@ -1116,7 +1116,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 items.push({
                     label: 'Copy Name',
                     icon: 'fa-copy',
-                    action: () => navigator.clipboard.writeText(t(node.Name || node.Constellation)).then(() => { if (window.showToast) window.showToast(t("Copied to clipboard!")); })
+                    action: () => navigator.clipboard.writeText(t(node.Name || node.Constellation)).then(() => { if (window.showToast) window.showToast(t("common.copied_to_clipboard")); })
                 });
 
                 window.ContextMenu.show(e, items);
@@ -1182,7 +1182,7 @@ document.addEventListener('star_chart_loaded', async () => {
                         window.addEventListener('resize', syncSummaryPanelHeight);
                     });
                 } else {
-                    window.showToast(t("Error loading chart data: {error}").replace("{error}", response.error), true);
+                    window.showToast(t("gems.star_chart.error_loading_chart_data_error").replace("{error}", response.error), true);
                 }
             });
 

@@ -5,31 +5,31 @@
     <div class="tabs-wrapper">
         <div class="tab-buttons">
             <button data-tab="pr-tab" :class="['tab-btn', { active: activeTab === 'pr-tab' }]" @click="activeTab = 'pr-tab'">
-                <i class="fa-solid fa-star" style="color: #fbc02d;"></i> {{ t('Power Rank') }}
+                <i class="fa-solid fa-star" style="color: #fbc02d;"></i> {{ t('common.power_rank') }}
             </button>
             <button data-tab="mastery-tab" :class="['tab-btn', { active: activeTab === 'mastery-tab' }]" @click="activeTab = 'mastery-tab'">
-                <i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('Mastery') }}
+                <i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('calculators.mastery') }}
             </button>
             <button data-tab="mf-tab" :class="['tab-btn', { active: activeTab === 'mf-tab' }]" @click="activeTab = 'mf-tab'">
-                <i class="fa-solid fa-gem" style="color: var(--accent-blue);"></i> {{ t('Magic Find') }}
+                <i class="fa-solid fa-gem" style="color: var(--accent-blue);"></i> {{ t('calculators.magic_find') }}
             </button>
             <button data-tab="light-tab" :class="['tab-btn', { active: activeTab === 'light-tab' }]" @click="activeTab = 'light-tab'">
-                <i class="fa-solid fa-sun" style="color: #00bcd4;"></i> {{ t('Light') }}
+                <i class="fa-solid fa-sun" style="color: #00bcd4;"></i> {{ t('common.light') }}
             </button>
         </div>
 
         <div class="tab-content pr-tab-content" :class="{ active: activeTab === 'pr-tab' }" style="--calc-accent: #fbc02d;">
             <div class="mf-header compact-header pr-header" style="border-color: var(--calc-accent);">
                 <div class="mf-total-box">
-                    <span class="mf-total-label">{{ t('Total Power Rank') }}</span>
+                    <span class="mf-total-label">{{ t('calculators.total_power_rank') }}</span>
                     <span class="mf-total-value">{{ totalPR.toLocaleString() }}</span>
                 </div>
                 <div class="pr-summary-strip">
-                    <span class="summary-chip"><strong>{{ t('Mastery PR') }}</strong> {{ prBreakdown.masteryPR.toLocaleString() }}</span>
-                    <span v-if="prBreakdown.patronActive" class="summary-chip"><i class="fa-solid fa-crown" style="color: #fbc02d;"></i> {{ t('Patron') }}</span>
+                    <span class="summary-chip"><strong>{{ t('calculators.mastery_pr') }}</strong> {{ prBreakdown.masteryPR.toLocaleString() }}</span>
+                    <span v-if="prBreakdown.patronActive" class="summary-chip"><i class="fa-solid fa-crown" style="color: #fbc02d;"></i> {{ t('common.patron') }}</span>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" @click="resetPr"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
+                    <button class="btn-reset" @click="resetPr"><i class="fa-solid fa-rotate-left"></i> {{ t('calculators.reset_defaults') }}</button>
                 </div>
             </div>
             
@@ -56,38 +56,38 @@
         <div class="tab-content mastery-tab-content" :class="{ active: activeTab === 'mastery-tab' }" style="--calc-accent: #ff9800;">
             <div class="mf-header compact-header mastery-header" style="border-color: var(--calc-accent);">
                 <div class="mf-total-box">
-                    <span class="mf-total-label">{{ t('Total Mastery Power Rank') }}</span>
+                    <span class="mf-total-label">{{ t('calculators.total_mastery_power_rank') }}</span>
                     <span class="mf-total-value">{{ masteryPR.toLocaleString() }}</span>
                 </div>
 
                 <div class="mastery-summary-strip">
                     <div class="mastery-stat-box">
                         <span class="stat-val">{{ masteryDmg }}</span>
-                        <span class="stat-label"><i class="fa-solid fa-burst"></i> {{ t('Damage') }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-burst"></i> {{ t('calculators.damage') }}</span>
                     </div>
                     <div class="mastery-stat-box">
                         <span class="stat-val">{{ masteryHp }}</span>
-                        <span class="stat-label"><i class="fa-solid fa-heart"></i> {{ t('Health') }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-heart"></i> {{ t('common.health') }}</span>
                     </div>
                     <div class="mastery-stat-box">
                         <span class="stat-val" style="color: #00bcd4;">{{ masteryLight }}</span>
-                        <span class="stat-label"><i class="fa-solid fa-sun"></i> {{ t('Light') }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-sun"></i> {{ t('common.light') }}</span>
                     </div>
                     <div class="mastery-stat-box">
                         <span class="stat-val">{{ masteryMf }}</span>
-                        <span class="stat-label"><i class="fa-solid fa-gem"></i> {{ t('Magic Find') }}</span>
+                        <span class="stat-label"><i class="fa-solid fa-gem"></i> {{ t('calculators.magic_find') }}</span>
                     </div>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" @click="resetMastery"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
+                    <button class="btn-reset" @click="resetMastery"><i class="fa-solid fa-rotate-left"></i> {{ t('calculators.reset_defaults') }}</button>
                 </div>
             </div>
 
             <div class="mf-calculator-grid">
                 <div class="calc-item" style="--calc-accent: #fbc02d; border-left: 4px solid var(--calc-accent);">
                     <div class="calc-item-header">
-                        <span><i class="fa-solid fa-crown" style="color: var(--calc-accent);"></i> {{ t('Trove Mastery') }}</span>
-                        <span class="calc-item-badge">{{ t('Soft Cap: 1000') }}</span>
+                        <span><i class="fa-solid fa-crown" style="color: var(--calc-accent);"></i> {{ t('calculators.trove_mastery') }}</span>
+                        <span class="calc-item-badge">{{ t('calculators.soft_cap_1000') }}</span>
                     </div>
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider" min="0" max="1100" v-model.number="troveMastery" :style="{ '--val-pct': sliderFillPct(troveMastery, 0, 1100) }">
@@ -97,8 +97,8 @@
 
                 <div class="calc-item" style="--calc-accent: #00bcd4; border-left: 4px solid var(--calc-accent);">
                     <div class="calc-item-header">
-                        <span><i class="fa-solid fa-gem" style="color: var(--calc-accent);"></i> {{ t('Geode Mastery') }}</span>
-                        <span class="calc-item-badge">{{ t('Soft Cap: 100') }}</span>
+                        <span><i class="fa-solid fa-gem" style="color: var(--calc-accent);"></i> {{ t('calculators.geode_mastery') }}</span>
+                        <span class="calc-item-badge">{{ t('calculators.soft_cap_100') }}</span>
                     </div>
                     <div class="calc-slider-wrapper">
                         <input type="range" class="calc-slider" min="0" max="150" v-model.number="geodeMastery" :style="{ '--val-pct': sliderFillPct(geodeMastery, 0, 150) }">
@@ -111,22 +111,22 @@
         <div class="tab-content mf-tab-content" :class="{ active: activeTab === 'mf-tab' }" style="--calc-accent: var(--accent-blue);">
             <div class="mf-header compact-header magic-find-header">
                 <div class="mf-total-box">
-                    <span class="mf-total-label">{{ t('Total Magic Find') }}</span>
+                    <span class="mf-total-label">{{ t('calculators.total_magic_find') }}</span>
                     <span class="mf-total-value">{{ mfStats.total.toLocaleString() }}</span>
                 </div>
                 <div class="mf-summary-strip">
-                    <span class="summary-chip"><strong>{{ t('Base MF') }}</strong> {{ mfStats.flat.toLocaleString() }}</span>
-                    <span class="summary-chip"><strong>{{ t('Bonus') }}</strong> +{{ mfStats.bonus }}%</span>
+                    <span class="summary-chip"><strong>{{ t('calculators.base_mf') }}</strong> {{ mfStats.flat.toLocaleString() }}</span>
+                    <span class="summary-chip"><strong>{{ t('calculators.bonus') }}</strong> +{{ mfStats.bonus }}%</span>
                     <span v-if="mfStats.starFlat > 0 || mfStats.starPct > 0" class="summary-chip">
-                        <strong>{{ t('Star Chart') }}</strong>
+                        <strong>{{ t('common.star_chart') }}</strong>
                         <template v-if="mfStats.starFlat > 0">+{{ mfStats.starFlat }}</template>
                         <template v-if="mfStats.starFlat > 0 && mfStats.starPct > 0"> / </template>
                         <template v-if="mfStats.starPct > 0">+{{ mfStats.starPct }}%</template>
                     </span>
-                    <span v-if="mfStats.patron > 1" class="summary-chip"><strong>{{ t('Patron') }}</strong> x{{ mfStats.patron }}</span>
+                    <span v-if="mfStats.patron > 1" class="summary-chip"><strong>{{ t('common.patron') }}</strong> x{{ mfStats.patron }}</span>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" @click="resetMf"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
+                    <button class="btn-reset" @click="resetMf"><i class="fa-solid fa-rotate-left"></i> {{ t('calculators.reset_defaults') }}</button>
                 </div>
             </div>
             
@@ -152,26 +152,26 @@
 
                 <div class="calc-item star-chart-calc-item" style="--calc-accent: #ff9800;">
                     <div class="calc-item-header">
-                        <span><i class="fa-solid fa-chart-network" style="color: var(--calc-accent);"></i> {{ t('Star Chart') }}</span>
-                        <span class="calc-item-badge">{{ t('MF Only') }}</span>
+                        <span><i class="fa-solid fa-chart-network" style="color: var(--calc-accent);"></i> {{ t('common.star_chart') }}</span>
+                        <span class="calc-item-badge">{{ t('calculators.mf_only') }}</span>
                     </div>
                     <div class="star-chart-inline-controls">
                         <custom-vue-select v-model="starChartTemplate" :options="starChartTemplateOptions" style="width: 100%;"></custom-vue-select>
-                        <input type="text" class="calc-number-input star-chart-code-input" v-model.trim="starChartCode" :placeholder="t('Paste Star Chart build code...')">
+                        <input type="text" class="calc-number-input star-chart-code-input" v-model.trim="starChartCode" :placeholder="t('calculators.paste_star_chart_build_code')">
                     </div>
                     <div class="mf-breakdown star-chart-breakdown" v-if="starChartCode">
                         <template v-if="starChartMf.error">
-                            <span style="color: #ff6b6b;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('Invalid Build Code') }}</span>
+                            <span style="color: #ff6b6b;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('common.invalid_build_code') }}</span>
                         </template>
                         <template v-else>
                             <span>
-                                <strong>{{ t('Nodes') }}:</strong> {{ starChartMf.pathsCount }}
+                                <strong>{{ t('common.nodes') }}:</strong> {{ starChartMf.pathsCount }}
                                 <span style="margin: 0 8px; opacity: 0.55;">|</span>
-                                <strong>{{ t('Magic Find') }}:</strong>
+                                <strong>{{ t('calculators.magic_find') }}:</strong>
                                 <template v-if="starChartMf.flat > 0">+{{ starChartMf.flat }}</template>
                                 <template v-if="starChartMf.flat > 0 && starChartMf.pct > 0"> / </template>
                                 <template v-if="starChartMf.pct > 0">+{{ starChartMf.pct }}%</template>
-                                <template v-if="starChartMf.flat <= 0 && starChartMf.pct <= 0">{{ t('No Magic Find stats detected') }}</template>
+                                <template v-if="starChartMf.flat <= 0 && starChartMf.pct <= 0">{{ t('calculators.no_magic_find_stats_detected') }}</template>
                             </span>
                         </template>
                     </div>
@@ -182,15 +182,15 @@
         <div class="tab-content light-tab-content" :class="{ active: activeTab === 'light-tab' }" style="--calc-accent: #00bcd4;">
             <div class="mf-header compact-header light-header" style="border-color: var(--calc-accent);">
                 <div class="mf-total-box">
-                    <span class="mf-total-label">{{ t('Total Light') }}</span>
+                    <span class="mf-total-label">{{ t('calculators.total_light') }}</span>
                     <span class="mf-total-value">{{ lightStats.total.toLocaleString() }}</span>
                 </div>
                 <div class="mf-summary-strip">
-                    <span class="summary-chip"><strong>{{ t('Base Light') }}</strong> {{ lightStats.flat.toLocaleString() }}</span>
-                    <span v-if="lightStats.bonusPct > 0" class="summary-chip"><strong>{{ t('Bonus') }}</strong> +{{ lightStats.bonusPct.toFixed(0) }}%</span>
+                    <span class="summary-chip"><strong>{{ t('calculators.base_light') }}</strong> {{ lightStats.flat.toLocaleString() }}</span>
+                    <span v-if="lightStats.bonusPct > 0" class="summary-chip"><strong>{{ t('calculators.bonus') }}</strong> +{{ lightStats.bonusPct.toFixed(0) }}%</span>
                 </div>
                 <div class="mf-header-actions">
-                    <button class="btn-reset" @click="resetLight"><i class="fa-solid fa-rotate-left"></i> {{ t('Reset Defaults') }}</button>
+                    <button class="btn-reset" @click="resetLight"><i class="fa-solid fa-rotate-left"></i> {{ t('calculators.reset_defaults') }}</button>
                 </div>
             </div>
 

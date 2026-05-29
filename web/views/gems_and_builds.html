@@ -11,16 +11,16 @@
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'gem-builds' }" @click="setActiveTab('gem-builds')">
-                <i class="fa-solid fa-dice-five"></i> <span>{{ t('Gem Builds') }}</span>
+                <i class="fa-solid fa-dice-five"></i> <span>{{ t('gems_and_builds.gem_builds') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'star-chart' }" @click="setActiveTab('star-chart')">
-                <i class="fa-solid fa-star"></i> <span>{{ t('Star Chart') }}</span>
+                <i class="fa-solid fa-star"></i> <span>{{ t('common.star_chart') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'gem-evaluator' }" @click="setActiveTab('gem-evaluator')">
-                <i class="fa-solid fa-magnifying-glass-chart"></i> <span>{{ t('Gem Evaluator') }}</span>
+                <i class="fa-solid fa-magnifying-glass-chart"></i> <span>{{ t('common.gem_evaluator') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'gem-simulator' }" @click="setActiveTab('gem-simulator')">
-                <i class="fa-solid fa-gem"></i> <span>{{ t('Gem Simulator') }}</span>
+                <i class="fa-solid fa-gem"></i> <span>{{ t('gems_and_builds.gem_simulator') }}</span>
             </button>
         </div>
 

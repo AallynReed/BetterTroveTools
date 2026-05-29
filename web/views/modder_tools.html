@@ -6,28 +6,28 @@
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'build' }" @click="activeTab = 'build'">
-                <i class="fa-solid fa-hammer"></i> <span>{{ t('Build TMod') }}</span>
+                <i class="fa-solid fa-hammer"></i> <span>{{ t('modder_tools.build_tmod') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'extract' }" @click="activeTab = 'extract'">
-                <i class="fa-solid fa-box-open"></i> <span>{{ t('Extract TMod') }}</span>
+                <i class="fa-solid fa-box-open"></i> <span>{{ t('modder_tools.extract_tmod') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'edit_tmod' }" @click="activeTab = 'edit_tmod'">
-                <i class="fa-solid fa-pen-to-square"></i> <span>{{ t('Edit TMod') }}</span> <span class="beta-label">BETA</span>
+                <i class="fa-solid fa-pen-to-square"></i> <span>{{ t('modder_tools.edit_tmod') }}</span> <span class="beta-label">BETA</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="activeTab = 'projects'">
-                <i class="fa-solid fa-diagram-project"></i> <span>{{ t('Projects') }}</span>
+                <i class="fa-solid fa-diagram-project"></i> <span>{{ t('modder_tools.projects') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="activeTab = 'qb_editor'">
-                <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('Blueprint Editor') }}</span> <span class="beta-label">BETA</span>
+                <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('modder_tools.blueprint_editor') }}</span> <span class="beta-label">BETA</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="activeTab = 'file_explorer'">
-                <i class="fa-solid fa-folder-tree"></i> <span>{{ t('File Explorer') }}</span>
+                <i class="fa-solid fa-folder-tree"></i> <span>{{ t('common.file_explorer') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'update_tracker' }" @click="activeTab = 'update_tracker'">
-                <i class="fa-solid fa-satellite-dish"></i> <span>{{ t('Update Tracker') }}</span>
+                <i class="fa-solid fa-satellite-dish"></i> <span>{{ t('common.update_tracker') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'software' }" @click="activeTab = 'software'">
-                <i class="fa-solid fa-computer"></i> <span>{{ t('Third Party Software') }}</span>
+                <i class="fa-solid fa-computer"></i> <span>{{ t('modder_tools.third_party_software') }}</span>
             </button>
         </div>
 
@@ -36,27 +36,27 @@
                 <div class="build-split-layout">
                     <div class="build-left-col">
                         <div class="form-group">
-                            <label>{{ t('Mod Preview') }}</label>
-                            <div class="mod-preview-picker" :title="t('Click to select preview image')" @click="chooseBuildPreview">
+                            <label>{{ t('modder_tools.mod_preview') }}</label>
+                            <div class="mod-preview-picker" :title="t('modder_tools.click_to_select_preview_image')" @click="chooseBuildPreview">
                                 <img :src="build.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
-                                    <span>{{ t('Change Image') }}</span>
+                                    <span>{{ t('modder_tools.change_image') }}</span>
                                 </div>
-                                <button type="button" class="remove-preview-btn" v-show="build.preview" @click.stop="build.preview = ''; build.previewName = ''" :title="t('Remove Preview')">
+                                <button type="button" class="remove-preview-btn" v-show="build.preview" @click.stop="build.preview = ''; build.previewName = ''" :title="t('modder_tools.remove_preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
                         </div>
 
                         <div class="form-group" style="margin-top: 15px;">
-                            <label>{{ t('Config File (.cfg)') }}</label>
+                            <label>{{ t('modder_tools.config_file_cfg') }}</label>
                             <div class="input-row">
-                                <input type="text" :value="build.configName" :placeholder="t('Optional UI config file...')" readonly>
+                                <input type="text" :value="build.configName" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
                                 <button class="primary-btn" @click="chooseBuildConfig">
-                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('Browse') }}</span>
+                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('common.browse') }}</span>
                                 </button>
-                                <button type="button" class="icon-btn-small danger" v-show="build.config" @click="build.config = ''; build.configName = ''" :title="t('Remove Config File')">
+                                <button type="button" class="icon-btn-small danger" v-show="build.config" @click="build.config = ''; build.configName = ''" :title="t('modder_tools.remove_config_file')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
@@ -65,10 +65,10 @@
                     
                     <div class="build-right-col">
                         <div class="form-group">
-                            <label>{{ t('Target Game Installation') }}</label>
+                            <label>{{ t('modder_tools.target_game_installation') }}</label>
                             <div class="input-row">
                                 <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;" :class="{ 'field-invalid': isBuildFieldInvalid('gamePath') }"></custom-vue-select>
-                                <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                                <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('common.open_selected_game_folder')">
                                     <i class="fa-solid fa-folder-open"></i>
                                 </button>
                             </div>
@@ -76,15 +76,15 @@
 
                         <div class="form-row">
                             <div class="form-group" style="flex: 2;">
-                                <label>{{ t('Mod Title') }}</label>
-                                <input type="text" v-model="build.title" :placeholder="t('My Awesome Mod')" :class="{ 'field-invalid': isBuildFieldInvalid('title') }">
+                                <label>{{ t('modder_tools.mod_title') }}</label>
+                                <input type="text" v-model="build.title" :placeholder="t('modder_tools.my_awesome_mod')" :class="{ 'field-invalid': isBuildFieldInvalid('title') }">
                             </div>
                             <div class="form-group" style="flex: 2;">
-                                <label>{{ t('Authors') }}</label>
-                                <input type="text" v-model="build.author" :placeholder="t('Author 1, Author 2')" :class="{ 'field-invalid': isBuildFieldInvalid('author') }">
+                                <label>{{ t('modder_tools.authors') }}</label>
+                                <input type="text" v-model="build.author" :placeholder="t('modder_tools.author_1_author_2')" :class="{ 'field-invalid': isBuildFieldInvalid('author') }">
                             </div>
                             <div class="form-group" style="flex: 1;">
-                                <label>{{ t('Version') }}</label>
+                                <label>{{ t('modder_tools.version') }}</label>
                                 <input type="text" v-model="build.version" :class="{ 'field-invalid': isBuildFieldInvalid('version') }">
                             </div>
                         </div>
@@ -97,44 +97,44 @@
 
                 <div class="form-group">
                     <div class="form-group">
-                        <label>{{ t('Notes') }}</label>
-                        <textarea v-model="build.notes" rows="3" maxlength="220" :placeholder="t('Enter mod description or notes...')" :class="{ 'field-invalid': isBuildFieldInvalid('notes') }"></textarea>
+                        <label>{{ t('modder_tools.notes') }}</label>
+                        <textarea v-model="build.notes" rows="3" maxlength="220" :placeholder="t('modder_tools.enter_mod_description_or_notes')" :class="{ 'field-invalid': isBuildFieldInvalid('notes') }"></textarea>
                     </div>
                     <div class="form-row">
                         <div class="form-group" style="flex: 2;">
-                            <label>{{ t('Tags') }}</label>
+                            <label>{{ t('modder_tools.tags') }}</label>
                             <div :class="{ 'field-invalid': isBuildFieldInvalid('tags') }">
-                                <select2 v-model="build.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                                <select2 v-model="build.tags" :options="tagOptions" :placeholder="t('modder_tools.select_categories')"></select2>
                             </div>
                         </div>
                         <div class="form-group" style="flex: 1;">
-                            <label>{{ t('Subtype') }}</label>
+                            <label>{{ t('modder_tools.subtype') }}</label>
                             <custom-vue-select v-model="build.subtype" :options="subtypeOptions" style="flex: 1;"></custom-vue-select>
                         </div>
                     </div>
                     <div class="input-row" style="margin-bottom: 10px;">
-                        <button class="primary-btn" @click="detectBuildOverrides" :disabled="isWorking.detectingOverrides"><i class="fa-solid" :class="isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('Detect Overrides') }}</span></button>
-                        <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('Add File') }}</span></button>
-                        <button class="primary-btn" @click="autoStructureBuild" :disabled="isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('Auto-Fix file locations') }}</span></button>
+                        <button class="primary-btn" @click="detectBuildOverrides" :disabled="isWorking.detectingOverrides"><i class="fa-solid" :class="isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('modder_tools.detect_overrides') }}</span></button>
+                        <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_file') }}</span></button>
+                        <button class="primary-btn" @click="autoStructureBuild" :disabled="isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.auto_fix_file_locations') }}</span></button>
                     </div>
                     <div class="table-container" :class="{ 'field-invalid': isBuildFieldInvalid('files') }" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
                         <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                             <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                 <tr>
-                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('File') }}</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
                                     <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 40px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="file in build.files" :key="file.path">
-                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('Click to open containing folder')" style="color: var(--text-main); font-size: 13px; word-break: break-all; cursor: pointer;">
+                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('modder_tools.click_to_open_containing_folder')" style="color: var(--text-main); font-size: 13px; word-break: break-all; cursor: pointer;">
                                         <div>{{ file.internal_path }}</div>
                                         <div style="color: var(--text-muted); font-size: 11px;">{{ file.path }}</div>
                                     </td>
-                                    <td style="text-align: right;"><button class="icon-btn-small danger" :title="t('Remove File')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
+                                    <td style="text-align: right;"><button class="icon-btn-small danger" :title="t('modder_tools.remove_file')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
                                 </tr>
                                 <tr v-if="build.files.length === 0">
-                                    <td colspan="2" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files added.') }}</td>
+                                    <td colspan="2" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('modder_tools.no_files_added') }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -143,10 +143,10 @@
 
                 <div class="input-row" style="margin-top: 10px; align-items: stretch;">
                     <button class="primary-btn execute-btn" @click="buildTMod" :disabled="isWorking.buildingTMod" style="margin-top: 0; flex: 1;">
-                        <template v-if="isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling TMod...') }}</template>
-                        <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Build TMod') }}</span></template>
+                        <template v-if="isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.compiling_tmod') }}</template>
+                        <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('modder_tools.build_tmod') }}</span></template>
                     </button>
-                    <button class="primary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('Open Built TMod Folder')" style="min-width: 44px; padding: 0 12px;">
+                    <button class="primary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('modder_tools.open_built_tmod_folder')" style="min-width: 44px; padding: 0 12px;">
                         <i class="fa-solid fa-folder-open"></i>
                     </button>
                 </div>
@@ -155,42 +155,42 @@
 
         <div class="tab-content" :class="{ active: activeTab === 'extract' }">
             <div class="tool-panel">
-                <h3>{{ t('Extract an existing TMod') }}</h3>
-                <p class="help-text">{{ t('Select a .tmod archive to unpack its contents into a folder for editing.') }}</p>
+                <h3>{{ t('modder_tools.extract_an_existing_tmod') }}</h3>
+                <p class="help-text">{{ t('modder_tools.select_a_tmod_archive_to_unpack_its_cont_0c6253') }}</p>
                 
                 <div class="form-group">
-                    <label>{{ t('Source TMod File') }}</label>
+                    <label>{{ t('modder_tools.source_tmod_file') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="extract.source" :placeholder="t('Select a .tmod file...')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('source') }">
-                        <button class="primary-btn" @click="browseExtractSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('Browse') }}</span></button>
+                        <input type="text" v-model="extract.source" :placeholder="t('modder_tools.select_a_tmod_file')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('source') }">
+                        <button class="primary-btn" @click="browseExtractSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('common.browse') }}</span></button>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label>{{ t('Destination Folder') }}</label>
+                    <label>{{ t('modder_tools.destination_folder') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="extract.dest" :placeholder="t('Select where to extract the files...')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('dest') }">
-                        <button class="primary-btn" @click="browseExtractDest"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
+                        <input type="text" v-model="extract.dest" :placeholder="t('modder_tools.select_where_to_extract_the_files')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('dest') }">
+                        <button class="primary-btn" @click="browseExtractDest"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></button>
                     </div>
                 </div>
 
                 <button class="primary-btn execute-btn" @click="extractTMod" :disabled="isWorking.extracting">
-                    <template v-if="isWorking.extracting"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Extracting...') }}</template>
-                    <template v-else><i class="fa-solid fa-box-open"></i> <span>{{ t('Extract TMod') }}</span></template>
+                    <template v-if="isWorking.extracting"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.extracting') }}</template>
+                    <template v-else><i class="fa-solid fa-box-open"></i> <span>{{ t('modder_tools.extract_tmod') }}</span></template>
                 </button>
             </div>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'edit_tmod' }">
             <div class="tool-panel">
-                <h3>{{ t('Edit an existing TMod in place') }}</h3>
-                <p class="help-text">{{ t('Load a .tmod into memory, update its metadata or file list, then compile it back over the same archive.') }}</p>
+                <h3>{{ t('modder_tools.edit_an_existing_tmod_in_place') }}</h3>
+                <p class="help-text">{{ t('modder_tools.load_a_tmod_into_memory_update_its_metad_086325') }}</p>
 
                 <div class="form-group">
-                    <label>{{ t('Source TMod File') }}</label>
+                    <label>{{ t('modder_tools.source_tmod_file') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="editTmod.tmodPath" :placeholder="t('Select a .tmod file...')" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
-                        <button class="primary-btn" @click="browseEditTmodSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('Browse') }}</span></button>
+                        <input type="text" v-model="editTmod.tmodPath" :placeholder="t('modder_tools.select_a_tmod_file')" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
+                        <button class="primary-btn" @click="browseEditTmodSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('common.browse') }}</span></button>
                     </div>
                 </div>
 
@@ -198,18 +198,18 @@
                     <div class="build-left-col">
                         <div class="form-group">
                             <label class="form-label-with-action">
-                                <span>{{ t('Mod Preview') }}</span>
-                                <button v-if="hasEditTmodFieldChanged('preview')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('preview')" :title="t('Restore original preview')">
+                                <span>{{ t('modder_tools.mod_preview') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('preview')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('preview')" :title="t('modder_tools.restore_original_preview')">
                                     <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </label>
-                            <div class="mod-preview-picker" :title="t('Click to select preview image')" @click="chooseEditTmodPreview">
+                            <div class="mod-preview-picker" :title="t('modder_tools.click_to_select_preview_image')" @click="chooseEditTmodPreview">
                                 <img :src="editTmod.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
-                                    <span>{{ t('Change Image') }}</span>
+                                    <span>{{ t('modder_tools.change_image') }}</span>
                                 </div>
-                                <button type="button" class="remove-preview-btn" v-show="editTmod.preview" @click.stop="editTmod.preview = ''; editTmod.previewName = ''" :title="t('Remove Preview')">
+                                <button type="button" class="remove-preview-btn" v-show="editTmod.preview" @click.stop="editTmod.preview = ''; editTmod.previewName = ''" :title="t('modder_tools.remove_preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
@@ -217,17 +217,17 @@
 
                         <div class="form-group" style="margin-top: 15px;">
                             <label class="form-label-with-action">
-                                <span>{{ t('Config File (.cfg)') }}</span>
-                                <button v-if="hasEditTmodFieldChanged('config')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('config')" :title="t('Restore original config')">
+                                <span>{{ t('modder_tools.config_file_cfg') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('config')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('config')" :title="t('modder_tools.restore_original_config')">
                                     <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </label>
                             <div class="input-row">
-                                <input type="text" :value="editTmod.configName" :placeholder="t('Optional UI config file...')" readonly>
+                                <input type="text" :value="editTmod.configName" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
                                 <button class="primary-btn" @click="chooseEditTmodConfig">
-                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('Browse') }}</span>
+                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('common.browse') }}</span>
                                 </button>
-                                <button type="button" class="icon-btn-small danger" v-show="editTmod.config" @click="editTmod.config = ''; editTmod.configName = ''" :title="t('Remove Config File')">
+                                <button type="button" class="icon-btn-small danger" v-show="editTmod.config" @click="editTmod.config = ''; editTmod.configName = ''" :title="t('modder_tools.remove_config_file')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
@@ -236,33 +236,33 @@
 
                     <div class="build-right-col">
                         <div class="form-group">
-                            <label>{{ t('Loaded Archive') }}</label>
+                            <label>{{ t('modder_tools.loaded_archive') }}</label>
                             <input type="text" :value="editTmod.fileName" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
                         </div>
 
                         <div class="form-row">
                             <div class="form-group" style="flex: 2;">
                                 <label class="form-label-with-action">
-                                    <span>{{ t('Mod Title') }}</span>
-                                    <button v-if="hasEditTmodFieldChanged('title')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('title')" :title="t('Restore original title')">
+                                    <span>{{ t('modder_tools.mod_title') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('title')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('title')" :title="t('modder_tools.restore_original_title')">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
                                 </label>
-                                <input type="text" v-model="editTmod.title" :placeholder="t('My Awesome Mod')" :class="{ 'field-invalid': isEditTmodFieldInvalid('title') }">
+                                <input type="text" v-model="editTmod.title" :placeholder="t('modder_tools.my_awesome_mod')" :class="{ 'field-invalid': isEditTmodFieldInvalid('title') }">
                             </div>
                             <div class="form-group" style="flex: 2;">
                                 <label class="form-label-with-action">
-                                    <span>{{ t('Authors') }}</span>
-                                    <button v-if="hasEditTmodFieldChanged('author')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('author')" :title="t('Restore original authors')">
+                                    <span>{{ t('modder_tools.authors') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('author')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('author')" :title="t('modder_tools.restore_original_authors')">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
                                 </label>
-                                <input type="text" v-model="editTmod.author" :placeholder="t('Author 1, Author 2')" :class="{ 'field-invalid': isEditTmodFieldInvalid('author') }">
+                                <input type="text" v-model="editTmod.author" :placeholder="t('modder_tools.author_1_author_2')" :class="{ 'field-invalid': isEditTmodFieldInvalid('author') }">
                             </div>
                             <div class="form-group" style="flex: 1;">
                                 <label class="form-label-with-action">
-                                    <span>{{ t('Version') }}</span>
-                                    <button v-if="hasEditTmodFieldChanged('version')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('version')" :title="t('Restore original version')">
+                                    <span>{{ t('modder_tools.version') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('version')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('version')" :title="t('modder_tools.restore_original_version')">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
                                 </label>
@@ -272,30 +272,30 @@
 
                         <div class="form-group">
                             <label class="form-label-with-action">
-                                <span>{{ t('Notes') }}</span>
-                                <button v-if="hasEditTmodFieldChanged('notes')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('notes')" :title="t('Restore original notes')">
+                                <span>{{ t('modder_tools.notes') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('notes')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('notes')" :title="t('modder_tools.restore_original_notes')">
                                     <i class="fa-solid fa-rotate-left"></i>
                                 </button>
                             </label>
-                            <textarea v-model="editTmod.notes" rows="3" maxlength="220" :placeholder="t('Enter mod description or notes...')" :class="{ 'field-invalid': isEditTmodFieldInvalid('notes') }"></textarea>
+                            <textarea v-model="editTmod.notes" rows="3" maxlength="220" :placeholder="t('modder_tools.enter_mod_description_or_notes')" :class="{ 'field-invalid': isEditTmodFieldInvalid('notes') }"></textarea>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group" style="flex: 2;">
                                 <label class="form-label-with-action">
-                                    <span>{{ t('Tags') }}</span>
-                                    <button v-if="hasEditTmodFieldChanged('tags')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('tags')" :title="t('Restore original tags')">
+                                    <span>{{ t('modder_tools.tags') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('tags')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('tags')" :title="t('modder_tools.restore_original_tags')">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
                                 </label>
                                 <div :class="{ 'field-invalid': isEditTmodFieldInvalid('tags') }">
-                                    <select2 v-model="editTmod.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                                    <select2 v-model="editTmod.tags" :options="tagOptions" :placeholder="t('modder_tools.select_categories')"></select2>
                                 </div>
                             </div>
                             <div class="form-group" style="flex: 1;">
                                 <label class="form-label-with-action">
-                                    <span>{{ t('Subtype') }}</span>
-                                    <button v-if="hasEditTmodFieldChanged('subtype')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('subtype')" :title="t('Restore original subtype')">
+                                    <span>{{ t('modder_tools.subtype') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('subtype')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('subtype')" :title="t('modder_tools.restore_original_subtype')">
                                         <i class="fa-solid fa-rotate-left"></i>
                                     </button>
                                 </label>
@@ -310,18 +310,18 @@
 
                     <div class="form-group">
                         <div class="edit-tmod-toolbar">
-                            <label style="margin: 0;">{{ t('Archive Files') }}</label>
+                            <label style="margin: 0;">{{ t('modder_tools.archive_files') }}</label>
                             <div class="input-row">
-                                <button class="primary-btn" @click="addEditTmodFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('Add File') }}</span></button>
-                                <button class="primary-btn secondary-btn" @click="addEditTmodFilesFromTmod"><i class="fa-solid fa-file-import"></i> <span>{{ t('Add From TMod') }}</span></button>
+                                <button class="primary-btn" @click="addEditTmodFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_file') }}</span></button>
+                                <button class="primary-btn secondary-btn" @click="addEditTmodFilesFromTmod"><i class="fa-solid fa-file-import"></i> <span>{{ t('modder_tools.add_from_tmod') }}</span></button>
                             </div>
                         </div>
                         <div class="table-container" :class="{ 'field-invalid': isEditTmodFieldInvalid('files') }" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
                             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
                                 <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                     <tr>
-                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('File') }}</th>
-                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 180px;">{{ t('Source') }}</th>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 180px;">{{ t('common.source') }}</th>
                                         <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 96px;"></th>
                                     </tr>
                                 </thead>
@@ -329,25 +329,25 @@
                                     <tr v-for="file in editTmodDisplayFiles" :key="file.internal_path" :class="{ 'edit-tmod-file-removed': isEditTmodFileRemoved(file) }">
                                         <td style="color: var(--text-main); font-size: 13px; word-break: break-all;">
                                             <div>{{ file.internal_path }}</div>
-                                            <div style="color: var(--text-muted); font-size: 11px;">{{ file.path || file.imported_from || t('Embedded in archive memory') }}</div>
+                                            <div style="color: var(--text-muted); font-size: 11px;">{{ file.path || file.imported_from || t('modder_tools.embedded_in_archive_memory') }}</div>
                                         </td>
                                         <td style="padding: 10px; color: var(--text-muted); font-size: 12px;">
-                                            <template v-if="isEditTmodFileRemoved(file)">{{ t('Removed from in-memory build') }}</template>
-                                            <template v-else-if="file.source === 'disk'">{{ t('Replacement from disk') }}</template>
-                                            <template v-else-if="file.source === 'tmod'">{{ t('Imported from another TMod') }}</template>
-                                            <template v-else>{{ t('Original archive data') }}</template>
+                                            <template v-if="isEditTmodFileRemoved(file)">{{ t('modder_tools.removed_from_in_memory_build') }}</template>
+                                            <template v-else-if="file.source === 'disk'">{{ t('modder_tools.replacement_from_disk') }}</template>
+                                            <template v-else-if="file.source === 'tmod'">{{ t('modder_tools.imported_from_another_tmod') }}</template>
+                                            <template v-else>{{ t('modder_tools.original_archive_data') }}</template>
                                         </td>
                                         <td style="padding: 10px; text-align: right;">
                                             <div class="edit-tmod-actions">
-                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('Replace File')" @click="replaceEditTmodFile(file)"><i class="fa-solid fa-arrows-rotate"></i></button>
-                                                <button v-if="!isEditTmodFileRemoved(file) && canRestoreOriginalEditTmodFile(file)" class="icon-btn-small" :title="t('Restore Original File')" @click="restoreOriginalEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
-                                                <button v-if="isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('Restore File')" @click="restoreRemovedEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
-                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small danger" :title="t('Remove File')" @click="removeEditTmodFile(file)"><i class="fa-solid fa-trash"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('modder_tools.replace_file')" @click="replaceEditTmodFile(file)"><i class="fa-solid fa-arrows-rotate"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file) && canRestoreOriginalEditTmodFile(file)" class="icon-btn-small" :title="t('modder_tools.restore_original_file')" @click="restoreOriginalEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button v-if="isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('modder_tools.restore_file')" @click="restoreRemovedEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small danger" :title="t('modder_tools.remove_file')" @click="removeEditTmodFile(file)"><i class="fa-solid fa-trash"></i></button>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr v-if="editTmod.files.length === 0">
-                                        <td colspan="3" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files in this archive.') }}</td>
+                                        <td colspan="3" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('modder_tools.no_files_in_this_archive') }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -356,8 +356,8 @@
 
                     <div class="input-row" style="margin-top: 10px; align-items: stretch;">
                         <button class="primary-btn execute-btn" @click="saveEditTmod" :disabled="isWorking.savingEditTmod" style="margin-top: 0; flex: 1;">
-                            <template v-if="isWorking.savingEditTmod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling TMod...') }}</template>
-                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('Compile TMod In Place') }}</span></template>
+                            <template v-if="isWorking.savingEditTmod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.compiling_tmod') }}</template>
+                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('modder_tools.compile_tmod_in_place') }}</span></template>
                         </button>
                     </div>
                 </div>
@@ -366,15 +366,15 @@
 
         <div class="tab-content" :class="{ active: activeTab === 'projects' }">
             <div class="tool-panel">
-                <h3>{{ t('Mod Project Manager') }}</h3>
-                <p class="help-text">{{ t('Manage persistent mod projects, versioning, and live game testing.') }}</p>
+                <h3>{{ t('modder_tools.mod_project_manager') }}</h3>
+                <p class="help-text">{{ t('modder_tools.manage_persistent_mod_projects_versionin_78357a') }}</p>
 
                 <div class="form-group" style="background: var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <label>{{ t('Project Folder') }}</label>
+                    <label>{{ t('modder_tools.project_folder') }}</label>
                     <div class="input-row">
-                        <input type="text" v-model="project.dir" :placeholder="t('Select or create a project folder...')" readonly :class="{ 'field-invalid': isProjectFieldInvalid('dir') }">
-                        <button class="primary-btn" @click="browseProject"><i class="fa-solid fa-folder-open"></i> <span>{{ t('Browse') }}</span></button>
-                        <button class="primary-btn" @click="openProjectFolder" :disabled="!project.dir" :title="t('Open Project Folder')"><i class="fa-solid fa-folder-tree"></i></button>
+                        <input type="text" v-model="project.dir" :placeholder="t('modder_tools.select_or_create_a_project_folder')" readonly :class="{ 'field-invalid': isProjectFieldInvalid('dir') }">
+                        <button class="primary-btn" @click="browseProject"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></button>
+                        <button class="primary-btn" @click="openProjectFolder" :disabled="!project.dir" :title="t('modder_tools.open_project_folder')"><i class="fa-solid fa-folder-tree"></i></button>
                     </div>
                 </div>
 
@@ -385,41 +385,41 @@
                                 <img :src="project.preview || 'assets/images/no_preview.png'" alt="Project Preview">
                                 <div class="preview-overlay">
                                     <i class="fa-solid fa-camera"></i>
-                                    <span>{{ t('Change Image') }}</span>
+                                    <span>{{ t('modder_tools.change_image') }}</span>
                                 </div>
-                                <button type="button" class="remove-preview-btn" v-show="project.preview" @click.stop="project.preview = ''; project.previewName = ''" :title="t('Remove Preview')">
+                                <button type="button" class="remove-preview-btn" v-show="project.preview" @click.stop="project.preview = ''; project.previewName = ''" :title="t('modder_tools.remove_preview')">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             </div>
 
                             <div class="form-group" style="margin-top: 15px;">
-                                <label>{{ t('Config File (.cfg)') }}</label>
+                                <label>{{ t('modder_tools.config_file_cfg') }}</label>
                                 <div class="input-row">
-                                    <input type="text" :value="project.configName" :placeholder="t('Optional UI config file...')" readonly>
+                                    <input type="text" :value="project.configName" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
                                     <button class="primary-btn" @click="chooseProjectConfig">
-                                        <i class="fa-solid fa-file-lines"></i> <span>{{ t('Browse') }}</span>
+                                        <i class="fa-solid fa-file-lines"></i> <span>{{ t('common.browse') }}</span>
                                     </button>
-                                    <button type="button" class="icon-btn-small danger" v-show="project.config" @click="project.config = ''; project.configName = ''" :title="t('Remove Config File')">
+                                    <button type="button" class="icon-btn-small danger" v-show="project.config" @click="project.config = ''; project.configName = ''" :title="t('modder_tools.remove_config_file')">
                                         <i class="fa-solid fa-xmark"></i>
                                     </button>
                                 </div>
                             </div>
                             
                             <div class="form-group" style="margin-top: 15px;">
-                                <label>{{ t('Target Game Installation') }}</label>
+                                <label>{{ t('modder_tools.target_game_installation') }}</label>
                                 <div class="input-row">
                                     <custom-vue-select v-model="selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;" :class="{ 'field-invalid': isProjectFieldInvalid('gamePath') }"></custom-vue-select>
-                                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('Open Selected Game Folder')">
+                                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('common.open_selected_game_folder')">
                                         <i class="fa-solid fa-folder-open"></i>
                                     </button>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label>{{ t('Active Version Workspace') }}</label>
+                                <label>{{ t('modder_tools.active_version_workspace') }}</label>
                                 <div class="input-row">
                                     <custom-vue-select v-model="project.activeVersion" :options="project.versions.map(v => [`Version ${v}`, v])" style="flex: 1;" :class="{ 'field-invalid': isProjectFieldInvalid('activeVersion') }"></custom-vue-select>
-                                    <button class="icon-btn-small" @click="newVersion" :title="t('Create New Version Folder')"><i class="fa-solid fa-plus"></i></button>
+                                    <button class="icon-btn-small" @click="newVersion" :title="t('modder_tools.create_new_version_folder')"><i class="fa-solid fa-plus"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -427,27 +427,27 @@
                         <div class="build-right-col">
                             <div class="form-row">
                                 <div class="form-group" style="flex: 2;">
-                                    <label>{{ t('Project Title') }}</label>
+                                    <label>{{ t('modder_tools.project_title') }}</label>
                                     <input type="text" v-model="project.title" :class="{ 'field-invalid': isProjectFieldInvalid('title') }">
                                 </div>
                                 <div class="form-group" style="flex: 2;">
-                                    <label>{{ t('Authors') }}</label>
+                                    <label>{{ t('modder_tools.authors') }}</label>
                                     <input type="text" v-model="project.author">
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label>{{ t('Notes') }}</label>
+                                <label>{{ t('modder_tools.notes') }}</label>
                                 <textarea v-model="project.notes" rows="2" maxlength="220" :class="{ 'field-invalid': isProjectFieldInvalid('notes') }"></textarea>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group" style="flex: 2;">
-                                    <label>{{ t('Tags') }}</label>
-                                    <select2 v-model="project.tags" :options="tagOptions" :placeholder="t('Select categories...')"></select2>
+                                    <label>{{ t('modder_tools.tags') }}</label>
+                                    <select2 v-model="project.tags" :options="tagOptions" :placeholder="t('modder_tools.select_categories')"></select2>
                                 </div>
                                 <div class="form-group" style="flex: 1;">
-                                    <label>{{ t('Subtype') }}</label>
+                                    <label>{{ t('modder_tools.subtype') }}</label>
                                     <custom-vue-select v-model="project.subtype" :options="subtypeOptions" style="flex: 1;"></custom-vue-select>
                                 </div>
                             </div>
@@ -458,23 +458,23 @@
 
                     <div class="form-group">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <label style="margin: 0;">{{ t("Version Files (ignores '__' prefix)") }}</label>
+                            <label style="margin: 0;">{{ t("modder_tools.version_files_ignores_prefix") }}</label>
                             <div style="display: flex; gap: 10px;">
-                                <button class="icon-btn-small" @click="refreshProjectFiles" :title="t('Refresh Files')"><i class="fa-solid" :class="isWorking.refreshProjectFiles ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i></button>
-                                <button class="primary-btn" @click="autoStructureProject" :disabled="isWorking.autoStructuringProject" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid" :class="isWorking.autoStructuringProject ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('Structure Relative to Game') }}</span></button>
+                                <button class="icon-btn-small" @click="refreshProjectFiles" :title="t('modder_tools.refresh_files')"><i class="fa-solid" :class="isWorking.refreshProjectFiles ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i></button>
+                                <button class="primary-btn" @click="autoStructureProject" :disabled="isWorking.autoStructuringProject" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid" :class="isWorking.autoStructuringProject ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.structure_relative_to_game') }}</span></button>
                             </div>
                         </div>
                         <div class="table-container" :class="{ 'field-invalid': isProjectFieldInvalid('files') }" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
                             <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                                 <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                     <tr>
-                                        <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">{{ t('Relative Path') }}</th>
+                                        <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.relative_path') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-if="project.files.length === 0"><td style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('No files found in this version folder.') }}</td></tr>
+                                    <tr v-if="project.files.length === 0"><td style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('modder_tools.no_files_found_in_this_version_folder') }}</td></tr>
                                     <tr v-else v-for="f in project.files" :key="f.rel_path">
-                                        <td @click="openProjectFileLocation(f)" :title="t('Click to open containing folder')" style="padding: 8px 10px; color: var(--text-main); font-family: monospace; cursor: pointer;">{{ f.rel_path }}</td>
+                                        <td @click="openProjectFileLocation(f)" :title="t('modder_tools.click_to_open_containing_folder')" style="padding: 8px 10px; color: var(--text-main); font-family: monospace; cursor: pointer;">{{ f.rel_path }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -483,24 +483,24 @@
 
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
                         <div style="display: flex; gap: 10px;">
-                            <button class="primary-btn" @click="saveProject"><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('Save Metadata') }}</span></button>
+                            <button class="primary-btn" @click="saveProject"><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('modder_tools.save_metadata') }}</span></button>
                             <button class="primary-btn" @click="compileProject" :disabled="isWorking.compilingProject" style="background: var(--accent-blue);">
-                                <template v-if="isWorking.compilingProject"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Compiling...') }}</template>
-                                <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('Compile Active Version') }}</span></template>
+                                <template v-if="isWorking.compilingProject"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.compiling') }}</template>
+                                <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('modder_tools.compile_active_version') }}</span></template>
                             </button>
-                            <button class="primary-btn" @click="openCompileOutputFolder" :disabled="!lastCompiledProjectPath" :title="t('Open Compiled TMod Folder')" style="min-width: 44px; padding: 0 12px;">
+                            <button class="primary-btn" @click="openCompileOutputFolder" :disabled="!lastCompiledProjectPath" :title="t('modder_tools.open_compiled_tmod_folder')" style="min-width: 44px; padding: 0 12px;">
                                 <i class="fa-solid fa-folder-open"></i>
                             </button>
                         </div>
                         
                         <div style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px dashed var(--border-color);">
                             <button class="primary-btn" @click="placeOverrides" :disabled="isWorking.placingOverrides" style="background: #28a745;">
-                                <template v-if="isWorking.placingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Placing...') }}</template>
-                                <template v-else><i class="fa-solid fa-play"></i> <span>{{ t('Test in Game') }}</span></template>
+                                <template v-if="isWorking.placingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.placing') }}</template>
+                                <template v-else><i class="fa-solid fa-play"></i> <span>{{ t('modder_tools.test_in_game') }}</span></template>
                             </button>
                             <button class="primary-btn" @click="removeOverrides" :disabled="project.activeOverrides.length === 0 || isWorking.removingOverrides" style="background: #dc3545;">
-                                <template v-if="isWorking.removingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Removing...') }}</template>
-                                <template v-else><i class="fa-solid fa-stop"></i> <span>{{ t('Remove Overrides') }}</span></template>
+                                <template v-if="isWorking.removingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.removing') }}</template>
+                                <template v-else><i class="fa-solid fa-stop"></i> <span>{{ t('modder_tools.remove_overrides') }}</span></template>
                             </button>
                         </div>
                     </div>
@@ -512,39 +512,39 @@
             <div class="tool-panel qb-editor-panel">
                 <div class="qb-toolbar">
                     <div>
-                        <h3>{{ t('Voxel Editor') }}</h3>
+                        <h3>{{ t('modder_tools.voxel_editor') }}</h3>
                         <p class="help-text" style="margin-bottom: 0;">
-                            {{ t('Open a .qb file or a Trove .blueprint package, navigate its internal assets, inspect them in 3D, and save the selected voxel asset back to Qubicle Binary format.') }}
+                            {{ t('modder_tools.open_a_qb_file_or_a_trove_blueprint_pack_bb1f77') }}
                         </p>
                     </div>
                     <div class="qb-toolbar-actions">
                         <button class="primary-btn" @click="newQbDocument">
-                            <i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('New') }}</span>
+                            <i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.new') }}</span>
                         </button>
                         <button class="primary-btn" @click="openQbDocument">
-                            <i class="fa-solid fa-folder-open"></i> <span>{{ t('Open') }}</span>
+                            <i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open') }}</span>
                         </button>
                         <button class="primary-btn" @click="saveQbDocument" :disabled="isWorking.savingQb">
-                            <template v-if="isWorking.savingQb"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('Saving...') }}</template>
-                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('Save') }}</span></template>
+                            <template v-if="isWorking.savingQb"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
+                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('common.save') }}</span></template>
                         </button>
                         <button class="primary-btn" @click="saveQbDocumentAs" :disabled="isWorking.savingQb">
-                            <i class="fa-solid fa-file-export"></i> <span>{{ t('Save As') }}</span>
+                            <i class="fa-solid fa-file-export"></i> <span>{{ t('modder_tools.save_as') }}</span>
                         </button>
-                        <button class="primary-btn" @click="openQbFileLocation" :disabled="!qbEditor.path" :title="t('Open QB file location')">
+                        <button class="primary-btn" @click="openQbFileLocation" :disabled="!qbEditor.path" :title="t('modder_tools.open_qb_file_location')">
                             <i class="fa-solid fa-folder-tree"></i>
                         </button>
                     </div>
                 </div>
                 <div class="qb-warning-banner" role="alert">
                     <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>{{ t("This tool isn't working correctly. It is available for demonstration purposes only and will not be able to produce any results.") }}</span>
+                    <span>{{ t("modder_tools.this_tool_isn_t_working_correctly_it_is_d7f0b6") }}</span>
                 </div>
 
                 <details class="qb-collapsible-card qb-meta-card">
                     <summary class="qb-collapsible-summary">
                         <div>
-                            <strong>{{ t('Document Info') }}</strong>
+                            <strong>{{ t('modder_tools.document_info') }}</strong>
                             <span>{{ qbPackageActive ? qbContainerName : qbDisplayName }}</span>
                         </div>
                         <i class="fa-solid fa-chevron-down"></i>
@@ -552,32 +552,32 @@
                     <div class="qb-collapsible-body">
                         <div class="qb-summary-bar">
                             <div class="qb-summary-pill">
-                                <span class="qb-summary-label">{{ qbPackageActive ? t('Asset') : t('File') }}</span>
+                                <span class="qb-summary-label">{{ qbPackageActive ? t('modder_tools.asset') : t('modder_tools.file') }}</span>
                                 <span class="qb-summary-value">{{ qbDisplayName }}</span>
                             </div>
                             <div class="qb-summary-pill" v-if="qbPackageActive">
-                                <span class="qb-summary-label">{{ t('Blueprint') }}</span>
+                                <span class="qb-summary-label">{{ t('modder_tools.blueprint') }}</span>
                                 <span class="qb-summary-value">{{ qbContainerName }}</span>
                             </div>
                             <div class="qb-summary-pill">
-                                <span class="qb-summary-label">{{ t('Matrices') }}</span>
+                                <span class="qb-summary-label">{{ t('modder_tools.matrices') }}</span>
                                 <span class="qb-summary-value">{{ qbEditor.matrices.length }}</span>
                             </div>
                             <div class="qb-summary-pill">
-                                <span class="qb-summary-label">{{ t('Voxels') }}</span>
+                                <span class="qb-summary-label">{{ t('modder_tools.voxels') }}</span>
                                 <span class="qb-summary-value">{{ qbTotalVoxelCount }}</span>
                             </div>
                             <div class="qb-summary-pill qb-summary-status" :class="{ dirty: qbHasUnsavedAssets }">
-                                <span class="qb-summary-label">{{ t('Status') }}</span>
-                                <span class="qb-summary-value">{{ qbHasUnsavedAssets ? t('Unsaved Changes') : t('Saved') }}</span>
+                                <span class="qb-summary-label">{{ t('modder_tools.status') }}</span>
+                                <span class="qb-summary-value">{{ qbHasUnsavedAssets ? t('modder_tools.unsaved_changes') : t('modder_tools.saved') }}</span>
                             </div>
                         </div>
 
                         <div v-if="qbDecodeInfoRows.length > 0" class="qb-decode-card">
                             <div class="qb-sidebar-header">
                                 <div>
-                                    <h4>{{ t('Decode Insight') }}</h4>
-                                    <span>{{ t('How this blueprint payload was interpreted before rendering.') }}</span>
+                                    <h4>{{ t('modder_tools.decode_insight') }}</h4>
+                                    <span>{{ t('modder_tools.how_this_blueprint_payload_was_interpret_cee86f') }}</span>
                                 </div>
                             </div>
                             <div class="qb-decode-grid">
@@ -590,35 +590,35 @@
 
                         <div class="qb-settings-grid">
                             <div class="form-group">
-                                <label>{{ t('Version') }}</label>
+                                <label>{{ t('modder_tools.version') }}</label>
                                 <input type="text" :value="qbVersionLabel" readonly>
                             </div>
                             <div class="form-group">
-                                <label>{{ t('Color Format') }}</label>
+                                <label>{{ t('modder_tools.color_format') }}</label>
                                 <select v-model.number="qbEditor.header.color_format" @change="markQbDirty">
                                     <option :value="0">{{ t('RGBA') }}</option>
                                     <option :value="1">{{ t('BGRA') }}</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label>{{ t('Z Axis Orientation') }}</label>
+                                <label>{{ t('modder_tools.z_axis_orientation') }}</label>
                                 <select v-model.number="qbEditor.header.z_axis_orientation" @change="markQbDirty">
-                                    <option :value="0">{{ t('Left-handed') }}</option>
-                                    <option :value="1">{{ t('Right-handed') }}</option>
+                                    <option :value="0">{{ t('modder_tools.left_handed') }}</option>
+                                    <option :value="1">{{ t('modder_tools.right_handed') }}</option>
                                 </select>
                             </div>
                             <label class="qb-toggle-card">
                                 <input type="checkbox" v-model="qbEditor.header.compressed" @change="markQbDirty">
                                 <div>
-                                    <strong>{{ t('Compressed') }}</strong>
-                                    <span>{{ t('Write slice-compressed QB data when saving.') }}</span>
+                                    <strong>{{ t('modder_tools.compressed') }}</strong>
+                                    <span>{{ t('modder_tools.write_slice_compressed_qb_data_when_savi_f62f3d') }}</span>
                                 </div>
                             </label>
                             <label class="qb-toggle-card">
                                 <input type="checkbox" v-model="qbEditor.header.visibility_mask_encoded" @change="toggleQbVisibilityMaskMode">
                                 <div>
-                                    <strong>{{ t('Visibility Mask Encoded') }}</strong>
-                                    <span>{{ t('Use mask values instead of alpha for voxel visibility.') }}</span>
+                                    <strong>{{ t('modder_tools.visibility_mask_encoded') }}</strong>
+                                    <span>{{ t('modder_tools.use_mask_values_instead_of_alpha_for_vox_086df9') }}</span>
                                 </div>
                             </label>
                         </div>
@@ -630,13 +630,13 @@
                         <div v-if="qbPackageActive" class="qb-blueprint-panel">
                             <div class="qb-sidebar-header">
                                 <div>
-                                    <h4>{{ t('Blueprint Assets') }}</h4>
-                                    <span>{{ t('Select an internal QB asset to edit.') }}</span>
+                                    <h4>{{ t('modder_tools.blueprint_assets') }}</h4>
+                                    <span>{{ t('modder_tools.select_an_internal_qb_asset_to_edit') }}</span>
                                 </div>
                             </div>
 
                             <div v-if="qbBlueprintAssetRows.length === 0" class="qb-empty-matrices">
-                                {{ t('No internal blueprint assets were found.') }}
+                                {{ t('modder_tools.no_internal_blueprint_assets_were_found') }}
                             </div>
 
                             <div v-for="row in qbBlueprintAssetRows" :key="row.id">
@@ -671,16 +671,16 @@
 
                         <div class="qb-sidebar-header">
                             <div>
-                                <h4>{{ t('Matrices') }}</h4>
-                                <span>{{ t('Select a matrix to edit.') }}</span>
+                                <h4>{{ t('modder_tools.matrices') }}</h4>
+                                <span>{{ t('modder_tools.select_a_matrix_to_edit') }}</span>
                             </div>
-                            <button class="icon-btn-small" @click="addQbMatrix" :title="t('Add Matrix')">
+                            <button class="icon-btn-small" @click="addQbMatrix" :title="t('modder_tools.add_matrix')">
                                 <i class="fa-solid fa-plus"></i>
                             </button>
                         </div>
 
                         <div v-if="qbEditor.matrices.length === 0" class="qb-empty-matrices">
-                            {{ t('No matrices yet. Add one to start editing.') }}
+                            {{ t('modder_tools.no_matrices_yet_add_one_to_start_editing') }}
                         </div>
 
                         <button
@@ -698,24 +698,24 @@
                         </button>
 
                         <button class="danger-btn qb-remove-matrix-btn" @click="removeSelectedQbMatrix" :disabled="!selectedQbMatrix">
-                            <i class="fa-solid fa-trash"></i> <span>{{ t('Remove Selected Matrix') }}</span>
+                            <i class="fa-solid fa-trash"></i> <span>{{ t('modder_tools.remove_selected_matrix') }}</span>
                         </button>
 
                         <details class="qb-collapsible-card qb-paint-panel" open>
                             <summary class="qb-collapsible-summary">
                                 <div>
-                                    <strong>{{ t('Paint & Attachment') }}</strong>
-                                    <span>{{ qbEditor.paintColor.toUpperCase() }} - {{ qbEditor.header.visibility_mask_encoded ? t('Mask') : t('Alpha') }} {{ qbEditor.paintAlpha }}</span>
+                                    <strong>{{ t('modder_tools.paint_attachment') }}</strong>
+                                    <span>{{ qbEditor.paintColor.toUpperCase() }} - {{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.mask') : t('modder_tools.alpha') }} {{ qbEditor.paintAlpha }}</span>
                                 </div>
                                 <i class="fa-solid fa-chevron-down"></i>
                             </summary>
                             <div class="qb-collapsible-body">
                                 <div class="form-group">
-                                    <label>{{ qbEditor.header.visibility_mask_encoded ? t('Paint Mask') : t('Paint Alpha') }}</label>
+                                    <label>{{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.paint_mask') : t('modder_tools.paint_alpha') }}</label>
                                     <input type="text" v-model.number="qbEditor.paintAlpha">
                                 </div>
                                 <div class="form-group">
-                                    <label>{{ t('Paint Color') }}</label>
+                                    <label>{{ t('modder_tools.paint_color') }}</label>
                                     <div class="qb-paint-row">
                                         <input type="color" v-model="qbEditor.paintColor" class="qb-color-input">
                                         <div class="qb-color-code">{{ qbEditor.paintColor.toUpperCase() }}</div>
@@ -725,12 +725,12 @@
                                 <div class="form-group" v-if="qbLayerReadOnly">
                                     <div class="qb-readonly-note">
                                         <i class="fa-solid fa-eye"></i>
-                                        {{ t('Read-only composite preview (deco fill). Edits here are not saved; edit the Base / map layers instead.') }}
+                                        {{ t('modder_tools.read_only_composite_preview_deco_fill_ed_f5c264') }}
                                     </div>
                                 </div>
 
                                 <div class="form-group" v-if="activeLayerPresets.length">
-                                    <label>{{ t('Material Presets') }} <small>({{ qbActiveLayer }})</small></label>
+                                    <label>{{ t('modder_tools.material_presets') }} <small>({{ qbActiveLayer }})</small></label>
                                     <div class="qb-material-presets">
                                         <button
                                             v-for="opt in activeLayerPresets"
@@ -748,18 +748,18 @@
                                 </div>
                                 <div class="qb-paint-actions">
                                     <button class="primary-btn" @click="fillQbSlice">
-                                        <i class="fa-solid fa-fill-drip"></i> <span>{{ t('Fill Slice') }}</span>
+                                        <i class="fa-solid fa-fill-drip"></i> <span>{{ t('modder_tools.fill_slice') }}</span>
                                     </button>
                                     <button class="primary-btn" @click="clearQbSlice" style="background: #a23a3a;">
-                                        <i class="fa-solid fa-eraser"></i> <span>{{ t('Clear Slice') }}</span>
+                                        <i class="fa-solid fa-eraser"></i> <span>{{ t('modder_tools.clear_slice') }}</span>
                                     </button>
                                 </div>
 
                                 <div class="qb-attachment-card">
                                     <div class="qb-attachment-header">
                                         <strong>
-                                            {{ t('Attachment Point') }}
-                                            <span class="qb-attachment-swatch" :title="t('Shown as pink in the viewers')"></span>
+                                            {{ t('modder_tools.attachment_point') }}
+                                            <span class="qb-attachment-swatch" :title="t('modder_tools.shown_as_pink_in_the_viewers')"></span>
                                         </strong>
                                         <span>{{ qbAttachmentStatus.currentLabel }}</span>
                                     </div>
@@ -768,26 +768,26 @@
                                             {{ qbCurrentAttachmentPoint.x }}, {{ qbCurrentAttachmentPoint.y }}, {{ qbCurrentAttachmentPoint.z }}
                                         </span>
                                         <span v-else>
-                                            {{ qbAttachmentStatus.currentCount === 0 ? t('No pink attachment voxel set.') : t('More than one pink voxel found.') }}
+                                            {{ qbAttachmentStatus.currentCount === 0 ? t('modder_tools.no_pink_attachment_voxel_set') : t('modder_tools.more_than_one_pink_voxel_found') }}
                                         </span>
                                     </div>
                                     <div class="qb-attachment-note">
-                                        {{ qbPackageActive ? t('Sync copies this pink point to sibling QB maps in the same blueprint family.') : t('Set Hovered turns the current hovered voxel into the pink attachment point.') }}
+                                        {{ qbPackageActive ? t('modder_tools.sync_copies_this_pink_point_to_sibling_q_08d781') : t('modder_tools.set_hovered_turns_the_current_hovered_vo_f8d947') }}
                                     </div>
                                     <div class="qb-attachment-actions">
-                                        <button class="qb-tool-btn" @click="focusCurrentQbAttachmentPoint" :disabled="!qbCurrentAttachmentPoint" :title="t('Jump to the attachment slice and highlight it')">
-                                            <i class="fa-solid fa-crosshairs"></i> <span>{{ t('Jump') }}</span>
+                                        <button class="qb-tool-btn" @click="focusCurrentQbAttachmentPoint" :disabled="!qbCurrentAttachmentPoint" :title="t('modder_tools.jump_to_the_attachment_slice_and_highlig_f80ebb')">
+                                            <i class="fa-solid fa-crosshairs"></i> <span>{{ t('modder_tools.jump') }}</span>
                                         </button>
-                                        <button class="qb-tool-btn" @click="setCurrentQbAttachmentPoint()" :disabled="!qbHoveredEditableCell" :title="t('Replace the current attachment point with the hovered voxel')">
-                                            <i class="fa-solid fa-thumbtack"></i> <span>{{ t('Set Hovered') }}</span>
+                                        <button class="qb-tool-btn" @click="setCurrentQbAttachmentPoint()" :disabled="!qbHoveredEditableCell" :title="t('modder_tools.replace_the_current_attachment_point_wit_0cbd36')">
+                                            <i class="fa-solid fa-thumbtack"></i> <span>{{ t('modder_tools.set_hovered') }}</span>
                                         </button>
-                                        <button class="qb-tool-btn" @click="clearCurrentQbAttachmentPoints()" :disabled="qbAttachmentStatus.currentCount === 0" :title="t('Remove all attachment points from this asset')">
-                                            <i class="fa-solid fa-ban"></i> <span>{{ t('Clear') }}</span>
+                                        <button class="qb-tool-btn" @click="clearCurrentQbAttachmentPoints()" :disabled="qbAttachmentStatus.currentCount === 0" :title="t('modder_tools.remove_all_attachment_points_from_this_a_ea7b34')">
+                                            <i class="fa-solid fa-ban"></i> <span>{{ t('common.clear') }}</span>
                                         </button>
                                     </div>
-                                    <button class="qb-tool-btn qb-attachment-sync" @click="syncAttachmentPointAcrossPackageFamily" :disabled="!qbPackageActive || !qbCurrentAttachmentPoint || qbAttachmentStatus.familyCount < 2" :title="t('Copy this attachment point to sibling package maps like base, A, S, and T')">
+                                    <button class="qb-tool-btn qb-attachment-sync" @click="syncAttachmentPointAcrossPackageFamily" :disabled="!qbPackageActive || !qbCurrentAttachmentPoint || qbAttachmentStatus.familyCount < 2" :title="t('modder_tools.copy_this_attachment_point_to_sibling_pa_e9b873')">
                                         <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                        <span>{{ t('Sync Across Package Maps') }}</span>
+                                        <span>{{ t('modder_tools.sync_across_package_maps') }}</span>
                                     </button>
                                 </div>
                             </div>
@@ -797,7 +797,7 @@
                     <section class="qb-editor-workspace">
                         <div v-if="!selectedQbMatrix" class="qb-empty-state">
                             <i class="fa-solid fa-cubes-stacked"></i>
-                            <p>{{ t('No matrix selected. Add a matrix or open a QB file to begin.') }}</p>
+                            <p>{{ t('modder_tools.no_matrix_selected_add_a_matrix_or_open_136f1a') }}</p>
                         </div>
 
                         <template v-else>
@@ -805,7 +805,7 @@
                                 <details class="qb-collapsible-card qb-matrix-form">
                                     <summary class="qb-collapsible-summary">
                                         <div>
-                                            <strong>{{ t('Matrix Settings') }}</strong>
+                                            <strong>{{ t('modder_tools.matrix_settings') }}</strong>
                                             <span>{{ selectedQbMatrix.name }} - {{ selectedQbMatrix.size_x }} x {{ selectedQbMatrix.size_y }} x {{ selectedQbMatrix.size_z }}</span>
                                         </div>
                                         <i class="fa-solid fa-chevron-down"></i>
@@ -813,39 +813,39 @@
                                     <div class="qb-collapsible-body">
                                         <div class="form-row">
                                             <div class="form-group" style="flex: 2;">
-                                                <label>{{ t('Matrix Name') }}</label>
+                                                <label>{{ t('modder_tools.matrix_name') }}</label>
                                                 <input type="text" v-model="qbMatrixForm.name">
                                             </div>
                                             <div class="form-group">
-                                                <label>{{ t('Pos X') }}</label>
+                                                <label>{{ t('modder_tools.pos_x') }}</label>
                                                 <input type="text" v-model.number="qbMatrixForm.pos_x">
                                             </div>
                                             <div class="form-group">
-                                                <label>{{ t('Pos Y') }}</label>
+                                                <label>{{ t('modder_tools.pos_y') }}</label>
                                                 <input type="text" v-model.number="qbMatrixForm.pos_y">
                                             </div>
                                             <div class="form-group">
-                                                <label>{{ t('Pos Z') }}</label>
+                                                <label>{{ t('modder_tools.pos_z') }}</label>
                                                 <input type="text" v-model.number="qbMatrixForm.pos_z">
                                             </div>
                                         </div>
                                         <div class="form-row">
                                             <div class="form-group">
-                                                <label>{{ t('Size X') }}</label>
+                                                <label>{{ t('modder_tools.size_x') }}</label>
                                                 <input type="text" v-model.number="qbMatrixForm.size_x">
                                             </div>
                                             <div class="form-group">
-                                                <label>{{ t('Size Y') }}</label>
+                                                <label>{{ t('modder_tools.size_y') }}</label>
                                                 <input type="text" v-model.number="qbMatrixForm.size_y">
                                             </div>
                                             <div class="form-group">
-                                                <label>{{ t('Size Z') }}</label>
+                                                <label>{{ t('modder_tools.size_z') }}</label>
                                                 <input type="text" v-model.number="qbMatrixForm.size_z">
                                             </div>
                                             <div class="form-group qb-matrix-apply-wrap">
                                                 <label>&nbsp;</label>
                                                 <button class="primary-btn" @click="applyQbMatrixForm">
-                                                    <i class="fa-solid fa-wrench"></i> <span>{{ t('Apply Matrix Changes') }}</span>
+                                                    <i class="fa-solid fa-wrench"></i> <span>{{ t('modder_tools.apply_matrix_changes') }}</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -855,30 +855,30 @@
                             </div>
 
                             <div class="qb-display-toolbar">
-                                <div class="qb-view-mode-toggle" role="tablist" :aria-label="t('QB View Mode')">
+                                <div class="qb-view-mode-toggle" role="tablist" :aria-label="t('modder_tools.qb_view_mode')">
                                     <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '3d' }" @click="setQbViewMode('3d')">
-                                        <i class="fa-solid fa-cubes"></i> <span>{{ t('3D Edit') }}</span>
+                                        <i class="fa-solid fa-cubes"></i> <span>{{ t('modder_tools.3d_edit') }}</span>
                                     </button>
                                     <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '2d' }" @click="setQbViewMode('2d')">
-                                        <i class="fa-solid fa-table-cells-large"></i> <span>{{ t('2D Slice') }}</span>
+                                        <i class="fa-solid fa-table-cells-large"></i> <span>{{ t('modder_tools.2d_slice') }}</span>
                                     </button>
                                 </div>
                             </div>
 
                             <div class="qb-viewport-card" v-if="qbEditor.viewMode === '3d'">
                                 <div class="qb-canvas-header">
-                                    <strong>{{ t('3D Viewport') }}</strong>
+                                    <strong>{{ t('modder_tools.3d_viewport') }}</strong>
                                     <div class="qb-viewport-header-inline">
                                         <strong>{{ qbActiveToolLabel }}</strong>
-                                        <span>{{ t('Visible in clip') }}: {{ qbVisibleVoxelCount }}</span>
+                                        <span>{{ t('modder_tools.visible_in_clip') }}: {{ qbVisibleVoxelCount }}</span>
                                         <div class="form-group qb-inline-clip">
                                             <select v-model="qbEditor.clipMode">
-                                                <option value="off">{{ t('Show All') }}</option>
-                                                <option value="below">{{ t('Show Up To Slice') }}</option>
-                                                <option value="slice">{{ t('Only Current Slice') }}</option>
+                                                <option value="off">{{ t('modder_tools.show_all') }}</option>
+                                                <option value="below">{{ t('modder_tools.show_up_to_slice') }}</option>
+                                                <option value="slice">{{ t('modder_tools.only_current_slice') }}</option>
                                             </select>
                                         </div>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" @click="resetQbView" :title="t('Reset View')" :aria-label="t('Reset View')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" @click="resetQbView" :title="t('modder_tools.reset_view')" :aria-label="t('modder_tools.reset_view')">
                                             <i class="fa-solid fa-compass-drafting"></i>
                                         </button>
                                     </div>
@@ -886,22 +886,22 @@
 
                                 <div class="qb-viewport-shell">
                                     <div class="qb-tool-rail">
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'orbit' }" @click="setQbTool('orbit')" :title="t('Orbit')" :aria-label="t('Orbit')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'orbit' }" @click="setQbTool('orbit')" :title="t('modder_tools.orbit')" :aria-label="t('modder_tools.orbit')">
                                             <i class="fa-solid fa-arrows-rotate"></i>
                                         </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'pan' }" @click="setQbTool('pan')" :title="t('Pan')" :aria-label="t('Pan')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'pan' }" @click="setQbTool('pan')" :title="t('modder_tools.pan')" :aria-label="t('modder_tools.pan')">
                                             <i class="fa-solid fa-hand"></i>
                                         </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'paint' }" @click="setQbTool('paint')" :title="t('Paint')" :aria-label="t('Paint')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'paint' }" @click="setQbTool('paint')" :title="t('modder_tools.paint')" :aria-label="t('modder_tools.paint')">
                                             <i class="fa-solid fa-paintbrush"></i>
                                         </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'add' }" @click="setQbTool('add')" :title="t('Add')" :aria-label="t('Add')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'add' }" @click="setQbTool('add')" :title="t('modder_tools.add')" :aria-label="t('modder_tools.add')">
                                             <i class="fa-solid fa-cube"></i>
                                         </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'erase' }" @click="setQbTool('erase')" :title="t('Erase')" :aria-label="t('Erase')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'erase' }" @click="setQbTool('erase')" :title="t('modder_tools.erase')" :aria-label="t('modder_tools.erase')">
                                             <i class="fa-solid fa-eraser"></i>
                                         </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'sample' }" @click="setQbTool('sample')" :title="t('Sample')" :aria-label="t('Sample')">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'sample' }" @click="setQbTool('sample')" :title="t('modder_tools.sample')" :aria-label="t('modder_tools.sample')">
                                             <i class="fa-solid fa-eye-dropper"></i>
                                         </button>
                                     </div>
@@ -921,20 +921,20 @@
 
                             <div class="qb-slice-toolbar" v-if="qbEditor.viewMode === '2d' || qbEditor.clipMode !== 'off'">
                                 <div class="qb-slice-controls">
-                                    <button class="icon-btn-small" @click="stepQbSlice(-1)" :disabled="qbEditor.selectedSlice <= 0" :title="t('Previous Slice')">
+                                    <button class="icon-btn-small" @click="stepQbSlice(-1)" :disabled="qbEditor.selectedSlice <= 0" :title="t('modder_tools.previous_slice')">
                                         <i class="fa-solid fa-chevron-left"></i>
                                     </button>
                                     <div class="qb-slice-readout">
-                                        <strong>{{ t('Z Slice') }}</strong>
+                                        <strong>{{ t('modder_tools.z_slice') }}</strong>
                                         <span>{{ qbEditor.selectedSlice + 1 }} / {{ selectedQbMatrix.size_z }}</span>
                                     </div>
-                                    <button class="icon-btn-small" @click="stepQbSlice(1)" :disabled="qbEditor.selectedSlice >= selectedQbMatrix.size_z - 1" :title="t('Next Slice')">
+                                    <button class="icon-btn-small" @click="stepQbSlice(1)" :disabled="qbEditor.selectedSlice >= selectedQbMatrix.size_z - 1" :title="t('modder_tools.next_slice')">
                                         <i class="fa-solid fa-chevron-right"></i>
                                     </button>
                                 </div>
                                 <input type="range" min="0" :max="Math.max(0, selectedQbMatrix.size_z - 1)" v-model.number="qbEditor.selectedSlice" class="qb-slice-range">
                                 <div class="qb-slice-zoom" v-if="qbEditor.viewMode === '2d'">
-                                    <label>{{ t('Cell Size') }}</label>
+                                    <label>{{ t('modder_tools.cell_size') }}</label>
                                     <input type="range" min="12" max="34" v-model.number="qbEditor.sliceZoom">
                                 </div>
                             </div>
@@ -942,8 +942,8 @@
                             <div class="qb-canvas-card" v-if="qbEditor.viewMode === '2d'">
                                 <div class="qb-canvas-header">
                                     <div>
-                                        <strong>{{ t('Slice Painter') }}</strong>
-                                        <span>{{ t('Left click to paint, right click to erase, Alt-click to sample.') }}</span>
+                                        <strong>{{ t('modder_tools.slice_painter') }}</strong>
+                                        <span>{{ t('modder_tools.left_click_to_paint_right_click_to_erase_247ce5') }}</span>
                                     </div>
                                     <div class="qb-hover-readout">
                                         <template v-if="qbHoverSummary">
@@ -951,7 +951,7 @@
                                             <span>{{ qbHoverSummary.color }}</span>
                                         </template>
                                         <template v-else>
-                                            <span>{{ t('Hover a cell to inspect it.') }}</span>
+                                            <span>{{ t('modder_tools.hover_a_cell_to_inspect_it') }}</span>
                                         </template>
                                     </div>
                                 </div>
@@ -968,22 +968,22 @@
 
                             <div class="qb-slice-table-card" v-if="qbEditor.viewMode === '2d'">
                                 <div class="qb-slice-table-header">
-                                    <strong>{{ t('Current Slice Voxels') }}</strong>
-                                    <span>{{ qbSliceVoxels.length }} {{ t('voxel(s)') }}</span>
+                                    <strong>{{ t('modder_tools.current_slice_voxels') }}</strong>
+                                    <span>{{ qbSliceVoxels.length }} {{ t('modder_tools.voxel_s') }}</span>
                                 </div>
                                 <div class="table-container" style="max-height: 220px; overflow-y: auto;">
                                     <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
                                         <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                             <tr>
-                                                <th style="padding: 8px 10px;">{{ t('Coord') }}</th>
-                                                <th style="padding: 8px 10px;">{{ t('Color') }}</th>
-                                                <th style="padding: 8px 10px;">{{ qbEditor.header.visibility_mask_encoded ? t('Mask') : t('Alpha') }}</th>
+                                                <th style="padding: 8px 10px;">{{ t('modder_tools.coord') }}</th>
+                                                <th style="padding: 8px 10px;">{{ t('modder_tools.color') }}</th>
+                                                <th style="padding: 8px 10px;">{{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.mask') : t('modder_tools.alpha') }}</th>
                                                 <th style="padding: 8px 10px; width: 74px;"></th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <tr v-if="qbSliceVoxels.length === 0">
-                                                <td colspan="4" style="padding: 10px; color: var(--text-muted); text-align: center;">{{ t('No visible voxels in this slice.') }}</td>
+                                                <td colspan="4" style="padding: 10px; color: var(--text-muted); text-align: center;">{{ t('modder_tools.no_visible_voxels_in_this_slice') }}</td>
                                             </tr>
                                             <tr v-for="voxel in qbSliceVoxels" :key="voxel.key">
                                                 <td style="padding: 8px 10px; font-family: monospace;">{{ voxel.coords }}</td>
@@ -995,10 +995,10 @@
                                                 </td>
                                                 <td style="padding: 8px 10px;">{{ voxel.a }}</td>
                                                 <td style="padding: 8px 10px; text-align: right;">
-                                                    <button class="icon-btn-small" @click="sampleQbVoxel(voxel.raw)" :title="t('Sample Color')">
+                                                    <button class="icon-btn-small" @click="sampleQbVoxel(voxel.raw)" :title="t('modder_tools.sample_color')">
                                                         <i class="fa-solid fa-eye-dropper"></i>
                                                     </button>
-                                                    <button class="icon-btn-small danger" @click="removeQbVoxel(voxel.raw)" :title="t('Delete Voxel')">
+                                                    <button class="icon-btn-small danger" @click="removeQbVoxel(voxel.raw)" :title="t('modder_tools.delete_voxel')">
                                                         <i class="fa-solid fa-trash"></i>
                                                     </button>
                                                 </td>
@@ -1019,8 +1019,8 @@
 
         <div class="tab-content" :class="{ active: activeTab === 'software' }">
             <div class="tool-panel">
-                <h3>{{ t('Third Party Software') }}</h3>
-                <p class="help-text">{{ t('Tools and software used for creating Trove mods.') }}</p>
+                <h3>{{ t('modder_tools.third_party_software') }}</h3>
+                <p class="help-text">{{ t('modder_tools.tools_and_software_used_for_creating_tro_2664e8') }}</p>
                 
                 <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px;">
                     <template v-for="(catData, catKey) in softwareCategories" :key="catKey">
@@ -1031,7 +1031,7 @@
                             <a v-for="sw in catData.software" :key="sw.name" :href="sw.url" target="_blank" class="software-badge" :title="t(sw.description)">
                                 <i class="fa-solid" :class="catData.icon"></i>
                                 <span class="software-name">{{ sw.name }}</span>
-                                <span class="sw-price-tag" :class="sw.free ? 'free' : 'paid'">{{ sw.free ? t('Free') : t('Paid') }}</span>
+                                <span class="sw-price-tag" :class="sw.free ? 'free' : 'paid'">{{ sw.free ? t('modder_tools.free') : t('modder_tools.paid') }}</span>
                             </a>
                         </div>
                     </template>

@@ -9,7 +9,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_modder_tools';
             let hydratingState = false;
 
@@ -23,9 +23,9 @@ document.addEventListener('modder_tools_loaded', () => {
             const lastCompiledProjectPath = ref('');
             
             const gameOptions = computed(() => {
-                if (installs.value.length === 0) return [[t('Searching...'), '']];
+                if (installs.value.length === 0) return [[t('common.searching'), '']];
                 return installs.value.map(g => [
-                    t('{name} - {path}')
+                    t('common.name_path')
                         .replace('{name}', t(g.name))
                         .replace('{path}', g.path),
                     g.path
@@ -42,7 +42,7 @@ document.addEventListener('modder_tools_loaded', () => {
             ]);
 
             const subtypeOptions = ref([
-                [t('No subtype'), ''],
+                [t('modder_tools.no_subtype'), ''],
                 ['Bard', 'Bard'], ['Boomeranger', 'Boomeranger'],
                 ['Candy Barbarian', 'Candy Barbarian'], ['Chloromancer', 'Chloromancer'],
                 ['Dino Tamer', 'Dino Tamer'], ['Dracolyte', 'Dracolyte'],
@@ -175,7 +175,7 @@ document.addEventListener('modder_tools_loaded', () => {
             const restorePreviousEditTmod = () => {
                 if (!previousEditTmodSnapshot.value) return;
                 applyEditTmodSnapshot(previousEditTmodSnapshot.value);
-                window.showToast(t('Previous Edit TMod session restored.'));
+                window.showToast(t('modder_tools.previous_edit_tmod_session_restored'));
             };
 
             const cloneEditTmodFile = (file) => ({ ...file });
@@ -235,7 +235,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     default:
                         return;
                 }
-                window.showToast(t('Field restored.'));
+                window.showToast(t('modder_tools.field_restored'));
             };
 
             const canRestoreOriginalEditTmodFile = (file) => {
@@ -250,7 +250,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 const index = editTmod.files.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(file.internal_path));
                 if (index < 0) return;
                 editTmod.files.splice(index, 1, { ...editTmod.files[index], removed: false });
-                window.showToast(t('File restored to in-memory build.'));
+                window.showToast(t('modder_tools.file_restored_to_in_memory_build'));
             };
 
             const restoreOriginalEditTmodFile = (file) => {
@@ -259,7 +259,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 const index = editTmod.files.findIndex(existing => normalizeInternalPath(existing.internal_path) === normalizeInternalPath(file.internal_path));
                 if (index < 0) return;
                 editTmod.files.splice(index, 1, { ...cloneEditTmodFile(original), removed: false });
-                window.showToast(t('Original file restored from loaded archive.'));
+                window.showToast(t('modder_tools.original_file_restored_from_loaded_archi_0ae641'));
             };
 
             const project = reactive({
@@ -629,12 +629,12 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const qbActiveToolLabel = computed(() => {
                 switch (qbEditor.activeTool) {
-                    case 'paint': return t('Paint');
-                    case 'add': return t('Add');
-                    case 'erase': return t('Erase');
-                    case 'sample': return t('Sample');
-                    case 'pan': return t('Pan');
-                    default: return t('Orbit');
+                    case 'paint': return t('modder_tools.paint');
+                    case 'add': return t('modder_tools.add');
+                    case 'erase': return t('modder_tools.erase');
+                    case 'sample': return t('modder_tools.sample');
+                    case 'pan': return t('modder_tools.pan');
+                    default: return t('modder_tools.orbit');
                 }
             });
 
@@ -1071,10 +1071,10 @@ document.addEventListener('modder_tools_loaded', () => {
             const ensureQbDiscardChanges = async () => {
                 if (!qbHasUnsavedAssets.value) return true;
                 return window.showConfirmModal({
-                    title: t('Discard QB Changes?'),
-                    message: t('You have unsaved QB edits. Continue and lose those changes?'),
-                    confirmLabel: t('Discard'),
-                    cancelLabel: t('Keep Editing'),
+                    title: t('modder_tools.discard_qb_changes'),
+                    message: t('modder_tools.you_have_unsaved_qb_edits_continue_and_l_438a5e'),
+                    confirmLabel: t('modder_tools.discard'),
+                    cancelLabel: t('modder_tools.keep_editing'),
                     danger: true
                 });
             };
@@ -1101,11 +1101,11 @@ document.addEventListener('modder_tools_loaded', () => {
                 // first time it's selected.
                 if (asset.lazy && !asset._built) {
                     if (typeof eel.build_blueprint_render !== 'function') {
-                        window.showToast(t('Full render needs a restart: the build_blueprint_render endpoint is not loaded yet. Restart the app/backend and try again.'), true);
+                        window.showToast(t('modder_tools.full_render_needs_a_restart_the_build_bl_86eb30'), true);
                         return;
                     }
                     try {
-                        window.showToast(t('Building full render (this can take a moment)...'));
+                        window.showToast(t('modder_tools.building_full_render_this_can_take_a_mom_0b9474'));
                         const res = await eel.build_blueprint_render(
                             asset.path, selectedGamePath.value || null)();
                         if (res && res.success && res.document) {
@@ -1113,17 +1113,17 @@ document.addEventListener('modder_tools_loaded', () => {
                             qbEditor.packageAssets[assetId] = asset;
                             const ri = res.document.render_info || {};
                             const note = ri.structure_omitted
-                                ? t('Rendered {n} decos (structure omitted — build too large to explode fully).').replace('{n}', ri.decos_placed ?? '?')
-                                : t('Rendered {n} decos + structure ({v} voxels).').replace('{n}', ri.decos_placed ?? '?').replace('{v}', (ri.voxel_count ?? 0).toLocaleString());
+                                ? t('modder_tools.rendered_n_decos_structure_omitted_build_bd4451').replace('{n}', ri.decos_placed ?? '?')
+                                : t('modder_tools.rendered_n_decos_structure_v_voxels').replace('{n}', ri.decos_placed ?? '?').replace('{v}', (ri.voxel_count ?? 0).toLocaleString());
                             window.showToast(note);
                         } else {
                             const msg = (res && res.error) ? res.error
-                                : t('Could not build the full render.');
+                                : t('modder_tools.could_not_build_the_full_render');
                             window.showToast(msg, true);
                             return;
                         }
                     } catch (e) {
-                        window.showToast((t('Could not build the full render: ') + (e && e.errorText ? e.errorText : e)), true);
+                        window.showToast((t('modder_tools.could_not_build_the_full_render_7197cc') + (e && e.errorText ? e.errorText : e)), true);
                         return;
                     }
                 }
@@ -1137,27 +1137,27 @@ document.addEventListener('modder_tools_loaded', () => {
             // draw a whole house, but a GPU voxel viewer opens the exported .qb fine.
             const exportFullBlueprintRender = async () => {
                 const bpPath = qbEditor.containerPath || qbEditor.path;
-                if (!bpPath) { window.showToast(t('Open a Trove blueprint first.'), true); return; }
+                if (!bpPath) { window.showToast(t('modder_tools.open_a_trove_blueprint_first'), true); return; }
                 if (typeof eel.export_blueprint_render !== 'function') {
-                    window.showToast(t('Export needs a restart: the export_blueprint_render endpoint is not loaded yet. Restart the app/backend and try again.'), true);
+                    window.showToast(t('modder_tools.export_needs_a_restart_the_export_bluepr_b0522f'), true);
                     return;
                 }
                 const stem = String(qbEditor.containerFileName || 'blueprint').replace(/\.[^.]+$/, '');
                 const dialogResult = await eel.ask_qb_save_file(bpPath, stem + '_fullrender.qb')();
                 const outPath = dialogResult?.value ?? dialogResult?.data?.value ?? dialogResult;
                 if (!outPath) return;
-                window.showToast(t('Exporting full render to .qb (this can take a moment)...'));
+                window.showToast(t('modder_tools.exporting_full_render_to_qb_this_can_tak_b67a92'));
                 try {
                     const res = await eel.export_blueprint_render(bpPath, outPath, selectedGamePath.value || null)();
                     if (res && res.success) {
-                        window.showToast(t('Exported {n} voxels to {f}')
+                        window.showToast(t('modder_tools.exported_n_voxels_to_f')
                             .replace('{n}', (res.voxel_count || 0).toLocaleString())
                             .replace('{f}', res.file_name || outPath));
                     } else {
-                        window.showToast((res && res.error) || t('Export failed.'), true);
+                        window.showToast((res && res.error) || t('modder_tools.export_failed'), true);
                     }
                 } catch (e) {
-                    window.showToast(t('Export failed: ') + (e && e.errorText ? e.errorText : e), true);
+                    window.showToast(t('modder_tools.export_failed_c93ab1') + (e && e.errorText ? e.errorText : e), true);
                 }
             };
 
@@ -1175,10 +1175,10 @@ document.addEventListener('modder_tools_loaded', () => {
             const removeSelectedQbMatrix = async () => {
                 if (!selectedQbMatrix.value) return;
                 const confirmed = await window.showConfirmModal({
-                    title: t('Remove Matrix'),
-                    message: t('Remove the selected matrix from this QB file?'),
-                    confirmLabel: t('Remove'),
-                    cancelLabel: t('Cancel'),
+                    title: t('modder_tools.remove_matrix'),
+                    message: t('modder_tools.remove_the_selected_matrix_from_this_qb_9bfe69'),
+                    confirmLabel: t('modder_tools.remove'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
                 if (!confirmed) return;
@@ -1231,7 +1231,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
                 const removed = previousCount - matrix.voxels.length;
                 if (removed > 0) {
-                    window.showToast(t('{count} voxel(s) were clipped by the new matrix bounds.').replace('{count}', removed));
+                    window.showToast(t('modder_tools.count_voxel_s_were_clipped_by_the_new_ma_c54788').replace('{count}', removed));
                 }
             };
 
@@ -1306,7 +1306,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!voxel) return;
                 qbEditor.paintColor = qbVoxelHex(voxel);
                 qbEditor.paintAlpha = voxel[6];
-                window.showToast(t('Sampled voxel color.'));
+                window.showToast(t('modder_tools.sampled_voxel_color'));
             };
 
             const removeQbVoxel = (voxel) => {
@@ -1342,7 +1342,7 @@ document.addEventListener('modder_tools_loaded', () => {
             const setCurrentQbAttachmentPoint = (cell = qbHoveredEditableCell.value) => {
                 const matrix = selectedQbMatrix.value;
                 if (!matrix || !cell) {
-                    window.showToast(t('Hover a voxel or slice cell first.'), true);
+                    window.showToast(t('modder_tools.hover_a_voxel_or_slice_cell_first'), true);
                     return false;
                 }
                 clearAttachmentPointsInDocument(qbEditor);
@@ -1353,7 +1353,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     markQbDirty();
                     rebuildQbLookup();
                     scheduleQbCanvasRender();
-                    window.showToast(t('Attachment point updated.'));
+                    window.showToast(t('modder_tools.attachment_point_updated'));
                 }
                 return changed;
             };
@@ -1364,13 +1364,13 @@ document.addEventListener('modder_tools_loaded', () => {
                 markQbDirty();
                 rebuildQbLookup();
                 scheduleQbCanvasRender();
-                window.showToast(t('Attachment point cleared.'));
+                window.showToast(t('modder_tools.attachment_point_cleared'));
             };
 
             const focusCurrentQbAttachmentPoint = () => {
                 const point = qbCurrentAttachmentPoint.value;
                 if (!point) {
-                    window.showToast(t('This asset does not have exactly one attachment point.'), true);
+                    window.showToast(t('modder_tools.this_asset_does_not_have_exactly_one_att_0ae082'), true);
                     return;
                 }
                 qbEditor.selectedMatrixIndex = point.matrixIndex;
@@ -1386,7 +1386,7 @@ document.addEventListener('modder_tools_loaded', () => {
             const syncAttachmentPointAcrossPackageFamily = () => {
                 const point = qbCurrentAttachmentPoint.value;
                 if (!qbPackageActive.value || !point) {
-                    window.showToast(t('Set exactly one attachment point in the current asset first.'), true);
+                    window.showToast(t('modder_tools.set_exactly_one_attachment_point_in_the_0693fc'), true);
                     return;
                 }
 
@@ -1423,7 +1423,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     qbEditor.dirty = qbEditor.selectedAssetId ? qbEditor.dirtyAssetIds.includes(qbEditor.selectedAssetId) : qbEditor.dirty;
                     rebuildQbLookup();
                     scheduleQbCanvasRender();
-                    window.showToast(t('Synced attachment point to {count} package asset(s).').replace('{count}', changedAssets));
+                    window.showToast(t('modder_tools.synced_attachment_point_to_count_package_65bdce').replace('{count}', changedAssets));
                 }
             };
 
@@ -1491,7 +1491,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     if (!matrix) return false;
                     const [targetX, targetY, targetZ] = face.addTarget;
                     if (targetX < 0 || targetX >= matrix.size_x || targetY < 0 || targetY >= matrix.size_y || targetZ < 0 || targetZ >= matrix.size_z) {
-                        window.showToast(t('Expand the matrix bounds before adding voxels outside the current volume.'), true);
+                        window.showToast(t('modder_tools.expand_the_matrix_bounds_before_adding_v_3fc22f'), true);
                         return false;
                     }
                     if (getSelectedQbVoxel(targetX, targetY, targetZ)) {
@@ -1527,7 +1527,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (changed > 0) {
                     markQbDirty();
                     scheduleQbCanvasRender();
-                    window.showToast(t('Filled {count} voxel(s) in the current slice.').replace('{count}', changed));
+                    window.showToast(t('modder_tools.filled_count_voxel_s_in_the_current_slic_b698e5').replace('{count}', changed));
                 }
             };
 
@@ -1541,7 +1541,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 targets.forEach((voxel) => removeSelectedQbVoxel(voxel[0], voxel[1], voxel[2]));
                 markQbDirty();
                 scheduleQbCanvasRender();
-                window.showToast(t('Cleared {count} voxel(s) from the current slice.').replace('{count}', targets.length));
+                window.showToast(t('modder_tools.cleared_count_voxel_s_from_the_current_s_15dae2').replace('{count}', targets.length));
             };
 
             const stepQbSlice = (delta) => {
@@ -1575,8 +1575,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 return {
                     coords: `${qbEditor.hoverCell.x}, ${qbEditor.hoverCell.y}, ${qbEditor.hoverCell.z}`,
                     color: voxel
-                        ? `${qbVoxelHex(voxel).toUpperCase()} | ${qbEditor.header.visibility_mask_encoded ? `${t('Mask')} ${voxel[6]}` : `${t('Alpha')} ${voxel[6]}`}`
-                        : t('Empty')
+                        ? `${qbVoxelHex(voxel).toUpperCase()} | ${qbEditor.header.visibility_mask_encoded ? `${t('modder_tools.mask')} ${voxel[6]}` : `${t('modder_tools.alpha')} ${voxel[6]}`}`
+                        : t('common.empty')
                 };
             });
 
@@ -1645,7 +1645,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 });
                 return {
                     currentCount,
-                    currentLabel: currentCount === 0 ? t('Missing') : currentCount === 1 ? t('Ready') : t('Multiple'),
+                    currentLabel: currentCount === 0 ? t('modder_tools.missing') : currentCount === 1 ? t('common.ready') : t('modder_tools.multiple'),
                     familyCount: siblingCounts.length,
                     familyUniform: siblingCounts.length > 0 && siblingCounts.every((item) => item.count === 1),
                     siblingCounts
@@ -1890,13 +1890,13 @@ document.addEventListener('modder_tools_loaded', () => {
                                 decode_info: qbEditor.decodeInfo
                             };
                         }
-                        window.showToast(t('QB file saved to:\n{path}').replace('{path}', qbEditor.path));
+                        window.showToast(t('modder_tools.qb_file_saved_to_path').replace('{path}', qbEditor.path));
                         return true;
                     }
-                    window.showToast(t('Failed to save QB file:\n{error}').replace('{error}', result?.error || t('Unknown error occurred')), true);
+                    window.showToast(t('modder_tools.failed_to_save_qb_file_error').replace('{error}', result?.error || t('common.unknown_error_occurred')), true);
                     return false;
                 } catch (error) {
-                    window.showToast(t('Failed to save QB file.'), true);
+                    window.showToast(t('modder_tools.failed_to_save_qb_file'), true);
                     return false;
                 } finally {
                     isWorking.savingQb = false;
@@ -1935,15 +1935,15 @@ document.addEventListener('modder_tools_loaded', () => {
                 // tints + resolved block names from the live game registry.
                 const result = await eel.load_qb_file(filePath, selectedGamePath.value || null)();
                 if (!result || !result.success) {
-                    window.showToast(t('Failed to open voxel file:\n{error}').replace('{error}', result?.error || t('Unknown error occurred')), true);
+                    window.showToast(t('modder_tools.failed_to_open_voxel_file_error').replace('{error}', result?.error || t('common.unknown_error_occurred')), true);
                     return;
                 }
 
                 applyQbDocument(result.document, { packagePayload: result.package || null });
                 if (result.package) {
-                    window.showToast(t('Opened Trove blueprint assets in the voxel editor.'));
+                    window.showToast(t('modder_tools.opened_trove_blueprint_assets_in_the_vox_d782e1'));
                 } else if (result.document?.source_file_type === 'blueprint') {
-                    window.showToast(t('Imported Trove blueprint into the voxel editor.'));
+                    window.showToast(t('modder_tools.imported_trove_blueprint_into_the_voxel_aaa1f0'));
                 }
             };
 
@@ -2036,12 +2036,12 @@ document.addEventListener('modder_tools_loaded', () => {
                     installs.value = [];
                     selectedGamePath.value = '';
                     if (response && response.error) {
-                        window.showToast(t('Game path detection failed: {error}').replace('{error}', response.error), true);
+                        window.showToast(t('common.game_path_detection_failed_error').replace('{error}', response.error), true);
                     }
                 } catch (error) {
                     installs.value = [];
                     selectedGamePath.value = '';
-                    window.showToast(t('Game path detection failed.'), true);
+                    window.showToast(t('common.game_path_detection_failed'), true);
                 }
             };
 
@@ -2056,12 +2056,12 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const openPathInExplorer = async (path) => {
                 if (!path) {
-                    window.showToast(t('No path selected.'), true);
+                    window.showToast(t('common.no_path_selected'), true);
                     return;
                 }
                 const result = await eel.open_path_in_explorer(path)();
                 if (!result || !result.success) {
-                    window.showToast(t('Failed to open folder: {error}').replace('{error}', result?.error || t('Unknown error occurred')), true);
+                    window.showToast(t('common.failed_to_open_folder_error').replace('{error}', result?.error || t('common.unknown_error_occurred')), true);
                 }
             };
 
@@ -2090,14 +2090,14 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const chooseBuildPreview = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 const result = await eel.ask_preview_file(selectedGamePath.value)();
                 const file = result?.file;
                 if (file) {
                     const nextPreviewName = file.name;
                     const previewPath = normalizeInternalPath(previewInternalPath(nextPreviewName));
                     if (build.files.some(existing => normalizeInternalPath(existing.internal_path) === previewPath)) {
-                        window.showToast(t("Preview image path cannot also be included in the files list."), true);
+                        window.showToast(t("modder_tools.preview_image_path_cannot_also_be_includ_01ba5d"), true);
                         return;
                     }
                     build.preview = file.data;
@@ -2106,7 +2106,7 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const chooseBuildConfig = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 const result = await eel.ask_config_file(selectedGamePath.value)();
                 const file = result?.file;
                 if (file) {
@@ -2116,7 +2116,7 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const detectBuildOverrides = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 
                 isWorking.detectingOverrides = true;
                 
@@ -2131,18 +2131,18 @@ document.addEventListener('modder_tools_loaded', () => {
                 let result;
                 try {
                     result = await runQueuedModderOperation({
-                        label: t('Detect override files'),
+                        label: t('modder_tools.detect_override_files'),
                         operation: 'detect_overrides',
                         task: () => eel.detect_override_files(selectedGamePath.value)()
                     });
                 } catch (e) {
-                    window.showToast(String(e || t('Error detecting overrides.')), true);
+                    window.showToast(String(e || t('modder_tools.error_detecting_overrides')), true);
                     isWorking.detectingOverrides = false;
                     return;
                 }
 
                 if (result.cancelled) {
-                    window.showToast(t('Override detection cancelled.'));
+                    window.showToast(t('modder_tools.override_detection_cancelled'));
                     isWorking.detectingOverrides = false;
                     return;
                 }
@@ -2166,24 +2166,24 @@ document.addEventListener('modder_tools_loaded', () => {
                         isWorking.detectingOverrides = false;
                         return;
                     }
-                    if (addedCount === 0) window.showToast(t("No new override files found in the source directory."), true);
-                    else window.showToast(t("{count} override file(s) successfully detected.").replace("{count}", addedCount));
+                    if (addedCount === 0) window.showToast(t("modder_tools.no_new_override_files_found_in_the_sourc_a8f847"), true);
+                    else window.showToast(t("modder_tools.count_override_file_s_successfully_detec_216c6d").replace("{count}", addedCount));
                 } else {
-                    window.showToast(t("Error detecting overrides: {error}").replace("{error}", result.error), true);
+                    window.showToast(t("modder_tools.error_detecting_overrides_error").replace("{error}", result.error), true);
                 }
                 isWorking.detectingOverrides = false;
             };
 
             const addBuildFiles = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 try {
                     const result = await eel.ask_add_files(selectedGamePath.value)();
                     if (result && result.success) {
                         if (result.rejected && result.rejected.length > 0) {
-                            window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
+                            window.showToast(t("modder_tools.denied_count_file_s_selected_files_must_6dca21").replace("{count}", result.rejected.length), true);
                         }
                         if (result.rejected_cfg && result.rejected_cfg.length > 0) {
-                            window.showToast(t("Denied {count} file(s):\n.cfg files must be added through the Config File option.").replace("{count}", result.rejected_cfg.length), true);
+                            window.showToast(t("modder_tools.denied_count_file_s_cfg_files_must_be_ad_7eabd1").replace("{count}", result.rejected_cfg.length), true);
                         }
                         if (result.files && result.files.length > 0) {
                             const newFiles = [];
@@ -2206,14 +2206,14 @@ document.addEventListener('modder_tools_loaded', () => {
                         }
                     }
                 } catch (e) {
-                    window.showToast(t("An error occurred while adding files."), true);
+                    window.showToast(t("modder_tools.an_error_occurred_while_adding_files"), true);
                 }
             };
 
             const removeBuildFile = (file) => {
                 build.files = build.files.filter(f => f.path !== file.path);
                 window.showUndoToast(
-                    t('Removed file from build list.'),
+                    t('modder_tools.removed_file_from_build_list'),
                     6,
                     () => {
                         if (!build.files.find(f => f.path === file.path)) {
@@ -2224,38 +2224,38 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const autoStructureBuild = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 isWorking.autoStructuringBuild = true;
                 try {
                     const result = await runQueuedModderOperation({
-                        label: t('Auto-structure build workspace files'),
+                        label: t('modder_tools.auto_structure_build_workspace_files'),
                         operation: 'auto_structure_workspace',
                         task: () => eel.auto_structure_workspace(selectedGamePath.value, selectedGamePath.value)()
                     });
                     if (result.cancelled) {
-                        window.showToast(t('Auto-structure cancelled.'));
+                        window.showToast(t('modder_tools.auto_structure_cancelled'));
                         return;
                     }
-                    if (result.success) window.showToast(t("Successfully auto-structured {count} files!").replace("{count}", result.count));
-                    else window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
+                    if (result.success) window.showToast(t("modder_tools.successfully_auto_structured_count_files").replace("{count}", result.count));
+                    else window.showToast(t("modder_tools.error_structuring_files_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while structuring files."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_struc_cc3923"), true);
                 }
                 isWorking.autoStructuringBuild = false;
             };
 
             const buildTMod = async () => {
                 validationState.build = true;
-                if (!selectedGamePath.value) return window.showToast(t("Please select a target game installation."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation"), true);
                 const title = build.title.trim();
-                if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
-                if (build.notes.trim().length > 220) return window.showToast(t("Mod notes cannot exceed 220 characters."), true);
-                if (!title) return window.showToast(t("Please enter a mod title."), true);
-                if (!build.author.trim()) return window.showToast(t("Please enter a mod author."), true);
-                if (!build.version.trim()) return window.showToast(t("Please enter a mod version."), true);
-                if (!build.notes.trim()) return window.showToast(t("Please enter mod notes or a description."), true);
-                if (build.tags.length === 0) return window.showToast(t("Please select at least one tag."), true);
-                if (build.files.length === 0) return window.showToast(t("Please add at least one file to your mod!"), true);
+                if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("modder_tools.mod_title_contains_illegal_characters_pl_768e5c"), true);
+                if (build.notes.trim().length > 220) return window.showToast(t("modder_tools.mod_notes_cannot_exceed_220_characters"), true);
+                if (!title) return window.showToast(t("modder_tools.please_enter_a_mod_title"), true);
+                if (!build.author.trim()) return window.showToast(t("modder_tools.please_enter_a_mod_author"), true);
+                if (!build.version.trim()) return window.showToast(t("modder_tools.please_enter_a_mod_version"), true);
+                if (!build.notes.trim()) return window.showToast(t("modder_tools.please_enter_mod_notes_or_a_description"), true);
+                if (build.tags.length === 0) return window.showToast(t("modder_tools.please_select_at_least_one_tag"), true);
+                if (build.files.length === 0) return window.showToast(t("modder_tools.please_add_at_least_one_file_to_your_mod"), true);
                 if (buildValidationError.value) return window.showToast(t(buildValidationError.value), true);
 
                 isWorking.buildingTMod = true;
@@ -2265,7 +2265,7 @@ document.addEventListener('modder_tools_loaded', () => {
                         const missingResult = await eel.get_missing_files(pathsToCheck)();
                         if (missingResult.success && missingResult.missing && missingResult.missing.length > 0) {
                             build.files = build.files.filter(f => !missingResult.missing.includes(f.path));
-                            window.showToast(t("Warning: {count} file(s) were missing from disk and have been removed from the list.\n\nPlease review your files and click Build TMod again.").replace("{count}", missingResult.missing.length), true);
+                            window.showToast(t("modder_tools.warning_count_file_s_were_missing_from_d_a16fd4").replace("{count}", missingResult.missing.length), true);
                             isWorking.buildingTMod = false;
                             return;
                         }
@@ -2287,7 +2287,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     };
 
                     const runBuild = async (requestPayload) => runQueuedModderOperation({
-                        label: t("Build TMod '{name}'").replace('{name}', title),
+                        label: t("modder_tools.build_tmod_name").replace('{name}', title),
                         operation: 'build_tmod',
                         task: () => eel.build_tmod(requestPayload)()
                     });
@@ -2295,16 +2295,16 @@ document.addEventListener('modder_tools_loaded', () => {
                     let result = await runBuild(payload);
                     if (!result.cancelled && !result.success && result.code === 'FILE_EXISTS') {
                         const overwriteConfirmed = await window.showConfirmModal({
-                            title: t('Overwrite Existing TMod?'),
-                            message: t('A file with this name already exists. Do you want to overwrite it?'),
-                            confirmLabel: t('Overwrite'),
-                            cancelLabel: t('Cancel'),
+                            title: t('modder_tools.overwrite_existing_tmod'),
+                            message: t('modder_tools.a_file_with_this_name_already_exists_do_b77724'),
+                            confirmLabel: t('common.overwrite'),
+                            cancelLabel: t('common.cancel'),
                             danger: true
                         });
 
                         if (!overwriteConfirmed) {
                             isWorking.buildingTMod = false;
-                            window.showToast(t('Build cancelled.'));
+                            window.showToast(t('modder_tools.build_cancelled'));
                             return;
                         }
 
@@ -2312,17 +2312,17 @@ document.addEventListener('modder_tools_loaded', () => {
                     }
 
                     if (result.cancelled) {
-                        window.showToast(t('Build cancelled.'));
+                        window.showToast(t('modder_tools.build_cancelled'));
                         isWorking.buildingTMod = false;
                         return;
                     }
                     if (result.success) {
                         lastBuildOutputPath.value = result.path || '';
-                        window.showToast(t("TMod successfully built!\nSaved to: {path}").replace("{path}", result.path), false);
+                        window.showToast(t("modder_tools.tmod_successfully_built_saved_to_path").replace("{path}", result.path), false);
                     }
-                    else window.showToast(t("Failed to build TMod:\n{error}").replace("{error}", result.error), true);
+                    else window.showToast(t("modder_tools.failed_to_build_tmod_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while building the TMod."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_build_a03c95"), true);
                 }
                 isWorking.buildingTMod = false;
             };
@@ -2339,25 +2339,25 @@ document.addEventListener('modder_tools_loaded', () => {
             };
             const extractTMod = async () => {
                 validationState.extract = true;
-                if (!extract.source) return window.showToast(t("Please select a Source TMod File."), true);
-                if (!extract.dest) return window.showToast(t("Please select a Destination Folder."), true);
+                if (!extract.source) return window.showToast(t("modder_tools.please_select_a_source_tmod_file"), true);
+                if (!extract.dest) return window.showToast(t("modder_tools.please_select_a_destination_folder"), true);
                 
                 isWorking.extracting = true;
                 try {
                     const result = await runQueuedModderOperation({
-                        label: t('Extract TMod archive'),
+                        label: t('modder_tools.extract_tmod_archive'),
                         operation: 'extract_tmod',
                         task: () => eel.extract_tmod(extract.source, extract.dest)()
                     });
                     if (result.cancelled) {
-                        window.showToast(t('Extraction cancelled.'));
+                        window.showToast(t('common.extraction_cancelled'));
                         isWorking.extracting = false;
                         return;
                     }
-                    if (result.success) window.showToast(t("Successfully extracted {count} files to:\n{path}").replace("{count}", result.count).replace("{path}", extract.dest));
-                    else window.showToast(t("Failed to extract TMod:\n{error}").replace("{error}", result.error), true);
+                    if (result.success) window.showToast(t("modder_tools.successfully_extracted_count_files_to_pa_a5ca3e").replace("{count}", result.count).replace("{path}", extract.dest));
+                    else window.showToast(t("modder_tools.failed_to_extract_tmod_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred during extraction."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_during_extr_0d9416"), true);
                 }
                 isWorking.extracting = false;
             };
@@ -2375,7 +2375,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 await loadEditTmod();
                 if (editTmod.loaded && priorSnapshot) {
                     window.showUndoToast(
-                        t('Loaded a new TMod. Restore previous in-memory data?'),
+                        t('modder_tools.loaded_a_new_tmod_restore_previous_in_me_60035d'),
                         10,
                         () => restorePreviousEditTmod()
                     );
@@ -2384,12 +2384,12 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const loadEditTmod = async () => {
                 validationState.editTmod = true;
-                if (!editTmod.tmodPath) return window.showToast(t("Please select a Source TMod File."), true);
+                if (!editTmod.tmodPath) return window.showToast(t("modder_tools.please_select_a_source_tmod_file"), true);
                 isWorking.loadingEditTmod = true;
                 try {
                     const result = await eel.load_tmod_for_edit(editTmod.tmodPath)();
                     if (!result.success) {
-                        window.showToast(t("Failed to load TMod:\n{error}").replace("{error}", result.error), true);
+                        window.showToast(t("modder_tools.failed_to_load_tmod_error").replace("{error}", result.error), true);
                         isWorking.loadingEditTmod = false;
                         return;
                     }
@@ -2418,15 +2418,15 @@ document.addEventListener('modder_tools_loaded', () => {
                     })) : [];
                     originalLoadedEditTmodSnapshot.value = createEditTmodSnapshot();
 
-                    window.showToast(t("TMod loaded into memory and ready to edit."));
+                    window.showToast(t("modder_tools.tmod_loaded_into_memory_and_ready_to_edi_fd4dba"));
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while loading the TMod."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_loadi_340a61"), true);
                 }
                 isWorking.loadingEditTmod = false;
             };
 
             const chooseEditTmodPreview = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 const result = await eel.ask_preview_file(selectedGamePath.value)();
                 const file = result?.file;
                 if (file) {
@@ -2435,13 +2435,13 @@ document.addEventListener('modder_tools_loaded', () => {
                     const nextPreviewName = file.name;
                     const previewPath = normalizeInternalPath(previewInternalPath(nextPreviewName));
                     if (editTmod.files.some(existing => normalizeInternalPath(existing.internal_path) === previewPath)) {
-                        window.showToast(t("Preview image path cannot also be included in the files list."), true);
+                        window.showToast(t("modder_tools.preview_image_path_cannot_also_be_includ_01ba5d"), true);
                         return;
                     }
                     editTmod.preview = file.data;
                     editTmod.previewName = nextPreviewName;
                     window.showUndoToast(
-                        t('Preview updated. Restore previous preview?'),
+                        t('modder_tools.preview_updated_restore_previous_preview'),
                         8,
                         () => {
                             editTmod.preview = previousPreview;
@@ -2452,7 +2452,7 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const chooseEditTmodConfig = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 const result = await eel.ask_config_file(selectedGamePath.value)();
                 const file = result?.file;
                 if (file) {
@@ -2461,7 +2461,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     editTmod.config = file.data;
                     editTmod.configName = 'default.cfg';
                     window.showUndoToast(
-                        t('Config updated. Restore previous config?'),
+                        t('modder_tools.config_updated_restore_previous_config'),
                         8,
                         () => {
                             editTmod.config = previousConfig;
@@ -2472,15 +2472,15 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const addEditTmodFiles = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 try {
                     const result = await eel.ask_add_files(selectedGamePath.value)();
                     if (result && result.success) {
                         if (result.rejected && result.rejected.length > 0) {
-                            window.showToast(t("Denied {count} file(s):\nSelected files must be located within the active game path.").replace("{count}", result.rejected.length), true);
+                            window.showToast(t("modder_tools.denied_count_file_s_selected_files_must_6dca21").replace("{count}", result.rejected.length), true);
                         }
                         if (result.rejected_cfg && result.rejected_cfg.length > 0) {
-                            window.showToast(t("Denied {count} file(s):\n.cfg files must be added through the Config File option.").replace("{count}", result.rejected_cfg.length), true);
+                            window.showToast(t("modder_tools.denied_count_file_s_cfg_files_must_be_ad_7eabd1").replace("{count}", result.rejected_cfg.length), true);
                         }
                         if (result.files && result.files.length > 0) {
                             const previousFiles = editTmod.files.map(cloneEditTmodFile);
@@ -2511,7 +2511,7 @@ document.addEventListener('modder_tools_loaded', () => {
                             }
                             editTmod.files = merged;
                             window.showUndoToast(
-                                t('File list updated. Restore previous file state?'),
+                                t('modder_tools.file_list_updated_restore_previous_file_f38f25'),
                                 8,
                                 () => {
                                     editTmod.files = previousFiles.map(cloneEditTmodFile);
@@ -2520,12 +2520,12 @@ document.addEventListener('modder_tools_loaded', () => {
                         }
                     }
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while adding files."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_addin_86eef6"), true);
                 }
             };
 
             const addEditTmodFilesFromTmod = async () => {
-                if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("Please load a TMod first."), true);
+                if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("modder_tools.please_load_a_tmod_first"), true);
                 try {
                     const fileResp = await eel.ask_tmod_file()();
                     const sourcePath = fileResp?.value ?? fileResp?.data?.value ?? fileResp;
@@ -2533,7 +2533,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
                     const result = await eel.load_tmod_for_edit(sourcePath)();
                     if (!result.success) {
-                        window.showToast(t("Failed to read source TMod:\n{error}").replace("{error}", result.error), true);
+                        window.showToast(t("modder_tools.failed_to_read_source_tmod_error").replace("{error}", result.error), true);
                         return;
                     }
 
@@ -2550,7 +2550,7 @@ document.addEventListener('modder_tools_loaded', () => {
                         : [];
 
                     if (importedFiles.length === 0) {
-                        window.showToast(t("The selected TMod has no regular archive files to import."), true);
+                        window.showToast(t("modder_tools.the_selected_tmod_has_no_regular_archive_bcf2ca"), true);
                         return;
                     }
 
@@ -2562,11 +2562,11 @@ document.addEventListener('modder_tools_loaded', () => {
                         if (existingIndex >= 0) {
                             if (!replaceAllRemaining) {
                                 const decision = await window.showConfirmModal({
-                                    title: t('File Conflict'),
-                                    message: t("A file already exists at:\n{path}\n\nKeep the current file or replace it with the version from:\n{source}").replace("{path}", file.internal_path).replace("{source}", sourcePath),
-                                    confirmLabel: t('Replace'),
-                                    cancelLabel: t('Keep Current'),
-                                    extraActionLabel: t('Replace All Remaining'),
+                                    title: t('modder_tools.file_conflict'),
+                                    message: t("modder_tools.a_file_already_exists_at_path_keep_the_c_04ce6f").replace("{path}", file.internal_path).replace("{source}", sourcePath),
+                                    confirmLabel: t('modder_tools.replace'),
+                                    cancelLabel: t('modder_tools.keep_current'),
+                                    extraActionLabel: t('modder_tools.replace_all_remaining'),
                                     danger: true
                                 });
                                 if (decision === false) {
@@ -2595,14 +2595,14 @@ document.addEventListener('modder_tools_loaded', () => {
 
                     editTmod.files = merged;
                     window.showUndoToast(
-                        t('Imported files from another TMod. Restore previous file state?'),
+                        t('modder_tools.imported_files_from_another_tmod_restore_37f81b'),
                         8,
                         () => {
                             editTmod.files = previousFiles.map(cloneEditTmodFile);
                         }
                     );
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while importing files from another TMod."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_impor_ccf24d"), true);
                 }
             };
 
@@ -2623,7 +2623,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     removed: false
                 });
                 window.showUndoToast(
-                    t('File replaced. Restore previous file data?'),
+                    t('modder_tools.file_replaced_restore_previous_file_data'),
                     8,
                     () => {
                         editTmod.files.splice(index, 1, previousFile);
@@ -2640,23 +2640,23 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const saveEditTmod = async () => {
                 validationState.editTmod = true;
-                if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("Please load a TMod first."), true);
+                if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("modder_tools.please_load_a_tmod_first"), true);
                 const title = editTmod.title.trim();
-                if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("Mod title contains illegal characters (< > : \" / \\ | ? *).\nPlease remove them to continue."), true);
-                if (!title) return window.showToast(t("Please enter a mod title."), true);
-                if (!editTmod.author.trim()) return window.showToast(t("Please enter a mod author."), true);
-                if (!editTmod.version.trim()) return window.showToast(t("Please enter a mod version."), true);
-                if (!editTmod.notes.trim()) return window.showToast(t("Please enter mod notes or a description."), true);
-                if (editTmod.notes.trim().length > 220) return window.showToast(t("Mod notes cannot exceed 220 characters."), true);
-                if (editTmod.tags.length === 0) return window.showToast(t("Please select at least one tag."), true);
-                if (getActiveEditTmodFiles().length === 0) return window.showToast(t("Please keep at least one file in your mod."), true);
+                if (/[<>:"/\\|?*]/.test(title)) return window.showToast(t("modder_tools.mod_title_contains_illegal_characters_pl_768e5c"), true);
+                if (!title) return window.showToast(t("modder_tools.please_enter_a_mod_title"), true);
+                if (!editTmod.author.trim()) return window.showToast(t("modder_tools.please_enter_a_mod_author"), true);
+                if (!editTmod.version.trim()) return window.showToast(t("modder_tools.please_enter_a_mod_version"), true);
+                if (!editTmod.notes.trim()) return window.showToast(t("modder_tools.please_enter_mod_notes_or_a_description"), true);
+                if (editTmod.notes.trim().length > 220) return window.showToast(t("modder_tools.mod_notes_cannot_exceed_220_characters"), true);
+                if (editTmod.tags.length === 0) return window.showToast(t("modder_tools.please_select_at_least_one_tag"), true);
+                if (getActiveEditTmodFiles().length === 0) return window.showToast(t("modder_tools.please_keep_at_least_one_file_in_your_mo_a6ee09"), true);
 
                 if (editTmodValidationError.value) return window.showToast(t(editTmodValidationError.value), true);
 
                 isWorking.savingEditTmod = true;
                 try {
                     const runSave = async (requestPayload) => runQueuedModderOperation({
-                        label: t("Compile TMod in place '{name}'").replace('{name}', title),
+                        label: t("modder_tools.compile_tmod_in_place_name").replace('{name}', title),
                         operation: 'build_tmod',
                         task: () => eel.save_tmod_in_place(requestPayload)()
                     });
@@ -2683,16 +2683,16 @@ document.addEventListener('modder_tools_loaded', () => {
                     let result = await runSave(payload);
                     if (!result.cancelled && !result.success && result.code === 'FILE_EXISTS') {
                         const overwriteConfirmed = await window.showConfirmModal({
-                            title: t('Overwrite Existing TMod?'),
-                            message: t('A file with the title-based file name already exists. Do you want to overwrite it?'),
-                            confirmLabel: t('Overwrite'),
-                            cancelLabel: t('Cancel'),
+                            title: t('modder_tools.overwrite_existing_tmod'),
+                            message: t('modder_tools.a_file_with_the_title_based_file_name_al_bd480d'),
+                            confirmLabel: t('common.overwrite'),
+                            cancelLabel: t('common.cancel'),
                             danger: true
                         });
 
                         if (!overwriteConfirmed) {
                             isWorking.savingEditTmod = false;
-                            window.showToast(t('TMod compile cancelled.'));
+                            window.showToast(t('modder_tools.tmod_compile_cancelled'));
                             return;
                         }
 
@@ -2700,33 +2700,33 @@ document.addEventListener('modder_tools_loaded', () => {
                     }
 
                     if (result.cancelled) {
-                        window.showToast(t('TMod compile cancelled.'));
+                        window.showToast(t('modder_tools.tmod_compile_cancelled'));
                         isWorking.savingEditTmod = false;
                         return;
                     }
                     if (result.success) {
                         editTmod.tmodPath = result.path || editTmod.tmodPath;
                         editTmod.fileName = result.fileName || editTmod.fileName;
-                        window.showToast(t("TMod successfully compiled in place!\nSaved to: {path}").replace("{path}", result.path));
+                        window.showToast(t("modder_tools.tmod_successfully_compiled_in_place_save_04c434").replace("{path}", result.path));
                         await loadEditTmod();
                     } else {
-                        window.showToast(t("Failed to compile TMod:\n{error}").replace("{error}", result.error), true);
+                        window.showToast(t("modder_tools.failed_to_compile_tmod_error").replace("{error}", result.error), true);
                     }
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while compiling the TMod."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_compi_69a943"), true);
                 }
                 isWorking.savingEditTmod = false;
             };
 
             const chooseProjectPreview = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 const result = await eel.ask_preview_file(selectedGamePath.value)();
                 const file = result?.file;
                 if (file) {
                     const nextPreviewName = file.name;
                     const previewPath = normalizeInternalPath(previewInternalPath(nextPreviewName));
                     if (project.files.some(existing => normalizeInternalPath(existing.rel_path) === previewPath)) {
-                        window.showToast(t("Preview image path cannot also be included in the files list."), true);
+                        window.showToast(t("modder_tools.preview_image_path_cannot_also_be_includ_01ba5d"), true);
                         return;
                     }
                     project.preview = file.data;
@@ -2735,7 +2735,7 @@ document.addEventListener('modder_tools_loaded', () => {
             };
 
             const chooseProjectConfig = async () => {
-                if (!selectedGamePath.value) return window.showToast(t("Please select a Target Game Installation first."), true);
+                if (!selectedGamePath.value) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 const result = await eel.ask_config_file(selectedGamePath.value)();
                 const file = result?.file;
                 if (file) {
@@ -2772,7 +2772,7 @@ document.addEventListener('modder_tools_loaded', () => {
                     project.versions = result.data.versions || ["1.0"];
                     project.activeVersion = result.data.active_version || project.versions[0];
                 } else {
-                    window.showToast(t("Error loading project: {error}").replace("{error}", result.error), true);
+                    window.showToast(t("modder_tools.error_loading_project_error").replace("{error}", result.error), true);
                 }
             };
 
@@ -2787,7 +2787,7 @@ document.addEventListener('modder_tools_loaded', () => {
 
             const saveProject = async () => {
                 if (!project.dir) return;
-                if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
+                if (project.notes.trim().length > 220) return window.showToast(t("modder_tools.project_notes_cannot_exceed_220_characte_d36d29"), true);
 
                 const payload = {
                     title: project.title.trim(),
@@ -2803,51 +2803,51 @@ document.addEventListener('modder_tools_loaded', () => {
                 };
 
                 const result = await eel.save_mod_project(project.dir, payload)();
-                if (result.success) window.showToast(t("Project metadata saved successfully!"));
-                else window.showToast(t("Error saving project: {error}").replace("{error}", result.error), true);
+                if (result.success) window.showToast(t("modder_tools.project_metadata_saved_successfully"));
+                else window.showToast(t("modder_tools.error_saving_project_error").replace("{error}", result.error), true);
             };
 
             const newVersion = async () => {
                 if (!project.dir) return;
-                const nv = prompt(t("Enter new version number (e.g., 1.1):"));
+                const nv = prompt(t("modder_tools.enter_new_version_number_e_g_1_1"));
                 if (!nv) return;
 
                 const result = await eel.create_project_version(project.dir, nv)();
                 if (result.success) {
-                    window.showToast(t("New version folder created!"));
+                    window.showToast(t("modder_tools.new_version_folder_created"));
                     await loadProjectData(project.dir);
                     project.activeVersion = nv;
-                } else window.showToast(t("Error creating version: {error}").replace("{error}", result.error), true);
+                } else window.showToast(t("modder_tools.error_creating_version_error").replace("{error}", result.error), true);
             };
 
             const autoStructureProject = async () => {
-                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("modder_tools.ensure_a_project_version_and_game_path_a_abd5e3"), true);
                 isWorking.autoStructuringProject = true;
                 try {
                     const result = await runQueuedModderOperation({
-                        label: t('Auto-structure project version files'),
+                        label: t('modder_tools.auto_structure_project_version_files'),
                         operation: 'auto_structure_project',
                         task: () => eel.auto_structure_project_version(project.dir, project.activeVersion, selectedGamePath.value)()
                     });
                     if (result.cancelled) {
-                        window.showToast(t('Project auto-structure cancelled.'));
+                        window.showToast(t('modder_tools.project_auto_structure_cancelled'));
                         return;
                     }
                     if (result.success) {
-                        window.showToast(t("Successfully structured {count} files!").replace("{count}", result.count));
+                        window.showToast(t("modder_tools.successfully_structured_count_files").replace("{count}", result.count));
                         await refreshProjectFiles();
-                    } else window.showToast(t("Error structuring files: {error}").replace("{error}", result.error), true);
+                    } else window.showToast(t("modder_tools.error_structuring_files_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred"), true);
                 }
                 isWorking.autoStructuringProject = false;
             };
 
             const compileProject = async () => {
                 validationState.project = true;
-                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
-                if (!project.title.trim()) return window.showToast(t("Project title cannot be empty."), true);
-                if (project.notes.trim().length > 220) return window.showToast(t("Project notes cannot exceed 220 characters."), true);
+                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("modder_tools.ensure_a_project_version_and_game_path_a_abd5e3"), true);
+                if (!project.title.trim()) return window.showToast(t("modder_tools.project_title_cannot_be_empty"), true);
+                if (project.notes.trim().length > 220) return window.showToast(t("modder_tools.project_notes_cannot_exceed_220_characte_d36d29"), true);
                 if (projectValidationError.value) return window.showToast(t(projectValidationError.value), true);
 
                 await saveProject();
@@ -2855,49 +2855,49 @@ document.addEventListener('modder_tools_loaded', () => {
                 isWorking.compilingProject = true;
                 try {
                     const result = await runQueuedModderOperation({
-                        label: t("Compile project '{name}'").replace('{name}', project.title.trim() || t('Untitled')),
+                        label: t("modder_tools.compile_project_name").replace('{name}', project.title.trim() || t('modder_tools.untitled')),
                         operation: 'compile_project',
                         task: () => eel.compile_project(project.dir, project.activeVersion, selectedGamePath.value)()
                     });
                     if (result.cancelled) {
-                        window.showToast(t('Project compile cancelled.'));
+                        window.showToast(t('modder_tools.project_compile_cancelled'));
                         isWorking.compilingProject = false;
                         return;
                     }
                     if (result.success) {
                         lastCompiledProjectPath.value = result.path || '';
-                        window.showToast(t("Project successfully compiled!\nSaved to: {path}").replace("{path}", result.path), false);
+                        window.showToast(t("modder_tools.project_successfully_compiled_saved_to_p_5e5598").replace("{path}", result.path), false);
                     }
-                    else window.showToast(t("Failed to compile project:\n{error}").replace("{error}", result.error), true);
+                    else window.showToast(t("modder_tools.failed_to_compile_project_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred while compiling the project."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred_while_compi_ad5dc7"), true);
                 }
                 isWorking.compilingProject = false;
             };
 
             const placeOverrides = async () => {
-                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("Ensure a project, version, and game path are selected."), true);
+                if (!project.dir || !project.activeVersion || !selectedGamePath.value) return window.showToast(t("modder_tools.ensure_a_project_version_and_game_path_a_abd5e3"), true);
                 isWorking.placingOverrides = true;
                 try {
                     const result = await runQueuedModderOperation({
-                        label: t('Place project overrides into game'),
+                        label: t('modder_tools.place_project_overrides_into_game'),
                         operation: 'place_overrides',
                         task: () => eel.place_project_overrides(project.dir, project.activeVersion, selectedGamePath.value)()
                     });
                     if (result.cancelled) {
-                        window.showToast(t('Placing overrides cancelled.'));
+                        window.showToast(t('modder_tools.placing_overrides_cancelled'));
                         isWorking.placingOverrides = false;
                         return;
                     }
                     if (result.success) {
-                        if (result.count === 0) window.showToast(t("No valid files found to test."));
+                        if (result.count === 0) window.showToast(t("modder_tools.no_valid_files_found_to_test"));
                         else {
                             project.activeOverrides = result.placed_files;
-                            window.showToast(t("{count} files placed in game overrides for testing.").replace("{count}", result.count));
+                            window.showToast(t("modder_tools.count_files_placed_in_game_overrides_for_ea0d0d").replace("{count}", result.count));
                         }
-                    } else window.showToast(t("Error placing overrides: {error}").replace("{error}", result.error), true);
+                    } else window.showToast(t("modder_tools.error_placing_overrides_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred"), true);
                 }
                 isWorking.placingOverrides = false;
             };
@@ -2905,10 +2905,10 @@ document.addEventListener('modder_tools_loaded', () => {
             const removeOverrides = async () => {
                 if (project.activeOverrides.length === 0) return;
                 const confirmed = await window.showConfirmModal({
-                    title: t('Remove Overrides'),
-                    message: t('Remove all currently placed override files from the game?'),
-                    confirmLabel: t('Remove'),
-                    cancelLabel: t('Cancel'),
+                    title: t('modder_tools.remove_overrides'),
+                    message: t('modder_tools.remove_all_currently_placed_override_fil_f2f7f6'),
+                    confirmLabel: t('modder_tools.remove'),
+                    cancelLabel: t('common.cancel'),
                     danger: true
                 });
                 if (!confirmed) return;
@@ -2917,58 +2917,58 @@ document.addEventListener('modder_tools_loaded', () => {
                 try {
                     const removedSnapshot = [...project.activeOverrides];
                     const result = await runQueuedModderOperation({
-                        label: t('Remove project overrides from game'),
+                        label: t('modder_tools.remove_project_overrides_from_game'),
                         operation: 'remove_overrides',
                         task: () => eel.remove_project_overrides(project.activeOverrides)()
                     });
                     if (result.cancelled) {
                         if (result.undo_token) {
                             window.showUndoToast(
-                                t('Removal cancelled. Restore removed files?'),
+                                t('modder_tools.removal_cancelled_restore_removed_files'),
                                 10,
                                 async () => {
                                     const undoResult = await eel.undo_remove_project_overrides(result.undo_token)();
                                     if (!undoResult.success) {
-                                        window.showToast(t('Undo failed: {error}').replace('{error}', undoResult.error || t('Unknown error occurred')), true);
+                                        window.showToast(t('common.undo_failed_error').replace('{error}', undoResult.error || t('common.unknown_error_occurred')), true);
                                         return;
                                     }
                                     project.activeOverrides = removedSnapshot;
-                                    window.showToast(t('Overrides restored.'));
+                                    window.showToast(t('modder_tools.overrides_restored'));
                                 }
                             );
                         }
-                        window.showToast(t('Removing overrides cancelled.'));
+                        window.showToast(t('modder_tools.removing_overrides_cancelled'));
                         isWorking.removingOverrides = false;
                         return;
                     }
                     if (result.success) {
-                        window.showToast(t("{count} override files successfully removed from game.").replace("{count}", result.count));
+                        window.showToast(t("modder_tools.count_override_files_successfully_remove_53725e").replace("{count}", result.count));
                         project.activeOverrides = [];
 
                         if (result.undo_token) {
                             window.showUndoToast(
-                                t('Overrides removed.'),
+                                t('modder_tools.overrides_removed'),
                                 10,
                                 async () => {
                                     const undoResult = await eel.undo_remove_project_overrides(result.undo_token)();
                                     if (!undoResult.success) {
-                                        window.showToast(t('Undo failed: {error}').replace('{error}', undoResult.error || t('Unknown error occurred')), true);
+                                        window.showToast(t('common.undo_failed_error').replace('{error}', undoResult.error || t('common.unknown_error_occurred')), true);
                                         return;
                                     }
                                     if (undoResult.restored > 0) {
                                         project.activeOverrides = removedSnapshot;
                                     }
                                     if (undoResult.conflicts && undoResult.conflicts.length > 0) {
-                                        window.showToast(t('Undo completed with conflicts for existing files.'), true);
+                                        window.showToast(t('modder_tools.undo_completed_with_conflicts_for_existi_d69170'), true);
                                     } else {
-                                        window.showToast(t('Overrides restored.'));
+                                        window.showToast(t('modder_tools.overrides_restored'));
                                     }
                                 }
                             );
                         }
-                    } else window.showToast(t("Error removing overrides: {error}").replace("{error}", result.error), true);
+                    } else window.showToast(t("modder_tools.error_removing_overrides_error").replace("{error}", result.error), true);
                 } catch (e) {
-                    window.showToast(t("An unexpected error occurred."), true);
+                    window.showToast(t("modder_tools.an_unexpected_error_occurred"), true);
                 }
                 isWorking.removingOverrides = false;
             };
@@ -3039,7 +3039,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 }
                 handleEmbeddedTabSelection(newTab).catch((e) => {
                     console.error('Failed to load embedded File Manager:', e);
-                    window.showToast(t('Failed to load Game File Manager inside Modder Tools.'), true);
+                    window.showToast(t('modder_tools.failed_to_load_game_file_manager_inside_754ac4'), true);
                 });
             });
 

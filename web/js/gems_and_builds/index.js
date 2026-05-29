@@ -9,7 +9,7 @@ document.addEventListener('gems_and_builds_loaded', () => {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_gems_and_builds';
             
             const activeTab = ref('gem-builds');

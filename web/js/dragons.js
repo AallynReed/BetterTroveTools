@@ -13,7 +13,7 @@ function initDragonsView() {
 
     const app = createApp({
         setup() {
-            const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
             const PREF_STATE_KEY = 'state_dragons';
             let hydratingState = false;
 
@@ -71,7 +71,7 @@ function initDragonsView() {
                 if (typeof stat.display === 'string' && stat.display.trim()) return stat.display.trim();
                 if (typeof stat.value !== 'number' || !Number.isFinite(stat.value)) return '';
                 return stat.is_percent
-                    ? t('{value}%').replace('{value}', formatNumberWithSeparators(stat.value * 100))
+                    ? t('common.value').replace('{value}', formatNumberWithSeparators(stat.value * 100))
                     : formatNumberWithSeparators(stat.value);
             };
 
@@ -80,7 +80,7 @@ function initDragonsView() {
                 const label = translateText(stat.label || stat.name || '');
                 const formattedValue = formatStatValue(stat);
                 if (formattedValue && label) {
-                    return t('{value} {stat}')
+                    return t('common.value_stat')
                         .replace('{value}', formattedValue)
                         .replace('{stat}', label);
                 }
@@ -90,15 +90,15 @@ function initDragonsView() {
             const componentHeadingLabel = (componentType) => {
                 switch (componentType) {
                     case 'Mag Rider':
-                        return t('Mag Rider');
+                        return t('common.mag_rider');
                     case 'Mount':
-                        return t('Ground');
+                        return t('common.ground');
                     case 'Wings':
-                        return t('Flight');
+                        return t('common.flight');
                     case 'Stat Stats':
-                        return t('Permanent Stat increases');
+                        return t('common.permanent_stat_increases');
                     case 'Boat/Ship':
-                        return t('Water');
+                        return t('common.water');
                     default:
                         return '';
                 }
@@ -111,16 +111,16 @@ function initDragonsView() {
                 const componentType = stat.component_type || '';
 
                 if (componentType === 'Wings' || statName === 'Glide') {
-                    return t('Flight');
+                    return t('common.flight');
                 }
                 if (componentType === 'Boat/Ship' || statName === 'Acceleration' || statName === 'Turning Rate' || statName === 'TurningRate') {
-                    return t('Water');
+                    return t('common.water');
                 }
                 if (statName === 'MovementSpeed' || statName === 'Movement Speed') {
-                    return Math.abs(Number(value) - 25) < 0.0001 ? t('Mag Rider') : t('Ground');
+                    return Math.abs(Number(value) - 25) < 0.0001 ? t('common.mag_rider') : t('common.ground');
                 }
                 if (componentType === 'Stat Stats') {
-                    return t('Permanent Stat increases');
+                    return t('common.permanent_stat_increases');
                 }
                 return componentHeadingLabel(componentType);
             };
@@ -135,7 +135,7 @@ function initDragonsView() {
                     }
                     const heading = resolveStatHeading(stat);
                     if (heading && heading !== lastHeading) {
-                        grouped.push({ heading, text: t('{heading}:').replace('{heading}', heading), isHeading: true });
+                        grouped.push({ heading, text: t('common.heading').replace('{heading}', heading), isHeading: true });
                         lastHeading = heading;
                     }
                     grouped.push(stat);
@@ -388,13 +388,13 @@ function initDragonsView() {
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
-                if (source === 'game-cache') dataSourceText.value = t('Loaded dragon data from cached game-file scan.');
-                else if (source === 'game-cache-stale') dataSourceText.value = t('Loaded dragon data from cache. Refreshing in the background…');
-                else if (source === 'game-live') dataSourceText.value = t('Loaded dragon data from live game files.');
+                if (source === 'game-cache') dataSourceText.value = t('dragons.loaded_dragon_data_from_cached_game_file_0c302e');
+                else if (source === 'game-cache-stale') dataSourceText.value = t('dragons.loaded_dragon_data_from_cache_refreshing_3ad980');
+                else if (source === 'game-live') dataSourceText.value = t('dragons.loaded_dragon_data_from_live_game_files');
                 else dataSourceText.value = '';
                 if (source && cacheMeta && cacheMeta.age_seconds !== undefined && source === 'game-cache') {
                     const hours = Math.floor((cacheMeta.age_seconds || 0) / 3600);
-                    if (hours > 0) dataSourceText.value += ` ${t('Cache age')}: ${hours}h.`;
+                    if (hours > 0) dataSourceText.value += ` ${t('common.cache_age')}: ${hours}h.`;
                 }
             };
 

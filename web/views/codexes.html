@@ -12,28 +12,28 @@
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'allies' }" @click="setActiveTab('allies')">
-                <i class="fa-solid fa-paw"></i> <span>{{ t('Allies') }}</span>
+                <i class="fa-solid fa-paw"></i> <span>{{ t('common.allies') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'mounts' }" @click="setActiveTab('mounts')">
-                <i class="fa-solid fa-horse"></i> <span>{{ t('Mounts') }}</span>
+                <i class="fa-solid fa-horse"></i> <span>{{ t('common.mounts') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'dragons' }" @click="setActiveTab('dragons')">
-                <i class="fa-solid fa-dragon"></i> <span>{{ t('Dragons') }}</span>
+                <i class="fa-solid fa-dragon"></i> <span>{{ t('common.dragons') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'mementos' }" @click="setActiveTab('mementos')">
-                <i class="fa-solid fa-scroll"></i> <span>{{ t('Mementos') }}</span>
+                <i class="fa-solid fa-scroll"></i> <span>{{ t('codexes.mementos') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'recipes' }" @click="setActiveTab('recipes')">
-                <i class="fa-solid fa-book"></i> <span>{{ t('Recipes') }}</span>
+                <i class="fa-solid fa-book"></i> <span>{{ t('codexes.recipes') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'items' }" @click="setActiveTab('items')">
-                <i class="fa-solid fa-box"></i> <span>{{ t('Items') }}</span>
+                <i class="fa-solid fa-box"></i> <span>{{ t('codexes.items') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'fish' }" @click="setActiveTab('fish')">
-                <i class="fa-solid fa-fish"></i> <span>{{ t('Fish') }}</span>
+                <i class="fa-solid fa-fish"></i> <span>{{ t('codexes.fish') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'badges' }" @click="setActiveTab('badges')">
-                <i class="fa-solid fa-shield-halved"></i> <span>{{ t('Badges') }}</span>
+                <i class="fa-solid fa-shield-halved"></i> <span>{{ t('codexes.badges') }}</span>
             </button>
         </div>
 
@@ -44,27 +44,27 @@
                         <div class="search-bar-wrapper codex-search-row">
                             <div class="codex-search-input-wrap codex-shell-input-wrap">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <div class="codex-shell-input">{{ t('Search allies by name or keyword...') }}</div>
+                                <div class="codex-shell-input">{{ t('codexes.search_allies_by_name_or_keyword') }}</div>
                             </div>
                             <div class="codex-toolbar-actions">
-                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('Open Folder') }}</span></button>
-                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('Refresh Paths') }}</span></button>
+                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open_folder') }}</span></button>
+                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('common.refresh_paths') }}</span></button>
                             </div>
                         </div>
                         <div class="codexes-install-picker codex-install-picker">
-                            <label>{{ t('Game Installation') }}</label>
+                            <label>{{ t('common.game_installation') }}</label>
                             <div class="codexes-install-row">
-                                <div class="codex-shell-select">{{ t('Loading detected installations...') }}</div>
+                                <div class="codex-shell-select">{{ t('codexes.loading_detected_installations') }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="codex-warning-banner">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+                        <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
                     </div>
                     <div class="ui-state ui-state-loading ui-state-compact">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>{{ t('Loading Ally Codex...') }}</span>
+                        <span>{{ t('codexes.loading_ally_codex') }}</span>
                     </div>
                 </div>
             </div>
@@ -78,27 +78,27 @@
                         <div class="search-bar-wrapper codex-search-row">
                             <div class="codex-search-input-wrap codex-shell-input-wrap">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <div class="codex-shell-input">{{ t('Search mounts by name or keyword...') }}</div>
+                                <div class="codex-shell-input">{{ t('codexes.search_mounts_by_name_or_keyword') }}</div>
                             </div>
                             <div class="codex-toolbar-actions">
-                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('Open Folder') }}</span></button>
-                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('Refresh Paths') }}</span></button>
+                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open_folder') }}</span></button>
+                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('common.refresh_paths') }}</span></button>
                             </div>
                         </div>
                         <div class="codexes-install-picker codex-install-picker">
-                            <label>{{ t('Game Installation') }}</label>
+                            <label>{{ t('common.game_installation') }}</label>
                             <div class="codexes-install-row">
-                                <div class="codex-shell-select">{{ t('Loading detected installations...') }}</div>
+                                <div class="codex-shell-select">{{ t('codexes.loading_detected_installations') }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="codex-warning-banner">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+                        <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
                     </div>
                     <div class="ui-state ui-state-loading ui-state-compact">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>{{ t('Loading Mount Codex...') }}</span>
+                        <span>{{ t('codexes.loading_mount_codex') }}</span>
                     </div>
                 </div>
             </div>
@@ -112,27 +112,27 @@
                         <div class="search-bar-wrapper codex-search-row">
                             <div class="codex-search-input-wrap codex-shell-input-wrap">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <div class="codex-shell-input">{{ t('Search dragons by name or keyword...') }}</div>
+                                <div class="codex-shell-input">{{ t('codexes.search_dragons_by_name_or_keyword') }}</div>
                             </div>
                             <div class="codex-toolbar-actions">
-                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('Open Folder') }}</span></button>
-                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('Refresh Paths') }}</span></button>
+                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open_folder') }}</span></button>
+                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('common.refresh_paths') }}</span></button>
                             </div>
                         </div>
                         <div class="codexes-install-picker codex-install-picker">
-                            <label>{{ t('Game Installation') }}</label>
+                            <label>{{ t('common.game_installation') }}</label>
                             <div class="codexes-install-row">
-                                <div class="codex-shell-select">{{ t('Loading detected installations...') }}</div>
+                                <div class="codex-shell-select">{{ t('codexes.loading_detected_installations') }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="codex-warning-banner">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+                        <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
                     </div>
                     <div class="ui-state ui-state-loading ui-state-compact">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>{{ t('Loading Dragon Codex...') }}</span>
+                        <span>{{ t('codexes.loading_dragon_codex') }}</span>
                     </div>
                 </div>
             </div>
@@ -146,27 +146,27 @@
                         <div class="search-bar-wrapper codex-search-row">
                             <div class="codex-search-input-wrap codex-shell-input-wrap">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <div class="codex-shell-input">{{ t('Search mementos by name, source, or keyword...') }}</div>
+                                <div class="codex-shell-input">{{ t('codexes.search_mementos_by_name_source_or_keywor_c3985b') }}</div>
                             </div>
                             <div class="codex-toolbar-actions">
-                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('Open Folder') }}</span></button>
-                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('Refresh Paths') }}</span></button>
+                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open_folder') }}</span></button>
+                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('common.refresh_paths') }}</span></button>
                             </div>
                         </div>
                         <div class="codexes-install-picker codex-install-picker">
-                            <label>{{ t('Game Installation') }}</label>
+                            <label>{{ t('common.game_installation') }}</label>
                             <div class="codexes-install-row">
-                                <div class="codex-shell-select">{{ t('Loading detected installations...') }}</div>
+                                <div class="codex-shell-select">{{ t('codexes.loading_detected_installations') }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="codex-warning-banner">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+                        <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
                     </div>
                     <div class="ui-state ui-state-loading ui-state-compact">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>{{ t('Loading Memento Codex...') }}</span>
+                        <span>{{ t('codexes.loading_memento_codex') }}</span>
                     </div>
                 </div>
             </div>
@@ -180,27 +180,27 @@
                         <div class="search-bar-wrapper codex-search-row">
                             <div class="codex-search-input-wrap codex-shell-input-wrap">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <div class="codex-shell-input">{{ t('Search recipes by name, output, ingredient, or keyword...') }}</div>
+                                <div class="codex-shell-input">{{ t('codexes.search_recipes_by_name_output_ingredient_f12aee') }}</div>
                             </div>
                             <div class="codex-toolbar-actions">
-                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('Open Folder') }}</span></button>
-                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('Refresh Paths') }}</span></button>
+                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open_folder') }}</span></button>
+                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('common.refresh_paths') }}</span></button>
                             </div>
                         </div>
                         <div class="codexes-install-picker codex-install-picker">
-                            <label>{{ t('Game Installation') }}</label>
+                            <label>{{ t('common.game_installation') }}</label>
                             <div class="codexes-install-row">
-                                <div class="codex-shell-select">{{ t('Loading detected installations...') }}</div>
+                                <div class="codex-shell-select">{{ t('codexes.loading_detected_installations') }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="codex-warning-banner">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+                        <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
                     </div>
                     <div class="ui-state ui-state-loading ui-state-compact">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>{{ t('Loading Recipe Codex...') }}</span>
+                        <span>{{ t('codexes.loading_recipe_codex') }}</span>
                     </div>
                 </div>
             </div>
@@ -214,27 +214,27 @@
                         <div class="search-bar-wrapper items-search-row">
                             <div class="items-search-input-wrap codex-shell-input-wrap">
                                 <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                <div class="codex-shell-input">{{ t('Search items by name, category, unlock, or path...') }}</div>
+                                <div class="codex-shell-input">{{ t('common.search_items_by_name_category_unlock_or_f90793') }}</div>
                             </div>
                             <div class="items-toolbar-actions">
-                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('Open Folder') }}</span></button>
-                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('Refresh Paths') }}</span></button>
+                                <button class="primary-btn" disabled><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open_folder') }}</span></button>
+                                <button class="secondary-btn" disabled><i class="fa-solid fa-arrows-rotate"></i> <span>{{ t('common.refresh_paths') }}</span></button>
                             </div>
                         </div>
                         <div class="codexes-install-picker items-install-picker">
-                            <label>{{ t('Game Installation') }}</label>
+                            <label>{{ t('common.game_installation') }}</label>
                             <div class="codexes-install-row">
-                                <div class="codex-shell-select">{{ t('Loading detected installations...') }}</div>
+                                <div class="codex-shell-select">{{ t('codexes.loading_detected_installations') }}</div>
                             </div>
                         </div>
                     </div>
                     <div class="codex-warning-banner">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        <span>{{ t('Extracted data is inferred from game prefabs and may contain errors.') }}</span>
+                        <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
                     </div>
                     <div class="ui-state ui-state-loading ui-state-compact">
                         <i class="fa-solid fa-spinner fa-spin"></i>
-                        <span>{{ t('Loading Item Codex...') }}</span>
+                        <span>{{ t('codexes.loading_item_codex') }}</span>
                     </div>
                 </div>
             </div>
@@ -245,7 +245,7 @@
             <div v-if="!loadedTabs.fish" class="codex-preload-shell">
                 <div class="ui-state ui-state-loading ui-state-compact">
                     <i class="fa-solid fa-spinner fa-spin"></i>
-                    <span>{{ t('Loading Fish Codex...') }}</span>
+                    <span>{{ t('codexes.loading_fish_codex') }}</span>
                 </div>
             </div>
             <div id="codexes-fish-host" class="view-container" v-cloak></div>
@@ -255,7 +255,7 @@
             <div v-if="!loadedTabs.badges" class="codex-preload-shell">
                 <div class="ui-state ui-state-loading ui-state-compact">
                     <i class="fa-solid fa-spinner fa-spin"></i>
-                    <span>{{ t('Loading Badge Codex...') }}</span>
+                    <span>{{ t('codexes.loading_badge_codex') }}</span>
                 </div>
             </div>
             <div id="codexes-badges-host" class="view-container" v-cloak></div>

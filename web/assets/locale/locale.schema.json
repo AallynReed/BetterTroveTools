@@ -1,0 +1,41 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://better-trove-tools.invalid/locale.schema.json",
+    "title": "Better Trove Tools locale file",
+    "description": "A translation file. `strings` is hand-curated UI chrome keyed by symbolic id; `content` is game/data-driven text keyed by the English source and is auto-generated (do not hand-edit).",
+    "type": "object",
+    "required": ["meta", "strings"],
+    "additionalProperties": false,
+    "properties": {
+        "$schema": { "type": "string" },
+        "meta": {
+            "type": "object",
+            "required": ["code", "name", "direction", "fallback"],
+            "additionalProperties": true,
+            "properties": {
+                "code": { "type": "string", "pattern": "^[a-z]{2,3}_[A-Za-z]{2,4}$" },
+                "name": { "type": "string", "description": "Endonym - language name in its own language." },
+                "englishName": { "type": "string" },
+                "direction": { "enum": ["ltr", "rtl"] },
+                "fallback": { "type": "string", "description": "Locale code to fall back to for missing strings (usually en_US)." },
+                "maintainers": { "type": "array", "items": { "type": "string" } },
+                "updated": { "type": "string" }
+            }
+        },
+        "strings": {
+            "type": "object",
+            "description": "Symbolic id -> translation. A value may be a plural object { one, other, ... }.",
+            "additionalProperties": {
+                "oneOf": [
+                    { "type": "string" },
+                    { "type": "object", "additionalProperties": { "type": "string" } }
+                ]
+            }
+        },
+        "content": {
+            "type": "object",
+            "description": "English source text -> translation (game/data-driven; auto-generated).",
+            "additionalProperties": { "type": "string" }
+        }
+    }
+}
