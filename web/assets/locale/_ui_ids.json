@@ -1281,7 +1281,8 @@
     "{title} Schedule": "home.title_schedule",
     "{type} Node": "gems.star_chart.type_node",
     "{value} {stat}": "common.value_stat",
-    "{value}%": "common.value"
+    "{value}%": "common.value",
+    "Config file is read-only, skipped: {mods}": "mod_manager.cfg_read_only_skipped"
   },
   "en": {
     "items.count_more": "+{count} more",
@@ -2565,6 +2566,7 @@
     "home.title_schedule": "{title} Schedule",
     "gems.star_chart.type_node": "{type} Node",
     "common.value_stat": "{value} {stat}",
-    "common.value": "{value}%"
+    "common.value": "{value}%",
+    "mod_manager.cfg_read_only_skipped": "Config file is read-only, skipped: {mods}"
   }
 }
