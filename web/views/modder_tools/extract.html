@@ -1,0 +1,25 @@
+            <div class="tool-panel">
+                <h3>{{ t('modder_tools.extract_an_existing_tmod') }}</h3>
+                <p class="help-text">{{ t('modder_tools.select_a_tmod_archive_to_unpack_its_cont_0c6253') }}</p>
+
+                <div class="form-group">
+                    <label>{{ t('modder_tools.source_tmod_file') }}</label>
+                    <div class="input-row">
+                        <input type="text" v-model="extract.source" :placeholder="t('modder_tools.select_a_tmod_file')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('source') }">
+                        <button class="primary-btn" @click="browseExtractSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('common.browse') }}</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ t('modder_tools.destination_folder') }}</label>
+                    <div class="input-row">
+                        <input type="text" v-model="extract.dest" :placeholder="t('modder_tools.select_where_to_extract_the_files')" readonly :class="{ 'field-invalid': isExtractFieldInvalid('dest') }">
+                        <button class="primary-btn" @click="browseExtractDest"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></button>
+                    </div>
+                </div>
+
+                <button class="primary-btn execute-btn" @click="extractTMod" :disabled="store.isWorking.extracting">
+                    <template v-if="store.isWorking.extracting"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.extracting') }}</template>
+                    <template v-else><i class="fa-solid fa-box-open"></i> <span>{{ t('modder_tools.extract_tmod') }}</span></template>
+                </button>
+            </div>

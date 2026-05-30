@@ -1,0 +1,117 @@
+<head>
+    <link rel="stylesheet" href="css/codexes/mementos.css">
+</head>
+<div id="mementos-vue-app" class="allies-container" v-cloak>
+    <div class="search-section">
+        <div class="codex-toolbar panel-card">
+            <div class="search-bar-wrapper codex-search-row">
+                <div class="codex-search-input-wrap">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" v-model="searchQuery" :title="t('mementos.advanced_search_keywords_author_or_desig_f51fd4')" :placeholder="t(`Search mementos by name, source, or keyword...`)" id="memento-search-input">
+                </div>
+                <div class="codex-toolbar-actions">
+                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!selectedGamePath" :title="t('common.open_selected_game_folder')">
+                        <i class="fa-solid fa-folder-open"></i>
+                        <span>{{ t('common.open_folder') }}</span>
+                    </button>
+                    <button class="secondary-btn" @click="refreshGamePaths" :title="t('common.refresh_detected_games')">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>{{ t('common.refresh_paths') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="codexes-install-picker codex-install-picker">
+                <label>{{ t('common.game_installation') }}</label>
+                <div class="codexes-install-row">
+                    <custom-vue-select v-model="selectedGamePath" :options="installOptions" :translate-options="false" class="codex-install-select"></custom-vue-select>
+                </div>
+            </div>
+            <details class="codex-advanced-actions">
+                <summary>{{ t('common.more_actions') }}</summary>
+                <div class="codex-advanced-grid">
+                    <button class="secondary-btn" @click="clearCacheAndReload" :disabled="isLoading" :title="t('mementos.clear_memento_cache_and_rebuild_from_gam_60c7d6')">
+                        <i class="fa-solid fa-broom"></i>
+                        <span>{{ t('common.rebuild_cache') }}</span>
+                    </button>
+                </div>
+            </details>
+            <div v-if="dataSourceText" class="search-stats cache-status">{{ dataSourceText }}</div>
+        </div>
+        <div class="codex-warning-banner">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ t('common.extracted_data_is_inferred_from_game_pre_bddd97') }}</span>
+        </div>
+        <div v-if="loadError && loadError.includes('Prefabs directory was not found:')" class="codex-warning-banner codex-warning-banner-error">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ loadError }}</span>
+        </div>
+
+        <div class="filters-row">
+            <div class="filter-group filter-group-compact">
+                <label>{{ t('common.category') }}</label>
+                <custom-vue-select v-model="selectedCategory" :options="categoryOptions"></custom-vue-select>
+            </div>
+        </div>
+
+        <div v-if="isLoading" class="ui-state ui-state-loading ui-state-compact">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span>{{ t('mementos.loading_mementos_from_game_files_this_ma_ec6571') }}</span>
+        </div>
+        <div v-else-if="loadError && !loadError.includes('Prefabs directory was not found:')" class="ui-state ui-state-error ui-state-compact">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ loadError }}</span>
+        </div>
+        <div v-else-if="searchQuery.trim().length > 0 && searchQuery.trim().length < 3" class="ui-state ui-state-warning ui-state-compact">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>{{ t('common.minimum_3_characters_to_search') }}</span>
+        </div>
+        <div v-else class="search-stats search-stats-summary">
+            <span>{{ t('mementos.showing_from_to_of_count_filtered_mement_8cd7ff').replace('{from}', visibleStart).replace('{to}', visibleEnd).replace('{count}', filteredMementos.length).replace('{total}', mementosData.length) }}</span>
+        </div>
+    </div>
+
+    <div class="allies-grid">
+        <div v-for="(memento, idx) in paginatedMementos" :key="memento.id" class="ally-card" :style="{ animationDelay: Math.min(idx * 0.03, 0.3) + 's' }">
+            <div class="ally-header">
+                <div class="ally-icon">
+                    <img :src="memento.imagePath" alt="" loading="lazy" decoding="async">
+                </div>
+                <div class="ally-title-area">
+                    <div class="ally-name" v-html="highlightSearch(t(memento.displayName || memento.name || memento.fallbackName))"></div>
+                    <div class="ally-category">{{ t(memento.category || 'Unknown') }}</div>
+                    <div v-if="memento.designer && memento.designer !== 'Trove Team'" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
+                        <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(memento.designer)"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="ally-body">
+                <div v-if="memento.source_label && memento.source_name" class="memento-meta">
+                    <div class="memento-meta-row" :class="sourceRowClass(memento.source_label)">
+                        <span class="memento-meta-label">{{ t(memento.source_label) }}</span>
+                        <span class="memento-meta-value" v-html="highlightSearch(t(memento.source_name))"></span>
+                    </div>
+                </div>
+            </div>
+            <div v-if="memento.mastery" class="ally-footer">
+                <span v-if="parseInt(memento.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('common.mastery_val').replace('{val}', parseInt(memento.mastery)) }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="allies-pagination" v-if="!isLoading && filteredMementos.length > 0">
+        <button class="secondary-btn" @click="prevPage" :disabled="currentPage === 1">
+            <i class="fa-solid fa-chevron-left"></i> {{ t('common.prev') }}
+        </button>
+        <button
+            v-for="page in pageNumbers"
+            :key="'page-' + page"
+            class="secondary-btn pagination-page-btn"
+            :class="{ active: page === currentPage }"
+            @click="setPage(page)">
+            {{ page }}
+        </button>
+        <button class="secondary-btn" @click="nextPage" :disabled="currentPage === totalPages">
+            {{ t('common.next') }} <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+</div>
