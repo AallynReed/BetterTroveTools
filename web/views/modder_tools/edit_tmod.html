@@ -1,0 +1,180 @@
+            <div class="tool-panel">
+                <h3>{{ t('modder_tools.edit_an_existing_tmod_in_place') }}</h3>
+                <p class="help-text">{{ t('modder_tools.load_a_tmod_into_memory_update_its_metad_086325') }}</p>
+
+                <div class="form-group">
+                    <label>{{ t('modder_tools.source_tmod_file') }}</label>
+                    <div class="input-row">
+                        <input type="text" v-model="editTmod.tmodPath" :placeholder="t('modder_tools.select_a_tmod_file')" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
+                        <button class="primary-btn" @click="browseEditTmodSource"><i class="fa-solid fa-file-archive"></i> <span>{{ t('common.browse') }}</span></button>
+                    </div>
+                </div>
+
+                <div v-if="editTmod.loaded" class="edit-tmod-layout">
+                    <div class="build-left-col">
+                        <div class="form-group">
+                            <label class="form-label-with-action">
+                                <span>{{ t('modder_tools.mod_preview') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('preview')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('preview')" :title="t('modder_tools.restore_original_preview')">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </label>
+                            <div class="mod-preview-picker" :title="t('modder_tools.click_to_select_preview_image')" @click="chooseEditTmodPreview">
+                                <img :src="editTmod.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
+                                <div class="preview-overlay">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>{{ t('modder_tools.change_image') }}</span>
+                                </div>
+                                <button type="button" class="remove-preview-btn" v-show="editTmod.preview" @click.stop="editTmod.preview = ''; editTmod.previewName = ''" :title="t('modder_tools.remove_preview')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label class="form-label-with-action">
+                                <span>{{ t('modder_tools.config_file_cfg') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('config')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('config')" :title="t('modder_tools.restore_original_config')">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </label>
+                            <div class="input-row">
+                                <input type="text" :value="editTmod.configName" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
+                                <button class="primary-btn" @click="chooseEditTmodConfig">
+                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('common.browse') }}</span>
+                                </button>
+                                <button type="button" class="icon-btn-small danger" v-show="editTmod.config" @click="editTmod.config = ''; editTmod.configName = ''" :title="t('modder_tools.remove_config_file')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="build-right-col">
+                        <div class="form-group">
+                            <label>{{ t('modder_tools.loaded_archive') }}</label>
+                            <input type="text" :value="editTmod.fileName" readonly :class="{ 'field-invalid': isEditTmodFieldInvalid('source') }">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('modder_tools.mod_title') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('title')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('title')" :title="t('modder_tools.restore_original_title')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <input type="text" v-model="editTmod.title" :placeholder="t('modder_tools.my_awesome_mod')" :class="{ 'field-invalid': isEditTmodFieldInvalid('title') }">
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('modder_tools.authors') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('author')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('author')" :title="t('modder_tools.restore_original_authors')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <input type="text" v-model="editTmod.author" :placeholder="t('modder_tools.author_1_author_2')" :class="{ 'field-invalid': isEditTmodFieldInvalid('author') }">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('modder_tools.version') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('version')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('version')" :title="t('modder_tools.restore_original_version')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <input type="text" v-model="editTmod.version" :class="{ 'field-invalid': isEditTmodFieldInvalid('version') }">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label-with-action">
+                                <span>{{ t('modder_tools.notes') }}</span>
+                                <button v-if="hasEditTmodFieldChanged('notes')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('notes')" :title="t('modder_tools.restore_original_notes')">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                </button>
+                            </label>
+                            <textarea v-model="editTmod.notes" rows="3" maxlength="220" :placeholder="t('modder_tools.enter_mod_description_or_notes')" :class="{ 'field-invalid': isEditTmodFieldInvalid('notes') }"></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('modder_tools.tags') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('tags')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('tags')" :title="t('modder_tools.restore_original_tags')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <div :class="{ 'field-invalid': isEditTmodFieldInvalid('tags') }">
+                                    <select2 v-model="editTmod.tags" :options="store.tagOptions" :placeholder="t('modder_tools.select_categories')"></select2>
+                                </div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label-with-action">
+                                    <span>{{ t('modder_tools.subtype') }}</span>
+                                    <button v-if="hasEditTmodFieldChanged('subtype')" type="button" class="icon-btn-small" @click.stop="restoreEditTmodField('subtype')" :title="t('modder_tools.restore_original_subtype')">
+                                        <i class="fa-solid fa-rotate-left"></i>
+                                    </button>
+                                </label>
+                                <custom-vue-select v-model="editTmod.subtype" :options="store.subtypeOptions" style="flex: 1;"></custom-vue-select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="editTmod.loaded">
+                    <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+                    <div class="form-group">
+                        <div class="edit-tmod-toolbar">
+                            <label style="margin: 0;">{{ t('modder_tools.archive_files') }}</label>
+                            <div class="input-row">
+                                <button class="primary-btn" @click="addEditTmodFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_file') }}</span></button>
+                                <button class="primary-btn secondary-btn" @click="addEditTmodFilesFromTmod"><i class="fa-solid fa-file-import"></i> <span>{{ t('modder_tools.add_from_tmod') }}</span></button>
+                            </div>
+                        </div>
+                        <div class="table-container" :class="{ 'field-invalid': isEditTmodFieldInvalid('files') }" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                                <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                    <tr>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 180px;">{{ t('common.source') }}</th>
+                                        <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 96px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="file in editTmodDisplayFiles" :key="file.internal_path" :class="{ 'edit-tmod-file-removed': isEditTmodFileRemoved(file) }">
+                                        <td style="color: var(--text-main); font-size: 13px; word-break: break-all;">
+                                            <div>{{ file.internal_path }}</div>
+                                            <div style="color: var(--text-muted); font-size: 11px;">{{ file.path || file.imported_from || t('modder_tools.embedded_in_archive_memory') }}</div>
+                                        </td>
+                                        <td style="padding: 10px; color: var(--text-muted); font-size: 12px;">
+                                            <template v-if="isEditTmodFileRemoved(file)">{{ t('modder_tools.removed_from_in_memory_build') }}</template>
+                                            <template v-else-if="file.source === 'disk'">{{ t('modder_tools.replacement_from_disk') }}</template>
+                                            <template v-else-if="file.source === 'tmod'">{{ t('modder_tools.imported_from_another_tmod') }}</template>
+                                            <template v-else>{{ t('modder_tools.original_archive_data') }}</template>
+                                        </td>
+                                        <td style="padding: 10px; text-align: right;">
+                                            <div class="edit-tmod-actions">
+                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('modder_tools.replace_file')" @click="replaceEditTmodFile(file)"><i class="fa-solid fa-arrows-rotate"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file) && canRestoreOriginalEditTmodFile(file)" class="icon-btn-small" :title="t('modder_tools.restore_original_file')" @click="restoreOriginalEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button v-if="isEditTmodFileRemoved(file)" class="icon-btn-small" :title="t('modder_tools.restore_file')" @click="restoreRemovedEditTmodFile(file)"><i class="fa-solid fa-rotate-left"></i></button>
+                                                <button v-if="!isEditTmodFileRemoved(file)" class="icon-btn-small danger" :title="t('modder_tools.remove_file')" @click="removeEditTmodFile(file)"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="editTmod.files.length === 0">
+                                        <td colspan="3" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('modder_tools.no_files_in_this_archive') }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="input-row" style="margin-top: 10px; align-items: stretch;">
+                        <button class="primary-btn execute-btn" @click="saveEditTmod" :disabled="store.isWorking.savingEditTmod" style="margin-top: 0; flex: 1;">
+                            <template v-if="store.isWorking.savingEditTmod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.compiling_tmod') }}</template>
+                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('modder_tools.compile_tmod_in_place') }}</span></template>
+                        </button>
+                    </div>
+                </div>
+            </div>

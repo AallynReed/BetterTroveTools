@@ -130,8 +130,17 @@ window.BTT_ENABLE_ONBOARDING_TOURS = false;
 // attached by the time the event fires.
 window.BTT_VIEW_SCRIPTS = {
     home: ['js/home.js'],
-    mod_manager: ['js/mod_manager.js'],
-    modder_tools: ['js/modder_tools.js'],
+    mod_manager: ['js/mod_manager/index.js'],
+    modder_tools: [
+        'js/modder_tools/shared.js',
+        'js/modder_tools/index.js',
+        'js/modder_tools/build.js',
+        'js/modder_tools/extract.js',
+        'js/modder_tools/edit_tmod.js',
+        'js/modder_tools/projects.js',
+        'js/modder_tools/qb_editor.js',
+        'js/modder_tools/software.js',
+    ],
     gems_and_builds: [
         'js/gems_and_builds/index.js',
         'js/gems_and_builds/gem_builds.js',
@@ -140,21 +149,21 @@ window.BTT_VIEW_SCRIPTS = {
         'js/gems_and_builds/gem_simulator.js',
     ],
     calculators: ['js/calculators.js'],
-    codexes: ['js/codexes.js'],
+    codexes: ['js/codexes/index.js'],
     settings: ['js/settings.js'],
     about: ['js/about.js'],
 };
 
 // Codex sub-tabs are loaded lazily by codexes.js's loadSubview.
 window.BTT_CODEX_SUBVIEW_SCRIPTS = {
-    allies: 'js/allies.js',
-    mounts: 'js/mounts.js',
-    dragons: 'js/dragons.js',
-    mementos: 'js/mementos.js',
-    recipes: 'js/recipes.js',
-    items: 'js/items.js',
-    fish: 'js/fish.js',
-    badges: 'js/badges.js',
+    allies: 'js/codexes/allies.js',
+    mounts: 'js/codexes/mounts.js',
+    dragons: 'js/codexes/dragons.js',
+    mementos: 'js/codexes/mementos.js',
+    recipes: 'js/codexes/recipes.js',
+    items: 'js/codexes/items.js',
+    fish: 'js/codexes/fish.js',
+    badges: 'js/codexes/badges.js',
 };
 
 window.AppSettings = {
@@ -2393,7 +2402,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 window.getSelectedCodexGamePath = null;
             }
 
-            const response = await fetch(`views/${target}.html`, { signal: activeViewLoadController.signal });
+            const response = await fetch(`views/${target}.html`, { signal: activeViewLoadController.signal, cache: 'no-store' });
             if (loadToken !== activeViewLoadToken) return false;
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             

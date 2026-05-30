@@ -1,0 +1,262 @@
+<head>
+    <link rel="stylesheet" href="css/modder_tools/file_manager.css">
+</head>
+
+<div id="file-manager-vue-app" class="file-manager-container" v-cloak>
+    
+    <div class="tabs-container">
+        <div class="tab-buttons" style="margin-bottom: 20px;">
+            <button class="tab-btn" :class="{ active: activeTab === 'tab-explorer' }" @click="setActiveTab('tab-explorer')" :disabled="isAnyOperationRunning && activeTab !== 'tab-explorer'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('common.file_explorer') }}</span></button>
+            <button class="tab-btn" :class="{ active: activeTab === 'tab-tracker' }" @click="setActiveTab('tab-tracker')" :disabled="isAnyOperationRunning && activeTab !== 'tab-tracker'"><i class="fa-solid fa-satellite-dish"></i> <span>{{ t('common.update_tracker') }}</span></button>
+        </div>
+
+        <div v-show="activeTab === 'tab-explorer'" class="tab-content" :class="{ active: activeTab === 'tab-explorer' }">
+            <div class="file-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                <custom-vue-select v-model="selectedInstall" :options="installOptions" :translate-options="false" style="flex-grow: 1;"></custom-vue-select>
+                <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('common.open_selected_game_folder')" :disabled="!selectedInstall || isAnyOperationRunning">
+                    <i class="fa-solid fa-folder-open"></i>
+                </button>
+                
+                <button @click="scanForGames" class="primary-btn" :title="t('common.refresh_detected_games')" :disabled="isAnyOperationRunning">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button @click="loadTree" class="primary-btn" :disabled="isAnyOperationRunning || isLoadingTree || !selectedInstall">
+                    <i class="fa-solid fa-box-archive"></i> <span>{{ t('file_manager.load_archives') }}</span>
+                </button>
+                <button @click="collapseAll" class="primary-btn" :title="t('file_manager.collapse_all_folders')" :disabled="isAnyOperationRunning || !isTreeLoaded">
+                    <i class="fa-solid fa-folder-minus"></i> <span>{{ t('file_manager.collapse') }}</span>
+                </button>
+                <button @click="selectAllFiles" class="primary-btn" :disabled="isAnyOperationRunning || isSelectionPending || !isTreeLoaded">
+                    <i class="fa-solid fa-check-to-slot"></i> <span>{{ t('file_manager.select_all') }}</span>
+                </button>
+                <button
+                    @click="selectVisible"
+                    class="primary-btn"
+                    :class="{ 'is-filter-required': !isSearching }"
+                    :title="isSearching ? t('file_manager.select_only_the_currently_filtered_files') : t('file_manager.select_visible_requires_an_active_search_af07fc')"
+                    :disabled="isAnyOperationRunning || isSelectionPending || !isTreeLoaded || !isSearching">
+                    <i class="fa-solid fa-check-double"></i> <span>{{ t('file_manager.select_visible') }}</span>
+                </button>
+            </div>
+
+            <div class="search-container" style="margin-top: 20px;">
+                <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                    <input type="text" id="tree-search" v-model="searchQuery" @input="debouncedSearch" :placeholder="t('file_manager.search_files_e_g_swf_dragon_ui')" />
+                    <button @click="clearSearch" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+                </div>
+                <button class="secondary-btn" @click="prevSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-up"></i></button>
+                <button class="secondary-btn" @click="nextSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-down"></i></button>
+                <span class="file-meta" style="font-size: 12px; color: var(--accent-blue); font-weight: bold;">{{ searchCountText }}</span>
+            </div>
+            <div class="search-helper-row">
+                <span>{{ t('file_manager.search_starts_after_4_characters_and_aut_92af6e') }}</span>
+                <span>{{ t('file_manager.tip_use_select_visible_after_filtering_t_28ece0') }}</span>
+            </div>
+            <div v-if="showOnboardingTips" class="onboarding-tour">
+                <div class="onboarding-tour-header">
+                    <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('file_manager.quick_tour_file_explorer') }}</span>
+                    <button class="onboarding-dismiss" @click="dismissOnboardingTips">{{ t('common.skip_tour') }}</button>
+                </div>
+                <ol class="onboarding-tour-steps">
+                    <li>{{ t('file_manager.choose_install_then_click_load_archives') }}</li>
+                    <li>{{ t('file_manager.search_starts_at_4_characters_and_opens_6326a6') }}</li>
+                    <li>{{ t('file_manager.use_select_visible_to_batch_select_only_8cd600') }}</li>
+                </ol>
+                <div class="onboarding-tour-actions">
+                    <button class="secondary-btn" @click="focusSearchInput"><i class="fa-solid fa-magnifying-glass"></i> {{ t('common.show_me_search') }}</button>
+                    <button class="secondary-btn" @click="dismissOnboardingTips">{{ t('common.done') }}</button>
+                </div>
+            </div>
+            <div v-if="showSearchShortcutHint" class="search-shortcut-hint">
+                <span>{{ t('file_manager.shortcuts_ctrl_cmd_f_focus_search_arrow_887ea8') }}</span>
+                <button class="search-shortcut-dismiss" @click="dismissSearchShortcutHint" :title="t('common.hide_this_tip')" aria-label="Hide this tip">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="file-tree-shell">
+                <div id="file-tree" ref="treeContainerRef" @toggle.capture="onTreeToggle" @change="onTreeChange" :class="{ searching: isSearching }"></div>
+                <div v-if="isSearchPending || isSelectionPending" class="file-tree-busy-overlay is-blocking">
+                    <div class="file-tree-busy-card">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                        <span>{{ isSelectionPending ? t('file_manager.applying_selection') : t('file_manager.searching_files') }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div v-show="!isTreeLoaded" class="placeholder-box">
+                <h3 v-if="isLoadingTree"><i class="fa-solid fa-spinner fa-spin"></i> {{ treePlaceholderText }}</h3>
+                <span v-else>{{ treePlaceholderText }}</span>
+            </div>
+        </div>
+
+            <div v-show="activeTab === 'tab-tracker'" class="tab-content" :class="{ active: activeTab === 'tab-tracker' }">
+            <div class="tool-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>{{ t('common.update_tracker') }}</h3>
+                    <span class="tracker-mode-pill">{{ t('file_manager.guided') }}</span>
+                </div>
+                <p class="help-text">{{ t('file_manager.track_game_updates_generate_patch_baseli_e69db7') }}</p>
+                <div class="tracker-steps">
+                    <div class="tracker-step" :class="{ active: !!selectedTrackerGame }">
+                        <span class="tracker-step-num">1</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('file_manager.pick_trove_path') }}</div>
+                            <div class="tracker-step-copy">{{ t('file_manager.choose_the_install_you_want_to_monitor_f_eb5c73') }}</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" :class="{ active: !!selectedTrackingDir }">
+                        <span class="tracker-step-num">2</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('file_manager.pick_tracking_folder') }}</div>
+                            <div class="tracker-step-copy">{{ t('file_manager.store_your_baseline_hashes_and_extracted_ddb930') }}</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" :class="{ active: trackerStatus.state === 'baseline' }">
+                        <span class="tracker-step-num">3</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('file_manager.build_baseline_cache') }}</div>
+                            <div class="tracker-step-copy">{{ t('file_manager.run_this_once_before_you_try_scanning_fo_eaa986') }}</div>
+                        </div>
+                    </div>
+                    <div class="tracker-step" :class="{ active: trackerStatus.state === 'baseline' }">
+                        <span class="tracker-step-num">4</span>
+                        <div>
+                            <div class="tracker-step-title">{{ t('Scan & Extract Updates') }}</div>
+                            <div class="tracker-step-copy">{{ t('file_manager.after_a_patch_compare_against_the_baseli_8169f6') }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>{{ t('file_manager.target_trove_installation') }}</label>
+                    <div class="input-row">
+                        <custom-vue-select v-model="selectedTrackerGame" :options="installOptions" :translate-options="false" style="flex-grow: 1;"></custom-vue-select>
+                        <button @click="openSelectedTrackerGameFolder" class="primary-btn" :title="t('common.open_selected_game_folder')" :disabled="!selectedTrackerGame || isAnyOperationRunning">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>{{ t('file_manager.tracking_directory_where_to_save_hashes_bb2428') }}</label>
+                    <div class="input-row">
+                        <custom-vue-select v-model="selectedTrackingDir" :options="trackingDirOptions" style="flex-grow: 1;"></custom-vue-select>
+                        <button @click="openSelectedTrackingDirFolder" class="primary-btn" :title="t('file_manager.open_selected_tracking_folder')" :disabled="!selectedTrackingDir || isAnyOperationRunning">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </button>
+                        <button @click="modals.addTracker = true" class="primary-btn" :disabled="isAnyOperationRunning"><i class="fa-solid fa-plus"></i> <span>{{ t('file_manager.add_path') }}</span></button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 15px;">
+                    <button class="secondary-btn" @click="showTrackerAdvanced = !showTrackerAdvanced" :disabled="isAnyOperationRunning">
+                        <i class="fa-solid" :class="showTrackerAdvanced ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                        {{ showTrackerAdvanced ? t('file_manager.hide_advanced') : t('file_manager.show_advanced') }}
+                    </button>
+                </div>
+
+                <div v-if="showTrackerOnboardingTips" class="onboarding-tour" style="margin-top: -5px; margin-bottom: 15px;">
+                    <div class="onboarding-tour-header">
+                        <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('file_manager.quick_tour_update_tracker') }}</span>
+                        <button class="onboarding-dismiss" @click="dismissTrackerOnboardingTips">{{ t('common.skip_tour') }}</button>
+                    </div>
+                    <ol class="onboarding-tour-steps">
+                        <li>{{ t('file_manager.add_select_a_tracking_directory_first') }}</li>
+                        <li>{{ t('file_manager.build_baseline_cache_once_for_that_direc_3864bc') }}</li>
+                        <li>{{ t('file_manager.after_baseline_exists_use_scan_extract_u_832973') }}</li>
+                    </ol>
+                    <div class="onboarding-tour-actions">
+                        <button class="secondary-btn" @click="showTrackerAdvanced = true"><i class="fa-solid fa-gears"></i> {{ t('file_manager.show_advanced') }}</button>
+                        <button class="secondary-btn" @click="dismissTrackerOnboardingTips">{{ t('common.done') }}</button>
+                    </div>
+                </div>
+
+                <div v-show="showTrackerAdvanced" class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); width: max-content;">
+                    <input type="checkbox" v-model="runCatalogMode" id="tracker-catalog-toggle" style="width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;">
+                    <label for="tracker-catalog-toggle" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <span>{{ t('file_manager.run_catalog_mode') }}</span>
+                        <i class="fa-solid fa-circle-question" :title="t('file_manager.catalogs_generate_image_previews_of_blue_e06fa5')" style="color: var(--text-muted);"></i>
+                    </label>
+                </div>
+                <div class="placeholder-box" style="margin-top: 20px; padding: 30px 20px;">
+                    <i class="fa-solid fa-circle-info" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i>
+                    <div class="tracker-status-kicker">{{ trackerNextAction }}</div>
+                    <p :style="{ color: trackerStatusColor, fontWeight: 'bold', fontSize: '16px' }">{{ trackerStatus.text }}</p>
+                    <p class="help-text" style="margin-top: 5px; white-space: pre-wrap;">{{ trackerStatus.subText }}</p>
+                    
+                    <div v-show="trackerStatus.state !== 'empty'" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <button @click="buildBaseline" class="primary-btn tracker-build-btn" :class="{ 'is-baseline': trackerStatus.state === 'baseline' }" :disabled="isAnyOperationRunning">
+                            <template v-if="trackerStatus.isBuilding"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('file_manager.building_baseline_cache') }}</template>
+                            <template v-else-if="trackerStatus.state === 'baseline'"><i class="fa-solid fa-rotate-right"></i> {{ t('file_manager.force_rebuild_cache') }}</template>
+                            <template v-else><i class="fa-solid fa-database"></i> {{ t('file_manager.build_baseline_cache') }}</template>
+                        </button>
+                        
+                        <button v-show="trackerStatus.state === 'baseline'" @click="scanUpdates" class="primary-btn" :disabled="isAnyOperationRunning" style="background-color: #28a745;">
+                            <template v-if="trackerStatus.isScanning"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('file_manager.scanning_for_updates') }}</template>
+                            <template v-else><i class="fa-solid fa-satellite-dish"></i> {{ t('Scan & Extract Updates') }}</template>
+                        </button>
+
+                        <button v-if="trackerStatus.isBuilding || trackerStatus.isScanning" @click="cancelTrackerOperation" class="danger-btn">
+                            <i class="fa-solid fa-ban"></i> {{ t('file_manager.cancel_current_operation') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-modal" :class="{ active: modals.addTracker }" style="display: flex;" v-show="modals.addTracker">
+    <div class="tool-panel" style="width: 450px; position: relative; padding-top: 35px;">
+            <span @click="modals.addTracker = false" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;" :style="isAnyOperationRunning ? 'pointer-events: none; opacity: 0.5;' : ''">&times;</span>
+            <h3 style="margin-top: 0; margin-bottom: 20px;">{{ t('file_manager.add_extraction_path') }}</h3>
+        <div class="form-group">
+                <label>{{ t('file_manager.name') }}</label>
+                <input type="text" v-model="newTrackerForm.name" :placeholder="t('file_manager.e_g_trove_pts_live_build')" />
+        </div>
+        <div class="form-group">
+                <label>{{ t('file_manager.directory') }}</label>
+            <div class="input-row">
+                    <input type="text" v-model="newTrackerForm.path" :placeholder="t('file_manager.select_a_folder')" readonly />
+                    <button @click="browseTrackerDir" class="primary-btn" :disabled="isBrowsingTracker || isAnyOperationRunning">
+                        <template v-if="isBrowsingTracker"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                        <template v-else><i class="fa-solid fa-folder-open"></i> {{ t('common.browse') }}</template>
+                    </button>
+            </div>
+        </div>
+            <button @click="saveTrackerDir" class="primary-btn" style="width: 100%; margin-top: 10px; background: var(--accent-blue);" :disabled="!newTrackerForm.name || !newTrackerForm.path || isAnyOperationRunning">{{ t('file_manager.save_path') }}</button>
+    </div>
+</div>
+
+    <div id="extraction-bar" :class="{ active: selectedFilesCount > 0 || progress.active }">
+        <span v-show="!progress.active">
+            <span style="font-weight: bold; color: var(--accent-blue);">{{ selectedFilesCount }}</span> {{ t('file_manager.files_selected') }}
+            ({{ (selectedFilesSize / 1048576).toFixed(2) }} MB)
+        </span>
+    
+        <div v-show="progress.active" class="progress-container">
+        <div class="progress-track" :aria-label="t('file_manager.extraction_progress')" role="progressbar" :aria-valuenow="progress.percent" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-fill" :style="{ width: progress.percent + '%' }"></div>
+            <span class="progress-percent">{{ progress.percent }}%</span>
+        </div>
+            <details style="width: 100%;">
+                <summary style="cursor: pointer; color: var(--text-muted); font-size: 12px;">{{ t('file_manager.details') }}</summary>
+                <div style="font-size: 12px; color: var(--text-main); display: grid; gap: 3px; margin-top: 6px;">
+                    <span v-if="progress.status">{{ t('file_manager.status') }} {{ progress.status }}</span>
+                    <span v-if="progress.elapsed">{{ t('file_manager.elapsed') }} {{ progress.elapsed }}</span>
+                    <span v-if="progress.eta">{{ t('file_manager.eta') }} {{ progress.eta }}</span>
+                    <span v-if="progress.filename">{{ t('file_manager.current') }} {{ progress.filename }}</span>
+                </div>
+            </details>
+    </div>
+
+        <button v-show="!progress.active" @click="massExtract" class="primary-btn" :disabled="isAnyOperationRunning || isMassExtracting">
+            <template v-if="isMassExtracting"><i class="fa-solid fa-spinner fa-spin"></i></template>
+            <template v-else><i class="fa-solid fa-file-export"></i> {{ t('file_manager.extract_selected') }}</template>
+        </button>
+
+        <button v-show="!progress.active && selectedFilesCount > 0" @click="clearSelectedFiles" class="secondary-btn" :disabled="isAnyOperationRunning">
+            <i class="fa-solid fa-eraser"></i> {{ t('file_manager.clear_selection') }}
+        </button>
+    </div>
+</div>

@@ -21,24 +21,24 @@ os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
 import backend.about
-import backend.allies
-import backend.badges
+import backend.codexes.allies
+import backend.codexes.badges
 import backend.calculators
-import backend.file_manager
-import backend.fish
+import backend.modder_tools.file_manager
+import backend.codexes.fish
 import backend.gems_and_builds.gem_builds
 import backend.gems_and_builds.gem_evaluator
 import backend.gems_and_builds.gem_simulator
 import backend.home
-import backend.items
-import backend.mementos
-import backend.mounts
-import backend.mod_manager
-import backend.modder_tools
-import backend.recipes
+import backend.codexes.items
+import backend.codexes.mementos
+import backend.codexes.mounts
+import backend.mod_manager.mod_manager
+import backend.modder_tools.modder_tools
+import backend.codexes.recipes
 import backend.settings
 import backend.gems_and_builds.star_chart
-import backend.trovesaurus
+import backend.mod_manager.trovesaurus
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)
@@ -673,12 +673,12 @@ def warm_codex_caches():
         return  # no valid Trove install detected -> nothing to warm
 
     try:
-        from backend.allies import _build_allies_from_game_files
-        from backend.mounts import _build_mounts_from_game_files
-        from backend.mementos import _build_mementos_from_game_files
-        from backend.recipes import _build_recipes_from_game_files
-        from backend.items import _build_items_from_game_files
-        from backend.fish import _build_fish_from_game_files
+        from backend.codexes.allies import _build_allies_from_game_files
+        from backend.codexes.mounts import _build_mounts_from_game_files
+        from backend.codexes.mementos import _build_mementos_from_game_files
+        from backend.codexes.recipes import _build_recipes_from_game_files
+        from backend.codexes.items import _build_items_from_game_files
+        from backend.codexes.fish import _build_fish_from_game_files
     except Exception:
         return
 

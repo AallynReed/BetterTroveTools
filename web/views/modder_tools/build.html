@@ -1,0 +1,119 @@
+            <div class="tool-panel">
+                <div class="build-split-layout">
+                    <div class="build-left-col">
+                        <div class="form-group">
+                            <label>{{ t('modder_tools.mod_preview') }}</label>
+                            <div class="mod-preview-picker" :title="t('modder_tools.click_to_select_preview_image')" @click="chooseBuildPreview">
+                                <img :src="build.preview || 'assets/images/no_preview.png'" alt="Mod Preview">
+                                <div class="preview-overlay">
+                                    <i class="fa-solid fa-camera"></i>
+                                    <span>{{ t('modder_tools.change_image') }}</span>
+                                </div>
+                                <button type="button" class="remove-preview-btn" v-show="build.preview" @click.stop="build.preview = ''; build.previewName = ''" :title="t('modder_tools.remove_preview')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label>{{ t('modder_tools.config_file_cfg') }}</label>
+                            <div class="input-row">
+                                <input type="text" :value="build.configName" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
+                                <button class="primary-btn" @click="chooseBuildConfig">
+                                    <i class="fa-solid fa-file-lines"></i> <span>{{ t('common.browse') }}</span>
+                                </button>
+                                <button type="button" class="icon-btn-small danger" v-show="build.config" @click="build.config = ''; build.configName = ''" :title="t('modder_tools.remove_config_file')">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="build-right-col">
+                        <div class="form-group">
+                            <label>{{ t('modder_tools.target_game_installation') }}</label>
+                            <div class="input-row">
+                                <custom-vue-select v-model="store.selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;" :class="{ 'field-invalid': isBuildFieldInvalid('gamePath') }"></custom-vue-select>
+                                <button class="primary-btn" @click="openSelectedGamePath" :disabled="!store.selectedGamePath" :title="t('common.open_selected_game_folder')">
+                                    <i class="fa-solid fa-folder-open"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label>{{ t('modder_tools.mod_title') }}</label>
+                                <input type="text" v-model="build.title" :placeholder="t('modder_tools.my_awesome_mod')" :class="{ 'field-invalid': isBuildFieldInvalid('title') }">
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label>{{ t('modder_tools.authors') }}</label>
+                                <input type="text" v-model="build.author" :placeholder="t('modder_tools.author_1_author_2')" :class="{ 'field-invalid': isBuildFieldInvalid('author') }">
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>{{ t('modder_tools.version') }}</label>
+                                <input type="text" v-model="build.version" :class="{ 'field-invalid': isBuildFieldInvalid('version') }">
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 25px 0;">
+
+                <div class="form-group">
+                    <div class="form-group">
+                        <label>{{ t('modder_tools.notes') }}</label>
+                        <textarea v-model="build.notes" rows="3" maxlength="220" :placeholder="t('modder_tools.enter_mod_description_or_notes')" :class="{ 'field-invalid': isBuildFieldInvalid('notes') }"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;">
+                            <label>{{ t('modder_tools.tags') }}</label>
+                            <div :class="{ 'field-invalid': isBuildFieldInvalid('tags') }">
+                                <select2 v-model="build.tags" :options="store.tagOptions" :placeholder="t('modder_tools.select_categories')"></select2>
+                            </div>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label>{{ t('modder_tools.subtype') }}</label>
+                            <custom-vue-select v-model="build.subtype" :options="store.subtypeOptions" style="flex: 1;"></custom-vue-select>
+                        </div>
+                    </div>
+                    <div class="input-row" style="margin-bottom: 10px;">
+                        <button class="primary-btn" @click="detectBuildOverrides" :disabled="store.isWorking.detectingOverrides"><i class="fa-solid" :class="store.isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('modder_tools.detect_overrides') }}</span></button>
+                        <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_file') }}</span></button>
+                        <button class="primary-btn" @click="autoStructureBuild" :disabled="store.isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="store.isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.auto_fix_file_locations') }}</span></button>
+                    </div>
+                    <div class="table-container" :class="{ 'field-invalid': isBuildFieldInvalid('files') }" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                            <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                <tr>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
+                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="file in build.files" :key="file.path">
+                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('modder_tools.click_to_open_containing_folder')" style="color: var(--text-main); font-size: 13px; word-break: break-all; cursor: pointer;">
+                                        <div>{{ file.internal_path }}</div>
+                                        <div style="color: var(--text-muted); font-size: 11px;">{{ file.path }}</div>
+                                    </td>
+                                    <td style="text-align: right;"><button class="icon-btn-small danger" :title="t('modder_tools.remove_file')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
+                                </tr>
+                                <tr v-if="build.files.length === 0">
+                                    <td colspan="2" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('modder_tools.no_files_added') }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="input-row" style="margin-top: 10px; align-items: stretch;">
+                    <button class="primary-btn execute-btn" @click="buildTMod" :disabled="store.isWorking.buildingTMod" style="margin-top: 0; flex: 1;">
+                        <template v-if="store.isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.compiling_tmod') }}</template>
+                        <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('modder_tools.build_tmod') }}</span></template>
+                    </button>
+                    <button class="primary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('modder_tools.open_built_tmod_folder')" style="min-width: 44px; padding: 0 12px;">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </button>
+                </div>
+            </div>

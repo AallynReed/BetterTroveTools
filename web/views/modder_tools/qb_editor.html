@@ -1,0 +1,502 @@
+            <div class="tool-panel qb-editor-panel">
+                <div class="qb-toolbar">
+                    <div>
+                        <h3>{{ t('modder_tools.voxel_editor') }}</h3>
+                        <p class="help-text" style="margin-bottom: 0;">
+                            {{ t('modder_tools.open_a_qb_file_or_a_trove_blueprint_pack_bb1f77') }}
+                        </p>
+                    </div>
+                    <div class="qb-toolbar-actions">
+                        <button class="primary-btn" @click="newQbDocument">
+                            <i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.new') }}</span>
+                        </button>
+                        <button class="primary-btn" @click="openQbDocument">
+                            <i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open') }}</span>
+                        </button>
+                        <button class="primary-btn" @click="saveQbDocument" :disabled="store.isWorking.savingQb">
+                            <template v-if="store.isWorking.savingQb"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
+                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('common.save') }}</span></template>
+                        </button>
+                        <button class="primary-btn" @click="saveQbDocumentAs" :disabled="store.isWorking.savingQb">
+                            <i class="fa-solid fa-file-export"></i> <span>{{ t('modder_tools.save_as') }}</span>
+                        </button>
+                        <button class="primary-btn" @click="openQbFileLocation" :disabled="!qbEditor.path" :title="t('modder_tools.open_qb_file_location')">
+                            <i class="fa-solid fa-folder-tree"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="qb-warning-banner" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>{{ t("modder_tools.this_tool_isn_t_working_correctly_it_is_d7f0b6") }}</span>
+                </div>
+
+                <details class="qb-collapsible-card qb-meta-card">
+                    <summary class="qb-collapsible-summary">
+                        <div>
+                            <strong>{{ t('modder_tools.document_info') }}</strong>
+                            <span>{{ qbPackageActive ? qbContainerName : qbDisplayName }}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </summary>
+                    <div class="qb-collapsible-body">
+                        <div class="qb-summary-bar">
+                            <div class="qb-summary-pill">
+                                <span class="qb-summary-label">{{ qbPackageActive ? t('modder_tools.asset') : t('modder_tools.file') }}</span>
+                                <span class="qb-summary-value">{{ qbDisplayName }}</span>
+                            </div>
+                            <div class="qb-summary-pill" v-if="qbPackageActive">
+                                <span class="qb-summary-label">{{ t('modder_tools.blueprint') }}</span>
+                                <span class="qb-summary-value">{{ qbContainerName }}</span>
+                            </div>
+                            <div class="qb-summary-pill">
+                                <span class="qb-summary-label">{{ t('modder_tools.matrices') }}</span>
+                                <span class="qb-summary-value">{{ qbEditor.matrices.length }}</span>
+                            </div>
+                            <div class="qb-summary-pill">
+                                <span class="qb-summary-label">{{ t('modder_tools.voxels') }}</span>
+                                <span class="qb-summary-value">{{ qbTotalVoxelCount }}</span>
+                            </div>
+                            <div class="qb-summary-pill qb-summary-status" :class="{ dirty: qbHasUnsavedAssets }">
+                                <span class="qb-summary-label">{{ t('modder_tools.status') }}</span>
+                                <span class="qb-summary-value">{{ qbHasUnsavedAssets ? t('modder_tools.unsaved_changes') : t('modder_tools.saved') }}</span>
+                            </div>
+                        </div>
+
+                        <div v-if="qbDecodeInfoRows.length > 0" class="qb-decode-card">
+                            <div class="qb-sidebar-header">
+                                <div>
+                                    <h4>{{ t('modder_tools.decode_insight') }}</h4>
+                                    <span>{{ t('modder_tools.how_this_blueprint_payload_was_interpret_cee86f') }}</span>
+                                </div>
+                            </div>
+                            <div class="qb-decode-grid">
+                                <div v-for="row in qbDecodeInfoRows" :key="row.label" class="qb-decode-pill">
+                                    <span class="qb-summary-label">{{ t(row.label) }}</span>
+                                    <strong class="qb-summary-value">{{ row.value }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qb-settings-grid">
+                            <div class="form-group">
+                                <label>{{ t('modder_tools.version') }}</label>
+                                <input type="text" :value="qbVersionLabel" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>{{ t('modder_tools.color_format') }}</label>
+                                <select v-model.number="qbEditor.header.color_format" @change="markQbDirty">
+                                    <option :value="0">{{ t('RGBA') }}</option>
+                                    <option :value="1">{{ t('BGRA') }}</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>{{ t('modder_tools.z_axis_orientation') }}</label>
+                                <select v-model.number="qbEditor.header.z_axis_orientation" @change="markQbDirty">
+                                    <option :value="0">{{ t('modder_tools.left_handed') }}</option>
+                                    <option :value="1">{{ t('modder_tools.right_handed') }}</option>
+                                </select>
+                            </div>
+                            <label class="qb-toggle-card">
+                                <input type="checkbox" v-model="qbEditor.header.compressed" @change="markQbDirty">
+                                <div>
+                                    <strong>{{ t('modder_tools.compressed') }}</strong>
+                                    <span>{{ t('modder_tools.write_slice_compressed_qb_data_when_savi_f62f3d') }}</span>
+                                </div>
+                            </label>
+                            <label class="qb-toggle-card">
+                                <input type="checkbox" v-model="qbEditor.header.visibility_mask_encoded" @change="toggleQbVisibilityMaskMode">
+                                <div>
+                                    <strong>{{ t('modder_tools.visibility_mask_encoded') }}</strong>
+                                    <span>{{ t('modder_tools.use_mask_values_instead_of_alpha_for_vox_086df9') }}</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="qb-layout">
+                    <aside class="qb-matrix-sidebar">
+                        <div v-if="qbPackageActive" class="qb-blueprint-panel">
+                            <div class="qb-sidebar-header">
+                                <div>
+                                    <h4>{{ t('modder_tools.blueprint_assets') }}</h4>
+                                    <span>{{ t('modder_tools.select_an_internal_qb_asset_to_edit') }}</span>
+                                </div>
+                            </div>
+
+                            <div v-if="qbBlueprintAssetRows.length === 0" class="qb-empty-matrices">
+                                {{ t('modder_tools.no_internal_blueprint_assets_were_found') }}
+                            </div>
+
+                            <div v-for="row in qbBlueprintAssetRows" :key="row.id">
+                                <button
+                                    v-if="row.assetId"
+                                    class="qb-asset-item"
+                                    :class="{ active: qbEditor.selectedAssetId === row.assetId }"
+                                    :style="{ paddingLeft: `${12 + (row.depth * 18)}px` }"
+                                    @click="selectQbPackageAsset(row.assetId)"
+                                    :title="row.path"
+                                >
+                                    <span class="qb-asset-item-label">
+                                        <i class="fa-solid" :class="row.kind === 'blueprint' ? 'fa-folder-tree' : 'fa-cube'"></i>
+                                        <span>{{ row.label }}</span>
+                                    </span>
+                                </button>
+
+                                <div
+                                    v-else
+                                    class="qb-asset-group"
+                                    :style="{ paddingLeft: `${12 + (row.depth * 18)}px` }"
+                                    :title="row.path"
+                                >
+                                    <span class="qb-asset-item-label">
+                                        <i class="fa-solid fa-folder-tree"></i>
+                                        <span>{{ row.label }}</span>
+                                    </span>
+                                    <small v-if="row.error">{{ row.error }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="qb-sidebar-header">
+                            <div>
+                                <h4>{{ t('modder_tools.matrices') }}</h4>
+                                <span>{{ t('modder_tools.select_a_matrix_to_edit') }}</span>
+                            </div>
+                            <button class="icon-btn-small" @click="addQbMatrix" :title="t('modder_tools.add_matrix')">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <div v-if="qbEditor.matrices.length === 0" class="qb-empty-matrices">
+                            {{ t('modder_tools.no_matrices_yet_add_one_to_start_editing') }}
+                        </div>
+
+                        <button
+                            v-for="(matrix, index) in qbEditor.matrices"
+                            :key="matrix.name + '_' + index"
+                            class="qb-matrix-item"
+                            :class="{ active: qbEditor.selectedMatrixIndex === index }"
+                            @click="selectQbMatrix(index)"
+                        >
+                            <div class="qb-matrix-item-main">
+                                <strong>{{ matrix.name }}</strong>
+                                <span>{{ matrix.size_x }} x {{ matrix.size_y }} x {{ matrix.size_z }}</span>
+                            </div>
+                            <span class="qb-matrix-item-count">{{ matrix.voxels.length }}</span>
+                        </button>
+
+                        <button class="danger-btn qb-remove-matrix-btn" @click="removeSelectedQbMatrix" :disabled="!selectedQbMatrix">
+                            <i class="fa-solid fa-trash"></i> <span>{{ t('modder_tools.remove_selected_matrix') }}</span>
+                        </button>
+
+                        <details class="qb-collapsible-card qb-paint-panel" open>
+                            <summary class="qb-collapsible-summary">
+                                <div>
+                                    <strong>{{ t('modder_tools.paint_attachment') }}</strong>
+                                    <span>{{ qbEditor.paintColor.toUpperCase() }} - {{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.mask') : t('modder_tools.alpha') }} {{ qbEditor.paintAlpha }}</span>
+                                </div>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </summary>
+                            <div class="qb-collapsible-body">
+                                <div class="form-group">
+                                    <label>{{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.paint_mask') : t('modder_tools.paint_alpha') }}</label>
+                                    <input type="text" v-model.number="qbEditor.paintAlpha">
+                                </div>
+                                <div class="form-group">
+                                    <label>{{ t('modder_tools.paint_color') }}</label>
+                                    <div class="qb-paint-row">
+                                        <input type="color" v-model="qbEditor.paintColor" class="qb-color-input">
+                                        <div class="qb-color-code">{{ qbEditor.paintColor.toUpperCase() }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" v-if="qbLayerReadOnly">
+                                    <div class="qb-readonly-note">
+                                        <i class="fa-solid fa-eye"></i>
+                                        {{ t('modder_tools.read_only_composite_preview_deco_fill_ed_f5c264') }}
+                                    </div>
+                                </div>
+
+                                <div class="form-group" v-if="activeLayerPresets.length">
+                                    <label>{{ t('modder_tools.material_presets') }} <small>({{ qbActiveLayer }})</small></label>
+                                    <div class="qb-material-presets">
+                                        <button
+                                            v-for="opt in activeLayerPresets"
+                                            :key="opt.label"
+                                            type="button"
+                                            class="qb-material-chip"
+                                            :class="{ active: qbEditor.paintColor.toUpperCase() === rgbToHex(opt.rgb).toUpperCase() }"
+                                            :title="opt.description"
+                                            @click="applyMaterialPreset(opt)"
+                                        >
+                                            <span class="qb-material-swatch" :style="{ background: rgbToHex(opt.rgb) }"></span>
+                                            <span>{{ opt.label }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="qb-paint-actions">
+                                    <button class="primary-btn" @click="fillQbSlice">
+                                        <i class="fa-solid fa-fill-drip"></i> <span>{{ t('modder_tools.fill_slice') }}</span>
+                                    </button>
+                                    <button class="primary-btn" @click="clearQbSlice" style="background: #a23a3a;">
+                                        <i class="fa-solid fa-eraser"></i> <span>{{ t('modder_tools.clear_slice') }}</span>
+                                    </button>
+                                </div>
+
+                                <div class="qb-attachment-card">
+                                    <div class="qb-attachment-header">
+                                        <strong>
+                                            {{ t('modder_tools.attachment_point') }}
+                                            <span class="qb-attachment-swatch" :title="t('modder_tools.shown_as_pink_in_the_viewers')"></span>
+                                        </strong>
+                                        <span>{{ qbAttachmentStatus.currentLabel }}</span>
+                                    </div>
+                                    <div class="qb-attachment-meta">
+                                        <span v-if="qbCurrentAttachmentPoint">
+                                            {{ qbCurrentAttachmentPoint.x }}, {{ qbCurrentAttachmentPoint.y }}, {{ qbCurrentAttachmentPoint.z }}
+                                        </span>
+                                        <span v-else>
+                                            {{ qbAttachmentStatus.currentCount === 0 ? t('modder_tools.no_pink_attachment_voxel_set') : t('modder_tools.more_than_one_pink_voxel_found') }}
+                                        </span>
+                                    </div>
+                                    <div class="qb-attachment-note">
+                                        {{ qbPackageActive ? t('modder_tools.sync_copies_this_pink_point_to_sibling_q_08d781') : t('modder_tools.set_hovered_turns_the_current_hovered_vo_f8d947') }}
+                                    </div>
+                                    <div class="qb-attachment-actions">
+                                        <button class="qb-tool-btn" @click="focusCurrentQbAttachmentPoint" :disabled="!qbCurrentAttachmentPoint" :title="t('modder_tools.jump_to_the_attachment_slice_and_highlig_f80ebb')">
+                                            <i class="fa-solid fa-crosshairs"></i> <span>{{ t('modder_tools.jump') }}</span>
+                                        </button>
+                                        <button class="qb-tool-btn" @click="setCurrentQbAttachmentPoint()" :disabled="!qbHoveredEditableCell" :title="t('modder_tools.replace_the_current_attachment_point_wit_0cbd36')">
+                                            <i class="fa-solid fa-thumbtack"></i> <span>{{ t('modder_tools.set_hovered') }}</span>
+                                        </button>
+                                        <button class="qb-tool-btn" @click="clearCurrentQbAttachmentPoints()" :disabled="qbAttachmentStatus.currentCount === 0" :title="t('modder_tools.remove_all_attachment_points_from_this_a_ea7b34')">
+                                            <i class="fa-solid fa-ban"></i> <span>{{ t('common.clear') }}</span>
+                                        </button>
+                                    </div>
+                                    <button class="qb-tool-btn qb-attachment-sync" @click="syncAttachmentPointAcrossPackageFamily" :disabled="!qbPackageActive || !qbCurrentAttachmentPoint || qbAttachmentStatus.familyCount < 2" :title="t('modder_tools.copy_this_attachment_point_to_sibling_pa_e9b873')">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                        <span>{{ t('modder_tools.sync_across_package_maps') }}</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </details>
+                    </aside>
+
+                    <section class="qb-editor-workspace">
+                        <div v-if="!selectedQbMatrix" class="qb-empty-state">
+                            <i class="fa-solid fa-cubes-stacked"></i>
+                            <p>{{ t('modder_tools.no_matrix_selected_add_a_matrix_or_open_136f1a') }}</p>
+                        </div>
+
+                        <template v-else>
+                            <div class="qb-workspace-top">
+                                <details class="qb-collapsible-card qb-matrix-form">
+                                    <summary class="qb-collapsible-summary">
+                                        <div>
+                                            <strong>{{ t('modder_tools.matrix_settings') }}</strong>
+                                            <span>{{ selectedQbMatrix.name }} - {{ selectedQbMatrix.size_x }} x {{ selectedQbMatrix.size_y }} x {{ selectedQbMatrix.size_z }}</span>
+                                        </div>
+                                        <i class="fa-solid fa-chevron-down"></i>
+                                    </summary>
+                                    <div class="qb-collapsible-body">
+                                        <div class="form-row">
+                                            <div class="form-group" style="flex: 2;">
+                                                <label>{{ t('modder_tools.matrix_name') }}</label>
+                                                <input type="text" v-model="qbMatrixForm.name">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('modder_tools.pos_x') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.pos_x">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('modder_tools.pos_y') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.pos_y">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('modder_tools.pos_z') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.pos_z">
+                                            </div>
+                                        </div>
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label>{{ t('modder_tools.size_x') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.size_x">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('modder_tools.size_y') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.size_y">
+                                            </div>
+                                            <div class="form-group">
+                                                <label>{{ t('modder_tools.size_z') }}</label>
+                                                <input type="text" v-model.number="qbMatrixForm.size_z">
+                                            </div>
+                                            <div class="form-group qb-matrix-apply-wrap">
+                                                <label>&nbsp;</label>
+                                                <button class="primary-btn" @click="applyQbMatrixForm">
+                                                    <i class="fa-solid fa-wrench"></i> <span>{{ t('modder_tools.apply_matrix_changes') }}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
+
+                            </div>
+
+                            <div class="qb-display-toolbar">
+                                <div class="qb-view-mode-toggle" role="tablist" :aria-label="t('modder_tools.qb_view_mode')">
+                                    <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '3d' }" @click="setQbViewMode('3d')">
+                                        <i class="fa-solid fa-cubes"></i> <span>{{ t('modder_tools.3d_edit') }}</span>
+                                    </button>
+                                    <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '2d' }" @click="setQbViewMode('2d')">
+                                        <i class="fa-solid fa-table-cells-large"></i> <span>{{ t('modder_tools.2d_slice') }}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="qb-viewport-card" v-if="qbEditor.viewMode === '3d'">
+                                <div class="qb-canvas-header">
+                                    <strong>{{ t('modder_tools.3d_viewport') }}</strong>
+                                    <div class="qb-viewport-header-inline">
+                                        <strong>{{ qbActiveToolLabel }}</strong>
+                                        <span>{{ t('modder_tools.visible_in_clip') }}: {{ qbVisibleVoxelCount }}</span>
+                                        <div class="form-group qb-inline-clip">
+                                            <select v-model="qbEditor.clipMode">
+                                                <option value="off">{{ t('modder_tools.show_all') }}</option>
+                                                <option value="below">{{ t('modder_tools.show_up_to_slice') }}</option>
+                                                <option value="slice">{{ t('modder_tools.only_current_slice') }}</option>
+                                            </select>
+                                        </div>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" @click="resetQbView" :title="t('modder_tools.reset_view')" :aria-label="t('modder_tools.reset_view')">
+                                            <i class="fa-solid fa-compass-drafting"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="qb-viewport-shell">
+                                    <div class="qb-tool-rail">
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'orbit' }" @click="setQbTool('orbit')" :title="t('modder_tools.orbit')" :aria-label="t('modder_tools.orbit')">
+                                            <i class="fa-solid fa-arrows-rotate"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'pan' }" @click="setQbTool('pan')" :title="t('modder_tools.pan')" :aria-label="t('modder_tools.pan')">
+                                            <i class="fa-solid fa-hand"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'paint' }" @click="setQbTool('paint')" :title="t('modder_tools.paint')" :aria-label="t('modder_tools.paint')">
+                                            <i class="fa-solid fa-paintbrush"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'add' }" @click="setQbTool('add')" :title="t('modder_tools.add')" :aria-label="t('modder_tools.add')">
+                                            <i class="fa-solid fa-cube"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'erase' }" @click="setQbTool('erase')" :title="t('modder_tools.erase')" :aria-label="t('modder_tools.erase')">
+                                            <i class="fa-solid fa-eraser"></i>
+                                        </button>
+                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'sample' }" @click="setQbTool('sample')" :title="t('modder_tools.sample')" :aria-label="t('modder_tools.sample')">
+                                            <i class="fa-solid fa-eye-dropper"></i>
+                                        </button>
+                                    </div>
+
+                                    <div class="qb-viewport-wrap">
+                                        <canvas
+                                            ref="qbViewportCanvasRef"
+                                            class="qb-viewport-canvas"
+                                            @mousedown="onQbViewportMouseDown"
+                                            @mousemove="onQbViewportMouseMove"
+                                            @mouseleave="onQbViewportMouseLeave"
+                                            @wheel.prevent="onQbViewportWheel"
+                                        ></canvas>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="qb-slice-toolbar" v-if="qbEditor.viewMode === '2d' || qbEditor.clipMode !== 'off'">
+                                <div class="qb-slice-controls">
+                                    <button class="icon-btn-small" @click="stepQbSlice(-1)" :disabled="qbEditor.selectedSlice <= 0" :title="t('modder_tools.previous_slice')">
+                                        <i class="fa-solid fa-chevron-left"></i>
+                                    </button>
+                                    <div class="qb-slice-readout">
+                                        <strong>{{ t('modder_tools.z_slice') }}</strong>
+                                        <span>{{ qbEditor.selectedSlice + 1 }} / {{ selectedQbMatrix.size_z }}</span>
+                                    </div>
+                                    <button class="icon-btn-small" @click="stepQbSlice(1)" :disabled="qbEditor.selectedSlice >= selectedQbMatrix.size_z - 1" :title="t('modder_tools.next_slice')">
+                                        <i class="fa-solid fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                                <input type="range" min="0" :max="Math.max(0, selectedQbMatrix.size_z - 1)" v-model.number="qbEditor.selectedSlice" class="qb-slice-range">
+                                <div class="qb-slice-zoom" v-if="qbEditor.viewMode === '2d'">
+                                    <label>{{ t('modder_tools.cell_size') }}</label>
+                                    <input type="range" min="12" max="34" v-model.number="qbEditor.sliceZoom">
+                                </div>
+                            </div>
+
+                            <div class="qb-canvas-card" v-if="qbEditor.viewMode === '2d'">
+                                <div class="qb-canvas-header">
+                                    <div>
+                                        <strong>{{ t('modder_tools.slice_painter') }}</strong>
+                                        <span>{{ t('modder_tools.left_click_to_paint_right_click_to_erase_247ce5') }}</span>
+                                    </div>
+                                    <div class="qb-hover-readout">
+                                        <template v-if="qbHoverSummary">
+                                            <strong>{{ qbHoverSummary.coords }}</strong>
+                                            <span>{{ qbHoverSummary.color }}</span>
+                                        </template>
+                                        <template v-else>
+                                            <span>{{ t('modder_tools.hover_a_cell_to_inspect_it') }}</span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="qb-canvas-wrap">
+                                    <canvas
+                                        ref="qbCanvasRef"
+                                        class="qb-slice-canvas"
+                                        @mousedown="onQbCanvasMouseDown"
+                                        @mousemove="onQbCanvasMouseMove"
+                                        @mouseleave="onQbCanvasMouseLeave"
+                                    ></canvas>
+                                </div>
+                            </div>
+
+                            <div class="qb-slice-table-card" v-if="qbEditor.viewMode === '2d'">
+                                <div class="qb-slice-table-header">
+                                    <strong>{{ t('modder_tools.current_slice_voxels') }}</strong>
+                                    <span>{{ qbSliceVoxels.length }} {{ t('modder_tools.voxel_s') }}</span>
+                                </div>
+                                <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                        <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+                                            <tr>
+                                                <th style="padding: 8px 10px;">{{ t('modder_tools.coord') }}</th>
+                                                <th style="padding: 8px 10px;">{{ t('modder_tools.color') }}</th>
+                                                <th style="padding: 8px 10px;">{{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.mask') : t('modder_tools.alpha') }}</th>
+                                                <th style="padding: 8px 10px; width: 74px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-if="qbSliceVoxels.length === 0">
+                                                <td colspan="4" style="padding: 10px; color: var(--text-muted); text-align: center;">{{ t('modder_tools.no_visible_voxels_in_this_slice') }}</td>
+                                            </tr>
+                                            <tr v-for="voxel in qbSliceVoxels" :key="voxel.key">
+                                                <td style="padding: 8px 10px; font-family: monospace;">{{ voxel.coords }}</td>
+                                                <td style="padding: 8px 10px;">
+                                                    <div class="qb-voxel-color-cell">
+                                                        <span class="qb-voxel-swatch" :style="{ background: voxel.swatch }"></span>
+                                                        <span>{{ voxel.color }}</span>
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 8px 10px;">{{ voxel.a }}</td>
+                                                <td style="padding: 8px 10px; text-align: right;">
+                                                    <button class="icon-btn-small" @click="sampleQbVoxel(voxel.raw)" :title="t('modder_tools.sample_color')">
+                                                        <i class="fa-solid fa-eye-dropper"></i>
+                                                    </button>
+                                                    <button class="icon-btn-small danger" @click="removeQbVoxel(voxel.raw)" :title="t('modder_tools.delete_voxel')">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+                    </section>
+                </div>
+            </div>
