@@ -247,7 +247,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                             isUpdating: false,
                             isDeleting: false
                         }));
-                        await Promise.all([applyModUrls(token), applyUpdateFlags(token, false)]);
+                        // Render the list immediately from local data. The Trovesaurus
+                        // enrichment (mod URLs + update badges) needs the network, so run
+                        // it in the BACKGROUND and never block the list on it -- offline
+                        // the mods still show right away, and tsUrl/hasUpdate fill in
+                        // reactively if/when a request succeeds.
+                        if (loadGuard.isCurrent(token)) isLoading.value = false;
+                        Promise.all([applyModUrls(token), applyUpdateFlags(token, false)]).catch(() => {});
                     } catch (err) {
                         if (!loadGuard.isCurrent(token)) return;
                         statusText.value = t('mod_manager.error_reading_mod_data_from_cache');

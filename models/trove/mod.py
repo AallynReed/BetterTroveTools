@@ -627,7 +627,7 @@ class TroveMod:
             pass
             
         try:
-            response = requests.get(url)
+            response = requests.get(url, timeout=60)
             if req_id:
                 eel.remove_external_request(req_id, response.status_code == 200)()
             if response.status_code == 200:
