@@ -86,8 +86,12 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
 
         return _resp(
             True,
-            data={"cached_file": "/api/cache/installed_mods.json"},
+            data={
+                "cached_file": "/api/cache/installed_mods.json",
+                "read_only_configs": mod_list.read_only_configs,
+            },
             cached_file="/api/cache/installed_mods.json",
+            read_only_configs=mod_list.read_only_configs,
         )
 
     except Exception as e:

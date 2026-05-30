@@ -829,6 +829,7 @@ class TroveModList:
 
     def __init__(self, path: TroveGamePath, **kwargs):
         self._mods = []
+        self.read_only_configs = []  # mod names whose .cfg could not be written
         self.trove_path = path
         self._populate(**kwargs)
 
@@ -991,9 +992,15 @@ class TroveModList:
             mod.check_conflicts(self.mods, force)
 
     def _ensure_mod_configs(self):
+        self.read_only_configs = []
         for mod in self.mods:
             if mod.is_ui_mod:
-                mod.ensure_config()
+                try:
+                    mod.ensure_config()
+                except (PermissionError, OSError):
+                    # A read-only / locked .cfg must not abort the whole list
+                    # load. Skip this mod's config sync and report it to the UI.
+                    self.read_only_configs.append(mod.name or "Unknown Mod")
 
     def _populate(self, force=False, fix_names=False, fix_configs=False, partial=False):
         mod_file_cache.clear()

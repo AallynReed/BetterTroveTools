@@ -234,6 +234,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (!loadGuard.isCurrent(token)) return;
 
                 if (response.success) {
+                    const readOnlyCfgs = response.data.read_only_configs || response.raw?.read_only_configs || [];
+                    if (readOnlyCfgs.length) {
+                        window.showToast(t('mod_manager.cfg_read_only_skipped').replace('{mods}', readOnlyCfgs.join(', ')), true);
+                    }
                     const cachePath = response.data.cached_file || response.raw?.cached_file;
                     try {
                         const fetchRes = await fetch(`${cachePath}?t=${Date.now()}`);
