@@ -172,6 +172,17 @@
 }
 
 @media (max-width: 900px) {
+    /* Stack the search row so the input gets a full-width line of its own
+       instead of being crushed to an icon by the action buttons sharing
+       the row. */
+    .items-search-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .items-search-input-wrap {
+        width: 100%;
+    }
+
     .items-toolbar-actions {
         width: 100%;
     }
