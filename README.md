@@ -198,33 +198,30 @@ python main.py
 
 Better Trove Tools is pure Python on Linux — **no native library to compile**.
 
-First install the two system components pywebview and the native file dialogs rely on (these aren't pip‑installable):
-
-| Component | Debian/Ubuntu | Fedora | Arch |
-|---|---|---|---|
-| Webview backend (GTK) | `python3-gi gir1.2-webkit2-4.1` | `python3-gobject webkit2gtk4.1` | `python-gobject webkit2gtk` |
-| File dialogs (Tk) | `python3-tk` | `python3-tkinter` | `tk` |
-
-*(Prefer Qt over GTK? Skip the GTK packages and instead `pip install pyqt6 pyqt6-webengine qtpy` into `.venv-linux/`.)*
-
-**Then, as a desktop app** (adds it to your application menu with an icon):
+pywebview needs a webview backend to open its window. `run.sh` and `install-linux.sh` handle this for you: if no backend is found, they **auto‑install the Qt backend** (`pyqt6 pyqt6-webengine qtpy`) into the venv — fully self‑contained, no system packages required. So the quickest path is just:
 
 ```bash
 # Download BetterTroveTools-<version>-linux.tar.gz from the Releases page
 tar xzf BetterTroveTools-*-linux.tar.gz
 cd BetterTroveTools
-./install-linux.sh
+./install-linux.sh    # venv + deps + Qt backend + a menu launcher & icon
 ```
 
-`install-linux.sh` creates the venv, installs dependencies, and registers a launcher + icon. Launch **Better Trove Tools** from your menu afterwards. (`./install-linux.sh --uninstall` removes the launcher.)
+Launch **Better Trove Tools** from your application menu afterwards (`./install-linux.sh --uninstall` removes the launcher). Or, to run without a menu entry, just `./run.sh`.
 
-**Or just run it** without installing a launcher:
+**Optional — lighter native GTK backend.** Qt's WebEngine is a ~150 MB download. If you'd rather use the system's WebKitGTK, install the packages below **and** create the venv with access to system packages (a plain venv can't see system `gi`), then set `BTT_NO_AUTO_QT=1` so `run.sh` won't pull in Qt:
 
 ```bash
-./run.sh
+sudo apt install python3-gi gir1.2-webkit2-4.1   # Fedora: python3-gobject webkit2gtk4.1 | Arch: python-gobject webkit2gtk
+python3 -m venv --system-site-packages .venv-linux
+BTT_NO_AUTO_QT=1 ./run.sh
 ```
 
-`run.sh` creates `.venv-linux/`, installs `requirements-linux.txt`, checks the system packages above, and launches. Re‑run it any time; pass `--setup` to set up without launching.
+**File dialogs (Tk).** The modder tools' file pickers and Settings' "Browse for folder" use Tk. Install it for those to work (the app runs fine without it otherwise):
+
+```bash
+sudo apt install python3-tk    # Fedora: python3-tkinter | Arch: tk
+```
 
 **What works on Linux:** the full UI, calculators, gems/builds, Star Chart, home dashboard, Trovesaurus browsing, and — when a Trove install is present (e.g. via **Steam/Proton**, which is auto‑detected) — the codexes and mod management, since those only *read* the game files.
 

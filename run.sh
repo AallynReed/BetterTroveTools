@@ -47,22 +47,34 @@ info "Installing Python dependencies (requirements-linux.txt)"
 pip install --quiet --upgrade pip
 pip install --quiet -r "$HERE/requirements-linux.txt"
 
-# --- 3. backend sanity checks (warn, don't block) ----------------------------
-missing_backend=1
-if python -c "import gi; gi.require_version('WebKit2','4.1')" >/dev/null 2>&1 \
-   || python -c "import gi; gi.require_version('WebKit2','4.0')" >/dev/null 2>&1; then
-    missing_backend=0
+# --- 3. webview backend ------------------------------------------------------
+# pywebview needs GTK (system PyGObject + WebKit2) or Qt (pip) to open a window.
+# A plain venv can't see a system-installed `gi`, so the reliable, self-contained
+# path is to pip-install the Qt backend into the venv when nothing is present.
+have_backend() {
+    python -c "import gi; gi.require_version('WebKit2','4.1')" >/dev/null 2>&1 \
+        || python -c "import gi; gi.require_version('WebKit2','4.0')" >/dev/null 2>&1 \
+        || python -c "import PyQt6.QtWebEngineWidgets" >/dev/null 2>&1 \
+        || python -c "import PySide6.QtWebEngineWidgets" >/dev/null 2>&1 \
+        || python -c "import PyQt5.QtWebEngineWidgets" >/dev/null 2>&1
+}
+
+if ! have_backend; then
+    if [ "${BTT_NO_AUTO_QT:-}" = "1" ]; then
+        warn "No pywebview backend found and BTT_NO_AUTO_QT=1, skipping auto-install."
+    else
+        info "No webview backend found. Installing the Qt backend into the venv"
+        info "(one-time, ~150 MB). Prefer lighter native GTK? See README 'Install on Linux'."
+        pip install --quiet pyqt6 pyqt6-webengine qtpy || true
+    fi
 fi
-if [ "$missing_backend" = "1" ] && python -c "import PyQt6.QtWebEngineWidgets" >/dev/null 2>&1; then
-    missing_backend=0
-fi
-if [ "$missing_backend" = "1" ] && python -c "import PyQt5.QtWebEngineWidgets" >/dev/null 2>&1; then
-    missing_backend=0
-fi
-if [ "$missing_backend" = "1" ]; then
-    warn "No pywebview backend detected. The window may fail to open."
-    warn "  GTK (recommended): sudo apt install python3-gi gir1.2-webkit2-4.1"
-    warn "  or Qt:             pip install pyqt6 pyqt6-webengine qtpy"
+
+if ! have_backend; then
+    err "No usable pywebview backend. Install one of:"
+    err "  Qt  (pip, self-contained): pip install pyqt6 pyqt6-webengine qtpy"
+    err "  GTK (lighter, native):     sudo apt install python3-gi gir1.2-webkit2-4.1"
+    err "                             (GTK needs a venv created with --system-site-packages)"
+    exit 1
 fi
 
 if ! python -c "import tkinter" >/dev/null 2>&1; then
