@@ -1,0 +1,6 @@
+# Shell scripts must use LF endings or they fail on Linux ("bad interpreter").
+*.sh text eol=lf
+run.sh text eol=lf
+
+# C source builds the native trove.so on Linux; keep LF.
+*.c text eol=lf

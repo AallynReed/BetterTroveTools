@@ -10,12 +10,18 @@ from utils.archive_parser import TFIndex, TFArchive, TroveFile, hash_archive_blo
 import concurrent.futures
 from utils.registry import get_trove_locations, invalidate_trove_locations_cache
 from utils.helper import read_storage, write_storage
+from utils.path import get_cache_root
+from utils.platform_open import open_in_file_manager
 from utils.executable import find_trove_executable
 from collections import defaultdict
 from backend.settings import get_settings
 
-import tkinter as tk
-from tkinter import filedialog
+try:
+    import tkinter as tk
+    from tkinter import filedialog
+except Exception:  # python3-tk not installed (common on minimal Linux setups)
+    tk = None
+    filedialog = None
 import time
 from datetime import datetime
 import re
@@ -176,7 +182,7 @@ def _index_signature(game_path: Path) -> str:
 def load_entire_game_tree(game_path_str, force_refresh=False):
     try:
         _reset_cancel_flag("load_tree")
-        cache_dir = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
+        cache_dir = get_cache_root()
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir / "temp_tree.json"
         manifest_file = cache_dir / "temp_tree_manifest.json"
@@ -322,12 +328,7 @@ def open_path_in_explorer(path_str, select_file=False):
         if not target.exists():
             return {"success": False, "error": "The selected path does not exist."}
 
-        if select_file and target.is_file():
-            subprocess.Popen(["explorer", "/select,", str(target)])
-            return {"success": True}
-
-        open_target = target.parent if target.is_file() else target
-        subprocess.Popen(["explorer", str(open_target)])
+        open_in_file_manager(target, select_file=select_file)
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}

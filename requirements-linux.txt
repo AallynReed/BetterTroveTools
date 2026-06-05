@@ -1,0 +1,33 @@
+# Python dependencies for running Better Trove Tools from source on Linux.
+#
+# This is the desktop app's runtime set MINUS the Windows-only build tooling
+# (cx-freeze, pythonnet, clr_loader -- those only exist for the Windows MSI).
+#
+# pywebview needs a native webview backend that is NOT pip-installable on Linux.
+# Install ONE of these via your system package manager before launching:
+#
+#   GTK (recommended, lightweight):
+#     Debian/Ubuntu : sudo apt install python3-gi gir1.2-webkit2-4.1
+#     Fedora        : sudo dnf install python3-gobject webkit2gtk4.1
+#     Arch          : sudo pacman -S python-gobject webkit2gtk
+#
+#   Qt (alternative, pip-installable): add `pyqt6 pyqt6-webengine qtpy`
+#
+# Native file dialogs (modder tools / "browse for folder" in Settings) need Tk:
+#     Debian/Ubuntu : sudo apt install python3-tk
+#     Fedora        : sudo dnf install python3-tkinter
+#     Arch          : sudo pacman -S tk
+#
+# run.sh checks for these and tells you what's missing.
+
+aiofiles
+aiohttp
+binary-reader
+bottle
+eel
+gevent
+pydantic
+pywebview
+requests
+toml
+vdf

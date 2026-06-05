@@ -21,6 +21,7 @@ from toml import dumps
 
 from utils.functions import (calculate_hash, chunks, get_attr, read_leb128,
                              write_leb128)
+from utils.path import get_app_data_dir, get_cache_root
 from utils.registry import TroveGamePath
 
 from ..trovesaurus.mods import Mod
@@ -754,7 +755,7 @@ class TMod(TroveMod):
     def ensure_config(self):
         if os.name != "nt":
             return
-        mods_cfgs_path = Path(os.getenv("APPDATA")).joinpath("Trove", "ModCfgs")
+        mods_cfgs_path = get_app_data_dir().joinpath("ModCfgs")
         mods_cfgs_path.mkdir(parents=True, exist_ok=True)
         config_file = mods_cfgs_path.joinpath(f"{self.name}.cfg")
         embedded_config = self.config
@@ -846,8 +847,7 @@ class TroveModList:
         return self.count
     
     def _get_cached_mods_all(self) -> dict:
-        appdata = Path(os.getenv("APPDATA"))
-        cache_dir = appdata.joinpath("Trove", "ModManagerCache")
+        cache_dir = get_cache_root()
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir.joinpath("trovesaurus_mods_all.json")
 

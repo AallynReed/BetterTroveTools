@@ -11,6 +11,7 @@ import requests
 
 from backend.mod_manager.mod_manager import delete_mod
 from models.trove.mod import TroveModList
+from utils.path import get_cache_root
 from utils.registry import TroveGamePath
 
 _local_hash_cache = {}
@@ -28,8 +29,7 @@ def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
     return payload
 
 def _get_cached_api(endpoint, cache_filename, expiry=900):
-    appdata = Path(os.getenv("APPDATA"))
-    cache_dir = appdata.joinpath("Trove", "ModManagerCache")
+    cache_dir = get_cache_root()
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file = cache_dir.joinpath(cache_filename)
 
@@ -415,8 +415,7 @@ def open_url_in_browser(url):
 @eel.expose
 def clear_trovesaurus_cache():
     try:
-        appdata = Path(os.getenv("APPDATA"))
-        cache_dir = appdata.joinpath("Trove", "ModManagerCache")
+        cache_dir = get_cache_root()
         removed = []
         for filename in ["mods_all.json", "mods_hot.json"]:
             file_path = cache_dir / filename

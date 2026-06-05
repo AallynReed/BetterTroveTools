@@ -173,6 +173,8 @@ The desktop app renders its interface in the **Microsoft Edge WebView2 runtime**
 
 WebView2 is a standalone component, so it stays installed even if Microsoft Edge itself is removed.
 
+**Linux** renders through pywebview's system backend instead — **WebKit2GTK** (recommended) or **Qt WebEngine**. See [Run on Linux](#run-on-linux) below. Windows remains the primary, fully‑featured target; Linux runs the same UI and tools, with Windows‑only bits (self‑update, FPS patching, the registry‑based auto‑detect) gracefully disabled.
+
 ---
 
 ## Getting started
@@ -191,6 +193,29 @@ The app keeps itself up to date: when a newer release is available it offers a o
 pip install -r requirements.txt
 python main.py
 ```
+
+### Run on Linux
+
+Better Trove Tools runs from source on Linux. A helper script handles the venv, Python deps, and building the small native hash helper (`trove.so`):
+
+```bash
+./run.sh
+```
+
+`run.sh` creates `.venv-linux/`, installs `requirements-linux.txt`, compiles `trove.so` from `trove.c`, sanity‑checks the system packages below, and launches the app. Re‑run it any time; pass `--rebuild` to force‑recompile `trove.so` or `--setup` to set up without launching.
+
+You need two system components pywebview and the native file dialogs rely on (these are **not** pip‑installable):
+
+| Component | Debian/Ubuntu | Fedora | Arch |
+|---|---|---|---|
+| Webview backend (GTK) | `python3-gi gir1.2-webkit2-4.1` | `python3-gobject webkit2gtk4.1` | `python-gobject webkit2gtk` |
+| File dialogs (Tk) | `python3-tk` | `python3-tkinter` | `tk` |
+
+Prefer Qt over GTK? Skip the GTK packages and instead `pip install pyqt6 pyqt6-webengine qtpy` into `.venv-linux/`.
+
+**What works on Linux:** the full UI, calculators, gems/builds, Star Chart, home dashboard, Trovesaurus browsing, and — when a Trove install is present (e.g. via **Steam/Proton**, which is auto‑detected) — the codexes and mod management, since those only *read* the game files.
+
+**What's Windows‑only:** the in‑app self‑updater, the FPS patcher, and "Test in Game" (these run/modify the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (you can point it at any valid Trove folder manually).
 
 ---
 

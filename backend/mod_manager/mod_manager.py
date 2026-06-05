@@ -10,6 +10,7 @@ import requests
 
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
+from utils.path import get_cache_root
 
 
 def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
@@ -25,7 +26,7 @@ def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
 
 
 def _cache_root():
-    root = Path(os.getenv("APPDATA")) / "Trove" / "ModManagerCache"
+    root = get_cache_root()
     root.mkdir(parents=True, exist_ok=True)
     return root
 

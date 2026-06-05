@@ -4,17 +4,20 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
-import winreg
 from pathlib import Path
+
+if sys.platform == "win32":
+    import winreg
 
 import bottle
 import eel
 import requests
 import webview
 from gevent.exceptions import ConcurrentObjectUseError
+
+from utils.path import get_app_data_dir, get_cache_root
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
@@ -50,7 +53,7 @@ else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     DEV_MODE = True
 
-IPC_LOCK_FILE = Path(os.getenv('APPDATA', '')) / 'Trove' / 'btt_ipc.lock'
+IPC_LOCK_FILE = get_app_data_dir() / 'btt_ipc.lock'
 
 try:
     with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as _meta_file:
@@ -292,13 +295,6 @@ def get_app_metadata():
             return json.load(f)
     except Exception:
         return {}
-
-
-def get_cache_root():
-    appdata = os.getenv("APPDATA")
-    if appdata:
-        return Path(appdata) / "Trove" / "ModManagerCache"
-    return Path(tempfile.gettempdir()) / "BetterTroveToolsCache"
 
 
 def _safe_asset_name(asset_name, version_tag):
@@ -636,7 +632,13 @@ if not webview2_runtime_installed():
             pass
     sys.exit(1)
 
-webview_storage_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'WebView2')
+webview_storage_path = str(get_app_data_dir() / 'WebView2')
+try:
+    # GTK/WebKit (Linux) expects the data dir to exist; WebView2 (Windows) is
+    # happy either way. Create it defensively so the backend never fails to init.
+    Path(webview_storage_path).mkdir(parents=True, exist_ok=True)
+except OSError:
+    pass
 
 print("✅ Starting app...")
 

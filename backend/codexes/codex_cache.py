@@ -13,8 +13,26 @@ later opens. They all want the same three behaviours, so they live here once:
 from __future__ import annotations
 
 import json
+import tempfile
 import threading
+from pathlib import Path
 from typing import Callable
+
+from utils.path import get_cache_root
+
+
+def cache_root_candidates(subdir: str = "codexes_cache") -> list[Path]:
+    """Ordered list of writable cache directories shared by every codex.
+
+    Per-user app cache first, OS temp-dir fallback second. On Windows the first
+    resolves to %APPDATA%/Trove/ModManagerCache/<subdir>; on Linux to
+    ~/.local/share/BetterTroveTools/ModManagerCache/<subdir>. The temp fallback
+    keeps codexes working even when the primary location isn't writable.
+    """
+    return [
+        get_cache_root() / subdir,
+        Path(tempfile.gettempdir()) / "BetterTroveToolsCache" / subdir,
+    ]
 
 
 def compact_dumps(data) -> str:
