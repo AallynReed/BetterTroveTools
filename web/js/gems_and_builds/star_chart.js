@@ -225,8 +225,9 @@ document.addEventListener('star_chart_loaded', async () => {
                     .sort();
                 const pathToId = new Map();
                 selectablePaths.forEach((path, index) => pathToId.set(path, index));
-                _codecMapsCache = { selectablePaths, pathToId };
-                return _codecMapsCache;
+                const maps = { selectablePaths, pathToId };
+                if (selectablePaths.length > 0) _codecMapsCache = maps;
+                return maps;
             };
             const getSelectablePathList = () => getCodecMaps().selectablePaths;
 
@@ -1147,6 +1148,10 @@ document.addEventListener('star_chart_loaded', async () => {
                         }
                     });
                     isLoading.value = false;
+                    // nodeMap is now fully populated -- drop any codec maps that
+                    // were computed (empty) before the chart loaded so the next
+                    // encode/decode rebuilds them against the real nodes.
+                    _codecMapsCache = null;
 
                     if (window.AppSettings) {
                         await window.AppSettings.load();
