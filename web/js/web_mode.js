@@ -92,6 +92,12 @@
 
     const asJson = (data) => (typeof data === 'string' ? JSON.parse(data) : data);
 
+    // Kiwi API (api.aallyn.net) — public rotations/feeds, fetched via the same
+    // native-HTTP-or-fetch path so it works in the packaged app today (CORS-free)
+    // and on the web build once the API allowlists the web origin.
+    const KIWI_BASE = 'https://api.aallyn.net/v1';
+    const kiwiGet = async (path) => asJson(await feedGet(`${KIWI_BASE}/${path}`));
+
     const _stripHtml = (html) => {
         const d = document.createElement('div');
         d.innerHTML = html || '';
@@ -337,7 +343,22 @@
         }),
         get_chaos_chest_data: makeEelFn('get_chaos_chest_data', () => ({ success: true, rewards: [], current: null })),
         get_merchant_schedules: makeEelFn('get_merchant_schedules', () => ({ success: true })),
-        get_yearly_calendar_data: makeEelFn('get_yearly_calendar_data', () => ({ success: true, events: [] })),
+        get_yearly_calendar_data: makeEelFn('get_yearly_calendar_data', async () => {
+            try {
+                const data = await kiwiGet('rotations/calendar');
+                // Kiwi: {type,name,starts_at,ends_at,color?,state?,biomes?:[{name,icon}]}
+                // Frontend: {type,name,color,start,end,icons[],biome_names[]} (unix seconds)
+                const events = (data.events || []).map(e => ({
+                    type: e.type, name: e.name, color: e.color || null,
+                    start: e.starts_at, end: e.ends_at,
+                    icons: (e.biomes || []).map(b => b.icon),
+                    biome_names: (e.biomes || []).map(b => b.name)
+                }));
+                return { success: true, data: events, events };
+            } catch (err) {
+                return { success: false, error: String(err && err.message || err), code: 'CALENDAR_FAILED' };
+            }
+        }, { localOnly: true }),
         get_gardening_rotation: makeEelFn('get_gardening_rotation', () => {
             const now = Math.floor(Date.now() / 1000);
             return {
