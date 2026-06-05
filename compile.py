@@ -27,7 +27,6 @@ build_exe_options = {
     ],
     "include_files": [
         ("web/", "web/"),
-        ("trove.dll", "trove.dll"),
         ("metadata.json", "metadata.json"),
         ("LICENSE", "LICENSE"),
         ("README.md", "README.md"),

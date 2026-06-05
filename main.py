@@ -4,17 +4,21 @@ import os
 import socket
 import subprocess
 import sys
-import tempfile
 import threading
 import time
-import winreg
+import webbrowser
 from pathlib import Path
+
+if sys.platform == "win32":
+    import winreg
 
 import bottle
 import eel
 import requests
 import webview
 from gevent.exceptions import ConcurrentObjectUseError
+
+from utils.path import get_app_data_dir, get_cache_root
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
@@ -50,7 +54,7 @@ else:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     DEV_MODE = True
 
-IPC_LOCK_FILE = Path(os.getenv('APPDATA', '')) / 'Trove' / 'btt_ipc.lock'
+IPC_LOCK_FILE = get_app_data_dir() / 'btt_ipc.lock'
 
 try:
     with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as _meta_file:
@@ -292,13 +296,6 @@ def get_app_metadata():
             return json.load(f)
     except Exception:
         return {}
-
-
-def get_cache_root():
-    appdata = os.getenv("APPDATA")
-    if appdata:
-        return Path(appdata) / "Trove" / "ModManagerCache"
-    return Path(tempfile.gettempdir()) / "BetterTroveToolsCache"
 
 
 def _safe_asset_name(asset_name, version_tag):
@@ -636,7 +633,13 @@ if not webview2_runtime_installed():
             pass
     sys.exit(1)
 
-webview_storage_path = os.path.join(os.getenv('APPDATA'), 'Trove', 'WebView2')
+webview_storage_path = str(get_app_data_dir() / 'WebView2')
+try:
+    # GTK/WebKit (Linux) expects the data dir to exist; WebView2 (Windows) is
+    # happy either way. Create it defensively so the backend never fails to init.
+    Path(webview_storage_path).mkdir(parents=True, exist_ok=True)
+except OSError:
+    pass
 
 print("✅ Starting app...")
 
@@ -647,16 +650,62 @@ eel_port = get_free_port()
 print(f"Launching UI server on port {eel_port}...")
 
 
+# Set before the server thread starts. In webview mode pywebview owns the
+# window lifecycle, so a dropped websocket must NOT stop the server. In browser
+# mode there's no window we control, so a closed tab is our shutdown signal.
+_use_webview = True
+_shutdown_event = threading.Event()
+
+
+def webview_backend_available():
+    """True if pywebview has a usable native window backend on this platform.
+
+    Windows always does (WebView2). On Linux/macOS it needs GTK (system
+    PyGObject + WebKit2) or Qt (PyQt/PySide WebEngine). When none is present we
+    fall back to opening the app in the user's default browser instead.
+    """
+    if sys.platform == 'win32':
+        return True
+    try:
+        import gi
+        for ver in ('4.1', '4.0'):
+            try:
+                gi.require_version('WebKit2', ver)
+                return True
+            except ValueError:
+                continue
+    except Exception:
+        pass
+    import importlib.util
+    for mod in ('PyQt6.QtWebEngineWidgets', 'PySide6.QtWebEngineWidgets', 'PyQt5.QtWebEngineWidgets'):
+        try:
+            if importlib.util.find_spec(mod) is not None:
+                return True
+        except Exception:
+            continue
+    return False
+
+
+def _on_websocket_close(page, open_sockets):
+    # Browser mode only: when the last tab/window closes, shut down. A reload
+    # briefly drops the socket, so debounce and only exit if nothing reconnected.
+    if _use_webview:
+        return
+    def _check():
+        if len(eel._websockets) == 0:
+            _shutdown_event.set()
+    threading.Timer(1.5, _check).start()
+
+
 def run_eel_server():
-    # mode=None serves the app without launching a browser. The no-op
-    # close_callback stops Eel from shutting the server down when the websocket
-    # drops — pywebview owns the window lifecycle below.
+    # mode=None serves the app without launching a browser (pywebview or the
+    # default browser opens the page). See _on_websocket_close for shutdown.
     eel.start(
         'index.html',
         mode=None,
         port=eel_port,
         block=True,
-        close_callback=lambda *args: None,
+        close_callback=_on_websocket_close,
         suppress_error=True,
     )
 
@@ -708,39 +757,62 @@ def wait_for_server(port, timeout=15.0):
     return False
 
 
+# Windows ALWAYS uses the embedded WebView2 window -- the browser fallback never
+# applies there (and BTT_BROWSER is ignored). Elsewhere (Linux/macOS) prefer an
+# embedded webview window when a GTK/Qt backend is available, otherwise fall back
+# to the user's default browser so the app still runs with no extra install.
+# BTT_BROWSER=1 forces the browser path on non-Windows platforms.
+if sys.platform == 'win32':
+    _use_webview = True
+else:
+    _use_webview = webview_backend_available() and os.getenv('BTT_BROWSER') != '1'
+
 threading.Thread(target=run_eel_server, daemon=True).start()
 
 if not wait_for_server(eel_port):
     print("❌ ERROR: UI server failed to start.")
     sys.exit(1)
 
-print("✅ Server ready. Opening window...")
-
 # Warm codex caches in the background once the UI server is up, so opening a
 # codex tab for the first time doesn't pay the full game-file scan inline.
 threading.Thread(target=warm_codex_caches, daemon=True, name="codex-warmup").start()
 
-webview.create_window(
-    WINDOW_TITLE,
-    f'http://localhost:{eel_port}/index.html',
-    width=1700,
-    height=1000,
-    min_size=(1100, 700),
-)
+app_url = f'http://localhost:{eel_port}/index.html'
 
-# Safety net: if a launcher (e.g. an older self-updater) starts us hidden,
-# bring the window to the foreground once it exists.
-threading.Thread(
-    target=lambda: _surface_app_window(only_if_hidden=True, retries=50),
-    daemon=True,
-).start()
+if _use_webview:
+    print("✅ Server ready. Opening window...")
+    webview.create_window(
+        WINDOW_TITLE,
+        app_url,
+        width=1700,
+        height=1000,
+        min_size=(1100, 700),
+    )
 
-webview.start(
-    private_mode=False,
-    storage_path=webview_storage_path,
-    icon=os.path.join(base_dir, 'web', 'favicon.ico'),
-)
+    # Safety net: if a launcher (e.g. an older self-updater) starts us hidden,
+    # bring the window to the foreground once it exists.
+    threading.Thread(
+        target=lambda: _surface_app_window(only_if_hidden=True, retries=50),
+        daemon=True,
+    ).start()
 
-# webview.start() returns once the user closes the window — shut everything down.
+    webview.start(
+        private_mode=False,
+        storage_path=webview_storage_path,
+        icon=os.path.join(base_dir, 'web', 'favicon.ico'),
+    )
+    # webview.start() returns once the user closes the window.
+else:
+    print(f"✅ Server ready. Opening {app_url} in your default browser...")
+    try:
+        opened = webbrowser.open(app_url)
+    except Exception:
+        opened = False
+    if not opened:
+        print(f"⚠️ Couldn't open a browser automatically. Open this URL manually:\n    {app_url}")
+    # Run until the browser tab/window is closed (see _on_websocket_close).
+    _shutdown_event.wait()
+
+# Shut everything down.
 IPC_LOCK_FILE.unlink(missing_ok=True)
 os._exit(0)

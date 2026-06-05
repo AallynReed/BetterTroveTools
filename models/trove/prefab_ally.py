@@ -25,13 +25,24 @@ ALLY_KEY_ALIASES = {
 }
 
 
+NO_INSTALL_MESSAGE = (
+    "No Trove installation was detected. Add one in Settings > Directories."
+)
+
+
 def detect_first_glyph_install() -> Path:
     with contextlib.redirect_stdout(io.StringIO()):
         locations = list(get_trove_locations())
     for game in locations:
         if game.is_glyph and game.is_valid:
             return game.path
-    raise RuntimeError("No valid Glyph Trove installation was detected.")
+    # Fall back to any other valid detected install (e.g. Steam) before giving
+    # up, so platforms where Glyph isn't present (Linux + Steam/Proton) still
+    # resolve a game automatically when one is available.
+    for game in locations:
+        if game.is_valid:
+            return game.path
+    raise RuntimeError(NO_INSTALL_MESSAGE)
 
 
 def resolve_game_install(game_path: str | Path | None = None) -> Path:

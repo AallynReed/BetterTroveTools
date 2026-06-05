@@ -173,6 +173,8 @@ The desktop app renders its interface in the **Microsoft Edge WebView2 runtime**
 
 WebView2 is a standalone component, so it stays installed even if Microsoft Edge itself is removed.
 
+**Linux** renders through pywebview's system backend instead — **WebKit2GTK** (recommended) or **Qt WebEngine**. See [Run on Linux](#run-on-linux) below. Windows remains the primary, fully‑featured target; Linux runs the same UI and tools, with Windows‑only bits (self‑update, FPS patching, the registry‑based auto‑detect) gracefully disabled.
+
 ---
 
 ## Getting started
@@ -191,6 +193,58 @@ The app keeps itself up to date: when a newer release is available it offers a o
 pip install -r requirements.txt
 python main.py
 ```
+
+### Install on Linux
+
+Better Trove Tools is pure Python on Linux — **no native library to compile, and no webview backend required**. If no GTK/Qt backend is installed, the app simply **opens in your default browser** (full functionality — it's the same local server either way). The quickest path:
+
+```bash
+# Download BetterTroveTools-<version>-linux.tar.gz from the Releases page
+tar xzf BetterTroveTools-*-linux.tar.gz
+cd BetterTroveTools
+./install-linux.sh    # venv + deps + a menu launcher & icon
+```
+
+Launch **Better Trove Tools** from your application menu afterwards (`./install-linux.sh --uninstall` removes the launcher). Or, to run without a menu entry, just `./run.sh`.
+
+**Optional — a standalone app window** (instead of a browser tab). Install a webview backend, either Qt (self‑contained, ~150 MB) or the lighter native GTK:
+
+```bash
+# Qt: works in the existing venv as-is
+.venv-linux/bin/pip install pyqt6 pyqt6-webengine qtpy
+
+# or GTK (lighter, native) — needs a venv that can see system `gi`:
+sudo apt install python3-gi gir1.2-webkit2-4.1   # Fedora: python3-gobject webkit2gtk4.1 | Arch: python-gobject webkit2gtk
+python3 -m venv --system-site-packages .venv-linux && ./run.sh
+```
+
+The app auto‑detects a backend and uses an app window when one is present. Force the browser (Linux/macOS only) with `BTT_BROWSER=1 ./run.sh`. On Windows the app always uses its WebView2 window — there is no browser fallback.
+
+**File dialogs (Tk).** The modder tools' file pickers and Settings' "Browse for folder" use Tk. Install it for those to work (the app runs fine without it otherwise):
+
+```bash
+sudo apt install python3-tk    # Fedora: python3-tkinter | Arch: tk
+```
+
+**What works on Linux:** the full UI, calculators, gems/builds, Star Chart, home dashboard, Trovesaurus browsing, and — when a Trove install is present (e.g. via **Steam/Proton**, which is auto‑detected) — the codexes and mod management, since those only *read* the game files.
+
+**What's Windows‑only:** the in‑app self‑updater, the FPS patcher, and "Test in Game" (these run/modify the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (point it at any valid Trove folder manually).
+
+### Cutting a release (maintainers)
+
+Releases are built automatically by [`.github/workflows/compiler.yml`](.github/workflows/compiler.yml) when a GitHub Release is **created**:
+
+1. Bump `APP_VERSION` in `metadata.json` and commit.
+2. Create the release — tag and **release name** should match the version (the asset filenames use the release name), e.g. with the GitHub CLI:
+   ```bash
+   gh release create 2026.06.01 --title 2026.06.01 --notes "What changed..."
+   ```
+   (Or use the Releases page → *Draft a new release*.)
+3. The workflow then attaches two assets to that release:
+   - `BetterTroveTools-<version>-win64.msi` — Windows installer (built via `compile.py`).
+   - `BetterTroveTools-<version>-linux.tar.gz` — Linux run‑from‑source bundle (`git archive`); users extract it and run `./install-linux.sh`.
+
+The Windows job needs a `COMPILER` repository secret (a token with `contents: write`) to upload assets.
 
 ---
 

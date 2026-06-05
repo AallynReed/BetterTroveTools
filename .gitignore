@@ -1,6 +1,7 @@
 # Ignore the virtual environment
 .idea/
 .venv/
+.venv-linux/
 .ghidra/
 .claude/
 venv/

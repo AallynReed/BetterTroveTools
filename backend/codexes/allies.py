@@ -38,12 +38,7 @@ def _cache_root() -> Path:
 
 
 def _cache_root_candidates() -> list[Path]:
-    appdata = os.getenv("APPDATA")
-    candidates = []
-    if appdata:
-        candidates.append(Path(appdata) / "Trove" / "ModManagerCache" / "codexes_cache")
-    candidates.append(Path(tempfile.gettempdir()) / "BetterTroveToolsCache" / "codexes_cache")
-    return candidates
+    return codex_cache.cache_root_candidates()
 
 
 def _allies_cache_file() -> Path:
