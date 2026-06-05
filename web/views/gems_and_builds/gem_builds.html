@@ -240,6 +240,9 @@
                         <tr v-if="isCalculating">
                             <td colspan="9" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('gems.gem_builds.crunching_math') }}</td>
                         </tr>
+                        <tr v-else-if="buildsUnavailable">
+                            <td colspan="9" class="text-center text-muted"><i class="fa-solid fa-desktop"></i> {{ t('web.gem_builds_needs_desktop') }}</td>
+                        </tr>
                         <tr v-else-if="cachedBuilds.length === 0">
                             <td colspan="9" class="text-center text-muted">{{ t('gems.gem_builds.no_builds_generated_check_your_config') }}</td>
                         </tr>

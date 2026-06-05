@@ -485,8 +485,17 @@
 
 @media (max-width: 1200px) {
     .gem-builds-grid {
-        grid-template-columns: 1fr;
+        /* minmax(0, 1fr) (not 1fr) so the column can't be forced wider than the
+           viewport by the results table's min-content width. The table then
+           scrolls inside its own .table-responsive wrapper instead of blowing
+           out the whole page horizontally. */
+        grid-template-columns: minmax(0, 1fr);
         min-height: 0;
+    }
+
+    .config-panel-wrapper,
+    .results-panel {
+        min-width: 0;
     }
 
     .config-panel-wrapper {
