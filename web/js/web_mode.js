@@ -300,6 +300,37 @@
         return { daily, weekly };
     };
 
+    // Deterministic Trove server-time math (mirrors utils/trove/server_time.py).
+    // Corruxion (dragon) + Fluxion rotate on fixed epochs, so they compute locally
+    // with no network — keeping the home merchants available offline.
+    const TROVE_OFFSET_SEC = 11 * 3600;
+    const DRAGON_DURATION_SEC = 3 * 86400;
+    const DRAGON_INTERVAL_SEC = 14 * 86400;
+    const FLUXION_INTERVAL_SEC = 7 * 86400;
+    const FIRST_CORRUXION_SEC = Date.UTC(2024, 2, 8) / 1000;
+    const FIRST_FLUXION_SEC = Date.UTC(2023, 6, 18) / 1000;
+    const troveNowSec = () => Date.now() / 1000 - TROVE_OFFSET_SEC;
+    const corruxionInfo = (nowSec) => {
+        const delta = Math.trunc(nowSec - FIRST_CORRUXION_SEC);
+        const completed = Math.floor(delta / DRAGON_INTERVAL_SEC);
+        const current = delta - completed * DRAGON_INTERVAL_SEC;
+        const nextDragon = FIRST_CORRUXION_SEC + (completed + 1) * DRAGON_INTERVAL_SEC;
+        const active = current < DRAGON_DURATION_SEC;
+        const end = active ? (nextDragon - DRAGON_INTERVAL_SEC + DRAGON_DURATION_SEC) : (nextDragon + DRAGON_DURATION_SEC);
+        return { active, time: active ? (end - nowSec) : (nextDragon - nowSec) };
+    };
+    const fluxionInfo = (nowSec) => {
+        const delta = nowSec - FIRST_FLUXION_SEC;
+        const completed = Math.floor(delta / DRAGON_INTERVAL_SEC);
+        let current = delta - completed * DRAGON_INTERVAL_SEC;
+        const phase = Math.floor(current / FLUXION_INTERVAL_SEC);
+        current = current - phase * FLUXION_INTERVAL_SEC;
+        const nextPhase = FIRST_FLUXION_SEC + (completed * 2 + (phase + 1)) * FLUXION_INTERVAL_SEC;
+        const active = current < DRAGON_DURATION_SEC;
+        const end = active ? (nextPhase - FLUXION_INTERVAL_SEC + DRAGON_DURATION_SEC) : (nextPhase + DRAGON_DURATION_SEC);
+        return { active, state: active ? (phase === 0 ? 'Voting' : 'Selling') : 'Away', time: active ? (end - nowSec) : (nextPhase - nowSec) };
+    };
+
     const localOnlyMessage = () => t('web.desktop_only_action');
 
     window.eel = {
@@ -409,31 +440,17 @@
                 const minutes = Math.floor((total % 3600) / 60);
                 return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes}m`;
             };
-            const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-            let merchants = {};
-            try {
-                const [corr, flux] = await Promise.all([
-                    kiwiGet('rotations/corruxion').catch(() => null),
-                    kiwiGet('rotations/fluxion').catch(() => null)
-                ]);
-                if (corr) {
-                    merchants.corruxion = {
-                        active: !!corr.active,
-                        time_str: fmtDur(corr.seconds_remaining),
-                        action: corr.active ? 'Leaves in' : 'Arrives in'
-                    };
-                }
-                if (flux) {
-                    merchants.fluxion = {
-                        active: !!flux.active,
-                        state: cap(flux.state) || 'Away',
-                        time_str: fmtDur(flux.seconds_remaining),
-                        action: flux.active ? 'Ends in' : 'Starts in'
-                    };
-                }
-            } catch (err) { /* merchants stay partial/empty on failure */ }
+            // Corruxion + Fluxion are deterministic (server_time epochs) -> compute
+            // locally so the home merchants work offline, with no API call.
+            const nowSec = troveNowSec();
+            const corr = corruxionInfo(nowSec);
+            const flux = fluxionInfo(nowSec);
+            const merchants = {
+                corruxion: { active: corr.active, time_str: fmtDur(corr.time), action: corr.active ? 'Leaves in' : 'Arrives in' },
+                fluxion: { active: flux.active, state: flux.state, time_str: fmtDur(flux.time), action: flux.active ? 'Ends in' : 'Starts in' }
+            };
             return { success: true, daily, weekly, merchants };
-        }),
+        }, { localOnly: true }),
         get_chaos_chest_data: makeEelFn('get_chaos_chest_data', async () => {
             try {
                 const c = await kiwiGet('rotations/chaos-chest');
@@ -466,21 +483,42 @@
             try {
                 const g = await kiwiGet('rotations/gardening');
                 const w = (x) => x ? { active: !!x.active, start: x.starts_at, end: x.ends_at } : { active: false, start: 0, end: 0 };
-                return { success: true, two_day: w(g.two_day), three_day: w(g.three_day), future: g.upcoming || [] };
+                // Modal reads rot.start/rot.end/rot.name — map the API's starts_at/ends_at.
+                const future = (g.upcoming || []).map((x) => ({ start: x.starts_at, end: x.ends_at, name: x.name, active: !!x.active }));
+                return { success: true, two_day: w(g.two_day), three_day: w(g.three_day), future };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'GARDENING_FAILED' }; }
         }, { localOnly: true }),
         get_d15_rotation: makeEelFn('get_d15_rotation', async () => {
+            // Deterministic 3-hour biome rotation (mirrors backend get_d15_rotation):
+            // computed locally so it works offline AND covers the full ~8-day window.
+            // The API's `upcoming` only returns ~2 days, which left the modal half-empty.
             try {
-                const r = await kiwiGet('rotations/biomes');
-                const cur = r.current;
-                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, rotations: r.upcoming || [] };
+                const subbiomes = await fetchJson('assets/data/biomes.json', {});
+                const D15_EPOCH = 1718708400, D15_INTERVAL = 3 * 3600;
+                const biome1 = ['Sundered Uplands', 'Cerise Sandsea', 'Deep Forest', 'Alkali Flats', 'Dead of Winter', 'Sundered Uplands', 'Firefly Party', 'Desert of Secrets', 'Weathered Wastelands', 'Frozen Wastes', "Frigga's Fjord", 'Abandoned Boneyard'];
+                const biome2 = ['Cursed Vale', 'Hollow Dunes', 'Bewitching Wood', 'Primal Preserve', 'Hollow Dunes', 'Ancient Heights', 'Viking Burial Grounds', 'Spellbound Thicket', 'Saurian Swamp', 'Restless Range', 'Uncanny Valley'];
+                const biome3 = ['Sugar Steppes', 'Volcanic Fields', 'The Lost Isles', 'Luminopolis', 'The Lost Isles', 'Blazing Emberlands', 'Cocoa Craters', 'Data Spires', 'The Lost Isles', 'Cupcake Canyon', "Dragon's Teeth", 'Luminopolis', 'The Lost Isles', 'Data Spires'];
+                const mod = (n, m) => ((n % m) + m) % m;
+                const subOf = (name) => subbiomes[name] || { name, final_name: name, icon: 'unknown' };
+                const nowSec = Date.now() / 1000;
+                const consumed = Math.floor((nowSec - D15_EPOCH) / D15_INTERVAL);
+                const startSec = D15_EPOCH + consumed * D15_INTERVAL;
+                const rotations = [];
+                for (let i = -8; i < 56; i++) {
+                    const offset = consumed + i;
+                    const s = startSec + i * D15_INTERVAL;
+                    rotations.push({ start: s, end: s + D15_INTERVAL, biomes: [subOf(biome1[mod(offset, biome1.length)]), subOf(biome2[mod(offset, biome2.length)]), subOf(biome3[mod(offset, biome3.length)])] });
+                }
+                const current = rotations.find((r) => r.start <= nowSec && nowSec < r.end) || null;
+                return { success: true, current, rotations };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'D15_FAILED' }; }
         }, { localOnly: true }),
         get_wild_mana_rotation: makeEelFn('get_wild_mana_rotation', async () => {
             try {
                 const r = await kiwiGet('rotations/wild-mana');
                 const cur = r.current;
-                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future: r.upcoming || [] };
+                const future = (r.upcoming || []).map((x) => ({ start: x.starts_at, end: x.ends_at, biomes: x.biomes }));
+                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'MANA_FAILED' }; }
         }, { localOnly: true }),
         get_delve_status: makeEelFn('get_delve_status', () => {
@@ -524,7 +562,8 @@
             try {
                 const r = await kiwiGet('rotations/stampy');
                 const cur = r.current;
-                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future: r.upcoming || [] };
+                const future = (r.upcoming || []).map((x) => ({ start: x.starts_at, end: x.ends_at, biomes: x.biomes }));
+                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'STAMPY_FAILED' }; }
         }, { localOnly: true })
     };

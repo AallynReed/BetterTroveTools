@@ -643,10 +643,70 @@ document.addEventListener('DOMContentLoaded', async () => {
         sidebar.appendChild(downloadContainer);
     };
 
+    // Android update notice: the packaged app can't self-install like the desktop
+    // MSI flow, so it checks GitHub releases for a newer version that ships an .apk
+    // asset and links straight to that APK (system browser handles download/install).
+    const checkAndroidUpdate = async () => {
+        try {
+            const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=10', { bttLabel: t('app.looking_for_updates') });
+            if (!ghResponse.ok) return;
+            const releases = await ghResponse.json();
+            const apkAsset = (release) => Array.isArray(release?.assets)
+                ? release.assets.find(a => typeof a?.name === 'string' && a.name.toLowerCase().endsWith('.apk') && typeof a?.browser_download_url === 'string' && a.browser_download_url)
+                : null;
+            const valid = Array.isArray(releases)
+                ? releases.filter(r => r && !r.draft && parseVersion(r.tag_name) && apkAsset(r))
+                : [];
+            let latestStable = null, latestPrerelease = null;
+            valid.forEach(r => {
+                if (r.prerelease) { if (!latestPrerelease || compareVersionTags(r.tag_name, latestPrerelease.tag_name) > 0) latestPrerelease = r; }
+                else { if (!latestStable || compareVersionTags(r.tag_name, latestStable.tag_name) > 0) latestStable = r; }
+            });
+            const currentParsed = parseVersion(currentVersion);
+            if (!currentParsed) return;
+            let target = null;
+            if (currentParsed.isBeta) {
+                const preNewer = latestPrerelease && compareVersionTags(latestPrerelease.tag_name, currentVersion) > 0;
+                const stableNewer = latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0;
+                if (preNewer && stableNewer) target = compareVersionTags(latestPrerelease.tag_name, latestStable.tag_name) >= 0 ? latestPrerelease : latestStable;
+                else if (preNewer) target = latestPrerelease;
+                else if (stableNewer) target = latestStable;
+            } else if (latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0) {
+                target = latestStable;
+            }
+            if (!target) return;
+            const asset = apkAsset(target);
+            if (!asset) return;
+            const latestVersion = normalizeVersionTag(target.tag_name);
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar) return;
+            const existing = sidebar.querySelector('.app-update-container');
+            if (existing) existing.remove();
+            const container = document.createElement('div');
+            container.className = 'app-update-container';
+            const button = document.createElement('button');
+            button.className = 'nav-btn update-app-btn';
+            button.title = t('app.a_new_version_is_available_click_to_upda_1d6574');
+            button.innerHTML = `
+                <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
+                <span class="nav-text">${t('app.update_v_version').replace('{version}', latestVersion)}</span>
+            `;
+            button.addEventListener('click', () => {
+                window.open(asset.browser_download_url, '_blank', 'noopener,noreferrer');
+            });
+            container.appendChild(button);
+            sidebar.appendChild(container);
+        } catch (e) { /* offline / API error -> no update notice */ }
+    };
+
     if (window.BTT_WEB_MODE === true) {
-        // The packaged Android app is already "the app" — the desktop download
-        // CTA only makes sense on the hosted web build, not inside the app.
-        if (window.BTT_NATIVE !== true) addWebDownloadButton();
+        if (window.BTT_NATIVE === true) {
+            // The packaged Android app checks GitHub for a newer release APK.
+            void checkAndroidUpdate();
+        } else {
+            // The hosted web build shows a desktop-download CTA instead.
+            addWebDownloadButton();
+        }
         return;
     }
 

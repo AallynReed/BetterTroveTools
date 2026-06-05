@@ -2678,6 +2678,7 @@ input[type="range"]::-ms-fill-lower {
     .modder-tools-container,
     .gem-sim-container,
     .about-view-container,
+    .calculators-container,
     .view-container
 ) {
     height: 100%;
