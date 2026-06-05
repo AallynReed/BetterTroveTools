@@ -7,6 +7,10 @@
     window.BTT_UNAVAILABLE_WEB_VIEWS = window.BTT_WEB_MODE
         ? ['mod_manager', 'modder_tools', 'codexes', 'allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items']
         : [];
+    // Running inside the packaged native (Android) app. Used to HIDE desktop-only
+    // views/tools entirely here (the web build instead badges them with "Desktop App").
+    window.BTT_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
+        && window.Capacitor.isNativePlatform());
 
     if (!window.BTT_WEB_MODE || (hasEelBridge && !forceWebMode)) return;
 

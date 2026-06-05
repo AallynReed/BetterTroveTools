@@ -2201,6 +2201,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('#sidebar .nav-btn').forEach((btn) => {
             const target = btn.getAttribute('data-target');
             const shouldHideForWeb = isWebUnavailableView(target);
+            if (shouldHideForWeb && window.BTT_NATIVE === true) {
+                // Native (Android): hide desktop-only views outright -- no point
+                // offering "the desktop app" from inside the mobile app.
+                btn.classList.remove('web-desktop-only-btn');
+                btn.querySelector('.desktop-app-label')?.remove();
+                const menuItem = btn.closest('li');
+                if (menuItem) { menuItem.style.display = 'none'; menuItem.hidden = true; }
+                else { btn.style.display = 'none'; btn.hidden = true; }
+                return;
+            }
             if (shouldHideForWeb) {
                 btn.classList.add('web-desktop-only-btn');
                 btn.setAttribute('data-tooltip-text', t('app.only_available_in_the_desktop_app'));
