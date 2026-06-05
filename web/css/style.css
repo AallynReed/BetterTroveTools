@@ -2685,37 +2685,42 @@ input[type="range"]::-ms-fill-lower {
 
 /* =====================================================================
    Mobile finishing touches (appended last so they win over the force
-   layers above): hide scrollbars and tighten lateral page padding.
+   layers above): hide every scrollbar and give every view the same
+   lateral spacing as the Modder Tools tab (the reference = 8px sides).
    ===================================================================== */
 @media (max-width: 900px) {
-    /* Hide scrollbars on the main scroll areas (content still scrolls). */
+    /* Hide scrollbars on EVERY scroll area inside the content + the nav
+       (content still scrolls via touch/drag). Hiding them also reclaims the
+       scrollbar gutter, so a view that was scrolling no longer pushes its
+       right edge in by ~10px -- that's what kept Modder Tools asymmetric
+       (8px left / 18px right). With the gutter gone every view lands at a
+       symmetric 8px / 8px. */
     #view-container,
-    .sidebar-nav-scroll,
-    #build-summary-panel {
+    #view-container *,
+    .sidebar-nav-scroll {
         scrollbar-width: none;          /* Firefox */
         -ms-overflow-style: none;       /* old Edge */
     }
     #view-container::-webkit-scrollbar,
-    .sidebar-nav-scroll::-webkit-scrollbar,
-    #build-summary-panel::-webkit-scrollbar {
+    #view-container *::-webkit-scrollbar,
+    .sidebar-nav-scroll::-webkit-scrollbar {
         width: 0;
         height: 0;
         display: none;                  /* Chromium/WebKit */
     }
 
-    /* Tighter lateral margins. Each view's root (#<view>-vue-app) carried ~20px
-       of side padding and the inner content wrappers another ~14px, so content
-       sat far from the edges on phones. Trim both. */
-    #view-container [id$="-vue-app"] {
-        padding-left: 10px !important;
-        padding-right: 10px !important;
-    }
-
+    /* One consistent lateral inset for every view root. Modder Tools (the
+       reference the user picked) sits at 8px; gems_and_builds / codexes were
+       falling through to 10px because their root class wasn't listed. Set the
+       default root to 8px so EVERY view -- and therefore every tab row -- gets
+       the exact same spacing. */
+    #view-container [id$="-vue-app"],
     #view-container :is(
         .home-container,
         .allies-container,
         .calculators-container,
         .settings-container,
+        .gems-and-builds-container,
         .star-chart-container,
         .trovesaurus-container,
         .file-manager-container,
