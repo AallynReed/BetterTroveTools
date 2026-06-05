@@ -35,7 +35,7 @@ import backend.gems_and_builds.star_chart  # noqa: E402,F401
 import backend.home  # noqa: E402,F401
 
 from backend.response import resp  # noqa: E402
-from backend.home import RSS_NAMESPACES, _safe_strip_html, _truncate_text  # noqa: E402
+from backend.home import KIWI_API_BASE, _kiwi_items, _map_kiwi_twitch, _map_kiwi_events  # noqa: E402
 
 
 DENIED_EEL_FUNCTIONS = {
@@ -94,87 +94,38 @@ DENIED_EEL_FUNCTIONS = {
 }
 
 
-def _get_json_endpoint(url, code):
+def _kiwi_feed(path, code, transform=None):
     try:
-        response = requests.get(url, headers={"User-Agent": "BetterTroveTools-Web/1.0"}, timeout=10)
+        response = requests.get(
+            f"{KIWI_API_BASE}/{path}",
+            headers={"User-Agent": "BetterTroveTools-Web/1.0"},
+            timeout=10,
+        )
         response.raise_for_status()
-        return resp(True, data=response.json())
+        items = _kiwi_items(response)
+        return resp(True, data=transform(items) if transform else items)
     except Exception as exc:
         return resp(False, data=[], error=str(exc), code=code)
 
 
 def get_youtube_videos():
-    return _get_json_endpoint("https://trovesaurus.aallyn.net/youtube_videos", "YOUTUBE_FETCH_FAILED")
+    return _kiwi_feed("feeds/youtube", "YOUTUBE_FETCH_FAILED")
 
 
 def get_twitch_streams():
-    return _get_json_endpoint("https://trovesaurus.aallyn.net/twitch_streams", "TWITCH_FETCH_FAILED")
+    return _kiwi_feed("feeds/twitch", "TWITCH_FETCH_FAILED", _map_kiwi_twitch)
 
 
 def get_bilibili_videos():
-    return _get_json_endpoint("https://trovesaurus.aallyn.net/bilibili_videos", "BILIBILI_FETCH_FAILED")
+    return _kiwi_feed("feeds/bilibili", "BILIBILI_FETCH_FAILED")
 
 
 def get_trovesaurus_events():
-    result = _get_json_endpoint("https://trovesaurus.com/calendar/feed", "EVENTS_FETCH_FAILED")
-    if result.get("success") and isinstance(result.get("data"), list):
-        result["data"].sort(key=lambda item: int(item.get("startdate") or 0))
-    return result
+    return _kiwi_feed("feeds/events", "EVENTS_FETCH_FAILED", _map_kiwi_events)
 
 
 def get_trove_news():
-    try:
-        response = requests.get(
-            "https://trovegame.com/feed",
-            headers={"User-Agent": "BetterTroveTools-Web/1.0"},
-            timeout=8,
-        )
-        response.raise_for_status()
-        root = ET.fromstring(response.text)
-        items = []
-
-        for item in root.findall("./channel/item"):
-            title = unescape((item.findtext("title") or "").strip())
-            link = (item.findtext("link") or "").strip()
-            author = (item.findtext("dc:creator", "", RSS_NAMESPACES) or "").strip()
-            pub_date_raw = (item.findtext("pubDate") or "").strip()
-            description = item.findtext("description") or ""
-            media_content = item.find("media:content", RSS_NAMESPACES)
-            media_thumb = item.find("media:thumbnail", RSS_NAMESPACES)
-            categories = [
-                unescape((category.text or "").strip())
-                for category in item.findall("category")
-                if (category.text or "").strip()
-            ]
-
-            published_at = pub_date_raw
-            try:
-                published_at = parsedate_to_datetime(pub_date_raw).astimezone(UTC).isoformat()
-            except Exception:
-                pass
-
-            image = None
-            if media_content is not None:
-                image = media_content.attrib.get("url")
-            if not image and media_thumb is not None:
-                image = media_thumb.attrib.get("url")
-
-            items.append({
-                "title": title,
-                "url": link,
-                "author": author or "Team Trove",
-                "published_at": published_at,
-                "summary": _truncate_text(_safe_strip_html(unescape(description)), 220),
-                "category": categories[0] if categories else "News",
-                "categories": categories,
-                "image": image,
-            })
-            if len(items) >= 20:
-                break
-
-        return resp(True, data=items)
-    except Exception as exc:
-        return resp(False, data=[], error=str(exc), code="NEWS_FETCH_FAILED")
+    return _kiwi_feed("feeds/news", "NEWS_FETCH_FAILED")
 
 
 eel._exposed_functions.update({

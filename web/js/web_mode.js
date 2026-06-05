@@ -331,6 +331,18 @@
         return { active, state: active ? (phase === 0 ? 'Voting' : 'Selling') : 'Away', time: active ? (end - nowSec) : (nextPhase - nowSec) };
     };
 
+    // --- Deterministic biome rotations (mirror backend/home.py) — computed locally
+    // so gardening / wild-mana / stampy / chaos-window / calendar work offline and
+    // cover the full schedule instead of the API's truncated window. ---
+    const DAY_SEC = 86400, WEEK_SEC = 7 * 86400, HOUR_SEC = 3600;
+    const _mod = (n, m) => ((n % m) + m) % m;
+    const MANA_BIOMES = ['Neon City', 'Jurassic Jungle', 'Dragonfire Peaks', 'Forbidden Spires', 'Sundered Uplands', 'Medieval Highlands', 'Permafrost', 'Cursed Vale', 'Desert Frontier', 'Fae Forest', 'Candoria'];
+    const STAMPY_BIOMES = ['Desert Frontier', 'The Lost Isles', 'Geode Topside', 'Neon City', 'Dragonfire Peaks', 'Permafrost', 'Candoria', 'Cursed Vale', 'Forbidden Spires', 'Fae Forest', 'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands'];
+    const MANA_ICON_FALLBACK = { 'Neon City': 'neon', 'Jurassic Jungle': 'dinosaur', 'Dragonfire Peaks': 'dragon', 'Forbidden Spires': 'spires', 'Sundered Uplands': 'giantland', 'Medieval Highlands': 'forest', 'Permafrost': 'tundra', 'Cursed Vale': 'undead', 'Desert Frontier': 'frontier', 'Fae Forest': 'fae', 'Candoria': 'candy' };
+    const STAMPY_ICON_FALLBACK = { ...MANA_ICON_FALLBACK, 'Geode Topside': 'dunes', 'The Lost Isles': 'pirate' };
+    const buildBiomeIconMap = (subbiomes) => { const m = {}; for (const k in subbiomes) { const p = subbiomes[k] && subbiomes[k].biome; if (p && !(p in m)) m[p] = subbiomes[k].icon || 'unknown'; } return m; };
+    const biomeIcon = (name, iconMap, fallback) => iconMap[name] || fallback[name] || 'unknown';
+
     const localOnlyMessage = () => t('web.desktop_only_action');
 
     window.eel = {
@@ -425,11 +437,14 @@
         spark_gem: makeEelFn('spark_gem', (gem, statId) => gemCall('sparkGem', gem, statId), { localOnly: true }),
         flare_gem: makeEelFn('flare_gem', (gem, statId) => gemCall('flareGem', gem, statId), { localOnly: true }),
         cancel_home_fetches: makeEelFn('cancel_home_fetches', () => ok()),
-        get_trove_news: makeFeedFn('receive_trove_news', 'https://trovegame.com/feed', parseTroveNews),
-        get_youtube_videos: makeFeedFn('receive_youtube_videos', 'https://trovesaurus.aallyn.net/youtube_videos', asJson),
-        get_twitch_streams: makeFeedFn('receive_twitch_streams', 'https://trovesaurus.aallyn.net/twitch_streams', asJson),
-        get_bilibili_videos: makeFeedFn('receive_bilibili_videos', 'https://trovesaurus.aallyn.net/bilibili_videos', asJson),
-        get_trovesaurus_events: makeFeedFn('receive_events_data', 'https://trovesaurus.com/calendar/feed', (d) => { const e = asJson(d) || []; if (Array.isArray(e)) e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
+        // Feeds now come from the Kiwi API (api.aallyn.net/v1/feeds/*), mapped to the
+        // shapes the home page already consumes (news/youtube/bilibili match 1:1;
+        // twitch + events get a small field rename).
+        get_trove_news: makeFeedFn('receive_trove_news', `${KIWI_BASE}/feeds/news`, (d) => asJson(d).items || []),
+        get_youtube_videos: makeFeedFn('receive_youtube_videos', `${KIWI_BASE}/feeds/youtube`, (d) => asJson(d).items || []),
+        get_twitch_streams: makeFeedFn('receive_twitch_streams', `${KIWI_BASE}/feeds/twitch`, (d) => (asJson(d).items || []).map((v) => ({ user_login: v.login, user_name: v.channel, viewer_count: v.viewers, thumbnail_url: v.thumbnail, title: v.title, url: v.url, game_name: v.game, started_at: v.started_at }))),
+        get_bilibili_videos: makeFeedFn('receive_bilibili_videos', `${KIWI_BASE}/feeds/bilibili`, (d) => asJson(d).items || []),
+        get_trovesaurus_events: makeFeedFn('receive_events_data', `${KIWI_BASE}/feeds/events`, (d) => { const e = (asJson(d).items || []).map((x) => ({ ...x, id: x.event_id, startdate: x.starts_at, enddate: x.ends_at })); e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
         get_current_server_data: makeEelFn('get_current_server_data', async () => {
             const { daily, weekly } = await getCurrentBuffs();
             // Mirror backend format_timedelta: ">0 days" -> "Xd Yh", else "Xh Ym"
@@ -452,40 +467,83 @@
             return { success: true, daily, weekly, merchants };
         }, { localOnly: true }),
         get_chaos_chest_data: makeEelFn('get_chaos_chest_data', async () => {
+            // The weekly window is deterministic (first_fluxion + 11h) -> compute it
+            // locally so the dates show offline. Only the featured item needs the API.
+            const realBase = FIRST_FLUXION_SEC + TROVE_OFFSET_SEC;
+            const nowTs = Date.now() / 1000;
+            const start = realBase + Math.floor((nowTs - realBase) / WEEK_SEC) * WEEK_SEC;
+            const end = start + WEEK_SEC;
+            const fallback_times = { start, end };
+            let data = null;
             try {
                 const c = await kiwiGet('rotations/chaos-chest');
-                const item = c.item || null;
-                return {
-                    success: true,
-                    data: item ? { name: item.name, identifier: item.identifier, blueprint: item.blueprint, end: c.ends_at } : null,
-                    fallback_times: { start: c.starts_at, end: c.ends_at }
-                };
-            } catch (err) { return { success: false, error: String(err && err.message || err), code: 'CHAOS_FAILED' }; }
+                const item = c && c.item;
+                if (item) data = { name: item.name, identifier: item.identifier, blueprint: item.blueprint, end };
+            } catch (e) { /* offline: window-only, frontend falls back to fallback_times */ }
+            return { success: true, data, fallback_times };
         }, { localOnly: true }),
         get_merchant_schedules: makeEelFn('get_merchant_schedules', () => ({ success: true })),
         get_yearly_calendar_data: makeEelFn('get_yearly_calendar_data', async () => {
             try {
-                const data = await kiwiGet('rotations/calendar');
-                // Kiwi: {type,name,starts_at,ends_at,color?,state?,biomes?:[{name,icon}]}
-                // Frontend: {type,name,color,start,end,icons[],biome_names[]} (unix seconds)
-                const events = (data.events || []).map(e => ({
-                    type: e.type, name: e.name, color: e.color || null,
-                    start: e.starts_at, end: e.ends_at,
-                    icons: (e.biomes || []).map(b => b.icon),
-                    biome_names: (e.biomes || []).map(b => b.name)
-                }));
+                // Every recurring rotation is deterministic -> compute the ±365-day
+                // calendar locally (mirrors backend get_yearly_calendar_data).
+                const [subbiomes, weeklyBuffs] = await Promise.all([
+                    fetchJson('assets/data/biomes.json', {}),
+                    fetchJson('assets/data/weekly_buffs.json', {})
+                ]);
+                const iconMap = buildBiomeIconMap(subbiomes);
+                const nowTs = Date.now() / 1000;
+                const startDate = nowTs - 365 * DAY_SEC, endDate = nowTs + 365 * DAY_SEC;
+                const events = [];
+
+                // weekly buffs (current index from the 4-week cycle since 2020-03-23)
+                const wkeys = Object.keys(weeklyBuffs).sort((a, b) => Number(a) - Number(b));
+                const wi = _mod(Math.floor((nowTs - Date.UTC(2020, 2, 23) / 1000) / WEEK_SEC), 4);
+                const curName = (weeklyBuffs[String(wi)] || {}).name;
+                let curIdx = 0; for (const k of wkeys) { if (weeklyBuffs[k].name === curName) { curIdx = Number(k); break; } }
+                const d = new Date(nowTs * 1000);
+                const todayUTC11 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 11, 0, 0) / 1000;
+                let cws = todayUTC11 - ((d.getUTCDay() + 6) % 7) * DAY_SEC; if (nowTs < cws) cws -= WEEK_SEC;
+                for (let wo = -55; wo < 55; wo++) {
+                    const sw = cws + wo * WEEK_SEC, ew = sw + WEEK_SEC;
+                    if (ew > startDate && sw < endDate) { const b = weeklyBuffs[wkeys[_mod(curIdx + wo, wkeys.length)]] || {}; events.push({ type: 'weekly_buff', start: sw, end: ew, name: b.name || 'Weekly Buff', color: b.color || 'fbc02d' }); }
+                }
+                // stampy (weekly 48h, 1 biome)
+                const baseStampy = Date.UTC(2023, 8, 30, 11, 0, 0) / 1000;
+                let wS = Math.floor((startDate - baseStampy) / WEEK_SEC), s = baseStampy + wS * WEEK_SEC;
+                while (s < endDate) { const e = s + 48 * HOUR_SEC; if (e > startDate) { const b = STAMPY_BIOMES[_mod(wS, 13)]; events.push({ type: 'stampy', start: s, end: e, name: 'Stampy', icons: [biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK)], biome_names: [b] }); } s += WEEK_SEC; wS++; }
+                // wild mana (weekly, 3 biomes)
+                const baseMana = Date.UTC(2023, 10, 20, 11, 0, 0) / 1000;
+                let wM = Math.floor((startDate - baseMana) / WEEK_SEC); s = baseMana + wM * WEEK_SEC;
+                while (s < endDate) { const e = s + WEEK_SEC; if (e > startDate) { const bb = [MANA_BIOMES[_mod(wM, 11)], MANA_BIOMES[_mod(wM - 1, 11)], MANA_BIOMES[_mod(wM - 2, 11)]]; events.push({ type: 'mana', start: s, end: e, name: 'Wild Mana', icons: bb.map((x) => biomeIcon(x, iconMap, STAMPY_ICON_FALLBACK)), biome_names: bb }); } s += WEEK_SEC; wM++; }
+                // corruxion (14-day cycle, 3-day window)
+                { const base = Date.UTC(2023, 11, 8, 11, 0, 0) / 1000; let ss = base + Math.floor((startDate - base) / (14 * DAY_SEC)) * 14 * DAY_SEC; while (ss < endDate) { const e = ss + 3 * DAY_SEC; if (e > startDate) events.push({ type: 'corruxion', start: ss, end: e, name: 'Corruxion' }); ss += 14 * DAY_SEC; } }
+                // fluxion (14-day cycle: voting then selling 7 days later)
+                { const base = Date.UTC(2023, 11, 5, 11, 0, 0) / 1000; let sf = base + Math.floor((startDate - base) / (14 * DAY_SEC)) * 14 * DAY_SEC; while (sf < endDate) { const sv = sf, ev = sv + 3 * DAY_SEC, sl = sf + 7 * DAY_SEC, el = sl + 3 * DAY_SEC; if (ev > startDate) events.push({ type: 'fluxion', start: sv, end: ev, name: 'Fluxion (Voting)', color: '5ca8cc' }); if (el > startDate && sl < endDate) events.push({ type: 'fluxion', start: sl, end: el, name: 'Fluxion (Selling)', color: '02679e' }); sf += 14 * DAY_SEC; } }
+                // gardening (2-day + 3-day cycles)
+                { const base = Date.UTC(2025, 4, 23) / 1000 + TROVE_OFFSET_SEC; let s2 = base + Math.floor((startDate - base) / (2 * DAY_SEC)) * 2 * DAY_SEC; while (s2 < endDate) { const hs = s2 + DAY_SEC, he = s2 + 2 * DAY_SEC; if (he > startDate && hs < endDate) events.push({ type: 'gardening_2', start: hs, end: he, name: '2-day plants', color: '8bc34a' }); s2 += 2 * DAY_SEC; } let s3 = base + Math.floor((startDate - base) / (3 * DAY_SEC)) * 3 * DAY_SEC; while (s3 < endDate) { const hs = s3 + 2 * DAY_SEC, he = s3 + 3 * DAY_SEC; if (he > startDate && hs < endDate) events.push({ type: 'gardening_3', start: hs, end: he, name: '3-day plants', color: '4caf50' }); s3 += 3 * DAY_SEC; } }
+
                 return { success: true, data: events, events };
             } catch (err) {
                 return { success: false, error: String(err && err.message || err), code: 'CALENDAR_FAILED' };
             }
         }, { localOnly: true }),
-        get_gardening_rotation: makeEelFn('get_gardening_rotation', async () => {
+        get_gardening_rotation: makeEelFn('get_gardening_rotation', () => {
             try {
-                const g = await kiwiGet('rotations/gardening');
-                const w = (x) => x ? { active: !!x.active, start: x.starts_at, end: x.ends_at } : { active: false, start: 0, end: 0 };
-                // Modal reads rot.start/rot.end/rot.name — map the API's starts_at/ends_at.
-                const future = (g.upcoming || []).map((x) => ({ start: x.starts_at, end: x.ends_at, name: x.name, active: !!x.active }));
-                return { success: true, two_day: w(g.two_day), three_day: w(g.three_day), future };
+                // Deterministic 2-day / 3-day cycles from first_gardening + 11h.
+                const base = Date.UTC(2025, 4, 23) / 1000 + TROVE_OFFSET_SEC;
+                const nowTs = Date.now() / 1000;
+                const c2 = Math.floor((nowTs - base) / (2 * DAY_SEC)), cur2 = base + c2 * 2 * DAY_SEC;
+                const two_day = { name: '2-day plants', active: (cur2 + DAY_SEC) <= nowTs && nowTs < (cur2 + 2 * DAY_SEC), start: cur2 + DAY_SEC, end: cur2 + 2 * DAY_SEC };
+                const c3 = Math.floor((nowTs - base) / (3 * DAY_SEC)), cur3 = base + c3 * 3 * DAY_SEC;
+                const three_day = { name: '3-day plants', active: (cur3 + 2 * DAY_SEC) <= nowTs && nowTs < (cur3 + 3 * DAY_SEC), start: cur3 + 2 * DAY_SEC, end: cur3 + 3 * DAY_SEC };
+                const future = [];
+                for (let i = 0; i < 8; i++) {
+                    const a2 = cur2 + i * 2 * DAY_SEC + DAY_SEC; if (a2 > nowTs) future.push({ name: '2-day plants', start: a2, end: a2 + DAY_SEC });
+                    const a3 = cur3 + i * 3 * DAY_SEC + 2 * DAY_SEC; if (a3 > nowTs) future.push({ name: '3-day plants', start: a3, end: a3 + DAY_SEC });
+                }
+                future.sort((x, y) => x.start - y.start);
+                return { success: true, two_day, three_day, future: future.slice(0, 10) };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'GARDENING_FAILED' }; }
         }, { localOnly: true }),
         get_d15_rotation: makeEelFn('get_d15_rotation', async () => {
@@ -515,10 +573,19 @@
         }, { localOnly: true }),
         get_wild_mana_rotation: makeEelFn('get_wild_mana_rotation', async () => {
             try {
-                const r = await kiwiGet('rotations/wild-mana');
-                const cur = r.current;
-                const future = (r.upcoming || []).map((x) => ({ start: x.starts_at, end: x.ends_at, biomes: x.biomes }));
-                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future };
+                // Deterministic weekly rotation (3 biomes) from 2023-11-20 11:00 UTC.
+                const iconMap = buildBiomeIconMap(await fetchJson('assets/data/biomes.json', {}));
+                const START = Date.UTC(2023, 10, 20, 11, 0, 0) / 1000;
+                const nowTs = Date.now() / 1000;
+                const ws = Math.floor((nowTs - START) / WEEK_SEC);
+                let current = null; const future = [];
+                for (let i = 0; i < 8; i++) {
+                    const w = ws + i, s = START + w * WEEK_SEC;
+                    const bs = [MANA_BIOMES[_mod(w, 11)], MANA_BIOMES[_mod(w - 1, 11)], MANA_BIOMES[_mod(w - 2, 11)]];
+                    const rot = { start: s, end: s + WEEK_SEC, biomes: bs.map((b) => ({ name: b, final_name: b, icon: biomeIcon(b, iconMap, MANA_ICON_FALLBACK) })) };
+                    if (i === 0) current = rot; else future.push(rot);
+                }
+                return { success: true, current, future };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'MANA_FAILED' }; }
         }, { localOnly: true }),
         get_delve_status: makeEelFn('get_delve_status', () => {
@@ -560,10 +627,18 @@
         }, { localOnly: true }),
         get_stampy_rotation: makeEelFn('get_stampy_rotation', async () => {
             try {
-                const r = await kiwiGet('rotations/stampy');
-                const cur = r.current;
-                const future = (r.upcoming || []).map((x) => ({ start: x.starts_at, end: x.ends_at, biomes: x.biomes }));
-                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future };
+                // Deterministic weekly 48h rotation (1 biome) from 2023-09-30 11:00 UTC.
+                const iconMap = buildBiomeIconMap(await fetchJson('assets/data/biomes.json', {}));
+                const BASE = Date.UTC(2023, 8, 30, 11, 0, 0) / 1000;
+                const nowTs = Date.now() / 1000;
+                const wo = Math.floor((nowTs - BASE) / WEEK_SEC);
+                const events = [];
+                for (let w = wo - 1; w < wo + 10; w++) {
+                    const s = BASE + w * WEEK_SEC, e = s + 48 * HOUR_SEC;
+                    if (e > nowTs) { const b = STAMPY_BIOMES[_mod(w, 13)]; events.push({ start: s, end: e, biomes: [{ name: b, final_name: b, icon: biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK) }] }); if (events.length === 8) break; }
+                }
+                if (!events.length) return { success: false, error: 'No valid Stampy events found', code: 'STAMPY_EVENTS_NOT_FOUND' };
+                return { success: true, current: events[0], future: events.slice(1) };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'STAMPY_FAILED' }; }
         }, { localOnly: true })
     };

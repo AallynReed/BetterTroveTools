@@ -41,8 +41,31 @@ _DELVE_HTTP.trust_env = False
 
 DELVE_SERVER_OFFSET = ServerTime().trove_time
 DELVE_ROTATION_BASE = datetime(2025, 11, 3, tzinfo=UTC)
-DELVE_ROTATION_URL = "https://trovesaurus.aallyn.net/delve_rotations/{week_id}"
+# News/feeds, the chaos-chest item, and delve floors are served from the Kiwi API
+# (api.aallyn.net) so desktop, hosted web, and the offline app all share one source.
+KIWI_API_BASE = "https://api.aallyn.net/v1"
+DELVE_ROTATION_URL = KIWI_API_BASE + "/rotations/delves?week={week_id}"
 DELVE_CACHE_TTL_SECONDS = 30 * 60
+
+
+def _kiwi_items(response):
+    payload = response.json()
+    return payload.get("items", []) if isinstance(payload, dict) else (payload or [])
+
+
+def _map_kiwi_twitch(items):
+    return [{
+        "user_login": v.get("login"), "user_name": v.get("channel"),
+        "viewer_count": v.get("viewers"), "thumbnail_url": v.get("thumbnail"),
+        "title": v.get("title"), "url": v.get("url"),
+        "game_name": v.get("game"), "started_at": v.get("started_at"),
+    } for v in (items or [])]
+
+
+def _map_kiwi_events(items):
+    events = [{**x, "id": x.get("event_id"), "startdate": x.get("starts_at"), "enddate": x.get("ends_at")} for x in (items or [])]
+    events.sort(key=lambda e: int(e.get("startdate") or 0))
+    return events
 
 
 def _home_generation() -> int:
@@ -247,18 +270,18 @@ def get_twitch_streams():
     def fetch_task(generation):
         req_id = None
         try:
-            req_id = eel.add_external_request("Fetching Twitch Streams", "https://trovesaurus.aallyn.net/twitch_streams")()
+            req_id = eel.add_external_request("Fetching Twitch Streams", KIWI_API_BASE + "/feeds/twitch")()
         except Exception:
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get("https://trovesaurus.aallyn.net/twitch_streams", headers=headers, timeout=10)
+            response = requests.get(KIWI_API_BASE + "/feeds/twitch", headers=headers, timeout=10)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
                 return
             _finish_external_request(req_id, True)
-            data = response.json()
+            data = _map_kiwi_twitch(_kiwi_items(response))
             eel.receive_twitch_streams(resp(True, data=data))
         except gevent.GreenletExit:
             _finish_external_request(req_id, False)
@@ -277,18 +300,18 @@ def get_youtube_videos():
     def fetch_task(generation):
         req_id = None
         try:
-            req_id = eel.add_external_request("Fetching YouTube Videos", "https://trovesaurus.aallyn.net/youtube_videos")()
+            req_id = eel.add_external_request("Fetching YouTube Videos", KIWI_API_BASE + "/feeds/youtube")()
         except Exception:
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get("https://trovesaurus.aallyn.net/youtube_videos", headers=headers, timeout=10)
+            response = requests.get(KIWI_API_BASE + "/feeds/youtube", headers=headers, timeout=10)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
                 return
             _finish_external_request(req_id, True)
-            data = response.json()
+            data = _kiwi_items(response)
             eel.receive_youtube_videos(resp(True, data=data))
         except gevent.GreenletExit:
             _finish_external_request(req_id, False)
@@ -307,18 +330,18 @@ def get_bilibili_videos():
     def fetch_task(generation):
         req_id = None
         try:
-            req_id = eel.add_external_request("Fetching BiliBili Videos", "https://trovesaurus.aallyn.net/bilibili_videos")()
+            req_id = eel.add_external_request("Fetching BiliBili Videos", KIWI_API_BASE + "/feeds/bilibili")()
         except Exception:
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get("https://trovesaurus.aallyn.net/bilibili_videos", headers=headers, timeout=10)
+            response = requests.get(KIWI_API_BASE + "/feeds/bilibili", headers=headers, timeout=10)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
                 return
             _finish_external_request(req_id, True)
-            data = response.json()
+            data = _kiwi_items(response)
             eel.receive_bilibili_videos(resp(True, data=data))
         except gevent.GreenletExit:
             _finish_external_request(req_id, False)
@@ -337,19 +360,18 @@ def get_trovesaurus_events():
     def fetch_task(generation):
         req_id = None
         try:
-            req_id = eel.add_external_request("Fetching Trovesaurus Events", "https://trovesaurus.com/calendar/feed")()
+            req_id = eel.add_external_request("Fetching Trovesaurus Events", KIWI_API_BASE + "/feeds/events")()
         except Exception:
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get("https://trovesaurus.com/calendar/feed", headers=headers, timeout=3)
+            response = requests.get(KIWI_API_BASE + "/feeds/events", headers=headers, timeout=3)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
                 return
             _finish_external_request(req_id, True)
-            events = response.json()
-            events.sort(key=lambda x: int(x['startdate']))
+            events = _map_kiwi_events(_kiwi_items(response))
             eel.receive_events_data(resp(True, data=events))
         except gevent.GreenletExit:
             _finish_external_request(req_id, False)
@@ -369,57 +391,20 @@ def get_trove_news():
     def fetch_task(generation):
         req_id = None
         try:
-            req_id = eel.add_external_request("Fetching Trove News", "https://trovegame.com/feed")()
+            req_id = eel.add_external_request("Fetching Trove News", KIWI_API_BASE + "/feeds/news")()
         except Exception:
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get("https://trovegame.com/feed", headers=headers, timeout=8)
+            response = requests.get(KIWI_API_BASE + "/feeds/news", headers=headers, timeout=8)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
                 return
             _finish_external_request(req_id, True)
 
-            root = ET.fromstring(response.text)
-            items = []
-
-            for item in root.findall("./channel/item"):
-                title = unescape((item.findtext("title") or "").strip())
-                link = (item.findtext("link") or "").strip()
-                author = (item.findtext("dc:creator", "", RSS_NAMESPACES) or "").strip()
-                pub_date_raw = (item.findtext("pubDate") or "").strip()
-                description = item.findtext("description") or ""
-                media_content = item.find("media:content", RSS_NAMESPACES)
-                media_thumb = item.find("media:thumbnail", RSS_NAMESPACES)
-                categories = [unescape((cat.text or "").strip()) for cat in item.findall("category") if (cat.text or "").strip()]
-
-                published_at = pub_date_raw
-                try:
-                    published_at = parsedate_to_datetime(pub_date_raw).astimezone(UTC).isoformat()
-                except Exception:
-                    pass
-
-                summary = _safe_strip_html(unescape(description))
-                image = None
-                if media_content is not None:
-                    image = media_content.attrib.get("url")
-                if not image and media_thumb is not None:
-                    image = media_thumb.attrib.get("url")
-
-                items.append({
-                    "title": title,
-                    "url": link,
-                    "author": author or "Team Trove",
-                    "published_at": published_at,
-                    "summary": _truncate_text(summary, 220),
-                    "category": categories[0] if categories else "News",
-                    "categories": categories,
-                    "image": image,
-                })
-
-                if len(items) >= 20:
-                    break
+            # Kiwi already returns parsed news items in the shape the home page wants.
+            items = _kiwi_items(response)
 
             eel.receive_trove_news(resp(True, data=items))
         except gevent.GreenletExit:
@@ -503,40 +488,33 @@ def get_chaos_chest_data():
 
     req_id = None
     try:
-        req_id = eel.add_external_request("Fetching Chaos Chest Data", "https://trovesaurus.com/api/chaos-chest")()
+        req_id = eel.add_external_request("Fetching Chaos Chest Data", KIWI_API_BASE + "/rotations/chaos-chest")()
     except Exception:
         pass
 
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
-        response = requests.get("https://trovesaurus.com/api/chaos-chest", headers=headers, timeout=3)
-        
+        response = requests.get(KIWI_API_BASE + "/rotations/chaos-chest", headers=headers, timeout=3)
+
         if req_id:
             eel.remove_external_request(req_id, response.status_code == 200)()
 
         if response.status_code == 200:
             payload = response.json()
+            item = payload.get("item") if isinstance(payload, dict) else None
 
-            # Defensive normalization in case the endpoint shape changes.
-            if isinstance(payload, dict) and isinstance(payload.get("data"), dict):
-                payload = payload["data"]
-            elif isinstance(payload, list):
-                payload = payload[0] if payload else {}
-
-            if isinstance(payload, dict):
-                name = payload.get("name")
-                start = payload.get("start")
-                end = payload.get("end")
-                identifier = payload.get("identifier")
-                blueprint = payload.get("blueprint")
-
+            if isinstance(item, dict):
+                blueprint = item.get("blueprint")
                 if isinstance(blueprint, str):
                     blueprint = blueprint.lower()
+                identifier = item.get("identifier")
                 if isinstance(identifier, str):
                     identifier = identifier.replace("\\", "/")
 
+                start = payload.get("starts_at")
+                end = payload.get("ends_at")
                 normalized = {
-                    "name": name,
+                    "name": item.get("name"),
                     "start": int(start) if start is not None else None,
                     "end": int(end) if end is not None else None,
                     "identifier": identifier,
