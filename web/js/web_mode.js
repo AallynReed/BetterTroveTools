@@ -18,6 +18,11 @@
     const fail = (error, code = 'WEB_MODE_UNAVAILABLE') => ({ success: false, error, code });
     const clone = (value) => JSON.parse(JSON.stringify(value));
 
+    // Resolve a translation id at call time (i18n is loaded by the time any of
+    // these shim functions actually run, so these user-facing "unavailable on
+    // web" messages get localized instead of being hardcoded English).
+    const t = (id, params) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(id, params) : id);
+
     const readJson = (key, fallback) => {
         try {
             const value = localStorage.getItem(key);
@@ -162,7 +167,7 @@
         return { daily, weekly };
     };
 
-    const localOnlyMessage = 'This desktop-only action is unavailable on the hosted web version.';
+    const localOnlyMessage = () => t('web.desktop_only_action');
 
     window.eel = {
         expose(fn, name) {
@@ -182,9 +187,9 @@
             if (url) window.open(url, '_blank', 'noopener,noreferrer');
             return ok();
         }, { localOnly: true }),
-        start_self_update: makeEelFn('start_self_update', () => fail(localOnlyMessage), { localOnly: true }),
+        start_self_update: makeEelFn('start_self_update', () => fail(localOnlyMessage()), { localOnly: true }),
         finalize_self_update_exit: makeEelFn('finalize_self_update_exit', () => ok(), { localOnly: true }),
-        browse_for_game_dir: makeEelFn('browse_for_game_dir', () => fail(localOnlyMessage), { localOnly: true }),
+        browse_for_game_dir: makeEelFn('browse_for_game_dir', () => fail(localOnlyMessage()), { localOnly: true }),
         get_detected_game_paths: makeEelFn('get_detected_game_paths', () => ok({ paths: [], detected: [] })),
         get_system_info: makeEelFn('get_system_info', () => ok({ app_mode: 'web', platform: navigator.platform || 'browser' })),
         get_app_license: makeEelFn('get_app_license', async () => ok({ text: await fetch('LICENSE').then(r => r.ok ? r.text() : '').catch(() => '') })),
@@ -213,23 +218,23 @@
             return ok();
         }, { localOnly: true }),
         get_calculated_star_chart: makeEelFn('get_calculated_star_chart', getCalculatedStarChart),
-        parse_star_chart_code: makeEelFn('parse_star_chart_code', () => fail('Star Chart stat parsing needs the desktop calculation engine.')),
-        calculate_gem_builds: makeEelFn('calculate_gem_builds', () => fail('Gem build optimization needs the desktop calculation engine.')),
+        parse_star_chart_code: makeEelFn('parse_star_chart_code', () => fail(t('web.star_chart_needs_desktop'))),
+        calculate_gem_builds: makeEelFn('calculate_gem_builds', () => fail(t('web.gem_builds_needs_desktop'))),
         get_trove_classes: makeEelFn('get_trove_classes', async () => {
             const classes = await fetchJson('assets/data/classes.json', []);
             return ok((classes || []).map(cls => ({ name: cls.name, value: cls.name })));
         }),
         get_food_data: makeEelFn('get_food_data', async () => ok(await fetchJson('assets/data/builds/food.json', {}))),
         get_ally_data: makeEelFn('get_ally_data', async () => ok(await fetchJson('assets/data/builds/ally.json', {}))),
-        get_gem_lookups: makeEelFn('get_gem_lookups', () => fail('Gem simulation needs the desktop gem engine.')),
-        get_gem_stat_range: makeEelFn('get_gem_stat_range', () => fail('Gem stat range needs the desktop calculation engine.')),
-        simulate_next_focus: makeEelFn('simulate_next_focus', () => fail('Focus simulation needs the desktop calculation engine.')),
-        create_gem: makeEelFn('create_gem', () => fail('Gem simulation needs the desktop gem engine.')),
+        get_gem_lookups: makeEelFn('get_gem_lookups', () => fail(t('web.gem_sim_needs_desktop'))),
+        get_gem_stat_range: makeEelFn('get_gem_stat_range', () => fail(t('web.gem_stat_range_needs_desktop'))),
+        simulate_next_focus: makeEelFn('simulate_next_focus', () => fail(t('web.focus_sim_needs_desktop'))),
+        create_gem: makeEelFn('create_gem', () => fail(t('web.gem_sim_needs_desktop'))),
         mass_update_gems: makeEelFn('mass_update_gems', (gems) => ({ success: true, data: { gems }, gems })),
-        level_up_gem: makeEelFn('level_up_gem', () => fail('Gem simulation needs the desktop gem engine.')),
-        augment_gem: makeEelFn('augment_gem', () => fail('Gem simulation needs the desktop gem engine.')),
-        spark_gem: makeEelFn('spark_gem', () => fail('Gem simulation needs the desktop gem engine.')),
-        flare_gem: makeEelFn('flare_gem', () => fail('Gem simulation needs the desktop gem engine.')),
+        level_up_gem: makeEelFn('level_up_gem', () => fail(t('web.gem_sim_needs_desktop'))),
+        augment_gem: makeEelFn('augment_gem', () => fail(t('web.gem_sim_needs_desktop'))),
+        spark_gem: makeEelFn('spark_gem', () => fail(t('web.gem_sim_needs_desktop'))),
+        flare_gem: makeEelFn('flare_gem', () => fail(t('web.gem_sim_needs_desktop'))),
         cancel_home_fetches: makeEelFn('cancel_home_fetches', () => ok()),
         get_trove_news: makeCallbackEelFn('get_trove_news', 'receive_trove_news', []),
         get_youtube_videos: makeCallbackEelFn('get_youtube_videos', 'receive_youtube_videos', []),

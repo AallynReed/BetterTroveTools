@@ -1291,7 +1291,13 @@
         "home.title_schedule": "",
         "gems.star_chart.type_node": "",
         "common.value_stat": "",
-        "common.value": ""
+        "common.value": "",
+        "web.desktop_only_action": "",
+        "web.star_chart_needs_desktop": "",
+        "web.gem_builds_needs_desktop": "",
+        "web.gem_sim_needs_desktop": "",
+        "web.gem_stat_range_needs_desktop": "",
+        "web.focus_sim_needs_desktop": ""
     },
     "content": {
         "\"Clam\" \"Chow\"": "",

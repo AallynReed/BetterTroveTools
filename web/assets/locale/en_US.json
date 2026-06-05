@@ -1292,7 +1292,13 @@
         "gems.star_chart.type_node": "{type} Node",
         "common.value_stat": "{value} {stat}",
         "common.value": "{value}%",
-        "mod_manager.cfg_read_only_skipped": "Config file is read-only, skipped: {mods}"
+        "mod_manager.cfg_read_only_skipped": "Config file is read-only, skipped: {mods}",
+        "web.desktop_only_action": "This desktop-only action is unavailable on the hosted web version.",
+        "web.star_chart_needs_desktop": "Star Chart stat parsing needs the desktop calculation engine.",
+        "web.gem_builds_needs_desktop": "Gem build optimization needs the desktop calculation engine.",
+        "web.gem_sim_needs_desktop": "Gem simulation needs the desktop gem engine.",
+        "web.gem_stat_range_needs_desktop": "Gem stat range needs the desktop calculation engine.",
+        "web.focus_sim_needs_desktop": "Focus simulation needs the desktop calculation engine."
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

@@ -1291,7 +1291,13 @@
         "home.title_schedule": "{title} 日程安排",
         "gems.star_chart.type_node": "{type} 节点",
         "common.value_stat": "{value} {stat}",
-        "common.value": "{value}%"
+        "common.value": "{value}%",
+        "web.desktop_only_action": "",
+        "web.star_chart_needs_desktop": "",
+        "web.gem_builds_needs_desktop": "",
+        "web.gem_sim_needs_desktop": "",
+        "web.gem_stat_range_needs_desktop": "",
+        "web.focus_sim_needs_desktop": ""
     },
     "content": {
         "(no tier)": "",
