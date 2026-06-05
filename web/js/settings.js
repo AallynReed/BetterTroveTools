@@ -23,6 +23,7 @@ document.addEventListener('settings_loaded', async () => {
             const settings = reactive({
                 accent_color: '#5ec6ff',
                 app_font: 'system',
+                ui_scale: 1,
                 show_community_content: true,
                 show_official_news: true,
                 auto_fix_names: false,
@@ -37,6 +38,8 @@ document.addEventListener('settings_loaded', async () => {
             const isFpsRepair = (path) => fpsRepair.value.includes(path);
             // Game-client settings (FPS cap) require local file access -> hide in hosted web mode.
             const isWebMode = window.BTT_WEB_MODE === true;
+            // UI size scaling is only offered on the packaged Android build.
+            const isNative = window.BTT_NATIVE === true;
 
             const modals = reactive({
                 add: false,
@@ -56,6 +59,9 @@ document.addEventListener('settings_loaded', async () => {
                 if (data) {
                     settings.accent_color = data.accent_color || '#5ec6ff';
                     settings.app_font = data.app_font || 'system';
+                    let scale = Number(data.ui_scale);
+                    if (!isFinite(scale) || scale <= 0) scale = 1;
+                    settings.ui_scale = Math.min(1, Math.max(0.7, scale)); // smaller-or-default only
                     settings.show_community_content = data.show_community_content !== false;
                     settings.show_official_news = data.show_official_news !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
@@ -255,7 +261,7 @@ document.addEventListener('settings_loaded', async () => {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
-                resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode
+                resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode, isNative
             };
         }
     });

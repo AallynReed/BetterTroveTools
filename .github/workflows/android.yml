@@ -11,6 +11,7 @@ on:
       - "web/**"
       - "android/**"
       - "capacitor.config.json"
+      - "metadata.json"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/android.yml"
@@ -46,6 +47,11 @@ jobs:
 
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      # Mirror the app version (root metadata.json) into the web build so the
+      # offline sidebar shows the real version instead of a placeholder.
+      - name: Sync app version into the web build
+        run: cp metadata.json web/metadata.json
 
       # cap sync copies the web/ build into the native project and regenerates
       # the Capacitor plugin glue (both are git-ignored / not committed).

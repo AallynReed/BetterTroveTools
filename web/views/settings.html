@@ -33,8 +33,23 @@
                         <option value="arial">Arial</option>
                     </select>
                 </div>
+                <div v-if="isNative" style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.ui_size') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.ui_size_desc') }}</div>
+                    </div>
+                    <select v-model.number="settings.ui_scale" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 8px 12px; cursor: pointer; min-width: 180px; outline: none;">
+                        <option :value="1">100% ({{ t('settings.default') }})</option>
+                        <option :value="0.95">95%</option>
+                        <option :value="0.9">90%</option>
+                        <option :value="0.85">85%</option>
+                        <option :value="0.8">80%</option>
+                        <option :value="0.75">75%</option>
+                        <option :value="0.7">70%</option>
+                    </select>
+                </div>
             </div>
-            
+
             <div class="settings-section">
                 <h3>{{ t('settings.home_page_preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">

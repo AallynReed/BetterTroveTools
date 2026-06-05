@@ -98,6 +98,42 @@
     const KIWI_BASE = 'https://api.aallyn.net/v1';
     const kiwiGet = async (path) => asJson(await feedGet(`${KIWI_BASE}/${path}`));
 
+    // --- Delve helpers (mirror backend.home delve week math + depth normalize) ---
+    // Delve rotations roll over on Trove server reset (UTC + 11h), base 2025-11-03.
+    const DELVE_BASE_MS = Date.UTC(2025, 10, 3); // 2025-11-03 00:00 UTC
+    const DELVE_OFFSET_MS = 11 * 3600 * 1000;
+    const DELVE_WEEK_MS = 7 * 24 * 3600 * 1000;
+    const delveCurrentWeekId = (nowMs) => {
+        const current = (nowMs == null ? Date.now() : nowMs) - DELVE_OFFSET_MS;
+        return Math.max(1, Math.floor((current - DELVE_BASE_MS) / DELVE_WEEK_MS) + 1);
+    };
+    const delveWeekWindow = (weekId) => {
+        const start = DELVE_BASE_MS + Math.max(0, weekId - 1) * DELVE_WEEK_MS + DELVE_OFFSET_MS;
+        return { start: Math.floor(start / 1000), end: Math.floor((start + DELVE_WEEK_MS) / 1000) };
+    };
+    const normalizeDelveEnemy = (e) => (e && typeof e === 'object')
+        ? { name: e.n || 'Unknown', bans: e.b || [], count: e.c || 0 }
+        : { name: 'Unknown', bans: [], count: 0 };
+    const normalizeDelveDepth = (d) => {
+        const enemies = (d.enemies || []).map(normalizeDelveEnemy);
+        const rooms = [];
+        (d.roomDetails || []).forEach((room, i) => {
+            if (!room || typeof room !== 'object' || Array.isArray(room)) return;
+            const ei = room.e;
+            const enemy = (typeof ei === 'number' && ei >= 0 && ei < enemies.length) ? enemies[ei] : null;
+            rooms.push({ room: i + 1, enemyIndex: ei, enemy });
+        });
+        const boss = d.boss || {};
+        return {
+            id: d.id, depth: d.depth, biome: d.biome, zone: d.zone,
+            boss: { name: boss.n || 'Unknown', bans: boss.b || [] },
+            objective: d.objective, objectiveText: d.objectiveText,
+            killType: d.killType, killAmount: d.killAmount, killString: d.killString,
+            isVaultFloor: !!d.isVaultFloor, submittedBy: d.submittedBy,
+            enemies, rooms,
+        };
+    };
+
     const _stripHtml = (html) => {
         const d = document.createElement('div');
         d.innerHTML = html || '';
@@ -181,6 +217,7 @@
         show_community_content: true,
         show_official_news: true,
         hide_beta_features: false,
+        ui_scale: 1,
         custom_directories: [],
         ui_preferences: {}
     };
@@ -277,7 +314,16 @@
             return ok(merged);
         }, { localOnly: true }),
         get_available_languages: makeEelFn('get_available_languages', () => languages),
-        get_app_metadata: makeEelFn('get_app_metadata', () => ({ APP_NAME: 'Better Trove Tools', APP_VERSION: 'Web' })),
+        get_app_metadata: makeEelFn('get_app_metadata', async () => {
+            // Mirror web_server.py / desktop: read the bundled metadata.json so the
+            // sidebar shows the real app version offline (Android) too, instead of
+            // a "Web" placeholder. web/metadata.json is a copy of the root file.
+            const meta = await fetchJson('metadata.json', null);
+            if (meta && meta.APP_VERSION) {
+                return { APP_NAME: meta.APP_NAME || 'Better Trove Tools', APP_VERSION: meta.APP_VERSION };
+            }
+            return { APP_NAME: 'Better Trove Tools', APP_VERSION: 'Unknown' };
+        }),
         get_startup_url: makeEelFn('get_startup_url', () => null),
         open_url_in_browser: makeEelFn('open_url_in_browser', (url) => {
             if (url) window.open(url, '_blank', 'noopener,noreferrer');
@@ -314,8 +360,24 @@
             return ok();
         }, { localOnly: true }),
         get_calculated_star_chart: makeEelFn('get_calculated_star_chart', getCalculatedStarChart),
-        parse_star_chart_code: makeEelFn('parse_star_chart_code', () => fail(t('web.star_chart_needs_desktop'))),
-        calculate_gem_builds: makeEelFn('calculate_gem_builds', () => fail(t('web.gem_builds_needs_desktop'))),
+        parse_star_chart_code: makeEelFn('parse_star_chart_code', async (base64Code) => {
+            try {
+                if (!window.GemBuildOptimizer) return fail(t('web.star_chart_needs_desktop'));
+                const parsed = await window.GemBuildOptimizer.parseStarChart(base64Code);
+                return { success: true, data: parsed, ...parsed };
+            } catch (err) {
+                return { success: false, data: { stats: {}, abilities: [] }, stats: {}, abilities: [], error: String(err && err.message || err), code: 'PARSE_STAR_CHART_CODE_FAILED' };
+            }
+        }, { localOnly: true }),
+        calculate_gem_builds: makeEelFn('calculate_gem_builds', async (config) => {
+            try {
+                if (!window.GemBuildOptimizer) return fail(t('web.gem_builds_needs_desktop'));
+                const builds = await window.GemBuildOptimizer.calculateBuilds(config || {});
+                return { success: true, data: { builds }, builds };
+            } catch (err) {
+                return { success: false, error: String(err && err.message || err), code: 'CALCULATE_GEM_BUILDS_FAILED' };
+            }
+        }, { localOnly: true }),
         get_trove_classes: makeEelFn('get_trove_classes', async () => {
             const classes = await fetchJson('assets/data/classes.json', []);
             return ok((classes || []).map(cls => ({ name: cls.name, value: cls.name })));
@@ -339,7 +401,38 @@
         get_trovesaurus_events: makeFeedFn('receive_events_data', 'https://trovesaurus.com/calendar/feed', (d) => { const e = asJson(d) || []; if (Array.isArray(e)) e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
         get_current_server_data: makeEelFn('get_current_server_data', async () => {
             const { daily, weekly } = await getCurrentBuffs();
-            return { success: true, daily, weekly, merchants: [] };
+            // Mirror backend format_timedelta: ">0 days" -> "Xd Yh", else "Xh Ym"
+            const fmtDur = (secs) => {
+                const total = Math.max(0, Math.floor(Number(secs) || 0));
+                const days = Math.floor(total / 86400);
+                const hours = Math.floor((total % 86400) / 3600);
+                const minutes = Math.floor((total % 3600) / 60);
+                return days > 0 ? `${days}d ${hours}h` : `${hours}h ${minutes}m`;
+            };
+            const cap = (s) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+            let merchants = {};
+            try {
+                const [corr, flux] = await Promise.all([
+                    kiwiGet('rotations/corruxion').catch(() => null),
+                    kiwiGet('rotations/fluxion').catch(() => null)
+                ]);
+                if (corr) {
+                    merchants.corruxion = {
+                        active: !!corr.active,
+                        time_str: fmtDur(corr.seconds_remaining),
+                        action: corr.active ? 'Leaves in' : 'Arrives in'
+                    };
+                }
+                if (flux) {
+                    merchants.fluxion = {
+                        active: !!flux.active,
+                        state: cap(flux.state) || 'Away',
+                        time_str: fmtDur(flux.seconds_remaining),
+                        action: flux.active ? 'Ends in' : 'Starts in'
+                    };
+                }
+            } catch (err) { /* merchants stay partial/empty on failure */ }
+            return { success: true, daily, weekly, merchants };
         }),
         get_chaos_chest_data: makeEelFn('get_chaos_chest_data', async () => {
             try {
@@ -390,8 +483,43 @@
                 return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future: r.upcoming || [] };
             } catch (err) { return { success: false, error: String(err && err.message || err), code: 'MANA_FAILED' }; }
         }, { localOnly: true }),
-        get_delve_status: makeEelFn('get_delve_status', () => ({ success: true, current: null, next: null })),
-        get_delve_rotation: makeEelFn('get_delve_rotation', () => ({ success: true, weeks: [], currentWeekId: null })),
+        get_delve_status: makeEelFn('get_delve_status', () => {
+            const currentWeekId = delveCurrentWeekId();
+            const { start, end } = delveWeekWindow(currentWeekId);
+            return { success: true, currentWeekId, start, end };
+        }, { localOnly: true }),
+        get_delve_rotation: makeEelFn('get_delve_rotation', async () => {
+            try {
+                const idx = await kiwiGet('rotations/delves/weeks');
+                const currentWeekId = idx.current_week || delveCurrentWeekId();
+                const minWeek = Math.max(1, currentWeekId - 7);
+                const totals = {};
+                (idx.items || []).forEach((it) => { totals[it.week] = it.total || it.count || 0; });
+
+                const weekIds = [];
+                for (let w = currentWeekId; w >= minWeek; w--) weekIds.push(w);
+
+                const weeks = await Promise.all(weekIds.map(async (wid) => {
+                    const { start, end } = delveWeekWindow(wid);
+                    const base = { weekId: wid, isCurrent: wid === currentWeekId, start, end };
+                    if ((totals[wid] || 0) <= 0) return { ...base, depths: [], depthCount: 0, hasData: false };
+                    try {
+                        const wk = await kiwiGet(`rotations/delves?week=${wid}`);
+                        const depths = (wk.depths || []).map(normalizeDelveDepth);
+                        return { ...base, depths, depthCount: depths.length, hasData: depths.length > 0 };
+                    } catch (e) {
+                        return { ...base, depths: [], depthCount: 0, hasData: false };
+                    }
+                }));
+
+                if (!weeks.length) return { success: false, error: 'No delve data found', code: 'DELVE_ROTATION_NOT_FOUND' };
+                weeks.sort((a, b) => (b.weekId || 0) - (a.weekId || 0));
+                const current = weeks.find((w) => w.isCurrent) || weeks[0];
+                return { success: true, currentWeekId, current, weeks };
+            } catch (err) {
+                return { success: false, error: String(err && err.message || err), code: 'DELVE_ROTATION_FAILED' };
+            }
+        }, { localOnly: true }),
         get_stampy_rotation: makeEelFn('get_stampy_rotation', async () => {
             try {
                 const r = await kiwiGet('rotations/stampy');

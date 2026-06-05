@@ -1,4 +1,4 @@
-package net.aallyn.bettertrovetools;
+package net.aallyn.btt;
 
 import com.getcapacitor.BridgeActivity;
 

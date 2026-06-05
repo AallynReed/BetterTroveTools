@@ -1,14 +1,28 @@
 apply plugin: 'com.android.application'
 
+// Keep the Android version in lockstep with the app's metadata.json (APP_VERSION),
+// the same source the desktop build reads. versionName mirrors it verbatim
+// (e.g. "2026.06.02") and versionCode is its digits (e.g. 20260602), which stays
+// monotonically increasing for date-based versions.
+def appVersionName = "2026.06.02"
+def appVersionCode = 20260602
+try {
+    def meta = new groovy.json.JsonSlurper().parseText(file("${rootProject.projectDir}/../metadata.json").text)
+    appVersionName = meta.APP_VERSION
+    appVersionCode = (appVersionName.replaceAll('[^0-9]', '')) as Integer
+} catch (Exception e) {
+    logger.warn("BTT: could not read APP_VERSION from metadata.json (${e.message}); using ${appVersionName}")
+}
+
 android {
-    namespace "net.aallyn.bettertrovetools"
+    namespace "net.aallyn.btt"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "net.aallyn.bettertrovetools"
+        applicationId "net.aallyn.btt"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
