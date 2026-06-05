@@ -25,3 +25,12 @@ populate_translations.py
 
 # Ignore web cache
 web/cache/
+
+# Node / Capacitor (Android build)
+node_modules/
+.gradle/
+android/local.properties
+android/app/release/
+android/capacitor-cordova-android-plugins/
+*.keystore
+*.apk

@@ -1,0 +1,17 @@
+{
+  "name": "bettertrovetools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor Android wrapper for Better Trove Tools (offline web build).",
+  "license": "ISC",
+  "author": "Aallyn",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AallynReed/BetterTroveTools.git"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.6.6",
+    "@capacitor/cli": "^7.6.6",
+    "@capacitor/core": "^7.6.6"
+  }
+}

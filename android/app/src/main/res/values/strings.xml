@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Better Trove Tools</string>
+    <string name="title_activity_main">Better Trove Tools</string>
+    <string name="package_name">net.aallyn.bettertrovetools</string>
+    <string name="custom_url_scheme">net.aallyn.bettertrovetools</string>
+</resources>
