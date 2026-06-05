@@ -2288,10 +2288,13 @@ span.flatpickr-weekday {
         top: 0;
         left: 0;
         right: 0;
-        height: 52px;
+        /* Grow the bar by the status-bar/notch inset so its content sits below
+           the Android notification bar (edge-to-edge WebView). env() is 0 on the
+           desktop/web build, so this is a no-op there. */
+        height: calc(52px + env(safe-area-inset-top, 0px));
         align-items: center;
         gap: 10px;
-        padding: 0 12px;
+        padding: env(safe-area-inset-top, 0px) 12px 0;
         background: var(--bg-panel);
         border-bottom: 1px solid var(--border-color);
         z-index: 260;
@@ -2334,6 +2337,8 @@ span.flatpickr-weekday {
         width: min(86vw, 300px);
         height: 100dvh;
         max-height: none;
+        /* Clear the status bar / notch so the drawer's logo isn't under it. */
+        padding-top: env(safe-area-inset-top, 0px);
         transform: translateX(-100%);
         transition: transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1);
         z-index: 300;
@@ -2376,7 +2381,7 @@ span.flatpickr-weekday {
         height: 100vh;
         overflow-y: auto;
         overflow-x: hidden;
-        padding-top: 52px;
+        padding-top: calc(52px + env(safe-area-inset-top, 0px));
         -webkit-overflow-scrolling: touch;
     }
 

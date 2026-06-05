@@ -53,8 +53,20 @@
         }
     };
 
+    // Server-proxied feeds (news, videos, Trovesaurus events) need the backend's
+    // api/eel endpoints. The hosted web build serves them same-origin; a packaged
+    // native app (Android) has no local backend, so it reaches the hosted backend
+    // instead. NOTE: for this to work over the network the backend must send CORS
+    // headers (Access-Control-Allow-Origin) allowing the app's origin. If it
+    // can't reach the backend it falls back to the existing empty state.
+    const HOSTED_BACKEND = 'https://trove.aallyn.net';
+    const isNativeApp = () => !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
+        && window.Capacitor.isNativePlatform());
+
     const callCompatApi = async (name, args) => {
-        const response = await fetch(`api/eel/${encodeURIComponent(name)}`, {
+        const path = `api/eel/${encodeURIComponent(name)}`;
+        const url = isNativeApp() ? `${HOSTED_BACKEND}/${path}` : path;
+        const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ args })
