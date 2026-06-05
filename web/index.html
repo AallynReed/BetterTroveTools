@@ -23,6 +23,8 @@
 
     <!-- Defer all scripts so they don't block HTML parsing. Order is preserved by `defer`. -->
     <script defer src="/eel.js"></script>
+    <!-- Client-side gem engine: lets web_mode.js run the Gem Simulator offline. -->
+    <script defer src="js/gems_and_builds/gem_engine.js"></script>
     <script defer src="js/web_mode.js"></script>
     <!-- Vue vendored locally (web/lib) so the app renders fully offline (Android/desktop). -->
     <script defer src="lib/vue.global.prod.js"></script>

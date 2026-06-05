@@ -23,6 +23,13 @@
     // web" messages get localized instead of being hardcoded English).
     const t = (id, params) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(id, params) : id);
 
+    // The Gem Simulator runs fully client-side via js/gems_and_builds/gem_engine.js
+    // (a port of the Python gem model), so it works offline / on Android. Fall back
+    // to the desktop-only message only if that engine somehow failed to load.
+    const gemCall = (method, ...args) => (window.GemEngine && window.GemEngine[method])
+        ? window.GemEngine[method](...args)
+        : fail(t('web.gem_sim_needs_desktop'));
+
     const readJson = (key, fallback) => {
         try {
             const value = localStorage.getItem(key);
@@ -226,15 +233,15 @@
         }),
         get_food_data: makeEelFn('get_food_data', async () => ok(await fetchJson('assets/data/builds/food.json', {}))),
         get_ally_data: makeEelFn('get_ally_data', async () => ok(await fetchJson('assets/data/builds/ally.json', {}))),
-        get_gem_lookups: makeEelFn('get_gem_lookups', () => fail(t('web.gem_sim_needs_desktop'))),
+        get_gem_lookups: makeEelFn('get_gem_lookups', () => gemCall('getLookups'), { localOnly: true }),
         get_gem_stat_range: makeEelFn('get_gem_stat_range', () => fail(t('web.gem_stat_range_needs_desktop'))),
         simulate_next_focus: makeEelFn('simulate_next_focus', () => fail(t('web.focus_sim_needs_desktop'))),
-        create_gem: makeEelFn('create_gem', () => fail(t('web.gem_sim_needs_desktop'))),
-        mass_update_gems: makeEelFn('mass_update_gems', (gems) => ({ success: true, data: { gems }, gems })),
-        level_up_gem: makeEelFn('level_up_gem', () => fail(t('web.gem_sim_needs_desktop'))),
-        augment_gem: makeEelFn('augment_gem', () => fail(t('web.gem_sim_needs_desktop'))),
-        spark_gem: makeEelFn('spark_gem', () => fail(t('web.gem_sim_needs_desktop'))),
-        flare_gem: makeEelFn('flare_gem', () => fail(t('web.gem_sim_needs_desktop'))),
+        create_gem: makeEelFn('create_gem', (data) => gemCall('createGem', data), { localOnly: true }),
+        mass_update_gems: makeEelFn('mass_update_gems', (gems) => gemCall('massUpdate', gems), { localOnly: true }),
+        level_up_gem: makeEelFn('level_up_gem', (gem) => gemCall('levelUpGem', gem), { localOnly: true }),
+        augment_gem: makeEelFn('augment_gem', (gem, statId, augmentId) => gemCall('augmentGem', gem, statId, augmentId), { localOnly: true }),
+        spark_gem: makeEelFn('spark_gem', (gem, statId) => gemCall('sparkGem', gem, statId), { localOnly: true }),
+        flare_gem: makeEelFn('flare_gem', (gem, statId) => gemCall('flareGem', gem, statId), { localOnly: true }),
         cancel_home_fetches: makeEelFn('cancel_home_fetches', () => ok()),
         get_trove_news: makeCallbackEelFn('get_trove_news', 'receive_trove_news', []),
         get_youtube_videos: makeCallbackEelFn('get_youtube_videos', 'receive_youtube_videos', []),
