@@ -63,21 +63,27 @@
         return response.json();
     };
 
-    // --- Home feeds for the native app ---------------------------------------
-    // The home feeds (news/videos/events) are fetched by the desktop app directly
-    // from public URLs. A browser (WebView) can't fetch them because those servers
-    // don't send CORS headers -- which is exactly why the desktop does it
-    // server-side. Capacitor's native HTTP makes the request from the native layer
-    // (like the desktop's Python requests), bypassing CORS, so the packaged app can
-    // hit the SAME urls the desktop does. On the plain web build (no Capacitor) we
-    // keep the existing backend-proxied path.
+    // --- Home feeds ----------------------------------------------------------
+    // Both the web build and the packaged Android app fetch the home feeds
+    // (news/videos/events) from the SAME public urls the desktop uses. In the
+    // packaged app we go through Capacitor's native HTTP, which runs the request
+    // from the native layer (like the desktop's Python requests) and so bypasses
+    // CORS. On the plain web build we use fetch(), which is subject to each feed
+    // server's CORS policy (a server that doesn't send Access-Control-Allow-Origin
+    // will leave that feed empty there until CORS is enabled on it).
     const capacitorHttp = () => (window.Capacitor && window.Capacitor.Plugins
         && window.Capacitor.Plugins.CapacitorHttp) || null;
 
-    const nativeGet = async (url) => {
-        const res = await capacitorHttp().get({ url, headers: { 'User-Agent': 'BetterTroveTools/1.0' } });
-        if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
-        return res.data; // object for JSON responses, string for XML/RSS
+    const feedGet = async (url) => {
+        const http = capacitorHttp();
+        if (http) {
+            const res = await http.get({ url, headers: { 'User-Agent': 'BetterTroveTools/1.0' } });
+            if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
+            return res.data; // object for JSON, string for XML/RSS
+        }
+        const res = await fetch(url, { headers: { 'Accept': 'application/json, text/xml, */*' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.text(); // string; the transforms (asJson / parseTroveNews) handle it
     };
 
     const asJson = (data) => (typeof data === 'string' ? JSON.parse(data) : data);
@@ -123,20 +129,14 @@
         return items;
     };
 
-    // A feed function that, in the native app, fetches the desktop's url directly
-    // via native HTTP and invokes the receive_* callback; on the web build it falls
-    // back to the existing backend-proxied path.
-    const makeNativeFeedFn = (name, callbackName, url, transform) => (...args) => async () => {
+    // A feed function that fetches the desktop's url directly (native HTTP in the
+    // app, fetch on the web build) and invokes the receive_* callback.
+    const makeFeedFn = (callbackName, url, transform) => () => async () => {
         let response;
-        if (capacitorHttp()) {
-            try {
-                response = { success: true, data: transform(await nativeGet(url)) };
-            } catch (e) {
-                response = { success: false, error: String(e && e.message || e), code: 'NATIVE_FEED_FAILED' };
-            }
-        } else {
-            try { response = await callCompatApi(name, args); }
-            catch { response = { success: true, data: [] }; }
+        try {
+            response = { success: true, data: transform(await feedGet(url)) };
+        } catch (e) {
+            response = { success: false, error: String(e && e.message || e), code: 'FEED_FAILED' };
         }
         if (typeof window[callbackName] === 'function') window[callbackName](response);
         return response;
@@ -322,11 +322,11 @@
         spark_gem: makeEelFn('spark_gem', (gem, statId) => gemCall('sparkGem', gem, statId), { localOnly: true }),
         flare_gem: makeEelFn('flare_gem', (gem, statId) => gemCall('flareGem', gem, statId), { localOnly: true }),
         cancel_home_fetches: makeEelFn('cancel_home_fetches', () => ok()),
-        get_trove_news: makeNativeFeedFn('get_trove_news', 'receive_trove_news', 'https://trovegame.com/feed', parseTroveNews),
-        get_youtube_videos: makeNativeFeedFn('get_youtube_videos', 'receive_youtube_videos', 'https://trovesaurus.aallyn.net/youtube_videos', asJson),
-        get_twitch_streams: makeNativeFeedFn('get_twitch_streams', 'receive_twitch_streams', 'https://trovesaurus.aallyn.net/twitch_streams', asJson),
-        get_bilibili_videos: makeNativeFeedFn('get_bilibili_videos', 'receive_bilibili_videos', 'https://trovesaurus.aallyn.net/bilibili_videos', asJson),
-        get_trovesaurus_events: makeNativeFeedFn('get_trovesaurus_events', 'receive_events_data', 'https://trovesaurus.com/calendar/feed', (d) => { const e = asJson(d) || []; if (Array.isArray(e)) e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
+        get_trove_news: makeFeedFn('receive_trove_news', 'https://trovegame.com/feed', parseTroveNews),
+        get_youtube_videos: makeFeedFn('receive_youtube_videos', 'https://trovesaurus.aallyn.net/youtube_videos', asJson),
+        get_twitch_streams: makeFeedFn('receive_twitch_streams', 'https://trovesaurus.aallyn.net/twitch_streams', asJson),
+        get_bilibili_videos: makeFeedFn('receive_bilibili_videos', 'https://trovesaurus.aallyn.net/bilibili_videos', asJson),
+        get_trovesaurus_events: makeFeedFn('receive_events_data', 'https://trovesaurus.com/calendar/feed', (d) => { const e = asJson(d) || []; if (Array.isArray(e)) e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
         get_current_server_data: makeEelFn('get_current_server_data', async () => {
             const { daily, weekly } = await getCurrentBuffs();
             return { success: true, daily, weekly, merchants: [] };
