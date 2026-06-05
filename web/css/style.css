@@ -2684,6 +2684,67 @@ input[type="range"]::-ms-fill-lower {
 }
 
 /* =====================================================================
+   Mobile finishing touches (appended last so they win over the force
+   layers above): hide scrollbars and tighten lateral page padding.
+   ===================================================================== */
+@media (max-width: 900px) {
+    /* Hide scrollbars on the main scroll areas (content still scrolls). */
+    #view-container,
+    .sidebar-nav-scroll,
+    #build-summary-panel {
+        scrollbar-width: none;          /* Firefox */
+        -ms-overflow-style: none;       /* old Edge */
+    }
+    #view-container::-webkit-scrollbar,
+    .sidebar-nav-scroll::-webkit-scrollbar,
+    #build-summary-panel::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;                  /* Chromium/WebKit */
+    }
+
+    /* Tighter lateral margins. Each view's root (#<view>-vue-app) carried ~20px
+       of side padding and the inner content wrappers another ~14px, so content
+       sat far from the edges on phones. Trim both. */
+    #view-container [id$="-vue-app"] {
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    #view-container :is(
+        .home-container,
+        .allies-container,
+        .calculators-container,
+        .settings-container,
+        .star-chart-container,
+        .trovesaurus-container,
+        .file-manager-container,
+        .modder-tools-container,
+        .gem-sim-container,
+        .about-view-container,
+        .view-container
+    ) {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    /* Trim inner panel side padding a touch so cards gain width too. */
+    #view-container :is(
+        .tool-panel,
+        .card,
+        .results-panel,
+        .settings-section,
+        .config-section,
+        .search-container,
+        .search-filter-bar,
+        .community-panel
+    ) {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+}
+
+/* =====================================================================
    Collapsible icon tabs (mobile)
    On small screens a view's .tab-buttons row collapses to a compact row of
    icon-only squares to save vertical space. A toggle button (injected by

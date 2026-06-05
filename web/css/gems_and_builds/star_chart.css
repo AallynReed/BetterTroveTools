@@ -517,14 +517,20 @@
         width: 100%;
         min-height: 0;
         max-height: none;
-        /* near full-bleed: tiny side padding so the node map is as large as possible */
         padding: 6px;
         padding-top: 44px;
+        /* Scale the chart past the wrapper width so it's noticeably bigger in
+           both dimensions (the viewBox is landscape, so fit-to-width was short).
+           The flex-centered overflow is clipped; the chart pans/zooms to reach
+           the edges. */
+        overflow: hidden;
     }
 
-    /* Let the SVG fill the wrapper width instead of capping at 1000px. */
     #chart-svg {
-        max-width: 100%;
+        width: 112%;
+        max-width: none;
+        height: auto;
+        flex-shrink: 0;
     }
 
     #build-summary-panel {
