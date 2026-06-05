@@ -196,26 +196,29 @@ python main.py
 
 ### Install on Linux
 
-Better Trove Tools is pure Python on Linux — **no native library to compile**.
-
-pywebview needs a webview backend to open its window. `run.sh` and `install-linux.sh` handle this for you: if no backend is found, they **auto‑install the Qt backend** (`pyqt6 pyqt6-webengine qtpy`) into the venv — fully self‑contained, no system packages required. So the quickest path is just:
+Better Trove Tools is pure Python on Linux — **no native library to compile, and no webview backend required**. If no GTK/Qt backend is installed, the app simply **opens in your default browser** (full functionality — it's the same local server either way). The quickest path:
 
 ```bash
 # Download BetterTroveTools-<version>-linux.tar.gz from the Releases page
 tar xzf BetterTroveTools-*-linux.tar.gz
 cd BetterTroveTools
-./install-linux.sh    # venv + deps + Qt backend + a menu launcher & icon
+./install-linux.sh    # venv + deps + a menu launcher & icon
 ```
 
 Launch **Better Trove Tools** from your application menu afterwards (`./install-linux.sh --uninstall` removes the launcher). Or, to run without a menu entry, just `./run.sh`.
 
-**Optional — lighter native GTK backend.** Qt's WebEngine is a ~150 MB download. If you'd rather use the system's WebKitGTK, install the packages below **and** create the venv with access to system packages (a plain venv can't see system `gi`), then set `BTT_NO_AUTO_QT=1` so `run.sh` won't pull in Qt:
+**Optional — a standalone app window** (instead of a browser tab). Install a webview backend, either Qt (self‑contained, ~150 MB) or the lighter native GTK:
 
 ```bash
+# Qt: works in the existing venv as-is
+.venv-linux/bin/pip install pyqt6 pyqt6-webengine qtpy
+
+# or GTK (lighter, native) — needs a venv that can see system `gi`:
 sudo apt install python3-gi gir1.2-webkit2-4.1   # Fedora: python3-gobject webkit2gtk4.1 | Arch: python-gobject webkit2gtk
-python3 -m venv --system-site-packages .venv-linux
-BTT_NO_AUTO_QT=1 ./run.sh
+python3 -m venv --system-site-packages .venv-linux && ./run.sh
 ```
+
+The app auto‑detects a backend and uses an app window when one is present. Force the browser anytime with `BTT_BROWSER=1 ./run.sh`.
 
 **File dialogs (Tk).** The modder tools' file pickers and Settings' "Browse for folder" use Tk. Install it for those to work (the app runs fine without it otherwise):
 
