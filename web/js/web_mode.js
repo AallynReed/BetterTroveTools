@@ -53,26 +53,93 @@
         }
     };
 
-    // Server-proxied feeds (news, videos, Trovesaurus events) need the backend's
-    // api/eel endpoints. The hosted web build serves them same-origin; a packaged
-    // native app (Android) has no local backend, so it reaches the hosted backend
-    // instead. NOTE: for this to work over the network the backend must send CORS
-    // headers (Access-Control-Allow-Origin) allowing the app's origin. If it
-    // can't reach the backend it falls back to the existing empty state.
-    const HOSTED_BACKEND = 'https://trove.aallyn.net';
-    const isNativeApp = () => !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
-        && window.Capacitor.isNativePlatform());
-
     const callCompatApi = async (name, args) => {
-        const path = `api/eel/${encodeURIComponent(name)}`;
-        const url = isNativeApp() ? `${HOSTED_BACKEND}/${path}` : path;
-        const response = await fetch(url, {
+        const response = await fetch(`api/eel/${encodeURIComponent(name)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ args })
         });
         if (!response.ok) throw new Error(`Compat API returned HTTP ${response.status}`);
         return response.json();
+    };
+
+    // --- Home feeds for the native app ---------------------------------------
+    // The home feeds (news/videos/events) are fetched by the desktop app directly
+    // from public URLs. A browser (WebView) can't fetch them because those servers
+    // don't send CORS headers -- which is exactly why the desktop does it
+    // server-side. Capacitor's native HTTP makes the request from the native layer
+    // (like the desktop's Python requests), bypassing CORS, so the packaged app can
+    // hit the SAME urls the desktop does. On the plain web build (no Capacitor) we
+    // keep the existing backend-proxied path.
+    const capacitorHttp = () => (window.Capacitor && window.Capacitor.Plugins
+        && window.Capacitor.Plugins.CapacitorHttp) || null;
+
+    const nativeGet = async (url) => {
+        const res = await capacitorHttp().get({ url, headers: { 'User-Agent': 'BetterTroveTools/1.0' } });
+        if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
+        return res.data; // object for JSON responses, string for XML/RSS
+    };
+
+    const asJson = (data) => (typeof data === 'string' ? JSON.parse(data) : data);
+
+    const _stripHtml = (html) => {
+        const d = document.createElement('div');
+        d.innerHTML = html || '';
+        return (d.textContent || d.innerText || '').replace(/\s+/g, ' ').trim();
+    };
+    const _truncate = (text, n) => (text && text.length > n ? text.slice(0, n - 1).trimEnd() + '…' : (text || ''));
+
+    // Mirror backend.home.get_trove_news's RSS -> item shape.
+    const parseTroveNews = (xmlText) => {
+        const doc = new DOMParser().parseFromString(typeof xmlText === 'string' ? xmlText : '', 'application/xml');
+        const NS_MEDIA = 'http://search.yahoo.com/mrss/';
+        const NS_DC = 'http://purl.org/dc/elements/1.1/';
+        const items = [];
+        const nodes = doc.querySelectorAll('channel > item');
+        for (let i = 0; i < nodes.length && items.length < 20; i++) {
+            const item = nodes[i];
+            const txt = (sel) => { const el = item.querySelector(sel); return el ? el.textContent.trim() : ''; };
+            const creator = item.getElementsByTagNameNS(NS_DC, 'creator')[0];
+            const mediaContent = item.getElementsByTagNameNS(NS_MEDIA, 'content')[0];
+            const mediaThumb = item.getElementsByTagNameNS(NS_MEDIA, 'thumbnail')[0];
+            const categories = [...item.querySelectorAll('category')].map(c => (c.textContent || '').trim()).filter(Boolean);
+            const pubRaw = txt('pubDate');
+            let published_at = pubRaw;
+            const dt = new Date(pubRaw);
+            if (!isNaN(dt.getTime())) published_at = dt.toISOString();
+            let image = mediaContent ? mediaContent.getAttribute('url') : null;
+            if (!image && mediaThumb) image = mediaThumb.getAttribute('url');
+            items.push({
+                title: txt('title'),
+                url: txt('link'),
+                author: (creator ? creator.textContent.trim() : '') || 'Team Trove',
+                published_at,
+                summary: _truncate(_stripHtml(txt('description')), 220),
+                category: categories[0] || 'News',
+                categories,
+                image
+            });
+        }
+        return items;
+    };
+
+    // A feed function that, in the native app, fetches the desktop's url directly
+    // via native HTTP and invokes the receive_* callback; on the web build it falls
+    // back to the existing backend-proxied path.
+    const makeNativeFeedFn = (name, callbackName, url, transform) => (...args) => async () => {
+        let response;
+        if (capacitorHttp()) {
+            try {
+                response = { success: true, data: transform(await nativeGet(url)) };
+            } catch (e) {
+                response = { success: false, error: String(e && e.message || e), code: 'NATIVE_FEED_FAILED' };
+            }
+        } else {
+            try { response = await callCompatApi(name, args); }
+            catch { response = { success: true, data: [] }; }
+        }
+        if (typeof window[callbackName] === 'function') window[callbackName](response);
+        return response;
     };
 
     const makeEelFn = (name, fn, options = {}) => (...args) => async () => {
@@ -255,11 +322,11 @@
         spark_gem: makeEelFn('spark_gem', (gem, statId) => gemCall('sparkGem', gem, statId), { localOnly: true }),
         flare_gem: makeEelFn('flare_gem', (gem, statId) => gemCall('flareGem', gem, statId), { localOnly: true }),
         cancel_home_fetches: makeEelFn('cancel_home_fetches', () => ok()),
-        get_trove_news: makeCallbackEelFn('get_trove_news', 'receive_trove_news', []),
-        get_youtube_videos: makeCallbackEelFn('get_youtube_videos', 'receive_youtube_videos', []),
-        get_twitch_streams: makeCallbackEelFn('get_twitch_streams', 'receive_twitch_streams', []),
-        get_bilibili_videos: makeCallbackEelFn('get_bilibili_videos', 'receive_bilibili_videos', []),
-        get_trovesaurus_events: makeCallbackEelFn('get_trovesaurus_events', 'receive_events_data', []),
+        get_trove_news: makeNativeFeedFn('get_trove_news', 'receive_trove_news', 'https://trovegame.com/feed', parseTroveNews),
+        get_youtube_videos: makeNativeFeedFn('get_youtube_videos', 'receive_youtube_videos', 'https://trovesaurus.aallyn.net/youtube_videos', asJson),
+        get_twitch_streams: makeNativeFeedFn('get_twitch_streams', 'receive_twitch_streams', 'https://trovesaurus.aallyn.net/twitch_streams', asJson),
+        get_bilibili_videos: makeNativeFeedFn('get_bilibili_videos', 'receive_bilibili_videos', 'https://trovesaurus.aallyn.net/bilibili_videos', asJson),
+        get_trovesaurus_events: makeNativeFeedFn('get_trovesaurus_events', 'receive_events_data', 'https://trovesaurus.com/calendar/feed', (d) => { const e = asJson(d) || []; if (Array.isArray(e)) e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
         get_current_server_data: makeEelFn('get_current_server_data', async () => {
             const { daily, weekly } = await getCurrentBuffs();
             return { success: true, daily, weekly, merchants: [] };
