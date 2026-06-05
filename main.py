@@ -757,10 +757,15 @@ def wait_for_server(port, timeout=15.0):
     return False
 
 
-# Prefer an embedded webview window; if no backend is available (e.g. a Linux
-# box without GTK/Qt), fall back to the user's default browser so the app still
-# runs with no extra install. BTT_BROWSER=1 forces the browser path on purpose.
-_use_webview = webview_backend_available() and os.getenv('BTT_BROWSER') != '1'
+# Windows ALWAYS uses the embedded WebView2 window -- the browser fallback never
+# applies there (and BTT_BROWSER is ignored). Elsewhere (Linux/macOS) prefer an
+# embedded webview window when a GTK/Qt backend is available, otherwise fall back
+# to the user's default browser so the app still runs with no extra install.
+# BTT_BROWSER=1 forces the browser path on non-Windows platforms.
+if sys.platform == 'win32':
+    _use_webview = True
+else:
+    _use_webview = webview_backend_available() and os.getenv('BTT_BROWSER') != '1'
 
 threading.Thread(target=run_eel_server, daemon=True).start()
 

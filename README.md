@@ -218,7 +218,7 @@ sudo apt install python3-gi gir1.2-webkit2-4.1   # Fedora: python3-gobject webki
 python3 -m venv --system-site-packages .venv-linux && ./run.sh
 ```
 
-The app auto‑detects a backend and uses an app window when one is present. Force the browser anytime with `BTT_BROWSER=1 ./run.sh`.
+The app auto‑detects a backend and uses an app window when one is present. Force the browser (Linux/macOS only) with `BTT_BROWSER=1 ./run.sh`. On Windows the app always uses its WebView2 window — there is no browser fallback.
 
 **File dialogs (Tk).** The modder tools' file pickers and Settings' "Browse for folder" use Tk. Install it for those to work (the app runs fine without it otherwise):
 
