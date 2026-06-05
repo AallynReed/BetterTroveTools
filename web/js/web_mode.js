@@ -341,7 +341,17 @@
             const { daily, weekly } = await getCurrentBuffs();
             return { success: true, daily, weekly, merchants: [] };
         }),
-        get_chaos_chest_data: makeEelFn('get_chaos_chest_data', () => ({ success: true, rewards: [], current: null })),
+        get_chaos_chest_data: makeEelFn('get_chaos_chest_data', async () => {
+            try {
+                const c = await kiwiGet('rotations/chaos-chest');
+                const item = c.item || null;
+                return {
+                    success: true,
+                    data: item ? { name: item.name, identifier: item.identifier, blueprint: item.blueprint, end: c.ends_at } : null,
+                    fallback_times: { start: c.starts_at, end: c.ends_at }
+                };
+            } catch (err) { return { success: false, error: String(err && err.message || err), code: 'CHAOS_FAILED' }; }
+        }, { localOnly: true }),
         get_merchant_schedules: makeEelFn('get_merchant_schedules', () => ({ success: true })),
         get_yearly_calendar_data: makeEelFn('get_yearly_calendar_data', async () => {
             try {
@@ -359,19 +369,35 @@
                 return { success: false, error: String(err && err.message || err), code: 'CALENDAR_FAILED' };
             }
         }, { localOnly: true }),
-        get_gardening_rotation: makeEelFn('get_gardening_rotation', () => {
-            const now = Math.floor(Date.now() / 1000);
-            return {
-                success: true,
-                two_day: { active: false, start: now + 3600, end: now + 86400 },
-                three_day: { active: false, start: now + 7200, end: now + 172800 },
-                future: []
-            };
-        }),
-        get_d15_rotation: makeEelFn('get_d15_rotation', () => ({ success: true, rotations: [] })),
-        get_wild_mana_rotation: makeEelFn('get_wild_mana_rotation', () => ({ success: true, future: [] })),
+        get_gardening_rotation: makeEelFn('get_gardening_rotation', async () => {
+            try {
+                const g = await kiwiGet('rotations/gardening');
+                const w = (x) => x ? { active: !!x.active, start: x.starts_at, end: x.ends_at } : { active: false, start: 0, end: 0 };
+                return { success: true, two_day: w(g.two_day), three_day: w(g.three_day), future: g.upcoming || [] };
+            } catch (err) { return { success: false, error: String(err && err.message || err), code: 'GARDENING_FAILED' }; }
+        }, { localOnly: true }),
+        get_d15_rotation: makeEelFn('get_d15_rotation', async () => {
+            try {
+                const r = await kiwiGet('rotations/biomes');
+                const cur = r.current;
+                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, rotations: r.upcoming || [] };
+            } catch (err) { return { success: false, error: String(err && err.message || err), code: 'D15_FAILED' }; }
+        }, { localOnly: true }),
+        get_wild_mana_rotation: makeEelFn('get_wild_mana_rotation', async () => {
+            try {
+                const r = await kiwiGet('rotations/wild-mana');
+                const cur = r.current;
+                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future: r.upcoming || [] };
+            } catch (err) { return { success: false, error: String(err && err.message || err), code: 'MANA_FAILED' }; }
+        }, { localOnly: true }),
         get_delve_status: makeEelFn('get_delve_status', () => ({ success: true, current: null, next: null })),
         get_delve_rotation: makeEelFn('get_delve_rotation', () => ({ success: true, weeks: [], currentWeekId: null })),
-        get_stampy_rotation: makeEelFn('get_stampy_rotation', () => ({ success: true, future: [] }))
+        get_stampy_rotation: makeEelFn('get_stampy_rotation', async () => {
+            try {
+                const r = await kiwiGet('rotations/stampy');
+                const cur = r.current;
+                return { success: true, current: cur ? { start: cur.starts_at, end: cur.ends_at, biomes: cur.biomes } : null, future: r.upcoming || [] };
+            } catch (err) { return { success: false, error: String(err && err.message || err), code: 'STAMPY_FAILED' }; }
+        }, { localOnly: true })
     };
 })();
