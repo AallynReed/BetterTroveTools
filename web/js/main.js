@@ -2356,6 +2356,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // --- Mobile off-canvas nav drawer -------------------------------------
+    // On phones/tablets (<=900px, see style.css) the sidebar is a fixed drawer.
+    // This toggle/backdrop/Esc wiring opens & closes it; closeMobileNav() is also
+    // called after navigating so tapping a tool dismisses the drawer.
+    const mobileNavToggle = document.getElementById('mobile-nav-toggle');
+    const mobileNavBackdrop = document.getElementById('mobile-nav-backdrop');
+    const closeMobileNav = () => {
+        document.body.classList.remove('mobile-nav-open');
+        if (mobileNavToggle) mobileNavToggle.setAttribute('aria-expanded', 'false');
+    };
+    const toggleMobileNav = () => {
+        const isOpen = document.body.classList.toggle('mobile-nav-open');
+        if (mobileNavToggle) mobileNavToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    };
+    if (mobileNavToggle) mobileNavToggle.addEventListener('click', toggleMobileNav);
+    if (mobileNavBackdrop) mobileNavBackdrop.addEventListener('click', closeMobileNav);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && document.body.classList.contains('mobile-nav-open')) closeMobileNav();
+    });
+    window.closeMobileNav = closeMobileNav;
+
     window.loadView = async function(target) {
         const loadToken = ++activeViewLoadToken;
         if (activeViewLoadController) {
@@ -2497,6 +2518,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 trackNavVisit(target);
                 window.loadView(target);
             }
+            closeMobileNav();  // dismiss the mobile drawer after picking a tool
         });
     });
 

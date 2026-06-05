@@ -2388,7 +2388,7 @@
     padding: 18px;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
     .home-section-header {
         flex-direction: column;
         align-items: flex-start;
@@ -2401,6 +2401,12 @@
     .home-server-time-inline {
         align-self: stretch;
         justify-content: center;
+    }
+    /* full-width media tabs once the header is stacked */
+    .media-tabs {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
     }
 }
 

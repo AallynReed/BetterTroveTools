@@ -499,3 +499,37 @@
     padding-top: 38px;
     max-height: calc(100vh - 200px);
 }
+
+/* Mobile/tablet: stack the chart above the build panel, full width, and drop
+   the mouse-only hover hints that otherwise overlap the toolbar on small screens. */
+@media (max-width: 900px) {
+    .star-chart-container {
+        padding: 14px;
+    }
+
+    .chart-layout {
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    #chart-wrapper {
+        width: 100%;
+        min-height: 320px;
+        max-height: none;
+        padding-top: 46px;
+    }
+
+    #build-summary-panel {
+        width: 100%;
+        height: auto;
+        max-height: none;
+    }
+
+    .chart-toolbar-hints {
+        display: none;
+    }
+
+    .chart-toolbar {
+        gap: 8px;
+    }
+}

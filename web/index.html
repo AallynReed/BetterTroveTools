@@ -33,6 +33,16 @@
          time the server-time converter modal opens. -->
 </head>
 <body>
+    <!-- Mobile-only top bar + drawer backdrop. Direct children of <body> so the
+         sidebar's off-canvas transform (which moves #sidebar) never moves them. -->
+    <header id="mobile-topbar">
+        <button id="mobile-nav-toggle" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <span class="mobile-topbar-title">Better Trove Tools</span>
+    </header>
+    <div id="mobile-nav-backdrop"></div>
+
     <div id="network-tracker-vue-app" v-cloak>
         <div id="external-request-indicator" class="network-status-indicator" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true">
             <i class="fa-solid fa-wifi" :class="{ 'fa-fade': hasActive }"></i>
