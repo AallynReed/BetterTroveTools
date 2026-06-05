@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import ctypes
 import datetime
 import random
-import sys
 import time
 from random import randint
 from random import sample
@@ -14,15 +12,52 @@ from typing import Callable, Generic, Literal, TypeVar, Union, overload
 from aiohttp import ClientSession
 from binary_reader import BinaryReader
 
-from .path import BasePath
+from .path import BasePath  # noqa: F401  (re-exported as utils.functions.BasePath)
 
-if sys.platform == "win32":
-    dll = ctypes.CDLL(BasePath.joinpath("trove.dll").as_posix())
-else:
-    dll = ctypes.CDLL(BasePath.joinpath("trove.so").as_posix())
-calculate_hash = dll.calculate_hash
-calculate_hash.restype = ctypes.c_uint32
-calculate_hash.argtypes = [ctypes.c_char_p, ctypes.c_size_t]
+# Trove's FNV-1a-variant checksum. Previously a native helper loaded via ctypes
+# (trove.dll / trove.so); reimplemented here in pure Python so no compiled
+# artifact has to be shipped or built on any platform. Verified byte-for-byte
+# against the original native library across every tail length and high-byte case.
+_FNV_OFFSET = 2166136261
+_FNV_PRIME = 16777619
+_MASK32 = 0xFFFFFFFF
+
+
+def _sign_extend_char(b: int) -> int:
+    """A signed C ``char`` widened to uint32. trove.c reads the hash's trailing
+    bytes through a ``char *`` (signed on MSVC/gcc), so a byte >= 0x80 becomes
+    negative and fills the upper 24 bits with 1s."""
+    return b if b < 0x80 else (b | 0xFFFFFF00)
+
+
+def calculate_hash(data: bytes, length: int | None = None) -> int:
+    """Trove's FNV-1a-variant checksum, 32-bit unsigned.
+
+    Full 4-byte words are folded little-endian (read unsigned); the trailing
+    1-3 bytes are folded big-endian AND sign-extended. ``length`` is optional
+    and only kept for compatibility with the old native signature
+    ``calculate_hash(data, len)``; when given it bounds the slice of ``data``.
+    """
+    if length is not None:
+        data = data[:length]
+    h = _FNV_OFFSET
+    n = len(data)
+    full = n & ~3
+    for i in range(0, full, 4):
+        chunk = int.from_bytes(data[i:i + 4], "little")
+        h = (_FNV_PRIME * (h ^ chunk)) & _MASK32
+    rem = n & 3
+    if rem == 1:
+        val = _sign_extend_char(data[full])
+    elif rem == 2:
+        val = ((_sign_extend_char(data[full]) << 8) & _MASK32) | _sign_extend_char(data[full + 1])
+    elif rem == 3:
+        v1 = (_sign_extend_char(data[full]) << 8) & _MASK32
+        v1 = ((_sign_extend_char(data[full + 1]) | v1) << 8) & _MASK32
+        val = v1 | _sign_extend_char(data[full + 2])
+    else:
+        return h & _MASK32
+    return (_FNV_PRIME * (h ^ val)) & _MASK32
 
 
 def random_id(k=8):

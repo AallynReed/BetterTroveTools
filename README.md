@@ -194,28 +194,57 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Run on Linux
+### Install on Linux
 
-Better Trove Tools runs from source on Linux. A helper script handles the venv, Python deps, and building the small native hash helper (`trove.so`):
+Better Trove Tools is pure Python on Linux — **no native library to compile**.
 
-```bash
-./run.sh
-```
-
-`run.sh` creates `.venv-linux/`, installs `requirements-linux.txt`, compiles `trove.so` from `trove.c`, sanity‑checks the system packages below, and launches the app. Re‑run it any time; pass `--rebuild` to force‑recompile `trove.so` or `--setup` to set up without launching.
-
-You need two system components pywebview and the native file dialogs rely on (these are **not** pip‑installable):
+First install the two system components pywebview and the native file dialogs rely on (these aren't pip‑installable):
 
 | Component | Debian/Ubuntu | Fedora | Arch |
 |---|---|---|---|
 | Webview backend (GTK) | `python3-gi gir1.2-webkit2-4.1` | `python3-gobject webkit2gtk4.1` | `python-gobject webkit2gtk` |
 | File dialogs (Tk) | `python3-tk` | `python3-tkinter` | `tk` |
 
-Prefer Qt over GTK? Skip the GTK packages and instead `pip install pyqt6 pyqt6-webengine qtpy` into `.venv-linux/`.
+*(Prefer Qt over GTK? Skip the GTK packages and instead `pip install pyqt6 pyqt6-webengine qtpy` into `.venv-linux/`.)*
+
+**Then, as a desktop app** (adds it to your application menu with an icon):
+
+```bash
+# Download BetterTroveTools-<version>-linux.tar.gz from the Releases page
+tar xzf BetterTroveTools-*-linux.tar.gz
+cd BetterTroveTools
+./install-linux.sh
+```
+
+`install-linux.sh` creates the venv, installs dependencies, and registers a launcher + icon. Launch **Better Trove Tools** from your menu afterwards. (`./install-linux.sh --uninstall` removes the launcher.)
+
+**Or just run it** without installing a launcher:
+
+```bash
+./run.sh
+```
+
+`run.sh` creates `.venv-linux/`, installs `requirements-linux.txt`, checks the system packages above, and launches. Re‑run it any time; pass `--setup` to set up without launching.
 
 **What works on Linux:** the full UI, calculators, gems/builds, Star Chart, home dashboard, Trovesaurus browsing, and — when a Trove install is present (e.g. via **Steam/Proton**, which is auto‑detected) — the codexes and mod management, since those only *read* the game files.
 
-**What's Windows‑only:** the in‑app self‑updater, the FPS patcher, and "Test in Game" (these run/modify the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (you can point it at any valid Trove folder manually).
+**What's Windows‑only:** the in‑app self‑updater, the FPS patcher, and "Test in Game" (these run/modify the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (point it at any valid Trove folder manually).
+
+### Cutting a release (maintainers)
+
+Releases are built automatically by [`.github/workflows/compiler.yml`](.github/workflows/compiler.yml) when a GitHub Release is **created**:
+
+1. Bump `APP_VERSION` in `metadata.json` and commit.
+2. Create the release — tag and **release name** should match the version (the asset filenames use the release name), e.g. with the GitHub CLI:
+   ```bash
+   gh release create 2026.06.01 --title 2026.06.01 --notes "What changed..."
+   ```
+   (Or use the Releases page → *Draft a new release*.)
+3. The workflow then attaches two assets to that release:
+   - `BetterTroveTools-<version>-win64.msi` — Windows installer (built via `compile.py`).
+   - `BetterTroveTools-<version>-linux.tar.gz` — Linux run‑from‑source bundle (`git archive`); users extract it and run `./install-linux.sh`.
+
+The Windows job needs a `COMPILER` repository secret (a token with `contents: write`) to upload assets.
 
 ---
 
