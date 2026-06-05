@@ -5,7 +5,7 @@
     <div class="tabs-container">
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('settings.general') }}</span></button>
-            <button class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('settings.directories') }}</span></button>
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('settings.directories') }}</span></button>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'general' }">
@@ -74,7 +74,7 @@
                 </div>
             </div>
             
-            <div class="settings-section">
+            <div v-if="!isWebMode" class="settings-section">
                 <h3>{{ t('settings.mod_manager_preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
@@ -159,7 +159,7 @@
             </div>
         </div>
 
-        <div class="tab-content" :class="{ active: activeTab === 'directories' }">
+        <div v-if="!isWebMode" class="tab-content" :class="{ active: activeTab === 'directories' }">
             <div class="settings-section">
                 <h3>{{ t('settings.custom_game_directories') }}</h3>
                 <p class="settings-help-text">{{ t('settings.add_custom_trove_installations_here_they_c088d8') }}</p>

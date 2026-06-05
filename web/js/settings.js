@@ -248,6 +248,9 @@ document.addEventListener('settings_loaded', async () => {
                 if (saved && typeof saved === 'object' && typeof saved.activeTab === 'string') {
                     activeTab.value = saved.activeTab;
                 }
+                // The Directories tab is hidden in web/Android mode — fall back to General
+                // so a restored "directories" selection doesn't land on an empty page.
+                if (isWebMode && activeTab.value === 'directories') activeTab.value = 'general';
             };
 
             watch(activeTab, persistState);
