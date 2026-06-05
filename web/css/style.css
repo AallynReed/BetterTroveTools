@@ -2682,3 +2682,100 @@ input[type="range"]::-ms-fill-lower {
     margin-bottom: 8px !important;
     padding: 14px !important;
 }
+
+/* =====================================================================
+   Collapsible icon tabs (mobile)
+   On small screens a view's .tab-buttons row collapses to a compact row of
+   icon-only squares to save vertical space. A toggle button (injected by
+   main.js) expands them into a full-width labelled column; picking a tab
+   auto-collapses again. Per-view tab CSS is lazy-loaded AFTER style.css, so
+   the overrides below are !important to win regardless of load order.
+   ===================================================================== */
+.tabs-mobile-toggle { display: none; }
+
+@media (max-width: 900px) {
+    /* Collapsed (default): wrapping row of icon squares. */
+    .tab-buttons {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        align-items: center !important;
+    }
+
+    .tab-buttons > .tab-btn {
+        width: 44px !important;
+        min-width: 44px !important;
+        height: 44px !important;
+        min-height: 44px !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        justify-content: center !important;
+        align-items: center !important;
+        font-size: 0 !important;               /* hides label text + raw text nodes */
+        border: 1px solid var(--border-color) !important;
+        border-radius: 10px !important;
+        flex: 0 0 auto !important;
+        overflow: hidden;
+    }
+
+    .tab-buttons > .tab-btn > i {
+        font-size: 17px !important;            /* restore the icon glyph */
+        margin: 0 !important;
+    }
+
+    .tab-buttons > .tab-btn .beta-label {
+        display: none !important;
+    }
+
+    /* The injected expand/collapse toggle (also a square). */
+    .tabs-mobile-toggle {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        border: 1px dashed rgba(255, 255, 255, 0.22);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--text-muted);
+        font-size: 17px;
+        cursor: pointer;
+        flex: 0 0 auto;
+        order: 99;                              /* sits at the end of the collapsed row */
+    }
+
+    .tabs-mobile-toggle:hover {
+        color: var(--text-main);
+        border-color: rgba(var(--accent-rgb), 0.4);
+    }
+
+    /* Expanded: full-width labelled column. */
+    .tab-buttons.tabs-expanded {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .tab-buttons.tabs-expanded > .tab-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
+        min-height: 42px !important;
+        padding: 11px 14px !important;
+        gap: 10px !important;
+        justify-content: flex-start !important;
+        font-size: 14px !important;            /* labels visible again */
+        overflow: visible;
+    }
+
+    .tab-buttons.tabs-expanded > .tab-btn .beta-label {
+        display: inline-flex !important;
+    }
+
+    .tabs-mobile-toggle.is-expanded {
+        order: -1;                              /* moves to the top as a close affordance */
+        align-self: flex-end;
+        border-style: solid;
+        border-color: rgba(var(--accent-rgb), 0.4);
+        color: var(--text-main);
+    }
+}

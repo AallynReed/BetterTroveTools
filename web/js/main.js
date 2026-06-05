@@ -2377,6 +2377,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     window.closeMobileNav = closeMobileNav;
 
+    // --- Mobile collapsible tabs ------------------------------------------
+    // On small screens (<=900px, see style.css) a view's .tab-buttons row shows
+    // as icon-only squares. We inject a toggle that expands it to a labelled
+    // column; choosing a tab auto-collapses it again. Works across all views via
+    // a MutationObserver on #view-container, so lazy-loaded views are covered too.
+    (function setupCollapsibleTabs() {
+        const vc = viewContainer;
+        if (!vc) return;
+
+        const setToggleIcon = (tog, expanded) => {
+            tog.classList.toggle('is-expanded', expanded);
+            tog.innerHTML = expanded ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-ellipsis"></i>';
+            tog.setAttribute('aria-label', expanded ? 'Hide tab labels' : 'Show tab labels');
+        };
+
+        const collapse = (row) => {
+            row.classList.remove('tabs-expanded');
+            const tog = row.querySelector(':scope > .tabs-mobile-toggle');
+            if (tog) setToggleIcon(tog, false);
+        };
+
+        // Inject the toggle element only (NO per-element handler — clicks are
+        // handled by delegation below, so re-renders that drop the element are
+        // harmless: the re-injected one keeps working).
+        const injectToggle = (row) => {
+            if (!row || row.querySelector(':scope > .tabs-mobile-toggle')) return;
+            if (row.querySelectorAll(':scope > .tab-btn').length < 2) return;  // nothing to collapse
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'tabs-mobile-toggle';
+            btn.setAttribute('aria-label', 'Show tab labels');
+            btn.innerHTML = '<i class="fa-solid fa-ellipsis"></i>';
+            row.appendChild(btn);
+        };
+
+        const scanAll = () => vc.querySelectorAll('.tab-buttons').forEach(injectToggle);
+
+        scanAll();
+        new MutationObserver(scanAll).observe(vc, { childList: true, subtree: true });
+
+        // One delegated click handler for both the toggle and tab selection.
+        vc.addEventListener('click', (e) => {
+            const tog = e.target.closest('.tabs-mobile-toggle');
+            if (tog) {
+                e.preventDefault();
+                e.stopPropagation();
+                const row = tog.closest('.tab-buttons');
+                if (row) setToggleIcon(tog, row.classList.toggle('tabs-expanded'));
+                return;
+            }
+            const tab = e.target.closest('.tab-btn');
+            if (tab) {
+                const row = tab.closest('.tab-buttons');
+                if (row && row.classList.contains('tabs-expanded')) collapse(row);
+            }
+        });
+    })();
+
     window.loadView = async function(target) {
         const loadToken = ++activeViewLoadToken;
         if (activeViewLoadController) {

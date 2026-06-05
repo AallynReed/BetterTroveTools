@@ -503,8 +503,9 @@
 /* Mobile/tablet: stack the chart above the build panel, full width, and drop
    the mouse-only hover hints that otherwise overlap the toolbar on small screens. */
 @media (max-width: 900px) {
+    /* Trim outer padding so the chart can use nearly the full screen width. */
     .star-chart-container {
-        padding: 14px;
+        padding: 8px;
     }
 
     .chart-layout {
@@ -514,9 +515,16 @@
 
     #chart-wrapper {
         width: 100%;
-        min-height: 320px;
+        min-height: 0;
         max-height: none;
-        padding-top: 46px;
+        /* near full-bleed: tiny side padding so the node map is as large as possible */
+        padding: 6px;
+        padding-top: 44px;
+    }
+
+    /* Let the SVG fill the wrapper width instead of capping at 1000px. */
+    #chart-svg {
+        max-width: 100%;
     }
 
     #build-summary-panel {
