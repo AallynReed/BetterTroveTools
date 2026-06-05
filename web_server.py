@@ -21,9 +21,6 @@ LOCALE_DIR = WEB_DIR / "assets" / "locale"
 
 os.chdir(BASE_DIR)
 sys.argv[0] = str(BASE_DIR / "web_server.py")
-if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
-    os.add_dll_directory(str(BASE_DIR))
-    os.environ["PATH"] = f"{BASE_DIR}{os.pathsep}{os.environ.get('PATH', '')}"
 os.environ.setdefault("GOOGLE_API_KEY", "no")
 os.environ.setdefault("GOOGLE_DEFAULT_CLIENT_ID", "no")
 os.environ.setdefault("GOOGLE_DEFAULT_CLIENT_SECRET", "no")

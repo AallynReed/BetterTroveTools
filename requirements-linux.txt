@@ -1,0 +1,31 @@
+# Python dependencies for running Better Trove Tools from source on Linux.
+#
+# This is the desktop app's runtime set MINUS the Windows-only build tooling
+# (cx-freeze, pythonnet, clr_loader -- those only exist for the Windows MSI).
+#
+# pywebview needs a webview backend to open a window. run.sh auto-installs the
+# Qt backend (pyqt6 pyqt6-webengine qtpy) into the venv when none is found --
+# self-contained, no system packages needed -- so it isn't pinned here.
+#
+# Lighter native GTK backend instead? Install system PyGObject + WebKitGTK
+# (e.g. `sudo apt install python3-gi gir1.2-webkit2-4.1`), create the venv with
+# --system-site-packages so it can see `gi`, and run with BTT_NO_AUTO_QT=1.
+#
+# Native file dialogs (modder tools / "browse for folder" in Settings) need Tk:
+#     Debian/Ubuntu : sudo apt install python3-tk
+#     Fedora        : sudo dnf install python3-tkinter
+#     Arch          : sudo pacman -S tk
+#
+# run.sh checks for all of this and installs/tells you what's missing.
+
+aiofiles
+aiohttp
+binary-reader
+bottle
+eel
+gevent
+pydantic
+pywebview
+requests
+toml
+vdf

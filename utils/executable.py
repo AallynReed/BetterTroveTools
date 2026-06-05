@@ -5,6 +5,8 @@ import shutil
 import struct
 from pathlib import Path
 
+from utils.path import get_cache_root
+
 def analyze_trove_exe(filepath: Path) -> tuple[bool, bool]:
     try:
         with open(filepath, 'rb') as f:
@@ -178,7 +180,7 @@ FPS_OPTIONS = [60, 90, 120, 144, 165, 180, 200, 240, 360, 540]  # selectable cap
 # depends on this list.
 _LOCATE_FPS = [STOCK_FPS] + [f for f in FPS_OPTIONS if f != STOCK_FPS] + [UNCAPPED_FPS]
 
-_CACHE_SUBDIR = ("Trove", "ModManagerCache", "binary_cache")
+_CACHE_SUBDIR = "binary_cache"
 _MEMO: dict = {}   # (resolved_path, size, mtime_ns) -> fps  (per-process read cache)
 
 
@@ -281,8 +283,7 @@ def _pe_timestamp(content: bytes) -> int:
 
 
 def _cache_dir() -> Path:
-    base = os.getenv("APPDATA") or str(Path.home() / "AppData" / "Roaming")
-    d = Path(base).joinpath(*_CACHE_SUBDIR)
+    d = get_cache_root() / _CACHE_SUBDIR
     try:
         d.mkdir(parents=True, exist_ok=True)
     except OSError:

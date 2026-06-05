@@ -42,3 +42,28 @@ jobs:
           asset_content_type: application/x-msi
         env:
           GITHUB_TOKEN: ${{ secrets.COMPILER }}
+
+  linux-package:
+    name: Package Linux source
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build Linux source tarball
+        run: |
+          OUT="BetterTroveTools-${{ github.event.release.name }}-linux.tar.gz"
+          # git archive emits only committed files (no venvs/build/dist/__pycache__)
+          # and honours `export-ignore` attributes, so it's a clean run-from-source bundle.
+          git archive --format=tar.gz --prefix=BetterTroveTools/ -o "$OUT" HEAD
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+
+      - name: Upload tarball to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ env.OUT }}
+          asset_name: ${{ env.OUT }}
+          asset_content_type: application/gzip
+        env:
+          GITHUB_TOKEN: ${{ secrets.COMPILER }}

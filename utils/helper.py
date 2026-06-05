@@ -1,11 +1,11 @@
 import json
-import os
 from pathlib import Path
+
+from utils.path import get_cache_root
 
 
 def get_storage_file():
-    appdata = Path(os.getenv("APPDATA"))
-    storage_dir = appdata.joinpath("Trove", "ModManagerCache")
+    storage_dir = get_cache_root()
     storage_dir.mkdir(parents=True, exist_ok=True)
     return storage_dir.joinpath("storage.json")
 

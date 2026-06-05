@@ -6,6 +6,7 @@ import eel
 
 from backend.response import resp, standardize_response
 from utils.executable import find_trove_executable, FPS_OPTIONS, UNCAPPED_FPS
+from utils.path import get_cache_root
 from utils.registry import get_trove_locations, TroveGamePath, invalidate_trove_locations_cache
 
 _ALLOWED_FPS = set(FPS_OPTIONS) | {0, UNCAPPED_FPS}  # 0 accepted as alias for uncapped
@@ -64,8 +65,7 @@ def _apply_fps_payload(target, games, default=120):
     target["fps_repair"] = [p for p, v in raw.items() if v is None]
 
 def get_settings_file():
-    appdata = Path(os.getenv("APPDATA"))
-    settings_dir = appdata.joinpath("Trove", "ModManagerCache")
+    settings_dir = get_cache_root()
     settings_dir.mkdir(parents=True, exist_ok=True)
     return settings_dir.joinpath("settings.json")
 

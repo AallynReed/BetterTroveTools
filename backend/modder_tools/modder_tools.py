@@ -4,10 +4,15 @@ import re
 import json
 import shutil
 import uuid
-import tkinter as tk
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-from tkinter import filedialog
+
+try:
+    import tkinter as tk
+    from tkinter import filedialog
+except Exception:  # python3-tk not installed (common on minimal Linux setups)
+    tk = None
+    filedialog = None
 
 import eel
 
@@ -27,6 +32,7 @@ from binary_reader import BinaryReader
 
 from models.trove.directory import Directories
 from models.trove.mod import TMod, TroveModFile
+from utils.path import get_app_data_dir
 
 
 class OperationCancelled(Exception):
@@ -121,9 +127,7 @@ def _validate_special_paths(file_paths, preview_path=None, include_config=False)
 
 
 def _trash_root():
-    appdata = os.getenv("APPDATA")
-    base = Path(appdata) if appdata else Path.cwd()
-    root = base / "Trove" / "ModderToolsTrash"
+    root = get_app_data_dir() / "ModderToolsTrash"
     root.mkdir(parents=True, exist_ok=True)
     return root
 

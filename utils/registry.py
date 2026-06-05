@@ -133,7 +133,7 @@ class TroveGamePath:
     @property
     def workshop_path(self):
         if self.is_steam:
-            workshop_path = self.steam.joinpath("steamapps\\workshop\\content\\304050")
+            workshop_path = self.steam.joinpath("steamapps", "workshop", "content", "304050")
             if workshop_path.exists():
                 return workshop_path
         return None
@@ -246,14 +246,83 @@ def search_steam_registry():
                 ...
 
 
+def _trove_from_steam_root(steam_root: Path) -> list:
+    """Given a Steam installation root, parse libraryfolders.vdf and return any
+    valid Trove installs found under steamapps/common/Trove/Games/Trove. Shared
+    by the Windows (registry-derived root) and POSIX (well-known roots) scans."""
+    found = []
+    libraries_vdf = steam_root.joinpath("steamapps", "libraryfolders.vdf")
+    if not libraries_vdf.exists():
+        return found
+    try:
+        with libraries_vdf.open("r", encoding="utf-8") as f:
+            data = vdf.load(f)
+    except Exception:
+        return found
+
+    for _lib_index, library in data.get("libraryfolders", {}).items():
+        lib_path_str = library.get("path") if isinstance(library, dict) else None
+        if not lib_path_str:
+            continue
+        library_path = Path(lib_path_str)
+        trove_root = library_path.joinpath("steamapps", "common", "Trove", "Games", "Trove")
+        if not trove_root.exists():
+            continue
+        try:
+            for game_path in trove_root.iterdir():
+                if game_path.is_dir():
+                    game = TroveGamePath(game_path, library_path)
+                    if game.is_valid:
+                        found.append(game)
+        except OSError:
+            continue
+    return found
+
+
+def _scan_trove_locations_posix() -> list:
+    """Best-effort auto-detection on Linux/macOS: walk the well-known Steam
+    install roots (incl. Flatpak) for a Trove install. Trove ships only on
+    Windows, but a Steam/Proton install lays the game files out identically, and
+    the codexes/mod tools only READ those files -- so detection still unlocks
+    them. Returns [] when nothing is found; callers degrade gracefully."""
+    home = Path.home()
+    steam_roots = [
+        home / ".steam" / "steam",
+        home / ".steam" / "root",
+        home / ".local" / "share" / "Steam",
+        home / ".var" / "app" / "com.valvesoftware.Steam" / ".local" / "share" / "Steam",
+        home / "Library" / "Application Support" / "Steam",  # macOS
+    ]
+
+    results = []
+    seen_roots = set()
+    seen_game_paths = set()
+    for root in steam_roots:
+        if not root.exists():
+            continue
+        try:
+            resolved = root.resolve()
+        except Exception:
+            resolved = root
+        if resolved in seen_roots:
+            continue
+        seen_roots.add(resolved)
+        for game in _trove_from_steam_root(root):
+            if game.path in seen_game_paths:
+                continue
+            seen_game_paths.add(game.path)
+            results.append(game)
+    return results
+
+
 def _scan_trove_locations():
     """Actual scan -- registry + Steam library walk. Not called directly; go
     through get_trove_locations() so the result is cached for the rest of the
     process lifetime."""
     print("\n--- STARTING TROVE LOCATION SCAN ---")
     if os.name != "nt":
-        print("Not running on Windows (nt). Aborting.")
-        return []
+        # No Windows registry off-Windows; fall back to scanning Steam roots.
+        return _scan_trove_locations_posix()
 
     results = []
 
@@ -284,31 +353,7 @@ def _scan_trove_locations():
                 except FileNotFoundError:
                     continue
 
-            steam_path = Path(steam_path_str)
-            steam_libraries_path = steam_path.joinpath("steamapps", "libraryfolders.vdf")
-
-            if not steam_libraries_path.exists():
-                continue
-
-            with steam_libraries_path.open("r", encoding="utf-8") as f:
-                steam_libraries = vdf.load(f)
-
-            libraries = steam_libraries.get("libraryfolders", {})
-
-            for lib_index, library in libraries.items():
-                lib_path_str = library.get("path")
-                library_path = Path(lib_path_str)
-
-                local_trove_path = library_path.joinpath("steamapps", "common", "Trove", "Games", "Trove")
-
-                if not local_trove_path.exists():
-                    continue
-
-                for game_path in local_trove_path.iterdir():
-                    if game_path.is_dir():
-                        game = TroveGamePath(game_path, library_path)
-                        if game.is_valid:
-                            results.append(game)
+            results.extend(_trove_from_steam_root(Path(steam_path_str)))
 
         except OSError:
             continue
