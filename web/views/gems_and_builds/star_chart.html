@@ -20,7 +20,7 @@
                 </div>
             </div>
 
-            <svg id="chart-svg" :view-box.camel="viewBoxStr" @wheel.prevent="onChartWheel" @mousedown="onChartMouseDown">
+            <svg id="chart-svg" :view-box.camel="viewBoxStr" @wheel.prevent="onChartWheel" @mousedown="onChartMouseDown" @touchstart="onChartTouchStart" @touchmove="onChartTouchMove" @touchend="onChartTouchEnd" @touchcancel="onChartTouchEnd">
                 <line v-for="line in lines" :key="line.id" :x1="line.x1" :y1="line.y1" :x2="line.x2" :y2="line.y2" class="chart-line" :class="{'line-selected': line.selected}" />
                 <path v-for="curve in replacementCurves" :key="curve.id" :d="curve.d" class="replacement-line" :class="{ 'replacement-line-active': curve.isTipEdge }" />
                 

@@ -815,6 +815,90 @@ document.addEventListener('star_chart_loaded', async () => {
                 window.addEventListener('mouseup', _onPanUp, { passive: true });
             };
 
+            // --- Touch: one-finger pan, two-finger pinch-zoom. Mirrors the mouse
+            //     wheel/drag viewBox math so phones and tablets can navigate the
+            //     chart. (#chart-svg has touch-action:none so the browser hands us
+            //     the gestures instead of scrolling/zooming the page.) ---
+            let touchState = null;
+            const _touchDist = (a, b) => Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY);
+            const onChartTouchStart = (e) => {
+                const svg = document.getElementById('chart-svg');
+                const rect = svg ? svg.getBoundingClientRect() : null;
+                if (!rect || !rect.width || !rect.height) return;
+                if (e.touches.length === 1) {
+                    const target = e.target;
+                    // A tap on a node/anchor must fall through to its click handler.
+                    if (target && target.classList &&
+                        (target.classList.contains('star-node') || target.classList.contains('center-clear-anchor'))) {
+                        touchState = null;
+                        return;
+                    }
+                    const tch = e.touches[0];
+                    touchState = {
+                        mode: 'pan',
+                        startClientX: tch.clientX, startClientY: tch.clientY,
+                        startVbX: viewBox.x, startVbY: viewBox.y,
+                        unitsPerPxX: viewBox.w / rect.width,
+                        unitsPerPxY: viewBox.h / rect.height
+                    };
+                    svg.classList.add('panning');
+                } else if (e.touches.length >= 2) {
+                    const a = e.touches[0], b = e.touches[1];
+                    const relX = (((a.clientX + b.clientX) / 2) - rect.left) / rect.width;
+                    const relY = (((a.clientY + b.clientY) / 2) - rect.top) / rect.height;
+                    touchState = {
+                        mode: 'pinch',
+                        startDist: _touchDist(a, b) || 1,
+                        startW: viewBox.w,
+                        // Keep the point under the pinch midpoint stationary while zooming.
+                        anchorX: viewBox.x + relX * viewBox.w,
+                        anchorY: viewBox.y + relY * viewBox.h,
+                        relX, relY
+                    };
+                    svg.classList.add('panning');
+                }
+            };
+            const onChartTouchMove = (e) => {
+                if (!touchState) return;
+                if (touchState.mode === 'pan' && e.touches.length === 1) {
+                    e.preventDefault();
+                    const tch = e.touches[0];
+                    viewBox.x = touchState.startVbX - (tch.clientX - touchState.startClientX) * touchState.unitsPerPxX;
+                    viewBox.y = touchState.startVbY - (tch.clientY - touchState.startClientY) * touchState.unitsPerPxY;
+                } else if (touchState.mode === 'pinch' && e.touches.length >= 2) {
+                    e.preventDefault();
+                    const dist = _touchDist(e.touches[0], e.touches[1]) || 1;
+                    const newW = Math.min(MAX_VIEW_W, Math.max(MIN_VIEW_W, touchState.startW * (touchState.startDist / dist)));
+                    const newH = newW / VIEWBOX_ASPECT;
+                    viewBox.x = touchState.anchorX - touchState.relX * newW;
+                    viewBox.y = touchState.anchorY - touchState.relY * newH;
+                    viewBox.w = newW;
+                    viewBox.h = newH;
+                }
+            };
+            const onChartTouchEnd = (e) => {
+                if (e.touches.length === 0) {
+                    const svg = document.getElementById('chart-svg');
+                    if (svg) svg.classList.remove('panning');
+                    touchState = null;
+                    return;
+                }
+                // Lifting from a pinch down to one finger: continue as a pan.
+                if (e.touches.length === 1) {
+                    const svg = document.getElementById('chart-svg');
+                    const rect = svg ? svg.getBoundingClientRect() : null;
+                    if (!rect) return;
+                    const tch = e.touches[0];
+                    touchState = {
+                        mode: 'pan',
+                        startClientX: tch.clientX, startClientY: tch.clientY,
+                        startVbX: viewBox.x, startVbY: viewBox.y,
+                        unitsPerPxX: viewBox.w / rect.width,
+                        unitsPerPxY: viewBox.h / rect.height
+                    };
+                }
+            };
+
             const zoomBy = (factor) => {
                 const cx = viewBox.x + viewBox.w / 2;
                 const cy = viewBox.y + viewBox.h / 2;
@@ -1209,7 +1293,7 @@ document.addEventListener('star_chart_loaded', async () => {
                 buildCode, codeInputFocused, loadCode, copyCode,
                 selectedStatFilter, statFilterOptions, highlightedStatNodeCount, clearStatFilter,
                 nodeSearchQuery, searchMatchCount, clearNodeSearch,
-                viewBoxStr, onChartWheel, onChartMouseDown, zoomBy, resetView,
+                viewBoxStr, onChartWheel, onChartMouseDown, onChartTouchStart, onChartTouchMove, onChartTouchEnd, zoomBy, resetView,
                 selectedTemplate, templateOptions, saveTemplate, deleteTemplate, renameTemplate,
                 exportTemplates, triggerImportTemplates, onImportTemplatesFile, importTemplatesRef,
                 modal, modalInputRef, confirmModal,
