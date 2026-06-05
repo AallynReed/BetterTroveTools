@@ -85,6 +85,9 @@ document.addEventListener("gem_builds_loaded", () => {
             const currentPage = ref(0);
             const itemsPerPage = 15;
             const isCalculating = ref(false);
+            // True when the build optimizer (desktop calc engine) is unavailable,
+            // e.g. hosted web mode or the Android build.
+            const buildsUnavailable = ref(false);
 
             const classIcon = computed(() => {
                 const cls = classesData.value.find(c => c.value === config.character);
@@ -266,8 +269,17 @@ document.addEventListener("gem_builds_loaded", () => {
                             star_chart: config.star_chart
                         };
                         const results = await eel.calculate_gem_builds(pyConfig)();
-                        const parsedResults = unwrapResp(results, 'builds', results);
-                        cachedBuilds.value = parsedResults || [];
+                        if (results && results.success === false) {
+                            // Build optimization needs the desktop calc engine; it is
+                            // unavailable in hosted web mode / the Android build. Show a
+                            // notice instead of letting a non-array crash the render.
+                            cachedBuilds.value = [];
+                            buildsUnavailable.value = true;
+                        } else {
+                            const parsedResults = unwrapResp(results, 'builds', results);
+                            cachedBuilds.value = Array.isArray(parsedResults) ? parsedResults : [];
+                            buildsUnavailable.value = false;
+                        }
                         currentPage.value = 0;
                     } catch (e) {
                         console.error(e);
@@ -383,7 +395,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 filteredStarChartStats,
                 classIcon, subclassIcon, onImageError,
                 modifiersOpen, tipsDismissed,
-                cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff,
+                cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff, buildsUnavailable,
                 nextPage, prevPage, getTooltipHtml, copyLayout, exportCsv, showContextMenu,
                 getBuildHeadline, dismissTips
             };

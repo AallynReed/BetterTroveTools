@@ -1,6 +1,8 @@
 # Shell scripts must use LF endings or they fail on Linux ("bad interpreter").
 *.sh text eol=lf
 run.sh text eol=lf
+# Gradle wrapper script (no extension) must stay LF for the Android CI runner.
+android/gradlew text eol=lf
 
 # Keep dev-only files out of the `git archive` release tarball.
 .github/ export-ignore

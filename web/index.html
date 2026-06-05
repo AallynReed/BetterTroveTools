@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Better Trove Tools</title>
 
     <!-- Warm up CDN connections early so blocking stylesheet/script downloads land faster. -->
@@ -17,13 +17,19 @@
 
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FontAwesome vendored locally (web/lib) so icons work fully offline (Android/desktop). -->
+    <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
 
     <!-- Defer all scripts so they don't block HTML parsing. Order is preserved by `defer`. -->
     <script defer src="/eel.js"></script>
+    <!-- Client-side gem engine: lets web_mode.js run the Gem Simulator offline. -->
+    <script defer src="js/gems_and_builds/gem_engine.js"></script>
+    <!-- Client-side gem build optimizer: lets web_mode.js calculate Gem Builds offline. -->
+    <script defer src="js/gems_and_builds/gem_optimizer.js"></script>
     <script defer src="js/web_mode.js"></script>
-    <script defer src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <!-- Vue vendored locally (web/lib) so the app renders fully offline (Android/desktop). -->
+    <script defer src="lib/vue.global.prod.js"></script>
     <script defer src="js/i18n.js"></script>
     <script defer src="js/main.js"></script>
 

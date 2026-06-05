@@ -644,7 +644,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     if (window.BTT_WEB_MODE === true) {
-        addWebDownloadButton();
+        // The packaged Android app is already "the app" — the desktop download
+        // CTA only makes sense on the hosted web build, not inside the app.
+        if (window.BTT_NATIVE !== true) addWebDownloadButton();
         return;
     }
 
@@ -1838,6 +1840,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // Android-only UI scale: shrink the whole interface (via root zoom) so more
+    // content fits on small screens. Capped at 1.0 — only goes smaller, never larger.
+    // `zoom` scales block layout against the zoomed viewport for width, but leaves
+    // vh/100vh on the unzoomed viewport, so the full-height shell (#view-container,
+    // body, drawer) would render short and leave a dead zone. We expose the scale as
+    // --ui-scale so those few vh heights can divide by it and still fill the screen.
+    const applyUiScale = () => {
+        if (window.BTT_NATIVE !== true) return;
+        let scale = Number(window.AppSettings ? window.AppSettings.get('ui_scale', 1) : 1);
+        if (!isFinite(scale) || scale <= 0) scale = 1;
+        scale = Math.min(1, Math.max(0.7, scale));
+        const de = document.documentElement;
+        if (scale === 1) {
+            de.style.zoom = '';
+            de.style.removeProperty('--ui-scale');
+        } else {
+            de.style.zoom = String(scale);
+            de.style.setProperty('--ui-scale', String(scale));
+        }
+    };
+    applyUiScale();
+
     const cmdOverlay = document.getElementById('command-palette-overlay');
     const cmdInput = document.getElementById('cmd-input');
     const cmdResults = document.getElementById('cmd-results');
@@ -2201,6 +2225,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('#sidebar .nav-btn').forEach((btn) => {
             const target = btn.getAttribute('data-target');
             const shouldHideForWeb = isWebUnavailableView(target);
+            if (shouldHideForWeb && window.BTT_NATIVE === true) {
+                // Native (Android): hide desktop-only views outright -- no point
+                // offering "the desktop app" from inside the mobile app.
+                btn.classList.remove('web-desktop-only-btn');
+                btn.querySelector('.desktop-app-label')?.remove();
+                const menuItem = btn.closest('li');
+                if (menuItem) { menuItem.style.display = 'none'; menuItem.hidden = true; }
+                else { btn.style.display = 'none'; btn.hidden = true; }
+                return;
+            }
             if (shouldHideForWeb) {
                 btn.classList.add('web-desktop-only-btn');
                 btn.setAttribute('data-tooltip-text', t('app.only_available_in_the_desktop_app'));
@@ -2362,6 +2396,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.addEventListener('app_settings_updated', () => {
         void applyBetaFeatureVisibility();
+        applyUiScale();
     });
 
     if (burgerBtn && sidebar) {

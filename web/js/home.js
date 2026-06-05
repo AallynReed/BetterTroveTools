@@ -261,16 +261,27 @@ document.addEventListener('home_loaded', () => {
                 const ranked = ['mod_manager', 'modder_tools', 'gems_and_builds', 'calculators', 'codexes']
                     .filter(id => (visits[id] || 0) > 0)
                     .sort((a, b) => (visits[b] || 0) - (visits[a] || 0));
+                // In the native app, never surface desktop-only tools.
+                const hiddenHere = (target) => window.BTT_NATIVE === true && isWebUnavailable(target);
                 const tools = [];
                 const seen = new Set();
                 for (const id of ranked) {
                     const tool = QUICK_TOOLS_CATALOG.find(c => c.target === id);
-                    if (tool && !seen.has(tool.id)) { tools.push(tool.id); seen.add(tool.id); }
+                    if (tool && !seen.has(tool.id) && !hiddenHere(tool.target)) { tools.push(tool.id); seen.add(tool.id); }
                     if (tools.length >= QUICK_TOOL_SLOT_COUNT) break;
                 }
                 for (const def of DEFAULT_QUICK_TOOLS) {
                     if (tools.length >= QUICK_TOOL_SLOT_COUNT) break;
-                    if (!seen.has(def)) { tools.push(def); seen.add(def); }
+                    const tool = QUICK_TOOLS_CATALOG.find(c => c.id === def);
+                    if (!seen.has(def) && !(tool && hiddenHere(tool.target))) { tools.push(def); seen.add(def); }
+                }
+                // Native: backfill remaining slots from the available catalog so removing
+                // desktop-only tools doesn't leave empty "Add tool" placeholders.
+                if (window.BTT_NATIVE === true) {
+                    for (const c of QUICK_TOOLS_CATALOG) {
+                        if (tools.length >= QUICK_TOOL_SLOT_COUNT) break;
+                        if (!seen.has(c.id) && !hiddenHere(c.target) && !c.beta) { tools.push(c.id); seen.add(c.id); }
+                    }
                 }
                 return tools;
             });
@@ -282,7 +293,9 @@ document.addEventListener('home_loaded', () => {
                 const out = [];
                 for (let i = 0; i < QUICK_TOOL_SLOT_COUNT; i++) {
                     const id = ids[i];
-                    const tool = id ? QUICK_TOOLS_CATALOG.find(t => t.id === id) : null;
+                    let tool = id ? QUICK_TOOLS_CATALOG.find(t => t.id === id) : null;
+                    // Drop desktop-only tools in the native app (e.g. a custom slot).
+                    if (tool && window.BTT_NATIVE === true && isWebUnavailable(tool.target)) tool = null;
                     out.push(tool || null);
                 }
                 return out;
