@@ -627,10 +627,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         downloadContainer.className = 'app-download-container app-update-container';
         const downloadButton = document.createElement('button');
         downloadButton.className = 'nav-btn download-app-btn update-app-btn';
+        // data-i18n* so the i18n engine re-translates these if the button was
+        // built before the dictionary finished loading (web mode renders it at
+        // first paint, which can beat i18n's async load -> raw token otherwise).
+        downloadButton.setAttribute('data-i18n-title', 'app.download_the_desktop_app');
         downloadButton.title = t('app.download_the_desktop_app');
         downloadButton.innerHTML = `
             <i class="fa-solid fa-download nav-icon"></i>
-            <span class="nav-text">${t('app.download_app')}</span>
+            <span class="nav-text" data-i18n="app.download_app">${t('app.download_app')}</span>
         `;
         downloadButton.addEventListener('click', () => {
             window.location.href = 'https://trove.aallyn.net';
@@ -2200,12 +2204,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (shouldHideForWeb) {
                 btn.classList.add('web-desktop-only-btn');
                 btn.setAttribute('data-tooltip-text', t('app.only_available_in_the_desktop_app'));
-                if (!btn.querySelector('.desktop-app-label')) {
-                    const desktopLabel = document.createElement('span');
+                let desktopLabel = btn.querySelector('.desktop-app-label');
+                if (!desktopLabel) {
+                    desktopLabel = document.createElement('span');
                     desktopLabel.className = 'desktop-app-label';
-                    desktopLabel.textContent = t('app.desktop_app');
                     btn.appendChild(desktopLabel);
                 }
+                // Always (re)set the text so a re-run after i18n loads replaces a
+                // raw token stamped before the dictionary was ready.
+                desktopLabel.textContent = t('app.desktop_app');
                 const menuItem = btn.closest('li');
                 if (menuItem) {
                     menuItem.style.display = '';
@@ -2239,6 +2246,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderCmdResults(cmdInput ? cmdInput.value : '');
         }
     };
+
+    // i18n loads its dictionary asynchronously (it fetches _ui_ids.json + the
+    // locale file). The web-mode "Desktop App" sidebar markers above are stamped
+    // imperatively via t(), which at startup can run before that finishes -> they
+    // would show the raw token (e.g. "app.desktop_app"). Re-apply them whenever
+    // i18n (re)resolves a language so they pick up the translated text. Registered
+    // here, before the startup await below, so it can't miss the first event.
+    window.addEventListener('languagechange', () => {
+        void applyBetaFeatureVisibility();
+    });
 
     function extractViewContentAndStyles(html) {
         const parser = new DOMParser();
