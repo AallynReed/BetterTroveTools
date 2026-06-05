@@ -306,7 +306,12 @@
 
 .allies-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    /* min(100%, 380px) keeps the 380px column target on wide screens but lets
+       a column shrink to the container width when it's narrower than 380px,
+       so tiles never overflow on phones (was a fixed 380px min that stuck out
+       past the screen edge). Desktop is unchanged: the container is always
+       wider than 380px there, so the floor stays 380px. */
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
     gap: 20px;
 }
 
@@ -555,6 +560,14 @@
     }
     .codex-search-input-wrap {
         width: 100%;
+    }
+
+    /* Let long tile names wrap instead of being clipped mid-word by the card's
+       overflow:hidden (they were white-space:nowrap). Shared by every codex
+       tile type, ally and item alike. */
+    .ally-name {
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .codex-toolbar-actions {
