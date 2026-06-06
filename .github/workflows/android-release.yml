@@ -54,17 +54,33 @@ jobs:
       # file the Gradle signing config can read. The same keystore identity is
       # used by every CI build (and the maintainer's local builds), so users
       # never hit INSTALL_FAILED_UPDATE_INCOMPATIBLE between consecutive releases.
+      #
+      # `tr -d '\r\n '` strips any stray whitespace that may have snuck into the
+      # secret on upload (e.g. CR characters when `gh secret set` was piped from
+      # a Windows shell). `keytool -list` verifies the decoded file is actually
+      # a usable keystore before we hand it to Gradle, so a bad secret fails
+      # here with a clear message instead of mid-signing with a cryptic one.
       - name: Decode release keystore
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
           if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "::error::ANDROID_KEYSTORE_BASE64 secret is missing — release builds cannot be signed."
             exit 1
           fi
           mkdir -p "$RUNNER_TEMP/signing"
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/signing/btt-release.jks"
-          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/signing/btt-release.jks" >> "$GITHUB_ENV"
+          KEYSTORE_FILE="$RUNNER_TEMP/signing/btt-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > "$KEYSTORE_FILE"
+          if [ ! -s "$KEYSTORE_FILE" ]; then
+            echo "::error::Decoded keystore is empty — check ANDROID_KEYSTORE_BASE64 secret content."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE_FILE" -storepass "$ANDROID_KEYSTORE_PASSWORD" > /dev/null 2>&1; then
+            echo "::error::Decoded keystore did not open with ANDROID_KEYSTORE_PASSWORD. Re-upload the secrets (most likely cause: stray whitespace introduced when piping to 'gh secret set' from a Windows shell — pipe from a file via stdin instead)."
+            exit 1
+          fi
+          echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_FILE" >> "$GITHUB_ENV"
 
       # Release APK signed with the stable BTT keystore (env vars below feed the
       # signingConfigs.release block in android/app/build.gradle). Always built
