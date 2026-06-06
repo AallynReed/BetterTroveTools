@@ -557,8 +557,15 @@ document.addEventListener('home_loaded', () => {
                 if (isDisposed) return;
                 mediaData.bilibili.loading = false;
                 if (response?.success && response.data) {
+                    // Bilibili thumbnails (hdslb.com) need a Referer-injecting proxy.
+                    // Desktop serves one locally; the web/Android builds have no local
+                    // server, so route through the Kiwi API's proxy (reachable on every
+                    // platform — cross-origin <img> loads aren't subject to CORS).
+                    const biliImgBase = window.BTT_WEB_MODE
+                        ? 'https://api.aallyn.net/v1/feeds/bilibili/image'
+                        : '/proxy/bilibili_image';
                     mediaData.bilibili.data = response.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).map(v => ({
-                        url: v.url, thumb: `/proxy/bilibili_image?url=${encodeURIComponent(v.thumbnail_url)}`, title: v.title, channel: v.channel,
+                        url: v.url, thumb: `${biliImgBase}?url=${encodeURIComponent(v.thumbnail_url)}`, title: v.title, channel: v.channel,
                         badgeHtml: getTimeAgo(v.published_at),
                         verified: false, iconColor: '#00A1D6'
                     }));
