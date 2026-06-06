@@ -33,4 +33,10 @@ android/local.properties
 android/app/release/
 android/capacitor-cordova-android-plugins/
 *.keystore
+*.jks
+# Defense in depth: even though the canonical release keystore lives at
+# ~/.android/btt-release/ (outside the repo), refuse to commit anything that
+# looks like keystore material if it lands inside the repo by accident.
+keystore.properties
+android/keystores/
 *.apk

@@ -50,13 +50,34 @@ jobs:
       - name: Sync web build into the Android project
         run: npx cap sync android
 
-      # The debug APK is signed with the auto-generated debug keystore, so it is
-      # installable when sideloaded (an unsigned release APK would not install).
-      - name: Build debug APK
+      # Decode the release keystore from the GitHub Actions secret into a real
+      # file the Gradle signing config can read. The same keystore identity is
+      # used by every CI build (and the maintainer's local builds), so users
+      # never hit INSTALL_FAILED_UPDATE_INCOMPATIBLE between consecutive releases.
+      - name: Decode release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is missing — release builds cannot be signed."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/signing"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/signing/btt-release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/signing/btt-release.jks" >> "$GITHUB_ENV"
+
+      # Release APK signed with the stable BTT keystore (env vars below feed the
+      # signingConfigs.release block in android/app/build.gradle). Always built
+      # against the same signing identity, so users get clean in-place updates.
+      - name: Build release APK
         working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Name the APK with the app version
         id: name
@@ -65,7 +86,7 @@ jobs:
           TAG="${{ github.event.release.tag_name }}"
           SUFFIX="${TAG:-$VER}"
           OUT="BetterTroveTools-${SUFFIX}.apk"
-          cp android/app/build/outputs/apk/debug/app-debug.apk "$OUT"
+          cp android/app/build/outputs/apk/release/app-release.apk "$OUT"
           echo "apk=$OUT" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact

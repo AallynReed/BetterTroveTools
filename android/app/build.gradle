@@ -14,6 +14,24 @@ try {
     logger.warn("BTT: could not read APP_VERSION from metadata.json (${e.message}); using ${appVersionName}")
 }
 
+// Release signing configuration. Values come from one of two sources, in order:
+//   1. Environment variables (CI: ANDROID_KEYSTORE_PATH/PASSWORD/KEY_ALIAS/KEY_PASSWORD)
+//   2. ~/.android/btt-release/keystore.properties (local dev — outside the repo,
+//      so no keystore data lives in version control)
+// If neither is available the release variant builds UNSIGNED — caller (CI or
+// developer) will get a clear "no signing config" error rather than silently
+// shipping an unusable APK.
+def releaseSigningProps = new Properties()
+def releaseSigningPropsFile = new File(System.getProperty('user.home'), '.android/btt-release/keystore.properties')
+if (releaseSigningPropsFile.exists()) {
+    releaseSigningPropsFile.withInputStream { releaseSigningProps.load(it) }
+}
+def releaseStoreFile = System.getenv('ANDROID_KEYSTORE_PATH') ?: releaseSigningProps.getProperty('storeFile')
+def releaseStorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: releaseSigningProps.getProperty('storePassword')
+def releaseKeyAlias = System.getenv('ANDROID_KEY_ALIAS') ?: releaseSigningProps.getProperty('keyAlias')
+def releaseKeyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: releaseSigningProps.getProperty('keyPassword')
+def releaseSigningReady = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+
 android {
     namespace "net.aallyn.btt"
     compileSdk rootProject.ext.compileSdkVersion
@@ -30,10 +48,27 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    if (releaseSigningReady) {
+        signingConfigs {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    } else {
+        logger.warn("BTT: no release signing config found — release APK will be unsigned. " +
+                    "Set env vars (ANDROID_KEYSTORE_PATH/PASSWORD/KEY_ALIAS/KEY_PASSWORD) or " +
+                    "create ~/.android/btt-release/keystore.properties to sign release builds.")
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (releaseSigningReady) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
