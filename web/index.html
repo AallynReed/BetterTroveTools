@@ -153,9 +153,15 @@
                 </button>
             </li>
             <li>
-                <button class="nav-btn" data-target="about">
-                    <i class="fa-solid fa-circle-info nav-icon"></i>
-                    <span class="nav-text" data-i18n="nav.about_donate">About & Donate</span>
+                <!-- Single entry point to the support / about page. The page IS
+                     the "Support the Project" page; version/credits/license info
+                     lives below the donate hero on that same view (mirrors the
+                     "About This Mac" pattern where 'about' and 'support' are
+                     one place). A separate About entry would just route to the
+                     same screen and confuse the user. -->
+                <button class="nav-btn nav-btn-donate" data-target="about" data-scroll-to="donate-hero">
+                    <i class="fa-solid fa-heart nav-icon"></i>
+                    <span class="nav-text" data-i18n="nav.donate">Support the Project</span>
                 </button>
             </li>
         </ul>

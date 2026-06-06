@@ -104,29 +104,90 @@
 .about-link.discord { background: #5865F2; }
 .about-link:hover { transform: translateY(-2px); filter: brightness(1.2); }
 
-.donation-row {
-    display: flex;
-    gap: 15px;
-}
-
+/* Legacy compact donate row — retained for any view that still embeds it. The
+   primary About surface now uses .donate-hero (below). */
+.donation-row { display: flex; gap: 15px; }
 .donate-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5em;
-    color: #fff;
-    text-decoration: none;
-    transition: all 0.2s;
+    width: 50px; height: 50px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5em; color: #fff; text-decoration: none; transition: all 0.2s;
 }
-
 .donate-icon.paypal { background: #003087; }
 .donate-icon.kofi { background: #FF5E5B; }
 .donate-icon.bmac { background: #FFDD00; color: #000; }
-
 .donate-icon:hover { transform: scale(1.1) rotate(5deg); }
+
+/* Hero donate banner (About page, between header and main grid).
+   The wide labeled CTAs are deliberately the loudest interactive element on
+   the page — that's the entire point. Each button uses its platform's brand
+   color so they're instantly recognizable, and shows both a verb-led label
+   ("Donate via PayPal") and the destination URL so users know what they're
+   tapping into. */
+.donate-hero {
+    margin: 24px 0 32px;
+    padding: 22px 24px;
+    background: linear-gradient(180deg, rgba(255, 120, 160, 0.07), rgba(255, 120, 160, 0.02));
+    border: 1px solid rgba(255, 120, 160, 0.22);
+    border-radius: 14px;
+}
+.donate-hero-headline {
+    display: flex; align-items: center; gap: 10px;
+}
+.donate-hero-headline h2 {
+    margin: 0; font-size: 1.35em; color: var(--text-main);
+}
+.donate-hero-copy {
+    color: var(--text-muted); margin: 10px 0 18px; line-height: 1.55;
+}
+.donate-hero-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+.donate-cta {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 600;
+    transition: transform 0.18s, filter 0.18s, box-shadow 0.18s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.donate-cta:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.28);
+}
+.donate-cta i { font-size: 1.8em; flex-shrink: 0; }
+.donate-cta-text { display: flex; flex-direction: column; min-width: 0; }
+.donate-cta-line1 { font-size: 1em; }
+.donate-cta-line2 {
+    font-size: 0.82em; opacity: 0.85; font-weight: 400; margin-top: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.donate-cta-paypal { background: #003087; }
+.donate-cta-kofi   { background: #FF5E5B; }
+.donate-cta-bmac   { background: #FFDD00; color: #1a1a1a; }
+.donate-cta-bmac .donate-cta-line2 { opacity: 0.7; }
+.donate-hero-perks {
+    margin: 14px 0 0;
+    color: var(--text-muted);
+    font-size: 0.88em;
+    font-style: italic;
+}
+
+/* Supporter wall — small "what you get" line above the chip list. */
+.supporter-perks {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-top: -4px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    background: rgba(255, 120, 160, 0.06);
+    border-left: 3px solid rgba(255, 120, 160, 0.5);
+    border-radius: 4px;
+}
 
 .credits-footer {
     margin-top: 60px;

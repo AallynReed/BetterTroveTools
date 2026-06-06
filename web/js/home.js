@@ -13,6 +13,7 @@ document.addEventListener('home_loaded', () => {
     const DENSITY_PREF_KEY = 'home_density_v1';
     const QUICK_TOOLS_PREF_KEY = 'home_quick_tools_v1';
     const WHATS_NEW_PREF_KEY = 'home_whats_new_seen_version_v1';
+    const SUPPORT_CARD_PREF_KEY = 'home_support_card_dismissed_v1';
     const NAV_VISITS_PREF_KEY = 'home_nav_visits';
     const NEWS_CATEGORY_PREF_KEY = 'home_news_category_v1';
     const DEFAULT_SECTION_ORDER = ['streams', 'news', 'rotations'];
@@ -135,6 +136,11 @@ document.addEventListener('home_loaded', () => {
             const navVisits = ref({});
             const whatsNewRelease = ref(null);
             const whatsNewDismissed = ref(false);
+            // Support card: hidden once the user dismisses, period. They can
+            // still reach the donate flow from the sidebar at any time.
+            const supportCardDismissed = ref(
+                !!(window.AppSettings && window.AppSettings.getPref(SUPPORT_CARD_PREF_KEY, false))
+            );
             const newsActiveCategory = ref('all');
             const draggingSectionId = ref(null);
             const dragInsertBefore = ref(null);
@@ -388,6 +394,21 @@ document.addEventListener('home_loaded', () => {
                 }
             };
             const whatsNewVisible = computed(() => !!whatsNewRelease.value && !whatsNewDismissed.value);
+
+            const supportCardVisible = computed(() => !supportCardDismissed.value);
+            const dismissSupportCard = () => {
+                supportCardDismissed.value = true;
+                if (window.AppSettings) {
+                    window.AppSettings.setPrefSync(SUPPORT_CARD_PREF_KEY, true);
+                }
+            };
+            // Open the About view with the donate hero scrolled into focus.
+            // Uses the same window.pendingViewScroll handshake the sidebar
+            // "Support the Project" button uses.
+            const openSupport = () => {
+                window.pendingViewScroll = { view: 'about', elementId: 'donate-hero' };
+                if (typeof window.loadView === 'function') window.loadView('about');
+            };
 
             const newsCategoriesAvailable = computed(() => {
                 const counts = new Map();
@@ -1440,6 +1461,7 @@ document.addEventListener('home_loaded', () => {
                 quickToolsMode, quickToolsList, quickToolsCatalogVisible, quickToolsEditingSlot,
                 toggleQuickToolsMode, openQuickToolSlotEditor, setQuickToolAtSlot, clearQuickToolSlot, navigateToTool,
                 whatsNewRelease, whatsNewVisible, dismissWhatsNew,
+                supportCardVisible, dismissSupportCard, openSupport,
                 nowStripItems, newsCategoriesAvailable, newsActiveCategory, setNewsCategory,
                 serverTimeNowText, isWebUnavailable
             };

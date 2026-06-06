@@ -1781,6 +1781,82 @@
     background: rgba(255,255,255,0.07);
 }
 
+/* Support-the-project nudge — sits below "What's New" if present, above the
+   Quick Tools section. Designed to read as a soft recommendation, not a CTA
+   that competes with anything functional. */
+.home-support-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    margin: 0 0 12px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255, 120, 160, 0.09), rgba(255, 120, 160, 0.03));
+    border: 1px solid rgba(255, 120, 160, 0.20);
+}
+.home-support-card-icon {
+    flex-shrink: 0;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 120, 160, 0.14);
+    color: #ff6f91;
+    font-size: 1.1em;
+}
+.home-support-card-body {
+    flex: 1; min-width: 0;
+}
+.home-support-card-title {
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.95em;
+}
+.home-support-card-copy {
+    color: var(--text-muted);
+    font-size: 0.85em;
+    margin-top: 2px;
+    line-height: 1.4;
+}
+.home-support-card-cta {
+    flex-shrink: 0;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #ff7aa1, #ff5d8c);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.88em;
+    cursor: pointer;
+    transition: transform 0.15s, filter 0.15s;
+}
+.home-support-card-cta:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.07);
+}
+.home-support-card-dismiss {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4em;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+}
+.home-support-card-dismiss:hover {
+    color: var(--text-main);
+    background: rgba(255,255,255,0.05);
+}
+/* Tablet/mobile: stack the CTA below the copy so nothing wraps awkwardly. */
+@media (max-width: 720px) {
+    .home-support-card { flex-wrap: wrap; }
+    .home-support-card-body { flex-basis: 100%; }
+    .home-support-card-cta { width: 100%; justify-content: center; }
+}
+
 .home-now-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

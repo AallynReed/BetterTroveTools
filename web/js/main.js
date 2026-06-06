@@ -2677,6 +2677,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
             if (target) {
+                // Optional: a nav button can declare an element id to scroll to
+                // inside the target view (e.g. the sidebar Donate button lands
+                // on `about` and scrolls the donate hero into view). about.js
+                // (and any other view) reads window.pendingViewScroll on mount.
+                const scrollTo = btn.getAttribute('data-scroll-to');
+                window.pendingViewScroll = scrollTo
+                    ? { view: target, elementId: scrollTo }
+                    : null;
                 trackNavVisit(target);
                 window.loadView(target);
             }

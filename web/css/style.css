@@ -300,6 +300,30 @@ body.app-update-active #network-tracker-vue-app {
     box-shadow: 0 8px 16px rgba(0,0,0,0.24);
 }
 
+/* Support-the-project nav row — visually distinct from the other admin items
+   (Settings, About, Documentation) so it doesn't disappear into banner blindness,
+   but quieter than the yellow Download App CTA. The heart picks up the donate
+   accent (pink) regardless of the user's app theme color; the left rail hints at
+   "this is a different category of action" without being loud. */
+.nav-btn.nav-btn-donate {
+    background: linear-gradient(180deg, rgba(255, 120, 160, 0.10), rgba(255, 120, 160, 0.04));
+    border-color: rgba(255, 120, 160, 0.28);
+    box-shadow: inset 3px 0 0 rgba(255, 120, 160, 0.65);
+}
+.nav-btn.nav-btn-donate .nav-icon {
+    color: #ff6f91;
+    background: rgba(255, 120, 160, 0.16);
+}
+.nav-btn.nav-btn-donate:hover {
+    background: linear-gradient(180deg, rgba(255, 120, 160, 0.18), rgba(255, 120, 160, 0.08));
+    border-color: rgba(255, 120, 160, 0.45);
+}
+.nav-btn.nav-btn-donate:hover .nav-icon {
+    color: #ff8eab;
+    transform: scale(1.05);
+    transition: transform 0.2s, color 0.2s;
+}
+
 .nav-btn.web-desktop-only-btn {
     background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(255,255,255,0.015));
     border-color: rgba(var(--accent-rgb), 0.38);

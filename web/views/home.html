@@ -12,6 +12,23 @@
         <button class="home-whats-new-dismiss" :title="t('home.dismiss')" :aria-label="t('home.dismiss')" @click.stop="dismissWhatsNew()">&times;</button>
     </div>
 
+    <!-- Support-the-project nudge. Dismissible (persisted), small, subtle. Once
+         dismissed it stays gone — users can always re-find the donate flow via
+         the sidebar "Support the Project" entry. Built deliberately quieter than
+         a yellow CTA so it doesn't feel like nagging on every home visit. -->
+    <div v-if="supportCardVisible" class="home-support-card" role="region" :aria-label="t('home.support_card_title')">
+        <span class="home-support-card-icon"><i class="fa-solid fa-heart"></i></span>
+        <div class="home-support-card-body">
+            <div class="home-support-card-title">{{ t('home.support_card_title') }}</div>
+            <div class="home-support-card-copy">{{ t('home.support_card_copy') }}</div>
+        </div>
+        <button class="home-support-card-cta" @click="openSupport()">
+            <i class="fa-solid fa-heart"></i>
+            <span>{{ t('home.support_card_cta') }}</span>
+        </button>
+        <button class="home-support-card-dismiss" :title="t('home.support_card_dismiss')" :aria-label="t('home.support_card_dismiss')" @click.stop="dismissSupportCard()">&times;</button>
+    </div>
+
     <div class="home-quick-tools">
         <div class="home-quick-tools-header">
             <div class="home-quick-tools-title">

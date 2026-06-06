@@ -159,6 +159,18 @@ document.addEventListener('about_loaded', async () => {
                     }
                 } catch (e) {}
                 supportersLoaded.value = true;
+
+                // If the user arrived here via a sidebar entry that requested
+                // a scroll target (currently: the "Support the Project" donate
+                // button → "donate-hero"), honor it after the view has rendered.
+                const pending = window.pendingViewScroll;
+                if (pending && pending.view === 'about' && pending.elementId) {
+                    window.pendingViewScroll = null;
+                    requestAnimationFrame(() => {
+                        const el = document.getElementById(pending.elementId);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                }
             });
 
             return {

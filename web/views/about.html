@@ -14,6 +14,44 @@
         <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 5px; opacity: 0.7;">{{ sysInfoStrShort }}</p>
     </div>
 
+    <!-- Hero donate banner: the primary "support the project" call-to-action.
+         Wide, labeled buttons (not just icons) so the donate platforms read as
+         real CTAs. Brand colors keep them recognizable. Anchored above the
+         column grid so the donate flow is the FIRST thing a user sees after
+         landing on About — no scrolling, no scanning. The sidebar "Support the
+         Project" button scrolls here on land via window.pendingViewScroll. -->
+    <div id="donate-hero" class="donate-hero">
+        <div class="donate-hero-headline">
+            <i class="fa-solid fa-heart" style="color: #ff6f91;"></i>
+            <h2>{{ t('about.donate_hero_title') }}</h2>
+        </div>
+        <p class="donate-hero-copy">{{ t('about.donate_hero_copy') }}</p>
+        <div class="donate-hero-row">
+            <a href="#" @click.prevent="openUrl('https://paypal.me/waterin')" class="donate-cta donate-cta-paypal">
+                <i class="fa-brands fa-paypal"></i>
+                <span class="donate-cta-text">
+                    <span class="donate-cta-line1">{{ t('about.donate_cta_paypal') }}</span>
+                    <span class="donate-cta-line2">paypal.me/waterin</span>
+                </span>
+            </a>
+            <a href="#" @click.prevent="openUrl('https://ko-fi.com/aallyn')" class="donate-cta donate-cta-kofi">
+                <i class="fa-solid fa-mug-hot"></i>
+                <span class="donate-cta-text">
+                    <span class="donate-cta-line1">{{ t('about.donate_cta_kofi') }}</span>
+                    <span class="donate-cta-line2">ko-fi.com/aallyn</span>
+                </span>
+            </a>
+            <a href="#" @click.prevent="openUrl('https://buymeacoffee.com/aallyn')" class="donate-cta donate-cta-bmac">
+                <i class="fa-solid fa-mug-saucer"></i>
+                <span class="donate-cta-text">
+                    <span class="donate-cta-line1">{{ t('about.donate_cta_bmac') }}</span>
+                    <span class="donate-cta-line2">buymeacoffee.com/aallyn</span>
+                </span>
+            </a>
+        </div>
+        <p class="donate-hero-perks">{{ t('about.donate_hero_perks') }}</p>
+    </div>
+
     <div class="about-grid">
         <div class="about-section">
             <div class="section-title"><i class="fa-solid fa-users"></i> <span>{{ t('Community & Support') }}</span></div>
@@ -38,15 +76,10 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 30px;">
-            <div class="about-section">
-                <div class="section-title"><i class="fa-solid fa-heart"></i> <span>{{ t('about.support_the_developer') }}</span></div>
-                <p>{{ t('about.developing_and_maintaining_these_tools_t_af111c') }}</p>
-                <div class="donation-row">
-                    <a href="#" @click.prevent="openUrl('https://paypal.me/waterin')" class="donate-icon paypal" :title="t('about.paypal')"><i class="fa-brands fa-paypal"></i></a>
-                    <a href="#" @click.prevent="openUrl('https://buymeacoffee.com/aallyn')" class="donate-icon bmac" :title="t('about.buy_me_a_coffee')"><i class="fa-solid fa-mug-saucer"></i></a>
-                    <a href="#" @click.prevent="openUrl('https://ko-fi.com/aallyn')" class="donate-icon kofi" :title="t('about.ko_fi')"><i class="fa-solid fa-mug-hot"></i></a>
-                </div>
-            </div>
+            <!-- The "Support the Developer" mini-section that used to live here was
+                 moved to the top-of-page hero banner (see #donate-hero above) so
+                 the donate call-to-action is the first thing a visitor sees,
+                 rather than being buried in the secondary column. -->
 
             <div class="about-section">
                 <div class="section-title"><i class="fa-solid fa-code-merge"></i> <span>{{ t('about.github_contributors') }}</span></div>
@@ -65,6 +98,7 @@
             <div class="about-section">
                 <div class="section-title"><i class="fa-solid fa-star"></i> <span>{{ t('about.supporters') }}</span></div>
                 <p>{{ t('about.thank_you_to_everyone_supporting_the_pro_5ab5ad') }}</p>
+                <p class="supporter-perks">{{ t('about.supporter_perks') }}</p>
                 <div class="supporters-container">
                     <div v-if="!supportersLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     <template v-else>
