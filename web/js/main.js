@@ -643,40 +643,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         sidebar.appendChild(downloadContainer);
     };
 
+    // Update checks go through the Kiwi API's BTT releases relay, which mirrors
+    // the GitHub release feed and exposes a server-side "is there an update?"
+    // endpoint per channel + platform. That collapses what used to be a list +
+    // filter + walk-back into one call, and dodges GitHub's 60/hr unauth cap.
+    //
+    // Returns a release-shaped object the existing UI code already understands:
+    //   { tag_name, html_url, prerelease, asset: { name, browser_download_url } }
+    // — `browser_download_url` is aliased from the API's `url` so the desktop
+    // self-update click handler (which passes the URL to eel.start_self_update)
+    // works without further changes.
+    const kiwiCheckUpdate = async (installed, platform, channel) => {
+        try {
+            const path = `btt/check?installed=${encodeURIComponent(installed)}&platform=${encodeURIComponent(platform)}&channel=${encodeURIComponent(channel)}`;
+            // Prefer the in-app helper so Android goes through CapacitorHttp
+            // (native HTTP, no CORS check — the WebView origin https://localhost
+            // isn't allowlisted by the API). Hosted-web / eel-desktop fall back
+            // to plain fetch since their origins ARE allowlisted.
+            let data;
+            if (window.BTT_Kiwi && typeof window.BTT_Kiwi.get === 'function') {
+                data = await window.BTT_Kiwi.get(path);
+            } else {
+                const resp = await fetch(`https://api.aallyn.net/v1/${path}`, { bttLabel: t('app.looking_for_updates') });
+                if (!resp.ok) return null;
+                data = await resp.json();
+            }
+            if (!data || data.update_available !== true || !data.latest) return null;
+            const release = data.latest.release || {};
+            const assets = Array.isArray(data.latest.assets) ? data.latest.assets : [];
+            const asset = assets[0]; // API returns priority-sorted platform-matched assets
+            if (!release.tag_name || !asset || !asset.url) return null;
+            return {
+                tag_name: release.tag_name,
+                html_url: release.html_url || '',
+                prerelease: release.prerelease === true,
+                asset: { name: asset.name || '', browser_download_url: asset.url }
+            };
+        } catch { return null; }
+    };
+
+    // Pick the best target across channels. Beta users check BOTH channels and
+    // take whichever ships a newer version (matches the old walk-back behavior).
+    const kiwiBestUpdate = async (installed, platform, currentIsBeta) => {
+        const channels = currentIsBeta ? ['release', 'beta'] : ['release'];
+        const results = await Promise.all(channels.map((c) => kiwiCheckUpdate(installed, platform, c)));
+        let best = null;
+        for (const r of results) {
+            if (!r) continue;
+            if (!best || compareVersionTags(r.tag_name, best.tag_name) > 0) best = r;
+        }
+        return best;
+    };
+
     // Android update notice: the packaged app can't self-install like the desktop
-    // MSI flow, so it checks GitHub releases for a newer version that ships an .apk
-    // asset and links straight to that APK (system browser handles download/install).
+    // MSI flow, so it asks the API for the latest .apk on its channel and links
+    // straight to that asset (system browser handles download/install).
     const checkAndroidUpdate = async () => {
         try {
-            const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=10', { bttLabel: t('app.looking_for_updates') });
-            if (!ghResponse.ok) return;
-            const releases = await ghResponse.json();
-            const apkAsset = (release) => Array.isArray(release?.assets)
-                ? release.assets.find(a => typeof a?.name === 'string' && a.name.toLowerCase().endsWith('.apk') && typeof a?.browser_download_url === 'string' && a.browser_download_url)
-                : null;
-            const valid = Array.isArray(releases)
-                ? releases.filter(r => r && !r.draft && parseVersion(r.tag_name) && apkAsset(r))
-                : [];
-            let latestStable = null, latestPrerelease = null;
-            valid.forEach(r => {
-                if (r.prerelease) { if (!latestPrerelease || compareVersionTags(r.tag_name, latestPrerelease.tag_name) > 0) latestPrerelease = r; }
-                else { if (!latestStable || compareVersionTags(r.tag_name, latestStable.tag_name) > 0) latestStable = r; }
-            });
             const currentParsed = parseVersion(currentVersion);
             if (!currentParsed) return;
-            let target = null;
-            if (currentParsed.isBeta) {
-                const preNewer = latestPrerelease && compareVersionTags(latestPrerelease.tag_name, currentVersion) > 0;
-                const stableNewer = latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0;
-                if (preNewer && stableNewer) target = compareVersionTags(latestPrerelease.tag_name, latestStable.tag_name) >= 0 ? latestPrerelease : latestStable;
-                else if (preNewer) target = latestPrerelease;
-                else if (stableNewer) target = latestStable;
-            } else if (latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0) {
-                target = latestStable;
-            }
+            const target = await kiwiBestUpdate(currentVersion, 'android', currentParsed.isBeta);
             if (!target) return;
-            const asset = apkAsset(target);
-            if (!asset) return;
             const latestVersion = normalizeVersionTag(target.tag_name);
             const sidebar = document.getElementById('sidebar');
             if (!sidebar) return;
@@ -692,7 +719,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <span class="nav-text">${t('app.update_v_version').replace('{version}', latestVersion)}</span>
             `;
             button.addEventListener('click', () => {
-                window.open(asset.browser_download_url, '_blank', 'noopener,noreferrer');
+                window.open(target.asset.browser_download_url, '_blank', 'noopener,noreferrer');
             });
             container.appendChild(button);
             sidebar.appendChild(container);
@@ -711,62 +738,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-        const ghResponse = await fetch('https://api.github.com/repos/AallynReed/BetterTroveTools/releases?per_page=5', { bttLabel: t('app.looking_for_updates') });
-        if (ghResponse.ok) {
-            const releases = await ghResponse.json();
-            const hasMsiAsset = (release) => Array.isArray(release?.assets)
-                && release.assets.some(asset => typeof asset?.name === 'string' && asset.name.toLowerCase().endsWith('.msi'));
-
-            const validReleases = Array.isArray(releases)
-                ? releases.filter(r => r && !r.draft && parseVersion(r.tag_name) && hasMsiAsset(r))
-                : [];
-
-            let latestStable = null;
-            let latestPrerelease = null;
-
-            validReleases.forEach(release => {
-                if (release.prerelease) {
-                    if (!latestPrerelease || compareVersionTags(release.tag_name, latestPrerelease.tag_name) > 0) {
-                        latestPrerelease = release;
-                    }
-                } else {
-                    if (!latestStable || compareVersionTags(release.tag_name, latestStable.tag_name) > 0) {
-                        latestStable = release;
-                    }
-                }
-            });
-
-            const currentParsed = parseVersion(currentVersion);
-            const currentIsBeta = !!(currentParsed && currentParsed.isBeta);
-
-            let updateTarget = null;
-
-            if (currentParsed) {
-                if (currentIsBeta) {
-                    const prereleaseNewer = latestPrerelease && compareVersionTags(latestPrerelease.tag_name, currentVersion) > 0;
-                    const stableNewer = latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0;
-
-                    if (prereleaseNewer && stableNewer) {
-                        updateTarget = compareVersionTags(latestPrerelease.tag_name, latestStable.tag_name) >= 0
-                            ? latestPrerelease
-                            : latestStable;
-                    } else if (prereleaseNewer) {
-                        updateTarget = latestPrerelease;
-                    } else if (stableNewer) {
-                        updateTarget = latestStable;
-                    }
-                } else {
-                    if (latestStable && compareVersionTags(latestStable.tag_name, currentVersion) > 0) {
-                        updateTarget = latestStable;
-                    }
-                }
-            }
-
-            if (updateTarget) {
+        const currentParsed = parseVersion(currentVersion);
+        const currentIsBeta = !!(currentParsed && currentParsed.isBeta);
+        const updateTarget = currentParsed
+            ? await kiwiBestUpdate(currentVersion, 'windows', currentIsBeta)
+            : null;
+        if (updateTarget) {
+            {
                 const latestVersion = normalizeVersionTag(updateTarget.tag_name);
-                const updateAsset = Array.isArray(updateTarget.assets)
-                    ? updateTarget.assets.find(asset => typeof asset?.name === 'string' && asset.name.toLowerCase().endsWith('.msi') && typeof asset?.browser_download_url === 'string' && asset.browser_download_url)
-                    : null;
+                // kiwiBestUpdate already filtered to the priority-matched .msi
+                // asset and aliased its url onto browser_download_url, so the
+                // existing self-update click handler works unchanged.
+                const updateAsset = updateTarget.asset || null;
                 const sidebar = document.getElementById('sidebar');
                 if (sidebar && updateAsset) {
                     const existingUpdate = sidebar.querySelector('.app-update-container');
@@ -1921,6 +1904,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     applyUiScale();
+    // Re-sync Android rotation notifications on startup so pending alarms roll
+    // forward and pick up any settings changes since the app was last open.
+    // No-op outside Android (notifications.js short-circuits on !isNative).
+    if (window.BTT_Notifications && window.BTT_Notifications.isNative()) {
+        void window.BTT_Notifications.sync();
+    }
 
     const cmdOverlay = document.getElementById('command-palette-overlay');
     const cmdInput = document.getElementById('cmd-input');
@@ -2457,6 +2446,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('app_settings_updated', () => {
         void applyBetaFeatureVisibility();
         applyUiScale();
+        if (window.BTT_Notifications && window.BTT_Notifications.isNative()) {
+            void window.BTT_Notifications.sync();
+        }
     });
 
     if (burgerBtn && sidebar) {
@@ -3012,13 +3004,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (window.AppSettings.getPref(commandHintKey, '') !== 'dismissed') {
             window.AppSettings.setPrefSync(commandHintKey, 'dismissed');
-            window.showToast(t('app.quick_open_is_available_from_the_sidebar_1dc9fd'), false, {
-                actionLabel: t('common.open'),
-                onAction: async () => openCommandPalette(),
-                durationMs: 7000,
-                closeable: true
-            });
-            return;
+            // The toast text references Ctrl/Cmd+K — skip it on Android (no
+            // keyboard). Mark it dismissed silently and fall through to the
+            // next discoverability hint check.
+            if (window.BTT_NATIVE !== true) {
+                window.showToast(t('app.quick_open_is_available_from_the_sidebar_1dc9fd'), false, {
+                    actionLabel: t('common.open'),
+                    onAction: async () => openCommandPalette(),
+                    durationMs: 7000,
+                    closeable: true
+                });
+                return;
+            }
         }
 
         if (window.AppSettings.getPref(requestHintKey, '') !== 'dismissed') {

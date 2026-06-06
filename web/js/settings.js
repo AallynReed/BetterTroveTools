@@ -20,6 +20,24 @@ document.addEventListener('settings_loaded', async () => {
 
             const activeTab = ref('general');
             
+            // Default notification config — mirrors defaultSettings.notifications
+            // in web_mode.js so the structure round-trips when load misses it.
+            // Each rotation has its OWN lead_minutes (>=1) and on_time toggle.
+            const defaultNotifications = () => ({
+                enabled: false,
+                types: {
+                    corruxion: { enabled: false, lead_minutes: 15, on_time: false },
+                    fluxion: { enabled: false, lead_minutes: 15, on_time: false, phases: ['voting', 'selling'] },
+                    mana: { enabled: false, lead_minutes: 15, on_time: false },
+                    stampy: { enabled: false, lead_minutes: 15, on_time: false },
+                    gardening: { enabled: false, lead_minutes: 15, on_time: false, cycles: ['2', '3'] },
+                    weekly_buff: { enabled: false, lead_minutes: 15, on_time: false },
+                    chaos_chest: { enabled: false, lead_minutes: 15, on_time: false },
+                    d15: { enabled: false, lead_minutes: 15, on_time: false, biomes: [] },
+                    daily_reset: { enabled: false, lead_minutes: 15, on_time: false }
+                }
+            });
+
             const settings = reactive({
                 accent_color: '#5ec6ff',
                 app_font: 'system',
@@ -29,7 +47,8 @@ document.addEventListener('settings_loaded', async () => {
                 auto_fix_names: false,
                 show_mod_preview_on_info_side: true,
                 hide_beta_features: false,
-                fps_caps: {}
+                fps_caps: {},
+                notifications: defaultNotifications()
             });
 
             const customDirs = ref([]);
@@ -68,6 +87,31 @@ document.addEventListener('settings_loaded', async () => {
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
                     settings.fps_caps = data.fps_caps || {};
+                    // Deep-merge notifications so old saves missing a new field
+                    // (e.g. a freshly-added rotation type) pick up its defaults.
+                    // Old saves may carry a global notifications.lead_minutes —
+                    // fold it into each type that doesn't already specify its own
+                    // so users don't lose their previous setting on upgrade.
+                    const incoming = data.notifications || {};
+                    const merged = defaultNotifications();
+                    merged.enabled = incoming.enabled === true;
+                    const legacyLead = Number.isFinite(Number(incoming.lead_minutes))
+                        ? Math.max(5, Math.floor(Number(incoming.lead_minutes)))
+                        : null;
+                    const incTypes = incoming.types || {};
+                    for (const key of Object.keys(merged.types)) {
+                        const cur = incTypes[key] || {};
+                        merged.types[key].enabled = cur.enabled === true;
+                        merged.types[key].on_time = cur.on_time === true;
+                        const lead = Number.isFinite(Number(cur.lead_minutes))
+                            ? Math.max(5, Math.floor(Number(cur.lead_minutes)))
+                            : (legacyLead !== null ? legacyLead : merged.types[key].lead_minutes);
+                        merged.types[key].lead_minutes = lead;
+                        if (Array.isArray(cur.phases)) merged.types[key].phases = cur.phases.slice();
+                        if (Array.isArray(cur.cycles)) merged.types[key].cycles = cur.cycles.slice();
+                        if (Array.isArray(cur.biomes)) merged.types[key].biomes = cur.biomes.slice();
+                    }
+                    settings.notifications = merged;
                     customDirs.value = data.custom_directories || [];
                     gameInstalls.value = data.game_installs || [];
                     fpsRepair.value = Array.isArray(data.fps_repair) ? data.fps_repair : [];
@@ -255,6 +299,43 @@ document.addEventListener('settings_loaded', async () => {
 
             watch(activeTab, persistState);
 
+            // --- Notifications (Android only) -----------------------------------
+            // The registry + scheduler live in js/notifications.js; the tab is data
+            // driven from registryMeta() so this view doesn't bake in rotation names.
+            const notifyRegistry = ref([]);
+            const d15Biomes = ref([]);
+            if (window.BTT_Notifications) {
+                notifyRegistry.value = window.BTT_Notifications.registryMeta();
+            }
+            if (window.BTT_Rotations && window.BTT_Rotations.D15) {
+                d15Biomes.value = window.BTT_Rotations.D15.uniqueBiomes();
+            }
+
+            const saveAndSyncNotifications = async () => {
+                await saveGeneralSettings();
+                if (window.BTT_Notifications) {
+                    try {
+                        await window.BTT_Notifications.sync();
+                    } catch (e) {
+                        console.error('[settings] notifications sync failed', e);
+                    }
+                }
+            };
+
+            const sendTestNotification = async () => {
+                if (!window.BTT_Notifications) return;
+                try {
+                    const r = await window.BTT_Notifications.sendTestNotification();
+                    if (r && r.skipped === 'permission-denied') {
+                        window.showToast && window.showToast(t('settings.notifications_permission_denied'), true);
+                    } else if (r && r.delay) {
+                        window.showToast && window.showToast(t('settings.notifications_test_sent', { seconds: r.delay }));
+                    }
+                } catch (e) {
+                    console.error('[settings] test notification failed', e);
+                }
+            };
+
             onMounted(async () => {
                 await restoreState();
                 await loadSettings();
@@ -264,7 +345,8 @@ document.addEventListener('settings_loaded', async () => {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
-                resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode, isNative
+                resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode, isNative,
+                notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification
             };
         }
     });

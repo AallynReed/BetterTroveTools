@@ -11,6 +11,9 @@
     // views/tools entirely here (the web build instead badges them with "Desktop App").
     window.BTT_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
         && window.Capacitor.isNativePlatform());
+    // Flag the document so CSS can hide desktop-only affordances (e.g. Ctrl+K
+    // shortcut tips) without each rule needing a JS gate.
+    if (window.BTT_NATIVE) document.documentElement.classList.add('btt-native');
 
     if (!window.BTT_WEB_MODE || (hasEelBridge && !forceWebMode)) return;
 
@@ -97,6 +100,13 @@
     // and on the web build once the API allowlists the web origin.
     const KIWI_BASE = 'https://api.aallyn.net/v1';
     const kiwiGet = async (path) => asJson(await feedGet(`${KIWI_BASE}/${path}`));
+
+    // Surface the Kiwi GET helper so consumers outside this IIFE (e.g. main.js
+    // update-check) can reuse the native-HTTP-on-Android path. CapacitorHttp
+    // bypasses the WebView's CORS check, which is necessary because the
+    // packaged app serves from https://localhost — an origin the API doesn't
+    // currently allowlist (and that I shouldn't change from the client side).
+    window.BTT_Kiwi = { get: kiwiGet, base: KIWI_BASE };
 
     // --- Delve helpers (mirror backend.home delve week math + depth normalize) ---
     // Delve rotations roll over on Trove server reset (UTC + 11h), base 2025-11-03.
@@ -219,6 +229,24 @@
         hide_beta_features: false,
         ui_scale: 1,
         custom_directories: [],
+        // Android-only rotation reminders (see js/notifications.js). Each rotation
+        // has its OWN lead_minutes (>= 1 = fires N minutes before the rotation
+        // starts) and on_time toggle (also fires at the rotation start). A rotation
+        // can have both — same event triggers two notifications.
+        notifications: {
+            enabled: false,
+            types: {
+                corruxion: { enabled: false, lead_minutes: 15, on_time: false },
+                fluxion: { enabled: false, lead_minutes: 15, on_time: false, phases: ['voting', 'selling'] },
+                mana: { enabled: false, lead_minutes: 15, on_time: false },
+                stampy: { enabled: false, lead_minutes: 15, on_time: false },
+                gardening: { enabled: false, lead_minutes: 15, on_time: false, cycles: ['2', '3'] },
+                weekly_buff: { enabled: false, lead_minutes: 15, on_time: false },
+                chaos_chest: { enabled: false, lead_minutes: 15, on_time: false },
+                d15: { enabled: false, lead_minutes: 15, on_time: false, biomes: [] },
+                daily_reset: { enabled: false, lead_minutes: 15, on_time: false }
+            }
+        },
         ui_preferences: {}
     };
 
@@ -342,6 +370,75 @@
     const STAMPY_ICON_FALLBACK = { ...MANA_ICON_FALLBACK, 'Geode Topside': 'dunes', 'The Lost Isles': 'pirate' };
     const buildBiomeIconMap = (subbiomes) => { const m = {}; for (const k in subbiomes) { const p = subbiomes[k] && subbiomes[k].biome; if (p && !(p in m)) m[p] = subbiomes[k].icon || 'unknown'; } return m; };
     const biomeIcon = (name, iconMap, fallback) => iconMap[name] || fallback[name] || 'unknown';
+
+    // D15 (Delve depth-15) 3-hour biome rotation — three independent sequences off
+    // a fixed epoch. Lifted to module scope so get_d15_rotation AND the notification
+    // scheduler share one definition.
+    const D15_EPOCH = 1718708400, D15_INTERVAL = 3 * HOUR_SEC;
+    const D15_BIOME1 = ['Sundered Uplands', 'Cerise Sandsea', 'Deep Forest', 'Alkali Flats', 'Dead of Winter', 'Sundered Uplands', 'Firefly Party', 'Desert of Secrets', 'Weathered Wastelands', 'Frozen Wastes', "Frigga's Fjord", 'Abandoned Boneyard'];
+    const D15_BIOME2 = ['Cursed Vale', 'Hollow Dunes', 'Bewitching Wood', 'Primal Preserve', 'Hollow Dunes', 'Ancient Heights', 'Viking Burial Grounds', 'Spellbound Thicket', 'Saurian Swamp', 'Restless Range', 'Uncanny Valley'];
+    const D15_BIOME3 = ['Sugar Steppes', 'Volcanic Fields', 'The Lost Isles', 'Luminopolis', 'The Lost Isles', 'Blazing Emberlands', 'Cocoa Craters', 'Data Spires', 'The Lost Isles', 'Cupcake Canyon', "Dragon's Teeth", 'Luminopolis', 'The Lost Isles', 'Data Spires'];
+    const d15UniqueBiomes = () => [...new Set([...D15_BIOME1, ...D15_BIOME2, ...D15_BIOME3])].sort();
+    const d15BiomesAt = (offset) => [D15_BIOME1[_mod(offset, D15_BIOME1.length)], D15_BIOME2[_mod(offset, D15_BIOME2.length)], D15_BIOME3[_mod(offset, D15_BIOME3.length)]];
+
+    // Shared rotation-event generator: flattens the deterministic schedule into a
+    // list of typed, timed events over [startSec, endSec). The yearly calendar AND
+    // the Android notification scheduler both consume this — one source of truth for
+    // rotation timing, no duplicated epoch math. ctx = { iconMap?, weeklyBuffs? }.
+    const computeRotationEvents = (startSec, endSec, ctx = {}) => {
+        const iconMap = ctx.iconMap || {};
+        const weeklyBuffs = ctx.weeklyBuffs || {};
+        const nowTs = Date.now() / 1000;
+        const events = [];
+
+        // weekly buffs (current index from the 4-week cycle since 2020-03-23)
+        const wkeys = Object.keys(weeklyBuffs).sort((a, b) => Number(a) - Number(b));
+        if (wkeys.length) {
+            const wi = _mod(Math.floor((nowTs - Date.UTC(2020, 2, 23) / 1000) / WEEK_SEC), 4);
+            const curName = (weeklyBuffs[String(wi)] || {}).name;
+            let curIdx = 0; for (const k of wkeys) { if (weeklyBuffs[k].name === curName) { curIdx = Number(k); break; } }
+            const d = new Date(nowTs * 1000);
+            const todayUTC11 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 11, 0, 0) / 1000;
+            let cws = todayUTC11 - ((d.getUTCDay() + 6) % 7) * DAY_SEC; if (nowTs < cws) cws -= WEEK_SEC;
+            for (let wo = -55; wo < 55; wo++) {
+                const sw = cws + wo * WEEK_SEC, ew = sw + WEEK_SEC;
+                if (ew > startSec && sw < endSec) { const b = weeklyBuffs[wkeys[_mod(curIdx + wo, wkeys.length)]] || {}; events.push({ type: 'weekly_buff', start: sw, end: ew, name: b.name || 'Weekly Buff', color: b.color || 'fbc02d' }); }
+            }
+        }
+        // stampy (weekly 48h, 1 biome)
+        const baseStampy = Date.UTC(2023, 8, 30, 11, 0, 0) / 1000;
+        let wS = Math.floor((startSec - baseStampy) / WEEK_SEC), s = baseStampy + wS * WEEK_SEC;
+        while (s < endSec) { const e = s + 48 * HOUR_SEC; if (e > startSec) { const b = STAMPY_BIOMES[_mod(wS, 13)]; events.push({ type: 'stampy', start: s, end: e, name: 'Stampy', icons: [biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK)], biome_names: [b] }); } s += WEEK_SEC; wS++; }
+        // wild mana (weekly, 3 biomes)
+        const baseMana = Date.UTC(2023, 10, 20, 11, 0, 0) / 1000;
+        let wM = Math.floor((startSec - baseMana) / WEEK_SEC); s = baseMana + wM * WEEK_SEC;
+        while (s < endSec) { const e = s + WEEK_SEC; if (e > startSec) { const bb = [MANA_BIOMES[_mod(wM, 11)], MANA_BIOMES[_mod(wM - 1, 11)], MANA_BIOMES[_mod(wM - 2, 11)]]; events.push({ type: 'mana', start: s, end: e, name: 'Wild Mana', icons: bb.map((x) => biomeIcon(x, iconMap, STAMPY_ICON_FALLBACK)), biome_names: bb }); } s += WEEK_SEC; wM++; }
+        // corruxion (14-day cycle, 3-day window)
+        { const base = Date.UTC(2023, 11, 8, 11, 0, 0) / 1000; let ss = base + Math.floor((startSec - base) / (14 * DAY_SEC)) * 14 * DAY_SEC; while (ss < endSec) { const e = ss + 3 * DAY_SEC; if (e > startSec) events.push({ type: 'corruxion', start: ss, end: e, name: 'Corruxion' }); ss += 14 * DAY_SEC; } }
+        // fluxion (14-day cycle: voting then selling 7 days later)
+        { const base = Date.UTC(2023, 11, 5, 11, 0, 0) / 1000; let sf = base + Math.floor((startSec - base) / (14 * DAY_SEC)) * 14 * DAY_SEC; while (sf < endSec) { const sv = sf, ev = sv + 3 * DAY_SEC, sl = sf + 7 * DAY_SEC, el = sl + 3 * DAY_SEC; if (ev > startSec) events.push({ type: 'fluxion', start: sv, end: ev, name: 'Fluxion (Voting)', phase: 'voting', color: '5ca8cc' }); if (el > startSec && sl < endSec) events.push({ type: 'fluxion', start: sl, end: el, name: 'Fluxion (Selling)', phase: 'selling', color: '02679e' }); sf += 14 * DAY_SEC; } }
+        // gardening (2-day + 3-day cycles)
+        { const base = Date.UTC(2025, 4, 23) / 1000 + TROVE_OFFSET_SEC; let s2 = base + Math.floor((startSec - base) / (2 * DAY_SEC)) * 2 * DAY_SEC; while (s2 < endSec) { const hs = s2 + DAY_SEC, he = s2 + 2 * DAY_SEC; if (he > startSec && hs < endSec) events.push({ type: 'gardening_2', start: hs, end: he, name: '2-day plants', color: '8bc34a' }); s2 += 2 * DAY_SEC; } let s3 = base + Math.floor((startSec - base) / (3 * DAY_SEC)) * 3 * DAY_SEC; while (s3 < endSec) { const hs = s3 + 2 * DAY_SEC, he = s3 + 3 * DAY_SEC; if (he > startSec && hs < endSec) events.push({ type: 'gardening_3', start: hs, end: he, name: '3-day plants', color: '4caf50' }); s3 += 3 * DAY_SEC; } }
+
+        return events;
+    };
+
+    const loadRotationCtx = async () => {
+        const [subbiomes, weeklyBuffs] = await Promise.all([
+            fetchJson('assets/data/biomes.json', {}),
+            fetchJson('assets/data/weekly_buffs.json', {})
+        ]);
+        return { iconMap: buildBiomeIconMap(subbiomes), weeklyBuffs };
+    };
+
+    // Surface the deterministic rotation math for js/notifications.js (Android).
+    window.BTT_Rotations = {
+        computeRotationEvents,
+        loadCtx: loadRotationCtx,
+        TROVE_OFFSET_SEC, FIRST_FLUXION_SEC, DAY_SEC, WEEK_SEC, HOUR_SEC,
+        chaosBaseSec: FIRST_FLUXION_SEC + TROVE_OFFSET_SEC,
+        D15: { EPOCH: D15_EPOCH, INTERVAL: D15_INTERVAL, biomesAt: d15BiomesAt, uniqueBiomes: d15UniqueBiomes }
+    };
 
     const localOnlyMessage = () => t('web.desktop_only_action');
 
@@ -493,36 +590,9 @@
                 ]);
                 const iconMap = buildBiomeIconMap(subbiomes);
                 const nowTs = Date.now() / 1000;
-                const startDate = nowTs - 365 * DAY_SEC, endDate = nowTs + 365 * DAY_SEC;
-                const events = [];
-
-                // weekly buffs (current index from the 4-week cycle since 2020-03-23)
-                const wkeys = Object.keys(weeklyBuffs).sort((a, b) => Number(a) - Number(b));
-                const wi = _mod(Math.floor((nowTs - Date.UTC(2020, 2, 23) / 1000) / WEEK_SEC), 4);
-                const curName = (weeklyBuffs[String(wi)] || {}).name;
-                let curIdx = 0; for (const k of wkeys) { if (weeklyBuffs[k].name === curName) { curIdx = Number(k); break; } }
-                const d = new Date(nowTs * 1000);
-                const todayUTC11 = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 11, 0, 0) / 1000;
-                let cws = todayUTC11 - ((d.getUTCDay() + 6) % 7) * DAY_SEC; if (nowTs < cws) cws -= WEEK_SEC;
-                for (let wo = -55; wo < 55; wo++) {
-                    const sw = cws + wo * WEEK_SEC, ew = sw + WEEK_SEC;
-                    if (ew > startDate && sw < endDate) { const b = weeklyBuffs[wkeys[_mod(curIdx + wo, wkeys.length)]] || {}; events.push({ type: 'weekly_buff', start: sw, end: ew, name: b.name || 'Weekly Buff', color: b.color || 'fbc02d' }); }
-                }
-                // stampy (weekly 48h, 1 biome)
-                const baseStampy = Date.UTC(2023, 8, 30, 11, 0, 0) / 1000;
-                let wS = Math.floor((startDate - baseStampy) / WEEK_SEC), s = baseStampy + wS * WEEK_SEC;
-                while (s < endDate) { const e = s + 48 * HOUR_SEC; if (e > startDate) { const b = STAMPY_BIOMES[_mod(wS, 13)]; events.push({ type: 'stampy', start: s, end: e, name: 'Stampy', icons: [biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK)], biome_names: [b] }); } s += WEEK_SEC; wS++; }
-                // wild mana (weekly, 3 biomes)
-                const baseMana = Date.UTC(2023, 10, 20, 11, 0, 0) / 1000;
-                let wM = Math.floor((startDate - baseMana) / WEEK_SEC); s = baseMana + wM * WEEK_SEC;
-                while (s < endDate) { const e = s + WEEK_SEC; if (e > startDate) { const bb = [MANA_BIOMES[_mod(wM, 11)], MANA_BIOMES[_mod(wM - 1, 11)], MANA_BIOMES[_mod(wM - 2, 11)]]; events.push({ type: 'mana', start: s, end: e, name: 'Wild Mana', icons: bb.map((x) => biomeIcon(x, iconMap, STAMPY_ICON_FALLBACK)), biome_names: bb }); } s += WEEK_SEC; wM++; }
-                // corruxion (14-day cycle, 3-day window)
-                { const base = Date.UTC(2023, 11, 8, 11, 0, 0) / 1000; let ss = base + Math.floor((startDate - base) / (14 * DAY_SEC)) * 14 * DAY_SEC; while (ss < endDate) { const e = ss + 3 * DAY_SEC; if (e > startDate) events.push({ type: 'corruxion', start: ss, end: e, name: 'Corruxion' }); ss += 14 * DAY_SEC; } }
-                // fluxion (14-day cycle: voting then selling 7 days later)
-                { const base = Date.UTC(2023, 11, 5, 11, 0, 0) / 1000; let sf = base + Math.floor((startDate - base) / (14 * DAY_SEC)) * 14 * DAY_SEC; while (sf < endDate) { const sv = sf, ev = sv + 3 * DAY_SEC, sl = sf + 7 * DAY_SEC, el = sl + 3 * DAY_SEC; if (ev > startDate) events.push({ type: 'fluxion', start: sv, end: ev, name: 'Fluxion (Voting)', color: '5ca8cc' }); if (el > startDate && sl < endDate) events.push({ type: 'fluxion', start: sl, end: el, name: 'Fluxion (Selling)', color: '02679e' }); sf += 14 * DAY_SEC; } }
-                // gardening (2-day + 3-day cycles)
-                { const base = Date.UTC(2025, 4, 23) / 1000 + TROVE_OFFSET_SEC; let s2 = base + Math.floor((startDate - base) / (2 * DAY_SEC)) * 2 * DAY_SEC; while (s2 < endDate) { const hs = s2 + DAY_SEC, he = s2 + 2 * DAY_SEC; if (he > startDate && hs < endDate) events.push({ type: 'gardening_2', start: hs, end: he, name: '2-day plants', color: '8bc34a' }); s2 += 2 * DAY_SEC; } let s3 = base + Math.floor((startDate - base) / (3 * DAY_SEC)) * 3 * DAY_SEC; while (s3 < endDate) { const hs = s3 + 2 * DAY_SEC, he = s3 + 3 * DAY_SEC; if (he > startDate && hs < endDate) events.push({ type: 'gardening_3', start: hs, end: he, name: '3-day plants', color: '4caf50' }); s3 += 3 * DAY_SEC; } }
-
+                // Shared generator (also feeds the Android rotation notifier) — one
+                // source of truth for the deterministic rotation timing.
+                const events = computeRotationEvents(nowTs - 365 * DAY_SEC, nowTs + 365 * DAY_SEC, { iconMap, weeklyBuffs });
                 return { success: true, data: events, events };
             } catch (err) {
                 return { success: false, error: String(err && err.message || err), code: 'CALENDAR_FAILED' };
@@ -552,20 +622,14 @@
             // The API's `upcoming` only returns ~2 days, which left the modal half-empty.
             try {
                 const subbiomes = await fetchJson('assets/data/biomes.json', {});
-                const D15_EPOCH = 1718708400, D15_INTERVAL = 3 * 3600;
-                const biome1 = ['Sundered Uplands', 'Cerise Sandsea', 'Deep Forest', 'Alkali Flats', 'Dead of Winter', 'Sundered Uplands', 'Firefly Party', 'Desert of Secrets', 'Weathered Wastelands', 'Frozen Wastes', "Frigga's Fjord", 'Abandoned Boneyard'];
-                const biome2 = ['Cursed Vale', 'Hollow Dunes', 'Bewitching Wood', 'Primal Preserve', 'Hollow Dunes', 'Ancient Heights', 'Viking Burial Grounds', 'Spellbound Thicket', 'Saurian Swamp', 'Restless Range', 'Uncanny Valley'];
-                const biome3 = ['Sugar Steppes', 'Volcanic Fields', 'The Lost Isles', 'Luminopolis', 'The Lost Isles', 'Blazing Emberlands', 'Cocoa Craters', 'Data Spires', 'The Lost Isles', 'Cupcake Canyon', "Dragon's Teeth", 'Luminopolis', 'The Lost Isles', 'Data Spires'];
-                const mod = (n, m) => ((n % m) + m) % m;
                 const subOf = (name) => subbiomes[name] || { name, final_name: name, icon: 'unknown' };
                 const nowSec = Date.now() / 1000;
                 const consumed = Math.floor((nowSec - D15_EPOCH) / D15_INTERVAL);
                 const startSec = D15_EPOCH + consumed * D15_INTERVAL;
                 const rotations = [];
                 for (let i = -8; i < 56; i++) {
-                    const offset = consumed + i;
                     const s = startSec + i * D15_INTERVAL;
-                    rotations.push({ start: s, end: s + D15_INTERVAL, biomes: [subOf(biome1[mod(offset, biome1.length)]), subOf(biome2[mod(offset, biome2.length)]), subOf(biome3[mod(offset, biome3.length)])] });
+                    rotations.push({ start: s, end: s + D15_INTERVAL, biomes: d15BiomesAt(consumed + i).map(subOf) });
                 }
                 const current = rotations.find((r) => r.start <= nowSec && nowSec < r.end) || null;
                 return { success: true, current, rotations };

@@ -190,6 +190,27 @@ input:checked + .slider:before {
     border-radius: 50%;
 }
 
+/* Notifications tab — D15 biome multi-select renders as chips. */
+.biome-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.biome-chip:hover { color: var(--text-main); border-color: var(--accent-blue); }
+.biome-chip.active {
+    background: rgba(var(--accent-rgb, 94, 198, 255), 0.18);
+    color: var(--text-main);
+    border-color: var(--accent-blue);
+}
+
 /* Concise module pass */
 .settings-container {
     padding: 24px;

@@ -1098,6 +1098,15 @@ body.app-update-active #network-tracker-vue-app {
     white-space: nowrap;
 }
 
+/* Android (BTT_NATIVE) has no keyboard, so keyboard-shortcut hints are useless:
+   * the "Ctrl+K" badge on the sidebar Quick Open card,
+   * the dismiss "×" (the card stops being a "tip" once the shortcut is gone),
+   * the command-palette footer row of Ctrl/Cmd+K / arrow / Enter / Esc hints.
+   The Quick Open card itself stays — it's still a tap-to-search affordance. */
+html.btt-native .sidebar-quick-open-kbd,
+html.btt-native .sidebar-quick-open-dismiss,
+html.btt-native .command-palette-footer { display: none !important; }
+
 .sidebar-quick-open-dismiss {
     width: 24px;
     height: 24px;

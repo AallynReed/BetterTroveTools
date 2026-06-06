@@ -6,6 +6,7 @@
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('settings.general') }}</span></button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('settings.directories') }}</span></button>
+            <button v-if="isNative" class="tab-btn" :class="{ active: activeTab === 'notifications' }" @click="activeTab = 'notifications'"><i class="fa-solid fa-bell"></i> <span>{{ t('settings.notifications') }}</span></button>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'general' }">
@@ -181,6 +182,93 @@
                 <button class="primary-btn" @click="openAddModal" style="margin-top: 15px;">
                     <i class="fa-solid fa-folder-plus"></i> <span>{{ t('settings.add_custom_directory') }}</span>
                 </button>
+            </div>
+        </div>
+
+        <!-- Notifications tab (Android only). Rendered from notifyRegistry so adding
+             a rotation only needs a registry entry in js/notifications.js + i18n keys. -->
+        <div v-if="isNative" class="tab-content" :class="{ active: activeTab === 'notifications' }">
+            <div class="settings-section">
+                <h3>{{ t('settings.notifications') }}</h3>
+                <p class="settings-help-text">{{ t('settings.notifications_help') }}</p>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.notifications_enable') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.notifications_enable_desc') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.notifications.enabled" @change="saveAndSyncNotifications">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <button class="primary-btn" :disabled="!settings.notifications.enabled" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, marginTop: '15px' }" @click="sendTestNotification">
+                    <i class="fa-solid fa-paper-plane"></i> <span>{{ t('settings.notifications_test') }}</span>
+                </button>
+            </div>
+
+            <div class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">
+                <h3>{{ t('settings.notifications_rotations') }}</h3>
+
+                <div v-for="entry in notifyRegistry" :key="entry.id" class="custom-dir-item" style="flex-direction: column; align-items: stretch;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                            <i :class="entry.icon" style="color: var(--accent-blue); font-size: 18px;"></i>
+                            <div style="display: flex; flex-direction: column; min-width: 0;">
+                                <span style="font-weight: 600; font-size: 14px; color: var(--text-main);">{{ t(entry.labelKey) }}</span>
+                                <span style="color: var(--text-muted); font-size: 13px;">{{ t(entry.descKey) }}</span>
+                            </div>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" v-model="settings.notifications.types[entry.id].enabled" @change="saveAndSyncNotifications">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Per-rotation timing: lead minutes + on-time toggle.
+                         Only rendered when this rotation is enabled. -->
+                    <div v-if="settings.notifications.types[entry.id].enabled" style="margin-top: 12px; padding-left: 30px; display: flex; flex-direction: column; gap: 10px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="color: var(--text-main); font-size: 13px;">{{ t('settings.notifications_row_lead') }}</span>
+                                <span style="color: var(--text-muted); font-size: 12px;">{{ t('settings.notifications_row_lead_desc') }}</span>
+                            </div>
+                            <input type="number" min="5" max="1440" step="1" v-model.number="settings.notifications.types[entry.id].lead_minutes" @change="saveAndSyncNotifications" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 6px 10px; outline: none; width: 80px;">
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                            <div style="display: flex; flex-direction: column;">
+                                <span style="color: var(--text-main); font-size: 13px;">{{ t('settings.notifications_row_on_time') }}</span>
+                                <span style="color: var(--text-muted); font-size: 12px;">{{ t('settings.notifications_row_on_time_desc') }}</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" v-model="settings.notifications.types[entry.id].on_time" @change="saveAndSyncNotifications">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Sub-options: only render when this rotation is enabled. -->
+                    <div v-if="settings.notifications.types[entry.id].enabled && entry.subOptions" style="margin-top: 12px; padding-left: 30px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- checkbox-set: small fixed set of named options (Fluxion phases, gardening cycles). -->
+                        <template v-if="entry.subOptions.kind === 'checkbox-set'">
+                            <label v-for="opt in entry.subOptions.values" :key="opt.value" style="display: flex; align-items: center; gap: 8px; color: var(--text-main); font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" :value="opt.value" v-model="settings.notifications.types[entry.id][entry.subOptions.key]" @change="saveAndSyncNotifications">
+                                <span>{{ t(opt.labelKey) }}</span>
+                            </label>
+                        </template>
+                        <!-- biome-multi: large list (D15) — chip grid driven by d15Biomes. -->
+                        <template v-else-if="entry.subOptions.kind === 'biome-multi'">
+                            <div style="color: var(--text-muted); font-size: 13px;">{{ t('settings.notifications_d15_pick') }}</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                                <label v-for="biome in d15Biomes" :key="biome" class="biome-chip" :class="{ active: settings.notifications.types[entry.id][entry.subOptions.key].includes(biome) }">
+                                    <input type="checkbox" :value="biome" v-model="settings.notifications.types[entry.id][entry.subOptions.key]" @change="saveAndSyncNotifications" style="display: none;">
+                                    <span>{{ biome }}</span>
+                                </label>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
