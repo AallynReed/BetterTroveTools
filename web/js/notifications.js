@@ -33,6 +33,23 @@
     // Anything below this is rounded up — sub-5-minute alarms don't really pay
     // off (notification delivery jitter + the user has barely any time to act).
     const MIN_LEAD_MIN = 5;
+    // localStorage key for the last successful sync timestamp (epoch ms). The
+    // settings tab shows this so users can tell when their reminders were last
+    // queued (and notice if they need to open the app to refresh).
+    const LAST_SYNC_KEY = 'btt.notifications.last_synced_ms';
+    // Android: monochrome notification icon resource (lives at
+    // android/app/src/main/res/drawable/ic_stat_btt.xml). Passed on every
+    // schedule call so Android doesn't fall back to the generic info glyph.
+    const SMALL_ICON = 'ic_stat_btt';
+    // Read the app's accent color (the user-customizable theme color) and use
+    // it to tint the notification icon. Falls back to the default blue if the
+    // CSS variable hasn't been set yet.
+    const iconColorHex = () => {
+        try {
+            const v = getComputedStyle(document.documentElement).getPropertyValue('--accent-blue').trim();
+            return v || '#5ec6ff';
+        } catch { return '#5ec6ff'; }
+    };
 
     // ---- helpers ----------------------------------------------------------
     const i18n = (id, params) => (window.I18nManager && window.I18nManager.t ? window.I18nManager.t(id, params) : id);
@@ -324,6 +341,7 @@
         } catch { /* notification just omits the buff name */ }
         const ctx = { ...baseCtx, dailyBuffs };
 
+        const tint = iconColorHex();
         const pending = [];
         for (const entry of registry) {
             const opts = types[entry.id] || {};
@@ -341,6 +359,7 @@
                         pending.push({
                             id: hashId(`${ev.key}:lead:${leadMin}`),
                             title, body: body || '',
+                            smallIcon: SMALL_ICON, iconColor: tint,
                             schedule: { at: new Date(fireAt * 1000) }
                         });
                     }
@@ -351,6 +370,7 @@
                         pending.push({
                             id: hashId(`${ev.key}:start`),
                             title, body: body || '',
+                            smallIcon: SMALL_ICON, iconColor: tint,
                             schedule: { at: new Date(ev.at * 1000) }
                         });
                     }
@@ -410,7 +430,60 @@
                 return { error: String(err && err.message || err), scheduled: 0 };
             }
         }
+        try { localStorage.setItem(LAST_SYNC_KEY, String(Date.now())); } catch {}
         return { scheduled: pending.length };
+    };
+
+    // Read the persisted "last sync" timestamp so the settings tab can show
+    // when reminders were last queued. Null = never.
+    const getLastSynced = () => {
+        try {
+            const v = Number(localStorage.getItem(LAST_SYNC_KEY));
+            return Number.isFinite(v) && v > 0 ? v : null;
+        } catch { return null; }
+    };
+
+    // Status surface for the Notifications tab — battery exemption, exact alarms,
+    // notification posting. All zero-side-effect calls; safe to poll on view open.
+    const getBackgroundStatus = async () => {
+        if (!NATIVE) return null;
+        const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BttBattery;
+        if (!p) return null;
+        try { return await p.getStatus(); } catch { return null; }
+    };
+
+    const requestIgnoreBatteryOptimizations = async () => {
+        const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BttBattery;
+        if (p && p.requestIgnoreBatteryOptimizations) await p.requestIgnoreBatteryOptimizations();
+    };
+    const requestExactAlarmPermission = async () => {
+        const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BttBattery;
+        if (p && p.requestExactAlarmPermission) await p.requestExactAlarmPermission();
+    };
+    const openAppDetailsSettings = async () => {
+        const p = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BttBattery;
+        if (p && p.openAppDetailsSettings) await p.openAppDetailsSettings();
+    };
+
+    // Belt-and-suspenders refresh: poll getStatus() for up to N seconds, calling
+    // `onChange(newStatus)` whenever any field flips. Used right after the user
+    // taps "Grant background access" — visibilitychange / App.resume should fire
+    // when they return from the system dialog, but Android system overlays don't
+    // always trigger those reliably, so this poll guarantees the UI catches up.
+    const pollStatusForChange = async (initialStatus, onChange, { intervalMs = 500, timeoutMs = 12000 } = {}) => {
+        if (!NATIVE) return;
+        const start = Date.now();
+        const baseline = initialStatus || {};
+        while (Date.now() - start < timeoutMs) {
+            await new Promise((r) => setTimeout(r, intervalMs));
+            const next = await getBackgroundStatus();
+            if (!next) continue;
+            const changed =
+                next.ignoresBatteryOptimizations !== baseline.ignoresBatteryOptimizations ||
+                next.canScheduleExactAlarms !== baseline.canScheduleExactAlarms ||
+                next.notificationsEnabled !== baseline.notificationsEnabled;
+            if (changed) { onChange(next); return; }
+        }
     };
 
     const sendTestNotification = async () => {
@@ -425,6 +498,7 @@
                 id: hashId(`test:${at.getTime()}`),
                 title: i18n('notifications.test.title'),
                 body: i18n('notifications.test.body', { seconds: TEST_DELAY }),
+                smallIcon: SMALL_ICON, iconColor: iconColorHex(),
                 schedule: { at }
             }]
         });
@@ -448,6 +522,12 @@
         registryMeta,
         isNative: () => NATIVE,
         MIN_LEAD_MIN,
+        getLastSynced,
+        getBackgroundStatus,
+        pollStatusForChange,
+        requestIgnoreBatteryOptimizations,
+        requestExactAlarmPermission,
+        openAppDetailsSettings,
         _computePending: computePending,
         _hashId: hashId
     };

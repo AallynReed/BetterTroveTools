@@ -208,6 +208,48 @@
                 </button>
             </div>
 
+            <!-- Background health panel. Hidden when every check is green so it
+                 doesn't clutter the tab once the user has granted everything. -->
+            <div v-if="settings.notifications.enabled && bgStatus.loaded && !bgAllGreen()" class="settings-section">
+                <h3>{{ t('settings.notifications_bg_health') }}</h3>
+                <p class="settings-help-text">{{ t('settings.notifications_bg_help') }}</p>
+
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i :class="bgStatus.notificationsEnabled ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.notificationsEnabled ? '#4caf50' : '#ffb84d', fontSize: '16px' }"></i>
+                        <span style="color: var(--text-main); font-size: 14px;">{{ t('settings.notifications_status_post') }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i :class="bgStatus.canScheduleExactAlarms ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.canScheduleExactAlarms ? '#4caf50' : '#ffb84d', fontSize: '16px' }"></i>
+                        <span style="color: var(--text-main); font-size: 14px;">{{ t('settings.notifications_status_exact') }}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i :class="bgStatus.ignoresBatteryOptimizations ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.ignoresBatteryOptimizations ? '#4caf50' : '#ffb84d', fontSize: '16px' }"></i>
+                        <span style="color: var(--text-main); font-size: 14px;">{{ t('settings.notifications_status_battery') }}</span>
+                    </div>
+                </div>
+
+                <button class="primary-btn" style="margin-top: 15px;" @click="grantBackgroundAccess">
+                    <i class="fa-solid fa-shield-halved"></i> <span>{{ t('settings.notifications_grant_bg') }}</span>
+                </button>
+            </div>
+
+            <!-- Last-synced row + refresh button. Always visible when notifications
+                 are enabled so the user can see scheduling is alive. -->
+            <div v-if="settings.notifications.enabled" class="settings-section">
+                <h3>{{ t('settings.notifications_sync_status') }}</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.notifications_last_synced') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ lastSyncedText() }}</div>
+                    </div>
+                    <button class="primary-btn" @click="refreshNotifications">
+                        <i class="fa-solid fa-rotate"></i> <span>{{ t('settings.notifications_refresh') }}</span>
+                    </button>
+                </div>
+                <p class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note') }}</p>
+            </div>
+
             <div class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">
                 <h3>{{ t('settings.notifications_rotations') }}</h3>
 

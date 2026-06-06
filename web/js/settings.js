@@ -311,6 +311,101 @@ document.addEventListener('settings_loaded', async () => {
                 d15Biomes.value = window.BTT_Rotations.D15.uniqueBiomes();
             }
 
+            // Background health: battery exemption + exact alarms + notification post.
+            // Reflective view of the OS state, refreshed when the user returns to the
+            // tab (so toggling a system setting and coming back updates the panel).
+            const bgStatus = reactive({
+                ignoresBatteryOptimizations: null,
+                canScheduleExactAlarms: null,
+                notificationsEnabled: null,
+                loaded: false
+            });
+            const lastSyncedMs = ref(null);
+            const refreshBgStatus = async () => {
+                if (!isNative || !window.BTT_Notifications) return;
+                const s = await window.BTT_Notifications.getBackgroundStatus();
+                if (s) {
+                    bgStatus.ignoresBatteryOptimizations = s.ignoresBatteryOptimizations === true;
+                    bgStatus.canScheduleExactAlarms = s.canScheduleExactAlarms === true;
+                    bgStatus.notificationsEnabled = s.notificationsEnabled === true;
+                    bgStatus.loaded = true;
+                }
+                lastSyncedMs.value = window.BTT_Notifications.getLastSynced();
+            };
+            const bgAllGreen = () => bgStatus.loaded
+                && bgStatus.ignoresBatteryOptimizations
+                && bgStatus.canScheduleExactAlarms
+                && bgStatus.notificationsEnabled;
+
+            // Human-friendly "X min/hour/day ago" for the last-synced label.
+            const lastSyncedText = () => {
+                const ms = lastSyncedMs.value;
+                if (!ms) return t('settings.notifications_never_synced');
+                const ageSec = Math.max(0, Math.round((Date.now() - ms) / 1000));
+                if (ageSec < 60) return t('settings.notifications_synced_seconds_ago', { n: ageSec });
+                if (ageSec < 3600) return t('settings.notifications_synced_minutes_ago', { n: Math.round(ageSec / 60) });
+                if (ageSec < 86400) return t('settings.notifications_synced_hours_ago', { n: Math.round(ageSec / 3600) });
+                return t('settings.notifications_synced_days_ago', { n: Math.round(ageSec / 86400) });
+            };
+
+            const grantBackgroundAccess = async () => {
+                if (!window.BTT_Notifications) return;
+                // Snapshot the current status BEFORE opening the system dialog
+                // — we'll watch for a change to detect the user's choice.
+                const before = { ...bgStatus };
+                if (bgStatus.canScheduleExactAlarms === false) {
+                    await window.BTT_Notifications.requestExactAlarmPermission();
+                } else if (bgStatus.ignoresBatteryOptimizations === false) {
+                    await window.BTT_Notifications.requestIgnoreBatteryOptimizations();
+                } else if (bgStatus.notificationsEnabled === false) {
+                    await window.BTT_Notifications.openAppDetailsSettings();
+                }
+                // App.resume / visibilitychange usually fire when the user
+                // returns from the system dialog — but Android system overlays
+                // (especially the targeted-app battery-opt dialog) don't
+                // always trigger them reliably. Poll as a safety net: as soon
+                // as any status field flips, refresh the panel.
+                if (window.BTT_Notifications.pollStatusForChange) {
+                    window.BTT_Notifications.pollStatusForChange(before, (next) => {
+                        bgStatus.ignoresBatteryOptimizations = next.ignoresBatteryOptimizations === true;
+                        bgStatus.canScheduleExactAlarms = next.canScheduleExactAlarms === true;
+                        bgStatus.notificationsEnabled = next.notificationsEnabled === true;
+                    });
+                }
+            };
+
+            const refreshNotifications = async () => {
+                if (!window.BTT_Notifications) return;
+                try {
+                    await window.BTT_Notifications.sync();
+                    lastSyncedMs.value = window.BTT_Notifications.getLastSynced();
+                    if (window.showToast) window.showToast(t('settings.notifications_refreshed'));
+                } catch (e) {
+                    console.error('[settings] manual refresh failed', e);
+                }
+            };
+
+            // Refresh status when the page becomes visible again (after returning
+            // from a system settings screen, the user expects to see the result).
+            // Three triggers on native, because no single one is fully reliable
+            // for the targeted Android system dialogs (battery-opt / exact-alarm):
+            //   1. document visibilitychange — WebView-level
+            //   2. window focus — sometimes the only one that fires
+            //   3. Capacitor App.appStateChange — native bridge, most reliable
+            // The grantBackgroundAccess flow ALSO polls as a final safety net.
+            if (isNative) {
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) void refreshBgStatus();
+                });
+                window.addEventListener('focus', () => { void refreshBgStatus(); });
+                const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+                if (App && App.addListener) {
+                    App.addListener('appStateChange', (state) => {
+                        if (state && state.isActive) void refreshBgStatus();
+                    });
+                }
+            }
+
             const saveAndSyncNotifications = async () => {
                 await saveGeneralSettings();
                 if (window.BTT_Notifications) {
@@ -339,6 +434,7 @@ document.addEventListener('settings_loaded', async () => {
             onMounted(async () => {
                 await restoreState();
                 await loadSettings();
+                await refreshBgStatus();
             });
 
             return {
@@ -346,7 +442,8 @@ document.addEventListener('settings_loaded', async () => {
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
                 resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode, isNative,
-                notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification
+                notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
+                bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications
             };
         }
     });

@@ -4,12 +4,28 @@ apply plugin: 'com.android.application'
 // the same source the desktop build reads. versionName mirrors it verbatim
 // (e.g. "2026.06.02") and versionCode is its digits (e.g. 20260602), which stays
 // monotonically increasing for date-based versions.
+//
+// Root metadata.json is the SINGLE source of truth. To prevent runtime drift
+// between the APK's manifest version and what the WebView shows in the sidebar,
+// this same step also mirrors root → web/metadata.json (idempotent: only writes
+// when content actually differs). The CI workflow used to do this with a `cp`
+// in a separate step; doing it here means local Android builds get the same
+// guarantee automatically.
 def appVersionName = "2026.06.02"
 def appVersionCode = 20260602
 try {
-    def meta = new groovy.json.JsonSlurper().parseText(file("${rootProject.projectDir}/../metadata.json").text)
+    def rootMetaFile = file("${rootProject.projectDir}/../metadata.json")
+    def rootMetaText = rootMetaFile.text
+    def meta = new groovy.json.JsonSlurper().parseText(rootMetaText)
     appVersionName = meta.APP_VERSION
     appVersionCode = (appVersionName.replaceAll('[^0-9]', '')) as Integer
+
+    def webMetaFile = file("${rootProject.projectDir}/../web/metadata.json")
+    if (!webMetaFile.exists() || webMetaFile.text != rootMetaText) {
+        webMetaFile.parentFile.mkdirs()
+        webMetaFile.text = rootMetaText
+        logger.lifecycle("BTT: mirrored root metadata.json → web/metadata.json (APP_VERSION=${appVersionName})")
+    }
 } catch (Exception e) {
     logger.warn("BTT: could not read APP_VERSION from metadata.json (${e.message}); using ${appVersionName}")
 }
