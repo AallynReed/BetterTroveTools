@@ -147,6 +147,12 @@
                 </button>
             </li>
             <li>
+                <button class="nav-btn" id="feedback-btn" data-i18n-title="feedback.button_title" title="Send feedback to the developer">
+                    <i class="fa-solid fa-comment-dots nav-icon"></i>
+                    <span class="nav-text" data-i18n="nav.feedback">Feedback</span>
+                </button>
+            </li>
+            <li>
                 <button class="nav-btn" data-target="settings">
                     <i class="fa-solid fa-gear nav-icon"></i>
                     <span class="nav-text" data-i18n="nav.settings">Settings</span>
@@ -263,6 +269,59 @@
                             </div>
                         </div>
                     </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback modal — POSTs to /v1/misc/feedback on the Kiwi API via BTT_Kiwi.post.
+         Public, tokenless; rate-limited to 3 submissions/hour per IP server-side. -->
+    <div id="feedback-modal" class="app-overlay app-overlay-blur" style="display: none;">
+        <div class="app-modal-card feedback-modal-card">
+            <div class="app-modal-header">
+                <h2 class="app-modal-title"><i class="fa-solid fa-comment-dots" style="color: var(--accent-blue);"></i> <span data-i18n="feedback.title">Send Feedback</span></h2>
+                <button id="feedback-close-btn" class="icon-btn" aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="feedback-modal-content">
+                <p class="feedback-intro" data-i18n="feedback.intro">Got a bug, an idea, or just a comment? It goes straight to the developer.</p>
+
+                <label class="feedback-label" for="feedback-category" data-i18n="feedback.category_label">Category</label>
+                <select id="feedback-category" class="custom-dropdown feedback-input">
+                    <option value="general" data-i18n="feedback.category_general">General feedback</option>
+                    <option value="bug" data-i18n="feedback.category_bug">Bug report</option>
+                    <option value="feature" data-i18n="feedback.category_feature">Feature suggestion</option>
+                </select>
+
+                <label class="feedback-label" for="feedback-message" data-i18n="feedback.message_label">Message</label>
+                <textarea id="feedback-message" class="feedback-input feedback-textarea" rows="6" maxlength="2000" data-i18n-placeholder="feedback.message_placeholder" placeholder="Describe what's on your mind…"></textarea>
+                <div class="feedback-count"><span id="feedback-message-count">0</span> / 2000</div>
+
+                <label class="feedback-label" for="feedback-contact" data-i18n="feedback.contact_label">Contact (optional)</label>
+                <input type="text" id="feedback-contact" class="feedback-input" maxlength="200" data-i18n-placeholder="feedback.contact_placeholder" placeholder="Discord, email, or anything I can reach you at">
+                <div class="feedback-hint" data-i18n="feedback.contact_hint">Leave blank if you don't need a reply.</div>
+
+                <!-- Attachments: hidden on Android because CapacitorHttp on v7
+                     can't transport File blobs (the JS adds the .feedback-no-attach
+                     class to the modal-card when running natively). -->
+                <label class="feedback-label feedback-attach-only" data-i18n="feedback.attachments_label">Attachments (optional)</label>
+                <div class="feedback-attachments-row feedback-attach-only">
+                    <div id="feedback-attachments-thumbs" class="feedback-attachments-thumbs"></div>
+                    <button id="feedback-add-attachment-btn" class="feedback-attachment-add" type="button" data-i18n-title="feedback.attachments_add_title" title="Add image">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+                <div class="feedback-hint feedback-attach-only feedback-attach-meta">
+                    <span data-i18n="feedback.attachments_hint">Up to 4 images (PNG, JPEG, WEBP, GIF), 5 MB each.</span>
+                    <span id="feedback-attachments-counter" class="feedback-attachments-counter">0/4</span>
+                </div>
+                <input type="file" id="feedback-file-input" accept="image/png,image/jpeg,image/webp,image/gif" multiple style="display:none">
+                <div class="feedback-hint feedback-android-only" data-i18n="feedback.attachments_android_unsupported" style="display:none">Screenshot attachments aren't supported on Android yet — please describe in the message above.</div>
+
+                <div id="feedback-status" class="feedback-status" style="display:none;" role="status" aria-live="polite"></div>
+
+                <div class="feedback-actions">
+                    <button id="feedback-cancel-btn" class="secondary-btn" data-i18n="common.cancel">Cancel</button>
+                    <button id="feedback-submit-btn" class="primary-btn" data-i18n="feedback.submit">Send</button>
                 </div>
             </div>
         </div>

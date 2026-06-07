@@ -3,6 +3,21 @@
 # This is the desktop app's runtime set MINUS the Windows-only build tooling
 # (cx-freeze, pythonnet, clr_loader -- those only exist for the Windows MSI).
 #
+# ##############################################################################
+# # !!  REQUIRED SYSTEM PACKAGE: Python Tk (tkinter)                          !!
+# #                                                                            #
+# # The Modder Tools' file pickers and Settings -> "Browse for folder" use    #
+# # Python's tkinter module, which ships as a separate DISTRO package on most #
+# # Linux setups -- pip can't install it. Without it the app still boots, but #
+# # those buttons silently do nothing.                                         #
+# #                                                                            #
+# #     Debian / Ubuntu / Mint :  sudo apt install python3-tk                  #
+# #     Fedora / RHEL          :  sudo dnf install python3-tkinter             #
+# #     Arch / Manjaro         :  sudo pacman -S tk                            #
+# #                                                                            #
+# # run.sh re-checks at every launch and prints a banner if it's missing.     #
+# ##############################################################################
+#
 # pywebview needs a webview backend to open a window. run.sh auto-installs the
 # Qt backend (pyqt6 pyqt6-webengine qtpy) into the venv when none is found --
 # self-contained, no system packages needed -- so it isn't pinned here.
@@ -10,13 +25,6 @@
 # Lighter native GTK backend instead? Install system PyGObject + WebKitGTK
 # (e.g. `sudo apt install python3-gi gir1.2-webkit2-4.1`), create the venv with
 # --system-site-packages so it can see `gi`, and run with BTT_NO_AUTO_QT=1.
-#
-# Native file dialogs (modder tools / "browse for folder" in Settings) need Tk:
-#     Debian/Ubuntu : sudo apt install python3-tk
-#     Fedora        : sudo dnf install python3-tkinter
-#     Arch          : sudo pacman -S tk
-#
-# run.sh checks for all of this and installs/tells you what's missing.
 
 aiofiles
 aiohttp

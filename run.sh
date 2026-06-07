@@ -68,8 +68,23 @@ if ! have_backend; then
 fi
 
 if ! python -c "import tkinter" >/dev/null 2>&1; then
-    warn "python3-tk not found. The app still runs, but 'Browse for folder' and"
-    warn "modder-tools file dialogs won't work. Install: sudo apt install python3-tk"
+    # A few features (modder-tools file pickers + Settings "Browse for folder")
+    # call Python's tkinter for the native dialog. tkinter is in the stdlib but
+    # ships as a separate distro package on Linux -- pip can't fix this for us,
+    # so make the missing dep impossible to miss with a bordered banner.
+    BAR='================================================================'
+    printf '\n\033[1;33m%s\033[0m\n' "$BAR"
+    printf '\033[1;33m[!]\033[0m \033[1mPYTHON TK (tkinter) NOT INSTALLED\033[0m\n'
+    printf '\033[1;33m[!]\033[0m\n'
+    printf '\033[1;33m[!]\033[0m The app will start, but these features silently do nothing:\n'
+    printf '\033[1;33m[!]\033[0m   * Modder Tools file pickers\n'
+    printf '\033[1;33m[!]\033[0m   * Settings -> "Browse for folder"\n'
+    printf '\033[1;33m[!]\033[0m\n'
+    printf '\033[1;33m[!]\033[0m One-time install for your distro:\n'
+    printf '\033[1;33m[!]\033[0m   Debian/Ubuntu : sudo apt install python3-tk\n'
+    printf '\033[1;33m[!]\033[0m   Fedora        : sudo dnf install python3-tkinter\n'
+    printf '\033[1;33m[!]\033[0m   Arch          : sudo pacman -S tk\n'
+    printf '\033[1;33m%s\033[0m\n\n' "$BAR"
 fi
 
 # --- 4. launch ---------------------------------------------------------------

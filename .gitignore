@@ -22,6 +22,10 @@ __pycache__/
 # Ignore scratch files
 populate_translations.py
 *.php
+# tools/i18n/apply_batch.py reads this path as a workspace; keep it out of git
+tools/i18n/_batch.json
+# One-off translation scripts (prefix-named) are throwaway — don't track them
+tools/i18n/_apply_*.py
 
 # Ignore web cache
 web/cache/

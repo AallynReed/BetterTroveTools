@@ -101,12 +101,99 @@
     const KIWI_BASE = 'https://api.aallyn.net/v1';
     const kiwiGet = async (path) => asJson(await feedGet(`${KIWI_BASE}/${path}`));
 
-    // Surface the Kiwi GET helper so consumers outside this IIFE (e.g. main.js
-    // update-check) can reuse the native-HTTP-on-Android path. CapacitorHttp
-    // bypasses the WebView's CORS check, which is necessary because the
-    // packaged app serves from https://localhost — an origin the API doesn't
+    // POST helper for write endpoints (currently just /misc/feedback). Body
+    // can be a plain object (sent as JSON) OR a FormData (sent as multipart).
+    //
+    // Transport story:
+    //   web / desktop  → fetch() — handles both JSON and FormData natively
+    //   Android native → CapacitorHttp.post — bypasses CORS, BUT (per the v7
+    //                    plugin docs) "data can only be a string or JSON on
+    //                    Android/iOS", so File/Blob inside FormData would be
+    //                    silently corrupted. We serialize text-only FormData
+    //                    into a multipart/form-data string and post that; the
+    //                    feedback UI hides the attachment picker on Android
+    //                    so the FormData arriving here has no File entries.
+    //
+    // On non-2xx, the rejection's .status mirrors the HTTP code (callers care
+    // most about 429 from the per-IP rate limit).
+    const _isFormData = (v) => (typeof FormData !== 'undefined' && v instanceof FormData);
+    const _formHasFiles = (fd) => {
+        for (const v of fd.values()) {
+            if (typeof File !== 'undefined' && v instanceof File) return true;
+            if (typeof Blob !== 'undefined' && v instanceof Blob) return true;
+        }
+        return false;
+    };
+    // Build a multipart/form-data body string from text-only FormData. Uses a
+    // boundary unlikely to appear in any caller's input (timestamped + random).
+    const _serializeMultipartText = (fd) => {
+        const boundary = '----BTTFormBoundary' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        let body = '';
+        for (const [name, value] of fd.entries()) {
+            body += `--${boundary}\r\n`;
+            body += `Content-Disposition: form-data; name="${name}"\r\n\r\n`;
+            body += String(value) + '\r\n';
+        }
+        body += `--${boundary}--\r\n`;
+        return { boundary, body };
+    };
+    const kiwiPost = async (path, body) => {
+        const url = `${KIWI_BASE}/${path}`;
+        const isForm = _isFormData(body);
+        const http = capacitorHttp();
+        if (http) {
+            if (isForm) {
+                if (_formHasFiles(body)) {
+                    // The Android feedback UI hides attachments precisely so we
+                    // never hit this path. If we do, fail loudly instead of
+                    // letting the file bytes get mangled mid-flight.
+                    throw new Error('Multipart with files is not supported on Android via CapacitorHttp.');
+                }
+                const { boundary, body: serialized } = _serializeMultipartText(body);
+                const res = await http.post({
+                    url,
+                    headers: {
+                        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                        'Accept': 'application/json',
+                    },
+                    data: serialized,
+                });
+                if (res.status < 200 || res.status >= 300) {
+                    const err = new Error(`HTTP ${res.status}`); err.status = res.status; err.data = res.data; throw err;
+                }
+                return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+            }
+            const res = await http.post({
+                url,
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                data: body,
+            });
+            if (res.status < 200 || res.status >= 300) {
+                const err = new Error(`HTTP ${res.status}`); err.status = res.status; err.data = res.data; throw err;
+            }
+            return typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
+        }
+        // fetch() path (web + desktop). Don't set Content-Type for FormData —
+        // the browser must set it including the boundary parameter.
+        const init = isForm
+            ? { method: 'POST', headers: { 'Accept': 'application/json' }, body }
+            : { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(body) };
+        const res = await fetch(url, init);
+        if (!res.ok) {
+            const err = new Error(`HTTP ${res.status}`);
+            err.status = res.status;
+            try { err.data = await res.json(); } catch { /* ignore */ }
+            throw err;
+        }
+        return res.json();
+    };
+
+    // Surface the Kiwi GET/POST helpers so consumers outside this IIFE (e.g. main.js
+    // update-check, feedback modal) can reuse the native-HTTP-on-Android path.
+    // CapacitorHttp bypasses the WebView's CORS check, which is necessary because
+    // the packaged app serves from https://localhost — an origin the API doesn't
     // currently allowlist (and that I shouldn't change from the client side).
-    window.BTT_Kiwi = { get: kiwiGet, base: KIWI_BASE };
+    window.BTT_Kiwi = { get: kiwiGet, post: kiwiPost, base: KIWI_BASE };
 
     // --- Delve helpers (mirror backend.home delve week math + depth normalize) ---
     // Delve rotations roll over on Trove server reset (UTC + 11h), base 2025-11-03.

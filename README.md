@@ -207,6 +207,23 @@ cd BetterTroveTools
 
 Launch **Better Trove Tools** from your application menu afterwards (`./install-linux.sh --uninstall` removes the launcher). Or, to run without a menu entry, just `./run.sh`.
 
+> [!IMPORTANT]
+> ### 📦 Install Python Tk — required for file pickers
+>
+> The Modder Tools' file pickers and **Settings → Browse for folder** open native folder/file dialogs through Python's `tkinter` module. On most Linux distros this is a **separate system package** that the pip install can't pull in.
+>
+> **Without it, the app still boots — but those buttons silently do nothing.**
+>
+> Install once for your distro:
+>
+> | Distro | Command |
+> |---|---|
+> | Debian / Ubuntu / Mint | `sudo apt install python3-tk` |
+> | Fedora / RHEL | `sudo dnf install python3-tkinter` |
+> | Arch / Manjaro | `sudo pacman -S tk` |
+>
+> `./run.sh` re‑checks at every launch and warns if Tk is missing.
+
 **Optional — a standalone app window** (instead of a browser tab). Install a webview backend, either Qt (self‑contained, ~150 MB) or the lighter native GTK:
 
 ```bash
@@ -219,12 +236,6 @@ python3 -m venv --system-site-packages .venv-linux && ./run.sh
 ```
 
 The app auto‑detects a backend and uses an app window when one is present. Force the browser (Linux/macOS only) with `BTT_BROWSER=1 ./run.sh`. On Windows the app always uses its WebView2 window — there is no browser fallback.
-
-**File dialogs (Tk).** The modder tools' file pickers and Settings' "Browse for folder" use Tk. Install it for those to work (the app runs fine without it otherwise):
-
-```bash
-sudo apt install python3-tk    # Fedora: python3-tkinter | Arch: tk
-```
 
 **What works on Linux:** the full UI, calculators, gems/builds, Star Chart, home dashboard, Trovesaurus browsing, and — when a Trove install is present (e.g. via **Steam/Proton**, which is auto‑detected) — the codexes and mod management, since those only *read* the game files.
 

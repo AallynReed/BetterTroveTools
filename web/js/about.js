@@ -1,3 +1,106 @@
+// --- Client info helpers ----------------------------------------------------
+// Used by the About page's sysInfoStrShort/Full when we're NOT on desktop. The
+// goal is browser/device facts (what's actually running the app), not the host
+// the page was served from. We blend three sources:
+//   - User-Agent parsing for the broad OS+browser+engine ID (works everywhere)
+//   - navigator.userAgentData high-entropy hints for accurate Windows version,
+//     architecture/bitness, and on mobile the device model (Chromium-only)
+//   - Capacitor.getPlatform() to pin OS = "Android" inside the packaged app
+//     (the WebView's UA still says Android, but this is the source of truth)
+const _parseBrowser = (ua) => {
+    let m;
+    if ((m = ua.match(/Edg\/([\d.]+)/)))     return { name: 'Edge',    version: m[1] };
+    if ((m = ua.match(/OPR\/([\d.]+)/)))     return { name: 'Opera',   version: m[1] };
+    if ((m = ua.match(/Firefox\/([\d.]+)/))) return { name: 'Firefox', version: m[1] };
+    if ((m = ua.match(/Chrome\/([\d.]+)/)))  return { name: 'Chrome',  version: m[1] };
+    if (/Safari\//.test(ua) && !/Chrome\//.test(ua) && (m = ua.match(/Version\/([\d.]+)/))) {
+        return { name: 'Safari', version: m[1] };
+    }
+    return { name: 'Browser', version: '' };
+};
+const _parseEngine = (ua) => {
+    let m;
+    if ((m = ua.match(/Gecko\/[\d.]+/)))              return { name: 'Gecko',   version: '' };
+    if ((m = ua.match(/AppleWebKit\/([\d.]+)/)))      return { name: 'WebKit',  version: m[1] };
+    return { name: '', version: '' };
+};
+const _parseOS = (ua) => {
+    // Trove targets Windows + Linux (via Steam/Proton) for the playable game and
+    // Android for the companion app. macOS / iOS aren't supported targets — no
+    // Trove client there, and Apple Silicon isn't supported by the game engine
+    // anyway — so we don't bother parsing those UAs. Web users on other OSes
+    // just fall through to '' which surfaces as a blank OS field in the line.
+    let m;
+    if ((m = ua.match(/Android\s([\d.]+)/)))    return { name: 'Android', version: m[1] };
+    if ((m = ua.match(/Windows NT\s([\d.]+)/))) {
+        // NT 10.0 covers Windows 10 AND 11; the high-entropy `platformVersion`
+        // resolves it for Chromium UAs (≥13.0.0 = Win 11), so leave it generic
+        // here and let the caller overwrite when better data is available.
+        const map = { '10.0': '10/11', '6.3': '8.1', '6.2': '8', '6.1': '7', '6.0': 'Vista', '5.1': 'XP' };
+        return { name: 'Windows', version: map[m[1]] || m[1] };
+    }
+    if (/Linux/.test(ua)) return { name: 'Linux', version: '' };
+    return { name: '', version: '' };
+};
+// Promise<{ os, os_release, architecture, browser, engine, model, screen,
+//           cores, memory_gb, platform }> — everything either a string or ''.
+const collectClientInfo = async () => {
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    const browser = _parseBrowser(ua);
+    const engine = _parseEngine(ua);
+    let os = _parseOS(ua);
+
+    // Client Hints (Chromium ≥90): more accurate than UA parsing on Windows 11
+    // and the only way to read the mobile device model in modern Chrome.
+    let uad = null;
+    try {
+        if (navigator.userAgentData && typeof navigator.userAgentData.getHighEntropyValues === 'function') {
+            uad = await navigator.userAgentData.getHighEntropyValues(['platform','platformVersion','architecture','bitness','model']);
+        }
+    } catch (_) { /* user denied / unsupported */ }
+    if (uad && uad.platform) {
+        os.name = uad.platform;
+        if (uad.platformVersion) {
+            // Chromium's Win 11 marker is platformVersion ≥ 13.0.0.
+            if (uad.platform === 'Windows') {
+                const major = parseInt((uad.platformVersion.split('.')[0] || '0'), 10);
+                os = { name: 'Windows', version: major >= 13 ? '11' : (major > 0 ? '10' : os.version) };
+            } else {
+                os.version = uad.platformVersion;
+            }
+        }
+    }
+
+    // Packaged Android app: Capacitor is the source of truth for OS name even
+    // when the WebView UA is unusual (custom shells, vendor forks, etc.). Only
+    // Android is shipped — there's no Trove iOS client to warrant a build.
+    const capPlatform = (window.Capacitor && typeof window.Capacitor.getPlatform === 'function')
+        ? window.Capacitor.getPlatform() : '';
+    if (capPlatform === 'android') os.name = 'Android';
+
+    const arch = uad && uad.architecture
+        ? `${uad.architecture}${uad.bitness ? '/' + uad.bitness : ''}`
+        : '';
+
+    const sw = (window.screen && window.screen.width) || 0;
+    const sh = (window.screen && window.screen.height) || 0;
+    const dpr = window.devicePixelRatio || 1;
+    const screenStr = sw && sh ? `${sw}×${sh}@${dpr}x` : '';
+
+    return {
+        os: os.name || '',
+        os_release: os.version || '',
+        architecture: arch,
+        browser: browser.name ? `${browser.name}${browser.version ? ' ' + browser.version : ''}` : '',
+        engine: engine.name ? `${engine.name}${engine.version ? ' ' + engine.version : ''}` : '',
+        model: (uad && uad.model) || '',
+        screen: screenStr,
+        cores: navigator.hardwareConcurrency || '',
+        memory_gb: navigator.deviceMemory || '',
+        platform: capPlatform ? `Capacitor ${capPlatform}` : (window.BTT_WEB_MODE ? 'Web' : ''),
+    };
+};
+
 document.addEventListener('about_loaded', async () => {
     console.log("About Vue initialized!");
     if (typeof Vue === 'undefined') {
@@ -133,10 +236,33 @@ document.addEventListener('about_loaded', async () => {
                 } catch (e) {}
 
                 try {
-                    const sysInfo = await eel.get_system_info()();
-                    if (!sysInfo.error) {
-                        sysInfoStrFull.value = `\nOS: ${sysInfo.os} ${sysInfo.os_release} (${sysInfo.architecture})\nProcessor: ${sysInfo.processor}`;
-                        sysInfoStrShort.value = `${sysInfo.os} ${sysInfo.os_release} | ${sysInfo.processor}`;
+                    // Desktop (eel-backed) reports the user's real OS/CPU from
+                    // Python's `platform` module. On web/Android that call would
+                    // either fail outright (Android: no eel) or — worse — hit
+                    // the hosted web's /api/eel/ shim and report the SERVER's
+                    // host info, not the user's. Branch on BTT_WEB_MODE so we
+                    // gather from `navigator` + Capacitor in those cases.
+                    if (!window.BTT_WEB_MODE && window.eel && typeof window.eel.get_system_info === 'function') {
+                        const sysInfo = await eel.get_system_info()();
+                        if (sysInfo && !sysInfo.error) {
+                            sysInfoStrFull.value = `\nOS: ${sysInfo.os} ${sysInfo.os_release} (${sysInfo.architecture})\nProcessor: ${sysInfo.processor}`;
+                            sysInfoStrShort.value = `${sysInfo.os} ${sysInfo.os_release} | ${sysInfo.processor}`;
+                        }
+                    } else {
+                        const ci = await collectClientInfo();
+                        const osLine = [ci.os, ci.os_release].filter(Boolean).join(' ');
+                        sysInfoStrShort.value = [osLine, ci.browser].filter(Boolean).join(' | ');
+
+                        const lines = [];
+                        if (osLine) lines.push(`OS: ${osLine}${ci.architecture ? ' (' + ci.architecture + ')' : ''}`);
+                        if (ci.model)      lines.push(`Device: ${ci.model}`);
+                        if (ci.browser)    lines.push(`Browser: ${ci.browser}`);
+                        if (ci.engine)     lines.push(`Engine: ${ci.engine}`);
+                        if (ci.screen)     lines.push(`Screen: ${ci.screen}`);
+                        if (ci.cores)      lines.push(`CPU cores: ${ci.cores}`);
+                        if (ci.memory_gb)  lines.push(`Memory: ~${ci.memory_gb} GB`);
+                        if (ci.platform)   lines.push(`Platform: ${ci.platform}`);
+                        sysInfoStrFull.value = lines.length ? '\n' + lines.join('\n') : '';
                     }
                 } catch (e) {}
 

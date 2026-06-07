@@ -2707,6 +2707,211 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    // Feedback modal — POSTs to /v1/misc/feedback (multipart/form-data).
+    // Mirrors the server-time-modal lifecycle (display flex/none, backdrop +
+    // Esc to close, no Vue mount). Length/MIME/size limits match the Kiwi
+    // spec so the client refuses bad payloads BEFORE burning an entry in the
+    // per-IP rate-limit bucket. Attachments are web/desktop-only — Capacitor
+    // v7's HTTP plugin can't transport File blobs, so the modal hides the
+    // picker on native and the FormData stays text-only there.
+    const feedbackBtn = document.getElementById('feedback-btn');
+    const feedbackModal = document.getElementById('feedback-modal');
+    if (feedbackBtn && feedbackModal) {
+        const modalCard = feedbackModal.querySelector('.feedback-modal-card');
+        const categoryEl = document.getElementById('feedback-category');
+        const messageEl = document.getElementById('feedback-message');
+        const contactEl = document.getElementById('feedback-contact');
+        const countEl = document.getElementById('feedback-message-count');
+        const statusEl = document.getElementById('feedback-status');
+        const submitBtn = document.getElementById('feedback-submit-btn');
+        const cancelBtn = document.getElementById('feedback-cancel-btn');
+        const closeBtn = document.getElementById('feedback-close-btn');
+        const fileInput = document.getElementById('feedback-file-input');
+        const addAttachBtn = document.getElementById('feedback-add-attachment-btn');
+        const thumbsEl = document.getElementById('feedback-attachments-thumbs');
+        const attachCounterEl = document.getElementById('feedback-attachments-counter');
+
+        // Limits — must match the Kiwi /misc/feedback spec verbatim.
+        const ATTACH_MAX_FILES = 4;
+        const ATTACH_MAX_BYTES = 5 * 1024 * 1024;
+        const ATTACH_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+        // Android: the WebView is Capacitor-native, the HTTP plugin can't carry
+        // File blobs, and there's no @capacitor/file-transfer in the deps. Drop
+        // the picker entirely; text-only feedback still routes through the
+        // CapacitorHttp multipart-string path in kiwiPost.
+        const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
+            && window.Capacitor.isNativePlatform());
+        if (isNativeApp && modalCard) modalCard.classList.add('feedback-no-attach');
+
+        // Each entry: { file: File, objectUrl: string }. Track the URL so we
+        // can revokeObjectURL when the user removes a tile or closes the modal.
+        const attachments = [];
+
+        const setStatus = (text, kind) => {
+            if (!text) { statusEl.style.display = 'none'; statusEl.textContent = ''; statusEl.className = 'feedback-status'; return; }
+            statusEl.style.display = 'block';
+            statusEl.textContent = text;
+            statusEl.className = `feedback-status feedback-status-${kind || 'info'}`;
+        };
+
+        const updateCount = () => { countEl.textContent = String(messageEl.value.length); };
+
+        const renderAttachments = () => {
+            if (!thumbsEl) return;
+            thumbsEl.innerHTML = '';
+            attachments.forEach((entry, idx) => {
+                const tile = document.createElement('div');
+                tile.className = 'feedback-attachment-thumb';
+                const img = document.createElement('img');
+                img.src = entry.objectUrl;
+                img.alt = entry.file.name;
+                const rm = document.createElement('button');
+                rm.type = 'button';
+                rm.className = 'feedback-attachment-remove';
+                rm.setAttribute('aria-label', t('feedback.attachments_remove'));
+                rm.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+                rm.addEventListener('click', () => {
+                    URL.revokeObjectURL(entry.objectUrl);
+                    attachments.splice(idx, 1);
+                    renderAttachments();
+                });
+                tile.appendChild(img);
+                tile.appendChild(rm);
+                thumbsEl.appendChild(tile);
+            });
+            if (attachCounterEl) attachCounterEl.textContent = `${attachments.length}/${ATTACH_MAX_FILES}`;
+            if (addAttachBtn) addAttachBtn.disabled = attachments.length >= ATTACH_MAX_FILES;
+        };
+
+        const clearAttachments = () => {
+            attachments.splice(0).forEach((e) => URL.revokeObjectURL(e.objectUrl));
+            renderAttachments();
+        };
+
+        const openFeedbackModal = () => {
+            feedbackModal.style.display = 'flex';
+            setStatus('');
+            updateCount();
+            renderAttachments();
+            setTimeout(() => { messageEl.focus(); }, 0);
+        };
+        const closeFeedbackModal = () => {
+            feedbackModal.style.display = 'none';
+            submitBtn.disabled = false;
+        };
+
+        feedbackBtn.addEventListener('click', openFeedbackModal);
+        if (closeBtn) closeBtn.addEventListener('click', closeFeedbackModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeFeedbackModal);
+        feedbackModal.addEventListener('click', (e) => { if (e.target === feedbackModal) closeFeedbackModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && feedbackModal.style.display === 'flex') closeFeedbackModal();
+        });
+        messageEl.addEventListener('input', updateCount);
+
+        if (addAttachBtn && fileInput && thumbsEl) {
+            addAttachBtn.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                const picked = Array.from(e.target.files || []);
+                let badType = false;
+                let tooBig = null;          // first oversized filename
+                let overflow = false;
+                for (const file of picked) {
+                    if (attachments.length >= ATTACH_MAX_FILES) { overflow = true; break; }
+                    if (!ATTACH_ALLOWED_TYPES.includes(file.type)) { badType = true; continue; }
+                    if (file.size > ATTACH_MAX_BYTES) { tooBig = tooBig || file.name; continue; }
+                    attachments.push({ file, objectUrl: URL.createObjectURL(file) });
+                }
+                // Reset so re-picking the same file triggers `change` again.
+                fileInput.value = '';
+                renderAttachments();
+                if (overflow)      setStatus(t('feedback.error_attachments_too_many'), 'error');
+                else if (badType)  setStatus(t('feedback.error_attachment_wrong_type'), 'error');
+                else if (tooBig)   setStatus((t('feedback.error_attachment_too_large') || '').replace('{name}', tooBig), 'error');
+                else               setStatus('');
+            });
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            const msg = (messageEl.value || '').trim();
+            const contact = (contactEl.value || '').trim();
+            const category = categoryEl.value || 'general';
+            if (msg.length < 5) {
+                setStatus(t('feedback.error_too_short'), 'error');
+                messageEl.focus();
+                return;
+            }
+            if (msg.length > 2000) {
+                setStatus(t('feedback.error_too_long'), 'error');
+                messageEl.focus();
+                return;
+            }
+            if (contact.length > 200) {
+                setStatus(t('feedback.error_contact_too_long'), 'error');
+                contactEl.focus();
+                return;
+            }
+            // Resolve app_version from the in-app metadata (best effort — the
+            // field is optional server-side, so a miss is fine).
+            let appVersion = '';
+            try {
+                const r = await fetch('/metadata.json', { cache: 'no-cache' });
+                if (r.ok) {
+                    const m = await r.json();
+                    appVersion = (m && m.APP_VERSION) || '';
+                }
+            } catch (_) { /* ignore */ }
+
+            const fd = new FormData();
+            fd.append('message', msg);
+            fd.append('category', category);
+            if (contact) fd.append('contact', contact);
+            if (appVersion) fd.append('app_version', appVersion);
+            attachments.forEach((e) => fd.append('attachments', e.file, e.file.name));
+
+            submitBtn.disabled = true;
+            setStatus(t('feedback.sending'), 'info');
+            try {
+                // BTT_Kiwi.post handles FormData on web (fetch) and on native
+                // (serializes text-only multipart to a string for CapacitorHttp,
+                // since File blobs can't cross the v7 plugin's Android bridge).
+                // The desktop build doesn't wire BTT_Kiwi at all, so fall back
+                // to a direct fetch + FormData — desktop has no CORS gate.
+                if (window.BTT_Kiwi && typeof window.BTT_Kiwi.post === 'function') {
+                    await window.BTT_Kiwi.post('misc/feedback', fd);
+                } else {
+                    const resp = await fetch('https://api.aallyn.net/v1/misc/feedback', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json' },
+                        body: fd,
+                        bttLabel: t('feedback.sending'),
+                    });
+                    if (!resp.ok) {
+                        const e = new Error(`HTTP ${resp.status}`);
+                        e.status = resp.status;
+                        try { e.data = await resp.json(); } catch { /* ignore */ }
+                        throw e;
+                    }
+                }
+                setStatus(t('feedback.success'), 'success');
+                messageEl.value = '';
+                contactEl.value = '';
+                clearAttachments();
+                updateCount();
+                setTimeout(closeFeedbackModal, 1500);
+            } catch (err) {
+                submitBtn.disabled = false;
+                if (err && err.status === 429) {
+                    setStatus(t('feedback.error_rate_limited'), 'error');
+                } else {
+                    const detail = (err && err.message) ? err.message : String(err);
+                    setStatus(`${t('feedback.error_generic')}: ${detail}`, 'error');
+                }
+            }
+        });
+    }
+
     document.addEventListener('btt_navigate', (e) => {
         const target = e?.detail?.target;
         if (!target) return;

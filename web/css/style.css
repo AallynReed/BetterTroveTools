@@ -2888,3 +2888,172 @@ input[type="range"]::-ms-fill-lower {
         color: var(--text-main);
     }
 }
+
+/* --- Feedback modal ---------------------------------------------------------
+   Sidebar button → modal that POSTs to /v1/misc/feedback. Layout reuses the
+   shared .app-overlay + .app-modal-card scaffolding; only the form-specific
+   bits live here so the look matches the request-log / server-time modals. */
+.feedback-modal-card {
+    width: min(560px, 92vw);
+    max-height: min(88vh, 720px);
+    display: flex;
+    flex-direction: column;
+}
+.feedback-modal-content {
+    padding: 16px 20px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.feedback-intro {
+    margin: 0 0 6px;
+    color: var(--text-muted, var(--text-main));
+    font-size: 0.92rem;
+    line-height: 1.4;
+}
+.feedback-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-top: 8px;
+}
+.feedback-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--bg-input, rgba(255, 255, 255, 0.04));
+    color: var(--text-main);
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.15s ease;
+}
+.feedback-input:focus {
+    outline: none;
+    border-color: rgba(var(--accent-rgb), 0.7);
+}
+.feedback-textarea {
+    resize: vertical;
+    min-height: 110px;
+    font-family: inherit;
+    line-height: 1.45;
+}
+.feedback-count {
+    align-self: flex-end;
+    font-size: 0.78rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+    margin-top: -4px;
+}
+.feedback-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+}
+.feedback-status {
+    margin-top: 4px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.35;
+}
+.feedback-status-info    { background: rgba(94, 198, 255, 0.12); color: var(--accent-blue, #5ec6ff); }
+.feedback-status-success { background: rgba( 76, 217, 100, 0.14); color: #4cd964; }
+.feedback-status-error   { background: rgba(255,  85,  85, 0.15); color: #ff8a8a; }
+.feedback-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+}
+.feedback-actions .secondary-btn,
+.feedback-actions .primary-btn {
+    min-width: 96px;
+}
+
+/* Attachments picker -- web/desktop only (Android hides this whole block via
+   the .feedback-no-attach class set on the modal-card from JS). */
+.feedback-attachments-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+.feedback-attachments-thumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.feedback-attachment-thumb {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
+    background: var(--bg-input, rgba(255, 255, 255, 0.04));
+}
+.feedback-attachment-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.feedback-attachment-remove {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 0.75rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.15s ease;
+}
+.feedback-attachment-remove:hover {
+    background: rgba(255, 85, 85, 0.85);
+}
+.feedback-attachment-add {
+    width: 72px;
+    height: 72px;
+    border-radius: 8px;
+    border: 1px dashed rgba(var(--accent-rgb), 0.45);
+    background: transparent;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.feedback-attachment-add:hover:not(:disabled) {
+    border-color: rgba(var(--accent-rgb), 0.8);
+    color: var(--accent-blue, #5ec6ff);
+    background: rgba(var(--accent-rgb), 0.06);
+}
+.feedback-attachment-add:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.feedback-attach-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+.feedback-attachments-counter {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted, rgba(255, 255, 255, 0.55));
+}
+/* Mode-aware visibility. The modal-card gets .feedback-no-attach in main.js
+   when running inside Capacitor — flip which set of helper text is shown. */
+.feedback-modal-card.feedback-no-attach .feedback-attach-only { display: none !important; }
+.feedback-modal-card:not(.feedback-no-attach) .feedback-android-only { display: none !important; }
+
+
