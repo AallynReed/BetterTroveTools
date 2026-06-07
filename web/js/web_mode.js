@@ -257,7 +257,7 @@
         { code: 'fr_FR', name: 'Francais', percent: 100 },
         { code: 'ja_JP', name: 'Japanese', percent: 100 },
         { code: 'ko_KR', name: 'Korean', percent: 100 },
-        { code: 'pt_BR', name: 'Portuguese', percent: 100 },
+        { code: 'pt_PT', name: 'Português', percent: 100 },
         { code: 'ru_RU', name: 'Russian', percent: 100 },
         { code: 'zh_CN', name: 'Chinese', percent: 100 }
     ];
