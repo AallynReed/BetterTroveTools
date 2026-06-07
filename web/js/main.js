@@ -2902,12 +2902,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setTimeout(closeFeedbackModal, 1500);
             } catch (err) {
                 submitBtn.disabled = false;
-                if (err && err.status === 429) {
+                // Server's canonical error envelope is { error: { code, message,
+                // details, request_id } }. Pull out the bits that help the user
+                // (and us, when they report it back). Fall back gracefully when
+                // the body isn't JSON or the network never produced one.
+                const serverErr = err && err.data && err.data.error;
+                const code = serverErr && serverErr.code;
+                const serverMsg = serverErr && serverErr.message;
+                const reqId = serverErr && serverErr.request_id;
+                console.error('[feedback] submit failed', { status: err && err.status, body: err && err.data, err });
+
+                // 429 / rate_limited: localized message; the server doesn't add
+                // anything actionable here so we don't surface request_id either.
+                if ((err && err.status === 429) || code === 'rate_limited') {
                     setStatus(t('feedback.error_rate_limited'), 'error');
-                } else {
-                    const detail = (err && err.message) ? err.message : String(err);
-                    setStatus(`${t('feedback.error_generic')}: ${detail}`, 'error');
+                    return;
                 }
+                // Otherwise: lead with our localized "Failed to send feedback",
+                // append the server's own message when available (more useful
+                // than just "HTTP 500"), and attach the request_id for support.
+                const parts = [t('feedback.error_generic')];
+                if (serverMsg) parts.push(serverMsg);
+                else if (err && err.message) parts.push(err.message);
+                if (reqId) parts.push(`(${reqId})`);
+                setStatus(parts.join(' — '), 'error');
             }
         });
     }
