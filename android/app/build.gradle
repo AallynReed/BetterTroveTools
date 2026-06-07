@@ -1,9 +1,11 @@
 apply plugin: 'com.android.application'
 
 // Keep the Android version in lockstep with the app's metadata.json (APP_VERSION),
-// the same source the desktop build reads. versionName mirrors it verbatim
-// (e.g. "2026.06.02") and versionCode is its digits (e.g. 20260602), which stays
-// monotonically increasing for date-based versions.
+// the same source the desktop build reads. The version scheme is YYYY.MM.BUILD --
+// the last number is the build count within that month, NOT the day of the month.
+// versionName mirrors APP_VERSION verbatim (e.g. "2026.06.09" = 9th build of
+// June 2026) and versionCode is its digits (e.g. 20260609), which stays
+// monotonic as long as monthly builds stay under 100.
 //
 // Root metadata.json is the SINGLE source of truth. To prevent runtime drift
 // between the APK's manifest version and what the WebView shows in the sidebar,
