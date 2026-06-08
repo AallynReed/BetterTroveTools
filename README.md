@@ -67,7 +67,7 @@ The interface renders inside the **Microsoft Edge WebView2 runtime** instead of 
 | 📖 **Codexes** *(beta)* | Allies, mounts, dragons, mementos, recipes, items, fish, and badges built straight from game files |
 | 🧩 **Mod manager** | Install, enable, update, and resolve conflicts across every Trove install, plus a built‑in Trovesaurus browser |
 | 🛠️ **Modder tools** | Build / extract / edit `.tmod` packages, browse archives, diff patches, and deploy test overrides |
-| ⚙️ **Quality of life** | Multi‑language UI, theming, FPS cap patching, command palette, and a background job queue |
+| ⚙️ **Quality of life** | Multi‑language UI, theming, command palette, and a background job queue |
 
 ---
 
@@ -143,7 +143,6 @@ The interface renders inside the **Microsoft Edge WebView2 runtime** instead of 
 
 - **Multi‑language interface** support (9 languages).
 - **Accent color** and **app font** customization.
-- **FPS cap patcher** — set the Trove client's frame‑rate cap (60 → 540 FPS, or uncapped) directly in the executable per install, with automatic pristine backups and repair detection.
 - **Custom Trove directory management** for Live, PTS, and custom installs.
 - **Command palette / Quick Open** (`Ctrl/Cmd + K`) to jump to any tool or action instantly.
 - **Background job queue** for long‑running operations like extraction and scanning.
@@ -173,7 +172,7 @@ The desktop app renders its interface in the **Microsoft Edge WebView2 runtime**
 
 WebView2 is a standalone component, so it stays installed even if Microsoft Edge itself is removed.
 
-**Linux** renders through pywebview's system backend instead — **WebKit2GTK** (recommended) or **Qt WebEngine**. See [Run on Linux](#run-on-linux) below. Windows remains the primary, fully‑featured target; Linux runs the same UI and tools, with Windows‑only bits (self‑update, FPS patching, the registry‑based auto‑detect) gracefully disabled.
+**Linux** renders through pywebview's system backend instead — **WebKit2GTK** (recommended) or **Qt WebEngine**. See [Run on Linux](#run-on-linux) below. Windows remains the primary, fully‑featured target; Linux runs the same UI and tools, with Windows‑only bits (self‑update, the registry‑based auto‑detect) gracefully disabled.
 
 ---
 
@@ -239,7 +238,7 @@ The app auto‑detects a backend and uses an app window when one is present. For
 
 **What works on Linux:** the full UI, calculators, gems/builds, Star Chart, home dashboard, Trovesaurus browsing, and — when a Trove install is present (e.g. via **Steam/Proton**, which is auto‑detected) — the codexes and mod management, since those only *read* the game files.
 
-**What's Windows‑only:** the in‑app self‑updater, the FPS patcher, and "Test in Game" (these run/modify the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (point it at any valid Trove folder manually).
+**What's Windows‑only:** the in‑app self‑updater and "Test in Game" (which runs the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (point it at any valid Trove folder manually).
 
 ### Cutting a release (maintainers)
 

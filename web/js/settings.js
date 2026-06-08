@@ -47,15 +47,12 @@ document.addEventListener('settings_loaded', async () => {
                 auto_fix_names: false,
                 show_mod_preview_on_info_side: true,
                 hide_beta_features: false,
-                fps_caps: {},
                 notifications: defaultNotifications()
             });
 
             const customDirs = ref([]);
             const gameInstalls = ref([]);
-            const fpsRepair = ref([]);
-            const isFpsRepair = (path) => fpsRepair.value.includes(path);
-            // Game-client settings (FPS cap) require local file access -> hide in hosted web mode.
+            // Custom directory management requires local file access -> hide in hosted web mode.
             const isWebMode = window.BTT_WEB_MODE === true;
             // UI size scaling is only offered on the packaged Android build.
             const isNative = window.BTT_NATIVE === true;
@@ -86,7 +83,6 @@ document.addEventListener('settings_loaded', async () => {
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
-                    settings.fps_caps = data.fps_caps || {};
                     // Deep-merge notifications so old saves missing a new field
                     // (e.g. a freshly-added rotation type) pick up its defaults.
                     // Old saves may carry a global notifications.lead_minutes —
@@ -114,7 +110,6 @@ document.addEventListener('settings_loaded', async () => {
                     settings.notifications = merged;
                     customDirs.value = data.custom_directories || [];
                     gameInstalls.value = data.game_installs || [];
-                    fpsRepair.value = Array.isArray(data.fps_repair) ? data.fps_repair : [];
                 }
             };
 
@@ -167,7 +162,6 @@ document.addEventListener('settings_loaded', async () => {
                 }
                 
                 gameInstalls.value = response_data.game_installs || [];
-                fpsRepair.value = Array.isArray(response_data.fps_repair) ? response_data.fps_repair : [];
                 document.dispatchEvent(new CustomEvent('app_settings_updated', {
                     detail: { settings: { ...response_data } }
                 }));
@@ -441,7 +435,7 @@ document.addEventListener('settings_loaded', async () => {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
-                resetOnboardingTips, gameInstalls, isFpsRepair, isWebMode, isNative,
+                resetOnboardingTips, gameInstalls, isWebMode, isNative,
                 notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
                 bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications
             };

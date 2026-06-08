@@ -121,43 +121,6 @@
                 </div>
             </div>
 
-            <div class="settings-section" v-if="!isWebMode">
-                <h3>{{ t('settings.game_settings') }} <span class="beta-label">BETA</span></h3>
-                <p class="settings-help-text">{{ t('settings.modifications_applied_directly_to_the_ga_7b242c') }}</p>
-                <div style="padding: 10px; background: rgba(255, 152, 0, 0.1); border-left: 3px solid #ff9800; border-radius: 4px; margin-top: 10px; margin-bottom: 20px;">
-                    <div style="color: #ff9800; font-weight: bold; font-size: 13px; margin-bottom: 5px;"><i class="fa-solid fa-circle-info"></i> {{ t('settings.disclaimer') }}</div>
-                    <div style="color: var(--text-muted); font-size: 13px; line-height: 1.4;">
-                        {{ t('settings.these_features_alter_the_game_client_dir_4ede91') }}
-                    </div>
-                </div>
-                
-                <div v-for="(install, index) in gameInstalls" :key="install.path" style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;" :style="{ borderBottom: index === gameInstalls.length - 1 ? 'none' : '1px solid var(--border-color)', paddingBottom: index === gameInstalls.length - 1 ? '0' : '15px' }">
-                    <div style="overflow: hidden; margin-right: 15px;">
-                        <div style="font-weight: 500; font-size: 14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" :style="{ color: isFpsRepair(install.path) ? '#ff5c5c' : 'var(--text-main)' }">{{ install.name }}</div>
-                        <div style="color: var(--text-muted); font-size: 12px; margin-top: 5px; font-family: monospace; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" :title="install.path">{{ install.path }}</div>
-                        <div v-if="isFpsRepair(install.path)" style="color: #ff5c5c; font-size: 12px; margin-top: 5px; display: flex; align-items: center; gap: 6px; white-space: normal;">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-                            <span>{{ t('settings.could_not_read_the_fps_cap_for_this_inst_cfe57c') }}</span>
-                        </div>
-                    </div>
-                    <select v-model.number="settings.fps_caps[install.path]" @change="saveGeneralSettings" :disabled="isFpsRepair(install.path)" :title="isFpsRepair(install.path) ? t('settings.locked_repair_this_install_in_glyph_firs_f7dc8e') : ''" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 6px 12px; min-width: 120px; outline: none; margin-left: auto; flex-shrink: 0;" :style="isFpsRepair(install.path) ? { borderColor: '#ff5c5c', color: '#ff5c5c', cursor: 'not-allowed', opacity: '0.6' } : {}">
-                        <option :value="9999">{{ t('settings.uncapped') }}</option>
-                        <option :value="60">60 FPS</option>
-                        <option :value="90">90 FPS</option>
-                        <option :value="120">120 FPS ({{ t('settings.default') }})</option>
-                        <option :value="144">144 FPS</option>
-                        <option :value="165">165 FPS</option>
-                        <option :value="180">180 FPS</option>
-                        <option :value="200">200 FPS</option>
-                        <option :value="240">240 FPS</option>
-                        <option :value="360">360 FPS</option>
-                        <option :value="540">540 FPS</option>
-                    </select>
-                </div>
-
-                <div v-if="gameInstalls && gameInstalls.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('settings.no_game_installations_found') }}</div>
-
-            </div>
         </div>
 
         <div v-if="!isWebMode" class="tab-content" :class="{ active: activeTab === 'directories' }">

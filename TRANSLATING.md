@@ -37,7 +37,7 @@ is the source of truth.
 There are two catalogs:
 
 - **`strings`** — the hand-curated **UI text** (menus, buttons, labels, dialogs),
-  keyed by a stable **symbolic id** like `nav.home` or `settings.fps.title`. **This
+  keyed by a stable **symbolic id** like `nav.home` or `settings.appearance`. **This
   is what you translate.** The id never changes even if the English wording does,
   so your translations don't silently break.
 - **`content`** — game/data text (item names, descriptions, stat labels) that is

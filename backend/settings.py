@@ -5,11 +5,9 @@ from pathlib import Path
 import eel
 
 from backend.response import resp, standardize_response
-from utils.executable import find_trove_executable, FPS_OPTIONS, UNCAPPED_FPS
+from utils.executable import find_trove_executable
 from utils.path import get_cache_root
 from utils.registry import get_trove_locations, TroveGamePath, invalidate_trove_locations_cache
-
-_ALLOWED_FPS = set(FPS_OPTIONS) | {0, UNCAPPED_FPS}  # 0 accepted as alias for uncapped
 
 
 def _normalize_settings_payload(payload):
@@ -56,14 +54,6 @@ def _get_all_games(settings_data):
                 games.append(TroveGamePath(p, name=f"(Custom) {p.name}"))
     return games
 
-def _apply_fps_payload(target, games, default=120):
-    """Populate target['fps_caps'] (path -> current cap) and target['fps_repair']
-    (paths whose FPS slot could not be read, i.e. the install needs a repair).
-    UNCAPPED_FPS is preserved; only an unreadable slot falls back to default."""
-    raw = {str(game.path): game.get_current_fps() for game in games}
-    target["fps_caps"] = {p: (default if v is None else v) for p, v in raw.items()}
-    target["fps_repair"] = [p for p, v in raw.items() if v is None]
-
 def get_settings_file():
     settings_dir = get_cache_root()
     settings_dir.mkdir(parents=True, exist_ok=True)
@@ -71,24 +61,18 @@ def get_settings_file():
 
 
 def _attach_games_payload(data, include_games):
-    """Populate game_installs + fps_caps + fps_repair on `data`. When
-    include_games is False we skip the registry scan and per-exe FPS read
-    entirely -- callers that only need font/locale/preferences don't pay
-    that cost. Settings page passes include_games=True explicitly."""
+    """Populate game_installs on `data`. When include_games is False we skip
+    the registry scan entirely -- callers that only need font/locale/preferences
+    don't pay that cost. Settings page passes include_games=True explicitly."""
     if not include_games:
         return
     games = _get_all_games(data)
-    _apply_fps_payload(data, games)
     data["game_installs"] = [{"name": game.name, "path": str(game.path)} for game in games]
 
 
 @eel.expose
 @standardize_response
 def get_settings(include_games=True):
-    # No "force refresh FPS" flag: the FPS memo in utils.executable is keyed on
-    # (path, size, mtime_ns), so any real exe change naturally misses the cache
-    # and re-reads. A manual invalidator would only ever clear entries that
-    # would already be ignored on the next lookup.
     settings_file = get_settings_file()
     if settings_file.exists():
         try:
@@ -155,14 +139,11 @@ def _read_settings_from_disk():
 @eel.expose
 @standardize_response
 def save_settings(settings):
-    incoming_payload = settings.get("data", settings) if isinstance(settings, dict) and "data" in settings else settings
-    incoming_fps_caps = incoming_payload.get("fps_caps", {}) if isinstance(incoming_payload, dict) else {}
-
     normalized = _normalize_settings_payload(settings)
 
     # Only the custom_directories list changes which installs the registry-scan
     # cache should return. If save_settings was called purely to update the
-    # font / accent / locale / FPS caps, we keep the cache. Otherwise the next
+    # font / accent / locale, we keep the cache. Otherwise the next
     # get_trove_locations() call rescans.
     prior_payload = _read_settings_from_disk()
     if _custom_dirs_key(prior_payload) != _custom_dirs_key(normalized):
@@ -170,28 +151,7 @@ def save_settings(settings):
 
     games = _get_all_games(normalized)
 
-    # The settings page sends back the full fps_caps object on every save, even
-    # when the user only touched font / accent / locale. Patching writes the
-    # exe back to disk, so without an explicit "did this value actually change"
-    # guard we'd hit every Trove install on every unrelated settings save.
-    for game in games:
-        path_str = str(game.path)
-        if path_str not in incoming_fps_caps:
-            continue
-        try:
-            target = int(incoming_fps_caps[path_str])
-        except (ValueError, TypeError):
-            continue
-        if target not in _ALLOWED_FPS:
-            continue
-        normalized_target = UNCAPPED_FPS if target == 0 else target
-        current = game.get_current_fps()
-        if current == normalized_target:
-            continue  # no change requested, don't touch the exe
-        game.patch_fps(target)
-
     settings_file = get_settings_file()
     settings_file.write_text(json.dumps(normalized), encoding="utf-8")
-    _apply_fps_payload(normalized, games)
     normalized["game_installs"] = [{"name": game.name, "path": str(game.path)} for game in games]
     return resp(True, data=normalized, **normalized)

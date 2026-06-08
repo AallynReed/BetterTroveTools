@@ -3,7 +3,7 @@ import threading
 from pathlib import Path
 from typing import Optional
 
-from utils.executable import find_trove_executable, patch_trove_fps, restore_trove_fps, get_current_fps
+from utils.executable import find_trove_executable
 import vdf
 
 # Cached result of the registry + Steam-library scan. The scan touches the
@@ -111,8 +111,8 @@ class TroveGamePath:
 
     @property
     def executable(self):
-        # Resolved once per instance: is_valid / get_current_fps / patch_fps all
-        # touch this, and instances are short-lived (rebuilt each get_settings).
+        # Resolved once per instance: is_valid touches this, and instances are
+        # short-lived (rebuilt each get_settings).
         if self._executable is None:
             exe = find_trove_executable(self.path)
             self._executable = exe if exe else self.path.joinpath("Trove_x64.exe")
@@ -154,24 +154,6 @@ class TroveGamePath:
             for mod in self.get_from_dir(self.workshop_path, "*.tmod", True):
                 mods.append(mod)
         return mods
-
-    def get_current_fps(self) -> Optional[int]:
-        """Reads the executable to determine the current FPS cap."""
-        if self.executable:
-            return get_current_fps(self.executable)
-        return None
-
-    def patch_fps(self, target_fps: int) -> tuple[bool, str]:
-        """Applies the FPS cap patch to the executable based on the target FPS."""
-        if self.executable:
-            return patch_trove_fps(self.executable, target_fps)
-        return False, "no_executable"
-
-    def restore_fps(self) -> bool:
-        """Restores the original unmodified executable."""
-        if self.executable:
-            return restore_trove_fps(self.executable)
-        return False
 
     @property
     def disabled_tmods(self):
