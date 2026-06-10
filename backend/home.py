@@ -860,7 +860,7 @@ def get_gardening_rotation():
         traceback.print_exc()
         return resp(False, error=str(e), code="GARDENING_ROTATION_FAILED")
 
-system_epoch = datetime.fromtimestamp(1718708400, UTC)
+system_epoch = datetime(2024, 6, 18, 14, 0, 0, tzinfo=UTC)
 system_interval = 60 * 60 * 3
 
 @eel.expose
