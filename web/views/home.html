@@ -155,8 +155,8 @@
                     <span>{{ t('home.no_content_available_right_now_check_bac_a102d0') }}</span>
                 </div>
                 <div v-else class="carousel-wrapper community-carousel-wrapper">
-                    <button class="carousel-btn left" @click="scrollCarousel(-260)"><i class="fa-solid fa-chevron-left"></i></button>
-                    <div class="streams-carousel" ref="carouselRef">
+                    <button type="button" class="carousel-btn left" @click.stop.prevent="scrollCarousel(-260)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <div class="streams-carousel" ref="carouselRef" @wheel.prevent="$event.currentTarget.scrollLeft += ($event.deltaY || $event.deltaX)">
                         <div v-for="item in mediaData[mediaTab].data" :key="item.id || item.url" class="stream-card" @click="openUrl(item.url)">
                             <div class="stream-thumb">
                                 <img :src="item.thumb" alt="" loading="lazy" decoding="async">
@@ -168,7 +168,7 @@
                             </div>
                         </div>
                     </div>
-                    <button class="carousel-btn right" @click="scrollCarousel(260)"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button type="button" class="carousel-btn right" @click.stop.prevent="scrollCarousel(260)"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>
         </section>
@@ -226,8 +226,8 @@
                     <span>{{ newsActiveCategory === 'all' ? t('home.no_news_articles_are_available_right_now') : t('home.no_news_articles_match_this_filter') }}</span>
                 </div>
                 <div v-else class="carousel-wrapper news-carousel-wrapper">
-                    <button class="carousel-btn left" @click="scrollNewsCarousel(-320)"><i class="fa-solid fa-chevron-left"></i></button>
-                    <div class="news-carousel" ref="newsCarouselRef">
+                    <button type="button" class="carousel-btn left" @click.stop.prevent="scrollNewsCarousel(-320)"><i class="fa-solid fa-chevron-left"></i></button>
+                    <div class="news-carousel" ref="newsCarouselRef" @wheel.prevent="$event.currentTarget.scrollLeft += ($event.deltaY || $event.deltaX)">
                         <article v-for="item in mappedNews" :key="item.id" class="news-card" @click="openUrl(item.url)">
                             <div class="news-image-wrap">
                                 <img class="news-image" :src="item.image" alt="" loading="lazy" decoding="async">
@@ -244,7 +244,7 @@
                             </div>
                         </article>
                     </div>
-                    <button class="carousel-btn right" @click="scrollNewsCarousel(320)"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button type="button" class="carousel-btn right" @click.stop.prevent="scrollNewsCarousel(320)"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>
         </section>

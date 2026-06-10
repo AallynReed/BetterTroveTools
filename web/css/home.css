@@ -126,9 +126,18 @@
 .media-tab.active.tab-twitch { background: #6840b1; }
 
 .carousel-wrapper {
-    position: relative;
+    /* In-flow flex row: [left btn] [carousel: flex:1 min-w:0] [right btn].
+       Earlier attempts had the buttons position:absolute overlaying the
+       carousel; that variant proved unreliable in the desktop WebView even
+       with overflow + z-index tweaks. Putting the buttons in normal flow
+       eliminates every stacking-context / overlay concern and forces the
+       carousel into a real flex item that .min-width:0 can shrink. */
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     margin-bottom: 8px;
 }
 
@@ -137,6 +146,13 @@
 }
 
 .streams-carousel {
+    /* Flex item inside .carousel-wrapper. flex:1 1 0 + min-width:0 forces
+       the carousel to take only the remaining row space and to ACTUALLY
+       shrink (the flex default min-width:auto = min-content would otherwise
+       blow it out to the sum of all card widths). Only then does
+       overflow-x: auto have a smaller-than-content box to scroll. */
+    flex: 1 1 0;
+    min-width: 0;
     display: flex;
     gap: 12px;
     overflow-x: auto;
@@ -176,17 +192,36 @@
 .stream-user { font-size: 0.76em; color: var(--text-muted); margin-top: 3px; }
 
 .carousel-btn {
-    position: absolute; z-index: 10; background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255,255,255,0.2); color: white; width: 30px; height: 30px;
-    border-radius: 50%; cursor: pointer; display: flex; align-items: center;
-    justify-content: center; backdrop-filter: blur(4px);
+    /* In-flow flex items now (not position:absolute over the carousel).
+       flex:0 0 30px = fixed-width column; align-self:center keeps them
+       vertically centered next to the carousel without needing top/transform.
+       Children that get clicked (the <i> icon) inherit pointer-events:auto
+       from the button itself, so click events propagate normally. */
+    flex: 0 0 30px;
+    align-self: center;
+    position: relative;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
     opacity: 0.55;
-    transition: all 0.2s ease;
+    padding: 0;
+    transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
-.community-panel:hover .carousel-btn { opacity: 1; }
+.carousel-btn > i { pointer-events: none; }
+/* The wrapping element used to be .community-panel; the home refresh moved
+   to .home-section-streams / .home-section-news. Cover both so the chevron
+   buttons brighten on hover under either layout. */
+.community-panel:hover .carousel-btn,
+.home-section:hover .carousel-btn { opacity: 1; }
 .carousel-btn:hover { background: rgba(var(--accent-rgb), 0.32); border-color: rgba(var(--accent-rgb), 0.7); }
-.carousel-btn.left { left: -10px; }
-.carousel-btn.right { right: -10px; }
+/* .left / .right used to set left/right offsets when the buttons were
+   position:absolute; in the new in-flow flex layout the buttons sit
+   naturally on either side of the carousel and need no offset. */
 
 .community-empty {
     width: 100%;
@@ -300,6 +335,9 @@
     scroll-behavior: smooth;
     padding: 4px;
     scrollbar-width: none;
+    /* See .streams-carousel above — same flex-item min-width fix so the
+       carousel actually scrolls inside the clipped home container. */
+    min-width: 0;
 }
 
 .news-carousel::-webkit-scrollbar {

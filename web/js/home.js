@@ -148,8 +148,45 @@ document.addEventListener('home_loaded', () => {
             let hydratingHomePrefs = false;
 
             const openUrl = (url) => eel.open_url_in_browser(url)();
-            const scrollCarousel = (amount) => { if (carouselRef.value) carouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
-            const scrollNewsCarousel = (amount) => { if (newsCarouselRef.value) newsCarouselRef.value.scrollBy({ left: amount, behavior: 'smooth' }); };
+            // The Vue template ref binds asynchronously and the eel-backed
+            // desktop WebView has historically had quirks with scrollBy +
+            // behavior:'smooth'. Fall back to walking the carousel's children
+            // and setting scrollLeft directly -- this works even when the ref
+            // is briefly stale (querySelector finds the live element) and even
+            // when smooth-scrolling silently no-ops. The `amount` sign is the
+            // only thing that matters now (negative = previous, positive = next).
+            const stepCarousel = (selector, amount) => {
+                const root = document.querySelector(selector);
+                if (!root) return;
+                const cards = root.children;
+                if (!cards.length) return;
+                const cur = root.scrollLeft;
+                const view = root.clientWidth;
+                let targetLeft = cur;
+                if (amount > 0) {
+                    // Snap to the first child whose right edge is past the visible area.
+                    for (const c of cards) {
+                        if (c.offsetLeft + c.offsetWidth > cur + view + 1) {
+                            targetLeft = c.offsetLeft;
+                            break;
+                        }
+                    }
+                    // No child found ahead? Fall back to a plain pixel nudge.
+                    if (targetLeft === cur) targetLeft = cur + Math.abs(amount);
+                } else {
+                    // Walk forward until we'd overshoot, then back one.
+                    let prev = 0;
+                    for (const c of cards) {
+                        if (c.offsetLeft >= cur - 1) break;
+                        prev = c.offsetLeft;
+                    }
+                    targetLeft = prev;
+                    if (targetLeft === cur) targetLeft = Math.max(0, cur - Math.abs(amount));
+                }
+                root.scrollLeft = targetLeft;
+            };
+            const scrollCarousel = (amount) => stepCarousel('.streams-carousel', amount);
+            const scrollNewsCarousel = (amount) => stepCarousel('.news-carousel', amount);
             const toggleNewsCollapsed = () => {
                 isNewsCollapsed.value = !isNewsCollapsed.value;
                 if (window.AppSettings) window.AppSettings.setPrefSync(NEWS_COLLAPSED_PREF_KEY, isNewsCollapsed.value);
