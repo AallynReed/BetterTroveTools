@@ -418,6 +418,109 @@ def get_trove_news():
 
     _spawn_home_fetch(fetch_task)
 
+
+def _kiwi_giveaway_list(path):
+    # All three Kiwi giveaway endpoints (ongoing / upcoming / ended) return a
+    # bare array of GiveawayPublicView records, not the {items: [...]} wrapper.
+    headers = {"User-Agent": "BetterTroveTools/1.0"}
+    response = requests.get(KIWI_API_BASE + path, headers=headers, timeout=8)
+    response.raise_for_status()
+    payload = response.json()
+    return payload if isinstance(payload, list) else (payload.get("items", []) if isinstance(payload, dict) else [])
+
+
+def _spawn_giveaway_fetch(label, path, receive_name, error_code):
+    def fetch_task(generation):
+        req_id = None
+        try:
+            req_id = eel.add_external_request(label, KIWI_API_BASE + path)()
+        except Exception:
+            pass
+        try:
+            items = _kiwi_giveaway_list(path)
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
+            getattr(eel, receive_name)(resp(True, data=items))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
+        except Exception as e:
+            _finish_external_request(req_id, False)
+            traceback.print_exc()
+            if _home_fetch_is_active(generation):
+                getattr(eel, receive_name)(resp(False, error=str(e), code=error_code))
+
+    _spawn_home_fetch(fetch_task)
+
+
+@eel.expose
+@standardize_response
+def get_giveaways():
+    _spawn_giveaway_fetch("Fetching Giveaways", "/giveaways/ongoing", "receive_giveaways", "GIVEAWAYS_FETCH_FAILED")
+
+
+@eel.expose
+@standardize_response
+def get_upcoming_giveaways():
+    _spawn_giveaway_fetch("Fetching Upcoming Giveaways", "/giveaways/upcoming", "receive_upcoming_giveaways", "UPCOMING_GIVEAWAYS_FETCH_FAILED")
+
+
+@eel.expose
+@standardize_response
+def get_ended_giveaways():
+    # Default ?days=7 (max 30 per API); matches the home modal's "last 7 days" UX.
+    _spawn_giveaway_fetch("Fetching Recent Giveaways", "/giveaways/ended?days=7", "receive_ended_giveaways", "ENDED_GIVEAWAYS_FETCH_FAILED")
+
+
+@eel.expose
+@standardize_response
+def get_player_activity():
+    # Kiwi /v1/activity/current returns the latest hourly capture's
+    # estimate plus 24h / 7d distinct-player rollups in one object.
+    def fetch_task(generation):
+        req_id = None
+        try:
+            req_id = eel.add_external_request("Fetching Player Activity", KIWI_API_BASE + "/activity/current")()
+        except Exception:
+            pass
+        try:
+            headers = {"User-Agent": "BetterTroveTools/1.0"}
+            response = requests.get(KIWI_API_BASE + "/activity/current", headers=headers, timeout=6)
+            response.raise_for_status()
+            if not _home_fetch_is_active(generation):
+                _finish_external_request(req_id, False)
+                return
+            _finish_external_request(req_id, True)
+            raw = response.json()
+            payload = raw if isinstance(raw, dict) else {}
+            # The home tile only needs the three rollups + freshness; the heavy
+            # by_board list is dropped to keep the eel payload light.
+            trimmed = {
+                "estimate": payload.get("estimate"),
+                "estimate_24h": payload.get("estimate_24h"),
+                "estimate_7d": payload.get("estimate_7d"),
+                "duration_hours": payload.get("duration_hours"),
+                "span_24h_hours": payload.get("span_24h_hours"),
+                "span_7d_hours": payload.get("span_7d_hours"),
+                "window_end": payload.get("window_end"),
+                "computed_at": payload.get("computed_at"),
+                "methodology": payload.get("methodology"),
+            }
+            eel.receive_player_activity(resp(True, data=trimmed))
+        except gevent.GreenletExit:
+            _finish_external_request(req_id, False)
+            raise
+        except Exception as e:
+            _finish_external_request(req_id, False)
+            traceback.print_exc()
+            if _home_fetch_is_active(generation):
+                eel.receive_player_activity(resp(False, error=str(e), code="ACTIVITY_FETCH_FAILED"))
+
+    _spawn_home_fetch(fetch_task)
+
+
 @eel.expose
 @standardize_response
 def get_current_server_data():

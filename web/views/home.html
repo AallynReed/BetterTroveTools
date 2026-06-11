@@ -112,6 +112,69 @@
         </div>
     </div>
 
+    <div v-if="showStatRow" class="home-stat-row">
+        <div v-if="showActivityTile" class="home-activity-tile home-stat-tile"
+             :class="{ 'is-loading': activity.loading }"
+             role="region"
+             :aria-label="t('home.activity.title')"
+             :title="mappedActivity?.methodology || ''">
+            <span class="home-activity-icon"><i class="fa-solid fa-users-line"></i></span>
+            <div class="home-activity-body">
+                <div class="home-activity-head">
+                    <span class="home-activity-label">{{ t('home.activity.title') }}</span>
+                    <span v-if="mappedActivity && mappedActivity.updatedAgoText" class="home-activity-updated">{{ t('home.activity.updated_label').replace('{ago}', mappedActivity.updatedAgoText) }}</span>
+                </div>
+                <div class="home-activity-stats">
+                    <div class="home-activity-stat">
+                        <span class="home-activity-stat-value">{{ mappedActivity ? mappedActivity.estimate : '—' }}</span>
+                        <span class="home-activity-stat-label">{{ t('home.activity.last_1h') }}</span>
+                    </div>
+                    <span class="home-activity-divider"></span>
+                    <div class="home-activity-stat">
+                        <span class="home-activity-stat-value">{{ mappedActivity ? mappedActivity.estimate_24h : '—' }}</span>
+                        <span class="home-activity-stat-label">{{ t('home.activity.last_24h') }}</span>
+                    </div>
+                    <span class="home-activity-divider"></span>
+                    <div class="home-activity-stat">
+                        <span class="home-activity-stat-value">{{ mappedActivity ? mappedActivity.estimate_7d : '—' }}</span>
+                        <span class="home-activity-stat-label">{{ t('home.activity.last_7d') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showGiveawayTile"
+             class="home-giveaway-tile home-stat-tile"
+             :class="{ 'is-loading': giveaways.loading, 'is-urgent': giveawayTileSummary.isUrgent }"
+             :title="giveawayTileSummary.tooltip"
+             role="button"
+             tabindex="0"
+             @click="openGiveawayModal()"
+             @keydown.enter.prevent="openGiveawayModal()"
+             @keydown.space.prevent="openGiveawayModal()">
+            <span class="home-giveaway-icon"><i class="fa-solid fa-gift"></i></span>
+            <div class="home-giveaway-body">
+                <div class="home-giveaway-head">
+                    <span class="home-giveaway-label">{{ t('home.giveaways.title') }}</span>
+                    <span class="home-giveaway-status">{{ giveawayTileSummary.statusText }}</span>
+                </div>
+                <div class="home-giveaway-line">
+                    <span class="home-giveaway-line-main">{{ giveawayTileSummary.headline }}</span>
+                    <span v-if="giveawayTileSummary.subline" class="home-giveaway-line-sub">{{ giveawayTileSummary.subline }}</span>
+                </div>
+            </div>
+            <button v-if="mappedGiveaways.length > 0"
+                    type="button"
+                    class="giveaway-enter-btn home-giveaway-enter"
+                    :title="t('home.giveaways.enter_button')"
+                    @click.stop="openUrl('https://trove.aallyn.net/giveaways')">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <span>{{ t('home.giveaways.enter_button') }}</span>
+            </button>
+            <span v-else class="home-giveaway-chevron"><i class="fa-solid fa-arrow-right"></i></span>
+        </div>
+    </div>
+
     <div class="home-section-controls">
         <span class="home-section-controls-hint">{{ t('home.drag_section_headers_to_reorder_click_th_455d26') }}</span>
     </div>
@@ -390,6 +453,113 @@
         </section>
 
     </template>
+
+    <div class="modal-overlay" v-show="giveawayModal.show" @click.self="giveawayModal.show = false">
+        <div class="modal-content giveaway-modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-gift" style="color: #ffd166;"></i> <span>{{ t('home.giveaways.title') }}</span></h3>
+                <button class="modal-close" @click="giveawayModal.show = false"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="giveaway-modal-section">
+                    <h4 class="giveaway-modal-section-title">
+                        <i class="fa-solid fa-circle-dot"></i>
+                        <span>{{ t('home.giveaways.section_open_now') }}</span>
+                        <span class="giveaway-modal-section-count">{{ mappedGiveaways.length }}</span>
+                    </h4>
+                    <div v-if="giveaways.loading" class="giveaway-modal-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('home.giveaways.loading') }}</div>
+                    <div v-else-if="giveaways.error" class="giveaway-modal-state is-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('home.giveaways.error') }}</div>
+                    <div v-else-if="mappedGiveaways.length === 0" class="giveaway-modal-state">{{ t('home.giveaways.no_ongoing') }}</div>
+                    <div v-else class="giveaway-modal-list">
+                        <article v-for="g in mappedGiveaways" :key="g.id" class="giveaway-modal-row" :class="{ 'is-urgent': g.isUrgent }">
+                            <div class="giveaway-modal-head">
+                                <span class="giveaway-row-icon"><i class="fa-solid fa-gift"></i></span>
+                                <div class="giveaway-modal-titles">
+                                    <div class="giveaway-modal-prize">{{ g.prizeName }}</div>
+                                    <div v-if="g.title && g.title !== g.prizeName" class="giveaway-modal-subtitle">{{ g.title }}</div>
+                                </div>
+                            </div>
+                            <p v-if="g.description" class="giveaway-modal-desc">{{ g.description }}</p>
+                            <div class="giveaway-modal-meta">
+                                <span class="giveaway-meta-pill" :title="t('home.giveaways.entry_count_title')"><i class="fa-solid fa-users"></i> {{ t('home.giveaways.entries_count').replace('{count}', g.entries.toLocaleString()) }}</span>
+                                <span class="giveaway-meta-pill" :title="t('home.giveaways.odds_title')"><i class="fa-solid fa-dice"></i> {{ g.oddsText }}</span>
+                                <span class="giveaway-meta-pill giveaway-meta-ends" :class="{ 'is-urgent': g.isUrgent }"><i class="fa-regular fa-clock"></i> {{ g.endsInText }}</span>
+                            </div>
+                            <div class="giveaway-modal-times">
+                                <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.starts_at') }}</span> <span>{{ g.startsAtText }}</span></div>
+                                <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.ends_at') }}</span> <span>{{ g.endsAtText }}</span></div>
+                            </div>
+                            <button type="button" class="giveaway-enter-btn" @click="openUrl('https://trove.aallyn.net/giveaways')">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                <span>{{ t('home.giveaways.enter_button') }}</span>
+                            </button>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="giveaway-modal-section">
+                    <h4 class="giveaway-modal-section-title">
+                        <i class="fa-regular fa-calendar"></i>
+                        <span>{{ t('home.giveaways.section_upcoming') }}</span>
+                        <span class="giveaway-modal-section-count">{{ mappedUpcoming.length }}</span>
+                    </h4>
+                    <div v-if="upcomingGiveaways.loading" class="giveaway-modal-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('home.giveaways.loading') }}</div>
+                    <div v-else-if="upcomingGiveaways.error" class="giveaway-modal-state is-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('home.giveaways.error') }}</div>
+                    <div v-else-if="mappedUpcoming.length === 0" class="giveaway-modal-state">{{ t('home.giveaways.no_upcoming') }}</div>
+                    <div v-else class="giveaway-modal-list">
+                        <article v-for="g in mappedUpcoming" :key="g.id" class="giveaway-modal-row is-upcoming">
+                            <div class="giveaway-modal-head">
+                                <span class="giveaway-row-icon"><i class="fa-solid fa-gift"></i></span>
+                                <div class="giveaway-modal-titles">
+                                    <div class="giveaway-modal-prize">{{ g.prizeName }}</div>
+                                    <div v-if="g.title && g.title !== g.prizeName" class="giveaway-modal-subtitle">{{ g.title }}</div>
+                                </div>
+                            </div>
+                            <p v-if="g.description" class="giveaway-modal-desc">{{ g.description }}</p>
+                            <div class="giveaway-modal-meta">
+                                <span class="giveaway-meta-pill"><i class="fa-regular fa-hourglass-half"></i> {{ g.startsInText }}</span>
+                            </div>
+                            <div class="giveaway-modal-times">
+                                <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.starts_at') }}</span> <span>{{ g.startsAtText }}</span></div>
+                                <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.ends_at') }}</span> <span>{{ g.endsAtText }}</span></div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="giveaway-modal-section">
+                    <h4 class="giveaway-modal-section-title">
+                        <i class="fa-solid fa-flag-checkered"></i>
+                        <span>{{ t('home.giveaways.section_recently_ended') }}</span>
+                        <span class="giveaway-modal-section-count">{{ mappedEnded.length }}</span>
+                    </h4>
+                    <div v-if="endedGiveaways.loading" class="giveaway-modal-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('home.giveaways.loading') }}</div>
+                    <div v-else-if="endedGiveaways.error" class="giveaway-modal-state is-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('home.giveaways.error') }}</div>
+                    <div v-else-if="mappedEnded.length === 0" class="giveaway-modal-state">{{ t('home.giveaways.no_recent') }}</div>
+                    <div v-else class="giveaway-modal-list">
+                        <article v-for="g in mappedEnded" :key="g.id" class="giveaway-modal-row is-ended">
+                            <div class="giveaway-modal-head">
+                                <span class="giveaway-row-icon"><i class="fa-solid fa-gift"></i></span>
+                                <div class="giveaway-modal-titles">
+                                    <div class="giveaway-modal-prize">{{ g.prizeName }}</div>
+                                    <div v-if="g.title && g.title !== g.prizeName" class="giveaway-modal-subtitle">{{ g.title }}</div>
+                                </div>
+                            </div>
+                            <p v-if="g.description" class="giveaway-modal-desc">{{ g.description }}</p>
+                            <div class="giveaway-modal-meta">
+                                <span v-if="g.winner" class="giveaway-meta-pill is-winner"><i class="fa-solid fa-trophy"></i> {{ t('home.giveaways.winner_name').replace('{name}', g.winner) }}</span>
+                                <span v-else class="giveaway-meta-pill"><i class="fa-regular fa-circle-xmark"></i> {{ t('home.giveaways.no_winner') }}</span>
+                                <span class="giveaway-meta-pill"><i class="fa-solid fa-users"></i> {{ t('home.giveaways.entries_count').replace('{count}', g.entries.toLocaleString()) }}</span>
+                            </div>
+                            <div class="giveaway-modal-times">
+                                <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.ended_at') }}</span> <span>{{ g.endsAtText }}</span></div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div v-if="draggingSectionId" class="home-section-drop-line home-section-drop-line-tail"
          :class="{ active: sectionOrder.length > 0 && sectionOrder[sectionOrder.length - 1] !== draggingSectionId && showDropLine(sectionOrder[sectionOrder.length - 1], 'after') }"

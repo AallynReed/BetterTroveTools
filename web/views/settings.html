@@ -73,6 +73,16 @@
                         <span class="slider round"></span>
                     </label>
                 </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_player_activity') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_player_activity_desc') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.show_player_activity" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
             </div>
             
             <div v-if="!isWebMode" class="settings-section">

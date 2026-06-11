@@ -70,6 +70,10 @@ document.addEventListener('home_loaded', () => {
                 window._homeAppHandleBilibili = null;
                 window._homeAppHandleEvents = null;
                 window._homeAppHandleNews = null;
+                window._homeAppHandleGiveaways = null;
+                window._homeAppHandleUpcomingGiveaways = null;
+                window._homeAppHandleEndedGiveaways = null;
+                window._homeAppHandleActivity = null;
                 if (window.eel && eel.cancel_home_fetches) {
                     try {
                         await eel.cancel_home_fetches()();
@@ -77,7 +81,7 @@ document.addEventListener('home_loaded', () => {
                 }
             };
 
-            const settings = reactive({ show_community_content: true, show_official_news: true });
+            const settings = reactive({ show_community_content: true, show_official_news: true, show_player_activity: true });
             const isChinese = ref(window.I18nManager?.currentLocale === 'zh_CN');
             
             const mediaTab = ref('youtube');
@@ -116,6 +120,11 @@ document.addEventListener('home_loaded', () => {
 
             const events = reactive({ loading: true, error: false, data: [] });
             const news = reactive({ loading: true, error: false, data: [] });
+            const giveaways = reactive({ loading: true, error: false, data: [] });
+            const upcomingGiveaways = reactive({ loading: true, error: false, data: [] });
+            const endedGiveaways = reactive({ loading: true, error: false, data: [] });
+            const giveawayModal = reactive({ show: false });
+            const activity = reactive({ loading: true, error: false, data: null });
             const timeMode = ref('local');
             
             const calendarModal = reactive({ show: false, isLoading: true, error: false });
@@ -652,6 +661,31 @@ document.addEventListener('home_loaded', () => {
                 }
             };
 
+            const makeGiveawayHandler = (bucket) => (response) => {
+                if (isDisposed) return;
+                bucket.loading = false;
+                if (response?.success && Array.isArray(response.data)) {
+                    bucket.data = response.data;
+                    bucket.error = false;
+                } else {
+                    bucket.error = true;
+                }
+            };
+            window._homeAppHandleGiveaways = makeGiveawayHandler(giveaways);
+            window._homeAppHandleUpcomingGiveaways = makeGiveawayHandler(upcomingGiveaways);
+            window._homeAppHandleEndedGiveaways = makeGiveawayHandler(endedGiveaways);
+
+            window._homeAppHandleActivity = (response) => {
+                if (isDisposed) return;
+                activity.loading = false;
+                if (response?.success && response.data && typeof response.data === 'object') {
+                    activity.data = response.data;
+                    activity.error = false;
+                } else {
+                    activity.error = true;
+                }
+            };
+
             const mappedEvents = computed(() => {
                 return events.data.map(ev => {
                     const startTs = parseInt(ev.startdate);
@@ -697,6 +731,150 @@ document.addEventListener('home_loaded', () => {
                     image: item.image || '/assets/images/no_preview.png'
                 }));
             });
+
+            const mappedActivity = computed(() => {
+                const d = activity.data;
+                if (!d) return null;
+                const fmt = (n) => (typeof n === 'number' && isFinite(n)) ? n.toLocaleString() : '—';
+                // window_end is when the most recent capture closed; use that
+                // (or computed_at as a fallback) for the "updated" label so it
+                // reflects data age, not server clock skew.
+                const stampSec = (typeof d.window_end === 'number' && d.window_end) || d.computed_at || 0;
+                const updatedAgoText = stampSec
+                    ? getTimeAgo(new Date(stampSec * 1000).toISOString())
+                    : '';
+                return {
+                    estimate: fmt(d.estimate),
+                    estimate_24h: fmt(d.estimate_24h),
+                    estimate_7d: fmt(d.estimate_7d),
+                    hasAny: typeof d.estimate === 'number' || typeof d.estimate_24h === 'number' || typeof d.estimate_7d === 'number',
+                    updatedAgoText,
+                    methodology: d.methodology || ''
+                };
+            });
+
+            const fmtGiveawayDateTime = (ts) => {
+                if (!ts) return '';
+                const locale = (window.I18nManager && window.I18nManager.currentLocale)
+                    ? window.I18nManager.currentLocale.replace('_', '-')
+                    : 'en-US';
+                return new Date(ts * 1000).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+            };
+            const mapGiveawayList = (list, { urgentByEnd = false } = {}) => {
+                return (list || []).map((g) => {
+                    const endsTs = Math.floor(new Date(g.ends_at).getTime() / 1000) || 0;
+                    const startsTs = Math.floor(new Date(g.starts_at).getTime() / 1000) || 0;
+                    const entries = Number(g.entry_count) || 0;
+                    // Per-entry odds as a percentage with two decimals (e.g.
+                    // 2 entries -> "50.00", 1000 entries -> "0.10"). The
+                    // template wraps it with the locale's "Odds" label + %.
+                    const oddsText = entries > 0
+                        ? t('home.giveaways.odds_percent').replace('{percent}', (100 / entries).toFixed(2))
+                        : t('home.giveaways.odds_unknown');
+                    const isUrgent = urgentByEnd && endsTs > 0 && (endsTs - nowSec.value) <= URGENT_THRESHOLD_SEC;
+                    return {
+                        id: g.id,
+                        status: g.status || '',
+                        title: g.title || g.prize_name,
+                        prizeName: g.prize_name,
+                        description: g.description,
+                        entries,
+                        oddsText,
+                        startsTs,
+                        endsTs,
+                        startsAtText: fmtGiveawayDateTime(startsTs),
+                        endsAtText: fmtGiveawayDateTime(endsTs),
+                        startsInText: startsTs > 0 ? t('home.giveaways.starts_in_time').replace('{time}', getCountdown(startsTs, false)) : '',
+                        endsInText: endsTs > 0 ? t('home.ends_in_time').replace('{time}', getCountdown(endsTs, false)) : '',
+                        isUrgent,
+                        winner: g.winner_username || null
+                    };
+                });
+            };
+
+            const mappedGiveaways = computed(() => mapGiveawayList(
+                (giveaways.data || []).filter((g) => g && g.status === 'open'),
+                { urgentByEnd: true }
+            ));
+            const mappedUpcoming = computed(() => mapGiveawayList(upcomingGiveaways.data || []));
+            const mappedEnded = computed(() => mapGiveawayList(endedGiveaways.data || []));
+
+            // Single-line summary for the home-page giveaway tile. Cascades:
+            // ongoing → upcoming → recently-ended → empty. Each bucket
+            // becomes the primary state only when no earlier one has rows,
+            // so a live giveaway always wins the headline.
+            const giveawayTileSummary = computed(() => {
+                const ongoingList = mappedGiveaways.value;
+                const upcomingList = mappedUpcoming.value;
+                const endedList = mappedEnded.value;
+
+                if (giveaways.loading && upcomingGiveaways.loading && endedGiveaways.loading) {
+                    return { statusText: '', headline: t('home.giveaways.loading'), subline: '', tooltip: '', isUrgent: false };
+                }
+                if (giveaways.error && upcomingGiveaways.error && endedGiveaways.error) {
+                    return { statusText: '', headline: t('home.giveaways.error'), subline: '', tooltip: '', isUrgent: false };
+                }
+
+                if (ongoingList.length > 0) {
+                    const first = ongoingList[0];
+                    const statusText = ongoingList.length === 1
+                        ? t('home.giveaways.tile_status_open')
+                        : t('home.giveaways.tile_status_open_count').replace('{count}', ongoingList.length);
+                    return {
+                        statusText,
+                        headline: first.prizeName,
+                        subline: first.endsInText,
+                        tooltip: `${first.prizeName} - ${first.endsAtText}`,
+                        isUrgent: first.isUrgent
+                    };
+                }
+
+                if (upcomingList.length > 0) {
+                    const first = upcomingList[0];
+                    const statusText = upcomingList.length === 1
+                        ? t('home.giveaways.tile_status_upcoming')
+                        : t('home.giveaways.tile_status_upcoming_count').replace('{count}', upcomingList.length);
+                    return {
+                        statusText,
+                        headline: first.prizeName,
+                        subline: first.startsInText,
+                        tooltip: `${first.prizeName} - ${first.startsAtText}`,
+                        isUrgent: false
+                    };
+                }
+
+                if (endedList.length > 0) {
+                    const statusText = endedList.length === 1
+                        ? t('home.giveaways.tile_status_recent')
+                        : t('home.giveaways.tile_status_recent_count').replace('{count}', endedList.length);
+                    return {
+                        statusText,
+                        headline: t('home.giveaways.recently_ended_short'),
+                        subline: t('home.giveaways.click_for_details'),
+                        tooltip: t('home.giveaways.recently_ended_tooltip').replace('{count}', endedList.length),
+                        isUrgent: false
+                    };
+                }
+
+                return {
+                    statusText: t('home.giveaways.tile_status_none'),
+                    headline: t('home.giveaways.empty_short'),
+                    subline: t('home.giveaways.click_for_details'),
+                    tooltip: t('home.giveaways.empty'),
+                    isUrgent: false
+                };
+            });
+
+            const openGiveawayModal = () => { giveawayModal.show = true; };
+
+            // Tiles hide themselves entirely on fetch failure (Kiwi API down,
+            // CORS reject, etc.) so the home page declutters instead of showing
+            // a permanent error pill. The row wrapper collapses when both go.
+            // For the giveaway tile: only hide when all three buckets failed —
+            // any single working endpoint is enough to keep the tile useful.
+            const showActivityTile = computed(() => settings.show_player_activity && !activity.error);
+            const showGiveawayTile = computed(() => !(giveaways.error && upcomingGiveaways.error && endedGiveaways.error));
+            const showStatRow = computed(() => showActivityTile.value || showGiveawayTile.value);
 
             const filteredCalendarTracks = computed(() => {
                 const nowMs = nowSec.value * 1000;
@@ -903,6 +1081,7 @@ document.addEventListener('home_loaded', () => {
                     : await eel.get_settings()();
                 settings.show_community_content = sets.show_community_content !== false;
                 settings.show_official_news = sets.show_official_news !== false;
+                settings.show_player_activity = sets.show_player_activity !== false;
                 hydratingNewsPrefs = true;
                 showShopOffers.value = sets.show_news_shop_offers === true;
                 hydratingNewsPrefs = false;
@@ -910,7 +1089,7 @@ document.addEventListener('home_loaded', () => {
                 if (settings.show_community_content) {
                     if (isChinese.value && mediaTab.value !== 'bilibili') mediaTab.value = 'bilibili';
                     else if (!isChinese.value && mediaTab.value === 'bilibili') mediaTab.value = 'youtube';
-                    
+
                     eel.get_youtube_videos()();
                     eel.get_twitch_streams()();
                     if (isChinese.value) eel.get_bilibili_videos()();
@@ -924,6 +1103,22 @@ document.addEventListener('home_loaded', () => {
                     news.data = [];
                 }
                 eel.get_trovesaurus_events()();
+                for (const bucket of [giveaways, upcomingGiveaways, endedGiveaways]) {
+                    bucket.loading = true;
+                    bucket.error = false;
+                }
+                eel.get_giveaways()();
+                eel.get_upcoming_giveaways()();
+                eel.get_ended_giveaways()();
+                if (settings.show_player_activity) {
+                    activity.loading = true;
+                    activity.error = false;
+                    eel.get_player_activity()();
+                } else {
+                    activity.loading = false;
+                    activity.error = false;
+                    activity.data = null;
+                }
                 
                 try {
                     const [sd, d15d, manad, schedulesd, stampyd, chaosd, gardend, delvestatus] = await Promise.all([
@@ -1486,7 +1681,11 @@ document.addEventListener('home_loaded', () => {
             return {
                 t, settings, isChinese, mediaTab, mediaData, activeMediaPlatformKey, carouselRef,
                 newsCarouselRef, showShopOffers, isNewsCollapsed,
-                serverData, events, mappedEvents, news, mappedNews, merchantCards, chaosChestCard,
+                serverData, events, mappedEvents, news, mappedNews,
+                giveaways, upcomingGiveaways, endedGiveaways,
+                mappedGiveaways, mappedUpcoming, mappedEnded,
+                giveawayModal, giveawayTileSummary, openGiveawayModal,
+                activity, mappedActivity, showActivityTile, showGiveawayTile, showStatRow, merchantCards, chaosChestCard,
                 scrollCarousel, scrollNewsCarousel, toggleNewsCollapsed, openUrl, openBuffSchedule, openMerchantSchedule,
                 rotationModal, calendarModal, calendarData, loadYearlyCalendar, centerCalendarToday,
                 timelineWrapperRef, isDraggingTimeline, startDrag, onDrag, stopDrag, onWheel,
@@ -1524,3 +1723,15 @@ function receive_events_data(response) { if (window._homeAppHandleEvents) window
 
 eel.expose(receive_trove_news, 'receive_trove_news');
 function receive_trove_news(response) { if (window._homeAppHandleNews) window._homeAppHandleNews(response); }
+
+eel.expose(receive_giveaways, 'receive_giveaways');
+function receive_giveaways(response) { if (window._homeAppHandleGiveaways) window._homeAppHandleGiveaways(response); }
+
+eel.expose(receive_upcoming_giveaways, 'receive_upcoming_giveaways');
+function receive_upcoming_giveaways(response) { if (window._homeAppHandleUpcomingGiveaways) window._homeAppHandleUpcomingGiveaways(response); }
+
+eel.expose(receive_ended_giveaways, 'receive_ended_giveaways');
+function receive_ended_giveaways(response) { if (window._homeAppHandleEndedGiveaways) window._homeAppHandleEndedGiveaways(response); }
+
+eel.expose(receive_player_activity, 'receive_player_activity');
+function receive_player_activity(response) { if (window._homeAppHandleActivity) window._homeAppHandleActivity(response); }

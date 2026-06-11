@@ -32,6 +32,7 @@ def _normalize_settings_payload(payload):
 
     allowed_keys = [
         "accent_color", "show_community_content", "show_official_news",
+        "show_player_activity",
         "auto_fix_names", "show_mod_preview_on_info_side", "hide_beta_features",
         "last_game_path", "locale"
     ]

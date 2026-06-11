@@ -2524,3 +2524,444 @@
     }
 }
 
+/* Side-by-side row holding the activity + giveaway tiles. Each child has
+   `flex: 1` so they split the available width evenly; on narrow viewports
+   they stack. */
+.home-stat-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 14px;
+    min-width: 0;
+}
+.home-stat-tile {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Player activity tile — shows three stat segments. Padding/radius/icon
+   are shared with the giveaway tile (.home-stat-tile) so they look paired. */
+.home-activity-tile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.18));
+    cursor: help;
+}
+.home-activity-tile.is-error {
+    border-color: rgba(255, 99, 71, 0.40);
+    background: rgba(255, 99, 71, 0.05);
+}
+.home-activity-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: rgba(var(--accent-rgb), 0.18);
+    color: var(--accent-blue);
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.home-activity-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.home-activity-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+}
+.home-activity-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.home-activity-updated {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    opacity: 0.75;
+    white-space: nowrap;
+}
+.home-activity-stats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+.home-activity-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+}
+.home-activity-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+}
+.home-activity-stat-label {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-top: 2px;
+}
+.home-activity-divider {
+    width: 1px;
+    height: 26px;
+    background: rgba(255, 255, 255, 0.08);
+}
+.home-activity-error {
+    color: #ffb7a8;
+    font-size: 14px;
+}
+
+/* Giveaway tile — same outer shape as the activity tile, plus a click
+   affordance (cursor + chevron) and an "urgent" pulse state. */
+.home-giveaway-tile {
+    appearance: none;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid rgba(var(--accent-rgb), 0.30);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(0,0,0,0.18));
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.home-giveaway-tile:hover,
+.home-giveaway-tile:focus-visible {
+    transform: translateY(-1px);
+    border-color: rgba(var(--accent-rgb), 0.60);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+    outline: none;
+}
+.home-giveaway-tile.is-urgent {
+    border-color: rgba(255, 99, 71, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 99, 71, 0.18) inset, 0 0 14px rgba(255, 99, 71, 0.18);
+    animation: home-urgent-pulse 2.6s ease-in-out infinite;
+}
+.home-giveaway-tile.is-error {
+    border-color: rgba(255, 99, 71, 0.40);
+    background: rgba(255, 99, 71, 0.05);
+}
+.home-giveaway-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: rgba(255, 209, 102, 0.16);
+    color: #ffd166;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+.home-giveaway-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.home-giveaway-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+}
+.home-giveaway-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.home-giveaway-status {
+    font-size: 10.5px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.home-giveaway-line {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.home-giveaway-line-main {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.home-giveaway-line-sub {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.home-giveaway-chevron {
+    color: var(--text-muted);
+    opacity: 0.6;
+    font-size: 12px;
+    flex-shrink: 0;
+    transition: transform 0.15s, opacity 0.15s;
+}
+.home-giveaway-tile:hover .home-giveaway-chevron,
+.home-giveaway-tile:focus-visible .home-giveaway-chevron {
+    opacity: 1;
+    transform: translateX(2px);
+}
+
+/* Giveaway modal — opens when the tile is clicked. Reuses the shared
+   .modal-overlay / .modal-content framework. */
+.giveaway-modal-content { max-width: 560px; }
+.giveaway-modal-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.giveaway-modal-row {
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(0,0,0,0.20));
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.giveaway-modal-row.is-urgent {
+    border-color: rgba(255, 99, 71, 0.50);
+}
+.giveaway-modal-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.giveaway-row-icon {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 209, 102, 0.16);
+    color: #ffd166;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.giveaway-modal-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.giveaway-modal-prize {
+    font-weight: 700;
+    color: #fff;
+    font-size: 15px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+.giveaway-modal-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+.giveaway-modal-desc {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 13px;
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+.giveaway-modal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.giveaway-meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.30);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    color: var(--text-main);
+    font-size: 11px;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+.giveaway-meta-pill i { opacity: 0.75; font-size: 10.5px; }
+.giveaway-meta-ends.is-urgent {
+    background: rgba(255, 99, 71, 0.12);
+    border-color: rgba(255, 99, 71, 0.40);
+    color: #ffb7a8;
+}
+.giveaway-modal-times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding-top: 6px;
+    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+.giveaway-modal-time-label {
+    font-weight: 600;
+    color: var(--text-main);
+    margin-right: 4px;
+}
+
+/* Modal is split into three sections (Open now / Upcoming / Recently ended).
+   Each section gets its own header with an inline count chip + an empty/
+   loading/error placeholder line when its bucket has nothing. */
+.giveaway-modal-section + .giveaway-modal-section {
+    margin-top: 18px;
+}
+.giveaway-modal-section-title {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.giveaway-modal-section-title i {
+    color: var(--accent-blue);
+    font-size: 11px;
+}
+.giveaway-modal-section-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    padding: 1px 7px;
+    margin-left: auto;
+}
+.giveaway-modal-state {
+    color: var(--text-muted);
+    font-size: 12.5px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px dashed rgba(255, 255, 255, 0.10);
+    background: rgba(0, 0, 0, 0.18);
+}
+.giveaway-modal-state i { margin-right: 6px; opacity: 0.75; }
+.giveaway-modal-state.is-error {
+    color: #ffb7a8;
+    border-color: rgba(255, 99, 71, 0.35);
+    background: rgba(255, 99, 71, 0.06);
+    border-style: solid;
+}
+.giveaway-modal-row.is-upcoming {
+    border-color: rgba(94, 198, 255, 0.30);
+    background: linear-gradient(135deg, rgba(94, 198, 255, 0.08), rgba(0,0,0,0.20));
+}
+.giveaway-modal-row.is-upcoming .giveaway-row-icon {
+    background: rgba(94, 198, 255, 0.16);
+    color: var(--accent-blue);
+}
+.giveaway-modal-row.is-ended {
+    border-color: rgba(255, 255, 255, 0.08);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0,0,0,0.20));
+    opacity: 0.92;
+}
+.giveaway-modal-row.is-ended .giveaway-row-icon {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+}
+.giveaway-meta-pill.is-winner {
+    background: rgba(255, 209, 102, 0.14);
+    border-color: rgba(255, 209, 102, 0.40);
+    color: #ffd166;
+}
+
+/* "Enter giveaway" CTA — primary action on each ongoing-row in the modal.
+   Yellow accent so it reads as the headline action of the row. */
+.giveaway-enter-btn {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 4px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 209, 102, 0.55);
+    background: linear-gradient(135deg, rgba(255, 209, 102, 0.22), rgba(255, 184, 60, 0.16));
+    color: #ffd166;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.giveaway-enter-btn:hover,
+.giveaway-enter-btn:focus-visible {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(255, 209, 102, 0.32), rgba(255, 184, 60, 0.24));
+    border-color: rgba(255, 209, 102, 0.85);
+    box-shadow: 0 6px 14px rgba(255, 184, 60, 0.18);
+    outline: none;
+    color: #fff;
+}
+.giveaway-enter-btn i { font-size: 11px; opacity: 0.85; }
+
+/* Tile-embedded variant: smaller padding so the tile keeps its compact
+   height when the button replaces the chevron, and a flex-shrink:0 so a
+   long translation never squashes it. */
+.home-giveaway-enter {
+    align-self: center;
+    margin-top: 0;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+@media (max-width: 720px) {
+    .home-giveaway-enter span { display: none; }
+    .home-giveaway-enter { padding: 6px 9px; }
+}
+
+@media (max-width: 720px) {
+    .home-stat-row {
+        flex-direction: column;
+    }
+    .home-activity-head,
+    .home-giveaway-head {
+        flex-wrap: wrap;
+    }
+    .home-activity-stat-value { font-size: 16px; }
+}
+
+

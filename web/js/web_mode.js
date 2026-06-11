@@ -633,6 +633,21 @@
         get_twitch_streams: makeFeedFn('receive_twitch_streams', `${KIWI_BASE}/feeds/twitch`, (d) => (asJson(d).items || []).map((v) => ({ user_login: v.login, user_name: v.channel, viewer_count: v.viewers, thumbnail_url: v.thumbnail, title: v.title, url: v.url, game_name: v.game, started_at: v.started_at }))),
         get_bilibili_videos: makeFeedFn('receive_bilibili_videos', `${KIWI_BASE}/feeds/bilibili`, (d) => asJson(d).items || []),
         get_trovesaurus_events: makeFeedFn('receive_events_data', `${KIWI_BASE}/feeds/events`, (d) => { const e = (asJson(d).items || []).map((x) => ({ ...x, id: x.event_id, startdate: x.starts_at, enddate: x.ends_at })); e.sort((a, b) => parseInt(a.startdate) - parseInt(b.startdate)); return e; }),
+        // /v1/giveaways/{ongoing,upcoming,ended} all return a bare array of
+        // GiveawayPublicView (not wrapped in {items}).
+        get_giveaways: makeFeedFn('receive_giveaways', `${KIWI_BASE}/giveaways/ongoing`, (d) => { const v = asJson(d); return Array.isArray(v) ? v : (v && v.items) || []; }),
+        get_upcoming_giveaways: makeFeedFn('receive_upcoming_giveaways', `${KIWI_BASE}/giveaways/upcoming`, (d) => { const v = asJson(d); return Array.isArray(v) ? v : (v && v.items) || []; }),
+        get_ended_giveaways: makeFeedFn('receive_ended_giveaways', `${KIWI_BASE}/giveaways/ended?days=7`, (d) => { const v = asJson(d); return Array.isArray(v) ? v : (v && v.items) || []; }),
+        // /v1/activity/current returns one object with 1h / 24h / 7d rollups; we
+        // drop by_board so the eel-receive payload mirrors the desktop trim.
+        get_player_activity: makeFeedFn('receive_player_activity', `${KIWI_BASE}/activity/current`, (d) => {
+            const p = asJson(d) || {};
+            return {
+                estimate: p.estimate, estimate_24h: p.estimate_24h, estimate_7d: p.estimate_7d,
+                duration_hours: p.duration_hours, span_24h_hours: p.span_24h_hours, span_7d_hours: p.span_7d_hours,
+                window_end: p.window_end, computed_at: p.computed_at, methodology: p.methodology
+            };
+        }),
         get_current_server_data: makeEelFn('get_current_server_data', async () => {
             const { daily, weekly } = await getCurrentBuffs();
             // Mirror backend format_timedelta: ">0 days" -> "Xd Yh", else "Xh Ym"

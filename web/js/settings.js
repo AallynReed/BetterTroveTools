@@ -44,6 +44,7 @@ document.addEventListener('settings_loaded', async () => {
                 ui_scale: 1,
                 show_community_content: true,
                 show_official_news: true,
+                show_player_activity: true,
                 auto_fix_names: false,
                 show_mod_preview_on_info_side: true,
                 hide_beta_features: false,
@@ -80,6 +81,7 @@ document.addEventListener('settings_loaded', async () => {
                     settings.ui_scale = Math.min(1, Math.max(0.7, scale)); // smaller-or-default only
                     settings.show_community_content = data.show_community_content !== false;
                     settings.show_official_news = data.show_official_news !== false;
+                    settings.show_player_activity = data.show_player_activity !== false;
                     settings.auto_fix_names = data.auto_fix_names === true;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
