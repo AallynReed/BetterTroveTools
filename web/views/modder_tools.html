@@ -5,28 +5,28 @@
 <div id="modder-tools-vue-app" class="modder-tools-container" v-cloak>
     <div class="tabs-container">
         <div class="tab-buttons">
-            <button class="tab-btn" :class="{ active: activeTab === 'build' }" @click="setActiveTab('build')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'build' }" @click="setActiveTab('build')">
                 <i class="fa-solid fa-hammer"></i> <span>{{ t('modder_tools.build_tmod') }}</span>
             </button>
             <button class="tab-btn" :class="{ active: activeTab === 'extract' }" @click="setActiveTab('extract')">
                 <i class="fa-solid fa-box-open"></i> <span>{{ t('modder_tools.extract_tmod') }}</span>
             </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'edit_tmod' }" @click="setActiveTab('edit_tmod')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'edit_tmod' }" @click="setActiveTab('edit_tmod')">
                 <i class="fa-solid fa-pen-to-square"></i> <span>{{ t('modder_tools.edit_tmod') }}</span> <span class="beta-label">BETA</span>
             </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="setActiveTab('projects')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="setActiveTab('projects')">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('modder_tools.projects') }}</span>
             </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="setActiveTab('qb_editor')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="setActiveTab('qb_editor')">
                 <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('modder_tools.blueprint_editor') }}</span> <span class="beta-label">BETA</span>
             </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="setActiveTab('file_explorer')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="setActiveTab('file_explorer')">
                 <i class="fa-solid fa-folder-tree"></i> <span>{{ t('common.file_explorer') }}</span>
             </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'update_tracker' }" @click="setActiveTab('update_tracker')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'update_tracker' }" @click="setActiveTab('update_tracker')">
                 <i class="fa-solid fa-satellite-dish"></i> <span>{{ t('common.update_tracker') }}</span>
             </button>
-            <button class="tab-btn" :class="{ active: activeTab === 'software' }" @click="setActiveTab('software')">
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'software' }" @click="setActiveTab('software')">
                 <i class="fa-solid fa-computer"></i> <span>{{ t('modder_tools.third_party_software') }}</span>
             </button>
         </div>

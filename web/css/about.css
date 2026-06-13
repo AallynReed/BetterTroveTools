@@ -347,23 +347,77 @@
     gap: 12px;
     margin-top: 10px;
 }
+/* Supporters get the loudest treatment in About — gold gradient pills with
+   a pink heart, centered, soft glow, gentle lift on hover. The intent is
+   "these are the people who keep the lights on, look at them". */
+.about-section-supporters .section-title {
+    justify-content: center;
+    text-align: center;
+}
+.about-section-supporters .section-title i {
+    color: #ffd166;
+    text-shadow: 0 0 14px rgba(255, 209, 102, 0.55);
+}
+.supporter-thanks {
+    text-align: center;
+    margin-top: 6px;
+    color: var(--text-main);
+}
 .supporters-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 10px;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 18px 14px;
+    border-radius: 14px;
+    background: radial-gradient(ellipse at center, rgba(255, 209, 102, 0.10), rgba(255, 184, 60, 0.03) 60%, transparent 80%);
 }
 .supporter-chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 6px 10px;
+    gap: 8px;
+    padding: 10px 18px;
     border-radius: 999px;
-    background: rgba(var(--accent-rgb), 0.14);
-    border: 1px solid rgba(var(--accent-rgb), 0.35);
-    color: #dbeafe;
+    background: linear-gradient(135deg, rgba(255, 209, 102, 0.20), rgba(255, 138, 76, 0.12));
+    border: 1px solid rgba(255, 209, 102, 0.55);
+    color: #fff;
+    font-size: 1em;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.2px;
+    box-shadow: 0 4px 14px rgba(255, 184, 60, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.supporter-chip:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 209, 102, 0.95);
+    box-shadow: 0 10px 24px rgba(255, 184, 60, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.supporter-chip-heart {
+    color: #ff6b9d;
     font-size: 0.9em;
-    line-height: 1;
+    filter: drop-shadow(0 0 6px rgba(255, 107, 157, 0.55));
+    animation: supporter-heart-pulse 2.8s ease-in-out infinite;
+}
+.supporter-chip:hover .supporter-chip-heart {
+    animation-duration: 1s;
+}
+.supporter-chip-name {
+    background: linear-gradient(135deg, #fff 0%, #ffe7b3 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+@keyframes supporter-heart-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .supporter-chip-heart { animation: none; }
 }
 .translation-region {
     display: flex;

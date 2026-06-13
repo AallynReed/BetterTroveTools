@@ -4,13 +4,20 @@
     const hasEelBridge = !!window.eel && typeof window.eel.expose === 'function';
 
     window.BTT_WEB_MODE = forceWebMode || !hasEelBridge;
-    window.BTT_UNAVAILABLE_WEB_VIEWS = window.BTT_WEB_MODE
-        ? ['mod_manager', 'modder_tools', 'codexes', 'allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items']
-        : [];
     // Running inside the packaged native (Android) app. Used to HIDE desktop-only
     // views/tools entirely here (the web build instead badges them with "Desktop App").
     window.BTT_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
         && window.Capacitor.isNativePlatform());
+    // Hosted web build (BTT_WEB_MODE && !BTT_NATIVE) keeps Modder Tools available
+    // — only the Extract TMod tab is exposed there (see web/views/modder_tools.html)
+    // and Extract runs entirely in the browser via TmodUnpacker. Android still
+    // hides the whole view (no DecompressionStream issues, but no file I/O either).
+    window.BTT_UNAVAILABLE_WEB_VIEWS = window.BTT_WEB_MODE
+        ? [
+            'mod_manager', 'codexes', 'allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items',
+            ...(window.BTT_NATIVE ? ['modder_tools'] : []),
+        ]
+        : [];
     // Flag the document so CSS can hide desktop-only affordances (e.g. Ctrl+K
     // shortcut tips) without each rule needing a JS gate.
     if (window.BTT_NATIVE) document.documentElement.classList.add('btt-native');

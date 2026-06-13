@@ -273,15 +273,24 @@ document.addEventListener('about_loaded', async () => {
                 } catch (e) {}
                 contributorsLoaded.value = true;
 
+                // Supporters list: Kiwi /v1/misc/supporters is the sole source
+                // of truth; admin-controlled display order ({supporters: [...]}).
+                // Empty list (or fetch failure) renders the "no supporters listed
+                // yet" state — no bundled copy to go stale.
                 try {
-                    const res = await fetch('/assets/data/supporters.json?t=' + Date.now(), { bttLabel: t('about.fetching_supporters') });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data)) {
-                            supporters.value = data
-                                .map((name) => typeof name === 'string' ? name.trim() : '')
-                                .filter((name) => name.length > 0);
-                        }
+                    const path = 'misc/supporters';
+                    let data;
+                    if (window.BTT_Kiwi && typeof window.BTT_Kiwi.get === 'function') {
+                        data = await window.BTT_Kiwi.get(path);
+                    } else {
+                        const resp = await fetch(`https://api.aallyn.net/v1/${path}`, { bttLabel: t('about.fetching_supporters') });
+                        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                        data = await resp.json();
+                    }
+                    if (data && Array.isArray(data.supporters)) {
+                        supporters.value = data.supporters
+                            .map((name) => typeof name === 'string' ? name.trim() : '')
+                            .filter((name) => name.length > 0);
                     }
                 } catch (e) {}
                 supportersLoaded.value = true;

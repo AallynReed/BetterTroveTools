@@ -95,14 +95,17 @@
                 </div>
             </div>
 
-            <div class="about-section">
+            <div class="about-section about-section-supporters">
                 <div class="section-title"><i class="fa-solid fa-star"></i> <span>{{ t('about.supporters') }}</span></div>
-                <p>{{ t('about.thank_you_to_everyone_supporting_the_pro_5ab5ad') }}</p>
+                <p class="supporter-thanks">{{ t('about.thank_you_to_everyone_supporting_the_pro_5ab5ad') }}</p>
                 <p class="supporter-perks">{{ t('about.supporter_perks') }}</p>
                 <div class="supporters-container">
                     <div v-if="!supportersLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i></div>
                     <template v-else>
-                        <span v-for="name in supporters" :key="name" class="supporter-chip">{{ name }}</span>
+                        <span v-for="name in supporters" :key="name" class="supporter-chip">
+                            <i class="fa-solid fa-heart supporter-chip-heart"></i>
+                            <span class="supporter-chip-name">{{ name }}</span>
+                        </span>
                         <span v-if="supporters.length === 0" class="special-thanks">{{ t('about.no_supporters_listed_yet') }}</span>
                     </template>
                 </div>

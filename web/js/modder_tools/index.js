@@ -13,17 +13,27 @@ document.addEventListener('modder_tools_loaded', () => {
             const PREF_STATE_KEY = 'state_modder_tools';
             let hydratingState = false;
 
-            const activeTab = ref('build');
+            // Web build (BTT_WEB_MODE && !BTT_NATIVE) only exposes the Extract
+            // tab — every other tab needs the desktop eel bridge for filesystem
+            // I/O, mod-tree scanning, or shelling out to external tools.
+            const isWebMode = !!window.BTT_WEB_MODE;
+            const activeTab = ref(isWebMode ? 'extract' : 'build');
             let embeddedFileManagerLoaded = false;
             let embeddedFileManagerLoading = null;
 
             const setActiveTab = (tabName) => {
+                if (isWebMode && tabName !== 'extract') return;
                 activeTab.value = tabName;
             };
 
             const applyStateSnapshot = (saved) => {
                 if (!saved || typeof saved !== 'object') return;
-                if (typeof saved.activeTab === 'string') activeTab.value = saved.activeTab;
+                if (typeof saved.activeTab === 'string') {
+                    // Honor saved tab, but in web mode coerce anything other
+                    // than 'extract' back to 'extract' so a desktop-only saved
+                    // state doesn't render a blank tab body here.
+                    activeTab.value = (isWebMode && saved.activeTab !== 'extract') ? 'extract' : saved.activeTab;
+                }
                 if (typeof saved.selectedGamePath === 'string') store.selectedGamePath = saved.selectedGamePath;
             };
 
@@ -76,14 +86,18 @@ document.addEventListener('modder_tools_loaded', () => {
             const loadSubviewContent = async () => {
                 // Fetch each per-tab sub-view in parallel and inject it into its
                 // host div. Mirrors the gems_and_builds orchestrator pattern.
-                const subviews = [
-                    { url: 'views/modder_tools/build.html', host: 'modder-build-vue-app-inner' },
-                    { url: 'views/modder_tools/extract.html', host: 'modder-extract-vue-app-inner' },
-                    { url: 'views/modder_tools/edit_tmod.html', host: 'modder-edit-tmod-vue-app-inner' },
-                    { url: 'views/modder_tools/projects.html', host: 'modder-projects-vue-app-inner' },
-                    { url: 'views/modder_tools/qb_editor.html', host: 'modder-qb-editor-vue-app-inner' },
-                    { url: 'views/modder_tools/software.html', host: 'modder-software-vue-app-inner' },
-                ];
+                // Web mode only ships Extract — skipping the rest avoids fetching
+                // sub-views whose JS would crash trying to call the eel bridge.
+                const subviews = isWebMode
+                    ? [{ url: 'views/modder_tools/extract.html', host: 'modder-extract-vue-app-inner' }]
+                    : [
+                        { url: 'views/modder_tools/build.html', host: 'modder-build-vue-app-inner' },
+                        { url: 'views/modder_tools/extract.html', host: 'modder-extract-vue-app-inner' },
+                        { url: 'views/modder_tools/edit_tmod.html', host: 'modder-edit-tmod-vue-app-inner' },
+                        { url: 'views/modder_tools/projects.html', host: 'modder-projects-vue-app-inner' },
+                        { url: 'views/modder_tools/qb_editor.html', host: 'modder-qb-editor-vue-app-inner' },
+                        { url: 'views/modder_tools/software.html', host: 'modder-software-vue-app-inner' },
+                    ];
                 const fetched = await Promise.all(subviews.map(async ({ url, host }) => {
                     try {
                         // no-store: these sub-view files are new (added by the modder
@@ -193,7 +207,10 @@ document.addEventListener('modder_tools_loaded', () => {
                 // tabs render blank. The tabs read store.selectedGamePath reactively,
                 // so they update once the background scan resolves.
                 await loadSubviewContent();
-                ['build', 'extract', 'edit_tmod', 'projects', 'qb_editor', 'software'].forEach((tab) => {
+                const tabsToMount = isWebMode
+                    ? ['extract']
+                    : ['build', 'extract', 'edit_tmod', 'projects', 'qb_editor', 'software'];
+                tabsToMount.forEach((tab) => {
                     document.dispatchEvent(new CustomEvent(`modder_${tab}_loaded`));
                 });
                 await handleEmbeddedTabSelection(activeTab.value);
@@ -211,7 +228,7 @@ document.addEventListener('modder_tools_loaded', () => {
             });
 
             return {
-                t, activeTab, setActiveTab
+                t, activeTab, setActiveTab, isWebMode
             };
         }
     });
