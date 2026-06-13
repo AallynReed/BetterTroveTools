@@ -35,6 +35,33 @@ const TmodUnpacker = (() => {
         return new Uint8Array(await stream.arrayBuffer());
     };
 
+    // Trove sometimes writes the .tmod payload as a Python zlib stream with
+    // "stored" (uncompressed) blocks that the browser's DecompressionStream
+    // rejects. Mirror models/trove/mod.py:TMod.manual_decompression — strip
+    // the 7-byte prefix and 5-byte suffix, then concatenate 32KB chunks
+    // separated by 5-byte block headers.
+    const manualDecompress = (u8) => {
+        if (u8.length < 12) throw new Error('payload too short for manual decompression');
+        const inner = u8.subarray(7, u8.length - 5);
+        const CHUNK = 32768;
+        const FRAME = 5;
+        const fullChunks = Math.floor(inner.length / (CHUNK + FRAME));
+        const out = new Uint8Array(inner.length);
+        let inPos = 0;
+        let outPos = 0;
+        for (let i = 0; i < fullChunks; i++) {
+            out.set(inner.subarray(inPos, inPos + CHUNK), outPos);
+            outPos += CHUNK;
+            inPos += CHUNK + FRAME;
+        }
+        if (inPos < inner.length) {
+            const tail = inner.subarray(inPos);
+            out.set(tail, outPos);
+            outPos += tail.length;
+        }
+        return out.subarray(0, outPos);
+    };
+
     const parseTmod = async (arrayBuffer) => {
         if (!arrayBuffer || arrayBuffer.byteLength < 12) throw new Error('not a .tmod file (too small)');
         const dv = new DataView(arrayBuffer);
@@ -67,15 +94,27 @@ const TmodUnpacker = (() => {
             properties.push({ name, value });
         }
 
-        // Payload starts at headerSize bytes from the start; try zlib-wrapped
-        // first (the Python writer's default), fall back to raw deflate.
+        // Payload starts at headerSize bytes from the start. Try in order:
+        // zlib-wrapped (the Python writer's default), then raw deflate, then
+        // the Trove-specific stored-blocks fallback that mirrors the Python
+        // manual_decompression path. Any single .tmod might only parse with
+        // one of these — the third path catches files whose payload uses
+        // uncompressed-block framing that the browser's DecompressionStream
+        // rejects (seen on Trove-shipped .tmod files in the wild).
         const payload = u8.subarray(headerSize);
         let body;
+        const errs = [];
         try { body = await decompress(payload, 'deflate'); }
-        catch (e) {
+        catch (e) { errs.push(`deflate: ${e?.message || e}`); }
+        if (!body) {
             try { body = await decompress(payload, 'deflate-raw'); }
-            catch (e2) { throw new Error('failed to decompress .tmod payload'); }
+            catch (e) { errs.push(`deflate-raw: ${e?.message || e}`); }
         }
+        if (!body) {
+            try { body = manualDecompress(payload); }
+            catch (e) { errs.push(`manual: ${e?.message || e}`); }
+        }
+        if (!body) throw new Error('failed to decompress .tmod payload (' + errs.join('; ') + ')');
 
         const files = [];
         while (pos < headerSize) {
