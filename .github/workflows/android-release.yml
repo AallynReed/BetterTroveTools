@@ -1,8 +1,11 @@
-name: Release Android APK
+name: Release Android APK & AAB
 
-# Builds the Android APK when a GitHub Release is published and attaches it to
-# that release, so every release ships a downloadable, reproducible APK built on
-# GitHub's infrastructure. Can also be run manually (uploads an artifact only).
+# Builds both the Android APK (sideload / GitHub Release asset) and the Android
+# App Bundle (Play Store upload format) when a GitHub Release is published. APK
+# is attached to the release for end users; AAB stays as a workflow artifact for
+# the maintainer to grab and upload to Play Console. Both come from the same
+# Gradle invocation and the same keystore decode, so they share a signing
+# identity and CI minutes don't double.
 
 on:
   release:
@@ -14,7 +17,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Build & attach release APK
+    name: Build & attach release APK + AAB
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -82,10 +85,14 @@ jobs:
           fi
           echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_FILE" >> "$GITHUB_ENV"
 
-      # Release APK signed with the stable BTT keystore (env vars below feed the
-      # signingConfigs.release block in android/app/build.gradle). Always built
-      # against the same signing identity, so users get clean in-place updates.
-      - name: Build release APK
+      # Release APK + AAB signed with the stable BTT keystore (env vars below
+      # feed the signingConfigs.release block in android/app/build.gradle).
+      # Both targets build in a single Gradle invocation so the keystore is
+      # loaded once and CI minutes don't double. Same signing identity for
+      # both, so Play-distributed (re-signed by Google if enrolled with their
+      # key, or signed by us if uploaded as the app signing key) and GitHub-
+      # distributed installs land on the same package.
+      - name: Build release APK + AAB
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -93,23 +100,36 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
 
-      - name: Name the APK with the app version
+      - name: Name the APK + AAB with the app version
         id: name
         run: |
           VER=$(node -p "require('./metadata.json').APP_VERSION")
           TAG="${{ github.event.release.tag_name }}"
           SUFFIX="${TAG:-$VER}"
-          OUT="BetterTroveTools-${SUFFIX}.apk"
-          cp android/app/build/outputs/apk/release/app-release.apk "$OUT"
-          echo "apk=$OUT" >> "$GITHUB_OUTPUT"
+          APK_OUT="BetterTroveTools-${SUFFIX}.apk"
+          AAB_OUT="BetterTroveTools-${SUFFIX}.aab"
+          cp android/app/build/outputs/apk/release/app-release.apk "$APK_OUT"
+          cp android/app/build/outputs/bundle/release/app-release.aab "$AAB_OUT"
+          echo "apk=$APK_OUT" >> "$GITHUB_OUTPUT"
+          echo "aab=$AAB_OUT" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: BetterTroveTools-release-apk
           path: ${{ steps.name.outputs.apk }}
+          if-no-files-found: error
+
+      # AAB is for Play Store upload only — never attach to the public GitHub
+      # release, since end users can't install .aab files directly. The
+      # maintainer downloads it from this workflow run and uploads it to Play.
+      - name: Upload AAB artifact (for Play Store upload)
+        uses: actions/upload-artifact@v4
+        with:
+          name: BetterTroveTools-release-aab
+          path: ${{ steps.name.outputs.aab }}
           if-no-files-found: error
 
       - name: Attach APK to the release
