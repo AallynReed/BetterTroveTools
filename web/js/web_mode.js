@@ -6,7 +6,10 @@
     window.BTT_WEB_MODE = forceWebMode || !hasEelBridge;
     // Running inside the packaged native (Android) app. Used to HIDE desktop-only
     // views/tools entirely here (the web build instead badges them with "Desktop App").
-    window.BTT_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
+    // ?android=1 also forces this on for taking Play Store screenshots from a
+    // desktop browser without a real Capacitor runtime.
+    const forceAndroid = params.get('android') === '1';
+    window.BTT_NATIVE = forceAndroid || !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
         && window.Capacitor.isNativePlatform());
     // Hosted web build (BTT_WEB_MODE && !BTT_NATIVE) keeps Modder Tools available
     // — only the Extract TMod tab is exposed there (see web/views/modder_tools.html)
@@ -19,7 +22,10 @@
         ]
         : [];
     // Flag the document so CSS can hide desktop-only affordances (e.g. Ctrl+K
-    // shortcut tips) without each rule needing a JS gate.
+    // shortcut tips) without each rule needing a JS gate. `btt-web` covers
+    // hosted web AND Android (both run the web build); `btt-native` is the
+    // narrower Android-only subset for Capacitor-specific tweaks.
+    if (window.BTT_WEB_MODE) document.documentElement.classList.add('btt-web');
     if (window.BTT_NATIVE) document.documentElement.classList.add('btt-native');
 
     if (!window.BTT_WEB_MODE || (hasEelBridge && !forceWebMode)) return;

@@ -4,7 +4,12 @@ document.addEventListener('mod_manager_loaded', async () => {
         return;
     }
 
-    let trovesaurusInitialized = false;
+    // Lazy-loaded sub-tabs: each loads its script once on first activation, then
+    // fires its `<section>_loaded` event so the (just-attached) listener mounts.
+    const lazySections = {
+        trovesaurus: { script: 'js/mod_manager/trovesaurus.js', event: 'trovesaurus_loaded', initialized: false },
+        mods_hub: { script: 'js/mod_manager/mods_hub.js', event: 'mods_hub_loaded', initialized: false }
+    };
     let activeSection = null;
     const setModManagerSection = (section) => {
         const previousSection = activeSection;
@@ -14,12 +19,13 @@ document.addEventListener('mod_manager_loaded', async () => {
         buttons.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-mm-tab') === section));
         panels.forEach(panel => panel.classList.toggle('active', panel.getAttribute('data-mm-panel') === section));
 
-        if (section === 'trovesaurus' && !trovesaurusInitialized) {
-            trovesaurusInitialized = true;
-            const fire = () => document.dispatchEvent(new CustomEvent('trovesaurus_loaded'));
+        const lazy = lazySections[section];
+        if (lazy && !lazy.initialized) {
+            lazy.initialized = true;
+            const fire = () => document.dispatchEvent(new CustomEvent(lazy.event));
             if (window.loadScript) {
-                window.loadScript('js/mod_manager/trovesaurus.js').then(fire).catch((e) => {
-                    console.error('Failed to lazy-load trovesaurus.js:', e);
+                window.loadScript(lazy.script).then(fire).catch((e) => {
+                    console.error(`Failed to lazy-load ${lazy.script}:`, e);
                     fire();
                 });
             } else {
@@ -185,6 +191,29 @@ document.addEventListener('mod_manager_loaded', async () => {
                 });
             };
 
+            // Mods Hub is authoritative: a mod resolved here uses hub data (variant
+            // branch + variant-scoped update flag) and is excluded from the
+            // Trovesaurus enrichment below.
+            const applyHubStates = async (token) => {
+                if (!selectedInstall.value) return;
+                const response = await window.callBackend(eel.get_mods_hub_install_states(selectedInstall.value)(), 'Failed to load Mods Hub state');
+                if (!loadGuard.isCurrent(token)) return;
+                if (!response.success) return;
+                const states = response.data.states || response.raw?.states || {};
+                mods.value.forEach(mod => {
+                    const s = states[mod.path];
+                    if (!s) return;
+                    mod.fromHub = true;
+                    mod.hubRef = s.ref;                 // "<handle>/<slug>" — the API identifier
+                    mod.hubSlug = s.slug;
+                    mod.hubHandle = s.handle || null;
+                    mod.hubBranch = s.branch || null;
+                    mod.hubPageUrl = s.page_url || null;
+                    mod.hasUpdate = !!s.has_update;     // variant-scoped: only same-branch updates flag
+                    mod.tsUrl = s.page_url || mod.tsUrl; // title links to the hub page
+                });
+            };
+
             const applyModUrls = async (token) => {
                 if (!selectedInstall.value) return;
                 const response = await window.callBackend(eel.get_mod_urls(selectedInstall.value)(), 'Failed to load mod URLs');
@@ -192,6 +221,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (!response.success) return;
                 const urls = response.data.urls || response.raw?.urls || {};
                 mods.value.forEach(mod => {
+                    if (mod.fromHub) return;            // hub mods skip the Trovesaurus check
                     if (urls[mod.path]) mod.tsUrl = urls[mod.path];
                 });
             };
@@ -206,9 +236,23 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
                 const updates = response.data.updates || response.raw?.updates || {};
                 mods.value.forEach(mod => {
+                    if (mod.fromHub) return;            // hub update state already set from the hub
                     mod.hasUpdate = !!updates[mod.path];
                 });
                 if (notify) window.showToast(t('mod_manager.update_state_refreshed'));
+            };
+
+            // Resolve hub mods first, then run the Trovesaurus check only for the
+            // remaining (non-hub) mods. If everything is from the hub we skip
+            // Trovesaurus entirely.
+            const applyEnrichment = async (token, notify = false) => {
+                await applyHubStates(token);
+                if (!loadGuard.isCurrent(token)) return;
+                if (mods.value.some(m => !m.fromHub)) {
+                    await Promise.all([applyModUrls(token), applyUpdateFlags(token, notify)]);
+                } else if (notify) {
+                    window.showToast(t('mod_manager.update_state_refreshed'));
+                }
             };
 
             const loadMods = async () => {
@@ -221,13 +265,17 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const settings = settingsResp.data || settingsResp.raw || {};
                 showPreviewOnInfoSide.value = settings.show_mod_preview_on_info_side !== false;
 
-                let stText = settings.auto_fix_names
+                // Auto-fix names defaults ON: treat an unset value as enabled so a
+                // user who never visited Settings still gets name-fixing (and the
+                // status text matches what actually runs below).
+                const autoFixNames = settings.auto_fix_names !== false;
+                let stText = autoFixNames
                     ? t('mod_manager.scanning_mods_and_auto_fixing_names')
                     : t('mod_manager.scanning_mods_and_verifying_configs');
                 statusText.value = stText;
 
                 const response = await window.callBackend(
-                    eel.get_installed_mods(selectedInstall.value, settings.auto_fix_names === true, true)(),
+                    eel.get_installed_mods(selectedInstall.value, autoFixNames, true)(),
                     'Failed to load installed mods'
                 );
 
@@ -247,17 +295,23 @@ document.addEventListener('mod_manager_loaded', async () => {
                             ...m,
                             hasUpdate: false,
                             tsUrl: null,
+                            fromHub: false,
+                            hubRef: null,
+                            hubSlug: null,
+                            hubHandle: null,
+                            hubBranch: null,
+                            hubPageUrl: null,
                             isToggling: false,
                             isUpdating: false,
                             isDeleting: false
                         }));
-                        // Render the list immediately from local data. The Trovesaurus
-                        // enrichment (mod URLs + update badges) needs the network, so run
-                        // it in the BACKGROUND and never block the list on it -- offline
-                        // the mods still show right away, and tsUrl/hasUpdate fill in
-                        // reactively if/when a request succeeds.
+                        // Render the list immediately from local data. Enrichment
+                        // (Mods Hub state first, then Trovesaurus for the rest) needs
+                        // the network, so run it in the BACKGROUND and never block the
+                        // list on it -- offline the mods still show right away, and
+                        // tsUrl/hasUpdate fill in reactively if/when requests succeed.
                         if (loadGuard.isCurrent(token)) isLoading.value = false;
-                        Promise.all([applyModUrls(token), applyUpdateFlags(token, false)]).catch(() => {});
+                        applyEnrichment(token).catch(() => {});
                     } catch (err) {
                         if (!loadGuard.isCurrent(token)) return;
                         statusText.value = t('mod_manager.error_reading_mod_data_from_cache');
@@ -288,11 +342,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                 await window.JobQueue.run({
                     label: t('mod_manager.refresh_mod_updates'),
                     task: async () => {
-                        await applyUpdateFlags(token, true);
+                        await applyEnrichment(token, true);
                     },
                     retryTask: async () => {
                         const retryToken = loadGuard.next();
-                        await applyUpdateFlags(retryToken, true);
+                        await applyEnrichment(retryToken, true);
                     }
                 });
                 isRefreshingUpdates.value = false;
@@ -328,9 +382,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (mod.isUpdating) return;
                 mod.isUpdating = true;
                 try {
+                    // Hub mods update at the VARIANT level: reinstall the latest
+                    // release of the branch the user is on (never silently jump to
+                    // another variant). Others use the Trovesaurus updater.
                     const response = await runManagedJob({
                         label: t("common.update_mod_name").replace('{name}', mod.name),
-                        task: async () => window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod')
+                        task: async () => mod.fromHub
+                            ? window.callBackend(eel.install_mods_hub_mod_sync(selectedInstall.value, mod.hubRef, mod.hubBranch || null)(), 'Failed to update mod')
+                            : window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod')
                     });
                     if (!response.success) {
                         window.showToast(t('mod_manager.failed_to_update_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
@@ -342,6 +401,59 @@ document.addEventListener('mod_manager_loaded', async () => {
                 } finally {
                     mod.isUpdating = false;
                 }
+            };
+
+            // --- Mods Hub variant switching (for installed hub mods) ------------
+            const variantPicker = reactive({ show: false, mod: null, name: '', variants: [], installedBranch: null });
+
+            const formatBytes = (bytes) => {
+                const n = Number(bytes);
+                if (!Number.isFinite(n) || n <= 0) return '';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let i = 0, v = n;
+                while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+                return `${v.toFixed(v >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+            };
+
+            const openVariantPicker = async (mod) => {
+                if (!mod.fromHub || !mod.hubRef) return;
+                const resp = await window.callBackend(eel.get_mods_hub_variants(mod.hubRef)(), 'Failed to load variants');
+                if (!resp.success) {
+                    window.showToast(t('mods_hub.error_error').replace('{error}', resp.error || t('common.unknown_error_occurred')), true);
+                    return;
+                }
+                const variants = resp.data?.variants || resp.raw?.variants || [];
+                if (!variants.length) {
+                    window.showToast(t('mods_hub.no_releases'), true);
+                    return;
+                }
+                variantPicker.mod = mod;
+                variantPicker.name = mod.name;
+                variantPicker.variants = variants;
+                variantPicker.installedBranch = mod.hubBranch || null;
+                variantPicker.show = true;
+            };
+
+            const installVariant = async (branch) => {
+                const mod = variantPicker.mod;
+                variantPicker.show = false;
+                if (!mod) return;
+                const response = await runManagedJob({
+                    label: t("common.update_mod_name").replace('{name}', mod.name),
+                    task: async () => window.callBackend(eel.install_mods_hub_mod_sync(selectedInstall.value, mod.hubRef, branch)(), 'Failed to install variant')
+                });
+                if (!response.success) {
+                    window.showToast(t('mods_hub.error_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                    return;
+                }
+                window.showToast(t('common.installed'));
+                await loadMods();
+            };
+
+            const closeVariantPicker = () => {
+                variantPicker.show = false;
+                variantPicker.mod = null;
+                variantPicker.variants = [];
             };
 
             const toggleMod = async (mod) => {
@@ -464,6 +576,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             const openUrl = (url) => eel.open_url_in_browser(url)();
             const modNameUrl = (mod) => mod?.tsUrl || null;
             const authorUrl = (mod) => {
+                // Hub mods link to the author's hub page; Trovesaurus mods to the TS profile.
+                if (mod?.fromHub && mod.hubHandle) {
+                    return `https://trove.aallyn.net/mods/${encodeURIComponent(mod.hubHandle)}`;
+                }
                 const authorId = String(mod?.author_id || '').trim();
                 if (!authorId) return null;
                 return `https://trovesaurus.com/user=${encodeURIComponent(authorId)}`;
@@ -490,6 +606,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                         label: 'Install Update',
                         icon: 'fa-cloud-arrow-down',
                         action: () => updateMod(mod)
+                    });
+                }
+
+                if (mod.fromHub) {
+                    menuItems.push({
+                        label: 'Switch Variant…',
+                        icon: 'fa-code-branch',
+                        action: () => openVariantPicker(mod)
                     });
                 }
 
@@ -583,7 +707,8 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const onSectionChanged = async (e) => {
                 const detail = e && e.detail ? e.detail : {};
-                if (detail.previousSection === 'trovesaurus' && detail.currentSection === 'mod_manager' && selectedInstall.value) {
+                const fromCommunityTab = detail.previousSection === 'trovesaurus' || detail.previousSection === 'mods_hub';
+                if (fromCommunityTab && detail.currentSection === 'mod_manager' && selectedInstall.value) {
                     await loadMods();
                 }
             };
@@ -655,6 +780,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                 updateMod,
                 deleteMod,
                 fixNames,
+                variantPicker,
+                openVariantPicker,
+                installVariant,
+                closeVariantPicker,
+                formatBytes,
                 hasActiveConflict,
                 getConflictTitle,
                 openUrl,

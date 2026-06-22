@@ -12,6 +12,7 @@ bin/
 build/
 dist/
 strings/
+tools/
 handoff/
 Better_Trove_Tools.egg-info
 

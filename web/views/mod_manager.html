@@ -1,6 +1,7 @@
 <head>
     <link rel="stylesheet" href="css/mod_manager/mod_manager.css">
     <link rel="stylesheet" href="css/mod_manager/trovesaurus.css">
+    <link rel="stylesheet" href="css/mod_manager/mods_hub.css">
 </head>
 
 <div id="mod-manager-unified-root" class="file-manager-container mod-manager-root">
@@ -12,6 +13,10 @@
             <button class="mm-tab-btn" data-mm-tab="trovesaurus">
                 <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
                 <span data-i18n="mod_manager.trovesaurus">Trovesaurus</span>
+            </button>
+            <button class="mm-tab-btn" data-mm-tab="mods_hub">
+                <img src="favicon.png" alt="Mods Hub" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
+                <span data-i18n="mod_manager.mods_hub">Mods Hub</span>
             </button>
         </div>
     </div>
@@ -122,14 +127,14 @@
                                 <span v-if="mod.has_conflicts" class="mod-conflict-icon" :class="hasActiveConflict(mod) ? 'active' : 'inactive'" :title="getConflictTitle(mod)" aria-hidden="true">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                 </span>
-                                <a v-if="mod.tsUrl" class="mod-title mod-link ts-mod-title" :href="modNameUrl(mod) || '#'" :title="t('mod_manager.title_click_to_view_on_trovesaurus').replace('{title}', mod.name)" @click.prevent="openUrl(mod.tsUrl)" v-html="highlightSearch(mod.name)"></a>
+                                <a v-if="mod.tsUrl" class="mod-title mod-link ts-mod-title" :href="modNameUrl(mod) || '#'" :title="mod.fromHub ? t('mods_hub.open_in_hub') : t('mod_manager.title_click_to_view_on_trovesaurus').replace('{title}', mod.name)" @click.prevent="openUrl(mod.tsUrl)" v-html="highlightSearch(mod.name)"></a>
                                 <span v-else class="mod-title" v-html="highlightSearch(mod.name)"></span>
                                 <button class="mod-card-delete-hover" :title="t('common.delete_mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
                                     <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
                                 </button>
                             </div>
 
-                            <a v-if="mod.author_id" class="mod-meta mod-author-link" :href="authorUrl(mod) || '#'" :title="t('mod_manager.view_author_profile')" @click.prevent="openAuthor(mod)" v-html="highlightSearch(mod.author)"></a>
+                            <a v-if="authorUrl(mod)" class="mod-meta mod-author-link" :href="authorUrl(mod) || '#'" :title="t('mod_manager.view_author_profile')" @click.prevent="openAuthor(mod)" v-html="highlightSearch(mod.author)"></a>
                             <span v-else class="mod-meta" v-html="highlightSearch(mod.author)"></span>
 
                             <button v-if="showPreviewOnInfoSide" class="mod-front-preview" @click="mod.image && openImageModal(mod)" :disabled="!mod.image" :title="mod.image ? t('mod_manager.open_preview') : t('mod_manager.no_preview_available')">
@@ -139,6 +144,7 @@
 
                             <div class="mod-front-tags">
                                 <span v-if="mod.hasUpdate" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('common.update') }}</span>
+                                <span v-if="mod.fromHub" class="mod-flag mod-flag-hub" :title="t('mods_hub.switch_variant')" @click.stop="openVariantPicker(mod)"><i class="fa-solid fa-code-branch"></i> {{ mod.hubBranch || t('mod_manager.mods_hub') }}</span>
                             </div>
 
                             <div class="mod-inline-actions">
@@ -164,6 +170,34 @@
                 <span class="close-modal" @click="closeImageModal" :title="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></span>
                 <img class="modal-content" :src="modal.src" v-if="modal.src" alt="Expanded Mod Preview">
                 <div id="modal-caption">{{ modal.caption }}</div>
+            </div>
+
+            <div class="mh-variant-modal" :class="{ active: variantPicker.show }" @click.self="closeVariantPicker">
+                <div class="mh-variant-dialog" v-if="variantPicker.show">
+                    <div class="mh-variant-head">
+                        <div>
+                            <h3 class="mh-variant-title">{{ t('mods_hub.choose_variant') }}</h3>
+                            <p class="mh-variant-mod-name">{{ variantPicker.name }}</p>
+                        </div>
+                        <button class="mh-variant-close" @click="closeVariantPicker" :title="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <p class="mh-variant-hint">{{ t('mods_hub.choose_variant_hint') }}</p>
+                    <div class="mh-variant-list">
+                        <div v-for="v in variantPicker.variants" :key="v.branch" class="mh-variant-row" :class="{ current: v.branch === variantPicker.installedBranch }">
+                            <div class="mh-variant-info">
+                                <div class="mh-variant-name-line">
+                                    <span class="mh-variant-name"><i class="fa-solid fa-code-branch"></i> {{ v.branch }}</span>
+                                    <span v-if="v.branch === variantPicker.installedBranch" class="mh-variant-installed-pill">{{ t('common.installed') }}</span>
+                                </div>
+                                <span class="mh-variant-meta">{{ v.title }}<template v-if="v.tag"> · {{ v.tag }}</template><template v-if="formatBytes(v.size)"> · {{ formatBytes(v.size) }}</template> · .{{ v.format || 'tmod' }}</span>
+                            </div>
+                            <button class="ts-install-btn mh-variant-install" :class="{ installed: v.branch === variantPicker.installedBranch }" @click="installVariant(v.branch)">
+                                <i class="fa-solid" :class="v.branch === variantPicker.installedBranch ? 'fa-rotate' : 'fa-download'"></i>
+                                {{ v.branch === variantPicker.installedBranch ? t('common.update') : t('common.install') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -271,6 +305,148 @@
                 <button v-if="modal.modId" id="modal-view-ts-btn" @click="openUrl(`https://trovesaurus.com/mod=${modal.modId}`)">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('common.view_on_trovesaurus') }}</span>
                 </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="mm-tab-content" data-mm-panel="mods_hub">
+        <div id="mods-hub-vue-app" class="trovesaurus-container mods-hub-container" v-cloak>
+            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <p style="color: var(--text-muted); margin-top: 5px;">{{ t('mods_hub.discover_copy') }}</p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
+                    <div style="width: 250px;">
+                        <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
+                    </div>
+                    <button class="primary-btn" @click="openSelectedGameFolder" :disabled="!selectedGame" :title="t('common.open_selected_game_folder')">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </button>
+                    <button class="primary-btn" @click="refreshMods" :disabled="isLoading || isRefreshing" :title="t('common.refresh_install_state')">
+                        <template v-if="isRefreshing"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                        <template v-else><i class="fa-solid fa-arrows-rotate"></i></template>
+                    </button>
+                    <button class="primary-btn" @click="clearCache" :disabled="isClearingCache" :title="t('mods_hub.clear_cache')">
+                        <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i></template>
+                        <template v-else><i class="fa-solid fa-broom"></i></template>
+                    </button>
+                </div>
+            </div>
+
+            <div class="search-filter-bar" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+                <div class="search-wrapper" style="flex: 1; min-width: 250px;">
+                    <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="mh-search-input" v-model="searchQuery" @keyup.enter="fetchMods(1)" :placeholder="t('mods_hub.search_placeholder')">
+                </div>
+
+                <div style="width: 180px;">
+                    <custom-vue-select v-model="selectedTag" :options="tagOptions"></custom-vue-select>
+                </div>
+
+                <div style="width: 200px;">
+                    <custom-vue-select v-model="selectedSort" :options="sortOptions"></custom-vue-select>
+                </div>
+
+                <button id="btn-mh-search" class="primary-btn" style="background: var(--accent-blue);" @click="fetchMods(1)" :disabled="isLoading">
+                    <i class="fa-solid fa-magnifying-glass"></i> <span>{{ t('common.search') }}</span>
+                </button>
+            </div>
+
+            <div id="mh-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+                <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mods_hub.browsing') }}</div>
+                <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+                <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('mods_hub.no_mods') }}</div>
+                <template v-else>
+                    <div v-for="mod in mods" :key="mod.ref" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
+                        <div class="ts-card-content">
+                            <div class="ts-front-top">
+                                <a class="mod-title ts-mod-title" href="#" :title="t('mods_hub.open_in_hub')" @click.prevent="openUrl(mod.page_url)">{{ mod.name }}</a>
+                                <button v-if="mod.is_installed" class="ts-card-delete-hover" :title="t('common.delete_installed_mod')" @click.stop.prevent="deleteInstalledMod(mod)" :disabled="mod.is_deleting">
+                                    <i class="fa-solid" :class="mod.is_deleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
+                                </button>
+                            </div>
+
+                            <span class="mod-meta">
+                                <a class="ts-mod-author" href="#" :title="t('mods_hub.view_author').replace('{author}', mod.author)" @click.prevent="openUrl(authorUrl(mod))">{{ mod.author }}</a>
+                            </span>
+
+                            <button class="ts-front-preview" @click="openImageModal(mod)" :title="t('common.click_to_enlarge_image')">
+                                <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                            </button>
+
+                            <div v-if="mod.tags && mod.tags.length" class="mh-mod-tags">
+                                <span v-for="tag in mod.tags.slice(0, 3)" :key="tag" class="mh-mod-tag">{{ tag }}</span>
+                            </div>
+
+                            <div class="ts-mod-stats">
+                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(mod.downloads) }}</span>
+                                <span class="ts-stat-item" :title="t('mods_hub.stars')"><i class="fa-solid fa-star" style="color: #ffc107;"></i> {{ formatCount(mod.stars) }}</span>
+                            </div>
+
+                            <div class="ts-inline-actions">
+                                <button class="ts-install-btn" :class="{ update: mod.needs_update, installed: mod.is_installed && !mod.needs_update }" :disabled="mod.is_installing || (mod.is_installed && !mod.needs_update)" @click.stop.prevent="installMod(mod)">
+                                    <template v-if="mod.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.installing') }}</template>
+                                    <template v-else-if="mod.needs_update"><i class="fa-solid fa-rotate"></i> {{ t('common.update') }}</template>
+                                    <template v-else-if="mod.is_installed"><i class="fa-solid fa-check"></i> {{ t('common.installed') }}</template>
+                                    <template v-else><i class="fa-solid fa-download"></i> {{ t('common.install') }}</template>
+                                </button>
+                                <button v-if="mod.is_installed" class="mh-switch-variant-btn" :disabled="mod.is_installing" :title="t('mods_hub.switch_variant')" @click.stop.prevent="chooseVariant(mod, { force: true })">
+                                    <i class="fa-solid fa-code-branch"></i>
+                                    <span>{{ mod.installed_branch || t('mods_hub.switch_variant') }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+                <button class="primary-btn" :disabled="currentPage <= 1 || isLoading" @click="fetchMods(currentPage - 1)">
+                    <i class="fa-solid fa-chevron-left"></i> <span>{{ t('common.previous') }}</span>
+                </button>
+                <span style="color: var(--text-main); font-weight: bold;"><span>{{ t('common.page') }}</span> <span>{{ currentPage }}</span> <span>{{ t('common.of') }}</span> <span>{{ maxPages }}</span></span>
+                <button class="primary-btn" :disabled="currentPage >= maxPages || isLoading" @click="fetchMods(currentPage + 1)">
+                    <span>{{ t('common.next') }}</span> <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
+                <span class="close-modal" @click="closeImageModal">&times;</span>
+                <img class="modal-content" :src="modal.src" v-if="modal.src">
+                <div id="modal-caption">{{ modal.caption }}</div>
+                <button v-if="modal.pageUrl" id="modal-view-mh-btn" @click="openUrl(modal.pageUrl)">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('mods_hub.view_on_hub') }}</span>
+                </button>
+            </div>
+
+            <div class="mh-variant-modal" :class="{ active: variantPicker.show }" @click.self="closeVariantPicker">
+                <div class="mh-variant-dialog" v-if="variantPicker.show">
+                    <div class="mh-variant-head">
+                        <div>
+                            <h3 class="mh-variant-title">{{ t('mods_hub.choose_variant') }}</h3>
+                            <p class="mh-variant-mod-name">{{ variantPicker.name }}</p>
+                        </div>
+                        <button class="mh-variant-close" @click="closeVariantPicker" :title="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <p class="mh-variant-hint">{{ t('mods_hub.choose_variant_hint') }}</p>
+                    <div class="mh-variant-list">
+                        <div v-for="v in variantPicker.variants" :key="v.branch" class="mh-variant-row" :class="{ current: v.branch === variantPicker.installedBranch }">
+                            <div class="mh-variant-info">
+                                <div class="mh-variant-name-line">
+                                    <span class="mh-variant-name"><i class="fa-solid fa-code-branch"></i> {{ v.branch }}</span>
+                                    <span v-if="v.branch === variantPicker.installedBranch" class="mh-variant-installed-pill">{{ t('common.installed') }}</span>
+                                </div>
+                                <span class="mh-variant-meta">{{ v.title }}<template v-if="v.tag"> · {{ v.tag }}</template><template v-if="formatBytes(v.size)"> · {{ formatBytes(v.size) }}</template> · .{{ v.format || 'tmod' }}</span>
+                            </div>
+                            <button class="ts-install-btn mh-variant-install" :class="{ installed: v.branch === variantPicker.installedBranch }" @click="installVariant(v.branch)">
+                                <i class="fa-solid" :class="v.branch === variantPicker.installedBranch ? 'fa-rotate' : 'fa-download'"></i>
+                                {{ v.branch === variantPicker.installedBranch ? t('common.update') : t('common.install') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>

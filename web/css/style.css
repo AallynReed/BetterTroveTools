@@ -1084,6 +1084,11 @@ body.app-update-active #network-tracker-vue-app {
     color: var(--text-main);
 }
 
+/* Hide the Ctrl+K Quick Open card in web and Android — neither has a
+   meaningful keyboard shortcut affordance (web users use the address bar /
+   omnibox shortcuts; Android has no Ctrl key). Desktop keeps it. */
+.btt-web #quick-open-card { display: none !important; }
+
 .sidebar-quick-open:hover {
     transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.68);

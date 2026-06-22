@@ -43,6 +43,7 @@ import backend.codexes.recipes
 import backend.settings
 import backend.gems_and_builds.star_chart
 import backend.mod_manager.trovesaurus
+import backend.mod_manager.mods_hub
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)

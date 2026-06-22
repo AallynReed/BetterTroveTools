@@ -45,7 +45,7 @@ document.addEventListener('settings_loaded', async () => {
                 show_community_content: true,
                 show_official_news: true,
                 show_player_activity: true,
-                auto_fix_names: false,
+                auto_fix_names: true,
                 show_mod_preview_on_info_side: true,
                 hide_beta_features: false,
                 notifications: defaultNotifications()
@@ -82,7 +82,7 @@ document.addEventListener('settings_loaded', async () => {
                     settings.show_community_content = data.show_community_content !== false;
                     settings.show_official_news = data.show_official_news !== false;
                     settings.show_player_activity = data.show_player_activity !== false;
-                    settings.auto_fix_names = data.auto_fix_names === true;
+                    settings.auto_fix_names = data.auto_fix_names !== false;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
                     // Deep-merge notifications so old saves missing a new field

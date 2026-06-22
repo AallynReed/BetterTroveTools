@@ -297,14 +297,25 @@ class TroveMod:
     def fix_name(self):
         extension = ".tmod" if self.enabled else ".tmod.disabled"
         new_mod_path = self.mod_path.with_name(self.name + extension)
+        if new_mod_path == self.mod_path:
+            return
         if new_mod_path.exists():
             return
         try:
             self.mod_path.rename(new_mod_path)
             self.mod_path = new_mod_path
-        except PermissionError:
+            # Partial mods read their bytes lazily from disk on demand (preview,
+            # config, hashing). Repoint them at the renamed file so a later read
+            # doesn't reopen the now-gone original path.
+            for mod_file in self.files:
+                if getattr(mod_file, "archive_path", None) is not None:
+                    mod_file.archive_path = new_mod_path
+        except OSError as e:
+            # On Windows a file with an OPEN handle can't be renamed (WinError 32),
+            # so callers must close their read handle before invoking this. A
+            # surviving error here is a genuine lock (game running, AV, etc.).
             print(
-                f"Failed to rename mod {self.name} at {self.mod_path} (Likely another program is using it)"
+                f"Failed to rename mod {self.name} at {self.mod_path}: {e}"
             )
 
     def check_conflicts(self, mods: list[TroveMod], force=False):
@@ -1040,9 +1051,11 @@ class TroveModList:
                 else:
                     file_data = f.read()
                 mod = TMod.read_bytes(file, file_data, partial)
-                if mod.has_wrong_name and fix_names:
-                    mod.fix_name()
-                self._mods.append(mod)
+            # The read handle is closed here BEFORE renaming: Windows refuses to
+            # rename a file while it's open (WinError 32 -> PermissionError).
+            if mod.has_wrong_name and fix_names:
+                mod.fix_name()
+            self._mods.append(mod)
 
     def _populate_tmod_disabled(self, fix_names=False, partial=False):
         for file in self.trove_path.disabled_tmods:
@@ -1055,10 +1068,11 @@ class TroveModList:
                 else:
                     file_data = f.read()
                 mod = TMod.read_bytes(file, file_data, partial)
-                mod.enabled = False
-                if mod.has_wrong_name and fix_names:
-                    mod.fix_name()
-                self._mods.append(mod)
+            mod.enabled = False
+            # Handle closed before rename (see _populate_tmod_enabled).
+            if mod.has_wrong_name and fix_names:
+                mod.fix_name()
+            self._mods.append(mod)
 
     def _populate_zip_enabled(self):
         for file in self.trove_path.enabled_zips:

@@ -1,0 +1,229 @@
+/* Mods Hub tab.
+   The card/grid look is shared with the Trovesaurus tab (trovesaurus.css owns the
+   `.ts-*`, `.trovesaurus-container`, `.placeholder-box`, `.search-filter-bar`,
+   `.pagination-controls` and `.image-modal` classes). Only the id-scoped rules —
+   which can't carry across to this panel's unique ids — and the hub-specific
+   extras (tag chips, the modal CTA) live here. */
+
+#mh-search-input {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    background: #111;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+}
+#mh-search-input:focus { border-color: var(--accent-blue); }
+
+#mh-mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    /* Rows size to content so installed cards (extra "switch variant" button + tag
+       chips) aren't clipped; the per-card min-height below keeps a 300px floor. */
+    grid-auto-rows: auto;
+    align-items: start;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+/* The shared .ts-* card pins height:100% for fixed-height rows; here we let the
+   Mods Hub card grow with its content (fixed-px floor, no circular % height). */
+#mh-mod-grid .ts-mod-card { height: auto; }
+#mh-mod-grid .ts-card-content { height: auto; min-height: 300px; }
+
+/* Category chips — the hub returns each mod's categories, surfaced as small tags. */
+.mh-mod-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.mh-mod-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    background: rgba(var(--accent-rgb), 0.10);
+    border: 1px solid rgba(var(--accent-rgb), 0.25);
+    border-radius: 999px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+#modal-view-mh-btn {
+    background: rgba(var(--accent-rgb), 0.15);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    margin-top: 15px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#modal-view-mh-btn:hover { background: var(--accent-blue); color: #111; }
+
+/* Mods Hub card: visible "switch variant" control under the install button,
+   shown for installed mods (the install button itself is locked to "Installed"). */
+.mh-switch-variant-btn {
+    width: 100%;
+    margin-top: 0;
+    padding: 7px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+    color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.10);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    transition: background 0.15s, border-color 0.15s;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.mh-switch-variant-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mh-switch-variant-btn:hover {
+    background: rgba(var(--accent-rgb), 0.2);
+    border-color: rgba(var(--accent-rgb), 0.6);
+}
+.mh-switch-variant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* "Mods Hub" variant chip on a My Mods card — click to switch variant. */
+.mod-flag-hub {
+    cursor: pointer;
+    color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s;
+}
+.mod-flag-hub:hover {
+    background: rgba(var(--accent-rgb), 0.22);
+    border-color: rgba(var(--accent-rgb), 0.6);
+}
+
+/* Variant picker — shown when a mod has more than one variant (branch). */
+.mh-variant-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.78);
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.mh-variant-modal.active { display: flex; animation: fadeIn 0.2s ease; }
+
+.mh-variant-dialog {
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    overflow: hidden;
+}
+
+.mh-variant-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px 10px;
+    border-bottom: 1px solid var(--border-color);
+}
+.mh-variant-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); }
+.mh-variant-mod-name { margin: 2px 0 0; font-size: 13px; color: var(--accent-blue); font-weight: 600; }
+.mh-variant-close {
+    background: transparent;
+    border: 0;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    line-height: 1;
+    transition: color 0.15s;
+}
+.mh-variant-close:hover { color: var(--text-main); }
+
+.mh-variant-hint { margin: 0; padding: 10px 18px 0; font-size: 12px; color: var(--text-muted); }
+
+.mh-variant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 18px 18px;
+    overflow-y: auto;
+}
+
+.mh-variant-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: linear-gradient(170deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.12));
+    transition: border-color 0.15s;
+}
+.mh-variant-row:hover { border-color: rgba(var(--accent-rgb), 0.55); }
+.mh-variant-row.current { border-color: rgba(var(--accent-rgb), 0.5); background: rgba(var(--accent-rgb), 0.06); }
+
+.mh-variant-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mh-variant-name-line { display: flex; align-items: center; gap: 8px; }
+.mh-variant-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.mh-variant-name i { color: var(--accent-blue); font-size: 12px; }
+.mh-variant-installed-pill {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.14);
+    border: 1px solid rgba(var(--accent-rgb), 0.4);
+    border-radius: 999px;
+    padding: 1px 8px;
+}
+.mh-variant-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.mh-variant-install { width: auto; margin-top: 0; flex: 0 0 auto; padding: 8px 14px; }
