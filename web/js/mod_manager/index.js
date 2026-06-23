@@ -8,7 +8,8 @@ document.addEventListener('mod_manager_loaded', async () => {
     // fires its `<section>_loaded` event so the (just-attached) listener mounts.
     const lazySections = {
         trovesaurus: { script: 'js/mod_manager/trovesaurus.js', event: 'trovesaurus_loaded', initialized: false },
-        mods_hub: { script: 'js/mod_manager/mods_hub.js', event: 'mods_hub_loaded', initialized: false }
+        mods_hub: { script: 'js/mod_manager/mods_hub.js', event: 'mods_hub_loaded', initialized: false },
+        modpacks: { script: 'js/mod_manager/modpacks.js', event: 'modpacks_loaded', initialized: false }
     };
     let activeSection = null;
     const setModManagerSection = (section) => {
@@ -82,6 +83,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             const isFixingNames = ref(false);
             const isRefreshingUpdates = ref(false);
             const isClearingCache = ref(false);
+            const isImportingTpack = ref(false);
 
             const modal = reactive({ show: false, src: '', caption: '' });
             const loadGuard = window.createRequestGuard ? window.createRequestGuard() : { next: () => Date.now(), isCurrent: () => true };
@@ -492,6 +494,35 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            // Import a local .tpack modpack file: a native dialog picks the file,
+            // the backend decompiles it into the individual .tmods, quarantines
+            // same-name conflicts into mods/disabled/, and installs.
+            const importTpack = async () => {
+                if (!selectedInstall.value) return window.showToast(t('common.select_a_game_first'), true);
+                if (isImportingTpack.value) return;
+                isImportingTpack.value = true;
+                try {
+                    const response = await window.JobQueue.run({
+                        label: t('mod_manager.import_tpack'),
+                        task: async () => window.callBackend(eel.import_tpack_file(selectedInstall.value)(), 'Failed to import modpack')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('mod_manager.import_tpack_failed').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                        return;
+                    }
+                    const data = response.data || response.raw || {};
+                    if (data.cancelled) return;  // user closed the file dialog
+                    const installed = data.installed || 0;
+                    const quarantined = (data.quarantined || []).length;
+                    window.showToast(quarantined
+                        ? t('modpacks.installed_with_quarantine').replace('{count}', installed).replace('{disabled}', quarantined)
+                        : t('modpacks.installed_summary').replace('{count}', installed));
+                    await loadMods();
+                } finally {
+                    isImportingTpack.value = false;
+                }
+            };
+
             const removeModLocally = (mod) => {
                 mods.value = mods.value.filter(m => m.path !== mod.path);
                 mods.value.forEach(m => {
@@ -707,7 +738,9 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const onSectionChanged = async (e) => {
                 const detail = e && e.detail ? e.detail : {};
-                const fromCommunityTab = detail.previousSection === 'trovesaurus' || detail.previousSection === 'mods_hub';
+                const fromCommunityTab = detail.previousSection === 'trovesaurus'
+                    || detail.previousSection === 'mods_hub'
+                    || detail.previousSection === 'modpacks';
                 if (fromCommunityTab && detail.currentSection === 'mod_manager' && selectedInstall.value) {
                     await loadMods();
                 }
@@ -771,6 +804,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                 isFixingNames,
                 isRefreshingUpdates,
                 isClearingCache,
+                isImportingTpack,
+                importTpack,
                 modal,
                 scanForGames,
                 refreshInstallState,

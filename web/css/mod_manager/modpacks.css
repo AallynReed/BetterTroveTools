@@ -1,0 +1,46 @@
+/* Modpacks tab.
+   Cards reuse the shared `.ts-*` look (trovesaurus.css) and the variant picker
+   reuses `.mh-variant-*` (mods_hub.css); only the id-scoped rules that can't
+   carry across to this panel's unique ids live here. */
+
+#mp-search-input {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    background: #111;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-main);
+    outline: none;
+    transition: border-color 0.2s;
+}
+#mp-search-input:focus { border-color: var(--accent-blue); }
+
+#mp-mod-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    /* Rows grow to fit content with a 300px floor (matches the Mods Hub grid). */
+    grid-auto-rows: auto;
+    align-items: start;
+    gap: 12px;
+    padding: 10px 0;
+}
+
+#mp-mod-grid .ts-mod-card { height: auto; }
+#mp-mod-grid .ts-card-content { height: auto; min-height: 300px; }
+
+#modal-view-mp-btn {
+    background: rgba(var(--accent-rgb), 0.15);
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    margin-top: 15px;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#modal-view-mp-btn:hover { background: var(--accent-blue); color: #111; }
