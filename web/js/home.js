@@ -26,8 +26,8 @@ document.addEventListener('home_loaded', () => {
         { id: 'gems_and_builds:gem-simulator', label: 'Gem Simulator', icon: 'fa-gem', target: 'gems_and_builds', gemsTab: 'gem-simulator' },
         { id: 'mod_manager:mod_manager', label: 'My Mods', icon: 'fa-cubes', target: 'mod_manager', mmSection: 'mod_manager' },
         { id: 'mod_manager:trovesaurus', label: 'Trovesaurus', icon: 'fa-folder-open', target: 'mod_manager', mmSection: 'trovesaurus' },
-        { id: 'modder_tools:file_explorer', label: 'File Explorer', icon: 'fa-folder-tree', target: 'modder_tools', modderTab: 'file_explorer' },
-        { id: 'modder_tools:update_tracker', label: 'Update Tracker', icon: 'fa-satellite-dish', target: 'modder_tools', modderTab: 'update_tracker' },
+        { id: 'game_explorer:file_explorer', label: 'File Explorer', icon: 'fa-folder-tree', target: 'game_explorer', gxTab: 'tab-explorer' },
+        { id: 'game_explorer:update_tracker', label: 'Update Tracker', icon: 'fa-satellite-dish', target: 'game_explorer', gxTab: 'tab-tracker' },
         { id: 'modder_tools:build', label: 'Build TMod', icon: 'fa-hammer', target: 'modder_tools', modderTab: 'build' },
         { id: 'modder_tools:extract', label: 'Extract TMod', icon: 'fa-box-open', target: 'modder_tools', modderTab: 'extract' },
         { id: 'calculators', label: 'Calculators', icon: 'fa-calculator', target: 'calculators' },
@@ -365,6 +365,7 @@ document.addEventListener('home_loaded', () => {
                     detail: {
                         target: tool.target,
                         modderTab: tool.modderTab,
+                        gxTab: tool.gxTab,
                         mmSection: tool.mmSection,
                         gemsTab: tool.gemsTab,
                         codexTab: tool.codexTab

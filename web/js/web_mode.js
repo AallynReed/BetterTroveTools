@@ -17,7 +17,10 @@
     // hides the whole view (no DecompressionStream issues, but no file I/O either).
     window.BTT_UNAVAILABLE_WEB_VIEWS = window.BTT_WEB_MODE
         ? [
-            'mod_manager', 'codexes', 'allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items',
+            // Discord sign-in needs the desktop eel backend (system browser +
+            // btt:// deep link + DPAPI token storage); on the hosted web build
+            // users sign in on the site itself, so hide the in-app Account view.
+            'mod_manager', 'game_explorer', 'codexes', 'allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items', 'account',
             ...(window.BTT_NATIVE ? ['modder_tools'] : []),
         ]
         : [];
@@ -579,6 +582,13 @@
         get_detected_game_paths: makeEelFn('get_detected_game_paths', () => ok({ paths: [], detected: [] })),
         get_system_info: makeEelFn('get_system_info', () => ok({ app_mode: 'web', platform: navigator.platform || 'browser' })),
         get_app_license: makeEelFn('get_app_license', async () => ok({ text: await fetch('LICENSE').then(r => r.ok ? r.text() : '').catch(() => '') })),
+        // Discord sign-in is desktop-only (needs the eel backend). On web/Android
+        // these resolve to a desktop-only message; the Account view is hidden via
+        // BTT_UNAVAILABLE_WEB_VIEWS so they shouldn't normally be reached.
+        site_auth_begin_login: makeEelFn('site_auth_begin_login', () => fail(localOnlyMessage()), { localOnly: true }),
+        site_auth_complete: makeEelFn('site_auth_complete', () => fail(localOnlyMessage()), { localOnly: true }),
+        site_auth_me: makeEelFn('site_auth_me', () => ok({ authenticated: false, user: null }), { localOnly: true }),
+        site_auth_logout: makeEelFn('site_auth_logout', () => ok({ authenticated: false, user: null }), { localOnly: true }),
         load_gem_storage: makeEelFn('load_gem_storage', () => {
             const gemData = readJson(GEM_STORAGE_KEY, {});
             return { success: true, data: gemData, gem_simulator: gemData };

@@ -1,6 +1,7 @@
 <head>
     <link rel="stylesheet" href="css/modder_tools/index.css">
     <link rel="stylesheet" href="css/modder_tools/file_manager.css">
+    <link rel="stylesheet" href="css/modder_tools/manage.css">
 </head>
 <div id="modder-tools-vue-app" class="modder-tools-container" v-cloak>
     <div class="tabs-container">
@@ -12,22 +13,30 @@
                 <i class="fa-solid fa-box-open"></i> <span>{{ t('modder_tools.extract_tmod') }}</span>
             </button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'edit_tmod' }" @click="setActiveTab('edit_tmod')">
-                <i class="fa-solid fa-pen-to-square"></i> <span>{{ t('modder_tools.edit_tmod') }}</span> <span class="beta-label">BETA</span>
+                <i class="fa-solid fa-pen-to-square"></i> <span>{{ t('modder_tools.edit_tmod') }}</span>
             </button>
-            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="setActiveTab('projects')">
+            <!-- Online management (your Mods Hub mods + Modpacks). Shown only while
+                 signed in; styled to stand out slightly as an "online" group. Signed-out
+                 users get a single sign-in prompt (a pseudo-tab) in their place. -->
+            <button v-if="!isWebMode && loggedIn" class="tab-btn tab-btn-cloud" :class="{ active: activeTab === 'manage_mods' }" @click="setActiveTab('manage_mods')">
+                <i class="fa-solid fa-cubes"></i> <span>{{ t('manage.mods_tab') }}</span>
+            </button>
+            <button v-if="!isWebMode && loggedIn" class="tab-btn tab-btn-cloud" :class="{ active: activeTab === 'manage_modpacks' }" @click="setActiveTab('manage_modpacks')">
+                <i class="fa-solid fa-layer-group"></i> <span>{{ t('manage.modpacks_tab') }}</span>
+            </button>
+            <button v-if="!isWebMode && !loggedIn" class="tab-btn tab-btn-signin" @click="promptManageLogin" :title="t('manage.signin_tab_hint')">
+                <i class="fa-solid fa-cloud-arrow-up"></i> <span>{{ t('manage.signin_tab') }}</span>
+            </button>
+            <button v-if="!isWebMode && legacyProjectsEnabled" class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="setActiveTab('projects')">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('modder_tools.projects') }}</span>
             </button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="setActiveTab('qb_editor')">
                 <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('modder_tools.blueprint_editor') }}</span> <span class="beta-label">BETA</span>
             </button>
-            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'file_explorer' }" @click="setActiveTab('file_explorer')">
-                <i class="fa-solid fa-folder-tree"></i> <span>{{ t('common.file_explorer') }}</span>
-            </button>
-            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'update_tracker' }" @click="setActiveTab('update_tracker')">
-                <i class="fa-solid fa-satellite-dish"></i> <span>{{ t('common.update_tracker') }}</span>
-            </button>
-            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'software' }" @click="setActiveTab('software')">
-                <i class="fa-solid fa-computer"></i> <span>{{ t('modder_tools.third_party_software') }}</span>
+            <!-- Third-party software: a secondary, de-emphasized utility. Icon-only and
+                 pushed to the far right so it doesn't compete with the core tools. -->
+            <button v-if="!isWebMode" class="tab-btn tab-btn-muted" :class="{ active: activeTab === 'software' }" @click="setActiveTab('software')" :title="t('modder_tools.third_party_software')" :aria-label="t('modder_tools.third_party_software')">
+                <i class="fa-solid fa-computer"></i>
             </button>
         </div>
 
@@ -43,16 +52,20 @@
             <div id="modder-edit-tmod-vue-app-inner" v-cloak></div>
         </div>
 
+        <div class="tab-content" :class="{ active: activeTab === 'manage_mods' }">
+            <div id="modder-manage-mods-vue-app-inner" v-cloak></div>
+        </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'manage_modpacks' }">
+            <div id="modder-manage-modpacks-vue-app-inner" v-cloak></div>
+        </div>
+
         <div class="tab-content" :class="{ active: activeTab === 'projects' }">
             <div id="modder-projects-vue-app-inner" v-cloak></div>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'qb_editor' }">
             <div id="modder-qb-editor-vue-app-inner" v-cloak></div>
-        </div>
-
-        <div class="tab-content" :class="{ active: activeTab === 'file_explorer' || activeTab === 'update_tracker' }">
-            <div id="modder-tools-file-manager-host"></div>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'software' }">

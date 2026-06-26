@@ -141,6 +141,7 @@ window.BTT_VIEW_SCRIPTS = {
         'js/modder_tools/qb_editor.js',
         'js/modder_tools/software.js',
     ],
+    game_explorer: ['js/game_explorer.js'],
     gems_and_builds: [
         'js/gems_and_builds/index.js',
         'js/gems_and_builds/gem_builds.js',
@@ -152,6 +153,7 @@ window.BTT_VIEW_SCRIPTS = {
     codexes: ['js/codexes/index.js'],
     settings: ['js/settings.js'],
     about: ['js/about.js'],
+    account: ['js/account.js'],
 };
 
 // Codex sub-tabs are loaded lazily by codexes.js's loadSubview.
@@ -1361,9 +1363,95 @@ window.initJobQueueUi = function() {
 
 window.pendingSearch = null;
 
+// Site account (Discord sign-in) state shared between the Account view and the
+// sidebar chip. Lives in main.js (always loaded) so the chip can reflect the
+// signed-in user even before the lazy account view is ever opened. The Python
+// side (backend/auth.py) is the source of truth; this just mirrors it for the UI.
+window.BTTAccount = (function () {
+    const tt = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
+    let state = { authenticated: false, user: null };
+    const listeners = new Set();
+
+    function applyNav() {
+        const icon = document.getElementById('account-nav-icon');
+        const avatar = document.getElementById('account-nav-avatar');
+        const label = document.getElementById('account-nav-label');
+        const user = state.user;
+        if (user && user.avatar_url && avatar) {
+            avatar.src = user.avatar_url;
+            avatar.hidden = false;
+            if (icon) icon.style.display = 'none';
+        } else {
+            if (avatar) { avatar.hidden = true; avatar.removeAttribute('src'); }
+            if (icon) icon.style.display = '';
+        }
+        if (label) label.textContent = (user && (user.display_name || user.username)) || tt('nav.account');
+    }
+
+    function set(data) {
+        state = {
+            authenticated: !!(data && data.authenticated),
+            user: (data && data.user) || null,
+        };
+        applyNav();
+        listeners.forEach((fn) => { try { fn(state); } catch (e) { /* ignore */ } });
+    }
+
+    return {
+        get state() { return state; },
+        onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+        onAuthChanged(data) { set(data); },
+        applyNav,
+        async refresh() {
+            if (window.BTT_WEB_MODE || !window.eel || !eel.site_auth_me) return state;
+            try {
+                const res = await eel.site_auth_me()();
+                if (res && res.success && res.data) set(res.data);
+            } catch (e) { /* offline / not signed in */ }
+            return state;
+        },
+    };
+})();
+
 eel.expose(handle_deep_link);
 function handle_deep_link(url) {
     console.log("Deep link received:", url);
+    const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
+    if (url.startsWith('btt://auth/discord')) {
+        // Discord sign-in finishing inside the app (see backend/auth.py). The
+        // server's interstitial bounced the one-time code (or an error) here.
+        let params;
+        try {
+            params = new URLSearchParams(url.split('?')[1] || '');
+        } catch (e) {
+            params = new URLSearchParams();
+        }
+        const error = params.get('error');
+        const code = params.get('code');
+        if (error) {
+            if (window.showToast) window.showToast(t('account.sign_in_failed'), true);
+            return;
+        }
+        if (!code) return;
+        (async () => {
+            try {
+                const res = await eel.site_auth_complete(code)();
+                if (res && res.success && res.data && res.data.authenticated) {
+                    if (window.BTTAccount && typeof window.BTTAccount.onAuthChanged === 'function') {
+                        window.BTTAccount.onAuthChanged(res.data);
+                    }
+                    if (window.showToast) window.showToast(t('account.signed_in'));
+                    window.loadView('account');
+                } else {
+                    if (window.showToast) window.showToast(t('account.sign_in_failed'), true);
+                }
+            } catch (e) {
+                console.error('Sign-in completion failed:', e);
+                if (window.showToast) window.showToast(t('account.sign_in_failed'), true);
+            }
+        })();
+        return;
+    }
     if (url.startsWith('btt://trovesaurus')) {
         try {
             const queryString = url.split('?')[1];
@@ -1921,12 +2009,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'home', title: 'Home', icon: 'fa-house' },
         { id: 'mod_manager', title: 'My Mods', icon: 'fa-cubes', mmSection: 'mod_manager' },
         { id: 'mod_manager', title: 'Trovesaurus', imgIcon: 'https://trovesaurus.com/images/logos/Sage_64.png', mmSection: 'trovesaurus' },
-        { id: 'modder_tools', title: 'File Explorer', icon: 'fa-folder-tree', modderTab: 'file_explorer' },
-        { id: 'modder_tools', title: 'Update Tracker', icon: 'fa-satellite-dish', modderTab: 'update_tracker' },
+        { id: 'game_explorer', title: 'File Explorer', icon: 'fa-folder-tree', gxTab: 'tab-explorer' },
+        { id: 'game_explorer', title: 'Update Tracker', icon: 'fa-satellite-dish', gxTab: 'tab-tracker' },
         { id: 'modder_tools', title: 'Build TMod', icon: 'fa-hammer', modderTab: 'build' },
         { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
         { id: 'modder_tools', title: 'Edit TMod', icon: 'fa-pen-to-square', modderTab: 'edit_tmod' },
-        { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects' },
+        { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects', legacyProjects: true },
         { id: 'modder_tools', title: 'Blueprint Editor', icon: 'fa-code', modderTab: 'qb_editor' },
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
         { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
@@ -2037,7 +2125,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
         cmdResults.innerHTML = displayCommands.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-url="${c.url || ''}" data-modder-tab="${c.modderTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-codex-tab="${c.codexTab || ''}" data-query="${c.query || ''}">
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-url="${c.url || ''}" data-modder-tab="${c.modderTab || ''}" data-gx-tab="${c.gxTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-codex-tab="${c.codexTab || ''}" data-query="${c.query || ''}">
                 <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
                 <div>${t(c.title)}</div>
             </div>
@@ -2061,11 +2149,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (isWebUnavailableView(target)) return;
         const modderTab = itemEl.getAttribute('data-modder-tab');
+        const gxTab = itemEl.getAttribute('data-gx-tab');
         const mmSection = itemEl.getAttribute('data-mm-section');
         const gemsTab = itemEl.getAttribute('data-gems-tab');
         const codexTab = itemEl.getAttribute('data-codex-tab');
         if (modderTab) {
             window.pendingModderToolsTab = modderTab;
+        }
+        if (gxTab) {
+            window.pendingGameExplorerTab = gxTab;
         }
         if (mmSection) {
             window.pendingModManagerSection = mmSection;
@@ -2178,6 +2270,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isCommandVisible = (command) => {
         if (!command) return false;
         if (isWebUnavailableView(command.id)) return false;
+        // Projects is a legacy tab hidden unless re-enabled in Settings.
+        if (command.legacyProjects === true
+            && !(window.AppSettings && window.AppSettings.get('enable_legacy_projects', false) === true)) {
+            return false;
+        }
         return !(command.beta === true && areBetaFeaturesHidden());
     };
 
@@ -2938,6 +3035,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         if (e.detail.modderTab) window.pendingModderToolsTab = e.detail.modderTab;
+        if (e.detail.gxTab) window.pendingGameExplorerTab = e.detail.gxTab;
         if (e.detail.mmSection) window.pendingModManagerSection = e.detail.mmSection;
         if (e.detail.gemsTab) window.pendingGemsTab = e.detail.gemsTab;
         if (e.detail.codexTab) window.pendingCodexTab = e.detail.codexTab;
@@ -3228,6 +3326,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
         window.loadView('home');
     }
+
+    // Reflect any persisted Discord sign-in in the sidebar account chip (desktop
+    // only; web/Android have no eel auth backend). Fire-and-forget.
+    if (window.BTTAccount) window.BTTAccount.refresh();
 
     const maybeShowDiscoverabilityHints = () => {
         const commandHintKey = 'hint_command_palette_v1';

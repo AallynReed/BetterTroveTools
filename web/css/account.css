@@ -1,0 +1,191 @@
+.account-view {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+}
+
+.account-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--text-muted);
+    padding: 80px 0;
+}
+
+/* --- Signed out ---------------------------------------------------------- */
+.account-hero {
+    text-align: center;
+    padding: 48px 28px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+}
+.account-hero-icon {
+    font-size: 56px;
+    color: #5865F2;
+    margin-bottom: 14px;
+}
+.account-hero h1 {
+    font-size: 22px;
+    margin-bottom: 10px;
+}
+.account-hero-copy {
+    color: var(--text-muted);
+    line-height: 1.55;
+    max-width: 440px;
+    margin: 0 auto 24px;
+}
+.account-hero-note {
+    color: var(--text-muted);
+    font-size: 0.82em;
+    opacity: 0.75;
+    margin-top: 16px;
+}
+
+.account-discord-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #5865F2;
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    font-size: 1em;
+    padding: 12px 26px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.08s;
+}
+.account-discord-btn:hover:not(:disabled) { background: #4752c4; }
+.account-discord-btn:active:not(:disabled) { transform: translateY(1px); }
+.account-discord-btn:disabled { opacity: 0.65; cursor: default; }
+
+/* --- Signed in ----------------------------------------------------------- */
+.account-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    overflow: hidden;
+}
+.account-card-head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), transparent);
+}
+.account-avatar,
+.account-avatar-fallback {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.account-avatar {
+    object-fit: cover;
+    border: 2px solid var(--glass-border);
+}
+.account-avatar-fallback {
+    font-size: 64px;
+    line-height: 1;
+    color: var(--text-muted);
+}
+.account-identity { flex: 1; min-width: 0; }
+.account-name {
+    font-size: 1.25em;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.account-handle {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    margin-top: 2px;
+}
+.account-handle .fa-discord { color: #5865F2; }
+
+.account-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78em;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+.account-badge.is-verified { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+.account-badge.is-unverified { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+
+.account-fields { list-style: none; padding: 8px 24px; }
+.account-fields li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.account-fields li:last-child { border-bottom: none; }
+.account-field-label { color: var(--text-muted); font-size: 0.9em; }
+.account-field-value {
+    font-weight: 500;
+    text-align: right;
+    word-break: break-word;
+}
+.account-field-value.account-muted { color: var(--text-muted); font-weight: 400; }
+
+.account-claim-badge {
+    margin-left: 8px;
+    font-size: 0.72em;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    vertical-align: middle;
+}
+.account-claim-badge.ok { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
+.account-claim-badge.pending { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+
+.account-actions {
+    display: flex;
+    gap: 12px;
+    padding: 20px 24px 24px;
+    flex-wrap: wrap;
+}
+.account-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-hover);
+    color: var(--text-main);
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+.account-btn:disabled { opacity: 0.6; cursor: default; }
+.account-btn-secondary:hover:not(:disabled) { border-color: var(--accent-blue); color: var(--accent-blue); }
+.account-btn-danger { margin-left: auto; }
+.account-btn-danger:hover:not(:disabled) { border-color: #ef4444; color: #ef4444; }
+
+.account-cloud-hint {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85em;
+    margin-top: 20px;
+    opacity: 0.8;
+}
+
+/* Sidebar account chip: swap the icon for the avatar once signed in. */
+.account-nav-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}

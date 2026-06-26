@@ -118,6 +118,12 @@
                     </button>
                 </li>
                 <li>
+                    <button class="nav-btn" data-target="game_explorer">
+                        <i class="fa-solid fa-folder-tree nav-icon"></i>
+                        <span class="nav-text" data-i18n="nav.game_explorer">Game Explorer</span>
+                    </button>
+                </li>
+                <li>
                     <button class="nav-btn" data-target="gems_and_builds">
                         <i class="fa-solid fa-gem nav-icon"></i>
                         <span class="nav-text" data-i18n="nav.gems_and_builds">Gems & Builds</span>
@@ -140,22 +146,21 @@
 
         <ul class="menu sidebar-footer-menu">
             <li>
-                <button class="nav-btn" id="docs-link-btn" title="Open the online documentation">
-                    <i class="fa-solid fa-book nav-icon"></i>
-                    <span class="nav-text" data-i18n="nav.documentation">Documentation</span>
-                    <i class="fa-solid fa-arrow-up-right-from-square nav-external-icon"></i>
+                <button class="nav-btn" id="account-nav-btn" data-target="account" title="Your Better Trove Tools account">
+                    <i class="fa-solid fa-circle-user nav-icon" id="account-nav-icon"></i>
+                    <img id="account-nav-avatar" class="account-nav-avatar" alt="" hidden>
+                    <span class="nav-text" id="account-nav-label" data-i18n="nav.account">Account</span>
                 </button>
             </li>
-            <li>
-                <button class="nav-btn" id="feedback-btn" data-i18n-title="feedback.button_title" title="Send feedback to the developer">
-                    <i class="fa-solid fa-comment-dots nav-icon"></i>
-                    <span class="nav-text" data-i18n="nav.feedback">Feedback</span>
-                </button>
-            </li>
-            <li>
-                <button class="nav-btn" data-target="settings">
+            <li class="sidebar-footer-icons">
+                <button class="nav-btn nav-btn-icon" data-target="settings" data-i18n-title="nav.settings" title="Settings" aria-label="Settings">
                     <i class="fa-solid fa-gear nav-icon"></i>
-                    <span class="nav-text" data-i18n="nav.settings">Settings</span>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="docs-link-btn" data-i18n-title="nav.documentation" title="Open the online documentation" aria-label="Documentation">
+                    <i class="fa-solid fa-book nav-icon"></i>
+                </button>
+                <button class="nav-btn nav-btn-icon" id="feedback-btn" data-i18n-title="feedback.button_title" title="Send feedback to the developer" aria-label="Feedback">
+                    <i class="fa-solid fa-comment-dots nav-icon"></i>
                 </button>
             </li>
             <li>

@@ -1,0 +1,80 @@
+<head>
+    <link rel="stylesheet" href="css/account.css">
+</head>
+<div id="account-vue-app" class="account-view" v-cloak>
+    <!-- Loading -->
+    <div v-if="loading" class="account-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        <span>{{ t('account.loading') }}</span>
+    </div>
+
+    <!-- Signed out -->
+    <div v-else-if="!user" class="account-signed-out">
+        <div class="account-hero">
+            <i class="fa-brands fa-discord account-hero-icon"></i>
+            <h1>{{ t('account.signed_out_title') }}</h1>
+            <p class="account-hero-copy">{{ t('account.signed_out_copy') }}</p>
+            <button class="account-discord-btn" :disabled="busy" @click="signIn">
+                <i class="fa-brands fa-discord"></i>
+                <span>{{ busy ? t('account.opening_browser') : t('account.sign_in_with_discord') }}</span>
+            </button>
+            <p class="account-hero-note">{{ t('account.signed_out_note') }}</p>
+        </div>
+    </div>
+
+    <!-- Signed in -->
+    <div v-else class="account-signed-in">
+        <div class="account-card">
+            <div class="account-card-head">
+                <img v-if="user.avatar_url" :src="user.avatar_url" class="account-avatar" alt="">
+                <i v-else class="fa-solid fa-circle-user account-avatar-fallback"></i>
+                <div class="account-identity">
+                    <div class="account-name">{{ user.display_name || user.username }}</div>
+                    <div class="account-handle" v-if="user.discord_handle">
+                        <i class="fa-brands fa-discord"></i> {{ user.discord_handle }}
+                    </div>
+                </div>
+                <span class="account-badge" :class="user.is_verified ? 'is-verified' : 'is-unverified'">
+                    <i class="fa-solid" :class="user.is_verified ? 'fa-circle-check' : 'fa-circle-exclamation'"></i>
+                    {{ user.is_verified ? t('account.verified') : t('account.unverified') }}
+                </span>
+            </div>
+
+            <ul class="account-fields">
+                <li>
+                    <span class="account-field-label">{{ t('account.trove_username') }}</span>
+                    <span class="account-field-value">{{ user.username }}</span>
+                </li>
+                <li v-if="user.email">
+                    <span class="account-field-label">{{ t('account.email') }}</span>
+                    <span class="account-field-value">{{ user.email }}</span>
+                </li>
+                <li>
+                    <span class="account-field-label">{{ t('account.claimed_trove_name') }}</span>
+                    <span class="account-field-value" v-if="user.claimed_trove_display">
+                        {{ user.claimed_trove_display }}
+                        <span class="account-claim-badge" :class="user.claim_verified ? 'ok' : 'pending'">
+                            {{ user.claim_verified ? t('account.claim_verified') : t('account.claim_pending') }}
+                        </span>
+                    </span>
+                    <span class="account-field-value account-muted" v-else>{{ t('account.no_claim') }}</span>
+                </li>
+            </ul>
+
+            <div class="account-actions">
+                <button class="account-btn account-btn-secondary" @click="openDashboard">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    <span>{{ t('account.manage_on_website') }}</span>
+                </button>
+                <button class="account-btn account-btn-danger" :disabled="busy" @click="signOut">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>{{ t('account.sign_out') }}</span>
+                </button>
+            </div>
+        </div>
+
+        <p class="account-cloud-hint">
+            <i class="fa-solid fa-cloud"></i> {{ t('account.cloud_hint') }}
+        </p>
+    </div>
+</div>

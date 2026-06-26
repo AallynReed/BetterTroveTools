@@ -5,7 +5,7 @@ document.addEventListener('modder_tools_loaded', () => {
         return;
     }
 
-    const { createApp, ref, watch, onMounted, onBeforeUnmount } = Vue;
+    const { createApp, ref, watch, onMounted, onUnmounted } = Vue;
 
     const app = createApp({
         setup() {
@@ -18,21 +18,47 @@ document.addEventListener('modder_tools_loaded', () => {
             // I/O, mod-tree scanning, or shelling out to external tools.
             const isWebMode = !!window.BTT_WEB_MODE;
             const activeTab = ref(isWebMode ? 'extract' : 'build');
-            let embeddedFileManagerLoaded = false;
-            let embeddedFileManagerLoading = null;
+            // Legacy "Projects" tab is hidden by default; opt back in via
+            // Settings -> Legacy Features (enable_legacy_projects). Read in
+            // onMounted from the persisted settings.
+            const legacyProjectsEnabled = ref(false);
+
+            // Online management tabs (Mods / Modpacks) only exist while the user is
+            // signed in (window.BTTAccount is the source of truth). Kept reactive so
+            // the tabs appear/disappear live on login/logout.
+            const loggedIn = ref(!!(window.BTTAccount && window.BTTAccount.state.authenticated));
+            let unsubAccount = null;
+
+            // Tabs that can actually be shown right now (web mode = extract only;
+            // projects only when the legacy toggle is on; manage tabs only when
+            // signed in). Used to coerce stale/unavailable saved tabs back to a
+            // valid tab (e.g. the relocated file_explorer/update_tracker).
+            const isTabAvailable = (tabName) => {
+                if (isWebMode) return tabName === 'extract';
+                if (tabName === 'projects') return legacyProjectsEnabled.value;
+                if (tabName === 'manage_mods' || tabName === 'manage_modpacks') return loggedIn.value;
+                return ['build', 'extract', 'edit_tmod', 'qb_editor', 'software'].includes(tabName);
+            };
+
+            // Signed-out pseudo-tab → take the user to the Account view to sign in.
+            const promptManageLogin = () => {
+                if (window.loadView) window.loadView('account');
+            };
 
             const setActiveTab = (tabName) => {
-                if (isWebMode && tabName !== 'extract') return;
+                if (!isTabAvailable(tabName)) return;
                 activeTab.value = tabName;
             };
 
             const applyStateSnapshot = (saved) => {
                 if (!saved || typeof saved !== 'object') return;
                 if (typeof saved.activeTab === 'string') {
-                    // Honor saved tab, but in web mode coerce anything other
-                    // than 'extract' back to 'extract' so a desktop-only saved
-                    // state doesn't render a blank tab body here.
-                    activeTab.value = (isWebMode && saved.activeTab !== 'extract') ? 'extract' : saved.activeTab;
+                    // Honor the saved tab only if it's still available: web mode
+                    // coerces to extract, the relocated file_explorer/update_tracker
+                    // and the gated-off projects tab fall back to the default.
+                    activeTab.value = isTabAvailable(saved.activeTab)
+                        ? saved.activeTab
+                        : (isWebMode ? 'extract' : 'build');
                 }
                 if (typeof saved.selectedGamePath === 'string') store.selectedGamePath = saved.selectedGamePath;
             };
@@ -94,7 +120,8 @@ document.addEventListener('modder_tools_loaded', () => {
                         { url: 'views/modder_tools/build.html', host: 'modder-build-vue-app-inner' },
                         { url: 'views/modder_tools/extract.html', host: 'modder-extract-vue-app-inner' },
                         { url: 'views/modder_tools/edit_tmod.html', host: 'modder-edit-tmod-vue-app-inner' },
-                        { url: 'views/modder_tools/projects.html', host: 'modder-projects-vue-app-inner' },
+                        // Projects only fetched when the legacy toggle is on.
+                        ...(legacyProjectsEnabled.value ? [{ url: 'views/modder_tools/projects.html', host: 'modder-projects-vue-app-inner' }] : []),
                         { url: 'views/modder_tools/qb_editor.html', host: 'modder-qb-editor-vue-app-inner' },
                         { url: 'views/modder_tools/software.html', host: 'modder-software-vue-app-inner' },
                     ];
@@ -119,51 +146,29 @@ document.addEventListener('modder_tools_loaded', () => {
                 });
             };
 
-            const ensureEmbeddedFileManagerLoaded = async () => {
-                if (embeddedFileManagerLoaded) return;
-                if (embeddedFileManagerLoading) {
-                    await embeddedFileManagerLoading;
-                    return;
-                }
-
-                embeddedFileManagerLoading = (async () => {
-                    const host = document.getElementById('modder-tools-file-manager-host');
-                    if (!host) return;
-
-                    const response = await fetch('views/modder_tools/file_manager.html', { cache: 'no-store' });
-                    if (!response.ok) throw new Error(`Failed to load file manager view (${response.status})`);
-
-                    const html = await response.text();
-                    const parsed = new DOMParser().parseFromString(html, 'text/html');
-                    const root = parsed.querySelector('#file-manager-vue-app');
-                    if (!root) throw new Error('File Manager root element not found');
-
-                    host.innerHTML = '';
-                    host.appendChild(root);
-
-                    if (window.loadScript) {
-                        try { await window.loadScript('js/modder_tools/file_manager.js'); } catch (e) { console.error('Failed to lazy-load file_manager.js:', e); }
-                    }
-
-                    document.dispatchEvent(new CustomEvent('file_manager_loaded'));
-                    embeddedFileManagerLoaded = true;
-                })();
-
+            // The two online-management tabs are login-gated and heavier, so they
+            // mount lazily the first time they're opened (fetch html + load js +
+            // dispatch the loaded event), mirroring the old file-manager embed.
+            const MANAGE_SUBVIEWS = {
+                manage_mods: { url: 'views/modder_tools/manage_mods.html', host: 'modder-manage-mods-vue-app-inner', script: 'js/modder_tools/manage_mods.js' },
+                manage_modpacks: { url: 'views/modder_tools/manage_modpacks.html', host: 'modder-manage-modpacks-vue-app-inner', script: 'js/modder_tools/manage_modpacks.js' },
+            };
+            const manageMounted = { manage_mods: false, manage_modpacks: false };
+            const ensureManageMounted = async (tabName) => {
+                const cfg = MANAGE_SUBVIEWS[tabName];
+                if (!cfg || manageMounted[tabName]) return;
+                manageMounted[tabName] = true;
                 try {
-                    await embeddedFileManagerLoading;
-                } finally {
-                    embeddedFileManagerLoading = null;
+                    const res = await fetch(cfg.url, { cache: 'no-store' });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    const host = document.getElementById(cfg.host);
+                    if (host) host.innerHTML = await res.text();
+                    if (window.loadScript) await window.loadScript(cfg.script);
+                    document.dispatchEvent(new CustomEvent(`modder_${tabName}_loaded`));
+                } catch (e) {
+                    console.error(`Failed to load ${tabName}:`, e);
+                    manageMounted[tabName] = false;  // allow a retry on next open
                 }
-            };
-
-            const syncEmbeddedFileManagerTab = (tabName) => {
-                document.dispatchEvent(new CustomEvent('file_manager_set_tab', { detail: { tab: tabName } }));
-            };
-
-            const handleEmbeddedTabSelection = async (newTab) => {
-                if (newTab !== 'file_explorer' && newTab !== 'update_tracker') return;
-                await ensureEmbeddedFileManagerLoaded();
-                syncEmbeddedFileManagerTab(newTab === 'file_explorer' ? 'tab-explorer' : 'tab-tracker');
             };
 
             watch(activeTab, (newTab) => {
@@ -180,27 +185,43 @@ document.addEventListener('modder_tools_loaded', () => {
                     document.dispatchEvent(new CustomEvent('modder_qb_editor_shown'));
                 } else if (newTab === 'software') {
                     document.dispatchEvent(new CustomEvent('modder_software_shown'));
+                } else if (newTab === 'manage_mods' || newTab === 'manage_modpacks') {
+                    ensureManageMounted(newTab).then(() => {
+                        document.dispatchEvent(new CustomEvent(`modder_${newTab}_shown`));
+                    });
                 }
-                handleEmbeddedTabSelection(newTab).catch((e) => {
-                    console.error('Failed to load embedded File Manager:', e);
-                    window.showToast(t('modder_tools.failed_to_load_game_file_manager_inside_754ac4'), true);
-                });
             });
 
             onMounted(async () => {
                 hydratingState = true;
+                // Sync login state BEFORE restoring the saved tab so a saved manage
+                // tab coerces correctly when signed out, and subscribe so the tabs
+                // appear/disappear live on login/logout.
+                if (window.BTTAccount) {
+                    loggedIn.value = !!window.BTTAccount.state.authenticated;
+                    unsubAccount = window.BTTAccount.onChange((s) => {
+                        loggedIn.value = !!s.authenticated;
+                        if (!s.authenticated && (activeTab.value === 'manage_mods' || activeTab.value === 'manage_modpacks')) {
+                            activeTab.value = isWebMode ? 'extract' : 'build';
+                        }
+                    });
+                    window.BTTAccount.refresh().then((s) => { loggedIn.value = !!s.authenticated; }).catch(() => {});
+                }
                 if (window.AppSettings) {
                     try {
                         await window.AppSettings.load();
+                        // Read the legacy-projects opt-in BEFORE restoring the saved
+                        // tab so a saved 'projects' tab coerces correctly when off.
+                        legacyProjectsEnabled.value = window.AppSettings.get('enable_legacy_projects', false) === true;
                         applyStateSnapshot(window.AppSettings.getPref(PREF_STATE_KEY, null));
                     } catch (e) {
                         console.error('modder_tools: failed to restore state', e);
                     }
                 }
-                if (window.pendingModderToolsTab) {
+                if (window.pendingModderToolsTab && isTabAvailable(window.pendingModderToolsTab)) {
                     activeTab.value = window.pendingModderToolsTab;
-                    window.pendingModderToolsTab = null;
                 }
+                window.pendingModderToolsTab = null;
 
                 // Mount every per-tab app NOW. This must not wait on the game-path
                 // scan (registry/Steam detection can be slow or hang), otherwise the
@@ -209,26 +230,21 @@ document.addEventListener('modder_tools_loaded', () => {
                 await loadSubviewContent();
                 const tabsToMount = isWebMode
                     ? ['extract']
-                    : ['build', 'extract', 'edit_tmod', 'projects', 'qb_editor', 'software'];
+                    : ['build', 'extract', 'edit_tmod', ...(legacyProjectsEnabled.value ? ['projects'] : []), 'qb_editor', 'software'];
                 tabsToMount.forEach((tab) => {
                     document.dispatchEvent(new CustomEvent(`modder_${tab}_loaded`));
                 });
-                await handleEmbeddedTabSelection(activeTab.value);
                 hydratingState = false;
 
                 // Detect game installs in the background (fire-and-forget).
                 scanForGames();
             });
 
-            onBeforeUnmount(() => {
-                if (window._fileManagerApp && typeof window._fileManagerApp.unmount === 'function') {
-                    window._fileManagerApp.unmount();
-                    window._fileManagerApp = null;
-                }
-            });
+            onUnmounted(() => { if (unsubAccount) unsubAccount(); });
 
             return {
-                t, activeTab, setActiveTab, isWebMode
+                t, activeTab, setActiveTab, isWebMode, legacyProjectsEnabled,
+                loggedIn, promptManageLogin
             };
         }
     });

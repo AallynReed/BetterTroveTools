@@ -1,0 +1,87 @@
+<div id="manage-modpacks-app" class="manage-panel" v-cloak>
+    <div class="manage-header">
+        <div>
+            <h3>{{ t('manage.modpacks_title') }}</h3>
+            <p class="help-text">{{ t('manage.modpacks_help') }}</p>
+        </div>
+        <div class="manage-header-actions">
+            <button class="secondary-btn" @click="load" :disabled="loading"><i class="fa-solid fa-rotate-right" :class="{ 'fa-spin': loading }"></i> <span>{{ t('manage.refresh') }}</span></button>
+            <button class="primary-btn" @click="createForm.open = !createForm.open"><i class="fa-solid fa-plus"></i> <span>{{ t('manage.new_modpack') }}</span></button>
+        </div>
+    </div>
+
+    <div v-if="createForm.open" class="manage-create">
+        <input type="text" v-model="createForm.title" :placeholder="t('manage.title_placeholder')" maxlength="120" @keyup.enter="createPack">
+        <select v-model="createForm.visibility">
+            <option value="draft">{{ t('manage.vis_draft') }}</option>
+            <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
+            <option value="public">{{ t('manage.vis_public') }}</option>
+        </select>
+        <button class="primary-btn" @click="createPack" :disabled="busy || !createForm.title.trim()"><i class="fa-solid fa-check"></i> <span>{{ t('manage.create') }}</span></button>
+    </div>
+
+    <div v-if="loading" class="manage-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('manage.loading') }}</div>
+    <div v-else-if="error" class="manage-state manage-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+    <div v-else-if="!items.length" class="manage-state">{{ t('manage.no_modpacks') }}</div>
+
+    <div v-else class="manage-list">
+        <div v-for="m in items" :key="m.handle + '/' + m.slug" class="manage-card">
+            <div class="manage-thumb">
+                <img v-if="bannerUrl(m)" :src="bannerUrl(m)" alt="" loading="lazy">
+                <i v-else class="fa-solid fa-layer-group"></i>
+            </div>
+            <div class="manage-card-body">
+                <div class="manage-card-top">
+                    <span class="manage-card-title">{{ m.title }}</span>
+                    <span class="manage-badge" :class="'vis-' + m.visibility">{{ t('manage.vis_' + m.visibility) }}</span>
+                    <span v-if="m.is_collaborator" class="manage-badge collab">{{ t('manage.collaborator') }}</span>
+                </div>
+                <div class="manage-card-summary">{{ m.summary || t('manage.no_summary') }}</div>
+                <div class="manage-card-stats">
+                    <span><i class="fa-solid fa-cubes"></i> {{ t('manage.mods_count').replace('{n}', m.mod_count || 0) }}</span>
+                    <span><i class="fa-solid fa-code-branch"></i> {{ t('manage.variants_count').replace('{n}', m.variant_count || 0) }}</span>
+                    <span><i class="fa-solid fa-download"></i> {{ m.download_count || 0 }}</span>
+                    <span><i class="fa-solid fa-star"></i> {{ m.star_count || 0 }}</span>
+                </div>
+            </div>
+            <div class="manage-card-actions">
+                <select :value="m.visibility" @change="setVisibility(m, $event.target.value)" :title="t('manage.visibility')">
+                    <option value="draft">{{ t('manage.vis_draft') }}</option>
+                    <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
+                    <option value="public">{{ t('manage.vis_public') }}</option>
+                </select>
+                <button class="icon-btn" @click="openEdit(m)" :title="t('manage.edit')"><i class="fa-solid fa-pen"></i></button>
+                <button class="icon-btn" @click="openStudio(m)" :title="t('manage.manage_mods_studio')"><i class="fa-solid fa-up-right-from-square"></i></button>
+                <button class="icon-btn danger" @click="removePack(m)" :title="t('manage.delete')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="manage-modal-overlay" :class="{ active: editForm.open }">
+        <div class="manage-modal">
+            <div class="manage-modal-head">
+                <h3>{{ t('manage.edit_modpack') }}</h3>
+                <button class="icon-btn" @click="editForm.open = false"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <label>{{ t('manage.field_title') }}</label>
+            <input type="text" v-model="editForm.title" maxlength="120">
+            <label>{{ t('manage.field_summary') }}</label>
+            <input type="text" v-model="editForm.summary" maxlength="280">
+            <label>{{ t('manage.field_tags') }}</label>
+            <input type="text" v-model="editForm.tags" :placeholder="t('manage.tags_placeholder')">
+            <label>{{ t('manage.field_visibility') }}</label>
+            <select v-model="editForm.visibility">
+                <option value="draft">{{ t('manage.vis_draft') }}</option>
+                <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
+                <option value="public">{{ t('manage.vis_public') }}</option>
+            </select>
+            <p class="manage-modal-note">{{ t('manage.edit_pack_more_in_studio') }}</p>
+            <div class="manage-modal-actions">
+                <button class="secondary-btn" @click="editForm.open = false">{{ t('common.cancel') }}</button>
+                <button class="primary-btn" @click="saveEdit" :disabled="editForm.saving || !editForm.title.trim()">
+                    <i v-if="editForm.saving" class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('manage.save') }}</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

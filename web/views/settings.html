@@ -7,6 +7,7 @@
             <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('settings.general') }}</span></button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('settings.directories') }}</span></button>
             <button v-if="isNative" class="tab-btn" :class="{ active: activeTab === 'notifications' }" @click="activeTab = 'notifications'"><i class="fa-solid fa-bell"></i> <span>{{ t('settings.notifications') }}</span></button>
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'legacy' }" @click="activeTab = 'legacy'"><i class="fa-solid fa-clock-rotate-left"></i> <span>{{ t('settings.legacy_features') }}</span></button>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'general' }">
@@ -283,6 +284,25 @@
                             </div>
                         </template>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legacy Features (desktop only). Opt-in switches for older tools that
+             are hidden by default because a better replacement is on the way. -->
+        <div v-if="!isWebMode" class="tab-content" :class="{ active: activeTab === 'legacy' }">
+            <div class="settings-section">
+                <h3>{{ t('settings.legacy_features') }}</h3>
+                <p class="settings-help-text">{{ t('settings.legacy_features_help') }}</p>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.legacy_projects') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.legacy_projects_desc') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.enable_legacy_projects" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
                 </div>
             </div>
         </div>

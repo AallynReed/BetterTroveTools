@@ -13,6 +13,48 @@
 .tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
 .tab-btn.active { background: var(--bg-panel); color: var(--accent-blue); border: 1px solid var(--border-color); border-bottom: 2px solid var(--accent-blue); }
 .tab-btn .beta-label { margin-left: 2px; }
+/* Third-party software: de-emphasized secondary tab. Pushed to the far right of
+   the row (margin-left:auto) and rendered muted/icon-only so it reads as an
+   "extra" rather than a core modding tool. */
+.tab-buttons .tab-btn-muted {
+    margin-left: auto;
+    color: var(--text-muted);
+    opacity: 0.6;
+    padding: 10px 12px;
+}
+.tab-buttons .tab-btn-muted:hover { opacity: 1; }
+.tab-buttons .tab-btn-muted.active { opacity: 1; }
+
+/* Online-management tabs (Mods / Modpacks). Stand out slightly from the local
+   tools with a faint accent tint + a left accent bar so they read as a distinct
+   "your online stuff" group, without being as loud as the active tab. */
+.tab-buttons .tab-btn-cloud {
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(var(--accent-rgb), 0.03));
+    box-shadow: inset 2px 0 0 rgba(var(--accent-rgb), 0.55);
+    color: var(--text-main);
+}
+.tab-buttons .tab-btn-cloud:hover {
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.06));
+}
+.tab-buttons .tab-btn-cloud.active {
+    background: var(--bg-panel);
+    color: var(--accent-blue);
+    border: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--accent-blue);
+    box-shadow: inset 2px 0 0 var(--accent-blue);
+}
+
+/* Signed-out pseudo-tab — inviting but quiet; a dashed accent border signals
+   "do this to unlock more". It's not a real tab (never gets .active). */
+.tab-buttons .tab-btn-signin {
+    border: 1px dashed rgba(var(--accent-rgb), 0.5);
+    color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.04);
+}
+.tab-buttons .tab-btn-signin:hover {
+    background: rgba(var(--accent-rgb), 0.12);
+    border-color: var(--accent-blue);
+}
 .tab-btn:hover .beta-label,
 .tab-btn.active .beta-label {
     border-color: rgba(255, 184, 77, 0.4);
@@ -159,10 +201,6 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 
 #modder-tools-file-manager-host .tabs-container {
     gap: 0;
-}
-
-#modder-tools-file-manager-host .tab-buttons {
-    display: none;
 }
 
 .qb-editor-panel {

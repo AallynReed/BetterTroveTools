@@ -25,6 +25,7 @@ os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
 import backend.about
+import backend.auth
 import backend.codexes.allies
 import backend.codexes.badges
 import backend.calculators

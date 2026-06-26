@@ -1,0 +1,167 @@
+/* Manage Mods / Modpacks tabs — list of your projects + create/edit/delete. */
+.manage-panel { padding: 4px 2px; }
+
+.manage-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.manage-header h3 { margin: 0 0 4px; color: var(--text-main); }
+.manage-header .help-text { margin: 0; color: var(--text-muted); font-size: 13px; }
+.manage-header-actions { display: flex; gap: 10px; flex-shrink: 0; }
+
+.manage-create {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding: 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+.manage-create input[type="text"] { flex: 1; }
+
+.manage-state {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 0;
+}
+.manage-state.manage-error { color: #ff7a7a; }
+
+.manage-list { display: flex; flex-direction: column; gap: 12px; }
+
+.manage-card {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    transition: border-color 0.15s;
+}
+.manage-card:hover { border-color: rgba(var(--accent-rgb), 0.4); }
+
+.manage-thumb {
+    width: 72px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--bg-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 20px;
+}
+.manage-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+.manage-card-body { flex: 1; min-width: 0; }
+.manage-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.manage-card-title {
+    font-weight: 700;
+    color: var(--text-main);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.manage-card-summary {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-top: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.manage-card-stats {
+    display: flex;
+    gap: 14px;
+    margin-top: 6px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+.manage-card-stats i { margin-right: 4px; opacity: 0.8; }
+
+.manage-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bg-hover);
+    color: var(--text-muted);
+}
+.manage-badge.vis-public { background: rgba(74, 222, 128, 0.14); color: #6ee7a0; }
+.manage-badge.vis-unlisted { background: rgba(251, 191, 36, 0.14); color: #fbbf24; }
+.manage-badge.vis-draft { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+.manage-badge.collab { background: rgba(var(--accent-rgb), 0.16); color: var(--accent-blue); }
+.manage-badge.mode { background: rgba(168, 130, 255, 0.16); color: #c4b1ff; }
+
+.manage-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.manage-card-actions select { min-width: 96px; }
+
+.icon-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    background: var(--bg-hover);
+    color: var(--text-main);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.icon-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+.icon-btn.danger:hover { border-color: #ef4444; color: #ef4444; }
+
+/* Edit modal */
+.manage-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10010;
+}
+.manage-modal-overlay.active { display: flex; }
+.manage-modal {
+    width: min(480px, 92vw);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px 22px;
+    max-height: 88vh;
+    overflow: auto;
+}
+.manage-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.manage-modal-head h3 { margin: 0; color: var(--text-main); }
+.manage-modal label { display: block; margin: 12px 0 5px; font-size: 13px; color: var(--text-main); font-weight: 600; }
+.manage-modal input[type="text"], .manage-modal select { width: 100%; }
+.manage-modal-note { color: var(--text-muted); font-size: 12px; margin: 14px 0 0; }
+.manage-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+
+/* Shared control styling so injected fragments match the app even though the
+   manage views don't reuse a tool-specific input class. */
+.manage-panel input[type="text"], .manage-panel select,
+.manage-modal input[type="text"], .manage-modal select {
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: 6px;
+    padding: 9px 11px;
+    outline: none;
+    font-size: 14px;
+}
+.manage-panel input[type="text"]:focus, .manage-panel select:focus,
+.manage-modal input[type="text"]:focus, .manage-modal select:focus {
+    border-color: var(--accent-blue);
+}

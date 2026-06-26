@@ -704,6 +704,31 @@ body.app-update-active #network-tracker-vue-app {
     margin-bottom: 8px;
 }
 
+/* Settings / Documentation / Feedback share one compact icon row so the footer
+   stays short. Each button flexes to an equal third; the label is dropped (the
+   title/aria-label carry the meaning on hover + for screen readers). */
+.sidebar-footer-icons {
+    display: flex;
+    gap: 6px;
+}
+.nav-btn.nav-btn-icon {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 0;
+    gap: 0;
+}
+.nav-btn.nav-btn-icon .nav-icon {
+    background: transparent;
+}
+/* Collapsed rail is too narrow for three across — stack them, and fan back out
+   to a row when the rail expands on hover (mirrors the .nav-btn collapse rules). */
+#sidebar.collapsed .sidebar-footer-icons {
+    flex-direction: column;
+}
+#sidebar.collapsed:hover .sidebar-footer-icons {
+    flex-direction: row;
+}
+
 .app-overlay {
     position: fixed;
     inset: 0;
