@@ -357,6 +357,24 @@ body.app-update-active #network-tracker-vue-app {
     color: inherit;
 }
 
+/* Sidebar account chip: the Discord avatar replaces the fallback icon once
+   signed in. Sized + rounded HERE (globally) — NOT in account.css — because the
+   sidebar chip is always present, but account.css only loads while the Account
+   view is active (so a view-scoped rule left the avatar huge + square off-tab). */
+.account-nav-avatar {
+    min-width: 24px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+/* Account is a desktop-only feature (needs the eel auth backend) — hide its
+   sidebar entry entirely on the web + Android builds. The manage Mods/Modpacks
+   tabs are already hidden there via their isWebMode/loggedIn gates. */
+.btt-web #account-nav-btn { display: none; }
+
 .nav-text {
     white-space: nowrap;
     transition: opacity 0.2s ease, transform 0.2s ease;

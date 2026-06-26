@@ -1397,6 +1397,12 @@ window.BTTAccount = (function () {
         listeners.forEach((fn) => { try { fn(state); } catch (e) { /* ignore */ } });
     }
 
+    // The chip label is no longer a data-i18n node (translatePage was resetting
+    // the signed-in username back to "Account" on every view switch). So we own
+    // the label text — re-apply it when the language changes so the signed-out
+    // "Account" label still localizes.
+    window.addEventListener('languagechange', applyNav);
+
     return {
         get state() { return state; },
         onChange(fn) { listeners.add(fn); return () => listeners.delete(fn); },

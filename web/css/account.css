@@ -180,12 +180,3 @@
     margin-top: 20px;
     opacity: 0.8;
 }
-
-/* Sidebar account chip: swap the icon for the avatar once signed in. */
-.account-nav-avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
-}

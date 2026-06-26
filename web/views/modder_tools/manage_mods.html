@@ -1,86 +1,183 @@
 <div id="manage-mods-app" class="manage-panel" v-cloak>
-    <div class="manage-header">
-        <div>
-            <h3>{{ t('manage.mods_title') }}</h3>
-            <p class="help-text">{{ t('manage.mods_help') }}</p>
-        </div>
-        <div class="manage-header-actions">
-            <button class="secondary-btn" @click="load" :disabled="loading"><i class="fa-solid fa-rotate-right" :class="{ 'fa-spin': loading }"></i> <span>{{ t('manage.refresh') }}</span></button>
-            <button class="primary-btn" @click="createForm.open = !createForm.open"><i class="fa-solid fa-plus"></i> <span>{{ t('manage.new_mod') }}</span></button>
-        </div>
-    </div>
-
-    <div v-if="createForm.open" class="manage-create">
-        <input type="text" v-model="createForm.title" :placeholder="t('manage.title_placeholder')" maxlength="120" @keyup.enter="createMod">
-        <select v-model="createForm.visibility">
-            <option value="draft">{{ t('manage.vis_draft') }}</option>
-            <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
-            <option value="public">{{ t('manage.vis_public') }}</option>
-        </select>
-        <button class="primary-btn" @click="createMod" :disabled="busy || !createForm.title.trim()"><i class="fa-solid fa-check"></i> <span>{{ t('manage.create') }}</span></button>
-    </div>
-
-    <div v-if="loading" class="manage-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('manage.loading') }}</div>
-    <div v-else-if="error" class="manage-state manage-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
-    <div v-else-if="!items.length" class="manage-state">{{ t('manage.no_mods') }}</div>
-
-    <div v-else class="manage-list">
-        <div v-for="m in items" :key="m.handle + '/' + m.slug" class="manage-card">
-            <div class="manage-thumb">
-                <img v-if="bannerUrl(m)" :src="bannerUrl(m)" alt="" loading="lazy">
-                <i v-else class="fa-solid fa-cube"></i>
+    <!-- ===================== LIST ===================== -->
+    <template v-if="view === 'list'">
+        <div class="manage-header">
+            <div>
+                <h3>{{ t('manage.mods_title') }}</h3>
+                <p class="help-text">{{ t('manage.mods_help') }}</p>
             </div>
-            <div class="manage-card-body">
-                <div class="manage-card-top">
-                    <span class="manage-card-title">{{ m.title }}</span>
-                    <span class="manage-badge" :class="'vis-' + m.visibility">{{ t('manage.vis_' + m.visibility) }}</span>
-                    <span v-if="m.is_collaborator" class="manage-badge collab">{{ t('manage.collaborator') }}</span>
-                    <span v-if="m.mode === 'releases'" class="manage-badge mode">{{ t('manage.releases_only') }}</span>
-                </div>
-                <div class="manage-card-summary">{{ m.summary || t('manage.no_summary') }}</div>
-                <div class="manage-card-stats">
-                    <span><i class="fa-solid fa-download"></i> {{ m.download_count || 0 }}</span>
-                    <span><i class="fa-solid fa-star"></i> {{ m.star_count || 0 }}</span>
-                </div>
-            </div>
-            <div class="manage-card-actions">
-                <select :value="m.visibility" @change="setVisibility(m, $event.target.value)" :title="t('manage.visibility')">
-                    <option value="draft">{{ t('manage.vis_draft') }}</option>
-                    <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
-                    <option value="public">{{ t('manage.vis_public') }}</option>
-                </select>
-                <button class="icon-btn" @click="openEdit(m)" :title="t('manage.edit')"><i class="fa-solid fa-pen"></i></button>
-                <button class="icon-btn" @click="openStudio(m)" :title="t('manage.open_studio')"><i class="fa-solid fa-up-right-from-square"></i></button>
-                <button class="icon-btn danger" @click="removeMod(m)" :title="t('manage.delete')"><i class="fa-solid fa-trash"></i></button>
+            <div class="manage-header-actions">
+                <button class="secondary-btn" @click="load" :disabled="loading"><i class="fa-solid fa-rotate-right" :class="{ 'fa-spin': loading }"></i> <span>{{ t('manage.refresh') }}</span></button>
+                <button class="primary-btn" @click="createForm.open = !createForm.open"><i class="fa-solid fa-plus"></i> <span>{{ t('manage.new_mod') }}</span></button>
             </div>
         </div>
-    </div>
 
-    <div class="manage-modal-overlay" :class="{ active: editForm.open }">
-        <div class="manage-modal">
-            <div class="manage-modal-head">
-                <h3>{{ t('manage.edit_mod') }}</h3>
-                <button class="icon-btn" @click="editForm.open = false"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <label>{{ t('manage.field_title') }}</label>
-            <input type="text" v-model="editForm.title" maxlength="120">
-            <label>{{ t('manage.field_summary') }}</label>
-            <input type="text" v-model="editForm.summary" maxlength="280">
-            <label>{{ t('manage.field_tags') }}</label>
-            <input type="text" v-model="editForm.tags" :placeholder="t('manage.tags_placeholder')">
-            <label>{{ t('manage.field_visibility') }}</label>
-            <select v-model="editForm.visibility">
+        <div v-if="createForm.open" class="manage-create">
+            <input type="text" v-model="createForm.title" :placeholder="t('manage.title_placeholder')" maxlength="120" @keyup.enter="createMod">
+            <select v-model="createForm.visibility">
                 <option value="draft">{{ t('manage.vis_draft') }}</option>
                 <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
                 <option value="public">{{ t('manage.vis_public') }}</option>
             </select>
-            <p class="manage-modal-note">{{ t('manage.edit_more_in_studio') }}</p>
-            <div class="manage-modal-actions">
-                <button class="secondary-btn" @click="editForm.open = false">{{ t('common.cancel') }}</button>
-                <button class="primary-btn" @click="saveEdit" :disabled="editForm.saving || !editForm.title.trim()">
-                    <i v-if="editForm.saving" class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('manage.save') }}</span>
-                </button>
+            <button class="primary-btn" @click="createMod" :disabled="busy || !createForm.title.trim()"><i class="fa-solid fa-check"></i> <span>{{ t('manage.create') }}</span></button>
+        </div>
+
+        <div v-if="loading" class="manage-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('manage.loading') }}</div>
+        <div v-else-if="error" class="manage-state manage-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+        <div v-else-if="!items.length" class="manage-state">{{ t('manage.no_mods') }}</div>
+
+        <div v-else class="manage-list">
+            <div v-for="m in items" :key="m.handle + '/' + m.slug" class="manage-card" @click="openEditor(m)">
+                <div class="manage-thumb">
+                    <img v-if="bannerUrl(m)" :src="bannerUrl(m)" alt="" loading="lazy">
+                    <i v-else class="fa-solid fa-cube"></i>
+                </div>
+                <div class="manage-card-body">
+                    <div class="manage-card-top">
+                        <span class="manage-card-title">{{ m.title }}</span>
+                        <span class="manage-badge" :class="'vis-' + m.visibility">{{ t('manage.vis_' + m.visibility) }}</span>
+                        <span v-if="m.is_collaborator" class="manage-badge collab">{{ t('manage.collaborator') }}</span>
+                        <span v-if="m.mode === 'releases'" class="manage-badge mode">{{ t('manage.releases_only') }}</span>
+                    </div>
+                    <div class="manage-card-summary">{{ m.summary || t('manage.no_summary') }}</div>
+                    <div class="manage-card-stats">
+                        <span><i class="fa-solid fa-download"></i> {{ m.download_count || 0 }}</span>
+                        <span><i class="fa-solid fa-star"></i> {{ m.star_count || 0 }}</span>
+                    </div>
+                </div>
+                <div class="manage-card-actions" @click.stop>
+                    <button class="primary-btn" @click="openEditor(m)"><i class="fa-solid fa-sliders"></i> <span>{{ t('manage.manage') }}</span></button>
+                    <button class="icon-btn" @click="openStudio(m)" :title="t('manage.open_studio')"><i class="fa-solid fa-up-right-from-square"></i></button>
+                    <button class="icon-btn danger" @click="removeMod(m)" :title="t('manage.delete')"><i class="fa-solid fa-trash"></i></button>
+                </div>
             </div>
         </div>
-    </div>
+    </template>
+
+    <!-- ===================== EDITOR ===================== -->
+    <template v-else>
+        <div class="manage-editor-bar">
+            <button class="secondary-btn" @click="closeEditor"><i class="fa-solid fa-arrow-left"></i> <span>{{ t('manage.back') }}</span></button>
+            <h3 class="manage-editor-title">{{ detail.title || editTarget.title }}</h3>
+            <button class="secondary-btn" @click="openStudio(editTarget)"><i class="fa-solid fa-up-right-from-square"></i> <span>{{ t('manage.open_studio') }}</span></button>
+        </div>
+
+        <div v-if="detailLoading" class="manage-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('manage.loading') }}</div>
+        <div v-else-if="detailError" class="manage-state manage-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ detailError }}</div>
+
+        <template v-else>
+            <!-- Details -->
+            <section class="manage-section">
+                <h4>{{ t('manage.sec_details') }}</h4>
+                <label>{{ t('manage.field_title') }}</label>
+                <input type="text" v-model="form.title" maxlength="120">
+                <label>{{ t('manage.field_summary') }}</label>
+                <input type="text" v-model="form.summary" maxlength="280">
+                <label>{{ t('manage.field_description') }}</label>
+                <textarea v-model="form.description" rows="5" :placeholder="t('manage.markdown_ok')"></textarea>
+                <div class="manage-row">
+                    <div>
+                        <label>{{ t('manage.field_tags') }}</label>
+                        <input type="text" v-model="form.tags" :placeholder="t('manage.tags_placeholder')">
+                    </div>
+                    <div>
+                        <label>{{ t('manage.field_visibility') }}</label>
+                        <select v-model="form.visibility">
+                            <option value="draft">{{ t('manage.vis_draft') }}</option>
+                            <option value="unlisted">{{ t('manage.vis_unlisted') }}</option>
+                            <option value="public">{{ t('manage.vis_public') }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="manage-row">
+                    <div><label>{{ t('manage.field_discord') }}</label><input type="text" v-model="form.discord_url" placeholder="https://discord.gg/…"></div>
+                    <div><label>{{ t('manage.field_website') }}</label><input type="text" v-model="form.website_url" placeholder="https://…"></div>
+                </div>
+                <label>{{ t('manage.field_donations') }}</label>
+                <textarea v-model="form.donation_urls" rows="2" :placeholder="t('manage.one_url_per_line')"></textarea>
+                <div class="manage-section-actions">
+                    <button class="primary-btn" @click="saveDetails" :disabled="savingDetails || !form.title.trim()">
+                        <i v-if="savingDetails" class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('manage.save_details') }}</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Banner -->
+            <section class="manage-section">
+                <h4>{{ t('manage.sec_banner') }}</h4>
+                <div class="manage-banner-row">
+                    <div class="manage-banner-preview">
+                        <img v-if="detail.banner_sha" :src="imageUrl(detail.banner_sha)" alt="">
+                        <span v-else class="manage-muted">{{ t('manage.no_banner') }}</span>
+                    </div>
+                    <button class="secondary-btn" @click="uploadBanner" :disabled="bannerBusy"><i class="fa-solid fa-image"></i> <span>{{ t('manage.upload_banner') }}</span></button>
+                </div>
+            </section>
+
+            <!-- Releases -->
+            <section class="manage-section">
+                <h4>{{ t('manage.sec_releases') }}</h4>
+                <div class="manage-release-upload">
+                    <div class="manage-row">
+                        <div><label>{{ t('manage.field_tag') }}</label><input type="text" v-model="relForm.tag" :placeholder="t('manage.tag_placeholder')" maxlength="60"></div>
+                        <div>
+                            <label>{{ t('manage.field_branch') }}</label>
+                            <select v-model="relForm.branch">
+                                <option v-for="b in (detail.branches || [])" :key="b.name" :value="b.name">{{ b.name }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>{{ t('manage.field_status') }}</label>
+                            <select v-model="relForm.status">
+                                <option value="published">{{ t('manage.status_published') }}</option>
+                                <option value="draft">{{ t('manage.status_draft') }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label>{{ t('manage.field_rel_title') }}</label>
+                    <input type="text" v-model="relForm.title" maxlength="160">
+                    <label>{{ t('manage.field_changelog') }}</label>
+                    <textarea v-model="relForm.changelog" rows="2"></textarea>
+                    <div class="manage-section-actions">
+                        <button class="primary-btn" @click="uploadRelease" :disabled="relBusy || !relForm.tag.trim()">
+                            <i v-if="relBusy" class="fa-solid fa-spinner fa-spin"></i><i v-else class="fa-solid fa-upload"></i> <span>{{ t('manage.upload_release') }}</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div v-if="!(detail.releases || []).length" class="manage-muted">{{ t('manage.no_releases') }}</div>
+                <div v-else class="manage-release-list">
+                    <div v-for="r in detail.releases" :key="r.id" class="manage-release">
+                        <div class="manage-release-info">
+                            <span class="manage-release-tag">{{ r.tag }}</span>
+                            <span class="manage-badge" :class="r.status === 'published' ? 'vis-public' : 'vis-draft'">{{ t('manage.status_' + r.status) }}</span>
+                            <span class="manage-muted">{{ r.branch }} · {{ r.download_count || 0 }} <i class="fa-solid fa-download"></i></span>
+                        </div>
+                        <div class="manage-release-actions">
+                            <button class="icon-btn" @click="toggleRelease(r)" :title="r.status === 'published' ? t('manage.unpublish') : t('manage.publish')">
+                                <i class="fa-solid" :class="r.status === 'published' ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                            <button class="icon-btn danger" @click="deleteRelease(r)" :title="t('manage.delete')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Collaborators -->
+            <section class="manage-section">
+                <h4>{{ t('manage.sec_collaborators') }}</h4>
+                <div v-if="!(detail.collaborators || []).length" class="manage-muted">{{ t('manage.no_collaborators') }}</div>
+                <div v-else class="manage-collab-list">
+                    <div v-for="c in detail.collaborators" :key="c.id" class="manage-collab">
+                        <span><i class="fa-solid fa-user"></i> {{ c.username }}</span>
+                        <button v-if="detail.is_primary_owner" class="icon-btn danger" @click="removeCollaborator(c)" :title="t('manage.remove')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+                <div v-if="detail.is_primary_owner" class="manage-collab-add">
+                    <input type="text" v-model="collabName" :placeholder="t('manage.collab_username')" @keyup.enter="addCollaborator">
+                    <button class="secondary-btn" @click="addCollaborator" :disabled="collabBusy || !collabName.trim()"><i class="fa-solid fa-user-plus"></i> <span>{{ t('manage.add') }}</span></button>
+                </div>
+            </section>
+        </template>
+    </template>
 </div>
