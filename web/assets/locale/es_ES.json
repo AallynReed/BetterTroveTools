@@ -1657,7 +1657,14 @@
         "manage.upload_release": "Subir versión",
         "manage.uploaded": "Subido",
         "manage.variant_label": "Nombre visible",
-        "manage.variant_name": "Nombre de la variante"
+        "manage.variant_name": "Nombre de la variante",
+        "home.giveaways.enter_failed": "No se pudo participar en el sorteo. Inténtalo de nuevo.",
+        "home.giveaways.entered": "Participando",
+        "home.giveaways.entered_toast": "Ya participas. ¡Buena suerte!",
+        "home.giveaways.join_button": "Participar en el sorteo",
+        "home.giveaways.sign_in": "Iniciar sesión",
+        "home.giveaways.signin_hint": "Inicia sesión para participar en los sorteos sin salir de la app.",
+        "home.giveaways.signin_to_enter": "Inicia sesión para participar"
     },
     "content": {
         "(Custom) Trove": "",

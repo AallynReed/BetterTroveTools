@@ -157,6 +157,56 @@ document.addEventListener('home_loaded', () => {
             let hydratingHomePrefs = false;
 
             const openUrl = (url) => eel.open_url_in_browser(url)();
+
+            // --- Giveaway joining (desktop + signed in) -------------------------
+            // On desktop a signed-in user can enter giveaways in-app; signed-out
+            // users get a sign-in hint. On web/Android (no eel auth) we keep the
+            // existing "open the website" behaviour.
+            const GIVEAWAYS_URL = 'https://trove.aallyn.net/giveaways';
+            const isGiveawayWebMode = window.BTT_WEB_MODE === true;
+            const giveawayLoggedIn = ref(!!(window.BTTAccount && window.BTTAccount.state.authenticated));
+            const enteredGiveaways = ref(new Set());
+            const joiningGiveaway = ref('');
+            let unsubGiveawayAccount = null;
+
+            const isGiveawayEntered = (id) => enteredGiveaways.value.has(id);
+
+            const refreshMyGiveaways = async () => {
+                if (isGiveawayWebMode || !giveawayLoggedIn.value || !window.eel || !eel.site_giveaway_mine) {
+                    enteredGiveaways.value = new Set();
+                    return;
+                }
+                try {
+                    const res = await eel.site_giveaway_mine()();
+                    if (res && res.success && res.data) enteredGiveaways.value = new Set(res.data.giveaway_ids || []);
+                } catch (e) { /* offline / not signed in */ }
+            };
+
+            const giveawaySignIn = () => {
+                giveawayModal.show = false;
+                if (window.loadView) window.loadView('account');
+            };
+
+            const joinGiveaway = async (g) => {
+                if (isGiveawayWebMode) { openUrl(GIVEAWAYS_URL); return; }
+                if (!giveawayLoggedIn.value) { giveawaySignIn(); return; }
+                if (joiningGiveaway.value || isGiveawayEntered(g.id)) return;
+                joiningGiveaway.value = g.id;
+                try {
+                    const res = await eel.site_giveaway_enter(g.id)();
+                    if (res && res.success && res.data && res.data.entered) {
+                        enteredGiveaways.value = new Set([...enteredGiveaways.value, g.id]);
+                        const raw = giveaways.data.find(x => x.id === g.id);
+                        if (raw && typeof res.data.entry_count === 'number') raw.entry_count = res.data.entry_count;
+                        if (window.showToast) window.showToast(t('home.giveaways.entered_toast'));
+                    } else if (window.showToast) {
+                        window.showToast((res && res.error) || t('home.giveaways.enter_failed'), true);
+                    }
+                } catch (e) {
+                    if (window.showToast) window.showToast(t('home.giveaways.enter_failed'), true);
+                }
+                joiningGiveaway.value = '';
+            };
             // The Vue template ref binds asynchronously and the eel-backed
             // desktop WebView has historically had quirks with scrollBy +
             // behavior:'smooth'. Fall back to walking the carousel's children
@@ -866,7 +916,7 @@ document.addEventListener('home_loaded', () => {
                 };
             });
 
-            const openGiveawayModal = () => { giveawayModal.show = true; };
+            const openGiveawayModal = () => { giveawayModal.show = true; refreshMyGiveaways(); };
 
             // Tiles hide themselves entirely on fetch failure (Kiwi API down,
             // CORS reject, etc.) so the home page declutters instead of showing
@@ -1669,10 +1719,21 @@ document.addEventListener('home_loaded', () => {
                 }
                 loadWhatsNew();
                 visitsTickInterval.value = setInterval(refreshNavVisits, 5000);
+
+                // Track sign-in state for in-app giveaway entry (desktop only).
+                if (window.BTTAccount) {
+                    giveawayLoggedIn.value = !!window.BTTAccount.state.authenticated;
+                    unsubGiveawayAccount = window.BTTAccount.onChange((s) => {
+                        giveawayLoggedIn.value = !!s.authenticated;
+                        refreshMyGiveaways();
+                    });
+                    refreshMyGiveaways();
+                }
             });
 
             onUnmounted(() => {
                 if (visitsTickInterval.value) clearInterval(visitsTickInterval.value);
+                if (unsubGiveawayAccount) unsubGiveawayAccount();
             });
 
             watch(nowSec, () => {
@@ -1686,6 +1747,7 @@ document.addEventListener('home_loaded', () => {
                 giveaways, upcomingGiveaways, endedGiveaways,
                 mappedGiveaways, mappedUpcoming, mappedEnded,
                 giveawayModal, giveawayTileSummary, openGiveawayModal,
+                isGiveawayWebMode, giveawayLoggedIn, isGiveawayEntered, joiningGiveaway, joinGiveaway, giveawaySignIn,
                 activity, mappedActivity, showActivityTile, showGiveawayTile, showStatRow, merchantCards, chaosChestCard,
                 scrollCarousel, scrollNewsCarousel, toggleNewsCollapsed, openUrl, openBuffSchedule, openMerchantSchedule,
                 rotationModal, calendarModal, calendarData, loadYearlyCalendar, centerCalendarToday,

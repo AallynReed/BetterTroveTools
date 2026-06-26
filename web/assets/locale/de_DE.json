@@ -1657,7 +1657,14 @@
         "manage.upload_release": "Release hochladen",
         "manage.uploaded": "Hochgeladen",
         "manage.variant_label": "Anzeigename",
-        "manage.variant_name": "Variantenname"
+        "manage.variant_name": "Variantenname",
+        "home.giveaways.enter_failed": "Teilnahme an der Verlosung fehlgeschlagen. Bitte versuche es erneut.",
+        "home.giveaways.entered": "Teilgenommen",
+        "home.giveaways.entered_toast": "Du nimmst teil. Viel Glück!",
+        "home.giveaways.join_button": "An Verlosung teilnehmen",
+        "home.giveaways.sign_in": "Anmelden",
+        "home.giveaways.signin_hint": "Melde dich an, um an Verlosungen teilzunehmen, ohne die App zu verlassen.",
+        "home.giveaways.signin_to_enter": "Zum Teilnehmen anmelden"
     },
     "content": {
         "(Custom) Trove": "",

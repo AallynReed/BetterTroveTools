@@ -167,8 +167,8 @@
                     type="button"
                     class="giveaway-enter-btn home-giveaway-enter"
                     :title="t('home.giveaways.enter_button')"
-                    @click.stop="openUrl('https://trove.aallyn.net/giveaways')">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    @click.stop="openGiveawayModal()">
+                <i class="fa-solid fa-gift"></i>
                 <span>{{ t('home.giveaways.enter_button') }}</span>
             </button>
             <span v-else class="home-giveaway-chevron"><i class="fa-solid fa-arrow-right"></i></span>
@@ -461,6 +461,11 @@
                 <button class="modal-close" @click="giveawayModal.show = false"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
+                <div v-if="!isGiveawayWebMode && !giveawayLoggedIn" class="giveaway-signin-hint" role="button" tabindex="0" @click="giveawaySignIn">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>{{ t('home.giveaways.signin_hint') }}</span>
+                    <span class="giveaway-signin-hint-cta">{{ t('home.giveaways.sign_in') }}</span>
+                </div>
                 <div class="giveaway-modal-section">
                     <h4 class="giveaway-modal-section-title">
                         <i class="fa-solid fa-circle-dot"></i>
@@ -489,9 +494,25 @@
                                 <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.starts_at') }}</span> <span>{{ g.startsAtText }}</span></div>
                                 <div><span class="giveaway-modal-time-label">{{ t('home.giveaways.ends_at') }}</span> <span>{{ g.endsAtText }}</span></div>
                             </div>
-                            <button type="button" class="giveaway-enter-btn" @click="openUrl('https://trove.aallyn.net/giveaways')">
+                            <!-- web/Android: link to the website (no in-app login there) -->
+                            <button v-if="isGiveawayWebMode" type="button" class="giveaway-enter-btn" @click="openUrl('https://trove.aallyn.net/giveaways')">
                                 <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                 <span>{{ t('home.giveaways.enter_button') }}</span>
+                            </button>
+                            <!-- desktop, signed out: hint to sign in -->
+                            <button v-else-if="!giveawayLoggedIn" type="button" class="giveaway-enter-btn is-signin" @click="giveawaySignIn">
+                                <i class="fa-solid fa-right-to-bracket"></i>
+                                <span>{{ t('home.giveaways.signin_to_enter') }}</span>
+                            </button>
+                            <!-- desktop, already entered -->
+                            <button v-else-if="isGiveawayEntered(g.id)" type="button" class="giveaway-enter-btn is-entered" disabled>
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>{{ t('home.giveaways.entered') }}</span>
+                            </button>
+                            <!-- desktop, signed in: join in-app -->
+                            <button v-else type="button" class="giveaway-enter-btn" :disabled="joiningGiveaway === g.id" @click="joinGiveaway(g)">
+                                <i class="fa-solid" :class="joiningGiveaway === g.id ? 'fa-spinner fa-spin' : 'fa-gift'"></i>
+                                <span>{{ t('home.giveaways.join_button') }}</span>
                             </button>
                         </article>
                     </div>

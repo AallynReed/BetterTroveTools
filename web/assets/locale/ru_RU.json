@@ -1657,7 +1657,14 @@
         "manage.upload_release": "Загрузить релиз",
         "manage.uploaded": "Загружено",
         "manage.variant_label": "Отображаемое имя",
-        "manage.variant_name": "Название варианта"
+        "manage.variant_name": "Название варианта",
+        "home.giveaways.enter_failed": "Не удалось принять участие в розыгрыше. Попробуйте ещё раз.",
+        "home.giveaways.entered": "Вы участвуете",
+        "home.giveaways.entered_toast": "Вы участвуете. Удачи!",
+        "home.giveaways.join_button": "Участвовать в розыгрыше",
+        "home.giveaways.sign_in": "Войти",
+        "home.giveaways.signin_hint": "Войдите, чтобы участвовать в розыгрышах не выходя из приложения.",
+        "home.giveaways.signin_to_enter": "Войдите для участия"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

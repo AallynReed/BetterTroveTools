@@ -1657,7 +1657,14 @@
         "manage.upload_release": "上传发布版本",
         "manage.uploaded": "已上传",
         "manage.variant_label": "显示名称",
-        "manage.variant_name": "变体名称"
+        "manage.variant_name": "变体名称",
+        "home.giveaways.enter_failed": "参与抽奖失败，请重试。",
+        "home.giveaways.entered": "已参与",
+        "home.giveaways.entered_toast": "已成功参与，祝你好运！",
+        "home.giveaways.join_button": "参与抽奖",
+        "home.giveaways.sign_in": "登录",
+        "home.giveaways.signin_hint": "登录后即可在应用内直接参与抽奖。",
+        "home.giveaways.signin_to_enter": "登录以参与"
     },
     "content": {
         "(no tier)": "",

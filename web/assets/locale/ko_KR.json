@@ -1657,7 +1657,14 @@
         "manage.upload_release": "릴리스 업로드",
         "manage.uploaded": "업로드됨",
         "manage.variant_label": "표시 이름",
-        "manage.variant_name": "변형 이름"
+        "manage.variant_name": "변형 이름",
+        "home.giveaways.enter_failed": "이벤트 응모에 실패했습니다. 다시 시도하세요.",
+        "home.giveaways.entered": "응모 완료",
+        "home.giveaways.entered_toast": "응모되었습니다. 행운을 빌어요!",
+        "home.giveaways.join_button": "이벤트 응모하기",
+        "home.giveaways.sign_in": "로그인",
+        "home.giveaways.signin_hint": "로그인하면 앱을 벗어나지 않고 이벤트에 응모할 수 있습니다.",
+        "home.giveaways.signin_to_enter": "로그인하여 응모"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

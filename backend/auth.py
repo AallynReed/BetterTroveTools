@@ -524,3 +524,20 @@ def site_hub_search(q, limit=20):
 def site_mod_branches(handle, slug):
     return _manage_call("GET", f"/mods/hub/projects/{handle}/{slug}/branches",
                         "Loading variants")
+
+
+# --- Giveaways (join + my entries) -------------------------------------------
+
+@eel.expose
+@standardize_response
+def site_giveaway_enter(giveaway_id):
+    """Enter the signed-in user into an open giveaway. Idempotent server-side
+    (a second call just returns success)."""
+    return _manage_call("POST", f"/giveaways/{giveaway_id}/enter", "Entering giveaway")
+
+
+@eel.expose
+@standardize_response
+def site_giveaway_mine():
+    """The giveaway ids the signed-in user has already entered."""
+    return _manage_call("GET", "/giveaways/mine", "Loading your giveaways")

@@ -2937,6 +2937,56 @@
 }
 .giveaway-enter-btn i { font-size: 11px; opacity: 0.85; }
 
+/* "Sign in to enter" variant — accent (not gold) so it reads as a different
+   action than a real entry. */
+.giveaway-enter-btn.is-signin {
+    border-color: rgba(var(--accent-rgb), 0.55);
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.20), rgba(var(--accent-rgb), 0.10));
+    color: var(--accent-blue);
+}
+.giveaway-enter-btn.is-signin:hover,
+.giveaway-enter-btn.is-signin:focus-visible {
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.30), rgba(var(--accent-rgb), 0.16));
+    border-color: var(--accent-blue);
+    box-shadow: 0 6px 14px rgba(var(--accent-rgb), 0.18);
+}
+/* "Entered" confirmation — green, non-interactive. */
+.giveaway-enter-btn.is-entered {
+    border-color: rgba(74, 222, 128, 0.5);
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.18), rgba(74, 222, 128, 0.10));
+    color: #6ee7a0;
+    cursor: default;
+}
+.giveaway-enter-btn.is-entered:hover { transform: none; box-shadow: none; color: #6ee7a0; }
+.giveaway-enter-btn:disabled { opacity: 0.7; cursor: default; }
+
+/* Sign-in hint banner at the top of the giveaway modal (desktop, logged out). */
+.giveaway-signin-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    background: rgba(var(--accent-rgb), 0.07);
+    color: var(--text-main);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.giveaway-signin-hint:hover { background: rgba(var(--accent-rgb), 0.13); border-color: var(--accent-blue); }
+.giveaway-signin-hint > i { color: var(--accent-blue); font-size: 15px; }
+.giveaway-signin-hint > span:first-of-type { flex: 1; }
+.giveaway-signin-hint-cta {
+    flex-shrink: 0;
+    font-weight: 700;
+    color: var(--accent-blue);
+    border: 1px solid rgba(var(--accent-rgb), 0.5);
+    border-radius: 999px;
+    padding: 4px 12px;
+}
+
 /* Tile-embedded variant: smaller padding so the tile keeps its compact
    height when the button replaces the chevron, and a flex-shrink:0 so a
    long translation never squashes it. */

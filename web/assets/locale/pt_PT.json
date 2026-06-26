@@ -1657,7 +1657,14 @@
         "manage.upload_release": "Carregar lançamento",
         "manage.uploaded": "Carregado",
         "manage.variant_label": "Nome a apresentar",
-        "manage.variant_name": "Nome da variante"
+        "manage.variant_name": "Nome da variante",
+        "home.giveaways.enter_failed": "Não foi possível participar no passatempo. Tenta novamente.",
+        "home.giveaways.entered": "A participar",
+        "home.giveaways.entered_toast": "Estás a participar. Boa sorte!",
+        "home.giveaways.join_button": "Participar no passatempo",
+        "home.giveaways.sign_in": "Iniciar sessão",
+        "home.giveaways.signin_hint": "Inicia sessão para participar nos passatempos sem sair da aplicação.",
+        "home.giveaways.signin_to_enter": "Inicia sessão para participar"
     },
     "content": {
         "\"Clam\" \"Chow\"": "",

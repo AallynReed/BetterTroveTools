@@ -1657,7 +1657,14 @@
         "manage.upload_release": "リリースをアップロード",
         "manage.uploaded": "アップロードしました",
         "manage.variant_label": "表示名",
-        "manage.variant_name": "バリエーション名"
+        "manage.variant_name": "バリエーション名",
+        "home.giveaways.enter_failed": "プレゼント企画への応募に失敗しました。もう一度お試しください。",
+        "home.giveaways.entered": "応募済み",
+        "home.giveaways.entered_toast": "応募が完了しました。幸運を祈ります！",
+        "home.giveaways.join_button": "プレゼント企画に応募",
+        "home.giveaways.sign_in": "サインイン",
+        "home.giveaways.signin_hint": "サインインすると、アプリを離れずにプレゼント企画へ応募できます。",
+        "home.giveaways.signin_to_enter": "サインインして応募"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

@@ -589,6 +589,10 @@
         site_auth_complete: makeEelFn('site_auth_complete', () => fail(localOnlyMessage()), { localOnly: true }),
         site_auth_me: makeEelFn('site_auth_me', () => ok({ authenticated: false, user: null }), { localOnly: true }),
         site_auth_logout: makeEelFn('site_auth_logout', () => ok({ authenticated: false, user: null }), { localOnly: true }),
+        // Giveaway joining is desktop-only (needs the eel auth backend); web/Android
+        // link out to the website instead, so these are no-op stubs.
+        site_giveaway_enter: makeEelFn('site_giveaway_enter', () => fail(localOnlyMessage()), { localOnly: true }),
+        site_giveaway_mine: makeEelFn('site_giveaway_mine', () => ok({ giveaway_ids: [] }), { localOnly: true }),
         load_gem_storage: makeEelFn('load_gem_storage', () => {
             const gemData = readJson(GEM_STORAGE_KEY, {});
             return { success: true, data: gemData, gem_simulator: gemData };

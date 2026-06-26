@@ -1657,7 +1657,14 @@
         "manage.upload_release": "Envoyer une version",
         "manage.uploaded": "Envoyé",
         "manage.variant_label": "Nom affiché",
-        "manage.variant_name": "Nom de la variante"
+        "manage.variant_name": "Nom de la variante",
+        "home.giveaways.enter_failed": "Impossible de participer au tirage. Veuillez réessayer.",
+        "home.giveaways.entered": "Participation enregistrée",
+        "home.giveaways.entered_toast": "Votre participation est enregistrée. Bonne chance !",
+        "home.giveaways.join_button": "Participer au tirage",
+        "home.giveaways.sign_in": "Se connecter",
+        "home.giveaways.signin_hint": "Connectez-vous pour participer aux tirages sans quitter l'application.",
+        "home.giveaways.signin_to_enter": "Se connecter pour participer"
     },
     "content": {
         "(Custom) Trove": "",
