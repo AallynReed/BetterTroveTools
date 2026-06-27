@@ -2025,6 +2025,11 @@
     border-color: rgba(var(--accent-rgb), 0.36);
     background: rgba(var(--accent-rgb), 0.10);
 }
+.home-quick-tools-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 .home-quick-tools-toggle {
     background: rgba(0,0,0,0.24);
     border: 1px solid rgba(255,255,255,0.10);
@@ -2042,6 +2047,15 @@
     color: #fff;
     border-color: rgba(var(--accent-rgb), 0.55);
     background: rgba(var(--accent-rgb), 0.14);
+}
+.home-quick-tools-toggle.is-primary {
+    color: #fff;
+    border-color: rgba(var(--accent-rgb), 0.55);
+    background: rgba(var(--accent-rgb), 0.18);
+}
+.home-quick-tools-toggle.is-primary:hover {
+    border-color: rgba(var(--accent-rgb), 0.75);
+    background: rgba(var(--accent-rgb), 0.26);
 }
 .home-quick-tools-grid {
     display: grid;

@@ -141,6 +141,7 @@ document.addEventListener('home_loaded', () => {
             const sectionCollapsed = reactive({ streams: false, news: false, rotations: false });
             const quickToolsMode = ref('auto');
             const quickToolsCustom = ref([...DEFAULT_QUICK_TOOLS]);
+            const quickToolsEditing = ref(false);
             const quickToolsEditingSlot = ref(-1);
             const navVisits = ref({});
             const whatsNewRelease = ref(null);
@@ -423,17 +424,38 @@ document.addEventListener('home_loaded', () => {
                 }));
             };
 
-            const toggleQuickToolsMode = () => {
-                quickToolsMode.value = quickToolsMode.value === 'auto' ? 'custom' : 'auto';
-                quickToolsEditingSlot.value = -1;
-                if (quickToolsMode.value === 'custom' && (!quickToolsCustom.value || quickToolsCustom.value.length === 0)) {
-                    quickToolsCustom.value = topVisitedToolIds.value.slice();
+            // Enter customise mode: switch to the custom set (seeding it from the
+            // most-visited tools the first time) and turn on slot editing.
+            const startQuickToolsEditing = () => {
+                if (quickToolsMode.value !== 'custom') {
+                    quickToolsMode.value = 'custom';
+                    if (!quickToolsCustom.value || quickToolsCustom.value.length === 0) {
+                        quickToolsCustom.value = topVisitedToolIds.value.slice();
+                    }
                 }
+                quickToolsEditing.value = true;
+                quickToolsEditingSlot.value = -1;
+                persistQuickToolsPref();
+            };
+
+            // Leave edit mode but keep the custom layout — slots become clickable
+            // shortcuts again instead of openers for the tool picker.
+            const finishQuickToolsEditing = () => {
+                quickToolsEditing.value = false;
+                quickToolsEditingSlot.value = -1;
+                persistQuickToolsPref();
+            };
+
+            // Drop the custom layout and go back to the auto "most visited" list.
+            const useAutoQuickTools = () => {
+                quickToolsMode.value = 'auto';
+                quickToolsEditing.value = false;
+                quickToolsEditingSlot.value = -1;
                 persistQuickToolsPref();
             };
 
             const openQuickToolSlotEditor = (slotIdx) => {
-                if (quickToolsMode.value !== 'custom') return;
+                if (!quickToolsEditing.value) return;
                 quickToolsEditingSlot.value = quickToolsEditingSlot.value === slotIdx ? -1 : slotIdx;
             };
 
@@ -1757,8 +1779,9 @@ document.addEventListener('home_loaded', () => {
                 sectionOrder, sectionCollapsed, isSectionCollapsed, toggleSectionCollapsed,
                 onSectionDragStart, onSectionDragOver, onSectionDrop, onSectionDragEnd, onTailDragOver,
                 draggingSectionId, dragInsertBefore, showDropLine,
-                quickToolsMode, quickToolsList, quickToolsCatalogVisible, quickToolsEditingSlot,
-                toggleQuickToolsMode, openQuickToolSlotEditor, setQuickToolAtSlot, clearQuickToolSlot, navigateToTool,
+                quickToolsMode, quickToolsList, quickToolsCatalogVisible, quickToolsEditingSlot, quickToolsEditing,
+                startQuickToolsEditing, finishQuickToolsEditing, useAutoQuickTools,
+                openQuickToolSlotEditor, setQuickToolAtSlot, clearQuickToolSlot, navigateToTool,
                 whatsNewRelease, whatsNewVisible, dismissWhatsNew,
                 supportCardVisible, dismissSupportCard, openSupport,
                 nowStripItems, newsCategoriesAvailable, newsActiveCategory, setNewsCategory,

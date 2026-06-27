@@ -39,28 +39,38 @@
                     {{ quickToolsMode === 'auto' ? t('home.most_visited') : t('home.custom') }}
                 </span>
             </div>
-            <button class="home-section-btn home-quick-tools-toggle" @click="toggleQuickToolsMode()" :title="t('home.switch_between_auto_and_custom_mode')">
-                <i class="fa-solid" :class="quickToolsMode === 'auto' ? 'fa-pen-to-square' : 'fa-wand-magic-sparkles'"></i>
-                <span>{{ quickToolsMode === 'auto' ? t('home.customize') : t('home.use_auto') }}</span>
-            </button>
+            <div class="home-quick-tools-actions">
+                <button v-if="quickToolsEditing" class="home-section-btn home-quick-tools-toggle is-primary" @click="finishQuickToolsEditing()" :title="t('home.finish_editing_quick_tools')">
+                    <i class="fa-solid fa-check"></i>
+                    <span>{{ t('home.done') }}</span>
+                </button>
+                <button v-else class="home-section-btn home-quick-tools-toggle" @click="startQuickToolsEditing()" :title="t('home.switch_between_auto_and_custom_mode')">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>{{ t('home.customize') }}</span>
+                </button>
+                <button v-if="quickToolsMode === 'custom'" class="home-section-btn home-quick-tools-toggle" @click="useAutoQuickTools()" :title="t('home.switch_between_auto_and_custom_mode')">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>{{ t('home.use_auto') }}</span>
+                </button>
+            </div>
         </div>
         <div class="home-quick-tools-grid">
             <div v-for="(tool, idx) in quickToolsList"
                  :key="idx"
                  class="home-quick-tool-slot"
-                 :class="{ 'is-empty': !tool, 'is-editing': quickToolsEditingSlot === idx, 'is-custom-mode': quickToolsMode === 'custom' }">
+                 :class="{ 'is-empty': !tool, 'is-editing': quickToolsEditingSlot === idx, 'is-custom-mode': quickToolsEditing }">
                 <button v-if="tool"
                         class="home-quick-tool"
                         :class="{ 'is-web-disabled': isWebUnavailable(tool.target) }"
                         :disabled="isWebUnavailable(tool.target)"
-                        @click="quickToolsMode === 'custom' ? openQuickToolSlotEditor(idx) : navigateToTool(tool)">
+                        @click="quickToolsEditing ? openQuickToolSlotEditor(idx) : navigateToTool(tool)">
                     <i class="home-quick-tool-icon fa-solid" :class="tool.icon"></i>
                     <span class="home-quick-tool-label">{{ t(tool.label) }}</span>
-                    <span v-if="quickToolsMode === 'custom'" class="home-quick-tool-edit-hint"><i class="fa-solid fa-pen"></i></span>
+                    <span v-if="quickToolsEditing" class="home-quick-tool-edit-hint"><i class="fa-solid fa-pen"></i></span>
                 </button>
                 <button v-else
                         class="home-quick-tool home-quick-tool-empty"
-                        :disabled="quickToolsMode !== 'custom'"
+                        :disabled="!quickToolsEditing"
                         @click="openQuickToolSlotEditor(idx)">
                     <i class="home-quick-tool-icon fa-solid fa-plus"></i>
                     <span class="home-quick-tool-label">{{ t('home.add_tool') }}</span>
