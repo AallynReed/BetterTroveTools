@@ -132,8 +132,15 @@ jobs:
           path: ${{ steps.name.outputs.aab }}
           if-no-files-found: error
 
+      # Attach the APK to the GitHub Release ONLY when this run was triggered by a
+      # published release (which always carries a tag). Manual workflow_dispatch
+      # runs intentionally skip this — they just leave the uploaded artifact above
+      # — so action-gh-release can never fire without a tag (the cause of the
+      # "GitHub Releases requires a tag" failure). tag_name is also passed
+      # explicitly so the upload targets that release's tag unambiguously.
       - name: Attach APK to the release
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.release.tag_name }}
           files: ${{ steps.name.outputs.apk }}
