@@ -34,7 +34,9 @@ document.addEventListener('mods_hub_loaded', () => {
             const maxPages = ref(1);
 
             const searchQuery = ref(uiState.searchQuery || '');
-            const selectedTag = ref(uiState.selectedTag || '');
+            // Always start with no category filter on a fresh app launch — a
+            // persisted filter is easy to forget and can make the hub look empty.
+            const selectedTag = ref('');
             const selectedSort = ref(uiState.selectedSort || 'popular');
 
             const categories = ref([]);

@@ -895,10 +895,15 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const onSectionChanged = async (e) => {
                 const detail = e && e.detail ? e.detail : {};
+                if (detail.currentSection !== 'mod_manager') return;
+                // Profiles can be saved from the Modpacks tab, so refresh them
+                // whenever we return to My Mods — otherwise a just-saved profile
+                // wouldn't appear until the tab is remounted.
+                await loadProfiles();
                 const fromCommunityTab = detail.previousSection === 'trovesaurus'
                     || detail.previousSection === 'mods_hub'
                     || detail.previousSection === 'modpacks';
-                if (fromCommunityTab && detail.currentSection === 'mod_manager' && selectedInstall.value) {
+                if (fromCommunityTab && selectedInstall.value) {
                     await loadMods();
                 }
             };
