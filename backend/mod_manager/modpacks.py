@@ -32,8 +32,8 @@ except ImportError:  # headless / no Tk (e.g. some Linux/web hosts)
     filedialog = None
 
 from backend.home import KIWI_API_BASE
-from models.trove.mod import TMod, TroveModList
-from utils.functions import read_leb128
+from models.trove.mod import TMod, TroveModFile, TroveModList
+from utils.functions import chunks, read_leb128, write_leb128
 from utils.registry import TroveGamePath
 
 USER_AGENT = "BetterTroveTools/1.0"
@@ -108,6 +108,76 @@ def _decompile_tpack(data):
         return [(names[i], bytes(files[i].data)) for i in range(len(files))]
     # Order mismatch shouldn't happen, but fall back to the (lowercased) trove paths.
     return [(f.trove_path, bytes(f.data)) for f in files]
+
+
+def _decompile_tpack_meta(data):
+    """Like `_decompile_tpack` but also returns the outer container's version and
+    properties, so a rebuilt `.tpack` can preserve them. Returns
+    (version, [(prop_name, prop_value)], [(filename, tmod_bytes)])."""
+    data = bytes(data)
+    mod = TMod.read_bytes(Path("modpack.tpack"), data, partial=False)
+    names = _tpack_file_names(data)
+    files = mod.files
+    if len(names) == len(files):
+        entries = [(names[i], bytes(files[i].data)) for i in range(len(files))]
+    else:
+        entries = [(f.trove_path, bytes(f.data)) for f in files]
+    props = [(p.name, p.value) for p in mod.properties]
+    return mod.version, props, entries
+
+
+def _rebuild_tpack(version, outer_props, entries):
+    """Recompile a `.tpack` container from `entries` ([(filename, tmod_bytes)]).
+
+    A dedicated writer mirroring `TMod.compile_tmod` byte-for-byte, but WITHOUT
+    its three modpack-hostile behaviours: it never injects `modLoader=BTT` into
+    the container, never lowercases the inner filenames (Trove validates each
+    `<Title>.tmod` name against the mod's header title), and preserves the source
+    `version` + outer properties. The result round-trips through `_decompile_tpack`.
+    """
+    files = []
+    offset = 0
+    for filename, content in entries:
+        f = TroveModFile(Path(filename), content)
+        f.trove_path = str(filename)  # restore case (TroveModFile.__init__ lowercases)
+        f.index = 0
+        f.offset = offset
+        files.append(f)
+        offset += len(f.padded_data)
+
+    header_stream = BinaryReader(bytearray())
+    properties_stream = BinaryReader(bytearray())
+    files_list_stream = BinaryReader(bytearray())
+
+    for name, value in outer_props:
+        properties_stream.write_bytes(write_leb128(len(name)))
+        properties_stream.write_str(name)
+        properties_stream.write_bytes(write_leb128(len(value)))
+        properties_stream.write_str(value)
+
+    body = BinaryReader(bytearray())
+    for f in files:
+        body.extend(bytearray(f.padded_data))
+    compressor = zlib.compressobj(level=0, strategy=0, wbits=zlib.MAX_WBITS)
+    compressed = BinaryReader(bytearray())
+    for chunk in chunks(body.buffer(), 32768):
+        compressed.extend(bytearray(compressor.compress(chunk)))
+    compressed.extend(bytearray(compressor.flush(zlib.Z_SYNC_FLUSH)))
+
+    for f in files:
+        files_list_stream.extend(bytearray(f.header_format))
+
+    header_stream.write_uint64(0)
+    header_stream.write_uint16(version)
+    header_stream.write_uint16(len(outer_props))
+    header_stream.extend(properties_stream.buffer())
+    header_stream.extend(files_list_stream.buffer())
+    header_stream.seek(0)
+    header_stream.write_uint64(len(header_stream.buffer()))
+
+    out = BinaryReader(bytearray())
+    out.extend(header_stream.buffer() + compressed.buffer())
+    return out.buffer()
 
 
 def _name_from_filename(filename):
@@ -333,6 +403,35 @@ def _install_tpack_bytes(game_path_str, data):
     return True, None, {"installed": len(installed), "files": installed, "quarantined": quarantined}
 
 
+def _download_tpack(handle, slug, variant=None):
+    """Download a modpack's raw `.tpack` bytes from the hub. Returns
+    (data, error) — exactly one is non-None. Shared by `install_modpack` (install
+    in place) and the profiles feature (save the bytes for later re-use)."""
+    ref = _ref(handle, slug)
+    url = f"{KIWI_API_BASE}/modpacks/{ref}/download?format=tpack"
+    if variant:
+        url += f"&variant={quote(str(variant))}"
+
+    req_id = None
+    try:
+        req_id = eel.add_external_request(f"Downloading Modpack {ref}", url)()
+    except Exception:
+        pass
+    try:
+        dl = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=(10, 600))
+        if req_id:
+            eel.remove_external_request(req_id, dl.status_code == 200)()
+            req_id = None
+    except Exception:
+        if req_id:
+            eel.remove_external_request(req_id, False)()
+        return None, "Failed to download the modpack from the hub."
+
+    if dl.status_code != 200:
+        return None, f"Download failed. Status: {dl.status_code}"
+    return dl.content, None
+
+
 @eel.expose
 def install_modpack(game_path_str, handle, slug, variant=None):
     """Download a modpack's `.tpack`, decompile it into the individual `.tmod`s,
@@ -342,30 +441,11 @@ def install_modpack(game_path_str, handle, slug, variant=None):
         if not game_path_str:
             return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
 
-        ref = _ref(handle, slug)
-        url = f"{KIWI_API_BASE}/modpacks/{ref}/download?format=tpack"
-        if variant:
-            url += f"&variant={quote(str(variant))}"
+        data, error = _download_tpack(handle, slug, variant)
+        if error:
+            return _resp(False, error=error, code="MODPACK_DOWNLOAD_FAILED")
 
-        req_id = None
-        try:
-            req_id = eel.add_external_request(f"Downloading Modpack {ref}", url)()
-        except Exception:
-            pass
-        try:
-            dl = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=(10, 600))
-            if req_id:
-                eel.remove_external_request(req_id, dl.status_code == 200)()
-                req_id = None
-        except Exception:
-            if req_id:
-                eel.remove_external_request(req_id, False)()
-            return _resp(False, error="Failed to download the modpack from the hub.", code="MODPACK_DOWNLOAD_FAILED")
-
-        if dl.status_code != 200:
-            return _resp(False, error=f"Download failed. Status: {dl.status_code}", code="MODPACK_DOWNLOAD_FAILED")
-
-        ok, error, result = _install_tpack_bytes(game_path_str, dl.content)
+        ok, error, result = _install_tpack_bytes(game_path_str, data)
         if not ok:
             return _resp(False, error=error, code="MODPACK_INSTALL_FAILED")
         return _resp(True, data=result, **result)

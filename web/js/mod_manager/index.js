@@ -85,6 +85,12 @@ document.addEventListener('mod_manager_loaded', async () => {
             const isClearingCache = ref(false);
             const isImportingTpack = ref(false);
 
+            // --- Modpack profiles (locally-saved .tpack loadouts) --------------
+            const profiles = ref([]);
+            const selectedProfileId = ref('');
+            const isApplyingProfile = ref(false);
+            const profileNameModal = reactive({ show: false, value: '', profileId: null, busy: false });
+
             const modal = reactive({ show: false, src: '', caption: '' });
             const loadGuard = window.createRequestGuard ? window.createRequestGuard() : { next: () => Date.now(), isCurrent: () => true };
 
@@ -523,6 +529,157 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            const profileOptions = computed(() => {
+                if (profiles.value.length === 0) return [[t('profiles.no_profiles'), '']];
+                return profiles.value.map(p => [
+                    t('profiles.option_label')
+                        .replace('{name}', p.display_name || t('profiles.untitled'))
+                        .replace('{count}', p.mod_count || 0),
+                    p.id
+                ]);
+            });
+
+            const selectedProfile = computed(() => profiles.value.find(p => p.id === selectedProfileId.value) || null);
+
+            const loadProfiles = async () => {
+                const response = await window.callBackend(eel.list_profiles()(), 'Failed to load profiles');
+                if (!response.success) return;
+                profiles.value = response.data.profiles || response.raw?.profiles || [];
+                if (!profiles.value.some(p => p.id === selectedProfileId.value)) {
+                    selectedProfileId.value = profiles.value.length ? profiles.value[0].id : '';
+                }
+                nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
+            };
+
+            const applyProfile = async () => {
+                const profile = selectedProfile.value;
+                if (!profile) return;
+                if (!selectedInstall.value) return window.showToast(t('common.select_a_game_first'), true);
+                if (isApplyingProfile.value) return;
+                isApplyingProfile.value = true;
+                try {
+                    // 1) Check (Mods Hub is ground truth) whether inner mods are outdated.
+                    let doUpdate = false;
+                    const check = await window.JobQueue.run({
+                        label: t('profiles.checking_updates').replace('{name}', profile.display_name),
+                        task: async () => window.callBackend(eel.check_profile_updates(profile.id)(), 'Failed to check profile updates')
+                    });
+                    const checkData = check.success ? (check.data || check.raw || {}) : {};
+                    const updates = checkData.updates || [];
+                    if (check.success && checkData.checked && updates.length) {
+                        const choice = await window.showConfirmModal({
+                            title: t('profiles.updates_available_title'),
+                            message: t('profiles.updates_available_message').replace('{count}', updates.length),
+                            confirmLabel: t('profiles.update_then_apply'),
+                            extraActionLabel: t('profiles.apply_without_update'),
+                            cancelLabel: t('common.cancel'),
+                            danger: false
+                        });
+                        if (choice === false) return;            // cancelled
+                        doUpdate = choice === true;              // 'extra' = apply as-is
+                    }
+
+                    // 2) Confirm the full loadout switch (disables every current mod).
+                    const confirmed = await window.showConfirmModal({
+                        title: t('profiles.apply_confirm_title').replace('{name}', profile.display_name),
+                        message: t('profiles.apply_full_switch_warning'),
+                        confirmLabel: t('profiles.apply'),
+                        cancelLabel: t('common.cancel'),
+                        danger: true
+                    });
+                    if (!confirmed) return;
+
+                    // 3) Optionally rewrite the saved .tpack with the latest mods first.
+                    if (doUpdate) {
+                        const upd = await window.JobQueue.run({
+                            label: t('profiles.updating_file').replace('{name}', profile.display_name),
+                            task: async () => window.callBackend(eel.update_profile_file(profile.id, Date.now())(), 'Failed to update profile')
+                        });
+                        if (!upd.success) {
+                            window.showToast(t('mods_hub.error_error').replace('{error}', upd.error || t('common.unknown_error_occurred')), true);
+                            return;
+                        }
+                    }
+
+                    // 4) Apply: disable current loadout + install the profile's mods.
+                    const response = await window.JobQueue.run({
+                        label: t('profiles.applying').replace('{name}', profile.display_name),
+                        task: async () => window.callBackend(eel.apply_profile(selectedInstall.value, profile.id)(), 'Failed to apply profile')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('mods_hub.error_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                        return;
+                    }
+                    const data = response.data || response.raw || {};
+                    window.showToast(t('profiles.applied')
+                        .replace('{name}', profile.display_name)
+                        .replace('{count}', data.installed || 0)
+                        .replace('{disabled}', data.disabled || 0));
+                    await loadProfiles();
+                    await loadMods();
+                } finally {
+                    isApplyingProfile.value = false;
+                }
+            };
+
+            const openRenameProfile = () => {
+                const profile = selectedProfile.value;
+                if (!profile) return;
+                profileNameModal.profileId = profile.id;
+                profileNameModal.value = profile.display_name || '';
+                profileNameModal.show = true;
+                nextTick(() => {
+                    const input = document.getElementById('mm-profile-name-input');
+                    if (input) { input.focus(); input.select(); }
+                });
+            };
+
+            const closeProfileNameModal = () => {
+                profileNameModal.show = false;
+                profileNameModal.profileId = null;
+                profileNameModal.value = '';
+                profileNameModal.busy = false;
+            };
+
+            const confirmRenameProfile = async () => {
+                const name = (profileNameModal.value || '').trim();
+                const id = profileNameModal.profileId;
+                if (!id || !name || profileNameModal.busy) return;
+                profileNameModal.busy = true;
+                try {
+                    const response = await window.callBackend(eel.rename_profile(id, name, Date.now())(), 'Failed to rename profile');
+                    if (!response.success) {
+                        window.showToast(t('mods_hub.error_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                        return;
+                    }
+                    window.showToast(t('profiles.renamed').replace('{name}', name));
+                    closeProfileNameModal();
+                    await loadProfiles();
+                } finally {
+                    profileNameModal.busy = false;
+                }
+            };
+
+            const removeProfile = async () => {
+                const profile = selectedProfile.value;
+                if (!profile) return;
+                const confirmed = await window.showConfirmModal({
+                    title: t('profiles.remove_confirm_title'),
+                    message: t('profiles.remove_confirm_message').replace('{name}', profile.display_name),
+                    confirmLabel: t('profiles.remove'),
+                    cancelLabel: t('common.cancel'),
+                    danger: true
+                });
+                if (!confirmed) return;
+                const response = await window.callBackend(eel.delete_profile(profile.id)(), 'Failed to remove profile');
+                if (!response.success) {
+                    window.showToast(t('mods_hub.error_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                    return;
+                }
+                window.showToast(t('profiles.removed').replace('{name}', profile.display_name));
+                await loadProfiles();
+            };
+
             const removeModLocally = (mod) => {
                 mods.value = mods.value.filter(m => m.path !== mod.path);
                 mods.value.forEach(m => {
@@ -773,6 +930,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (selectedInstall.value) {
                     await loadMods();
                 }
+                await loadProfiles();
                 document.addEventListener('keydown', onKeyDown);
                 document.addEventListener('mod_manager_section_changed', onSectionChanged);
                 nextTick(() => {
@@ -806,6 +964,17 @@ document.addEventListener('mod_manager_loaded', async () => {
                 isClearingCache,
                 isImportingTpack,
                 importTpack,
+                profiles,
+                selectedProfileId,
+                profileOptions,
+                selectedProfile,
+                isApplyingProfile,
+                profileNameModal,
+                applyProfile,
+                openRenameProfile,
+                closeProfileNameModal,
+                confirmRenameProfile,
+                removeProfile,
                 modal,
                 scanForGames,
                 refreshInstallState,

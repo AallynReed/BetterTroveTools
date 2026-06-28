@@ -69,6 +69,23 @@
                     </div>
                 </div>
 
+                <div class="toolbar-cluster toolbar-cluster-primary">
+                    <div class="toolbar-cluster-label">{{ t('profiles.profiles') }}</div>
+                    <div class="toolbar-cluster-actions">
+                        <custom-vue-select v-model="selectedProfileId" :options="profileOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>
+                        <button @click="applyProfile" class="primary-btn" style="background: var(--accent-blue);" :disabled="!selectedProfile || !selectedInstall || isApplyingProfile" :title="t('profiles.apply_title')">
+                            <template v-if="isApplyingProfile"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('profiles.applying_short') }}</template>
+                            <template v-else><i class="fa-solid fa-circle-check"></i> {{ t('profiles.apply') }}</template>
+                        </button>
+                        <button @click="openRenameProfile" class="secondary-btn" :disabled="!selectedProfile" :title="t('profiles.rename')">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button @click="removeProfile" class="secondary-btn" :disabled="!selectedProfile" :title="t('profiles.remove')">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <details class="toolbar-cluster toolbar-cluster-advanced">
                     <summary class="toolbar-cluster-summary">
                         <span class="toolbar-cluster-label">{{ t('mod_manager.maintenance') }}</span>
@@ -210,6 +227,25 @@
                                 {{ v.branch === variantPicker.installedBranch ? t('common.update') : t('common.install') }}
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mh-variant-modal" :class="{ active: profileNameModal.show }" @click.self="closeProfileNameModal">
+                <div class="mh-variant-dialog profile-name-dialog" v-if="profileNameModal.show">
+                    <div class="mh-variant-head">
+                        <div>
+                            <h3 class="mh-variant-title">{{ t('profiles.rename_title') }}</h3>
+                        </div>
+                        <button class="mh-variant-close" @click="closeProfileNameModal" :title="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <input id="mm-profile-name-input" type="text" class="profile-name-input" v-model="profileNameModal.value" :placeholder="t('profiles.name_placeholder')" @keyup.enter="confirmRenameProfile">
+                    <div class="profile-name-actions">
+                        <button class="secondary-btn" @click="closeProfileNameModal">{{ t('common.cancel') }}</button>
+                        <button class="ts-install-btn" :disabled="!profileNameModal.value.trim() || profileNameModal.busy" @click="confirmRenameProfile">
+                            <template v-if="profileNameModal.busy"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
+                            <template v-else><i class="fa-solid fa-check"></i> {{ t('common.save') }}</template>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -537,6 +573,10 @@
                                     <template v-if="pack.is_installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.installing') }}</template>
                                     <template v-else><i class="fa-solid fa-download"></i> {{ t('common.install') }}</template>
                                 </button>
+                                <button class="mh-switch-variant-btn" :disabled="pack.is_installing" :title="t('profiles.save_as_profile')" @click.stop.prevent="openSaveAsProfile(pack)">
+                                    <i class="fa-solid fa-bookmark"></i>
+                                    <span>{{ t('profiles.profile') }}</span>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -584,6 +624,25 @@
                                 <i class="fa-solid fa-download"></i> {{ t('common.install') }}
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mh-variant-modal" :class="{ active: nameModal.show }" @click.self="closeNameModal">
+                <div class="mh-variant-dialog profile-name-dialog" v-if="nameModal.show">
+                    <div class="mh-variant-head">
+                        <div>
+                            <h3 class="mh-variant-title">{{ t('profiles.name_prompt_title') }}</h3>
+                        </div>
+                        <button class="mh-variant-close" @click="closeNameModal" :title="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <input id="mp-profile-name-input" type="text" class="profile-name-input" v-model="nameModal.value" :placeholder="t('profiles.name_placeholder')" @keyup.enter="confirmSaveAsProfile">
+                    <div class="profile-name-actions">
+                        <button class="secondary-btn" @click="closeNameModal">{{ t('common.cancel') }}</button>
+                        <button class="ts-install-btn" :disabled="!nameModal.value.trim() || nameModal.saving" @click="confirmSaveAsProfile">
+                            <template v-if="nameModal.saving"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
+                            <template v-else><i class="fa-solid fa-bookmark"></i> {{ t('common.save') }}</template>
+                        </button>
                     </div>
                 </div>
             </div>

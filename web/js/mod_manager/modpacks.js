@@ -43,6 +43,7 @@ document.addEventListener('modpacks_loaded', () => {
 
             const modal = reactive({ show: false, src: '', caption: '', pageUrl: null });
             const variantPicker = reactive({ show: false, pack: null, name: '', variants: [] });
+            const nameModal = reactive({ show: false, value: '', pack: null, saving: false });
             const activeRequestToken = ref(0);
             const fetchResolvers = new Map();
 
@@ -213,6 +214,46 @@ document.addEventListener('modpacks_loaded', () => {
                 if (pack) await runInstall(pack, variantName);
             };
 
+            // --- Save modpack as a local profile -------------------------------
+            const openSaveAsProfile = (pack) => {
+                nameModal.pack = pack;
+                nameModal.value = pack.name || '';
+                nameModal.show = true;
+                nextTick(() => {
+                    const input = document.getElementById('mp-profile-name-input');
+                    if (input) { input.focus(); input.select(); }
+                });
+            };
+
+            const closeNameModal = () => {
+                nameModal.show = false;
+                nameModal.pack = null;
+                nameModal.value = '';
+                nameModal.saving = false;
+            };
+
+            const confirmSaveAsProfile = async () => {
+                const pack = nameModal.pack;
+                const name = (nameModal.value || '').trim();
+                if (!pack || !name || nameModal.saving) return;
+                nameModal.saving = true;
+                try {
+                    const response = await window.JobQueue.run({
+                        label: t('profiles.saving_profile').replace('{name}', name),
+                        task: async () => window.callBackend(eel.save_modpack_as_profile(pack.handle, pack.slug, pack.default_variant || null, name, Date.now())(), 'Failed to save profile'),
+                        retryTask: async () => window.callBackend(eel.save_modpack_as_profile(pack.handle, pack.slug, pack.default_variant || null, name, Date.now())(), 'Failed to save profile')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('mods_hub.error_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                        return;
+                    }
+                    window.showToast(t('profiles.saved').replace('{name}', name));
+                    closeNameModal();
+                } finally {
+                    nameModal.saving = false;
+                }
+            };
+
             const closeVariantPicker = () => {
                 variantPicker.show = false;
                 variantPicker.pack = null;
@@ -252,6 +293,7 @@ document.addEventListener('modpacks_loaded', () => {
                 if ((pack.variant_count || 1) > 1) {
                     items.push({ label: 'Choose Variant…', icon: 'fa-box-open', action: () => chooseVariant(pack, { force: true }) });
                 }
+                items.push({ label: t('profiles.save_as_profile'), icon: 'fa-bookmark', action: () => openSaveAsProfile(pack) });
                 items.push({ separator: true });
                 items.push({ label: 'View in Modpacks Hub', icon: 'fa-arrow-up-right-from-square', action: () => openUrl(pack.page_url) });
                 items.push({ label: 'Copy Modpack Name', icon: 'fa-copy', action: () => navigator.clipboard.writeText(pack.name).then(() => window.showToast(t('common.copied_to_clipboard'))) });
@@ -327,6 +369,10 @@ document.addEventListener('modpacks_loaded', () => {
                 isRefreshing,
                 modal,
                 variantPicker,
+                nameModal,
+                openSaveAsProfile,
+                closeNameModal,
+                confirmSaveAsProfile,
                 openImageModal,
                 closeImageModal,
                 fetchModpacks,

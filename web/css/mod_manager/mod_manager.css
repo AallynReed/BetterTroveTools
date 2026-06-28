@@ -577,3 +577,27 @@
 .mod-card-content {
     padding: 10px;
 }
+
+/* Profile name input modal — reuses .mh-variant-modal / .mh-variant-dialog. */
+.profile-name-dialog {
+    max-width: 460px;
+}
+.profile-name-input {
+    margin: 16px 18px 0;
+    padding: 10px 12px;
+    background: var(--bg-input, var(--bg-deep, var(--bg-panel)));
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-main);
+    font-size: 14px;
+    outline: none;
+}
+.profile-name-input:focus {
+    border-color: var(--accent-blue);
+}
+.profile-name-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 16px 18px 18px;
+}

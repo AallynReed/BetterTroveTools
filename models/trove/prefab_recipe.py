@@ -10,6 +10,7 @@ from models.trove.prefab_ally import (
     iter_index_entries,
     load_blueprint_path_map,
     load_language_map,
+    load_multipliers_map,
     read_archive_content,
     require_prefabs_root,
     resolve_blueprint_catalog_path,
@@ -126,6 +127,84 @@ def decode_quantified_recipe_paths(content: bytes) -> list[dict]:
         )
         pos = end_pos
     return rows
+
+
+def match_recipe_mastery_struct(content: bytes, pos: int) -> int | None:
+    """Match the recipe-mastery structure at ``pos`` (must start on the ``0x30``
+    tag) and return its mastery value, else None.
+
+    Trusted structure (protobuf-ish tag run)::
+
+        30 <00|02> 50 <mastery> 70 <byte> 80 01 <byte> 98 01
+
+    Reading the whole chain (not a bare ``0x50``) is what excludes ``50 70 6c…``
+    bytes that are really part of a ``Pplaceable…`` string payload.
+    """
+    n = len(content)
+    if pos >= n or content[pos] != 0x30:
+        return None
+    v6, cur = read_varint(content, pos + 1)
+    if v6 is None or v6 not in (0, 2):                       # 30 <00|02>
+        return None
+    if cur >= n or content[cur] != 0x50:                     # 50 <mastery>
+        return None
+    mastery, cur = read_varint(content, cur + 1)
+    if mastery is None:
+        return None
+    if cur >= n or content[cur] != 0x70:                     # 70 <byte>
+        return None
+    _v14, cur = read_varint(content, cur + 1)
+    if _v14 is None:
+        return None
+    if cur + 1 >= n or content[cur] != 0x80 or content[cur + 1] != 0x01:  # 80 01 <byte>
+        return None
+    _v16, cur = read_varint(content, cur + 2)
+    if _v16 is None:
+        return None
+    if cur + 1 >= n or content[cur] != 0x98 or content[cur + 1] != 0x01:  # 98 01
+        return None
+    return int(mastery)
+
+
+def recipe_mastery_from_prefab(content: bytes) -> int | None:
+    """Trusted recipe-mastery byte read STRUCTURALLY from a recipe prefab, or None.
+
+    The mastery value is field 10 (``0x50``) inside the recipe row structure
+    ``30 <00|02> 50 <mastery> 70 <byte> 80 01 <byte> 98 01``. Returns the value
+    only when every structural match agrees (usually one match); zero or
+    conflicting matches return None (review-only - never a broad-category guess).
+    This is what distinguishes ``recipe_block_glass_brown_01`` (``50 00`` -> 0)
+    from ``brown_02`` (``50 02`` -> 2) where category/tag/unlocker evidence can't.
+    """
+    matches: list[int] = []
+    for pos in range(len(content)):
+        if content[pos] != 0x30:
+            continue
+        value = match_recipe_mastery_struct(content, pos)
+        if value is not None:
+            matches.append(value)
+    if not matches or len(set(matches)) != 1:
+        return None
+    return matches[0]
+
+
+def resolve_recipe_mastery(recipe_id: str, content: bytes, multipliers_map: dict[str, dict]) -> dict:
+    """Recipe mastery via the evidence hierarchy -> ``{value, source, prefab_byte}``.
+
+    1. an exact ``meta/multipliers.binfab`` row (keyed by recipe identifier)
+       overrides (e.g. ``recipe_item_consumable_prismatic_red`` carries ``50 02``
+       but the multiplier produces 10);
+    2. otherwise the trusted structural prefab byte;
+    3. otherwise ``value=None`` (``source="review"``) - no trusted byte / conflict.
+    """
+    prefab_byte = recipe_mastery_from_prefab(content)
+    stem = str(recipe_id or "").replace("\\", "/").rsplit("/", 1)[-1]
+    row = multipliers_map.get(stem)
+    if row is not None:
+        return {"value": int(row["predicted"]), "source": "multipliers", "prefab_byte": prefab_byte}
+    if prefab_byte is not None:
+        return {"value": prefab_byte, "source": "prefab", "prefab_byte": prefab_byte}
+    return {"value": None, "source": "review", "prefab_byte": None}
 
 
 def split_recipe_sections(strings: list[str]) -> tuple[list[str], list[str]]:
@@ -355,6 +434,7 @@ async def build_recipes_dataset(
     prefab_index = build_prefab_entry_map(game_path)
     language_map = load_language_map(game_path, locale)
     blueprint_map = load_blueprint_path_map(game_path)
+    multipliers_map = load_multipliers_map(game_path)
 
     item_meta_cache: dict[str, dict] = {}
     rows: dict[str, dict] = {}
@@ -447,12 +527,16 @@ async def build_recipes_dataset(
         total_ingredients += len(ingredients)
 
         recipe_id = recipe_entry["prefab_path"].removesuffix(".binfab")
+        mastery_info = resolve_recipe_mastery(recipe_id, content, multipliers_map)
         rows[recipe_id] = {
             "name": output_meta.get("name") or pretty_name_from_path(recipe_id),
             "desc": output_meta.get("desc", ""),
             "category": category_from_output(recipe_id, normalized_output),
             "designer": output_meta.get("designer", "Trove Team"),
             "filename": recipe_id,
+            "mastery": mastery_info["value"],
+            "mastery_source": mastery_info["source"],
+            "mastery_prefab_byte": mastery_info["prefab_byte"],
             "blueprint": output_meta.get("blueprint", ""),
             "lootbox": bool(output_meta.get("lootbox")),
             "decay": bool(output_meta.get("decay")),
@@ -475,5 +559,8 @@ async def build_recipes_dataset(
         "with_requirements": sum(1 for row in rows.values() if row.get("requirements")),
         "with_ingredients": sum(1 for row in rows.values() if row.get("ingredients")),
         "total_ingredients": total_ingredients,
+        "mastery_from_multipliers": sum(1 for row in rows.values() if row.get("mastery_source") == "multipliers"),
+        "mastery_from_prefab": sum(1 for row in rows.values() if row.get("mastery_source") == "prefab"),
+        "mastery_review_only": sum(1 for row in rows.values() if row.get("mastery_source") == "review"),
     }
     return rows, manifest
