@@ -35,6 +35,9 @@
             <button class="tab-btn" :class="{ active: activeTab === 'badges' }" @click="setActiveTab('badges')">
                 <i class="fa-solid fa-shield-halved"></i> <span>{{ t('codexes.badges') }}</span>
             </button>
+            <button class="tab-btn" :class="{ active: activeTab === 'styles' }" @click="setActiveTab('styles')">
+                <i class="fa-solid fa-shirt"></i> <span>{{ t('codexes.styles') }}</span>
+            </button>
         </div>
 
         <div v-show="activeTab === 'allies'" class="tab-content" :class="{ active: activeTab === 'allies' }">
@@ -259,6 +262,16 @@
                 </div>
             </div>
             <div id="codexes-badges-host" class="view-container" v-cloak></div>
+        </div>
+
+        <div v-show="activeTab === 'styles'" class="tab-content" :class="{ active: activeTab === 'styles' }">
+            <div v-if="!loadedTabs.styles" class="codex-preload-shell">
+                <div class="ui-state ui-state-loading ui-state-compact">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                    <span>{{ t('codexes.loading_style_codex') }}</span>
+                </div>
+            </div>
+            <div id="codexes-styles-host" class="view-container" v-cloak></div>
         </div>
     </div>
 </div>

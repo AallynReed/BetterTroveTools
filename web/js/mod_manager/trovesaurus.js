@@ -6,6 +6,7 @@ document.addEventListener('trovesaurus_loaded', () => {
 
     const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
     const PREF_STATE_KEY = 'state_trovesaurus';
+    const PREF_HUB_PROMO_KEY = 'promo_mods_hub_from_trovesaurus_v1';
 
     const readUiState = () => {
         const state = window.AppSettings ? window.AppSettings.getPref(PREF_STATE_KEY, {}) : {};
@@ -43,6 +44,22 @@ document.addEventListener('trovesaurus_loaded', () => {
             const isClearingCache = ref(false);
 
             const modal = reactive({ show: false, src: '', caption: '', modId: null });
+
+            // Mods Hub promo: nudge Trovesaurus browsers toward the first-party hub.
+            // Shows once per app launch until permanently dismissed. "Don't show
+            // again" persists; "Maybe later" only hides it for this session so the
+            // nudge keeps surfacing on future launches.
+            const hubPromo = reactive({ show: false });
+            const goToModsHub = () => {
+                hubPromo.show = false;
+                if (window.setModManagerSection) window.setModManagerSection('mods_hub');
+            };
+            const dismissHubPromo = () => { hubPromo.show = false; };
+            const dismissHubPromoForever = () => {
+                hubPromo.show = false;
+                if (window.AppSettings) window.AppSettings.setPrefSync(PREF_HUB_PROMO_KEY, 'dismissed');
+            };
+
             const activeRequestToken = ref(0);
             const fetchResolvers = new Map();
             const installResolvers = new Map();
@@ -406,6 +423,15 @@ document.addEventListener('trovesaurus_loaded', () => {
                 nextTick(() => {
                     if (window.applyCustomDropdowns) window.applyCustomDropdowns();
                 });
+
+                // Surface the Mods Hub nudge shortly after the tab settles, unless
+                // the user has opted out for good.
+                const promoDismissed = window.AppSettings
+                    ? window.AppSettings.getPref(PREF_HUB_PROMO_KEY, '') === 'dismissed'
+                    : false;
+                if (!promoDismissed) {
+                    setTimeout(() => { hubPromo.show = true; }, 600);
+                }
             });
 
             return {
@@ -425,6 +451,10 @@ document.addEventListener('trovesaurus_loaded', () => {
                 isRefreshing,
                 isClearingCache,
                 modal,
+                hubPromo,
+                goToModsHub,
+                dismissHubPromo,
+                dismissHubPromoForever,
                 openImageModal,
                 closeImageModal,
                 fetchMods,

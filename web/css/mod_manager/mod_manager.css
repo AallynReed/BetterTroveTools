@@ -38,6 +38,10 @@
     white-space: nowrap;
     line-height: 1;
 }
+/* Push the Trovesaurus tab to the far right, apart from the first-party tabs. */
+.mm-tab-trovesaurus {
+    margin-left: auto;
+}
 .mm-tab-btn:hover {
     background: var(--bg-hover);
     color: var(--text-main);

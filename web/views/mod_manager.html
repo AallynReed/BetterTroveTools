@@ -11,16 +11,16 @@
             <button class="mm-tab-btn active" data-mm-tab="mod_manager">
                 <i class="fa-solid fa-cubes"></i> <span data-i18n="mod_manager.my_mods">My Mods</span>
             </button>
-            <button class="mm-tab-btn" data-mm-tab="trovesaurus">
-                <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
-                <span data-i18n="mod_manager.trovesaurus">Trovesaurus</span>
-            </button>
             <button class="mm-tab-btn" data-mm-tab="mods_hub">
                 <img src="favicon.png" alt="Mods Hub" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
                 <span data-i18n="mod_manager.mods_hub">Mods Hub</span>
             </button>
             <button class="mm-tab-btn" data-mm-tab="modpacks">
                 <i class="fa-solid fa-box-open"></i> <span data-i18n="mod_manager.modpacks">Modpacks</span>
+            </button>
+            <button class="mm-tab-btn mm-tab-trovesaurus" data-mm-tab="trovesaurus">
+                <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
+                <span data-i18n="mod_manager.trovesaurus">Trovesaurus</span>
             </button>
         </div>
     </div>
@@ -355,6 +355,22 @@
                 <button v-if="modal.modId" id="modal-view-ts-btn" @click="openUrl(`https://trovesaurus.com/mod=${modal.modId}`)">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('common.view_on_trovesaurus') }}</span>
                 </button>
+            </div>
+
+            <div class="mh-promo-overlay" :class="{ active: hubPromo.show }" @click.self="dismissHubPromo">
+                <div class="mh-promo-card" v-if="hubPromo.show">
+                    <button class="mh-promo-close" @click="dismissHubPromo" :title="t('common.close')" aria-label="Close">&times;</button>
+                    <div class="mh-promo-icon"><i class="fa-solid fa-store"></i></div>
+                    <h3 class="mh-promo-title">{{ t('mods_hub.promo_title') }}</h3>
+                    <p class="mh-promo-message">{{ t('mods_hub.promo_message') }}</p>
+                    <div class="mh-promo-actions">
+                        <button class="primary-btn mh-promo-yes" @click="goToModsHub">
+                            <i class="fa-solid fa-arrow-right"></i> <span>{{ t('mods_hub.promo_yes') }}</span>
+                        </button>
+                        <button class="secondary-btn mh-promo-no" @click="dismissHubPromo">{{ t('mods_hub.promo_no') }}</button>
+                    </div>
+                    <button class="mh-promo-dont-show" @click="dismissHubPromoForever">{{ t('mods_hub.promo_dont_show') }}</button>
+                </div>
             </div>
         </div>
     </section>

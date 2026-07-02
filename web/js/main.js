@@ -166,6 +166,7 @@ window.BTT_CODEX_SUBVIEW_SCRIPTS = {
     items: 'js/codexes/items.js',
     fish: 'js/codexes/fish.js',
     badges: 'js/codexes/badges.js',
+    styles: 'js/codexes/styles.js',
 };
 
 window.AppSettings = {

@@ -41,6 +41,7 @@ import backend.codexes.mounts
 import backend.mod_manager.mod_manager
 import backend.modder_tools.modder_tools
 import backend.codexes.recipes
+import backend.codexes.styles
 import backend.settings
 import backend.gems_and_builds.star_chart
 import backend.mod_manager.trovesaurus
@@ -730,6 +731,7 @@ def warm_codex_caches():
         from backend.codexes.mounts import _build_mounts_from_game_files
         from backend.codexes.mementos import _build_mementos_from_game_files
         from backend.codexes.recipes import _build_recipes_from_game_files
+        from backend.codexes.styles import _build_styles_from_game_files
         from backend.codexes.items import _build_items_from_game_files
         from backend.codexes.fish import _build_fish_from_game_files
     except Exception:
@@ -740,6 +742,7 @@ def warm_codex_caches():
         _build_mounts_from_game_files,
         _build_mementos_from_game_files,
         _build_recipes_from_game_files,
+        _build_styles_from_game_files,
         _build_items_from_game_files,
         _build_fish_from_game_files,
     )

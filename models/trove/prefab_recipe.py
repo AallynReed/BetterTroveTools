@@ -17,13 +17,24 @@ from models.trove.prefab_ally import (
     resolve_localized_value,
 )
 from utils.mount_binfab import extract_strings, zig_zag_decode
-from utils.binfab_reader import decode_identity
+from utils.binfab_reader import decode_identity, harvest_strings
 
 
 RECIPE_PREFIX = "recipes/"
 PATH_PREFIXES = ("item/", "placeable/", "block/", "collections/", "effects/")
 NAME_KEY_RE = re.compile(r"(\$prefabs_[A-Za-z0-9_]+(?:_item)?_name)")
 DESC_KEY_RE = re.compile(r"(\$prefabs_[A-Za-z0-9_]+(?:_item_)?(?:description|desc))")
+
+# The recipe catalogue table + the providers that expose recipes (mirrors the Kiwi
+# API `app/trove/codexes/catalogue.py` + `providers.py`). Catalogue membership and
+# bench/profession providers are ADDITIVE facets - kept separate from the
+# output-derived `category`, and a recipe absent from either is flagged, not dropped.
+RECIPE_CATALOGUE_PATH = "collections/collection_recipe"
+# Bench/profession prefabs list recipes as BARE `recipe_*` tokens (with framing bytes
+# glued on), NOT `recipes/<id>` paths - so we match against the known-id set. The path
+# regex targets the crafting stations (`*_interactive`/`*_interactable`) + professions.
+RECIPE_TOKEN_RE = re.compile(r"recipe_[a-z0-9_]+")
+PROVIDER_PATH_RE = re.compile(r"(interact|profession)", re.IGNORECASE)
 
 
 def read_varint(data: bytes, offset: int) -> tuple[int | None, int]:
@@ -425,6 +436,109 @@ def category_from_output(recipe_path: str, output_path: str) -> str:
     return "Recipe"
 
 
+def parse_recipe_catalogue(content: bytes, known_ids: set[str]) -> dict[str, dict]:
+    """``collection_recipe.binfab`` -> ``{recipe_id: {order, in_catalogue, duplicate?}}``.
+
+    Like the bench prefabs, the catalogue packs BARE ``recipe_*`` tokens with framing
+    bytes glued on, so each token is trimmed against ``known_ids`` (the recipes/ stems)
+    to recover membership (~100%). The file's category/group labels are interleaved with
+    the packed bytes and can't be attributed reliably, so we emit membership + order
+    only - the output-derived ``category`` stays the trusted one."""
+    out: dict[str, dict] = {}
+    order = 0
+    for _off, _field, text in harvest_strings(content):
+        for match in RECIPE_TOKEN_RE.finditer(text.lower()):
+            tok = match.group(0)
+            while tok and tok not in known_ids:
+                tok = tok[:-1]
+            if not tok:
+                continue
+            if tok in out:
+                out[tok]["duplicate"] = True
+            else:
+                out[tok] = {"order": order, "in_catalogue": True}
+                order += 1
+    return out
+
+
+def provider_lane_for(path: str) -> str:
+    """Coarse provider lane from the prefab path (provenance, not identity)."""
+    lowered = str(path or "").lower()
+    if "profession" in lowered:
+        return "profession"
+    if "workbench" in lowered or "/crafting/" in lowered or "forge" in lowered:
+        return "bench"
+    if "vendor" in lowered:
+        return "vendor"
+    if "guideui" in lowered:
+        return "guide"
+    if "interact" in lowered:
+        return "interactive"
+    return "other"
+
+
+def provider_id_from_path(path: str) -> str:
+    """Provider's stable id: its logical path with the prefabs/ root + .binfab stripped."""
+    text = str(path or "").replace("\\", "/")
+    if text.startswith("prefabs/"):
+        text = text[len("prefabs/"):]
+    return text.removesuffix(".binfab")
+
+
+def extract_provider_refs(content: bytes, known_ids: set[str]) -> list[str]:
+    """Every real ``recipe_*`` id a provider prefab references, in source order. Each
+    token is trimmed from the tail to the longest id that actually exists (`known_ids`),
+    so glued framing bytes are stripped and tokens matching no real recipe are dropped."""
+    seen: dict[str, None] = {}
+    for _off, _field, text in harvest_strings(content):
+        for match in RECIPE_TOKEN_RE.finditer(text.lower()):
+            tok = match.group(0)
+            while tok and tok not in known_ids:
+                tok = tok[:-1]
+            if tok:
+                seen.setdefault(tok, None)
+    return list(seen)
+
+
+def load_recipe_catalogue(prefab_index: dict[str, dict], known_ids: set[str]) -> dict[str, dict]:
+    """Parse the recipe catalogue table (membership + order). Empty when the archive
+    carries no ``collection_recipe.binfab``."""
+    _path, content = read_prefab_content(prefab_index, RECIPE_CATALOGUE_PATH)
+    if content is None:
+        return {}
+    return parse_recipe_catalogue(content, known_ids)
+
+
+def build_recipe_provider_map(prefab_index: dict[str, dict]) -> dict[str, list[dict]]:
+    """``recipe_id -> [provider rows]`` by reading the crafting-station + profession
+    prefabs (`*_interactive`/`*_interactable` + `professions/`) and inverting the bare
+    ``recipe_*`` tokens they list, matched against the known recipe-id set (the recipes/
+    stems) so glued framing bytes are trimmed and non-recipes dropped. Bounded scan; a
+    provider it misses just yields no benches for a recipe (never a wrong one)."""
+    known_ids = {
+        key.split("/")[-1].removesuffix(".binfab").lower()
+        for key in prefab_index if key.startswith("recipes/") and key.endswith(".binfab")
+    }
+    providers: dict[str, list[dict]] = {}
+    for key, entry in prefab_index.items():
+        if not key.endswith(".binfab") or not PROVIDER_PATH_RE.search(key):
+            continue
+        archive_path = entry["tfi_path"].parent / f"archive{entry['archive_index']}.tfa"
+        archive_content = read_archive_content(archive_path)
+        start = entry["offset"]
+        content = archive_content[start : start + entry["size"]]
+        refs = extract_provider_refs(content, known_ids)
+        if not refs:
+            continue
+        provider_id = provider_id_from_path(entry["prefab_path"])
+        lane = provider_lane_for(entry["prefab_path"])
+        for recipe_id in refs:
+            rows = providers.setdefault(recipe_id, [])
+            if not any(row["provider"] == provider_id for row in rows):
+                rows.append({"provider": provider_id, "provider_path": entry["prefab_path"], "lane": lane})
+    return providers
+
+
 async def build_recipes_dataset(
     game_path: Path | None = None,
     *,
@@ -435,6 +549,12 @@ async def build_recipes_dataset(
     language_map = load_language_map(game_path, locale)
     blueprint_map = load_blueprint_path_map(game_path)
     multipliers_map = load_multipliers_map(game_path)
+    known_recipe_ids = {
+        key.split("/")[-1].removesuffix(".binfab").lower()
+        for key in prefab_index if key.startswith(RECIPE_PREFIX) and key.endswith(".binfab")
+    }
+    recipe_catalogue = load_recipe_catalogue(prefab_index, known_recipe_ids)
+    recipe_providers = build_recipe_provider_map(prefab_index)
 
     item_meta_cache: dict[str, dict] = {}
     rows: dict[str, dict] = {}
@@ -528,6 +648,9 @@ async def build_recipes_dataset(
 
         recipe_id = recipe_entry["prefab_path"].removesuffix(".binfab")
         mastery_info = resolve_recipe_mastery(recipe_id, content, multipliers_map)
+        recipe_stem = recipe_id.replace("\\", "/").rsplit("/", 1)[-1].lower()
+        catalogue_info = recipe_catalogue.get(recipe_stem)
+        provider_rows = recipe_providers.get(recipe_stem, [])
         rows[recipe_id] = {
             "name": output_meta.get("name") or pretty_name_from_path(recipe_id),
             "desc": output_meta.get("desc", ""),
@@ -546,6 +669,10 @@ async def build_recipes_dataset(
             "ingredients": ingredients,
             "requirements": decode_requirements(strings, ingredient_paths, normalized_output),
             "raw_string_count": len(strings),
+            # Catalogue membership + craftable-at providers (additive provenance).
+            "in_catalogue": bool(catalogue_info),
+            "catalogue": catalogue_info or None,
+            "providers": provider_rows,
         }
 
     manifest = {
@@ -562,5 +689,9 @@ async def build_recipes_dataset(
         "mastery_from_multipliers": sum(1 for row in rows.values() if row.get("mastery_source") == "multipliers"),
         "mastery_from_prefab": sum(1 for row in rows.values() if row.get("mastery_source") == "prefab"),
         "mastery_review_only": sum(1 for row in rows.values() if row.get("mastery_source") == "review"),
+        "catalogue_rows": len(recipe_catalogue),
+        "in_catalogue": sum(1 for row in rows.values() if row.get("in_catalogue")),
+        "with_providers": sum(1 for row in rows.values() if row.get("providers")),
+        "provider_recipes": len(recipe_providers),
     }
     return rows, manifest

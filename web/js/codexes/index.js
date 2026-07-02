@@ -26,6 +26,7 @@ document.addEventListener('codexes_loaded', () => {
                 items: false,
                 fish: false,
                 badges: false,
+                styles: false,
             });
             const pendingTabAbortControllers = new Map();
             const pendingTabLoads = new Map();
@@ -217,6 +218,7 @@ document.addEventListener('codexes_loaded', () => {
                     items: () => loadSubview('items', 'codexes-items-host', 'views/codexes/items.html', '#items-vue-app', 'items_loaded'),
                     fish: () => loadSubview('fish', 'codexes-fish-host', 'views/codexes/fish.html', '#fish-vue-app', 'fish_loaded'),
                     badges: () => loadSubview('badges', 'codexes-badges-host', 'views/codexes/badges.html', '#badges-vue-app', 'badges_loaded'),
+                    styles: () => loadSubview('styles', 'codexes-styles-host', 'views/codexes/styles.html', '#styles-vue-app', 'styles_loaded'),
                 };
                 const loader = loaders[tabName];
                 if (loader) await loader();
