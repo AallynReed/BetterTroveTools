@@ -19,6 +19,7 @@ import webview
 from gevent.exceptions import ConcurrentObjectUseError
 
 from utils.path import get_app_data_dir, get_cache_root
+from utils.win_tray import create_tray_icon
 
 os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
@@ -29,6 +30,7 @@ import backend.auth
 import backend.codexes.allies
 import backend.codexes.badges
 import backend.calculators
+import backend.desktop_notifications
 import backend.modder_tools.file_manager
 import backend.codexes.fish
 import backend.gems_and_builds.gem_builds
@@ -60,6 +62,12 @@ else:
     DEV_MODE = True
 
 IPC_LOCK_FILE = get_app_data_dir() / 'btt_ipc.lock'
+
+# When the app is hidden in the system tray (close-to-tray), a second launch
+# should bring the window back rather than just poke a Win32 handle. This hook
+# is set to the tray-aware restore once the window exists; until then we fall
+# back to the raw Win32 surface. See _restore_from_tray / the IPC listener.
+_second_instance_handler = None
 
 try:
     with open(os.path.join(base_dir, "metadata.json"), "r", encoding="utf-8") as _meta_file:
@@ -139,9 +147,13 @@ def start_ipc_server():
             if data and data.startswith('btt://'):
                 eel.handle_deep_link(data)()
             # Any second-launch ping (deep link or WAKE_UP) should surface the
-            # already-running window instead of silently doing nothing.
+            # already-running window instead of silently doing nothing. When the
+            # app is sitting in the tray, the handler restores it from there.
             if data:
-                _surface_app_window(only_if_hidden=False)
+                if _second_instance_handler:
+                    _second_instance_handler()
+                else:
+                    _surface_app_window(only_if_hidden=False)
             conn.close()
 
     threading.Thread(target=listen, daemon=True).start()
@@ -461,6 +473,24 @@ def start_self_update(download_url, version_tag="", asset_name=""):
                 eel.remove_external_request(request_id, download_ok)()
             except Exception:
                 pass
+
+
+def close_to_tray_enabled():
+    """Read the current 'close to system tray' preference straight from the
+    settings file so a toggle in the UI takes effect without a restart.
+
+    Defaults to True (enabled) when the setting is missing or unreadable -- the
+    app ships closing to the tray by default.
+    """
+    try:
+        settings_file = get_cache_root() / "settings.json"
+        if settings_file.exists():
+            data = json.loads(settings_file.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data.get("close_to_tray", True) is not False
+    except Exception:
+        pass
+    return True
 
 
 LOCALE_DIR = Path("web/assets/locale")
@@ -788,13 +818,81 @@ app_url = f'http://localhost:{eel_port}/index.html'
 
 if _use_webview:
     print("✅ Server ready. Opening window...")
-    webview.create_window(
+    main_window = webview.create_window(
         WINDOW_TITLE,
         app_url,
         width=1700,
         height=1000,
         min_size=(1100, 700),
     )
+
+    # --- Close to system tray ------------------------------------------------
+    # When enabled (default), closing the window hides it to the notification
+    # area and keeps the app running instead of quitting. The tray icon is the
+    # way back. Tray support is Windows-only and best-effort: if it isn't
+    # available, closing behaves normally (see create_tray_icon).
+    _tray_state = {"quitting": False}
+    tray_icon = None
+    notifier = backend.desktop_notifications.notifier
+
+    def _restore_from_tray():
+        try:
+            main_window.show()
+        except Exception:
+            pass
+        if tray_icon:
+            tray_icon.hide()
+        _surface_app_window(only_if_hidden=False)
+
+    def _quit_from_tray():
+        _tray_state["quitting"] = True
+        if tray_icon:
+            try:
+                tray_icon.destroy()
+            except Exception:
+                pass
+        try:
+            main_window.destroy()
+        except Exception:
+            IPC_LOCK_FILE.unlink(missing_ok=True)
+            os._exit(0)
+
+    def _on_window_closing():
+        # Returning False cancels the native close (pywebview honors this).
+        if _tray_state["quitting"] or tray_icon is None:
+            return True
+        if not close_to_tray_enabled():
+            return True
+        try:
+            main_window.hide()
+        except Exception:
+            return True
+        tray_icon.show()
+        # First time ever the app tucks into the tray, tell the user where it
+        # went — once, then never again (persisted across restarts).
+        notifier.notify_once(
+            "close_to_tray_first_time",
+            WINDOW_TITLE,
+            f"{WINDOW_TITLE} is still running in the system tray. "
+            "Right-click the tray icon to quit.",
+        )
+        return False
+
+    main_window.events.closing += _on_window_closing
+
+    tray_icon = create_tray_icon(
+        title=WINDOW_TITLE,
+        icon_path=os.path.join(base_dir, 'web', 'favicon.ico'),
+        on_open=_restore_from_tray,
+        on_quit=_quit_from_tray,
+        tooltip=WINDOW_TITLE,
+    )
+    # Route desktop notifications through the tray balloon once it exists.
+    if tray_icon:
+        notifier.set_sink(tray_icon.notify)
+    # Second launches restore the window from the tray instead of just poking
+    # the Win32 handle (keeps pywebview's own shown/hidden state in sync).
+    _second_instance_handler = _restore_from_tray
 
     # Safety net: if a launcher (e.g. an older self-updater) starts us hidden,
     # bring the window to the foreground once it exists.
@@ -808,7 +906,12 @@ if _use_webview:
         storage_path=webview_storage_path,
         icon=os.path.join(base_dir, 'web', 'favicon.ico'),
     )
-    # webview.start() returns once the user closes the window.
+    # webview.start() returns once the user closes the window (real quit).
+    if tray_icon:
+        try:
+            tray_icon.destroy()
+        except Exception:
+            pass
 else:
     print(f"✅ Server ready. Opening {app_url} in your default browser...")
     try:

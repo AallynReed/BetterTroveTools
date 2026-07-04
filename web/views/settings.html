@@ -52,6 +52,20 @@
                 </div>
             </div>
 
+            <div v-if="!isWebMode && !isNative" class="settings-section">
+                <h3>{{ t('settings.window_behavior') }}</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.close_to_tray') }}</div>
+                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.close_to_tray_desc') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.close_to_tray" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <h3>{{ t('settings.home_page_preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">

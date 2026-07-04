@@ -49,6 +49,7 @@ document.addEventListener('settings_loaded', async () => {
                 show_mod_preview_on_info_side: true,
                 hide_beta_features: false,
                 enable_legacy_projects: false,
+                close_to_tray: true,
                 notifications: defaultNotifications()
             });
 
@@ -87,6 +88,7 @@ document.addEventListener('settings_loaded', async () => {
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
                     settings.enable_legacy_projects = data.enable_legacy_projects === true;
+                    settings.close_to_tray = data.close_to_tray !== false;
                     // Deep-merge notifications so old saves missing a new field
                     // (e.g. a freshly-added rotation type) pick up its defaults.
                     // Old saves may carry a global notifications.lead_minutes —

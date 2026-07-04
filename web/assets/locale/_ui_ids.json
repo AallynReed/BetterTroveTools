@@ -1662,7 +1662,10 @@
     "Gem build optimization needs the desktop calculation engine.": "web.gem_builds_needs_desktop",
     "Gem simulation needs the desktop gem engine.": "web.gem_sim_needs_desktop",
     "Gem stat range needs the desktop calculation engine.": "web.gem_stat_range_needs_desktop",
-    "Star Chart stat parsing needs the desktop calculation engine.": "web.star_chart_needs_desktop"
+    "Star Chart stat parsing needs the desktop calculation engine.": "web.star_chart_needs_desktop",
+    "Window Behavior": "settings.window_behavior",
+    "Close to system tray": "settings.close_to_tray",
+    "When you close the window, keep Better Trove Tools running in the system tray (the hidden-icons area) instead of quitting. Right-click the tray icon to quit.": "settings.close_to_tray_desc"
   },
   "en": {
     "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3374,6 +3377,9 @@
     "web.gem_builds_needs_desktop": "Gem build optimization needs the desktop calculation engine.",
     "web.gem_sim_needs_desktop": "Gem simulation needs the desktop gem engine.",
     "web.gem_stat_range_needs_desktop": "Gem stat range needs the desktop calculation engine.",
-    "web.star_chart_needs_desktop": "Star Chart stat parsing needs the desktop calculation engine."
+    "web.star_chart_needs_desktop": "Star Chart stat parsing needs the desktop calculation engine.",
+    "settings.window_behavior": "Window Behavior",
+    "settings.close_to_tray": "Close to system tray",
+    "settings.close_to_tray_desc": "When you close the window, keep Better Trove Tools running in the system tray (the hidden-icons area) instead of quitting. Right-click the tray icon to quit."
   }
 }
