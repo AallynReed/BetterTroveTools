@@ -66,11 +66,22 @@ document.addEventListener('gems_and_builds_loaded', () => {
                 await restoreState();
                 
                 // Check if a specific tab was requested via command palette
-                if (window.pendingGemsTab) {
-                    activeTab.value = window.pendingGemsTab;
-                    window.pendingGemsTab = null;
-                    persistState();
+                const applyPendingGemsTab = () => {
+                    if (window.pendingGemsTab) {
+                        activeTab.value = window.pendingGemsTab;
+                        window.pendingGemsTab = null;
+                        persistState();
+                    }
+                };
+                applyPendingGemsTab();
+                // A deep-link into a sub-tab of the already-cached view arrives via
+                // gems_and_builds_shown (no rebuild); honor it in place. Drop any
+                // prior handler first so a rebuild can't leave two racing.
+                if (window._gemsShownHandler) {
+                    document.removeEventListener('gems_and_builds_shown', window._gemsShownHandler);
                 }
+                window._gemsShownHandler = applyPendingGemsTab;
+                document.addEventListener('gems_and_builds_shown', applyPendingGemsTab);
                 
                 await loadSubviewContent();
                 

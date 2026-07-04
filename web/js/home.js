@@ -1617,8 +1617,29 @@ document.addEventListener('home_loaded', () => {
                 }, msUntil);
             }
 
+            // Leaving Home: abort in-flight work but keep the app mounted (it's
+            // cached now, not destroyed). Unlike cancelHomeWork this does NOT null
+            // the receive handlers -- they're assigned once in setup() and must
+            // survive so a later return can refresh. Late responses that arrive
+            // while away are dropped by the isDisposed guards inside each handler.
+            const pauseHomeWork = () => {
+                isDisposed = true;
+                resetHomeAbortController();
+                if (window.eel && eel.cancel_home_fetches) {
+                    try { eel.cancel_home_fetches()(); } catch (e) {}
+                }
+            };
+
             const handleHomeUnloading = () => {
-                cancelHomeWork();
+                pauseHomeWork();
+            };
+
+            // Returning to a cached Home tab: re-arm and snap to fresh data
+            // (mirrors onMounted's startup refresh).
+            const handleHomeShown = () => {
+                isDisposed = false;
+                resetHomeAbortController();
+                refreshAllData({ refreshOfficialNews: true });
             };
 
             // Visibility-aware tickers: every interval below checks document.hidden
@@ -1630,7 +1651,11 @@ document.addEventListener('home_loaded', () => {
             // listener below, which forces a fresh refreshAllData when the window
             // becomes visible again so the user sees current data without waiting
             // for the next 30 s tick.
-            const isHidden = () => typeof document !== 'undefined' && document.hidden;
+            // "Hidden" now also covers the case where Home is cached but is not the
+            // active tab -- no point polling streams/news/giveaways for a view the
+            // user isn't looking at. BTT_CURRENT_VIEW is maintained by loadView.
+            const isHidden = () => (typeof document !== 'undefined' && document.hidden)
+                || (typeof window !== 'undefined' && !!window.BTT_CURRENT_VIEW && window.BTT_CURRENT_VIEW !== 'home');
             let pendingRefreshOnVisible = false;
 
             const onVisibilityChange = () => {
@@ -1664,6 +1689,7 @@ document.addEventListener('home_loaded', () => {
                 };
                 document.addEventListener('change', window._homeLangListener);
                 document.addEventListener('home_unloading', handleHomeUnloading);
+                document.addEventListener('home_shown', handleHomeShown);
                 document.addEventListener('visibilitychange', onVisibilityChange);
             });
 
@@ -1692,6 +1718,7 @@ document.addEventListener('home_loaded', () => {
                 if (resetTimer) clearTimeout(resetTimer);
                 document.removeEventListener('change', window._homeLangListener);
                 document.removeEventListener('home_unloading', handleHomeUnloading);
+                document.removeEventListener('home_shown', handleHomeShown);
                 cancelHomeWork();
             });
 

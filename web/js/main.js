@@ -1097,12 +1097,23 @@ window.JobQueue = (() => {
     let patchEmitTimer = null;
 
     const loadHistory = () => {
-        if (window.AppSettings) {
-            const parsed = window.AppSettings.getPref(PREF_KEY, []);
-            jobs = Array.isArray(parsed) ? parsed : [];
-            return;
-        }
-        jobs = [];
+        const parsed = window.AppSettings
+            ? (Array.isArray(window.AppSettings.getPref(PREF_KEY, [])) ? window.AppSettings.getPref(PREF_KEY, []) : [])
+            : [];
+        // A job persisted as running/cancelling with no runtime handler belongs to
+        // a previous process that has since exited (e.g. the app was force-closed
+        // mid-job). Nothing can advance it, so coerce it to an interrupted error.
+        // Without this it lingers as a phantom "running" job -- a stuck badge/
+        // spinner, and (historically) a permanent block on tab switching.
+        let changed = false;
+        jobs = parsed.map((j) => {
+            if (j && (j.status === 'running' || j.status === 'cancelling') && !runtimeHandlers[j.id]) {
+                changed = true;
+                return { ...j, status: 'error', error: j.error || 'Interrupted (the app closed before this finished).' };
+            }
+            return j;
+        });
+        if (changed) saveHistory();
     };
     const saveHistory = () => {
         if (!window.AppSettings) return;
@@ -1949,6 +1960,8 @@ window.executePendingSearch = function() {
 
 document.addEventListener('trovesaurus_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
 document.addEventListener('mod_manager_loaded', () => setTimeout(() => window.executePendingSearch(), 0));
+// Re-entering a cached Mod Manager fires _shown (not _loaded); honor a pending search then too.
+document.addEventListener('mod_manager_shown', () => setTimeout(() => window.executePendingSearch(), 0));
 ['allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items', 'fish', 'badges'].forEach((name) => {
     document.addEventListener(`${name}_loaded`, () => setTimeout(() => window.executePendingSearch(), 100));
 });
@@ -2262,7 +2275,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const navButtons = document.querySelectorAll('.nav-btn');
     const viewContainer = document.getElementById('view-container');
     const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
-    let lastNavBlockToastAt = 0;
 
     const burgerBtn = document.getElementById('burger-btn');
     const sidebar = document.getElementById('sidebar');
@@ -2643,6 +2655,38 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     })();
 
+    // --- View cache ("keep-alive") ---------------------------------------
+    // Each top-level view is built once, then kept alive across tab switches
+    // instead of being torn down and refetched. Only the ACTIVE view's nodes
+    // live in #view-container at any moment; the rest are detached (removed
+    // from the document) but their nodes -- and any mounted Vue apps or running
+    // jobs bound to them -- are retained here. Because just one view is attached
+    // at a time, there are no duplicate-id or cross-view CSS collisions.
+    //
+    // Lifecycle events dispatched on `document`:
+    //   `<view>_loaded` -> fired ONCE, the first time a view is built. Existing
+    //       view scripts listen for this to mount their app + bind listeners.
+    //       (Firing it again on a cached view would double-bind, hence _shown.)
+    //   `<view>_shown`  -> fired every time a cached view is re-shown. Views use
+    //       this to refresh data, and to honor a pending deep-link sub-tab
+    //       (window.pending<View>Tab), without rebuilding -- so a job bound to the
+    //       view's live app survives a deep-link into one of its sub-tabs.
+    //   `<view>_hidden` -> fired when a view is switched away from.
+    const viewCache = new Map(); // target -> { nodes: Node[], styleHrefs: string[] }
+
+    const evictView = (targetName) => {
+        const entry = viewCache.get(targetName);
+        if (entry) entry.nodes.forEach((n) => { if (n.parentNode) n.parentNode.removeChild(n); });
+        viewCache.delete(targetName);
+    };
+
+    // Drop every cached view so each rebuilds fresh on next visit. Needed on a
+    // language change: cached Vue apps compute their text via t() at render time
+    // and won't re-render on a locale switch, so they must be rebuilt.
+    window.clearViewCache = () => {
+        for (const key of Array.from(viewCache.keys())) evictView(key);
+    };
+
     window.loadView = async function(target) {
         const loadToken = ++activeViewLoadToken;
         if (activeViewLoadController) {
@@ -2651,71 +2695,103 @@ document.addEventListener('DOMContentLoaded', async () => {
         activeViewLoadController = new AbortController();
 
         try {
-            const currentTarget = document.querySelector('.nav-btn.active')?.getAttribute('data-target') || null;
-            const isSwitchingTabs = !!currentTarget && !!target && currentTarget !== target;
-            const hasBlockingJobs = (() => {
-                if (!window.JobQueue || typeof window.JobQueue.getJobs !== 'function') return false;
-                const jobs = window.JobQueue.getJobs() || [];
-                return jobs.some(j => j && (j.status === 'running' || j.status === 'cancelling'));
-            })();
-
             if (!isViewVisible(target)) {
                 return false;
             }
 
-            if (isSwitchingTabs && hasBlockingJobs) {
-                const now = Date.now();
-                if (now - lastNavBlockToastAt > 1200) {
-                    window.showToast(t('app.cannot_switch_tabs_while_a_job_is_runnin_b3bddf'), true);
-                    lastNavBlockToastAt = now;
+            const currentTarget = window.BTT_CURRENT_VIEW
+                || (document.querySelector('.nav-btn.active')?.getAttribute('data-target') || null);
+
+            // Switch the currently-visible view out: fire its lifecycle-hide
+            // hooks and detach its nodes (kept alive in the cache). No-op when
+            // re-showing the same target (e.g. a language-change rebuild).
+            const detachCurrent = () => {
+                if (!currentTarget || currentTarget === target) return;
+                document.dispatchEvent(new CustomEvent(`${currentTarget}_hidden`, { detail: { to: target } }));
+                if (currentTarget === 'home') {
+                    // Back-compat: home.js listens for this to abort in-flight work.
+                    document.dispatchEvent(new CustomEvent('home_unloading', { detail: { from: currentTarget, to: target } }));
                 }
-                return false;
+                const prev = viewCache.get(currentTarget);
+                if (prev) prev.nodes.forEach((n) => { if (n.parentNode === viewContainer) viewContainer.removeChild(n); });
+            };
+
+            const finishShow = () => {
+                navButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-target') === target);
+                });
+                applyBetaVisibilityToContainer(viewContainer);
+                window.BTT_CURRENT_VIEW = target;
+                setTimeout(() => {
+                    if (loadToken === activeViewLoadToken) {
+                        applyBetaVisibilityToContainer(viewContainer);
+                        enforceVisibleBetaTabFallback(viewContainer);
+                    }
+                }, 0);
+            };
+
+            // ---- Fast path: view already built -> just re-show it -----------
+            const cached = viewCache.get(target);
+            if (cached) {
+                // Re-target of the view already on screen (e.g. a command-palette
+                // deep-link into a sub-tab of the current view): don't detach/
+                // re-append -- just fire _shown so the view switches sub-tab in
+                // place. Only move DOM when actually switching views.
+                if (currentTarget !== target) {
+                    detachCurrent();
+                    cached.nodes.forEach((n) => viewContainer.appendChild(n));
+                    activateViewStyles(cached.styleHrefs);
+                    if (window.I18nManager) { try { await window.I18nManager.translatePage(); } catch {} }
+                    if (loadToken !== activeViewLoadToken) return false;
+                }
+
+                // onMounted won't re-run for a cached view, so honor a pending
+                // scroll target here (the first-build case is handled by the view).
+                const pending = window.pendingViewScroll;
+                if (pending && pending.view === target && pending.elementId) {
+                    window.pendingViewScroll = null;
+                    requestAnimationFrame(() => {
+                        const el = document.getElementById(pending.elementId);
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    });
+                }
+
+                finishShow();
+                // Fires after finishShow so window.BTT_CURRENT_VIEW is already the
+                // target -- views apply their pending sub-tab / refresh here.
+                document.dispatchEvent(new CustomEvent(`${target}_shown`, { detail: { from: currentTarget } }));
+                console.log(`Re-showed cached view: ${target}`);
+                return true;
             }
 
-            if (isSwitchingTabs && currentTarget === 'home' && target !== 'home') {
-                document.dispatchEvent(new CustomEvent('home_unloading', { detail: { from: currentTarget, to: target } }));
-                if (window._homeApp && typeof window._homeApp.unmount === 'function') {
-                    try { window._homeApp.unmount(); } catch {}
-                    window._homeApp = null;
-                }
-            }
-
-            if (isSwitchingTabs && currentTarget === 'codexes' && target !== 'codexes') {
-                if (window._codexesApp && typeof window._codexesApp.unmount === 'function') {
-                    try { window._codexesApp.unmount(); } catch {}
-                    window._codexesApp = null;
-                }
-                window.CodexGamePathApi = null;
-                window.getSelectedCodexGamePath = null;
-            }
-
+            // ---- Build path: first visit (or post-eviction) -----------------
+            // Do all the fallible fetch/style work BEFORE detaching the current
+            // view, so a failed load leaves the current view untouched on screen.
             const response = await fetch(`views/${target}.html`, { signal: activeViewLoadController.signal, cache: 'no-store' });
             if (loadToken !== activeViewLoadToken) return false;
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            
+
             const html = await response.text();
             if (loadToken !== activeViewLoadToken) return false;
 
             const { contentHtml, stylesheetHrefs } = extractViewContentAndStyles(html);
             const activeStyleHrefs = await ensureViewStylesLoaded(stylesheetHrefs, activeViewLoadController.signal);
             if (loadToken !== activeViewLoadToken) return false;
+
+            const tpl = document.createElement('template');
+            tpl.innerHTML = contentHtml;
+            const nodes = Array.from(tpl.content.childNodes);
+
+            // Commit point: swap the DOM. Nothing past here throws (the remaining
+            // steps are guarded), so we never blank the screen on a late failure.
+            detachCurrent();
             activateViewStyles(activeStyleHrefs);
+            nodes.forEach((n) => viewContainer.appendChild(n));
+            viewCache.set(target, { nodes, styleHrefs: activeStyleHrefs });
 
-            viewContainer.innerHTML = contentHtml;
+            if (window.I18nManager) { try { await window.I18nManager.translatePage(); } catch {} }
             if (loadToken !== activeViewLoadToken) return false;
-            applyBetaVisibilityToContainer(viewContainer);
-
-            navButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.getAttribute('data-target') === target);
-            });
-
-            if (window.I18nManager) {
-                await window.I18nManager.translatePage();
-                if (loadToken !== activeViewLoadToken) return false;
-            }
-
-            window.applyCustomDropdowns();
-            if (loadToken !== activeViewLoadToken) return false;
+            try { window.applyCustomDropdowns(); } catch (e) { console.error('applyCustomDropdowns failed:', e); }
 
             const viewScripts = (window.BTT_VIEW_SCRIPTS && window.BTT_VIEW_SCRIPTS[target]) || [];
             if (viewScripts.length) {
@@ -2723,24 +2799,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (loadToken !== activeViewLoadToken) return false;
             }
 
-            const event = new CustomEvent(`${target}_loaded`);
-            document.dispatchEvent(event);
-            setTimeout(() => {
-                if (loadToken === activeViewLoadToken) {
-                    applyBetaVisibilityToContainer(viewContainer);
-                    enforceVisibleBetaTabFallback(viewContainer);
-                }
-            }, 0);
-            
+            finishShow();
+            document.dispatchEvent(new CustomEvent(`${target}_loaded`));
             console.log(`Successfully loaded view: ${target}`);
             return true;
         } catch (err) {
             if (loadToken !== activeViewLoadToken || (err && err.name === 'AbortError')) {
                 return false;
             }
+            // Failures here happen before the DOM is swapped, so the current view
+            // stays on screen -- surface the error as a toast instead of blanking.
             console.error("View loading error:", err);
-            const errorMsg = t("app.failed_to_load_view_error").replace("{error}", err.message);
-            viewContainer.innerHTML = `<div style="color: #ff5555; padding: 40px; text-align: center;">${errorMsg}</div>`;
+            if (window.showToast) {
+                window.showToast(t("app.failed_to_load_view_error").replace("{error}", err.message), true);
+            }
             return false;
         } finally {
             if (loadToken === activeViewLoadToken) {
@@ -3055,7 +3127,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         langSelect.addEventListener('change', async (e) => {
             await window.I18nManager.setLocale(e.target.value);
             await window.I18nManager.translatePage();
-            const currentView = document.querySelector('.nav-btn.active')?.getAttribute('data-target');
+            // Cached Vue views resolve their text via t() at render time and don't
+            // re-render on a locale switch, so drop the cache and rebuild the
+            // current view fresh in the new language. Others rebuild on next visit.
+            const currentView = window.BTT_CURRENT_VIEW
+                || document.querySelector('.nav-btn.active')?.getAttribute('data-target');
+            if (window.clearViewCache) window.clearViewCache();
             if (currentView) window.loadView(currentView);
         });
     }

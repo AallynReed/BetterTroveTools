@@ -234,10 +234,21 @@ document.addEventListener('codexes_loaded', () => {
                 hydratingState = true;
                 await restoreState();
                 await scanForGames();
-                if (window.pendingCodexTab) {
-                    activeTab.value = window.pendingCodexTab;
-                    window.pendingCodexTab = null;
+                const applyPendingCodexTab = () => {
+                    if (window.pendingCodexTab) {
+                        activeTab.value = window.pendingCodexTab;
+                        window.pendingCodexTab = null;
+                    }
+                };
+                applyPendingCodexTab();
+                // A deep-link into a codex sub-tab of the already-cached view
+                // arrives via codexes_shown (no rebuild); honor it in place. Drop
+                // any prior handler first so a rebuild can't leave two racing.
+                if (window._codexesShownHandler) {
+                    document.removeEventListener('codexes_shown', window._codexesShownHandler);
                 }
+                window._codexesShownHandler = applyPendingCodexTab;
+                document.addEventListener('codexes_shown', applyPendingCodexTab);
 
                 window.getSelectedCodexGamePath = () => selectedGamePath.value || '';
                 window.CodexGamePathApi = {

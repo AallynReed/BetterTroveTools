@@ -40,3 +40,13 @@ document.addEventListener('game_explorer_loaded', async () => {
         host.innerHTML = `<div style="color:#ff5555;padding:40px;text-align:center;">${t('game_explorer.failed_to_load')}</div>`;
     }
 });
+
+// Re-entering a cached Game Explorer via a deep-link into an internal tab fires
+// game_explorer_shown; forward the pending tab to the already-mounted file
+// manager instead of rebuilding the view. Registered at module scope (once).
+document.addEventListener('game_explorer_shown', () => {
+    if (!window.pendingGameExplorerTab) return;
+    const tab = window.pendingGameExplorerTab;
+    window.pendingGameExplorerTab = null;
+    document.dispatchEvent(new CustomEvent('file_manager_set_tab', { detail: { tab } }));
+});

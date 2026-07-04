@@ -218,10 +218,22 @@ document.addEventListener('modder_tools_loaded', () => {
                         console.error('modder_tools: failed to restore state', e);
                     }
                 }
-                if (window.pendingModderToolsTab && isTabAvailable(window.pendingModderToolsTab)) {
-                    activeTab.value = window.pendingModderToolsTab;
+                const applyPendingModderTab = () => {
+                    if (window.pendingModderToolsTab && isTabAvailable(window.pendingModderToolsTab)) {
+                        activeTab.value = window.pendingModderToolsTab;
+                    }
+                    window.pendingModderToolsTab = null;
+                };
+                applyPendingModderTab();
+                // Deep-link into a sub-tab of the already-cached view arrives via
+                // modder_tools_shown (no rebuild); honor it in place. Remove any
+                // prior handler first so a rebuild (e.g. language change) can't
+                // leave two racing to null window.pendingModderToolsTab.
+                if (window._modderToolsShownHandler) {
+                    document.removeEventListener('modder_tools_shown', window._modderToolsShownHandler);
                 }
-                window.pendingModderToolsTab = null;
+                window._modderToolsShownHandler = applyPendingModderTab;
+                document.addEventListener('modder_tools_shown', applyPendingModderTab);
 
                 // Mount every per-tab app NOW. This must not wait on the game-path
                 // scan (registry/Steam detection can be slow or hang), otherwise the

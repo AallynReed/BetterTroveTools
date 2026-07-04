@@ -50,6 +50,17 @@ document.addEventListener('mod_manager_loaded', async () => {
     window.pendingModManagerSection = null;
     setModManagerSection(requestedSection);
 
+    // Re-entering a cached Mod Manager via a deep-link into a sub-tab fires
+    // mod_manager_shown (not _loaded); apply the pending section in place so a
+    // running job's live app is never torn down. Registered once (this handler
+    // runs a single time).
+    document.addEventListener('mod_manager_shown', () => {
+        if (!window.pendingModManagerSection) return;
+        const section = window.pendingModManagerSection;
+        window.pendingModManagerSection = null;
+        setModManagerSection(section);
+    });
+
     const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
     const PREF_STATE_KEY = 'state_mod_manager';
     const PREF_TOUR_KEY = 'onboarding_mod_manager_v1';
