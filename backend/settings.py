@@ -41,6 +41,13 @@ def _normalize_settings_payload(payload):
         if key in payload:
             normalized[key] = payload[key]
 
+    # Rotation-reminder config: a nested dict the desktop app persists here so
+    # the backend scheduler can be re-armed on launch. (On Android this lives in
+    # local web-mode storage instead.) Passed through as-is -- the frontend owns
+    # its shape and deep-merges defaults on load.
+    if isinstance(payload.get("notifications"), dict):
+        normalized["notifications"] = payload["notifications"]
+
     return normalized
 
 def _get_all_games(settings_data):

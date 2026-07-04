@@ -475,6 +475,19 @@ def start_self_update(download_url, version_tag="", asset_name=""):
                 pass
 
 
+def _read_settings_dict():
+    """Best-effort read of the raw settings file. Returns {} on any problem."""
+    try:
+        settings_file = get_cache_root() / "settings.json"
+        if settings_file.exists():
+            data = json.loads(settings_file.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    return {}
+
+
 def close_to_tray_enabled():
     """Read the current 'close to system tray' preference straight from the
     settings file so a toggle in the UI takes effect without a restart.
@@ -482,15 +495,14 @@ def close_to_tray_enabled():
     Defaults to True (enabled) when the setting is missing or unreadable -- the
     app ships closing to the tray by default.
     """
-    try:
-        settings_file = get_cache_root() / "settings.json"
-        if settings_file.exists():
-            data = json.loads(settings_file.read_text(encoding="utf-8"))
-            if isinstance(data, dict):
-                return data.get("close_to_tray", True) is not False
-    except Exception:
-        pass
-    return True
+    return _read_settings_dict().get("close_to_tray", True) is not False
+
+
+def notifications_enabled():
+    """Whether the user has rotation reminders turned on. Used to keep the tray
+    icon present from startup (balloons need a visible icon). Defaults off."""
+    notifications = _read_settings_dict().get("notifications")
+    return isinstance(notifications, dict) and notifications.get("enabled") is True
 
 
 LOCALE_DIR = Path("web/assets/locale")
@@ -826,22 +838,43 @@ if _use_webview:
         min_size=(1100, 700),
     )
 
-    # --- Close to system tray ------------------------------------------------
-    # When enabled (default), closing the window hides it to the notification
-    # area and keeps the app running instead of quitting. The tray icon is the
-    # way back. Tray support is Windows-only and best-effort: if it isn't
-    # available, closing behaves normally (see create_tray_icon).
+    # --- Close to system tray + desktop reminders ----------------------------
+    # When close-to-tray is enabled (default), closing the window hides it to the
+    # notification area and keeps the app running instead of quitting. The tray
+    # icon is the way back. It also carries rotation-reminder balloons, so while
+    # reminders are enabled the icon stays visible even when the window is open
+    # (a balloon needs a live icon). Tray support is Windows-only and
+    # best-effort: with no tray, closing behaves normally (see create_tray_icon).
     _tray_state = {"quitting": False}
     tray_icon = None
     notifier = backend.desktop_notifications.notifier
+
+    # Two independent reasons the icon may need to be visible; the icon is shown
+    # if either holds. "collapsed" = window hidden to tray; "reminders" = the
+    # user has rotation reminders on (initial value read from settings).
+    _tray_wanted = {"collapsed": False, "reminders": notifications_enabled()}
+
+    def _apply_tray_visibility():
+        if not tray_icon:
+            return
+        if _tray_wanted["collapsed"] or _tray_wanted["reminders"]:
+            tray_icon.show()
+        else:
+            tray_icon.hide()
+
+    def _set_reminders_active(active):
+        # Called by the frontend scheduler (via the notifier) when reminders are
+        # toggled, so the icon can persist for as long as balloons must deliver.
+        _tray_wanted["reminders"] = bool(active)
+        _apply_tray_visibility()
 
     def _restore_from_tray():
         try:
             main_window.show()
         except Exception:
             pass
-        if tray_icon:
-            tray_icon.hide()
+        _tray_wanted["collapsed"] = False
+        _apply_tray_visibility()
         _surface_app_window(only_if_hidden=False)
 
     def _quit_from_tray():
@@ -867,7 +900,8 @@ if _use_webview:
             main_window.hide()
         except Exception:
             return True
-        tray_icon.show()
+        _tray_wanted["collapsed"] = True
+        _apply_tray_visibility()
         # First time ever the app tucks into the tray, tell the user where it
         # went — once, then never again (persisted across restarts).
         notifier.notify_once(
@@ -887,9 +921,12 @@ if _use_webview:
         on_quit=_quit_from_tray,
         tooltip=WINDOW_TITLE,
     )
-    # Route desktop notifications through the tray balloon once it exists.
+    # Route desktop notifications through the tray balloon, and let the reminder
+    # scheduler keep the icon present, once the tray exists.
     if tray_icon:
         notifier.set_sink(tray_icon.notify)
+        notifier.set_active_handler(_set_reminders_active)
+        _apply_tray_visibility()  # show now if reminders were already enabled
     # Second launches restore the window from the tray instead of just poking
     # the Win32 handle (keeps pywebview's own shown/hidden state in sync).
     _second_instance_handler = _restore_from_tray

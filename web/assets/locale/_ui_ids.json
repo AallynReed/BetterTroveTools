@@ -1665,7 +1665,11 @@
     "Star Chart stat parsing needs the desktop calculation engine.": "web.star_chart_needs_desktop",
     "Window Behavior": "settings.window_behavior",
     "Close to system tray": "settings.close_to_tray",
-    "When you close the window, keep Better Trove Tools running in the system tray (the hidden-icons area) instead of quitting. Right-click the tray icon to quit.": "settings.close_to_tray_desc"
+    "When you close the window, keep Better Trove Tools running in the system tray (the hidden-icons area) instead of quitting. Right-click the tray icon to quit.": "settings.close_to_tray_desc",
+    "Reminders show as Windows notifications from the tray icon. Keep Better Trove Tools open, or minimized to the tray, to receive them.": "settings.notifications_desktop_note",
+    "Reminders fire while the app is open or minimized to the system tray. They stop if you fully quit the app — reopen it to resume.": "settings.notifications_close_note_desktop",
+    "This is a test — your reminders are working.": "notifications.test.body_desktop",
+    "Test notification sent.": "settings.notifications_test_sent_desktop"
   },
   "en": {
     "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3380,6 +3384,10 @@
     "web.star_chart_needs_desktop": "Star Chart stat parsing needs the desktop calculation engine.",
     "settings.window_behavior": "Window Behavior",
     "settings.close_to_tray": "Close to system tray",
-    "settings.close_to_tray_desc": "When you close the window, keep Better Trove Tools running in the system tray (the hidden-icons area) instead of quitting. Right-click the tray icon to quit."
+    "settings.close_to_tray_desc": "When you close the window, keep Better Trove Tools running in the system tray (the hidden-icons area) instead of quitting. Right-click the tray icon to quit.",
+    "settings.notifications_desktop_note": "Reminders show as Windows notifications from the tray icon. Keep Better Trove Tools open, or minimized to the tray, to receive them.",
+    "settings.notifications_close_note_desktop": "Reminders fire while the app is open or minimized to the system tray. They stop if you fully quit the app — reopen it to resume.",
+    "notifications.test.body_desktop": "This is a test — your reminders are working.",
+    "settings.notifications_test_sent_desktop": "Test notification sent."
   }
 }

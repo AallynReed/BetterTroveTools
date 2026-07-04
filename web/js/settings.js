@@ -59,6 +59,10 @@ document.addEventListener('settings_loaded', async () => {
             const isWebMode = window.BTT_WEB_MODE === true;
             // UI size scaling is only offered on the packaged Android build.
             const isNative = window.BTT_NATIVE === true;
+            // Desktop (Windows) rotation reminders: only offered when the backend
+            // can actually deliver them (a tray sink exists). Resolved async in
+            // onMounted; drives the Notifications tab's visibility alongside isNative.
+            const isDesktopNotify = ref(window.BTT_DESKTOP_NOTIFY === true);
 
             const modals = reactive({
                 add: false,
@@ -295,6 +299,8 @@ document.addEventListener('settings_loaded', async () => {
                 // The Directories + Legacy tabs are hidden in web/Android mode — fall
                 // back to General so a restored selection doesn't land on an empty page.
                 if (isWebMode && (activeTab.value === 'directories' || activeTab.value === 'legacy')) activeTab.value = 'general';
+                // Notifications tab only exists on Android or a delivery-capable desktop.
+                if (activeTab.value === 'notifications' && !isNative && !isDesktopNotify.value) activeTab.value = 'general';
             };
 
             watch(activeTab, persistState);
@@ -425,6 +431,8 @@ document.addEventListener('settings_loaded', async () => {
                         window.showToast && window.showToast(t('settings.notifications_permission_denied'), true);
                     } else if (r && r.delay) {
                         window.showToast && window.showToast(t('settings.notifications_test_sent', { seconds: r.delay }));
+                    } else if (r && r.shown) {
+                        window.showToast && window.showToast(t('settings.notifications_test_sent_desktop'));
                     }
                 } catch (e) {
                     console.error('[settings] test notification failed', e);
@@ -432,6 +440,12 @@ document.addEventListener('settings_loaded', async () => {
             };
 
             onMounted(async () => {
+                // Resolve desktop-delivery capability first so the Notifications
+                // tab's visibility (and the restore-state fallback) is settled
+                // before the view paints.
+                if (window.BTT_Notifications && window.BTT_Notifications.desktopAvailable) {
+                    try { isDesktopNotify.value = await window.BTT_Notifications.desktopAvailable(); } catch { /* keep default */ }
+                }
                 await restoreState();
                 await loadSettings();
                 await refreshBgStatus();
@@ -441,7 +455,7 @@ document.addEventListener('settings_loaded', async () => {
                 t, activeTab, settings, customDirs, modals, addForm, editForm,
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
-                resetOnboardingTips, gameInstalls, isWebMode, isNative,
+                resetOnboardingTips, gameInstalls, isWebMode, isNative, isDesktopNotify,
                 notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
                 bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications
             };

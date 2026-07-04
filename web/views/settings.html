@@ -6,7 +6,7 @@
         <div class="tab-buttons">
             <button class="tab-btn" :class="{ active: activeTab === 'general' }" @click="activeTab = 'general'"><i class="fa-solid fa-sliders"></i> <span>{{ t('settings.general') }}</span></button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'directories' }" @click="activeTab = 'directories'"><i class="fa-solid fa-folder-tree"></i> <span>{{ t('settings.directories') }}</span></button>
-            <button v-if="isNative" class="tab-btn" :class="{ active: activeTab === 'notifications' }" @click="activeTab = 'notifications'"><i class="fa-solid fa-bell"></i> <span>{{ t('settings.notifications') }}</span></button>
+            <button v-if="isNative || isDesktopNotify" class="tab-btn" :class="{ active: activeTab === 'notifications' }" @click="activeTab = 'notifications'"><i class="fa-solid fa-bell"></i> <span>{{ t('settings.notifications') }}</span></button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'legacy' }" @click="activeTab = 'legacy'"><i class="fa-solid fa-clock-rotate-left"></i> <span>{{ t('settings.legacy_features') }}</span></button>
         </div>
 
@@ -175,10 +175,11 @@
 
         <!-- Notifications tab (Android only). Rendered from notifyRegistry so adding
              a rotation only needs a registry entry in js/notifications.js + i18n keys. -->
-        <div v-if="isNative" class="tab-content" :class="{ active: activeTab === 'notifications' }">
+        <div v-if="isNative || isDesktopNotify" class="tab-content" :class="{ active: activeTab === 'notifications' }">
             <div class="settings-section">
                 <h3>{{ t('settings.notifications') }}</h3>
                 <p class="settings-help-text">{{ t('settings.notifications_help') }}</p>
+                <p v-if="isDesktopNotify && !isNative" class="settings-help-text">{{ t('settings.notifications_desktop_note') }}</p>
 
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
                     <div>
@@ -235,7 +236,8 @@
                         <i class="fa-solid fa-rotate"></i> <span>{{ t('settings.notifications_refresh') }}</span>
                     </button>
                 </div>
-                <p class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note') }}</p>
+                <p v-if="isNative" class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note') }}</p>
+                <p v-else class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note_desktop') }}</p>
             </div>
 
             <div class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">

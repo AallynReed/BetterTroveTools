@@ -2012,11 +2012,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     applyUiScale();
-    // Re-sync Android rotation notifications on startup so pending alarms roll
+    // Re-sync rotation notifications on startup so pending reminders roll
     // forward and pick up any settings changes since the app was last open.
-    // No-op outside Android (notifications.js short-circuits on !isNative).
-    if (window.BTT_Notifications && window.BTT_Notifications.isNative()) {
-        void window.BTT_Notifications.sync();
+    // Android schedules native alarms; the desktop app arms a backend scheduler
+    // that fires while the app is open or minimized to the tray.
+    if (window.BTT_Notifications) {
+        if (window.BTT_Notifications.isNative()) {
+            void window.BTT_Notifications.sync();
+        } else if (window.BTT_Notifications.isDesktop && window.BTT_Notifications.isDesktop()) {
+            void window.BTT_Notifications.startDesktopScheduler();
+        }
     }
 
     const cmdOverlay = document.getElementById('command-palette-overlay');
@@ -2562,7 +2567,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.addEventListener('app_settings_updated', () => {
         void applyBetaFeatureVisibility();
         applyUiScale();
-        if (window.BTT_Notifications && window.BTT_Notifications.isNative()) {
+        // Reminder settings may have changed — re-sync on both platforms
+        // (sync() routes to the Android or desktop path internally).
+        if (window.BTT_Notifications && (window.BTT_Notifications.isNative()
+            || (window.BTT_Notifications.isDesktop && window.BTT_Notifications.isDesktop()))) {
             void window.BTT_Notifications.sync();
         }
     });

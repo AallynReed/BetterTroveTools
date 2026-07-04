@@ -20,6 +20,18 @@
     const plugin = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) || null;
     const rot = () => window.BTT_Rotations || null;
 
+    // Packaged desktop app (eel bridge present, not the hosted web build, not
+    // Android). Reminders here are computed with the SAME registry/rotation math
+    // as Android, but delivered as Windows tray balloons via the Python backend,
+    // which also owns the firing clock (see backend/desktop_notifications.py).
+    const DESKTOP = !NATIVE && window.BTT_WEB_MODE !== true;
+    const eelReady = () => !!(window.eel && typeof window.eel.schedule_desktop_notifications === 'function');
+    // Roll the schedule forward periodically so events beyond the 14-day window
+    // get picked up; the backend handles precise per-event timing in between.
+    const DESKTOP_RESYNC_MS = 30 * 60 * 1000;
+    let _desktopAvail = null;   // null = not yet queried; then boolean (cached)
+    let _desktopResyncTimer = null;
+
     // Look ahead this far when computing pending events. Android caps the number
     // of pending alarms, and we re-sync on every app open + settings change, so a
     // rolling 14-day window covers the next reminder cycle comfortably.
@@ -400,7 +412,91 @@
         } catch { /* nothing to cancel or plugin unavailable */ }
     };
 
+    // ---- desktop (Windows tray) path --------------------------------------
+    // Whether native desktop delivery actually works here (a tray sink exists in
+    // the backend — i.e. Windows packaged build). Cached; also mirrored onto
+    // window.BTT_DESKTOP_NOTIFY so the Settings tab can gate on it synchronously.
+    const desktopAvailable = async () => {
+        if (!DESKTOP || !eelReady()) { window.BTT_DESKTOP_NOTIFY = false; return false; }
+        if (_desktopAvail !== null) return _desktopAvail;
+        try {
+            const r = await window.eel.desktop_notifications_available()();
+            const val = !!(r && (r.data ? r.data.available : r.available));
+            _desktopAvail = val;
+            window.BTT_DESKTOP_NOTIFY = val;
+            return val;
+        } catch {
+            _desktopAvail = false;
+            window.BTT_DESKTOP_NOTIFY = false;
+            return false;
+        }
+    };
+
+    // Compute the pending reminders (same rotation math as Android) and hand the
+    // flat list to the backend, which fires each when due. Full replace every
+    // call. Also tells the backend whether reminders are active so it can keep
+    // the tray icon visible for balloon delivery.
+    const syncDesktop = async () => {
+        if (!eelReady()) return { skipped: 'no-bridge' };
+        const available = await desktopAvailable();
+        if (!available) return { skipped: 'no-delivery' };
+
+        const all = (window.AppSettings ? await window.AppSettings.load() : {}) || {};
+        const settings = all.notifications || {};
+        const active = settings.enabled === true;
+
+        let payload = [];
+        if (active) {
+            const registry = buildRegistry();
+            const pending = await computePending(settings, registry);
+            payload = pending.map((n) => ({
+                id: String(n.id),
+                title: n.title,
+                body: n.body || '',
+                at: Math.floor(n.schedule.at.getTime() / 1000)
+            }));
+        }
+        try {
+            await window.eel.schedule_desktop_notifications(payload, active)();
+        } catch (err) {
+            console.error('[BTT_Notifications] desktop schedule failed', err);
+            return { error: String(err && err.message || err), scheduled: 0 };
+        }
+        try { localStorage.setItem(LAST_SYNC_KEY, String(Date.now())); } catch {}
+        return { scheduled: payload.length };
+    };
+
+    // Kick off the desktop scheduler once: initial sync + a rolling refresh.
+    // Idempotent — safe to call on every app start.
+    const startDesktopScheduler = async () => {
+        if (!DESKTOP) return;
+        const available = await desktopAvailable();
+        if (!available) return;
+        await syncDesktop();
+        if (!_desktopResyncTimer) {
+            _desktopResyncTimer = setInterval(() => { void syncDesktop(); }, DESKTOP_RESYNC_MS);
+        }
+    };
+
+    const sendTestDesktop = async () => {
+        if (!eelReady()) return { skipped: 'no-bridge' };
+        const available = await desktopAvailable();
+        if (!available) return { skipped: 'no-delivery' };
+        try {
+            await window.eel.notify_desktop(
+                i18n('notifications.test.title'),
+                i18n('notifications.test.body_desktop'),
+                null, false
+            )();
+            return { shown: true };
+        } catch (err) {
+            return { error: String(err && err.message || err) };
+        }
+    };
+
+    // ---- android (Capacitor) path -----------------------------------------
     const sync = async () => {
+        if (DESKTOP) return syncDesktop();
         if (!NATIVE) return { skipped: 'not-native' };
         const LN = plugin();
         if (!LN) return { skipped: 'no-plugin' };
@@ -487,6 +583,7 @@
     };
 
     const sendTestNotification = async () => {
+        if (DESKTOP) return sendTestDesktop();
         if (!NATIVE) return { skipped: 'not-native' };
         const LN = plugin();
         if (!LN) return { skipped: 'no-plugin' };
@@ -521,6 +618,9 @@
         sendTestNotification,
         registryMeta,
         isNative: () => NATIVE,
+        isDesktop: () => DESKTOP,
+        desktopAvailable,
+        startDesktopScheduler,
         MIN_LEAD_MIN,
         getLastSynced,
         getBackgroundStatus,
