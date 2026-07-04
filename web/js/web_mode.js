@@ -477,11 +477,11 @@
     // D15 (Delve depth-15) 3-hour biome rotation — three independent sequences off
     // a fixed epoch. Lifted to module scope so get_d15_rotation AND the notification
     // scheduler share one definition.
-    // 2024-06-18 14:00 UTC — kept in lockstep with backend/home.py's
-    // `system_epoch = datetime(2024, 6, 18, 14, 0, 0, tzinfo=UTC)`. If you
+    // 2024-06-18 11:00 UTC — kept in lockstep with backend/home.py's
+    // `system_epoch = datetime(2024, 6, 18, 11, 0, 0, tzinfo=UTC)`. If you
     // bump one, bump the other in the same commit or the desktop and
     // web/Android builds will disagree on which slot is current.
-    const D15_EPOCH = 1718719200, D15_INTERVAL = 3 * HOUR_SEC;
+    const D15_EPOCH = 1718708400, D15_INTERVAL = 3 * HOUR_SEC;
     const D15_BIOME1 = ['Sundered Uplands', 'Cerise Sandsea', 'Deep Forest', 'Alkali Flats', 'Dead of Winter', 'Sundered Uplands', 'Firefly Party', 'Desert of Secrets', 'Weathered Wastelands', 'Frozen Wastes', "Frigga's Fjord", 'Abandoned Boneyard'];
     const D15_BIOME2 = ['Cursed Vale', 'Hollow Dunes', 'Bewitching Wood', 'Primal Preserve', 'Hollow Dunes', 'Ancient Heights', 'Viking Burial Grounds', 'Spellbound Thicket', 'Saurian Swamp', 'Restless Range', 'Uncanny Valley'];
     const D15_BIOME3 = ['Sugar Steppes', 'Volcanic Fields', 'The Lost Isles', 'Luminopolis', 'The Lost Isles', 'Blazing Emberlands', 'Cocoa Craters', 'Data Spires', 'The Lost Isles', 'Cupcake Canyon', "Dragon's Teeth", 'Luminopolis', 'The Lost Isles', 'Data Spires'];
