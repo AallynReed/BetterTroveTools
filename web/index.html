@@ -145,7 +145,7 @@
         </div>
 
         <ul class="menu sidebar-footer-menu">
-            <li>
+            <li class="sidebar-account-row">
                 <button class="nav-btn" id="account-nav-btn" data-target="account" title="Your Better Trove Tools account">
                     <i class="fa-solid fa-circle-user nav-icon" id="account-nav-icon"></i>
                     <img id="account-nav-avatar" class="account-nav-avatar" alt="" hidden>
@@ -153,6 +153,9 @@
                 </button>
             </li>
             <li class="sidebar-footer-icons">
+                <button class="nav-btn nav-btn-icon" id="notifications-shortcut-btn" data-i18n-title="settings.notifications" title="Notifications" aria-label="Notifications">
+                    <i class="fa-solid fa-bell nav-icon"></i>
+                </button>
                 <button class="nav-btn nav-btn-icon" data-target="settings" data-i18n-title="nav.settings" title="Settings" aria-label="Settings">
                     <i class="fa-solid fa-gear nav-icon"></i>
                 </button>
@@ -381,7 +384,10 @@
     <div id="job-queue-panel" class="job-queue-panel" style="display:none;">
         <div class="job-queue-header">
             <strong>Jobs</strong>
-            <button id="job-queue-close" class="icon-btn-small"><i class="fa-solid fa-xmark"></i></button>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <button id="job-queue-clear" class="icon-btn-small" title="Clear finished jobs" style="display:none;"><i class="fa-solid fa-broom"></i></button>
+                <button id="job-queue-close" class="icon-btn-small"><i class="fa-solid fa-xmark"></i></button>
+            </div>
         </div>
         <div id="job-queue-list" class="job-queue-list"></div>
     </div>

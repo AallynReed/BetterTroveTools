@@ -1,3 +1,38 @@
+// --- Early visible error surface --------------------------------------------
+// Devtools (F12 / right-click Inspect) are blocked in the packaged build, so an
+// uncaught startup error would otherwise be invisible and just look like "the
+// app doesn't work". Render uncaught errors + promise rejections into a fixed
+// banner so failures are diagnosable straight from the shipped app. Registered
+// first so it catches everything that follows.
+(function () {
+    let box = null;
+    const show = (label, detail) => {
+        try {
+            if (!box) {
+                box = document.createElement('div');
+                box.id = 'btt-error-surface';
+                box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;max-height:45vh;overflow:auto;background:#2a0d0d;color:#ffd7d7;border-top:2px solid #ff5555;font:12px/1.5 monospace;padding:10px 14px;white-space:pre-wrap;';
+                const parent = document.body || document.documentElement;
+                if (parent) parent.appendChild(box);
+            }
+            if (!box) return;
+            const entry = document.createElement('div');
+            entry.style.cssText = 'margin-bottom:8px;padding-bottom:8px;border-bottom:1px dashed rgba(255,85,85,0.47);';
+            entry.textContent = '⚠ ' + label + '\n' + detail;
+            box.appendChild(entry);
+        } catch (e) { /* never let the reporter itself throw */ }
+    };
+    window.addEventListener('error', (e) => {
+        const err = e && e.error;
+        show('Uncaught error', (err && err.stack) || (e && e.message) || String(e));
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+        const r = e && e.reason;
+        show('Unhandled promise rejection', (r && r.stack) || (r && r.message) || String(r));
+    });
+    window.BTT_reportError = show; // let code surface a handled error deliberately
+})();
+
 // Browser shortcuts (devtools, refresh, etc.) are only blocked in the packaged
 // build. In dev (running from source) and hosted web mode they stay enabled, so
 // there's no need to comment this out by hand while developing. The backend
@@ -1091,10 +1126,18 @@ window.fuzzyIncludes = function(haystack, needle, minScore = 3) {
 window.JobQueue = (() => {
     const PREF_KEY = 'job_queue_history_v1';
     const PATCH_EMIT_INTERVAL_MS = 120;
+    // Finished (terminal) statuses -- these are the "done" jobs that are safe to
+    // prune. Anything else (running/cancelling/queued) is an active job we keep.
+    const TERMINAL_STATUSES = new Set(['completed', 'cancelled', 'error']);
+    // Finished jobs older than this are dropped from the persisted history on
+    // load, so job_queue_history_v1 doesn't accumulate stale entries forever.
+    const FINISHED_RETENTION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
     let jobs = [];
     const listeners = [];
     const runtimeHandlers = {};
     let patchEmitTimer = null;
+
+    const isTerminal = (j) => !!j && TERMINAL_STATUSES.has(j.status);
 
     const loadHistory = () => {
         const parsed = window.AppSettings
@@ -1106,13 +1149,24 @@ window.JobQueue = (() => {
         // Without this it lingers as a phantom "running" job -- a stuck badge/
         // spinner, and (historically) a permanent block on tab switching.
         let changed = false;
-        jobs = parsed.map((j) => {
+        const now = Date.now();
+        const coerced = parsed.map((j) => {
             if (j && (j.status === 'running' || j.status === 'cancelling') && !runtimeHandlers[j.id]) {
                 changed = true;
                 return { ...j, status: 'error', error: j.error || 'Interrupted (the app closed before this finished).' };
             }
             return j;
         });
+        // Prune stale finished jobs so the persisted history stays small: drop
+        // terminal jobs last touched more than FINISHED_RETENTION_MS ago, and any
+        // legacy entry carrying no timestamp at all. Active jobs are always kept.
+        jobs = coerced.filter((j) => {
+            if (!j) return false;
+            if (!isTerminal(j)) return true;
+            const ts = Number(j.updatedAt || j.createdAt || 0);
+            return ts > 0 && (now - ts) <= FINISHED_RETENTION_MS;
+        });
+        if (jobs.length !== coerced.length) changed = true;
         if (changed) saveHistory();
     };
     const saveHistory = () => {
@@ -1263,18 +1317,36 @@ window.JobQueue = (() => {
         queuePatchEmit();
     };
 
+    // Remove all finished (completed/cancelled/error) jobs from the history and
+    // persist, keeping any still-active jobs. Returns how many were cleared.
+    const clearFinished = () => {
+        const before = jobs.length;
+        jobs = jobs.filter((j) => !isTerminal(j));
+        // The runtime handlers for removed jobs can never fire again -- drop them
+        // so they don't leak across a long session.
+        Object.keys(runtimeHandlers).forEach((id) => {
+            if (!jobs.some((j) => j.id === id)) delete runtimeHandlers[id];
+        });
+        saveHistory();
+        emit();
+        return before - jobs.length;
+    };
+
+    const countFinished = () => jobs.filter(isTerminal).length;
+
     loadHistory();
     const syncFromSettings = () => {
         loadHistory();
         emit();
     };
 
-    return { run, retry, cancelJob, retryById, cancelById, subscribe, patch, syncFromSettings, getJobs: () => [...jobs] };
+    return { run, retry, cancelJob, retryById, cancelById, subscribe, patch, syncFromSettings, clearFinished, countFinished, getJobs: () => [...jobs] };
 })();
 
 window.initJobQueueUi = function() {
     const toggle = document.getElementById('job-queue-toggle');
     const close = document.getElementById('job-queue-close');
+    const clear = document.getElementById('job-queue-clear');
     const panel = document.getElementById('job-queue-panel');
     const list = document.getElementById('job-queue-list');
     const badge = document.getElementById('job-queue-badge');
@@ -1284,6 +1356,14 @@ window.initJobQueueUi = function() {
         panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
     };
     close.onclick = () => { panel.style.display = 'none'; };
+    if (clear) {
+        clear.onclick = () => {
+            const removed = window.JobQueue.clearFinished();
+            if (removed && window.showToast) {
+                window.showToast(`Cleared ${removed} finished job${removed === 1 ? '' : 's'}.`);
+            }
+        };
+    }
 
     window.JobQueue.subscribe((jobs) => {
         const runningCount = jobs.filter(j => j.status === 'running' || j.status === 'cancelling').length;
@@ -1292,6 +1372,12 @@ window.initJobQueueUi = function() {
             badge.textContent = String(runningCount);
         } else {
             badge.style.display = 'none';
+        }
+
+        // Offer the "clear finished" broom only when there's finished history to clear.
+        if (clear) {
+            const finishedCount = jobs.filter(j => j.status === 'completed' || j.status === 'cancelled' || j.status === 'error').length;
+            clear.style.display = finishedCount > 0 ? '' : 'none';
         }
 
         if (jobs.length === 0) {
@@ -2710,6 +2796,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             const currentTarget = window.BTT_CURRENT_VIEW
                 || (document.querySelector('.nav-btn.active')?.getAttribute('data-target') || null);
 
+            // The static #view-container placeholder ("Select a tool from the
+            // menu.") shown before the first view loads is NOT a cached view, so
+            // the keep-alive detach logic below never removes it. Left in place it
+            // sits on top of the real view content and hides it. Strip it here on
+            // every load — it only ever exists before the first successful build.
+            viewContainer.querySelectorAll(':scope > .view-placeholder').forEach((n) => n.remove());
+
             // Switch the currently-visible view out: fire its lifecycle-hide
             // hooks and detach its nodes (kept alive in the cache). No-op when
             // re-showing the same target (e.g. a language-change rebuild).
@@ -2821,6 +2914,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.showToast) {
                 window.showToast(t("app.failed_to_load_view_error").replace("{error}", err.message), true);
             }
+            // Also surface to the visible error banner — a toast can be missed or
+            // itself fail early, and this is the exact failure we need to see.
+            if (window.BTT_reportError) window.BTT_reportError('View load failed: ' + target, (err && err.stack) || String(err));
             return false;
         } finally {
             if (loadToken === activeViewLoadToken) {
@@ -2878,6 +2974,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Documentation shortcut — opens the hosted user manual in the browser
     // (works in both the desktop app via eel and in hosted web mode).
+    // Notifications shortcut (bell beside the account button) → Settings, jumping
+    // straight to the Notifications sub-tab via the pending-tab deep-link.
+    const notificationsShortcutBtn = document.getElementById('notifications-shortcut-btn');
+    if (notificationsShortcutBtn) {
+        notificationsShortcutBtn.addEventListener('click', () => {
+            window.pendingSettingsTab = 'notifications';
+            window.loadView('settings');
+            closeMobileNav();
+        });
+    }
+
     const docsLinkBtn = document.getElementById('docs-link-btn');
     if (docsLinkBtn) {
         const DOCS_URL = 'https://trove.aallyn.net/documentation';

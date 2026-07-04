@@ -35,8 +35,20 @@ document.addEventListener('settings_loaded', async () => {
                     chaos_chest: { enabled: false, lead_minutes: 15, on_time: false },
                     d15: { enabled: false, lead_minutes: 15, on_time: false, biomes: [] },
                     daily_reset: { enabled: false, lead_minutes: 15, on_time: false }
-                }
+                },
+                // Desktop (SSE) per-event toggles — keys match the backend event
+                // catalog (window.BTT_Notifications.desktopEventKeys()).
+                events: {}
             });
+
+            // Desktop event catalog (groups + per-event toggles), from notifications.js.
+            const desktopEventCatalog = ref(
+                (window.BTT_Notifications && window.BTT_Notifications.desktopEventCatalog)
+                    ? window.BTT_Notifications.desktopEventCatalog() : []
+            );
+            const desktopEventKeys = () =>
+                (window.BTT_Notifications && window.BTT_Notifications.desktopEventKeys)
+                    ? window.BTT_Notifications.desktopEventKeys() : [];
 
             const settings = reactive({
                 accent_color: '#5ec6ff',
@@ -117,6 +129,12 @@ document.addEventListener('settings_loaded', async () => {
                         if (Array.isArray(cur.cycles)) merged.types[key].cycles = cur.cycles.slice();
                         if (Array.isArray(cur.biomes)) merged.types[key].biomes = cur.biomes.slice();
                     }
+                    // Desktop SSE per-event toggles: seed every catalog key (default
+                    // off) so new events appear unchecked, then apply saved values.
+                    const incEvents = incoming.events || {};
+                    const events = {};
+                    for (const k of desktopEventKeys()) events[k] = incEvents[k] === true;
+                    merged.events = events;
                     settings.notifications = merged;
                     customDirs.value = data.custom_directories || [];
                     gameInstalls.value = data.game_installs || [];
@@ -449,6 +467,23 @@ document.addEventListener('settings_loaded', async () => {
                 await restoreState();
                 await loadSettings();
                 await refreshBgStatus();
+
+                // Deep-link: the sidebar bell (and other shortcuts) set
+                // window.pendingSettingsTab to jump straight to a sub-tab. Honor
+                // it on first mount AND on re-entry to the cached view (settings_shown).
+                const applyPendingSettingsTab = () => {
+                    const tab = window.pendingSettingsTab;
+                    if (!tab) return;
+                    window.pendingSettingsTab = null;
+                    if (tab === 'notifications' && !isNative && !isDesktopNotify.value) return;
+                    activeTab.value = tab;
+                };
+                applyPendingSettingsTab();
+                if (window._settingsShownHandler) {
+                    document.removeEventListener('settings_shown', window._settingsShownHandler);
+                }
+                window._settingsShownHandler = applyPendingSettingsTab;
+                document.addEventListener('settings_shown', applyPendingSettingsTab);
             });
 
             return {
@@ -457,6 +492,7 @@ document.addEventListener('settings_loaded', async () => {
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
                 resetOnboardingTips, gameInstalls, isWebMode, isNative, isDesktopNotify,
                 notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
+                desktopEventCatalog,
                 bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications
             };
         }

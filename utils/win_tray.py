@@ -87,8 +87,17 @@ class _WinTray:
             wc.lpfnWndProc = self._wndproc
             class_atom = win32gui.RegisterClass(wc)
 
-            self._hwnd = win32gui.CreateWindow(
-                class_atom, self._title, win32con.WS_OVERLAPPED,
+            # Hidden message-carrier window for the tray icon. Two things matter:
+            #  * EMPTY window title — the app's window-surfacing helper
+            #    (_surface_app_window in main.py) enumerates top-level windows by
+            #    title; a titled window here would collide with the real app
+            #    window and get shown as a stray empty window. An empty title is
+            #    skipped by that helper (it ignores zero-length titles).
+            #  * WS_EX_TOOLWINDOW — keeps it out of the taskbar/Alt-Tab even if it
+            #    were ever shown.
+            self._hwnd = win32gui.CreateWindowEx(
+                win32con.WS_EX_TOOLWINDOW,
+                class_atom, "", win32con.WS_POPUP,
                 0, 0, 0, 0, 0, 0, hinst, None,
             )
             win32gui.UpdateWindow(self._hwnd)
@@ -210,21 +219,23 @@ class _WinTray:
         self._remove_icon()
 
     def notify(self, title, message):
-        """Show a balloon tip on the icon. No-op if the icon isn't visible."""
+        """Show a balloon tip on the icon. Returns True if the balloon was
+        handed to the shell, False if the icon isn't visible or the call failed
+        (so callers can tell a real delivery from a no-op)."""
         import win32gui
         from win32gui import NIF_ICON, NIF_INFO, NIF_MESSAGE, NIF_TIP, NIM_MODIFY
 
         if not self._visible or not self._hwnd:
-            return
+            return False
         try:
             niif_info = getattr(win32gui, "NIIF_INFO", 0x00000001)
             flags = NIF_ICON | NIF_MESSAGE | NIF_TIP | NIF_INFO
             # Balloon fields extend the base tuple in this order:
             # (szInfo, uTimeout, szInfoTitle, dwInfoFlags).
             data = self._notify_icon_data(flags, (message, 200, title, niif_info))
-            win32gui.Shell_NotifyIcon(NIM_MODIFY, data)
+            return bool(win32gui.Shell_NotifyIcon(NIM_MODIFY, data))
         except Exception:
-            pass
+            return False
 
     def destroy(self):
         """Tear down the icon and stop the message loop."""

@@ -21,16 +21,12 @@
     const rot = () => window.BTT_Rotations || null;
 
     // Packaged desktop app (eel bridge present, not the hosted web build, not
-    // Android). Reminders here are computed with the SAME registry/rotation math
-    // as Android, but delivered as Windows tray balloons via the Python backend,
-    // which also owns the firing clock (see backend/desktop_notifications.py).
+    // Android). Desktop notifications are driven by the TroveAPI live event
+    // stream in the Python backend (backend/event_notifications.py) and shown as
+    // Windows tray balloons — the frontend just owns the per-event settings.
     const DESKTOP = !NATIVE && window.BTT_WEB_MODE !== true;
-    const eelReady = () => !!(window.eel && typeof window.eel.schedule_desktop_notifications === 'function');
-    // Roll the schedule forward periodically so events beyond the 14-day window
-    // get picked up; the backend handles precise per-event timing in between.
-    const DESKTOP_RESYNC_MS = 30 * 60 * 1000;
+    const eelReady = () => !!(window.eel && typeof window.eel.apply_event_notifications === 'function');
     let _desktopAvail = null;   // null = not yet queried; then boolean (cached)
-    let _desktopResyncTimer = null;
 
     // Look ahead this far when computing pending events. Android caps the number
     // of pending alarms, and we re-sync on every app open + settings change, so a
@@ -432,50 +428,72 @@
         }
     };
 
-    // Compute the pending reminders (same rotation math as Android) and hand the
-    // flat list to the backend, which fires each when due. Full replace every
-    // call. Also tells the backend whether reminders are active so it can keep
-    // the tray icon visible for balloon delivery.
+    // The desktop app subscribes to the TroveAPI live event stream (SSE) in the
+    // Python backend and raises a tray notification per event the user opted
+    // into, at a fine grain. The frontend just owns the settings — here we push
+    // the current notification settings to the backend, which opens/closes the
+    // stream and filters by the per-event toggles.
+    //
+    // Catalog of notifiable live events. `key` matches the backend toggle key
+    // (settings.notifications.events[key]) and the SSE handler routing.
+    const DESKTOP_EVENT_CATALOG = [
+        { groupKey: 'notifications.group_challenges', items: [
+            { key: 'challenge_rampage', labelKey: 'notifications.event.challenge_rampage' },
+            { key: 'challenge_racing', labelKey: 'notifications.event.challenge_racing' },
+            { key: 'challenge_target', labelKey: 'notifications.event.challenge_target' },
+            { key: 'challenge_collection', labelKey: 'notifications.event.challenge_collection' },
+            { key: 'challenge_dungeon', labelKey: 'notifications.event.challenge_dungeon' },
+        ]},
+        { groupKey: 'notifications.group_merchants', items: [
+            { key: 'corruxion', labelKey: 'notifications.event.corruxion' },
+            { key: 'fluxion', labelKey: 'notifications.event.fluxion' },
+        ]},
+        { groupKey: 'notifications.group_rotations', items: [
+            { key: 'chaos', labelKey: 'notifications.event.chaos' },
+            { key: 'longshade', labelKey: 'notifications.event.longshade' },
+            { key: 'wild_mana', labelKey: 'notifications.event.wild_mana' },
+            { key: 'stampy', labelKey: 'notifications.event.stampy' },
+            { key: 'daily_bonuses', labelKey: 'notifications.event.daily_bonuses' },
+        ]},
+        { groupKey: 'notifications.group_game', items: [
+            { key: 'server_status', labelKey: 'notifications.event.server_status' },
+            { key: 'trove_news', labelKey: 'notifications.event.trove_news' },
+            { key: 'game_update', labelKey: 'notifications.event.game_update' },
+            { key: 'giveaways', labelKey: 'notifications.event.giveaways' },
+            { key: 'activity', labelKey: 'notifications.event.activity' },
+        ]},
+    ];
+    const desktopEventCatalog = () => DESKTOP_EVENT_CATALOG;
+    const desktopEventKeys = () => DESKTOP_EVENT_CATALOG.flatMap((g) => g.items.map((i) => i.key));
+
+    // Push the current notification settings to the backend SSE subscriber.
     const syncDesktop = async () => {
         if (!eelReady()) return { skipped: 'no-bridge' };
         const available = await desktopAvailable();
         if (!available) return { skipped: 'no-delivery' };
 
         const all = (window.AppSettings ? await window.AppSettings.load() : {}) || {};
-        const settings = all.notifications || {};
-        const active = settings.enabled === true;
-
-        let payload = [];
-        if (active) {
-            const registry = buildRegistry();
-            const pending = await computePending(settings, registry);
-            payload = pending.map((n) => ({
-                id: String(n.id),
-                title: n.title,
-                body: n.body || '',
-                at: Math.floor(n.schedule.at.getTime() / 1000)
-            }));
-        }
+        const notifications = all.notifications || {};
         try {
-            await window.eel.schedule_desktop_notifications(payload, active)();
+            await window.eel.apply_event_notifications({
+                enabled: notifications.enabled === true,
+                events: notifications.events || {}
+            })();
         } catch (err) {
-            console.error('[BTT_Notifications] desktop schedule failed', err);
-            return { error: String(err && err.message || err), scheduled: 0 };
+            console.error('[BTT_Notifications] apply_event_notifications failed', err);
+            return { error: String(err && err.message || err) };
         }
         try { localStorage.setItem(LAST_SYNC_KEY, String(Date.now())); } catch {}
-        return { scheduled: payload.length };
+        return { ok: true };
     };
 
-    // Kick off the desktop scheduler once: initial sync + a rolling refresh.
-    // Idempotent — safe to call on every app start.
+    // Push settings to the backend on app start (so the stream reconnects with
+    // the saved config) — idempotent, safe to call every launch.
     const startDesktopScheduler = async () => {
         if (!DESKTOP) return;
         const available = await desktopAvailable();
         if (!available) return;
         await syncDesktop();
-        if (!_desktopResyncTimer) {
-            _desktopResyncTimer = setInterval(() => { void syncDesktop(); }, DESKTOP_RESYNC_MS);
-        }
     };
 
     const sendTestDesktop = async () => {
@@ -621,6 +639,8 @@
         isDesktop: () => DESKTOP,
         desktopAvailable,
         startDesktopScheduler,
+        desktopEventCatalog,
+        desktopEventKeys,
         MIN_LEAD_MIN,
         getLastSynced,
         getBackgroundStatus,

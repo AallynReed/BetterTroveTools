@@ -722,9 +722,25 @@ body.app-update-active #network-tracker-vue-app {
     margin-bottom: 8px;
 }
 
-/* Settings / Documentation / Feedback share one compact icon row so the footer
-   stays short. Each button flexes to an equal third; the label is dropped (the
-   title/aria-label carry the meaning on hover + for screen readers). */
+/* Account row: the account button flexes to fill the width. */
+.sidebar-account-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+}
+.sidebar-account-row > #account-nav-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+/* Hosted web build has no notifications system — hide the bell there (but keep
+   it on Android, which is btt-web AND btt-native, and on the desktop app). */
+html.btt-web:not(.btt-native) #notifications-shortcut-btn {
+    display: none;
+}
+
+/* Notifications / Settings / Documentation / Feedback share one compact icon row
+   so the footer stays short. Each button flexes to an equal share; the label is
+   dropped (the title/aria-label carry the meaning on hover + for screen readers). */
 .sidebar-footer-icons {
     display: flex;
     gap: 6px;

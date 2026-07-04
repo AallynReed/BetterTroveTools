@@ -31,6 +31,7 @@ import backend.codexes.allies
 import backend.codexes.badges
 import backend.calculators
 import backend.desktop_notifications
+import backend.event_notifications
 import backend.modder_tools.file_manager
 import backend.codexes.fish
 import backend.gems_and_builds.gem_builds
@@ -903,13 +904,19 @@ if _use_webview:
         _tray_wanted["collapsed"] = True
         _apply_tray_visibility()
         # First time ever the app tucks into the tray, tell the user where it
-        # went — once, then never again (persisted across restarts).
-        notifier.notify_once(
-            "close_to_tray_first_time",
-            WINDOW_TITLE,
-            f"{WINDOW_TITLE} is still running in the system tray. "
-            "Right-click the tray icon to quit.",
-        )
+        # went — once, then never again (persisted across restarts). Defer the
+        # balloon: _apply_tray_visibility may have JUST added the tray icon, and
+        # Windows silently drops a balloon fired before the shell has finished
+        # registering a freshly-added icon. A short delay lets it register so the
+        # notification actually renders (notify_once only records it once shown).
+        def _first_time_tray_hint():
+            notifier.notify_once(
+                "close_to_tray_first_time",
+                WINDOW_TITLE,
+                f"{WINDOW_TITLE} is still running in the system tray. "
+                "Right-click the tray icon to quit.",
+            )
+        threading.Timer(1.2, _first_time_tray_hint).start()
         return False
 
     main_window.events.closing += _on_window_closing
@@ -938,10 +945,15 @@ if _use_webview:
         daemon=True,
     ).start()
 
+    # Enable WebView2 devtools (right-click → Inspect / F12) in dev, or in a
+    # packaged build when launched with BTT_DEBUG=1 — lets us read the JS console
+    # to diagnose frontend issues in the shipped app.
+    _webview_debug = bool(globals().get('DEV_MODE', False)) or os.getenv('BTT_DEBUG') == '1'
     webview.start(
         private_mode=False,
         storage_path=webview_storage_path,
         icon=os.path.join(base_dir, 'web', 'favicon.ico'),
+        debug=_webview_debug,
     )
     # webview.start() returns once the user closes the window (real quit).
     if tray_icon:

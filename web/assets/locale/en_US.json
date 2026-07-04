@@ -1726,7 +1726,30 @@
         "settings.notifications_desktop_note": "Reminders show as Windows notifications from the tray icon. Keep Better Trove Tools open, or minimized to the tray, to receive them.",
         "settings.notifications_close_note_desktop": "Reminders fire while the app is open or minimized to the system tray. They stop if you fully quit the app — reopen it to resume.",
         "notifications.test.body_desktop": "This is a test — your reminders are working.",
-        "settings.notifications_test_sent_desktop": "Test notification sent."
+        "settings.notifications_test_sent_desktop": "Test notification sent.",
+        "settings.notifications_events": "Event notifications",
+        "settings.notifications_events_help": "Choose exactly which live Trove events raise a desktop notification. The app subscribes to the live event stream while at least one is enabled.",
+        "notifications.group_challenges": "Hourly Challenges",
+        "notifications.group_merchants": "Merchants",
+        "notifications.group_rotations": "Rotations & Resets",
+        "notifications.group_game": "Game & Community",
+        "notifications.event.challenge_rampage": "Rampage Alert",
+        "notifications.event.challenge_racing": "Racing Challenge",
+        "notifications.event.challenge_target": "Target Challenge",
+        "notifications.event.challenge_collection": "Collection Challenge",
+        "notifications.event.challenge_dungeon": "Dungeon Challenge",
+        "notifications.event.corruxion": "Merchant Corruxion",
+        "notifications.event.fluxion": "Merchant Fluxion",
+        "notifications.event.chaos": "Chaos Chest item",
+        "notifications.event.longshade": "Shadow's Eve / d15 biomes",
+        "notifications.event.wild_mana": "Wild Mana biomes",
+        "notifications.event.stampy": "Stampy the Dragon",
+        "notifications.event.daily_bonuses": "Daily reset & buffs",
+        "notifications.event.server_status": "Server status changes",
+        "notifications.event.trove_news": "Trove news & patch notes",
+        "notifications.event.game_update": "New game update",
+        "notifications.event.giveaways": "New giveaways",
+        "notifications.event.activity": "Daily activity snapshot"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",
@@ -3956,6 +3979,7 @@
         "account.signed_out_copy": "",
         "account.sign_in_with_discord": "",
         "account.signed_out_note": "",
-        "nav.game_explorer": ""
+        "nav.game_explorer": "",
+        "Cursed Kiza": ""
     }
 }

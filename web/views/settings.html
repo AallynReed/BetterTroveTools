@@ -197,9 +197,9 @@
                 </button>
             </div>
 
-            <!-- Background health panel. Hidden when every check is green so it
-                 doesn't clutter the tab once the user has granted everything. -->
-            <div v-if="settings.notifications.enabled && bgStatus.loaded && !bgAllGreen()" class="settings-section">
+            <!-- Background health panel (Android only). Hidden when every check is
+                 green so it doesn't clutter the tab once everything is granted. -->
+            <div v-if="isNative && settings.notifications.enabled && bgStatus.loaded && !bgAllGreen()" class="settings-section">
                 <h3>{{ t('settings.notifications_bg_health') }}</h3>
                 <p class="settings-help-text">{{ t('settings.notifications_bg_help') }}</p>
 
@@ -223,9 +223,8 @@
                 </button>
             </div>
 
-            <!-- Last-synced row + refresh button. Always visible when notifications
-                 are enabled so the user can see scheduling is alive. -->
-            <div v-if="settings.notifications.enabled" class="settings-section">
+            <!-- Last-synced row + refresh button (Android scheduler only). -->
+            <div v-if="isNative && settings.notifications.enabled" class="settings-section">
                 <h3>{{ t('settings.notifications_sync_status') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px;">
                     <div>
@@ -240,7 +239,7 @@
                 <p v-else class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note_desktop') }}</p>
             </div>
 
-            <div class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">
+            <div v-if="isNative" class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">
                 <h3>{{ t('settings.notifications_rotations') }}</h3>
 
                 <div v-for="entry in notifyRegistry" :key="entry.id" class="custom-dir-item" style="flex-direction: column; align-items: stretch;">
@@ -301,6 +300,24 @@
                         </template>
                     </div>
                 </div>
+            </div>
+
+            <!-- Desktop (SSE) per-event notifications. Each toggle maps to a live
+                 TroveAPI event; the backend subscribes to the stream and raises a
+                 tray notification for the enabled ones. -->
+            <div v-if="isDesktopNotify && !isNative" class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">
+                <h3>{{ t('settings.notifications_events') }}</h3>
+                <p class="settings-help-text">{{ t('settings.notifications_events_help') }}</p>
+                <template v-for="group in desktopEventCatalog" :key="group.groupKey">
+                    <div style="margin-top: 18px; margin-bottom: 4px; color: var(--accent-blue); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">{{ t(group.groupKey) }}</div>
+                    <div v-for="item in group.items" :key="item.key" style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;">
+                        <div style="color: var(--text-main); font-size: 14px;">{{ t(item.labelKey) }}</div>
+                        <label class="switch">
+                            <input type="checkbox" v-model="settings.notifications.events[item.key]" @change="saveAndSyncNotifications">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </template>
             </div>
         </div>
 

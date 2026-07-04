@@ -7,32 +7,20 @@ notifications route through the tray balloon (Shell_NotifyIcon). With no sink --
 a dev checkout without pywin32, a non-Windows host, or before the window is up --
 calls no-op gracefully.
 
-Three capabilities:
+Two capabilities:
 
   * ``notify`` / ``notify_once`` -- one-off notifications (once = persisted,
-    shown at most a single time ever).
+    shown at most a single time ever). The live Trove event stream
+    (``backend/event_notifications.py``) delivers through ``notify``.
 
-  * a lightweight **scheduler** -- the frontend computes the deterministic Trove
-    rotation reminders (all the calendar math lives in web_mode.js /
-    notifications.js) and hands us a flat list of {id, title, body, at}. A
-    background thread fires each when due. Timing runs in Python on purpose:
-    the WebView2 window keeps running while hidden in the tray, but its JS
-    timers get throttled hard when hidden, so a Python thread is the reliable
-    clock. Firing stops only when the process exits (app fully quit), which is
-    exactly the "notifies while open or in the tray" contract.
-
-  * **tray presence** -- while reminders are enabled the tray icon must stay
+  * **tray presence** -- while notifications are enabled the tray icon must stay
     visible so balloons can show even when the main window is open; the app
     registers a handler we call when the active state flips.
-
-This is the desktop counterpart to the Android reminder system in
-``web/js/notifications.js`` -- unrelated code paths, deliberately kept separate.
 """
 from __future__ import annotations
 
 import json
 import threading
-import time
 from datetime import datetime, timezone
 
 import eel
@@ -41,13 +29,6 @@ from backend.response import resp, standardize_response
 from utils.path import get_cache_root
 
 _STATE_FILENAME = "desktop_notifications.json"
-
-# How often the scheduler thread wakes to check for due reminders.
-_POLL_SECONDS = 15.0
-# Don't fire a reminder that came due more than this long ago -- covers the
-# machine sleeping through an event, where a late "starts in 5m" ping is just
-# noise. Normal firing latency is at most one poll interval.
-_STALE_GRACE_SECONDS = 150.0
 
 
 def _utc_now_iso():
@@ -60,15 +41,8 @@ class DesktopNotifier:
         self._sink = None
         self._shown = None  # lazy-loaded {key: iso_timestamp} for notify_once
 
-        # Scheduler state.
-        self._sched_lock = threading.Lock()
-        self._scheduled = {}   # id -> {"at": float, "title": str, "body": str}
-        self._fired = set()    # ids already fired this process run
-        self._sched_thread = None
-        self._stop = threading.Event()
-
         # Tray presence handler: callable(active: bool) the app registers to
-        # show/hide the persistent tray icon when reminders turn on/off.
+        # show/hide the persistent tray icon when notifications turn on/off.
         self._active_handler = None
 
     # --- delivery sink --------------------------------------------------
@@ -131,14 +105,19 @@ class DesktopNotifier:
 
     # --- one-off notifications -----------------------------------------
     def notify(self, title, message):
-        """Attempt to show a notification now. Returns True if a sink handled it."""
+        """Attempt to show a notification now. Returns True if a sink actually
+        handled it. A sink may return a bool to report whether it really
+        delivered (e.g. the tray balloon returns False when its icon isn't
+        visible); we honor that so notify_once doesn't burn its one-time key on a
+        delivery that never rendered. A sink returning None is treated as True
+        for back-compat."""
         with self._lock:
             sink = self._sink
         if not sink:
             return False
         try:
-            sink(str(title or ""), str(message or ""))
-            return True
+            result = sink(str(title or ""), str(message or ""))
+            return result if isinstance(result, bool) else True
         except Exception:
             return False
 
@@ -176,76 +155,8 @@ class DesktopNotifier:
                 shown.pop(key, None)
             self._save_state()
 
-    # --- scheduled reminders -------------------------------------------
-    def schedule(self, items):
-        """Replace the pending reminder set.
-
-        ``items`` is an iterable of dicts ``{id, title, body, at}`` where ``at``
-        is an epoch-seconds fire time. The frontend recomputes and re-sends the
-        whole list (already excluding past events), so this is a full replace,
-        not a merge. Ids that dropped out of the list are also forgotten from the
-        fired set so a genuinely new event reusing an id can fire again. Returns
-        the count accepted.
-        """
-        cleaned = {}
-        for it in items or []:
-            try:
-                nid = str(it["id"])
-                at = float(it["at"])
-            except (KeyError, TypeError, ValueError):
-                continue
-            cleaned[nid] = {
-                "at": at,
-                "title": str(it.get("title") or ""),
-                "body": str(it.get("body") or ""),
-            }
-        with self._sched_lock:
-            self._scheduled = cleaned
-            self._fired &= set(cleaned.keys())
-            self._ensure_thread()
-        return len(cleaned)
-
-    def clear_schedule(self):
-        with self._sched_lock:
-            self._scheduled = {}
-            self._fired.clear()
-
-    def _ensure_thread(self):
-        # Caller must hold self._sched_lock.
-        if self._sched_thread and self._sched_thread.is_alive():
-            return
-        self._stop.clear()
-        self._sched_thread = threading.Thread(
-            target=self._run_scheduler, name="desktop-notify-sched", daemon=True
-        )
-        self._sched_thread.start()
-
-    def _run_scheduler(self):
-        # Wakes every poll interval; _stop.wait doubles as the sleep + exit.
-        while not self._stop.wait(_POLL_SECONDS):
-            try:
-                self._fire_due()
-            except Exception:
-                pass
-
-    def _fire_due(self):
-        now = time.time()
-        due = []
-        with self._sched_lock:
-            for nid, it in self._scheduled.items():
-                if nid in self._fired:
-                    continue
-                if now - _STALE_GRACE_SECONDS <= it["at"] <= now:
-                    due.append((nid, dict(it)))
-        # Deliver outside the lock; fire soonest-first for tidy ordering.
-        for nid, it in sorted(due, key=lambda p: p[1]["at"]):
-            if self.notify(it["title"], it["body"]):
-                with self._sched_lock:
-                    self._fired.add(nid)
-
-
 # App-wide singleton. Import this (not a fresh instance) so the registered sink,
-# scheduler and shown-once cache are shared everywhere.
+# active handler and shown-once cache are shared everywhere.
 notifier = DesktopNotifier()
 
 
@@ -280,15 +191,3 @@ def reset_desktop_notification(key=None):
     """Clear shown-once state so a keyed notification can fire again."""
     notifier.reset(key)
     return resp(True, data={"reset": key or "all"})
-
-
-@eel.expose
-@standardize_response
-def schedule_desktop_notifications(notifications, active=True):
-    """Replace the scheduled reminder set and set the active (tray-presence)
-    state. Called by the frontend scheduler on startup, on settings change, and
-    on a rolling refresh. ``notifications`` is a list of {id, title, body, at}.
-    """
-    notifier.set_active(bool(active))
-    count = notifier.schedule(notifications or [])
-    return resp(True, data={"scheduled": count}, scheduled=count)
