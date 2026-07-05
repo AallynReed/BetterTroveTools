@@ -1042,19 +1042,7 @@ document.addEventListener('home_loaded', () => {
                     cards.push({ type: 'biome', id: 'mana', name: 'Wild Trovian Mana', color: '#00bcd4', iconClass: 'fa-flask', active: true, statusText: 'ACTIVE', timeHtml: t("home.ends_in_time").replace("{time}", `<b>${getCountdown(mana.value.current.end, false)}</b>`), biomes: mana.value.current.biomes, endTs: mana.value.current.end });
                 }
 
-                if (delve.value && delve.value.currentWeekId) {
-                    cards.push({
-                        type: 'delve',
-                        id: 'delve',
-                        name: 'Delve Index',
-                        color: '#ab47bc',
-                        iconClass: 'fa-dungeon',
-                        active: true,
-                        statusText: 'WEEK',
-                        timeHtml: t("home.ends_in_time").replace("{time}", `<b>${getCountdown(delve.value.end, false)}</b>`),
-                        endTs: delve.value.end
-                    });
-                }
+                // Delve Index card disabled — intentionally not surfaced in the rotation grid.
 
                 const sorted = cards.sort((a, b) => {
                     if (a.id === 'd15' && b.id !== 'd15') return -1;
