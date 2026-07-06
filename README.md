@@ -240,6 +240,36 @@ The app auto‑detects a backend and uses an app window when one is present. For
 
 **What's Windows‑only:** the in‑app self‑updater and "Test in Game" (which runs the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (point it at any valid Trove folder manually).
 
+#### NixOS (flake)
+
+A flake lives **in this repo** — so the package definition comes from the same place as the app, with no third‑party repository to trust. Add it as an input and pull the package into your system config:
+
+```nix
+{
+  inputs = {
+    # ...
+    better-trove-tools.url = "github:AallynReed/BetterTroveTools";
+  };
+}
+```
+
+```nix
+{ inputs, pkgs, ... }:
+{
+  environment.systemPackages = [
+    inputs.better-trove-tools.packages.${pkgs.system}.default
+  ];
+}
+```
+
+Or try it without installing:
+
+```bash
+nix run github:AallynReed/BetterTroveTools
+```
+
+Currently packaged for `x86_64-linux`. The flake also builds the four Python deps that aren't in nixpkgs yet (`eel`, `bottle-websocket`, `gevent-websocket`, `binary-reader`). Original Nix packaging by [@Redhawk18](https://github.com/Redhawk18).
+
 ### Cutting a release (maintainers)
 
 Releases are built automatically by [`.github/workflows/compiler.yml`](.github/workflows/compiler.yml) when a GitHub Release is **created**:
