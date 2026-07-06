@@ -142,6 +142,19 @@
                 <p class="translation-note">{{ t('about.hover_over_a_contributor_to_see_their_ro_0c7aa2') }}</p>
             </div>
         </div>
+
+        <div class="about-section full-width">
+            <div class="section-title"><i class="fa-solid fa-cube"></i> <span>{{ t('Packaging') }}</span></div>
+            <p>{{ t('Thank you to the community members who help package and distribute the app.') }}</p>
+            <div class="translation-region">
+                <div class="translation-pill-list">
+                    <div class="translation-pill">
+                        <a href="#" @click.prevent="openUrl('https://github.com/Redhawk18')" class="translation-pill-name">Redhawk18</a>
+                        <span class="translation-pill-role">{{ t('NixOS Flake & Packaging') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="credits-footer">
