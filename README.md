@@ -9,15 +9,21 @@ Live game utilities, build planning, mod management, archive tooling, and gameâ€
 <!-- Project status -->
 ![GitHub Release](https://img.shields.io/github/v/release/AallynReed/BetterTroveTools?style=for-the-badge&color=blue&cacheSeconds=21600)
 ![GitHub Repo stars](https://img.shields.io/github/stars/AallynReed/BetterTroveTools?style=for-the-badge&color=gold&cacheSeconds=21600)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/AallynReed/BetterTroveTools/total?style=for-the-badge&cacheSeconds=21600)
 ![GitHub last commit](https://img.shields.io/github/last-commit/AallynReed/BetterTroveTools?style=for-the-badge&color=green&cacheSeconds=21600)
 ![GitHub issues](https://img.shields.io/github/issues/AallynReed/BetterTroveTools?style=for-the-badge&cacheSeconds=21600)
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/AallynReed/BetterTroveTools/total?style=for-the-badge&cacheSeconds=21600)
 
-<!-- Tech & platform -->
-![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+<!-- Platforms -->
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+
+<!-- Tech stack -->
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Vue.js](https://img.shields.io/badge/Vue.js%203-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)
 ![Runtime](https://img.shields.io/badge/Runtime-WebView2-0078D6?style=for-the-badge&logo=microsoftedge&logoColor=white)
+
+<!-- Project meta -->
 ![Localization](https://img.shields.io/badge/Languages-9-orange?style=for-the-badge&logo=googletranslate&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-8A2BE2?style=for-the-badge)
 
