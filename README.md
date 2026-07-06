@@ -14,7 +14,9 @@ Live game utilities, build planning, mod management, archive tooling, and gameâ€
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/AallynReed/BetterTroveTools/total?style=for-the-badge&cacheSeconds=21600)
 
 <!-- Tech & platform -->
-![Platform](https://img.shields.io/badge/Platform-Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Vue.js](https://img.shields.io/badge/Vue.js%203-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white)
 ![Runtime](https://img.shields.io/badge/Runtime-WebView2-0078D6?style=for-the-badge&logo=microsoftedge&logoColor=white)
