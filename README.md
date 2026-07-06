@@ -195,6 +195,36 @@ python main.py
 
 ### Install on Linux
 
+#### NixOS Flake
+[This is a working flake you can add to your system config.](https://github.com/Redhawk18/better-trove-tools-flake) It only works on x86_64 as of now, but open an issue in the flake repository to request support.
+Example usage:
+```nix
+{
+  description = "System flake";
+
+  inputs = {
+    # Community
+    better-trove-tools.url = "github:redhawk18/better-trove-tools-flake";
+  };
+  ...
+```
+```nix
+{
+  inputs,
+  pkgs,
+  ...
+}:
+{
+  environment.systemPackages = with pkgs; [ 
+    inputs.better-trove-tools.packages.${pkgs.system}.default
+  ];
+}
+
+
+```
+
+
+
 Better Trove Tools is pure Python on Linux — **no native library to compile, and no webview backend required**. If no GTK/Qt backend is installed, the app simply **opens in your default browser** (full functionality — it's the same local server either way). The quickest path:
 
 ```bash
