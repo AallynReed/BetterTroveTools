@@ -3240,7 +3240,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const langSelect = document.getElementById('global-language-select');
     if (langSelect && window.I18nManager) {
         langSelect.addEventListener('change', async (e) => {
-            await window.I18nManager.setLocale(e.target.value);
+            await window.I18nManager.setLanguage(e.target.value);
             await window.I18nManager.translatePage();
             // Cached Vue views resolve their text via t() at render time and don't
             // re-render on a locale switch, so drop the cache and rebuild the
