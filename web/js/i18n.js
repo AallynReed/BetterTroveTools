@@ -54,7 +54,7 @@ const I18nManager = {
                 this.availableLanguages = [];
             }
             try {
-                const settings = await eel.get_settings()();
+                const settings = this._unwrapSettings(await eel.get_settings()());
                 if (settings && settings.locale) this.currentLocale = settings.locale;
             } catch (e) {
                 console.warn('i18n: could not load locale from settings, defaulting to en_US.');
@@ -133,6 +133,18 @@ const I18nManager = {
 
     async setLanguage(localeCode) {
         await this.loadDictionary(localeCode);
+    },
+
+    // get_settings() returns a standardized envelope { success, code, data, ... }
+    // with the settings also spread at the top level. save_settings() unwraps to
+    // `.data`, so any mutation must land on the `.data` object -- otherwise it is
+    // silently dropped on save (this is what broke locale persistence).
+    _unwrapSettings(raw) {
+        if (raw && typeof raw === 'object' && raw.success !== undefined
+            && raw.data && typeof raw.data === 'object') {
+            return raw.data;
+        }
+        return raw || {};
     },
 
     // ---- normalization (mirror tools/i18n norm: unescape entities + trim) ---
@@ -349,7 +361,7 @@ const I18nManager = {
             const newLocale = e.target.value;
             await this.setLanguage(newLocale);
             try {
-                const settings = await eel.get_settings()();
+                const settings = this._unwrapSettings(await eel.get_settings()());
                 settings.locale = newLocale;
                 await eel.save_settings(settings)();
             } catch (err) {
