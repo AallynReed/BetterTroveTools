@@ -968,14 +968,16 @@ window.showToast = function(message, isError = false, options = {}) {
 };
 
 window.showUndoToast = function(message, seconds, onUndo) {
+    const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
     window.showToast(message, false, {
-        actionLabel: 'Undo',
+        actionLabel: t('common.undo'),
         onAction: onUndo,
         durationMs: Math.max(1000, Number(seconds || 8) * 1000)
     });
 };
 
-window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', extraActionLabel = '', danger = true }) {
+window.showConfirmModal = function({ title, message, confirmLabel, cancelLabel, extraActionLabel = '', danger = true }) {
+    const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
     return new Promise((resolve) => {
         const overlay = document.getElementById('global-confirm-overlay');
         const titleEl = document.getElementById('global-confirm-title');
@@ -985,14 +987,14 @@ window.showConfirmModal = function({ title, message, confirmLabel = 'Confirm', c
         const okBtn = document.getElementById('global-confirm-ok');
         if (!overlay || !titleEl || !messageEl || !cancelBtn || !okBtn) return resolve(false);
 
-        titleEl.textContent = title || 'Confirm';
+        titleEl.textContent = title || t('common.confirm');
         messageEl.textContent = message || '';
-        cancelBtn.textContent = cancelLabel;
+        cancelBtn.textContent = cancelLabel || t('common.cancel');
         if (extraBtn) {
             extraBtn.textContent = extraActionLabel || '';
             extraBtn.style.display = extraActionLabel ? '' : 'none';
         }
-        okBtn.textContent = confirmLabel;
+        okBtn.textContent = confirmLabel || t('common.confirm');
         okBtn.className = danger ? 'danger-btn' : 'primary-btn';
         overlay.style.display = 'flex';
 
@@ -1256,6 +1258,7 @@ window.JobQueue = (() => {
     };
 
     const cancelJob = (id, cancel) => {
+        const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
         update(id, { status: 'cancelling', error: null });
         if (typeof cancel === 'function') {
             try {
@@ -1267,7 +1270,7 @@ window.JobQueue = (() => {
                             update(id, { status: 'running', error: null });
                         }
                         if (window.showToast) {
-                            window.showToast(String(err || 'Failed to cancel operation.'), true);
+                            window.showToast(String(err || t('app.jobs_cancel_failed')), true);
                         }
                     });
                 }
@@ -1277,7 +1280,7 @@ window.JobQueue = (() => {
                     update(id, { status: 'running', error: null });
                 }
                 if (window.showToast) {
-                    window.showToast(String(err || 'Failed to cancel operation.'), true);
+                    window.showToast(String(err || t('app.jobs_cancel_failed')), true);
                 }
             }
         }
@@ -1344,6 +1347,7 @@ window.JobQueue = (() => {
 })();
 
 window.initJobQueueUi = function() {
+    const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
     const toggle = document.getElementById('job-queue-toggle');
     const close = document.getElementById('job-queue-close');
     const clear = document.getElementById('job-queue-clear');
@@ -1360,7 +1364,7 @@ window.initJobQueueUi = function() {
         clear.onclick = () => {
             const removed = window.JobQueue.clearFinished();
             if (removed && window.showToast) {
-                window.showToast(`Cleared ${removed} finished job${removed === 1 ? '' : 's'}.`);
+                window.showToast(t('app.jobs_cleared_finished', { count: removed }));
             }
         };
     }
@@ -1381,18 +1385,26 @@ window.initJobQueueUi = function() {
         }
 
         if (jobs.length === 0) {
-            list.innerHTML = '<div class="job-item"><div class="job-label">No jobs yet.</div></div>';
+            list.innerHTML = `<div class="job-item"><div class="job-label">${t('app.jobs_none_yet')}</div></div>`;
             return;
         }
 
+        const statusLabels = {
+            running: t('app.job_status_running'),
+            cancelling: t('app.job_status_cancelling'),
+            completed: t('app.job_status_completed'),
+            cancelled: t('app.job_status_cancelled'),
+            error: t('app.job_status_error')
+        };
+
         list.innerHTML = jobs.map(j => {
             const err = j.error ? `<div class="job-error">${j.error}</div>` : '';
-            const statusText = j.status === 'cancelling' ? 'cancelling...' : j.status;
+            const statusText = statusLabels[j.status] || j.status;
             const hasProgress = Number.isFinite(Number(j.meta?.progressPercent));
             const clampedProgress = hasProgress ? Math.max(0, Math.min(100, Number(j.meta.progressPercent))) : 0;
             const progressBar = hasProgress
                 ? `
-                    <div class="job-progress-track" role="progressbar" aria-valuenow="${clampedProgress}" aria-valuemin="0" aria-valuemax="100" aria-label="Job progress">
+                    <div class="job-progress-track" role="progressbar" aria-valuenow="${clampedProgress}" aria-valuemin="0" aria-valuemax="100" aria-label="${t('app.job_progress')}">
                         <div class="job-progress-fill" style="width:${clampedProgress}%;"></div>
                         <span class="job-progress-percent">${clampedProgress}%</span>
                     </div>
@@ -1401,20 +1413,20 @@ window.initJobQueueUi = function() {
             const details = j.meta && (j.meta.current || j.meta.elapsed || j.meta.eta || j.meta.status)
                 ? `
                     <details class="job-details" data-id="${j.id}" ${j.meta.detailsOpen ? 'open' : ''}>
-                        <summary>Details</summary>
+                        <summary>${t('app.job_details')}</summary>
                         <div class="job-details-content">
-                            ${j.meta.status ? `<div>Status: ${j.meta.status}</div>` : ''}
-                            ${j.meta.current ? `<div>Current: ${j.meta.current}</div>` : ''}
-                            ${j.meta.elapsed ? `<div>Elapsed: ${j.meta.elapsed}</div>` : ''}
-                            ${j.meta.eta ? `<div>ETA: ${j.meta.eta}</div>` : ''}
+                            ${j.meta.status ? `<div>${t('app.job_detail_status')} ${j.meta.status}</div>` : ''}
+                            ${j.meta.current ? `<div>${t('app.job_detail_current')} ${j.meta.current}</div>` : ''}
+                            ${j.meta.elapsed ? `<div>${t('app.job_detail_elapsed')} ${j.meta.elapsed}</div>` : ''}
+                            ${j.meta.eta ? `<div>${t('app.job_detail_eta')} ${j.meta.eta}</div>` : ''}
                         </div>
                     </details>
                 `
                 : '';
             const actions = `
                 <div class="job-actions">
-                    ${j.status === 'running' ? `<button data-action="cancel" data-id="${j.id}">Cancel</button>` : ''}
-                    ${j.status === 'error' && j.canRetry ? `<button data-action="retry" data-id="${j.id}">Retry</button>` : ''}
+                    ${j.status === 'running' ? `<button data-action="cancel" data-id="${j.id}">${t('common.cancel')}</button>` : ''}
+                    ${j.status === 'error' && j.canRetry ? `<button data-action="retry" data-id="${j.id}">${t('common.retry')}</button>` : ''}
                 </div>
             `;
             return `

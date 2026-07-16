@@ -389,7 +389,7 @@
                             <div v-if="chaosChestCard" class="merchant-card merchant-card-chaos" :class="{ 'hover-card': chaosChestCard.identifier, 'is-clickable': chaosChestCard.identifier }" :title="chaosChestCard.identifier ? t('home.name_click_to_view_on_trovesaurus').replace('{name}', t(chaosChestCard.name)) : ''" @click="chaosChestCard.identifier && openUrl(`https://trovesaurus.com/${chaosChestCard.identifier}`)">
                                 <div class="merchant-icon merchant-icon-plain"><img :src="chaosChestCard.iconUrl" class="merchant-item-image" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
                                 <div class="merchant-info merchant-info-fill">
-                                    <div class="merchant-name merchant-name-chaos">{{ t(chaosChestCard.name) }} <i v-if="chaosChestCard.unknown" class="fa-solid fa-triangle-exclamation merchant-warning-icon" :title="t(`We don't know the item yet`)"></i></div>
+                                    <div class="merchant-name merchant-name-chaos">{{ t(chaosChestCard.name) }} <i v-if="chaosChestCard.unknown" class="fa-solid fa-triangle-exclamation merchant-warning-icon" :title="t('home.we_dont_know_the_item_yet')"></i></div>
                                     <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="chaosChestCard.timeHtml"></span></div>
                                 </div>
                             </div>

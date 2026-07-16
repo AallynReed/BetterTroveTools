@@ -57,29 +57,30 @@
     const defaultConfigInternalPath = 'ui/default.cfg';
     const previewInternalPath = (name) => `ui/${String(name || '').replace(/[\\/*?:"<>|]/g, '').trim()}`;
 
+    // Returns an i18n id (callers pass it through t() before showing it) or null.
     const validateSpecialFileSelections = ({ files, previewName, hasPreview, hasConfig }) => {
         const seen = new Set();
         for (const file of files || []) {
             const internalPath = normalizeInternalPath(file.internal_path);
             if (!internalPath) continue;
-            if (seen.has(internalPath)) return 'You cannot add the same file path more than once.';
+            if (seen.has(internalPath)) return 'modder_tools.same_file_path_added_more_than_once';
             seen.add(internalPath);
         }
 
         if (hasConfig && seen.has(defaultConfigInternalPath)) {
-            return 'default.cfg can only be added through the config file option.';
+            return 'modder_tools.default_cfg_must_use_config_option';
         }
 
         if (hasPreview) {
             const previewPath = normalizeInternalPath(previewInternalPath(previewName || 'preview.png'));
-            if (seen.has(previewPath)) return 'Preview image path cannot also be included in the files list.';
+            if (seen.has(previewPath)) return 'modder_tools.preview_image_path_cannot_also_be_includ_01ba5d';
         }
 
         const cfgPaths = [...seen].filter(path => path.endsWith('.cfg'));
         if (hasConfig) cfgPaths.push(defaultConfigInternalPath);
-        if (cfgPaths.length > 1) return 'Only one config file can be included in a mod.';
+        if (cfgPaths.length > 1) return 'modder_tools.only_one_config_file_per_mod';
         if (cfgPaths.length === 1) {
-            if (cfgPaths[0] !== defaultConfigInternalPath) return 'default.cfg can only be added through the config file option.';
+            if (cfgPaths[0] !== defaultConfigInternalPath) return 'modder_tools.default_cfg_must_use_config_option';
         }
 
         return null;

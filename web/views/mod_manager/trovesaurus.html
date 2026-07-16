@@ -60,7 +60,7 @@
                     </div>
 
                     <span class="mod-meta">
-                        <a v-if="mod.author_id" class="ts-mod-author" href="#" :title="t(`View {author}'s profile`).replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/user=${mod.author_id}`)">{{ mod.author }}</a>
+                        <a v-if="mod.author_id" class="ts-mod-author" href="#" :title="t('trovesaurus.view_author_profile').replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/user=${mod.author_id}`)">{{ mod.author }}</a>
                         <a v-else class="ts-mod-author" href="#" :title="t('common.search_mods_by_author').replace('{author}', mod.author)" @click.prevent="openUrl(`https://trovesaurus.com/search?query=${encodeURIComponent(mod.author || '')}`)">{{ mod.author }}</a>
                     </span>
 

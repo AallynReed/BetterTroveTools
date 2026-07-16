@@ -122,7 +122,7 @@
                     <div class="tracker-step" :class="{ active: trackerStatus.state === 'baseline' }">
                         <span class="tracker-step-num">4</span>
                         <div>
-                            <div class="tracker-step-title">{{ t('Scan & Extract Updates') }}</div>
+                            <div class="tracker-step-title">{{ t('file_manager.scan_extract_updates') }}</div>
                             <div class="tracker-step-copy">{{ t('file_manager.after_a_patch_compare_against_the_baseli_8169f6') }}</div>
                         </div>
                     </div>
@@ -194,7 +194,7 @@
                         
                         <button v-show="trackerStatus.state === 'baseline'" @click="scanUpdates" class="primary-btn" :disabled="isAnyOperationRunning" style="background-color: #28a745;">
                             <template v-if="trackerStatus.isScanning"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('file_manager.scanning_for_updates') }}</template>
-                            <template v-else><i class="fa-solid fa-satellite-dish"></i> {{ t('Scan & Extract Updates') }}</template>
+                            <template v-else><i class="fa-solid fa-satellite-dish"></i> {{ t('file_manager.scan_extract_updates') }}</template>
                         </button>
 
                         <button v-if="trackerStatus.isBuilding || trackerStatus.isScanning" @click="cancelTrackerOperation" class="danger-btn">

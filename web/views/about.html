@@ -54,7 +54,7 @@
 
     <div class="about-grid">
         <div class="about-section">
-            <div class="section-title"><i class="fa-solid fa-users"></i> <span>{{ t('Community & Support') }}</span></div>
+            <div class="section-title"><i class="fa-solid fa-users"></i> <span>{{ t('about.community_support') }}</span></div>
             <p>{{ t('about.better_trove_tools_is_built_for_the_comm_e41dba') }}</p>
             <div class="link-buttons">
                 <button @click="modals.changelog = true; loadChangelog()" class="about-link changelog">
@@ -127,7 +127,7 @@
                         <span class="translation-pill-role">{{ t('about.translation_proofreading_technical_frame_738d06') }}</span>
                     </div>
                     <div class="translation-pill">
-                        <span class="translation-pill-name">{{ t('D_FairyTail') }}</span>
+                        <span class="translation-pill-name">{{ t('about.d_fairytail') }}</span>
                         <span class="translation-pill-role">{{ t('about.translation_proofreading_technical_frame_738d06') }}</span>
                     </div>
                     <div class="translation-pill">
@@ -144,13 +144,13 @@
         </div>
 
         <div class="about-section full-width">
-            <div class="section-title"><i class="fa-solid fa-cube"></i> <span>{{ t('Packaging') }}</span></div>
-            <p>{{ t('Thank you to the community members who help package and distribute the app.') }}</p>
+            <div class="section-title"><i class="fa-solid fa-cube"></i> <span>{{ t('about.packaging') }}</span></div>
+            <p>{{ t('about.packaging_intro') }}</p>
             <div class="translation-region">
                 <div class="translation-pill-list">
                     <div class="translation-pill">
                         <a href="#" @click.prevent="openUrl('https://github.com/Redhawk18')" class="translation-pill-name">Redhawk18</a>
-                        <span class="translation-pill-role">{{ t('NixOS Flake & Packaging') }}</span>
+                        <span class="translation-pill-role">{{ t('about.nixos_flake_packaging') }}</span>
                     </div>
                 </div>
             </div>

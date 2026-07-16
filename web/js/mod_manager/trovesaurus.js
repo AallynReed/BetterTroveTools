@@ -77,7 +77,7 @@ document.addEventListener('trovesaurus_loaded', () => {
 
             const categoryOptions = computed(() => [
                 [t('trovesaurus.all_categories'), ''],
-                [t('UI & HUD'), 'ui'],
+                [t('trovesaurus.ui_hud'), 'ui'],
                 [t('trovesaurus.vfx'), 'vfx'],
                 [t('common.mounts'), 'mount'],
                 [t('common.allies'), 'ally'],

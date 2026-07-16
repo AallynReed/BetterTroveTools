@@ -209,7 +209,7 @@
                 </div>
             </div>
             <div class="sidebar-quick-open-title" data-i18n="app.jump_to_any_tool">Jump to any tool</div>
-            <div class="sidebar-quick-open-copy" data-i18n="app.search_tools_switch_views_and_jump_into_ccb569">Search tools, switch views, and jump into common actions.</div>
+            <div class="sidebar-quick-open-copy" data-i18n="app.search_tools_switch_views_and_jump_into_ccb569">Search tools, views, and common actions.</div>
         </div>
 
     </nav>
@@ -339,7 +339,7 @@
         <div id="command-palette" class="command-palette">
             <div class="command-palette-header">
                 <i class="fa-solid fa-magnifying-glass command-palette-icon"></i>
-                <input type="text" id="cmd-input" placeholder="Search commands or jump to tool..." class="command-palette-input">
+                <input type="text" id="cmd-input" placeholder="Search commands or jump to a tool..." class="command-palette-input">
                 <div class="command-palette-kbd">ESC</div>
             </div>
             <div id="cmd-results" class="command-palette-results"></div>
@@ -377,15 +377,15 @@
         </div>
     </div>
 
-    <button id="job-queue-toggle" class="job-queue-toggle" title="Jobs">
+    <button id="job-queue-toggle" class="job-queue-toggle" title="Jobs" data-i18n-title="app.jobs_title">
         <i class="fa-solid fa-list-check"></i>
         <span id="job-queue-badge" class="job-queue-badge" style="display:none;">0</span>
     </button>
     <div id="job-queue-panel" class="job-queue-panel" style="display:none;">
         <div class="job-queue-header">
-            <strong>Jobs</strong>
+            <strong data-i18n="app.jobs_title">Jobs</strong>
             <div style="display:flex; align-items:center; gap:6px;">
-                <button id="job-queue-clear" class="icon-btn-small" title="Clear finished jobs" style="display:none;"><i class="fa-solid fa-broom"></i></button>
+                <button id="job-queue-clear" class="icon-btn-small" title="Clear finished jobs" data-i18n-title="app.jobs_clear_finished" style="display:none;"><i class="fa-solid fa-broom"></i></button>
                 <button id="job-queue-close" class="icon-btn-small"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
