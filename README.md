@@ -61,6 +61,8 @@ Better Trove Tools is a **local‑first desktop application**: it runs on your o
 
 The interface renders inside the **Microsoft Edge WebView2 runtime** instead of bundling a full browser engine, keeping the download small while staying automatically security‑patched by Windows.
 
+There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.net)** — download the app there, or browse the live dashboard, leaderboards, codexes, and mods hub straight from your browser.
+
 ---
 
 ## Feature highlights
