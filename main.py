@@ -46,6 +46,7 @@ import backend.modder_tools.modder_tools
 import backend.codexes.recipes
 import backend.codexes.styles
 import backend.settings
+import backend.trove
 import backend.gems_and_builds.star_chart
 import backend.mod_manager.trovesaurus
 import backend.mod_manager.mods_hub

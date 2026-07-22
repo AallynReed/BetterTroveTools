@@ -165,6 +165,7 @@ window.BTT_ENABLE_ONBOARDING_TOURS = false;
 // attached by the time the event fires.
 window.BTT_VIEW_SCRIPTS = {
     home: ['js/home.js'],
+    trove: ['js/trove.js'],
     mod_manager: ['js/mod_manager/index.js'],
     modder_tools: [
         'js/modder_tools/shared.js',

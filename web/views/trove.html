@@ -1,0 +1,138 @@
+<head>
+    <link rel="stylesheet" href="css/trove.css">
+</head>
+<div id="trove-vue-app" class="trove-container">
+    <header class="trove-header">
+        <div class="trove-header-text">
+            <h1><i class="fa-solid fa-dragon"></i> {{ t('trove.title') }}</h1>
+            <p class="trove-subtitle">{{ t('trove.subtitle') }}</p>
+        </div>
+        <div class="trove-header-status">
+            <span class="trove-pill" :class="loggedIn ? 'ok' : 'muted'">
+                <i :class="loggedIn ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'"></i>
+                {{ loggedIn ? t('trove.session_active') : t('trove.sign_in_required') }}
+            </span>
+            <span class="trove-pill muted" v-if="localVersion">
+                <i class="fa-solid fa-code-branch"></i> {{ localVersion }}
+            </span>
+        </div>
+    </header>
+
+    <div v-if="notice.text" class="trove-notice" :class="notice.kind">
+        <i :class="notice.kind === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-info'"></i>
+        <span>{{ notice.text }}</span>
+        <button class="trove-notice-close" @click="notice.text = ''"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Play card -->
+    <section class="trove-card trove-play-card">
+        <div class="trove-play-main">
+            <button class="trove-play-btn" :disabled="busy || !gamePath" @click="play">
+                <i class="fa-solid" :class="busy ? 'fa-spinner fa-spin' : 'fa-play'"></i>
+                <span>{{ busy ? busyLabel : t('trove.play') }}</span>
+            </button>
+            <label class="trove-check">
+                <input type="checkbox" v-model="updateFirst" :disabled="busy">
+                {{ t('trove.update_before_launch') }}
+            </label>
+        </div>
+        <div class="trove-play-config">
+            <div class="trove-field">
+                <label>{{ t('trove.install') }}</label>
+                <select v-model="gamePath" :disabled="busy" data-native-select="true">
+                    <option v-if="!installList.length" value="">{{ t('trove.no_installs') }}</option>
+                    <option v-for="g in installList" :key="g.path" :value="g.path">{{ g.name }}</option>
+                </select>
+            </div>
+            <div class="trove-field">
+                <label>{{ t('trove.server') }}</label>
+                <select v-model="server" :disabled="busy" data-native-select="true">
+                    <option v-for="s in serverList" :key="s.key" :value="s.key">{{ s.label }}</option>
+                </select>
+            </div>
+        </div>
+    </section>
+
+    <div class="trove-grid">
+        <!-- Account -->
+        <section class="trove-card">
+            <h2 class="trove-card-title"><i class="fa-solid fa-user"></i> {{ t('trove.account') }}</h2>
+            <p class="trove-card-hint">{{ t('trove.account_hint') }}</p>
+            <div class="trove-field">
+                <label>{{ t('trove.email') }}</label>
+                <input type="email" v-model="email" :disabled="busy" autocomplete="username"
+                       :placeholder="t('trove.email_placeholder')">
+            </div>
+            <div class="trove-field">
+                <label>{{ t('trove.password') }}</label>
+                <input type="password" v-model="password" :disabled="busy" autocomplete="current-password"
+                       :placeholder="hasSavedPassword ? t('trove.password_saved') : (loggedIn ? t('trove.password_optional') : t('trove.password_placeholder'))">
+            </div>
+            <div class="trove-checks">
+                <label class="trove-check">
+                    <input type="checkbox" v-model="rememberEmail" :disabled="busy || rememberPassword" @change="syncRemember">
+                    {{ t('trove.remember_email') }}
+                </label>
+                <label class="trove-check">
+                    <input type="checkbox" v-model="rememberPassword" :disabled="busy" @change="syncRemember">
+                    {{ t('trove.remember_password') }}
+                    <i class="fa-solid fa-lock trove-lock" :title="t('trove.remember_password_tip')"></i>
+                </label>
+            </div>
+            <div class="trove-account-row">
+                <span class="trove-card-hint" style="margin:0;">{{ t('trove.remember_password_tip') }}</span>
+                <button class="trove-btn ghost" :disabled="busy || (!loggedIn && !hasSavedPassword)" @click="logout">
+                    <i class="fa-solid fa-right-from-bracket"></i> {{ t('trove.sign_out') }}
+                </button>
+            </div>
+        </section>
+
+        <!-- Maintenance -->
+        <section class="trove-card">
+            <h2 class="trove-card-title"><i class="fa-solid fa-screwdriver-wrench"></i> {{ t('trove.maintenance') }}</h2>
+            <p class="trove-card-hint">{{ t('trove.maintenance_hint') }}</p>
+            <div class="trove-btn-row">
+                <button class="trove-btn" :disabled="busy || !gamePath" @click="check">
+                    <i class="fa-solid fa-magnifying-glass"></i> {{ t('trove.check_updates') }}
+                </button>
+                <button class="trove-btn primary" :disabled="busy || !gamePath" @click="update">
+                    <i class="fa-solid fa-download"></i> {{ t('trove.update') }}
+                </button>
+                <button class="trove-btn warn" :disabled="busy || !gamePath" @click="repair">
+                    <i class="fa-solid fa-wrench"></i> {{ t('trove.repair') }}
+                </button>
+            </div>
+            <p class="trove-card-note"><i class="fa-solid fa-circle-info"></i> {{ t('trove.repair_note') }}</p>
+        </section>
+    </div>
+
+    <!-- Progress -->
+    <section class="trove-card trove-progress-card" v-show="busy || logLines.length">
+        <div class="trove-progress-head">
+            <span class="trove-progress-stage">{{ message || t('trove.idle') }}</span>
+            <span class="trove-progress-count" v-if="progress.total">
+                {{ progress.current.toLocaleString() }} / {{ progress.total.toLocaleString() }}
+                <span v-if="progress.downloaded">&middot; {{ progress.downloaded.toLocaleString() }} {{ t('trove.downloaded') }}</span>
+            </span>
+        </div>
+        <div class="trove-bar">
+            <div class="trove-bar-fill" :class="{ indeterminate: busy && !progress.total }"
+                 :style="{ width: progress.total ? progressPct + '%' : '100%' }"></div>
+        </div>
+        <pre class="trove-log" ref="logEl"><div v-for="(line, i) in logLines" :key="i">{{ line }}</div></pre>
+    </section>
+
+    <!-- 2FA overlay -->
+    <div class="trove-modal-overlay" v-if="twofaNeeded" @click.self="cancel2fa">
+        <div class="trove-modal">
+            <h3><i class="fa-solid fa-shield-halved"></i> {{ t('trove.twofa_title') }}</h3>
+            <p>{{ t('trove.twofa_body') }}</p>
+            <input type="text" v-model="twofaCode" inputmode="numeric" autocomplete="one-time-code"
+                   :placeholder="t('trove.twofa_placeholder')" @keyup.enter="submit2fa" ref="twofaInput">
+            <div class="trove-modal-actions">
+                <button class="trove-btn ghost" @click="cancel2fa">{{ t('common.cancel') }}</button>
+                <button class="trove-btn primary" :disabled="!twofaCode" @click="submit2fa">{{ t('trove.twofa_submit') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
