@@ -62,6 +62,7 @@
                 const accounts = ref([]);            // [{email, name, logged_in, has_saved_password}]
                 const selectedEmail = ref('__add__');
                 const accountLabel = ref('');        // editable custom label for the selected account
+                const revealEmails = ref(false);     // hide emails behind ****@domain until toggled
                 const autoRelog = ref(false);
                 const running = ref([]);             // [{pid, email, server, auto_relog, uptime, relogs}]
                 const isAdding = computed(() => selectedEmail.value === '__add__' || !accounts.value.length);
@@ -298,10 +299,18 @@
                         selectedEmail.value = em;  // switch dropdown to the launched account
                     }
                 }
-                function labelFor(em) {
-                    const a = accounts.value.find(x => x.email === em);
-                    return (a && a.name) || em || 'Trove';
+                function maskEmail(em) {
+                    em = (em || '').trim();
+                    if (!em) return 'Trove';
+                    const at = em.indexOf('@');
+                    return at < 0 ? '****' : '****' + em.slice(at);
                 }
+                function shownEmail(em) { return revealEmails.value ? (em || '') : maskEmail(em); }
+                function aliasOf(em) { const a = accounts.value.find(x => x.email === em); return (a && a.name) || ''; }
+                // Dropdown label: alias if set, else masked/revealed email (+ ✓ when signed in).
+                function optLabel(a) { return (a.name || shownEmail(a.email)) + (a.logged_in ? '  ✓' : ''); }
+                // Running list / generic label: alias if set, else masked/revealed email.
+                function labelFor(em) { return aliasOf(em) || shownEmail(em); }
                 async function onSelectAccount() {
                     password.value = '';
                     const em = selectedEmail.value;
@@ -385,9 +394,9 @@
                     server, email, password,
                     rememberEmail, rememberPassword, hasSavedPassword, updateFirst,
                     loggedIn, busy, op, message, progress,
-                    accounts, selectedEmail, accountLabel, isAdding, autoRelog, running,
+                    accounts, selectedEmail, accountLabel, revealEmails, isAdding, autoRelog, running,
                     logLines, notice, twofaNeeded, twofaCode, logEl, twofaInput,
-                    progressPct, localVersion, busyLabel, labelFor,
+                    progressPct, localVersion, busyLabel, labelFor, shownEmail, optLabel,
                     check, update, repair, play, submit2fa, cancel2fa, logout, syncRemember,
                     onSelectAccount, removeAccount, renameAccount, toggleRelog,
                 };

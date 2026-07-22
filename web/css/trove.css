@@ -138,6 +138,15 @@
     cursor: pointer;
 }
 .trove-check input { accent-color: var(--accent-blue, #5ec6ff); }
+.trove-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.trove-card-head .trove-card-title { margin: 0; }
+.trove-reveal-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; font-size: 0.76rem;
+    background: transparent; color: var(--text-muted, #a3adc2);
+    border: 1px solid var(--border-color, #333); border-radius: 999px; cursor: pointer;
+}
+.trove-reveal-btn:hover { color: var(--accent-blue, #5ec6ff); border-color: var(--accent-blue, #5ec6ff); }
 .trove-rename-row { display: flex; gap: 8px; align-items: stretch; }
 .trove-rename-row input { flex: 1; }
 .trove-rename-row .trove-btn { white-space: nowrap; }
