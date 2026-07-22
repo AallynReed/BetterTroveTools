@@ -1575,6 +1575,8 @@
         "trove.update_before_launch": "Update before launching",
         "trove.install": "Trove install",
         "trove.no_installs": "No Trove installs detected",
+        "trove.no_pts_install": "No PTS install detected",
+        "trove.no_live_install": "No Live install detected",
         "trove.server": "Server",
         "trove.account": "Glyph account",
         "trove.account_hint": "Your credentials are sent only to Trion to obtain a launch ticket, which is cached encrypted on this PC. Your password is not saved unless you tick “Remember password” below.",

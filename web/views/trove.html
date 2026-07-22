@@ -40,7 +40,7 @@
             <div class="trove-field">
                 <label>{{ t('trove.install') }}</label>
                 <select v-model="gamePath" :disabled="busy" data-native-select="true">
-                    <option v-if="!installList.length" value="">{{ t('trove.no_installs') }}</option>
+                    <option v-if="!installList.length" value="">{{ noInstallLabel }}</option>
                     <option v-for="g in installList" :key="g.path" :value="g.path">{{ g.name }}</option>
                 </select>
             </div>

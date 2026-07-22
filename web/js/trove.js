@@ -23,9 +23,20 @@
     // Which update branch a server key syncs (for reading local version state).
     const SERVER_BRANCH = { 'live-na': 'live-us', 'live-eu': 'live-us', 'pts': 'pts' };
 
+    // Classify an install as PTS vs Live from its folder. PTS installs live in a
+    // folder literally named "PTS" (e.g. ...\Trove\PTS) and show as "(Glyph) PTS";
+    // Live NA/EU share the same Live files (only the auth server differs). Matching
+    // a whole path segment (not a substring) avoids false hits like ".../scripts/...".
+    const isPtsInstall = (g) => {
+        const name = (g && g.name) || '';
+        const path = (g && g.path) || '';
+        if (/\bpts\b/i.test(name)) return true;
+        return String(path).split(/[\\/]+/).some(seg => seg.toLowerCase() === 'pts');
+    };
+
     document.addEventListener('trove_loaded', () => {
         if (typeof Vue === 'undefined') { console.error('Vue.js failed to load!'); return; }
-        const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+        const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
         const app = createApp({
             setup() {
@@ -58,10 +69,15 @@
                 const logEl = ref(null);
                 const twofaInput = ref(null);
 
-                // Always iterate CLEAN objects in the template — never let a stray
-                // null / non-object / duplicate-path entry from the backend reach
-                // the v-for (that's what triggered "reading 'name' of undefined").
-                const installList = computed(() => {
+                // 'pts' when the PTS server is selected, else 'live'. Live NA/EU
+                // share the same files, so only the Live-vs-PTS split matters here.
+                const serverKind = computed(() => server.value === 'pts' ? 'pts' : 'live');
+
+                // Clean, de-duped install list FILTERED to the selected server's kind,
+                // so PTS never shows Live folders (and vice versa) — you can't launch
+                // or update PTS against Live files. Sanitizing also guards the v-for
+                // against stray null/non-object entries.
+                const cleanInstalls = computed(() => {
                     const src = Array.isArray(installs.value) ? installs.value : [];
                     const seen = new Set();
                     const out = [];
@@ -70,9 +86,16 @@
                         const path = String(g.path);
                         if (seen.has(path)) continue;
                         seen.add(path);
-                        out.push({ name: String(g.name || path), path });
+                        out.push({ name: String(g.name || path), path, kind: isPtsInstall(g) ? 'pts' : 'live' });
                     }
                     return out;
+                });
+                const installList = computed(() => cleanInstalls.value.filter(g => g.kind === serverKind.value));
+                // Empty-state label: distinguish "no PTS install" from "no installs at all".
+                const noInstallLabel = computed(() => {
+                    const hasOtherKind = cleanInstalls.value.some(g => g.kind !== serverKind.value);
+                    if (!hasOtherKind) return t('trove.no_installs');
+                    return t(serverKind.value === 'pts' ? 'trove.no_pts_install' : 'trove.no_live_install');
                 });
                 const serverList = computed(() => {
                     const src = Array.isArray(servers.value) ? servers.value : [];
@@ -167,9 +190,29 @@
                         installs.value = (d.game_installs || []).filter(g => g && g.path);
                         const paths = installs.value.map(g => g.path);
                         const pick = [preferred, d.last_game_path].find(p => p && paths.includes(p));
-                        gamePath.value = pick || (installs.value[0] ? installs.value[0].path : '');
+                        const pickPath = pick || (installs.value[0] ? installs.value[0].path : '');
+                        // Align the server's Live/PTS kind to the install we're about to
+                        // select, so a remembered PTS install opens on the PTS server
+                        // (keeping the Live region choice when it's a Live install).
+                        if (pickPath) {
+                            const g = installs.value.find(x => x.path === pickPath);
+                            if (isPtsInstall(g) && server.value !== 'pts') server.value = 'pts';
+                            else if (!isPtsInstall(g) && server.value === 'pts') server.value = 'live-na';
+                        }
+                        gamePath.value = pickPath;
                     } catch (e) { /* non-fatal */ }
                 }
+
+                // Keep the selected install valid for the current server: if switching
+                // server (or reloading installs) leaves gamePath pointing at a folder
+                // that's no longer in the filtered list, jump to the first match (or
+                // clear it, which disables the buttons until a matching install exists).
+                function reconcileInstall() {
+                    if (!installList.value.some(g => g.path === gamePath.value)) {
+                        gamePath.value = installList.value.length ? installList.value[0].path : '';
+                    }
+                }
+                watch(installList, reconcileInstall);
 
                 // -- operations --
                 // busy is set synchronously BEFORE the call so a near-instant
@@ -268,7 +311,7 @@
                 });
 
                 return {
-                    t, installs, installList, servers, serverList, versions, gamePath,
+                    t, installs, installList, noInstallLabel, servers, serverList, versions, gamePath,
                     server, email, password,
                     rememberEmail, rememberPassword, hasSavedPassword, updateFirst,
                     loggedIn, busy, op, message, progress,

@@ -1756,7 +1756,9 @@
 "2-step verification": "trove.twofa_title",
 "Trion sent a verification code to your email. Enter it to finish signing in.": "trove.twofa_body",
 "123456": "trove.twofa_placeholder",
-"Verify": "trove.twofa_submit"
+"Verify": "trove.twofa_submit",
+"No PTS install detected": "trove.no_pts_install",
+"No Live install detected": "trove.no_live_install"
 },
 "en": {
 "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3578,6 +3580,8 @@
 "trove.twofa_title": "2-step verification",
 "trove.twofa_body": "Trion sent a verification code to your email. Enter it to finish signing in.",
 "trove.twofa_placeholder": "123456",
-"trove.twofa_submit": "Verify"
+"trove.twofa_submit": "Verify",
+"trove.no_pts_install": "No PTS install detected",
+"trove.no_live_install": "No Live install detected"
 }
 }
