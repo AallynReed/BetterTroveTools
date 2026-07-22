@@ -86,11 +86,13 @@
                         const path = String(g.path);
                         if (seen.has(path)) continue;
                         seen.add(path);
-                        out.push({ name: String(g.name || path), path, kind: isPtsInstall(g) ? 'pts' : 'live' });
+                        const name = String(g.name || path);
+                        // Custom directories bypass the Live/PTS filter — always shown.
+                        out.push({ name, path, kind: isPtsInstall(g) ? 'pts' : 'live', custom: /^\(Custom\)/.test(name) });
                     }
                     return out;
                 });
-                const installList = computed(() => cleanInstalls.value.filter(g => g.kind === serverKind.value));
+                const installList = computed(() => cleanInstalls.value.filter(g => g.custom || g.kind === serverKind.value));
                 // Empty-state label: distinguish "no PTS install" from "no installs at all".
                 const noInstallLabel = computed(() => {
                     const hasOtherKind = cleanInstalls.value.some(g => g.kind !== serverKind.value);
