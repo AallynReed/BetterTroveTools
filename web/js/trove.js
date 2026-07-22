@@ -57,6 +57,16 @@
                 const updateFirst = ref(true);
                 const loggedIn = ref(false);
 
+                // Multi-account: saved accounts + which one is active. selectedEmail
+                // is '__add__' while entering a brand-new account.
+                const accounts = ref([]);            // [{email, name, logged_in, has_saved_password}]
+                const selectedEmail = ref('__add__');
+                const accountLabel = ref('');        // editable custom label for the selected account
+                const autoRelog = ref(false);
+                const running = ref([]);             // [{pid, email, server, auto_relog, uptime, relogs}]
+                const isAdding = computed(() => selectedEmail.value === '__add__' || !accounts.value.length);
+                const acctEmail = computed(() => isAdding.value ? email.value.trim() : selectedEmail.value);
+
                 const busy = ref(false);
                 const op = ref(null);
                 const message = ref('');
@@ -130,6 +140,18 @@
                 // Incoming progress/status frame from the backend worker thread.
                 _progressHandler = (p) => {
                     if (!p || typeof p !== 'object') return;
+                    // Running-instances / auto-relog frames are out-of-band: they must
+                    // not touch the current operation's op/busy/progress state.
+                    if (p.op === 'running') {
+                        if (Array.isArray(p.instances)) running.value = p.instances;
+                        if (p.message) {
+                            pushLog(p.message);
+                            if (p.stage === 'relog' || p.stage === 'relogged' || p.stage === 'relog_failed') {
+                                setNotice(p.message, p.stage === 'relog_failed' ? 'error' : 'info');
+                            }
+                        }
+                        return;
+                    }
                     op.value = p.op || op.value;
                     if (typeof p.current === 'number') progress.current = p.current;
                     if (typeof p.total === 'number') progress.total = p.total;
@@ -169,18 +191,29 @@
 
                 function finishOp() { busy.value = false; op.value = null; refreshState(); }
 
+                // Sync account list / running instances / login flags from a state
+                // payload. `initial` also seeds the selected account + toggles.
+                function applyState(d, initial) {
+                    if (Array.isArray(d.accounts)) accounts.value = d.accounts;
+                    if (Array.isArray(d.running)) running.value = d.running;
+                    if (typeof d.auto_relog === 'boolean' && initial) autoRelog.value = d.auto_relog;
+                    loggedIn.value = !!d.logged_in;
+                    hasSavedPassword.value = !!d.has_saved_password;
+                    if (d.versions) versions.value = d.versions;
+                    if (d.servers && d.servers.length) servers.value = d.servers;
+                    if (initial) {
+                        if (accounts.value.length) selectedEmail.value = d.selected_email || accounts.value[0].email;
+                        else selectedEmail.value = '__add__';
+                        rememberEmail.value = d.remember_email !== undefined ? !!d.remember_email : !!d.email;
+                        rememberPassword.value = !!d.remember_password;
+                    }
+                }
+
                 async function refreshState() {
                     if (!hasEel()) return;
                     try {
                         const st = await window.callBackend(window.eel.trove_get_state()(), 'state');
-                        if (st.success) {
-                            const d = st.data || {};
-                            loggedIn.value = !!d.logged_in;
-                            hasSavedPassword.value = !!d.has_saved_password;
-                            if (d.email && !email.value) email.value = d.email;
-                            if (d.versions) versions.value = d.versions;
-                            if (d.servers && d.servers.length) servers.value = d.servers;
-                        }
+                        if (st.success) applyState(st.data || {}, false);
                     } catch (e) { /* non-fatal */ }
                 }
 
@@ -252,24 +285,60 @@
                 }
                 async function play() {
                     if (!hasEel() || busy.value || !gamePath.value) return;
-                    const haveSecret = loggedIn.value || hasSavedPassword.value || password.value;
-                    if (!haveSecret || (!loggedIn.value && !hasSavedPassword.value && !email.value)) {
-                        setNotice(t('trove.need_credentials'), 'error'); return;
-                    }
+                    const em = acctEmail.value;
+                    const acct = accounts.value.find(a => a.email === em);
+                    const secretReady = (acct && (acct.logged_in || acct.has_saved_password)) || password.value;
+                    if (!em || !secretReady) { setNotice(t('trove.need_credentials'), 'error'); return; }
                     beginLocal(t('trove.launching'));
                     const res = await window.callBackend(window.eel.trove_play(
-                        gamePath.value, server.value, email.value, password.value,
-                        rememberEmail.value, rememberPassword.value, updateFirst.value)(), 'play');
+                        gamePath.value, server.value, em, password.value,
+                        rememberEmail.value, rememberPassword.value, updateFirst.value, autoRelog.value)(), 'play');
                     if (!ackFailed(res)) {
                         password.value = '';
-                        if (rememberPassword.value) hasSavedPassword.value = true;
+                        selectedEmail.value = em;  // switch dropdown to the launched account
                     }
+                }
+                function labelFor(em) {
+                    const a = accounts.value.find(x => x.email === em);
+                    return (a && a.name) || em || 'Trove';
+                }
+                async function onSelectAccount() {
+                    password.value = '';
+                    const em = selectedEmail.value;
+                    if (em === '__add__') { email.value = ''; accountLabel.value = ''; loggedIn.value = false; hasSavedPassword.value = false; return; }
+                    email.value = em;
+                    const acct = accounts.value.find(a => a.email === em);
+                    accountLabel.value = (acct && acct.name) || '';
+                    if (!hasEel()) return;
+                    const res = await window.callBackend(window.eel.trove_select_account(em)(), 'select');
+                    if (res.success) { loggedIn.value = !!res.data.logged_in; hasSavedPassword.value = !!res.data.has_saved_password; }
+                }
+                async function renameAccount() {
+                    const em = selectedEmail.value;
+                    if (!em || em === '__add__' || !hasEel()) return;
+                    const res = await window.callBackend(window.eel.trove_rename_account(em, accountLabel.value)(), 'rename');
+                    if (res.success) { setNotice(t('trove.renamed'), 'ok'); await refreshState(); }
+                }
+                async function removeAccount() {
+                    const em = selectedEmail.value;
+                    if (!em || em === '__add__' || !hasEel()) return;
+                    if (!window.confirm(t('trove.remove_confirm'))) return;
+                    const res = await window.callBackend(window.eel.trove_remove_account(em)(), 'remove');
+                    if (res.success) {
+                        await refreshState();
+                        selectedEmail.value = accounts.value.length ? accounts.value[0].email : '__add__';
+                        await onSelectAccount();
+                    }
+                }
+                async function toggleRelog(inst) {
+                    if (!hasEel() || !inst) return;
+                    await window.callBackend(window.eel.trove_set_auto_relog(inst.pid, !inst.auto_relog)(), 'relog');
                 }
                 async function syncRemember() {
                     if (rememberPassword.value) rememberEmail.value = true;
                     if (!hasEel()) return;
                     const res = await window.callBackend(window.eel.trove_set_remember(
-                        rememberEmail.value, rememberPassword.value)(), 'remember');
+                        rememberEmail.value, rememberPassword.value, acctEmail.value)(), 'remember');
                     if (res.success) hasSavedPassword.value = !!(res.data && res.data.has_saved_password);
                 }
                 async function submit2fa() {
@@ -283,11 +352,12 @@
                 }
                 async function logout() {
                     if (!hasEel() || busy.value) return;
-                    const res = await window.callBackend(window.eel.trove_logout()(), 'logout');
+                    const res = await window.callBackend(window.eel.trove_logout(acctEmail.value)(), 'logout');
                     if (res.success) {
                         loggedIn.value = false; hasSavedPassword.value = false;
                         rememberPassword.value = false; password.value = '';
                         setNotice(t('trove.signed_out'), 'info');
+                        refreshState();
                     }
                 }
 
@@ -297,18 +367,16 @@
                     let preferred = null;
                     if (st.success) {
                         const d = st.data || {};
-                        loggedIn.value = !!d.logged_in;
-                        email.value = d.email || '';
-                        rememberEmail.value = d.remember_email !== undefined ? !!d.remember_email : !!d.email;
-                        rememberPassword.value = !!d.remember_password;
-                        hasSavedPassword.value = !!d.has_saved_password;
+                        applyState(d, true);
+                        email.value = (selectedEmail.value && selectedEmail.value !== '__add__')
+                            ? selectedEmail.value : (d.email || '');
+                        accountLabel.value = (accounts.value.find(a => a.email === selectedEmail.value) || {}).name || '';
+                        autoRelog.value = !!d.auto_relog;
                         if (d.server) server.value = d.server;
-                        if (d.versions) versions.value = d.versions;
-                        if (d.servers && d.servers.length) servers.value = d.servers;
                         preferred = d.game_path || null;
                     }
                     await loadInstalls(preferred);
-                    // Refresh login/version state each time the tab is re-entered.
+                    // Refresh login/version/running state each time the tab is re-entered.
                     document.addEventListener('trove_shown', refreshState);
                 });
 
@@ -317,9 +385,11 @@
                     server, email, password,
                     rememberEmail, rememberPassword, hasSavedPassword, updateFirst,
                     loggedIn, busy, op, message, progress,
+                    accounts, selectedEmail, accountLabel, isAdding, autoRelog, running,
                     logLines, notice, twofaNeeded, twofaCode, logEl, twofaInput,
-                    progressPct, localVersion, busyLabel,
+                    progressPct, localVersion, busyLabel, labelFor,
                     check, update, repair, play, submit2fa, cancel2fa, logout, syncRemember,
+                    onSelectAccount, removeAccount, renameAccount, toggleRelog,
                 };
             }
         });

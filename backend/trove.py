@@ -99,12 +99,71 @@ def _save_prefs(**changes) -> dict:
     return prefs
 
 
-def _auth_cache_path() -> Path:
+def _email_hash(email: str) -> str:
+    return hashlib.sha1((email or "").strip().lower().encode("utf-8")).hexdigest()[:12]
+
+
+def _auth_cache_path(email: str = "") -> Path:
+    # Per-account ticket cache so several Glyph accounts can each stay signed in.
+    if email:
+        return _storage_dir() / f"auth-{_email_hash(email)}.bin"
     return _storage_dir() / "auth_cache.bin"
 
 
 def _macaddr_path() -> Path:
     return _storage_dir() / "macaddr.txt"
+
+
+# --- saved accounts (list of emails; passwords/tickets stored per-account) ---
+
+
+def _accounts() -> list:
+    out = []
+    for a in _load_prefs().get("accounts", []):
+        e = a if isinstance(a, str) else (a.get("email") if isinstance(a, dict) else None)
+        if e and e not in out:
+            out.append(e)
+    return out
+
+
+def _add_account(email: str) -> None:
+    email = (email or "").strip()
+    if not email:
+        return
+    accs = [a for a in _accounts() if a.lower() != email.lower()]
+    accs.insert(0, email)  # most-recently-used first
+    _save_prefs(accounts=accs, selected_email=email, email=email)
+
+
+def _alias_for(email: str) -> str:
+    return (_load_prefs().get("aliases", {}) or {}).get((email or "").strip().lower(), "")
+
+
+def _mask_email(email: str) -> str:
+    """Obfuscate an email for logs: ****@domain (local part hidden)."""
+    email = (email or "").strip()
+    if "@" not in email:
+        return "****" if email else "Trove"
+    return "****@" + email.partition("@")[2]
+
+
+def _display(email: str) -> str:
+    """What to show for an account in logs/UI: its custom label if set, else a
+    masked email — never the full address."""
+    return _alias_for(email) or _mask_email(email)
+
+
+def _set_alias(email: str, name: str) -> None:
+    email = (email or "").strip()
+    if not email:
+        return
+    aliases = dict(_load_prefs().get("aliases", {}) or {})
+    name = (name or "").strip()
+    if name:
+        aliases[email.lower()] = name
+    else:
+        aliases.pop(email.lower(), None)
+    _save_prefs(aliases=aliases)
 
 
 # --- remembered credentials (DPAPI, user scope) -----------------------------
@@ -116,7 +175,9 @@ def _macaddr_path() -> Path:
 _CRED_ENTROPY = b"BTT.trove.launcher.credentials.v1"
 
 
-def _cred_path() -> Path:
+def _cred_path(email: str = "") -> Path:
+    if email:
+        return _storage_dir() / f"cred-{_email_hash(email)}.bin"
     return _storage_dir() / "credentials.bin"
 
 
@@ -129,14 +190,14 @@ def _save_credentials(email: str, password: str) -> bool:
     except Exception:
         return False  # DPAPI unavailable — refuse to store a password in the clear
     try:
-        _cred_path().write_bytes(blob)
+        _cred_path(email).write_bytes(blob)
         return True
     except Exception:
         return False
 
 
-def _load_credentials() -> dict | None:
-    p = _cred_path()
+def _load_credentials(email: str = "") -> dict | None:
+    p = _cred_path(email)
     if not p.exists():
         return None
     try:
@@ -146,15 +207,15 @@ def _load_credentials() -> dict | None:
         return None
 
 
-def _clear_credentials() -> None:
+def _clear_credentials(email: str = "") -> None:
     try:
-        _cred_path().unlink(missing_ok=True)
+        _cred_path(email).unlink(missing_ok=True)
     except Exception:
         pass
 
 
-def _has_saved_password() -> bool:
-    creds = _load_credentials()
+def _has_saved_password(email: str = "") -> bool:
+    creds = _load_credentials(email)
     return bool(creds and creds.get("password"))
 
 
@@ -187,7 +248,7 @@ def _make_auth(email: str, password: str) -> "trionauth.TrionAuth":
     return trionauth.TrionAuth(
         username=email or "", password=password or "",
         channel=GLYPH_CHANNEL, user_agent=GLYPH_USER_AGENT,
-        cache_path=_auth_cache_path(), macaddr_path=_macaddr_path(),
+        cache_path=_auth_cache_path(email), macaddr_path=_macaddr_path(),
     )
 
 
@@ -310,6 +371,117 @@ def _make_token_provider(op: str):
     return _provider
 
 
+# --- launched-process tracking + auto-relog ---------------------------------
+# We remember which pid was launched for which account. A daemon monitor waits
+# for each process to exit; when auto-relog is on and the process died
+# ABNORMALLY (non-zero exit code), we sign back in and relaunch. A clean exit
+# (code 0 — Alt+F4 / quitting the game) is treated as an intentional close and
+# is NOT relogged. A too-short lifetime is ignored to avoid crash-loop relogs.
+
+_LAUNCH_LOCK = threading.Lock()
+_LAUNCHES: dict = {}  # pid -> {pid, email, server, game_path, region, branch, auto_relog, started_at, relogs}
+_MIN_UPTIME_FOR_RELOG = 25.0  # seconds; a process that dies faster isn't relogged
+
+
+def _wait_for_exit(pid: int):
+    """Block until process `pid` exits; return its exit code (None on error).
+    Windows only — reached only from a launch path, which is Windows-only."""
+    import ctypes
+    from ctypes import wintypes
+    k = ctypes.WinDLL("kernel32", use_last_error=True)
+    SYNCHRONIZE = 0x00100000
+    PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    INFINITE = 0xFFFFFFFF
+    k.OpenProcess.restype = wintypes.HANDLE
+    k.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    k.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    h = k.OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
+    if not h:
+        return None
+    try:
+        k.WaitForSingleObject(h, INFINITE)
+        code = wintypes.DWORD()
+        k.GetExitCodeProcess(h, ctypes.byref(code))
+        return int(code.value)
+    finally:
+        k.CloseHandle(h)
+
+
+def _running_list() -> list:
+    with _LAUNCH_LOCK:
+        items = [dict(i) for i in _LAUNCHES.values()]
+    now = time.time()
+    return [{"pid": i["pid"], "email": i["email"], "label": _display(i["email"]),
+             "server": i["server"], "auto_relog": bool(i.get("auto_relog")),
+             "relogs": i.get("relogs", 0), "uptime": int(now - i["started_at"])} for i in items]
+
+
+def _emit_running() -> None:
+    _emit("running", "update", instances=_running_list())
+
+
+def _track_launch(pid: int, info: dict) -> None:
+    info = dict(info)
+    info["pid"] = pid
+    info.setdefault("started_at", time.time())
+    info.setdefault("relogs", 0)
+    with _LAUNCH_LOCK:
+        _LAUNCHES[pid] = info
+    _emit_running()
+    threading.Thread(target=_monitor_launch, args=(pid,), daemon=True,
+                     name=f"trove-mon-{pid}").start()
+
+
+def _monitor_launch(pid: int) -> None:
+    code = _wait_for_exit(pid)
+    with _LAUNCH_LOCK:
+        info = _LAUNCHES.pop(pid, None)
+    if not info:
+        return
+    uptime = time.time() - info["started_at"]
+    clean_close = code == 0
+    should_relog = (info.get("auto_relog") and not clean_close and code is not None
+                    and uptime >= _MIN_UPTIME_FOR_RELOG)
+    who = _display(info["email"])
+    if not should_relog:
+        if info.get("auto_relog") and clean_close:
+            _emit("running", "closed", pid=pid,
+                  message=f"{who} closed normally — auto-relog skipped.")
+        elif info.get("auto_relog") and uptime < _MIN_UPTIME_FOR_RELOG:
+            _emit("running", "closed", pid=pid,
+                  message=f"{who} exited after {int(uptime)}s — not relogging (too soon).")
+        _emit_running()
+        return
+    _emit("running", "relog", pid=pid,
+          message=f"{who} exited (code {code}) — relogging...")
+    _emit_running()
+    try:
+        _relaunch(info)
+    except Exception as e:  # noqa: BLE001
+        _emit("running", "relog_failed", error=str(e),
+              message=f"Auto-relog for {who} failed: {e}")
+        _emit_running()
+
+
+def _relaunch(info: dict) -> None:
+    from backend.trove_launcher import inject, launch as launch_mod
+    time.sleep(3.0)  # let the anti-cheat/service settle before relaunching
+    creds = _load_credentials(info["email"])
+    pw = creds.get("password", "") if creds else ""
+    auth = _make_auth(info["email"], pw)
+    ticket = auth.get_ticket()  # no token_provider: a background relog can't do 2FA
+    exe = _resolve_exe(Path(info["game_path"]))
+    pid = inject.spawn(exe, ticket, launch_mod.get_auth_server(info["region"]),
+                       parent_process_name=REPARENT_PROCESS, log=_make_logger("relog"))
+    new_info = dict(info)
+    new_info["started_at"] = time.time()
+    new_info["relogs"] = info.get("relogs", 0) + 1
+    _track_launch(pid, new_info)
+    _emit("running", "relogged", pid=pid,
+          message=f"{_display(info['email'])} relogged (pid {pid}).")
+
+
 # ============================================================================
 # Exposed API
 # ============================================================================
@@ -343,17 +515,34 @@ def trove_get_state():
             except Exception:
                 versions[branch] = None
 
+    accounts = []
+    for e in _accounts():
+        try:
+            li = _make_auth(e, "").has_valid_cache()
+        except Exception:
+            li = False
+        accounts.append({"email": e, "name": _alias_for(e), "logged_in": li,
+                         "has_saved_password": _has_saved_password(e)})
+
+    selected = prefs.get("selected_email") or prefs.get("email", "") or (
+        accounts[0]["email"] if accounts else "")
+    sel = next((a for a in accounts if a["email"].lower() == (selected or "").lower()), None)
+
     data = {
-        "email": prefs.get("email", ""),
+        "email": selected,
+        "accounts": accounts,
+        "selected_email": selected,
         "remember_email": bool(prefs.get("remember_email", bool(prefs.get("email")))),
         "remember_password": bool(prefs.get("remember_password")),
-        "has_saved_password": _has_saved_password(),
+        "has_saved_password": sel["has_saved_password"] if sel else _has_saved_password(selected),
+        "auto_relog": bool(prefs.get("auto_relog")),
         "server": prefs.get("server", DEFAULT_SERVER),
         "game_path": game_path or "",
-        "logged_in": logged_in,
+        "logged_in": sel["logged_in"] if sel else logged_in,
         "busy": _BUSY,
         "servers": [{"key": k, "label": lbl} for k, (_b, _r, lbl) in SERVERS.items()],
         "versions": versions,
+        "running": _running_list(),
     }
     return resp(True, data=data)
 
@@ -405,30 +594,34 @@ def trove_repair(game_path, server=DEFAULT_SERVER):
 @eel.expose
 @standardize_response
 def trove_play(game_path, server=DEFAULT_SERVER, email="", password="",
-               remember_email=True, remember_password=False, update_first=True):
+               remember_email=True, remember_password=False, update_first=True,
+               auto_relog=False):
     """Optionally update, then authenticate and launch Trove without Glyph.
 
-    ``remember_password``: on success, store email+password encrypted via DPAPI
-    (see _save_credentials). When set and ``password`` is blank, the saved
-    password is loaded here — it is never sent to the frontend.
+    ``email`` selects which saved account to launch (added to the account list on
+    success). ``remember_password``: on success, store this account's password
+    encrypted via DPAPI (per-account). ``auto_relog``: monitor the launched
+    process and relaunch this account if it exits abnormally (see _monitor_launch).
     """
     branch, region, _label = _resolve_server(server)
     game_dir = _resolve_game_dir(game_path)
     remember_password = bool(remember_password)
+    auto_relog = bool(auto_relog)
     remember_email = bool(remember_email) or remember_password  # password implies email
+    email = (email or "").strip()
     _save_prefs(server=server, game_path=str(game_dir),
                 remember_email=remember_email, remember_password=remember_password,
-                email=(email if remember_email else ""))
-    if not remember_password:
-        _clear_credentials()
+                auto_relog=auto_relog)
+    if email and not remember_password:
+        _clear_credentials(email)
 
     def _work():
         # Lazily imported: these bind kernel32/user32 at import time (Windows only).
         from backend.trove_launcher import inject, launch as launch_mod
 
         use_email, use_pw = email, password
-        if not use_pw and remember_password:
-            creds = _load_credentials()
+        if not use_pw:  # blank password -> fall back to this account's saved one
+            creds = _load_credentials(use_email)
             if creds:
                 use_pw = creds.get("password", "")
                 if not use_email:
@@ -443,10 +636,12 @@ def trove_play(game_path, server=DEFAULT_SERVER, email="", password="",
             raise FileNotFoundError(
                 f"Trove executable not found in {game_dir}. Try Update or Repair first.")
 
-        _emit("play", "authenticating", message="Signing in to your Glyph account...")
+        _emit("play", "authenticating",
+              message=f"Signing in{(' as ' + _display(use_email)) if use_email else ''}...")
         auth = _make_auth(use_email, use_pw)
         ticket = auth.get_ticket(token_provider=_make_token_provider("play"))
-        # Only persist credentials that actually authenticated.
+        # Remember the account (dropdown) and, if asked, its password (per-account).
+        _add_account(use_email)
         if remember_password and use_pw:
             _save_credentials(use_email, use_pw)
 
@@ -455,6 +650,10 @@ def trove_play(game_path, server=DEFAULT_SERVER, email="", password="",
         pid = inject.spawn(exe, ticket, launch_mod.get_auth_server(region),
                            parent_process_name=REPARENT_PROCESS, log=logger)
 
+        # Track this pid <-> account for the running list + auto-relog.
+        _track_launch(pid, {"email": use_email, "server": server, "game_path": str(game_dir),
+                            "region": region, "branch": branch, "auto_relog": auto_relog})
+
         # Give the window a moment to appear, then pull it to the foreground.
         time.sleep(2.0)
         try:
@@ -462,8 +661,8 @@ def trove_play(game_path, server=DEFAULT_SERVER, email="", password="",
         except Exception:
             pass
 
-        _emit("play", "launched", done=True, ok=True, pid=pid,
-              message=f"Trove launched (pid {pid}).")
+        _emit("play", "launched", done=True, ok=True, pid=pid, email=use_email,
+              message=f"Launched {_display(use_email)} (pid {pid}).")
 
     return resp(True, data=_spawn("play", _work))
 
@@ -491,31 +690,99 @@ def trove_cancel_2fa():
 
 @eel.expose
 @standardize_response
-def trove_set_remember(remember_email=True, remember_password=False):
-    """Persist the 'remember' toggles; forget the stored password immediately
-    when password-remember is switched off (email likewise)."""
+def trove_set_remember(remember_email=True, remember_password=False, email=""):
+    """Persist the 'remember' toggles; forget the given account's stored password
+    immediately when password-remember is switched off."""
     remember_email = bool(remember_email) or bool(remember_password)
     remember_password = bool(remember_password)
-    changes = {"remember_email": remember_email, "remember_password": remember_password}
-    if not remember_email:
-        changes["email"] = ""
-    _save_prefs(**changes)
-    if not remember_password:
-        _clear_credentials()
+    email = (email or "").strip() or _load_prefs().get("selected_email", "")
+    _save_prefs(remember_email=remember_email, remember_password=remember_password)
+    if not remember_password and email:
+        _clear_credentials(email)
     return resp(True, data={"remember_email": remember_email,
                             "remember_password": remember_password,
-                            "has_saved_password": _has_saved_password()})
+                            "has_saved_password": _has_saved_password(email)})
 
 
 @eel.expose
 @standardize_response
-def trove_logout():
-    """Drop the cached ticket AND any remembered password so the next launch
-    re-authenticates from scratch."""
+def trove_select_account(email):
+    """Mark an account as the active one; report its cached-login state."""
+    email = (email or "").strip()
+    _save_prefs(selected_email=email, email=email)
+    logged_in = False
     try:
-        _make_auth("", "").logout()
+        logged_in = _make_auth(email, "").has_valid_cache()
+    except Exception:
+        logged_in = False
+    return resp(True, data={"email": email, "logged_in": logged_in,
+                            "has_saved_password": _has_saved_password(email)})
+
+
+@eel.expose
+@standardize_response
+def trove_remove_account(email):
+    """Forget an account entirely: its ticket cache, saved password, and its
+    entry in the dropdown."""
+    email = (email or "").strip()
+    _clear_credentials(email)
+    _set_alias(email, "")  # drop its custom label too
+    try:
+        _make_auth(email, "").logout()
+    except Exception:
+        pass
+    accs = [a for a in _accounts() if a.lower() != email.lower()]
+    prefs = _load_prefs()
+    changes = {"accounts": accs}
+    if (prefs.get("selected_email", "") or "").lower() == email.lower():
+        changes["selected_email"] = accs[0] if accs else ""
+        changes["email"] = accs[0] if accs else ""
+    _save_prefs(**changes)
+    return resp(True, data={"accounts": accs, "selected_email": changes.get("selected_email", "")})
+
+
+@eel.expose
+@standardize_response
+def trove_logout(email=""):
+    """Drop a single account's cached ticket AND remembered password (keeps the
+    account in the dropdown). Defaults to the selected account."""
+    email = (email or "").strip() or _load_prefs().get("selected_email", "")
+    try:
+        _make_auth(email, "").logout()
     except Exception as e:
         return resp(False, error=str(e), code="LOGOUT_FAILED")
-    _clear_credentials()
-    _save_prefs(remember_password=False)
-    return resp(True, data={"logged_in": False, "has_saved_password": False})
+    _clear_credentials(email)
+    return resp(True, data={"email": email, "logged_in": False, "has_saved_password": False})
+
+
+@eel.expose
+@standardize_response
+def trove_rename_account(email, name=""):
+    """Set (or clear, if blank) a custom display label for an account. The email
+    itself is unchanged — only what the dropdown shows."""
+    _set_alias(email, name)
+    return resp(True, data={"email": (email or "").strip(), "name": (name or "").strip()})
+
+
+@eel.expose
+@standardize_response
+def trove_get_running():
+    """The list of currently-tracked launched game processes."""
+    return resp(True, data={"instances": _running_list()})
+
+
+@eel.expose
+@standardize_response
+def trove_set_auto_relog(pid=None, enabled=True):
+    """Toggle auto-relog: for a specific running pid, or (pid omitted) the default
+    applied to future launches."""
+    enabled = bool(enabled)
+    if pid is None:
+        _save_prefs(auto_relog=enabled)
+    else:
+        with _LAUNCH_LOCK:
+            info = _LAUNCHES.get(int(pid))
+            if info:
+                info["auto_relog"] = enabled
+        _emit_running()
+    return resp(True, data={"auto_relog": enabled})

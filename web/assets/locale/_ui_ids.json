@@ -1758,7 +1758,15 @@
 "123456": "trove.twofa_placeholder",
 "Verify": "trove.twofa_submit",
 "No PTS install detected": "trove.no_pts_install",
-"No Live install detected": "trove.no_live_install"
+"No Live install detected": "trove.no_live_install",
+"Add new account": "trove.add_account",
+"Remove account": "trove.remove_account",
+"Remove this account? Its saved password and login session on this PC will be forgotten.": "trove.remove_confirm",
+"Auto-relog": "trove.auto_relog",
+"If the game exits unexpectedly (crash/disconnect), sign back in and relaunch this account automatically. A normal quit (Alt+F4) is left alone.": "trove.auto_relog_tip",
+"Running now": "trove.running",
+"Update or repair the selected install — no login required.": "trove.maintenance_hint",
+"Account renamed.": "trove.renamed"
 },
 "en": {
 "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3582,6 +3590,16 @@
 "trove.twofa_placeholder": "123456",
 "trove.twofa_submit": "Verify",
 "trove.no_pts_install": "No PTS install detected",
-"trove.no_live_install": "No Live install detected"
+"trove.no_live_install": "No Live install detected",
+"trove.account_select": "Account",
+"trove.add_account": "Add new account",
+"trove.remove_account": "Remove account",
+"trove.remove_confirm": "Remove this account? Its saved password and login session on this PC will be forgotten.",
+"trove.auto_relog": "Auto-relog",
+"trove.auto_relog_tip": "If the game exits unexpectedly (crash/disconnect), sign back in and relaunch this account automatically. A normal quit (Alt+F4) is left alone.",
+"trove.running": "Running now",
+"trove.display_name": "Display name",
+"trove.rename": "Rename",
+"trove.renamed": "Account renamed."
 }
 }

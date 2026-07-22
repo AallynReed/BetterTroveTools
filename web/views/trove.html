@@ -35,6 +35,11 @@
                 <input type="checkbox" v-model="updateFirst" :disabled="busy">
                 {{ t('trove.update_before_launch') }}
             </label>
+            <label class="trove-check">
+                <input type="checkbox" v-model="autoRelog" :disabled="busy">
+                {{ t('trove.auto_relog') }}
+                <i class="fa-solid fa-arrows-rotate trove-lock" :title="t('trove.auto_relog_tip')"></i>
+            </label>
         </div>
         <div class="trove-play-config">
             <div class="trove-field">
@@ -58,7 +63,22 @@
         <section class="trove-card">
             <h2 class="trove-card-title"><i class="fa-solid fa-user"></i> {{ t('trove.account') }}</h2>
             <p class="trove-card-hint">{{ t('trove.account_hint') }}</p>
-            <div class="trove-field">
+            <div class="trove-field" v-if="accounts.length">
+                <label>{{ t('trove.account_select') }}</label>
+                <select v-model="selectedEmail" :disabled="busy" @change="onSelectAccount" data-native-select="true">
+                    <option v-for="a in accounts" :key="a.email" :value="a.email">{{ (a.name || a.email) }}{{ a.logged_in ? '  ✓' : '' }}</option>
+                    <option value="__add__">+ {{ t('trove.add_account') }}</option>
+                </select>
+            </div>
+            <div class="trove-field" v-if="!isAdding">
+                <label>{{ t('trove.display_name') }}</label>
+                <div class="trove-rename-row">
+                    <input type="text" v-model="accountLabel" :disabled="busy" :placeholder="selectedEmail" @keyup.enter="renameAccount">
+                    <button class="trove-btn" :disabled="busy" @click="renameAccount"><i class="fa-solid fa-pen"></i> {{ t('trove.rename') }}</button>
+                </div>
+                <span class="trove-card-hint" style="margin:5px 0 0;"><i class="fa-solid fa-envelope"></i> {{ selectedEmail }}</span>
+            </div>
+            <div class="trove-field" v-if="isAdding">
                 <label>{{ t('trove.email') }}</label>
                 <input type="email" v-model="email" :disabled="busy" autocomplete="username"
                        :placeholder="t('trove.email_placeholder')">
@@ -80,7 +100,9 @@
                 </label>
             </div>
             <div class="trove-account-row">
-                <span class="trove-card-hint" style="margin:0;">{{ t('trove.remember_password_tip') }}</span>
+                <button class="trove-btn ghost" v-if="!isAdding" :disabled="busy" @click="removeAccount">
+                    <i class="fa-solid fa-trash"></i> {{ t('trove.remove_account') }}
+                </button>
                 <button class="trove-btn ghost" :disabled="busy || (!loggedIn && !hasSavedPassword)" @click="logout">
                     <i class="fa-solid fa-right-from-bracket"></i> {{ t('trove.sign_out') }}
                 </button>
@@ -105,6 +127,19 @@
             <p class="trove-card-note"><i class="fa-solid fa-circle-info"></i> {{ t('trove.repair_note') }}</p>
         </section>
     </div>
+
+    <!-- Running instances -->
+    <section class="trove-card trove-running-card" v-if="running.length">
+        <h2 class="trove-card-title"><i class="fa-solid fa-gamepad"></i> {{ t('trove.running') }}</h2>
+        <div class="trove-run-row" v-for="inst in running" :key="inst.pid">
+            <span class="trove-run-acct"><i class="fa-solid fa-circle trove-live-dot"></i> {{ inst.label || labelFor(inst.email) }}</span>
+            <span class="trove-run-meta">pid {{ inst.pid }} &middot; {{ inst.uptime }}s<span v-if="inst.relogs"> &middot; {{ inst.relogs }}&times; relog</span></span>
+            <label class="trove-check trove-run-relog">
+                <input type="checkbox" :checked="inst.auto_relog" @change="toggleRelog(inst)">
+                {{ t('trove.auto_relog') }}
+            </label>
+        </div>
+    </section>
 
     <!-- Progress -->
     <section class="trove-card trove-progress-card" v-show="busy || logLines.length">

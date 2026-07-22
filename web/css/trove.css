@@ -138,8 +138,30 @@
     cursor: pointer;
 }
 .trove-check input { accent-color: var(--accent-blue, #5ec6ff); }
+.trove-rename-row { display: flex; gap: 8px; align-items: stretch; }
+.trove-rename-row input { flex: 1; }
+.trove-rename-row .trove-btn { white-space: nowrap; }
 .trove-checks { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 2px 0 12px; }
 .trove-lock { font-size: 0.72rem; color: var(--accent-blue, #5ec6ff); opacity: 0.75; }
+
+/* Running instances */
+.trove-run-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #333);
+    border-radius: 9px;
+    background: var(--bg-dark, #121212);
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+.trove-run-row:last-child { margin-bottom: 0; }
+.trove-run-acct { font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+.trove-live-dot { color: #6ee7a8; font-size: 0.55rem; animation: trove-pulse 1.8s ease-in-out infinite; }
+@keyframes trove-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.trove-run-meta { color: var(--text-muted, #a3adc2); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.trove-run-relog { margin-left: auto; }
 
 /* Grid of account + maintenance */
 .trove-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
