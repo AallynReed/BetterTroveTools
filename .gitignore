@@ -4,6 +4,7 @@
 .venv-linux/
 .ghidra/
 .claude/
+.impeccable/
 venv/
 ENV/
 
@@ -15,6 +16,8 @@ strings/
 tools/
 handoff/
 Better_Trove_Tools.egg-info
+
+*.md
 
 # Ignore Python cache
 __pycache__/

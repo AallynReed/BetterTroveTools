@@ -1406,7 +1406,7 @@ window.initJobQueueUi = function() {
             const progressBar = hasProgress
                 ? `
                     <div class="job-progress-track" role="progressbar" aria-valuenow="${clampedProgress}" aria-valuemin="0" aria-valuemax="100" aria-label="${t('app.job_progress')}">
-                        <div class="job-progress-fill" style="width:${clampedProgress}%;"></div>
+                        <div class="job-progress-fill" style="transform:scaleX(${clampedProgress / 100});"></div>
                         <span class="job-progress-percent">${clampedProgress}%</span>
                     </div>
                 `
@@ -2794,7 +2794,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         for (const key of Array.from(viewCache.keys())) evictView(key);
     };
 
-    window.loadView = async function(target) {
+    const loadViewInternal = async function(target) {
         const loadToken = ++activeViewLoadToken;
         if (activeViewLoadController) {
             try { activeViewLoadController.abort(); } catch {}
@@ -2890,7 +2890,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const { contentHtml, stylesheetHrefs } = extractViewContentAndStyles(html);
             const activeStyleHrefs = await ensureViewStylesLoaded(stylesheetHrefs, activeViewLoadController.signal);
-            if (loadToken !== activeViewLoadToken) return false;
+            if (loadToken !== activeViewLoadToken) {
+                // Superseded after the styles attached but before the commit, so
+                // this build is discarded without ever being cached. Logged
+                // because a bare `return false` here is invisible and makes the
+                // view look like it simply refused to open.
+                console.debug(`[loadView] "${target}" superseded after styles; build discarded`);
+                return false;
+            }
 
             const tpl = document.createElement('template');
             tpl.innerHTML = contentHtml;
@@ -2910,7 +2917,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const viewScripts = (window.BTT_VIEW_SCRIPTS && window.BTT_VIEW_SCRIPTS[target]) || [];
             if (viewScripts.length) {
                 try { await window.loadScripts(viewScripts); } catch (e) { console.error(`Failed to lazy-load scripts for ${target}:`, e); }
-                if (loadToken !== activeViewLoadToken) return false;
+                if (loadToken !== activeViewLoadToken) {
+                    console.debug(`[loadView] "${target}" superseded after scripts`);
+                    return false;
+                }
             }
 
             finishShow();
@@ -2936,6 +2946,36 @@ document.addEventListener('DOMContentLoaded', async () => {
                 activeViewLoadController = null;
             }
         }
+    };
+
+    // Coalesce concurrent loads of the SAME view.
+    //
+    // Without this, a second call for a view that's already loading bumps the
+    // load token and aborts the first call's in-flight fetch. The superseded
+    // build then bails at one of the token checks *after* its stylesheet was
+    // attached but *before* `viewCache.set(...)` — so the work is thrown away,
+    // nothing is cached, and the caller just gets a silent `false`. Double-firing
+    // (a fast double-click, or a programmatic load racing a nav click) therefore
+    // made the view fail to open for no visible reason.
+    //
+    // Loads of a *different* target still supersede as before: that's the
+    // behaviour that keeps a stale view from committing after the user has
+    // navigated away.
+    let inFlightViewTarget = null;
+    let inFlightViewPromise = null;
+
+    window.loadView = function(target) {
+        if (inFlightViewTarget === target && inFlightViewPromise) {
+            return inFlightViewPromise;
+        }
+        const promise = loadViewInternal(target);
+        inFlightViewTarget = target;
+        inFlightViewPromise = promise;
+        promise.then(
+            () => { if (inFlightViewPromise === promise) { inFlightViewTarget = null; inFlightViewPromise = null; } },
+            () => { if (inFlightViewPromise === promise) { inFlightViewTarget = null; inFlightViewPromise = null; } }
+        );
+        return promise;
     };
 
     const showDesktopOnlyPrompt = async () => {

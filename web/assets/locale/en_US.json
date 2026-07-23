@@ -1587,6 +1587,7 @@
         "trove.password_optional": "Cached session — leave blank to reuse",
         "trove.account_select": "Account",
         "trove.display_name": "Display name",
+        "trove.installed_version": "Installed version",
         "trove.reveal_emails": "Reveal email",
         "trove.hide_emails": "Hide email",
         "trove.rename": "Rename",
@@ -4087,6 +4088,7 @@
         "trove.play": "",
         "trove.update_before_launch": "",
         "trove.install": "",
-        "trove.no_installs": ""
+        "trove.no_installs": "",
+        "Your achievements make your personality grow.. literally!": ""
     }
 }

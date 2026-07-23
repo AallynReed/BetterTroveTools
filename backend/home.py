@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import re
+import threading
 import traceback
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
@@ -92,6 +93,40 @@ def _spawn_home_fetch(fetcher):
             raise
 
     return _track_home_task(gevent.spawn(wrapped))
+
+
+def _blocking_io(fn, *args, **kwargs):
+    """Run one blocking call (an HTTP request) on an OS thread, yielding meanwhile.
+
+    gevent is NOT monkeypatched in this app, so a blocking ``requests.get`` inside
+    a greenlet freezes the entire eel hub for the length of the request. While Home
+    loaded its feeds the server could not serve the next view's HTML/CSS, so
+    switching tabs appeared to lock up for seconds.
+
+    Only the socket read moves to a thread; the caller stays a greenlet and keeps
+    polling with ``eel.sleep``, which means (a) the hub stays free, and (b) the
+    surrounding ``eel.*`` bookkeeping and ``task.kill()`` cancellation behave
+    exactly as before. If the greenlet is killed while waiting, GreenletExit
+    propagates here and the orphaned thread's result is simply discarded by the
+    caller's generation guard.
+    """
+    box = {}
+    done = threading.Event()
+
+    def runner():
+        try:
+            box["value"] = fn(*args, **kwargs)
+        except BaseException as exc:  # noqa: BLE001 - re-raised on the greenlet
+            box["error"] = exc
+        finally:
+            done.set()
+
+    threading.Thread(target=runner, name="home-io", daemon=True).start()
+    while not done.is_set():
+        eel.sleep(0.01)
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
 
 
 def _home_fetch_is_active(generation: int) -> bool:
@@ -189,7 +224,7 @@ def _fetch_delve_week(week_id: int, current_week_id: int | None = None):
 
     start, end = _get_delve_week_window(week_id)
     try:
-        response = _DELVE_HTTP.get(
+        response = _blocking_io(_DELVE_HTTP.get, 
             DELVE_ROTATION_URL.format(week_id=week_id),
             timeout=15,
             headers={"User-Agent": "BetterTroveTools/1.0"},
@@ -275,7 +310,7 @@ def get_twitch_streams():
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get(KIWI_API_BASE + "/feeds/twitch", headers=headers, timeout=10)
+            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/twitch", headers=headers, timeout=10)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
@@ -305,7 +340,7 @@ def get_youtube_videos():
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get(KIWI_API_BASE + "/feeds/youtube", headers=headers, timeout=10)
+            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/youtube", headers=headers, timeout=10)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
@@ -335,7 +370,7 @@ def get_bilibili_videos():
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get(KIWI_API_BASE + "/feeds/bilibili", headers=headers, timeout=10)
+            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/bilibili", headers=headers, timeout=10)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
@@ -365,7 +400,7 @@ def get_trovesaurus_events():
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get(KIWI_API_BASE + "/feeds/events", headers=headers, timeout=3)
+            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/events", headers=headers, timeout=3)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
@@ -396,7 +431,7 @@ def get_trove_news():
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get(KIWI_API_BASE + "/feeds/news", headers=headers, timeout=8)
+            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/news", headers=headers, timeout=8)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
@@ -423,7 +458,7 @@ def _kiwi_giveaway_list(path):
     # All three Kiwi giveaway endpoints (ongoing / upcoming / ended) return a
     # bare array of GiveawayPublicView records, not the {items: [...]} wrapper.
     headers = {"User-Agent": "BetterTroveTools/1.0"}
-    response = requests.get(KIWI_API_BASE + path, headers=headers, timeout=8)
+    response = _blocking_io(requests.get, KIWI_API_BASE + path, headers=headers, timeout=8)
     response.raise_for_status()
     payload = response.json()
     return payload if isinstance(payload, list) else (payload.get("items", []) if isinstance(payload, dict) else [])
@@ -487,7 +522,7 @@ def get_player_activity():
             pass
         try:
             headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = requests.get(KIWI_API_BASE + "/activity/current", headers=headers, timeout=6)
+            response = _blocking_io(requests.get, KIWI_API_BASE + "/activity/current", headers=headers, timeout=6)
             response.raise_for_status()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
@@ -597,7 +632,7 @@ def get_chaos_chest_data():
 
     try:
         headers = {"User-Agent": "BetterTroveTools/1.0"}
-        response = requests.get(KIWI_API_BASE + "/rotations/chaos-chest", headers=headers, timeout=3)
+        response = _blocking_io(requests.get, KIWI_API_BASE + "/rotations/chaos-chest", headers=headers, timeout=3)
 
         if req_id:
             eel.remove_external_request(req_id, response.status_code == 200)()

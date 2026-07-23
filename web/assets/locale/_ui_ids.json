@@ -1768,7 +1768,8 @@
 "Update or repair the selected install — no login required.": "trove.maintenance_hint",
 "Account renamed.": "trove.renamed",
 "Reveal email": "trove.reveal_emails",
-"Hide email": "trove.hide_emails"
+"Hide email": "trove.hide_emails",
+"Installed version": "trove.installed_version"
 },
 "en": {
 "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3604,6 +3605,7 @@
 "trove.rename": "Rename",
 "trove.renamed": "Account renamed.",
 "trove.reveal_emails": "Reveal email",
-"trove.hide_emails": "Hide email"
+"trove.hide_emails": "Hide email",
+"trove.installed_version": "Installed version"
 }
 }

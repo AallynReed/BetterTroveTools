@@ -1134,8 +1134,31 @@ document.addEventListener('home_loaded', () => {
                 }
             };
 
-            const refreshAllData = async ({ refreshOfficialNews = false } = {}) => {
+            // Freshness window for re-entering Home. Returning to the tab refetches
+            // all 8 feeds, so hopping Home -> another tab -> Home issued 8 upstream
+            // requests *per visit* — which is how the Kiwi API's rate limit (HTTP
+            // 429, seen as feed tiles endlessly reloading) gets tripped. The 30s
+            // interval below already keeps an open Home tab current, so matching it
+            // here is enough. Stamped at the START of a refresh so two refreshes
+            // can't overlap either.
+            const HOME_REFRESH_TTL_MS = 30000;
+            // Kept on `window`, not in this closure: setup() can run more than once
+            // over a session (rebuild after eviction, language change), and each
+            // extra scope keeps its own `home_shown` listener. A per-closure
+            // timestamp starts at 0 in every new scope, so each one would fire its
+            // own full refresh and the throttle would leak. One shared stamp makes
+            // the window authoritative no matter how many scopes are listening.
+            const homeDataIsFresh = () => (Date.now() - (window.__homeLastRefreshAt || 0)) < HOME_REFRESH_TTL_MS;
+            const stampHomeRefresh = () => { window.__homeLastRefreshAt = Date.now(); };
+
+            const refreshAllData = async ({ refreshOfficialNews = false, force = false } = {}) => {
                 if (isDisposed) return;
+                // Throttled here rather than at the call sites so EVERY path is
+                // covered (tab re-entry, interval tick, visibility snap-back).
+                // `force` is for the events that must always refetch: first mount,
+                // server reset, and a language change.
+                if (!force && homeDataIsFresh()) return;
+                stampHomeRefresh();
                 isChinese.value = window.I18nManager?.currentLocale === 'zh_CN';
                 const sets = window.AppSettings
                     ? await window.AppSettings.load(true)
@@ -1597,7 +1620,8 @@ document.addEventListener('home_loaded', () => {
                 const msUntil = Math.max(1000, ((nextReset - now) * 1000) + 2000);
 
                 resetTimer = setTimeout(async () => {
-                    await refreshAllData();
+                    // Server reset: the rotations genuinely changed, always refetch.
+                    await refreshAllData({ force: true });
                     if (calendarModal.show) {
                         await loadYearlyCalendar();
                     }
@@ -1627,6 +1651,9 @@ document.addEventListener('home_loaded', () => {
             const handleHomeShown = () => {
                 isDisposed = false;
                 resetHomeAbortController();
+                // Throttled inside refreshAllData: a re-entry within the freshness
+                // window is a no-op, which is what stops tab-hopping from hammering
+                // the API.
                 refreshAllData({ refreshOfficialNews: true });
             };
 
@@ -1657,7 +1684,7 @@ document.addEventListener('home_loaded', () => {
             onMounted(() => {
                 isDisposed = false;
                 resetHomeAbortController();
-                refreshAllData({ refreshOfficialNews: true });
+                refreshAllData({ refreshOfficialNews: true, force: true });
                 refreshInterval = setInterval(() => {
                     if (isHidden()) { pendingRefreshOnVisible = true; return; }
                     refreshAllData();
@@ -1673,7 +1700,7 @@ document.addEventListener('home_loaded', () => {
                 scheduleResetRefresh();
 
                 window._homeLangListener = (e) => {
-                    if (e.target && e.target.id === 'global-language-select') setTimeout(() => refreshAllData({ refreshOfficialNews: false }), 150);
+                    if (e.target && e.target.id === 'global-language-select') setTimeout(() => refreshAllData({ refreshOfficialNews: false, force: true }), 150);
                 };
                 document.addEventListener('change', window._homeLangListener);
                 document.addEventListener('home_unloading', handleHomeUnloading);

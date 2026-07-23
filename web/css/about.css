@@ -53,8 +53,8 @@
 }
 
 .about-section {
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
+    background: var(--bg-panel, #1e1e1e);
+    border: 1px solid var(--border-color, #333333);
     border-radius: 12px;
     padding: 30px;
     display: flex;
@@ -210,13 +210,13 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: var(--z-modal, 205000);
     animation: fadeIn 0.2s ease;
 }
 
 .modal-content {
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
+    background: var(--bg-panel, #1e1e1e);
+    border: 1px solid var(--border-color, #333333);
     border-radius: 12px;
     width: 80%;
     max-width: 800px;
@@ -229,7 +229,7 @@
 
 .modal-header {
     padding: 20px;
-    border-bottom: 1px solid var(--border-color, #444c5e);
+    border-bottom: 1px solid var(--border-color, #333333);
     display: flex;
     justify-content: space-between;
     align-items: center;

@@ -63,6 +63,7 @@
     --glass-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
     --z-dropdown: 200000;
     --z-dropdown-menu: 200001;
+    --z-modal: 205000;
     --z-toast: 210000;
 }
 
@@ -571,7 +572,7 @@ body.app-update-active #network-tracker-vue-app {
 }
 .custom-select-trigger {
     background: rgba(0,0,0,0.3);
-    border: 1px solid var(--border-color, #444c5e);
+    border: 1px solid var(--border-color, #333333);
     color: #fff;
     padding: 8px 12px;
     border-radius: 6px;
@@ -609,7 +610,7 @@ body.app-update-active #network-tracker-vue-app {
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--bg-panel, #1d232b);
+    background: var(--bg-panel, #1e1e1e);
     border: 1px solid var(--accent-blue, #5ec6ff);
     border-radius: 6px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -786,8 +787,8 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .app-modal-card {
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
+    background: var(--bg-panel, #1e1e1e);
+    border: 1px solid var(--border-color, #333333);
     border-radius: 12px;
     box-shadow: 0 15px 40px rgba(0,0,0,0.6);
     overflow: hidden;
@@ -797,7 +798,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 
 .app-modal-header {
     padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color, #444c5e);
+    border-bottom: 1px solid var(--border-color, #333333);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -880,7 +881,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .command-palette {
-    background: var(--bg-panel, #1d232b);
+    background: var(--bg-panel, #1e1e1e);
     border: 1px solid var(--accent-blue, #5ec6ff);
     width: 90%;
     max-width: 600px;
@@ -896,7 +897,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    border-bottom: 1px solid var(--border-color, #444c5e);
+    border-bottom: 1px solid var(--border-color, #333333);
 }
 
 .command-palette-icon {
@@ -930,7 +931,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 
 .command-palette-footer {
     padding: 10px 14px;
-    border-top: 1px solid var(--border-color, #444c5e);
+    border-top: 1px solid var(--border-color, #333333);
 }
 
 .panel-card {
@@ -1215,7 +1216,6 @@ html.btt-native .command-palette-footer { display: none !important; }
     background: rgba(0,0,0,0.3);
     border-color: rgba(255,255,255,0.28);
     color: #fff;
-    outline: none;
 }
 
 .sidebar-quick-open-title {
@@ -1249,8 +1249,8 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .server-time-modal-card {
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
+    background: var(--bg-panel, #1e1e1e);
+    border: 1px solid var(--border-color, #333333);
     border-radius: 14px;
     width: min(94vw, 920px);
     max-height: 84vh;
@@ -1263,7 +1263,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 .server-time-modal-header {
     padding: 16px 18px;
-    border-bottom: 1px solid var(--border-color, #444c5e);
+    border-bottom: 1px solid var(--border-color, #333333);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1457,7 +1457,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-input {
     width: 100%;
     background: rgba(0,0,0,0.3);
-    border: 1px solid var(--border-color, #444c5e);
+    border: 1px solid var(--border-color, #333333);
     color: #fff;
     padding: 10px 12px;
     border-radius: 8px;
@@ -1566,7 +1566,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border-color, #444c5e) transparent;
+    scrollbar-color: var(--border-color, #333333) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -1580,7 +1580,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border-color, #444c5e);
+    background: var(--border-color, #333333);
     border-radius: 4px;
 }
 
@@ -1593,15 +1593,15 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .flatpickr-calendar {
-    background: var(--bg-panel, #1d232b) !important;
-    border: 1px solid var(--border-color, #444c5e) !important;
+    background: var(--bg-panel, #1e1e1e) !important;
+    border: 1px solid var(--border-color, #333333) !important;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
     z-index: var(--z-dropdown) !important;
 }
-.flatpickr-calendar.arrowTop:after { border-bottom-color: var(--bg-panel, #1d232b) !important; }
-.flatpickr-calendar.arrowTop:before { border-bottom-color: var(--border-color, #444c5e) !important; }
-.flatpickr-calendar.arrowBottom:after { border-top-color: var(--bg-panel, #1d232b) !important; }
-.flatpickr-calendar.arrowBottom:before { border-top-color: var(--border-color, #444c5e) !important; }
+.flatpickr-calendar.arrowTop:after { border-bottom-color: var(--bg-panel, #1e1e1e) !important; }
+.flatpickr-calendar.arrowTop:before { border-bottom-color: var(--border-color, #333333) !important; }
+.flatpickr-calendar.arrowBottom:after { border-top-color: var(--bg-panel, #1e1e1e) !important; }
+.flatpickr-calendar.arrowBottom:before { border-top-color: var(--border-color, #333333) !important; }
 
 .flatpickr-months .flatpickr-month,
 .flatpickr-weekdays,
@@ -1628,7 +1628,7 @@ span.flatpickr-weekday {
     border-color: transparent !important;
 }
 
-.flatpickr-time { border-top: 1px solid var(--border-color, #444c5e) !important; }
+.flatpickr-time { border-top: 1px solid var(--border-color, #333333) !important; }
 .flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus {
     background: rgba(255, 255, 255, 0.05) !important;
 }
@@ -1719,7 +1719,7 @@ span.flatpickr-weekday {
 
 .context-menu {
     position: fixed;
-    background: var(--bg-panel, #1d232b);
+    background: var(--bg-panel, #1e1e1e);
     border: 1px solid var(--accent-blue, #5ec6ff);
     border-radius: 6px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.7);
@@ -1740,7 +1740,7 @@ span.flatpickr-weekday {
 .context-menu-item.danger:hover { background: rgba(255, 85, 85, 0.1); color: #ff5555; }
 .context-menu-separator {
     height: 1px;
-    background: var(--border-color, #444c5e);
+    background: var(--border-color, #333333);
     margin: 4px 0;
 }
 
@@ -1762,7 +1762,7 @@ span.flatpickr-weekday {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.7);
-    z-index: 10050;
+    z-index: var(--z-modal, 205000);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1810,7 +1810,7 @@ span.flatpickr-weekday {
     background:
         radial-gradient(120% 120% at 0% 0%, rgba(var(--accent-rgb), 0.18), transparent 55%),
         linear-gradient(160deg, rgba(255,255,255,0.06), rgba(5,10,18,0.92)),
-        var(--bg-panel, #1d232b);
+        var(--bg-panel, #1e1e1e);
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
@@ -1923,8 +1923,8 @@ span.flatpickr-weekday {
     align-items: center;
     justify-content: center;
     color: var(--text-main, #fff);
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
+    background: var(--bg-panel, #1e1e1e);
+    border: 1px solid var(--border-color, #333333);
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
     cursor: pointer;
 }
@@ -2034,9 +2034,13 @@ span.flatpickr-weekday {
 
 .job-progress-fill {
     height: 100%;
-    width: 0%;
+    /* Scaled, not resized: `width` is a layout property and thrashes every
+       frame (DESIGN.md > Do's and Don'ts). Set via transform:scaleX() in JS. */
+    width: 100%;
+    transform-origin: left center;
+    transform: scaleX(0);
     background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.75), var(--accent-blue));
-    transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .job-progress-percent {
@@ -2238,7 +2242,18 @@ span.flatpickr-weekday {
     color: #fff;
 }
 
-/* Concise cross-app density layer (scoped to dynamic views only) */
+/* =========================================================================
+   CROSS-APP DENSITY LAYER — the single source of truth (see DESIGN.md > Layout).
+
+   This replaces three overlapping layers that used to silently override each
+   other ("Concise cross-app density layer" 20px/16px/36px, "Concise force
+   layer" 14px/34px/8px, and "Unified layout constraints" 14px/8px). The values
+   below are the ones that actually rendered, now stated once.
+
+   DO NOT add a fourth layer. Change the value here.
+   ========================================================================= */
+
+/* View roots. */
 #view-container :is(
     .home-container,
     .allies-container,
@@ -2250,11 +2265,13 @@ span.flatpickr-weekday {
     .modder-tools-container,
     .gem-sim-container,
     .about-view-container,
+    .trove-container,
     .view-container
 ) {
-    padding: 20px !important;
+    padding: 14px !important;
 }
 
+/* Section / page headers. */
 #view-container :is(
     .home-header,
     .page-header,
@@ -2265,10 +2282,12 @@ span.flatpickr-weekday {
     .header,
     .section-header
 ) {
-    margin-bottom: 16px !important;
-    padding-bottom: 10px;
+    margin-top: 12px !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
 }
 
+/* Surface radius (DESIGN.md > Shapes: 10px = surface). */
 #view-container :is(
     .tool-panel,
     .settings-section,
@@ -2281,11 +2300,14 @@ span.flatpickr-weekday {
     .card,
     .about-section,
     .placeholder-box,
+    .trove-card,
+    .trove-hero,
     .results-panel
 ) {
     border-radius: 10px !important;
 }
 
+/* Surface padding. */
 #view-container :is(
     .tool-panel,
     .settings-section,
@@ -2295,25 +2317,70 @@ span.flatpickr-weekday {
     .community-panel,
     .card,
     .about-section,
-    .results-panel
+    .trove-card,
+    .results-panel,
+    .batch-actions-bar,
+    .config-section
 ) {
-    padding: 16px !important;
+    padding: 14px !important;
 }
 
+/* Surface rhythm. Deliberately NOT applied to .trove-card / .trove-hero: those
+   live in a gap-based grid, where a margin would compound with the gap. */
+#view-container :is(
+    .tool-panel,
+    .settings-section,
+    .search-filter-bar,
+    .search-container,
+    .search-section,
+    .community-panel,
+    .card,
+    .about-section,
+    .results-panel,
+    .results-toolbar,
+    .pagination-controls,
+    .file-controls
+) {
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+}
+
+/* Control rows / toolbars. */
 #view-container :is(
     .file-controls,
     .results-toolbar,
     .calendar-toolbar,
     .chart-toolbar,
+    .chart-toolbar-hints,
     .pagination-controls,
     .tabs-header,
     .media-tabs,
     .build-share-controls,
-    .server-time-discord-row
+    .server-time-discord-row,
+    .search-container,
+    .search-filter-bar,
+    .search-bar-wrapper,
+    .filters-row,
+    .input-row,
+    .form-row,
+    .settings-action-row
 ) {
     gap: 10px !important;
 }
 
+/* Card grids. */
+#view-container :is(
+    .allies-grid,
+    .mod-grid,
+    #ts-mod-grid,
+    .gem-builds-grid,
+    .mf-calculator-grid,
+    .mastery-stats-grid
+) {
+    gap: 12px !important;
+}
+
+/* Control radius (DESIGN.md > Shapes: 8px = control). */
 #view-container :is(
     .primary-btn,
     .secondary-btn,
@@ -2329,6 +2396,7 @@ span.flatpickr-weekday {
     border-radius: 8px;
 }
 
+/* Control height. */
 #view-container :is(
     .primary-btn,
     .secondary-btn,
@@ -2340,17 +2408,18 @@ span.flatpickr-weekday {
     select,
     textarea
 ) {
-    min-height: 36px;
+    min-height: 34px !important;
 }
 
+/* Table cells. */
 #view-container :is(
     .btt-table th,
     .btt-table td,
     th,
     td
 ) {
-    padding-top: 9px !important;
-    padding-bottom: 9px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
 }
 
 #view-container :is(h1, h2, h3) {
@@ -2543,102 +2612,8 @@ span.flatpickr-weekday {
     }
 }
 
-/* Concise force layer for inline/high-specificity module styles */
-#view-container :is(
-    .section-header,
-    .home-header,
-    .page-header,
-    .settings-header,
-    .star-chart-header,
-    .file-manager-header,
-    .modder-tools-header,
-    .header
-) {
-    margin-top: 12px !important;
-    margin-bottom: 12px !important;
-    padding-bottom: 8px !important;
-}
-
-#view-container :is(
-    .file-controls,
-    .search-container,
-    .search-filter-bar,
-    .search-bar-wrapper,
-    .filters-row,
-    .input-row,
-    .form-row,
-    .results-toolbar,
-    .pagination-controls,
-    .settings-action-row,
-    .media-tabs,
-    .chart-toolbar,
-    .chart-toolbar-hints,
-    .build-share-controls
-) {
-    gap: 10px !important;
-}
-
-#view-container :is(
-    .search-section,
-    .search-filter-bar,
-    .search-container,
-    .results-toolbar,
-    .pagination-controls,
-    .file-controls,
-    .community-panel,
-    .tool-panel,
-    .settings-section,
-    .card,
-    .about-section,
-    .results-panel
-) {
-    margin-top: 12px !important;
-    margin-bottom: 12px !important;
-}
-
-#view-container :is(
-    .tool-panel,
-    .settings-section,
-    .search-filter-bar,
-    .search-container,
-    .community-panel,
-    .card,
-    .about-section,
-    .results-panel,
-    .batch-actions-bar,
-    .config-section
-) {
-    padding: 14px !important;
-}
-
-#view-container :is(
-    .primary-btn,
-    .secondary-btn,
-    .danger-btn,
-    .custom-select-trigger,
-    .custom-dropdown,
-    input,
-    select,
-    textarea
-) {
-    min-height: 34px !important;
-}
-
-#view-container :is(
-    .allies-grid,
-    .mod-grid,
-    #ts-mod-grid,
-    .gem-builds-grid,
-    .mf-calculator-grid,
-    .mastery-stats-grid
-) {
-    gap: 12px !important;
-}
-
-#view-container :is(.btt-table th, .btt-table td, th, td) {
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
-}
+/* (The "Concise force layer" that used to live here has been folded into the
+   single cross-app density layer above. Don't reintroduce it.) */
 
 /* Global glassmorphism layer */
 #view-container :is(
@@ -2765,6 +2740,8 @@ input[type="range"]::-ms-fill-lower {
     min-height: 0;
 }
 
+/* Structural only — scrolling lives inside each view, not the shell.
+   Density (padding/margin) is set once in the cross-app density layer above. */
 #view-container :is(
     .home-container,
     .allies-container,
@@ -2776,18 +2753,12 @@ input[type="range"]::-ms-fill-lower {
     .gem-sim-container,
     .about-view-container,
     .calculators-container,
+    .trove-container,
     .view-container
 ) {
     height: 100%;
     min-height: 0;
     overflow: auto;
-    padding: 14px !important;
-}
-
-#view-container :is(.tool-panel, .card, .results-panel, .settings-section, .search-container, .search-filter-bar) {
-    margin-top: 8px !important;
-    margin-bottom: 8px !important;
-    padding: 14px !important;
 }
 
 /* =====================================================================
@@ -3021,7 +2992,7 @@ input[type="range"]::-ms-fill-lower {
     font-size: 0.9rem;
     line-height: 1.35;
 }
-.feedback-status-info    { background: rgba(94, 198, 255, 0.12); color: var(--accent-blue, #5ec6ff); }
+.feedback-status-info    { background: rgba(var(--accent-rgb, 94, 198, 255), 0.12); color: var(--accent-blue, #5ec6ff); }
 .feedback-status-success { background: rgba( 76, 217, 100, 0.14); color: #4cd964; }
 .feedback-status-error   { background: rgba(255,  85,  85, 0.15); color: #ff8a8a; }
 .feedback-actions {
@@ -3119,5 +3090,45 @@ input[type="range"]::-ms-fill-lower {
    when running inside Capacitor — flip which set of helper text is shown. */
 .feedback-modal-card.feedback-no-attach .feedback-attach-only { display: none !important; }
 .feedback-modal-card:not(.feedback-no-attach) .feedback-android-only { display: none !important; }
+
+
+/* =========================================================================
+   Design-system floor — see DESIGN.md.
+   Deliberately LAST in this file so it wins source-order ties against the
+   per-component `outline: none` declarations further up.
+   ========================================================================= */
+
+/* Keyboard focus is not optional (DESIGN.md > Components > Buttons).
+   `:focus-visible` only, so clicking with a mouse never draws a ring. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible,
+.nav-btn:focus-visible,
+.tab-btn:focus-visible,
+.icon-btn:focus-visible,
+.custom-select-trigger:focus-visible,
+.custom-select-option:focus-visible {
+    outline: 2px solid var(--accent-blue, #5ec6ff);
+    outline-offset: 2px;
+}
+
+/* Reduced motion. One app-wide guard instead of per-stylesheet blocks: it
+   neutralises every transition and animation (including the pulses, skeleton
+   sweep and fades defined in the view stylesheets) while leaving the UI fully
+   functional — nothing here changes layout, display or visibility. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
 
 
