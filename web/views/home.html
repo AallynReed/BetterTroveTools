@@ -387,7 +387,7 @@
                             </div>
 
                             <div v-if="chaosChestCard" class="merchant-card merchant-card-chaos" :class="{ 'hover-card': chaosChestCard.identifier, 'is-clickable': chaosChestCard.identifier }" :title="chaosChestCard.identifier ? t('home.name_click_to_view_on_trovesaurus').replace('{name}', t(chaosChestCard.name)) : ''" @click="chaosChestCard.identifier && openUrl(`https://trovesaurus.com/${chaosChestCard.identifier}`)">
-                                <div class="merchant-icon merchant-icon-plain"><img :src="chaosChestCard.iconUrl" class="merchant-item-image" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
+                                <div class="merchant-icon merchant-icon-plain"><img :src="chaosChestCard.iconUrl" class="merchant-item-image" alt="" @error="$event.target.src='https://trovesaurus.com/data/catalog/item_chaos_box.png'"></div>
                                 <div class="merchant-info merchant-info-fill">
                                     <div class="merchant-name merchant-name-chaos">{{ t(chaosChestCard.name) }} <i v-if="chaosChestCard.unknown" class="fa-solid fa-triangle-exclamation merchant-warning-icon" :title="t('home.we_dont_know_the_item_yet')"></i></div>
                                     <div class="merchant-time"><i class="fa-regular fa-clock"></i> <span v-html="chaosChestCard.timeHtml"></span></div>
@@ -467,7 +467,7 @@
     <div class="modal-overlay" v-show="giveawayModal.show" @click.self="giveawayModal.show = false">
         <div class="modal-content giveaway-modal-content">
             <div class="modal-header">
-                <h3><i class="fa-solid fa-gift" style="color: #ffd166;"></i> <span>{{ t('home.giveaways.title') }}</span></h3>
+                <h3><i class="fa-solid fa-gift" style="color: var(--warning);"></i> <span>{{ t('home.giveaways.title') }}</span></h3>
                 <button class="modal-close" @click="giveawayModal.show = false"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
@@ -638,7 +638,7 @@
                     <div class="calendar-today-line" :style="{ left: (calendarData.todayPx + 140) + 'px' }"></div>
 
                     <div class="calendar-timeline-header" :style="{ width: calendarData.totalWidth + 'px', flexDirection: 'column' }">
-                        <div class="calendar-months-row" style="display: flex; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
+                        <div class="calendar-months-row" style="display: flex; border-bottom: 1px solid var(--border-color); background: var(--bg-dark);">
                             <div class="calendar-track-label" style="min-width: 140px; width: 140px; border-bottom: none; box-shadow: none; border-right: 1px solid var(--border-color); background: var(--bg-panel); z-index: 7;"></div>
                             <div v-for="(m, i) in calendarData.months" :key="'m'+i" class="calendar-month-col" :style="{ width: (m.days * 40) + 'px' }">
                                 <div class="calendar-month-label" style="left: 140px;">{{ m.name }} {{ m.year }}</div>
@@ -657,7 +657,7 @@
                     <div class="calendar-tracks" :style="{ width: calendarData.totalWidth + 'px' }">
                         <div v-for="track in filteredCalendarTracks" :key="track.id" class="calendar-track" style="width: 100%;">
                             <div class="calendar-track-label" style="min-width: 140px; width: 140px;">
-                                <i class="fa-solid" :class="track.icon" style="margin-right: 8px; opacity: 0.8;"></i> {{ t(track.name) }}
+                                <i class="fa-solid" :class="track.icon" style="margin-right: var(--t-2); opacity: 0.8;"></i> {{ t(track.name) }}
                             </div>
                             <div v-for="(ev, j) in track.events" :key="j" class="calendar-event" :class="`event-${ev.colorClass}`" :style="ev.style" :data-tooltip="ev.tooltip" v-html="ev.htmlContent">
                             </div>
@@ -677,8 +677,8 @@
             <div style="display: flex; align-items: center;">
                 <h3 style="margin: 0;" v-html="rotationModal.titleHtml"></h3>
                 <template v-if="rotationModal.type === 'd15'">
-                    <button @click="rotationModal.d15ShowFinalName = !rotationModal.d15ShowFinalName" :style="{ marginLeft: '10px', background: rotationModal.d15ShowFinalName ? 'rgba(255, 202, 40, 0.18)' : 'rgba(0,0,0,0.3)', border: rotationModal.d15ShowFinalName ? '1px solid rgba(255, 202, 40, 0.75)' : '1px solid rgba(255,255,255,0.1)', color: rotationModal.d15ShowFinalName ? '#ffca28' : 'var(--text-muted)', boxShadow: rotationModal.d15ShowFinalName ? '0 0 12px rgba(255, 202, 40, 0.35), inset 0 0 10px rgba(255, 202, 40, 0.12)' : 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer', fontSize: '0.6em', verticalAlign: 'middle', transition: 'all 0.2s' }" :title="t('home.toggle_biome_names')"><i class="fa-solid fa-font"></i></button>
-                    <button @click="rotationModal.d15AllExpanded = !rotationModal.d15AllExpanded" style="margin-left: 5px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 0.6em; vertical-align: middle; transition: all 0.2s;" onmouseover="this.style.color='#fff'; this.style.borderColor='rgba(255,255,255,0.3)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='rgba(255,255,255,0.1)'" :title="t('home.expand_collapse_all')"><i class="fa-solid" :class="rotationModal.d15AllExpanded ? 'fa-compress' : 'fa-expand'"></i></button>
+                    <button @click="rotationModal.d15ShowFinalName = !rotationModal.d15ShowFinalName" :style="{ marginLeft: 'var(--control-gap)', background: rotationModal.d15ShowFinalName ? 'rgba(var(--warning-rgb), 0.18)' : 'var(--bg-dark)', border: rotationModal.d15ShowFinalName ? '1px solid rgba(var(--warning-rgb), 0.75)' : '1px solid var(--border-color)', color: rotationModal.d15ShowFinalName ? 'var(--warning-ink)' : 'var(--text-muted)', borderRadius: 'var(--radius-control)', padding: 'var(--t-1) var(--t-2)', cursor: 'pointer', fontSize: 'var(--t-fs-micro)', verticalAlign: 'middle', transition: 'background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease)' }" :title="t('home.toggle_biome_names')"><i class="fa-solid fa-font"></i></button>
+                    <button @click="rotationModal.d15AllExpanded = !rotationModal.d15AllExpanded" style="margin-left: var(--t-2); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: var(--radius-control); padding: var(--t-1) var(--t-2); cursor: pointer; font-size: var(--t-fs-micro); vertical-align: middle; transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);" onmouseover="this.style.color='var(--text-main)'; this.style.borderColor='rgba(var(--accent-rgb), 0.4)'" onmouseout="this.style.color='var(--text-muted)'; this.style.borderColor='var(--border-color)'" :title="t('home.expand_collapse_all')"><i class="fa-solid" :class="rotationModal.d15AllExpanded ? 'fa-compress' : 'fa-expand'"></i></button>
                 </template>
             </div>
             <button class="modal-close" @click="rotationModal.show = false"><i class="fa-solid fa-xmark"></i></button>
@@ -687,9 +687,9 @@
                 <template v-if="rotationModal.type === 'list'">
                     <div v-for="(row, idx) in rotationModal.list" :key="idx" class="modal-rotation-row" :style="row.style">
                         <div class="modal-time-col" :style="row.timeColStyle">
-                            <div style="font-weight: bold;" :style="{ color: row.isNext ? rotationModal.color : '#fff' }">{{ row.titleLabel }}</div>
-                            <div v-if="row.isActive" style="font-size: 0.85em;" :style="{ color: rotationModal.color }">{{ t('home.active_now') }}</div>
-                            <div v-else style="font-size: 0.85em; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> <span v-html="row.timeText"></span></div>
+                            <div style="font-weight: bold;" :style="{ color: row.isNext ? rotationModal.color : 'var(--text-main)' }">{{ row.titleLabel }}</div>
+                            <div v-if="row.isActive" style="font-size: var(--t-fs-label);" :style="{ color: rotationModal.color }">{{ t('home.active_now') }}</div>
+                            <div v-else style="font-size: var(--t-fs-label); color: var(--text-muted);"><i class="fa-regular fa-clock"></i> <span v-html="row.timeText"></span></div>
                         </div>
                         <div class="modal-biomes-col" :style="row.contentColStyle" v-html="row.contentHtml"></div>
                     </div>
@@ -709,15 +709,15 @@
                                 <span style="white-space: nowrap;">{{ row.label }}</span>
                             </div>
 
-                            <div v-for="(slot, i) in row.slots" :key="'d15s'+i" class="schedule-slot" :style="{ visibility: slot.empty ? 'hidden' : 'visible', opacity: (slot.hasPassed && r === 0) ? '0.5' : '1', borderColor: slot.isCurrent ? rotationModal.color : '', boxShadow: slot.isCurrent ? `inset 0 0 10px rgba(0,0,0,0.5), 0 0 8px -2px ${rotationModal.color}` : '', cursor: 'pointer' }" @click="slot.expanded = !slot.expanded">
+                            <div v-for="(slot, i) in row.slots" :key="'d15s'+i" class="schedule-slot" :style="{ visibility: slot.empty ? 'hidden' : 'visible', opacity: (slot.hasPassed && r === 0) ? '0.5' : '1', borderColor: slot.isCurrent ? rotationModal.color : '', cursor: 'pointer' }" @click="slot.expanded = !slot.expanded">
                                 <template v-if="!slot.empty">
-                                    <div class="schedule-biomes-collapsed" :style="{ display: (slot.expanded || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'none' : 'flex', flexDirection: 'row', gap: '6px' }">
-                                        <span v-for="(b, bIdx) in slot.rot.biomes" :key="'cb'+bIdx" class="biome-pill modal-pill" :title="t('home.biome_name').replace('{name}', rotationModal.d15ShowFinalName ? t(b.name) : t(b.final_name))" style="padding: 4px; flex: 1; justify-content: center;">
+                                    <div class="schedule-biomes-collapsed" :style="{ display: (slot.expanded || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'none' : 'flex', flexDirection: 'row', gap: 'var(--t-1)' }">
+                                        <span v-for="(b, bIdx) in slot.rot.biomes" :key="'cb'+bIdx" class="biome-pill modal-pill" :title="t('home.biome_name').replace('{name}', rotationModal.d15ShowFinalName ? t(b.name) : t(b.final_name))" style="padding: var(--t-1); flex: 1; justify-content: center;">
                                             <img :src="`/assets/images/biomes/${b.icon}.png`" @error="$event.target.style.display='none'" alt="" style="width: 16px; height: 16px;">
                                         </span>
                                     </div>
-                                    <div class="schedule-biomes-expanded" :style="{ display: (slot.expanded || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'flex' : 'none', flexDirection: 'column', gap: '4px' }">
-                                        <span v-for="(b, bIdx) in slot.rot.biomes" :key="'b'+bIdx" class="biome-pill modal-pill" :title="t('home.biome_name').replace('{name}', rotationModal.d15ShowFinalName ? t(b.name) : t(b.final_name))" style="justify-content: flex-start; padding: 4px 8px; font-size: 0.7em;">
+                                    <div class="schedule-biomes-expanded" :style="{ display: (slot.expanded || rotationModal.d15Cols[i].expanded || row.expanded || rotationModal.d15AllExpanded) ? 'flex' : 'none', flexDirection: 'column', gap: 'var(--t-1)' }">
+                                        <span v-for="(b, bIdx) in slot.rot.biomes" :key="'b'+bIdx" class="biome-pill modal-pill" :title="t('home.biome_name').replace('{name}', rotationModal.d15ShowFinalName ? t(b.name) : t(b.final_name))" style="justify-content: flex-start; padding: var(--t-1) var(--t-2); font-size: var(--t-fs-label);">
                                             <img :src="`/assets/images/biomes/${b.icon}.png`" @error="$event.target.style.display='none'" alt="" style="width: 14px; height: 14px;">
                                             <span class="biome-name-text">{{ rotationModal.d15ShowFinalName ? t(b.name) : t(b.final_name) }}</span>
                                         </span>

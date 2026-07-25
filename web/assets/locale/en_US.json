@@ -1844,7 +1844,12 @@
         "notifications.event.trove_news": "Trove news & patch notes",
         "notifications.event.game_update": "New game update",
         "notifications.event.giveaways": "New giveaways",
-        "notifications.event.activity": "Daily activity snapshot"
+        "notifications.event.activity": "Daily activity snapshot",
+        "app.collapse_sidebar": "Collapse sidebar",
+        "app.open_menu": "Open menu",
+        "app.command_palette": "Command palette",
+        "app.commands": "Commands",
+        "app.search_commands_or_jump_to_a_tool": "Search commands or jump to a tool..."
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",
@@ -4089,6 +4094,7 @@
         "trove.update_before_launch": "",
         "trove.install": "",
         "trove.no_installs": "",
-        "Your achievements make your personality grow.. literally!": ""
+        "Your achievements make your personality grow.. literally!": "",
+        "Squashling Stroller": ""
     }
 }

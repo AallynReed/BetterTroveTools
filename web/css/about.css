@@ -1,50 +1,74 @@
+/* About tab.
+   View padding (14px), .about-section radius (10px) and .about-section padding
+   (14px) are enrolled in the CROSS-APP DENSITY LAYER in style.css, so the values
+   stated here are the ones that layer already enforces — they agree rather than
+   fight. Everything else comes from the token layer in style.css `:root`: the
+   4pt spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three
+   radii and the four semantic colours.
+
+   The trailing "Concise module pass" block that used to re-state padding, gaps
+   and margins a second time has been folded into the rules above — one value
+   per concept, stated once. */
+
 [v-cloak] {
     display: none !important;
 }
 
 .about-view-container {
-    padding: 60px 40px;
+    padding: var(--view-padding);
     width: 100%;
     margin: 0 auto;
     box-sizing: border-box;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .about-header-hero {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: var(--t-6);
 }
 
 .about-logo {
     width: 80px;
     height: 80px;
-    margin-bottom: 20px;
-    filter: drop-shadow(0 0 15px rgba(var(--accent-rgb), 0.4));
+    margin-bottom: var(--t-5);
+    /* The accent halo that used to sit here was a zero-offset coloured glow —
+       decoration, and it read as elevation on a resting image. The logo is
+       already the largest thing on the page. */
 }
 
 .about-header-hero h1 {
-    font-size: 2.5em;
+    font-size: var(--t-fs-title);
     margin: 0;
-    color: #fff;
+    color: var(--text-main);
 }
 
 .version-tag {
-    color: var(--accent-blue, #5ec6ff);
+    color: var(--accent-blue);
     font-weight: bold;
-    font-size: 0.9em;
-    margin-top: 5px;
+    /* A version string is meta, not a heading — label role, in the accent
+       because it identifies the build the user is actually running. */
+    font-size: var(--t-fs-label);
+    margin-top: var(--t-1);
     letter-spacing: 1px;
 }
 
-#btn-copy-debug:hover { color: #fff !important; }
+#btn-copy-debug:hover { color: var(--text-main) !important; }
 
 .about-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    gap: var(--t-6);
+    /* Cards hug their content; without this a short card is stretched into a
+       drawn empty box next to a tall one. */
+    align-items: start;
 }
 
-@media (max-width: 800px) {
+/* The shell reserves 260px for the sidebar until 900px, so a viewport query
+   measures the wrong box and collapses far too late — 1000px viewport is about
+   700px of content, which is where two columns stop fitting. A container query
+   would be exact, but this view root hosts three `position: fixed` modal
+   overlays and inline-size containment would re-root them to the container. */
+@media (max-width: 1000px) {
     .about-grid { grid-template-columns: 1fr; }
 }
 
@@ -53,65 +77,85 @@
 }
 
 .about-section {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--border-color, #333333);
-    border-radius: 12px;
-    padding: 30px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: var(--t-3);
 }
 
 .about-section .section-title {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #fff;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+    color: var(--text-main);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--t-2);
 }
 
 .about-section p {
     margin: 0;
-    line-height: 1.6;
-    color: var(--text-muted, #a3adc2);
-    font-size: 0.95em;
+    line-height: 1.5;
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
 }
 
 .link-buttons {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--control-gap);
 }
 
 .about-link {
-    padding: 12px;
-    border-radius: 8px;
+    padding: var(--t-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    background: var(--bg-hover);
     text-decoration: none;
-    color: #fff;
-    font-weight: bold;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: var(--t-fs-body);
+    font-weight: 600;
+    cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    transition: all 0.2s;
+    gap: var(--t-2);
+    transition: transform var(--dur) var(--t-ease), filter var(--dur) var(--t-ease),
+                border-color var(--dur) var(--t-ease);
 }
 
-.about-link.changelog { background: #02679e; cursor: pointer; border: none; font-family: inherit; font-size: 1em; }
-.about-link.licenses { background: #6c757d; cursor: pointer; border: none; font-family: inherit; font-size: 1em; }
-.about-link.app-license { background: #4b5563; cursor: pointer; border: none; font-family: inherit; font-size: 1em; }
-.about-link.github { background: #333; }
-.about-link.discord { background: #5865F2; }
-.about-link:hover { transform: translateY(-2px); filter: brightness(1.2); }
+/* These five used to carry five invented fills (a hardcoded blue, two greys and
+   a near-border grey). Four of them are internal actions, so they take the
+   app's secondary-button vocabulary; the changelog is the card's single primary
+   action, tinted from the USER'S accent so it survives an orange theme. Only
+   Discord keeps a literal, because that one is third-party brand identity and
+   deliberately sits outside the palette. */
+.about-link.changelog { background: rgba(var(--accent-rgb), 0.16); border-color: rgba(var(--accent-rgb), 0.5); color: var(--accent-blue); }
+.about-link.licenses { background: var(--bg-hover); }
+.about-link.app-license { background: var(--bg-hover); }
+.about-link.github { background: var(--bg-hover); }
+.about-link.discord { background: #5865F2; border-color: transparent; color: var(--ink-on-dark-fill); }
+.about-link:hover { transform: translateY(-1px); filter: brightness(1.15); }
+.about-link:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 /* Legacy compact donate row — retained for any view that still embeds it. The
    primary About surface now uses .donate-hero (below). */
-.donation-row { display: flex; gap: 15px; }
+.donation-row { display: flex; gap: var(--t-4); }
 .donate-icon {
-    width: 50px; height: 50px; border-radius: 10px;
+    width: 50px; height: 50px; border-radius: var(--radius-surface);
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.5em; color: #fff; text-decoration: none; transition: all 0.2s;
+    /* A leading glyph this large is a graphic, not an optically trimmed inline
+       icon — it takes the largest type step rather than an ad-hoc em. */
+    font-size: var(--t-fs-title); color: var(--text-main); text-decoration: none;
+    transition: transform var(--dur) var(--t-ease);
 }
+/* Platform brand fills and their on-fill ink. These are the only literals left
+   in this file: a donation platform is recognised by its own colour, so it is
+   not ours to theme, and the ink has to be picked for contrast against that
+   fill rather than taken from the accent-derived --accent-ink. */
 .donate-icon.paypal { background: #003087; }
 .donate-icon.kofi { background: #FF5E5B; }
 .donate-icon.bmac { background: #FFDD00; color: #000; }
@@ -122,167 +166,188 @@
    the page — that's the entire point. Each button uses its platform's brand
    color so they're instantly recognizable, and shows both a verb-led label
    ("Donate via PayPal") and the destination URL so users know what they're
-   tapping into. */
+   tapping into. The pink wash the banner used to sit on has gone: it was a
+   fifth semantic colour doing decoration, and the branded CTAs already carry
+   all the loudness this block needs. */
 .donate-hero {
-    margin: 24px 0 32px;
-    padding: 22px 24px;
-    background: linear-gradient(180deg, rgba(255, 120, 160, 0.07), rgba(255, 120, 160, 0.02));
-    border: 1px solid rgba(255, 120, 160, 0.22);
-    border-radius: 14px;
+    margin: var(--t-5) 0 var(--t-6);
+    padding: var(--t-5);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
 }
 .donate-hero-headline {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: var(--t-2);
 }
 .donate-hero-headline h2 {
-    margin: 0; font-size: 1.35em; color: var(--text-main);
+    margin: 0; font-size: var(--t-fs-h2); font-weight: 600; color: var(--text-main);
 }
 .donate-hero-copy {
-    color: var(--text-muted); margin: 10px 0 18px; line-height: 1.55;
+    color: var(--text-muted); margin: var(--t-2) 0 var(--t-4); line-height: 1.5;
 }
 .donate-hero-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 12px;
+    gap: var(--t-3);
 }
 .donate-cta {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 16px;
-    border-radius: 10px;
+    display: flex; align-items: center; gap: var(--t-3);
+    padding: var(--t-3) var(--t-4);
+    border-radius: var(--radius-control);
     text-decoration: none;
-    color: #fff;
+    color: var(--text-main);
     font-weight: 600;
-    transition: transform 0.18s, filter 0.18s, box-shadow 0.18s;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+    /* No resting shadow: these sit on the page, they don't float above it. */
+    transition: transform var(--dur) var(--t-ease), filter var(--dur) var(--t-ease);
 }
 .donate-cta:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     filter: brightness(1.1);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.28);
 }
-.donate-cta i { font-size: 1.8em; flex-shrink: 0; }
+.donate-cta:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.donate-cta i { font-size: var(--t-fs-title); flex-shrink: 0; }
 .donate-cta-text { display: flex; flex-direction: column; min-width: 0; }
-.donate-cta-line1 { font-size: 1em; }
+.donate-cta-line1 { font-size: var(--t-fs-body); }
 .donate-cta-line2 {
-    font-size: 0.82em; opacity: 0.85; font-weight: 400; margin-top: 2px;
+    font-size: var(--t-fs-label); opacity: 0.85; font-weight: 400; margin-top: 2px;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.donate-cta-paypal { background: #003087; }
-.donate-cta-kofi   { background: #FF5E5B; }
-.donate-cta-bmac   { background: #FFDD00; color: #1a1a1a; }
+.donate-cta-paypal { background: #003087; color: var(--ink-on-dark-fill); }
+.donate-cta-kofi   { background: #FF5E5B; color: var(--ink-on-light-fill); }
+.donate-cta-bmac   { background: #FFDD00; color: var(--ink-on-light-fill); }
 .donate-cta-bmac .donate-cta-line2 { opacity: 0.7; }
 .donate-hero-perks {
-    margin: 14px 0 0;
+    margin: var(--t-3) 0 0;
     color: var(--text-muted);
-    font-size: 0.88em;
+    font-size: var(--t-fs-label);
     font-style: italic;
 }
 
-/* Supporter wall — small "what you get" line above the chip list. */
+/* Supporter wall — small "what you get" line above the chip list. The pink 3px
+   border-left stripe this used to carry is banned outright (DESIGN.md > Shapes);
+   it was only marking "this is a note", which an inset well and a hairline on
+   all four sides say just as clearly. */
 .supporter-perks {
     color: var(--text-muted);
-    font-size: 0.9em;
-    margin-top: -4px;
-    margin-bottom: 12px;
-    padding: 8px 12px;
-    background: rgba(255, 120, 160, 0.06);
-    border-left: 3px solid rgba(255, 120, 160, 0.5);
-    border-radius: 4px;
+    font-size: var(--t-fs-label);
+    /* Pulls back against the section's own 12px gap so the note reads as
+       attached to the line above it, not as a third sibling. */
+    margin-top: calc(var(--t-1) * -1);
+    margin-bottom: var(--t-3);
+    padding: var(--t-2) var(--t-3);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
 }
 
 .credits-footer {
-    margin-top: 60px;
+    margin-top: var(--t-6);
     text-align: center;
     border-top: 1px solid var(--border-color);
-    padding-top: 30px;
+    padding-top: var(--t-4);
     color: var(--text-muted);
 }
 
 .special-thanks {
-    font-size: 0.85em;
+    font-size: var(--t-fs-label);
     font-style: italic;
-    margin-top: 5px;
+    margin-top: var(--t-1);
 }
 
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.7);
+    background: var(--modal-backdrop);
+    /* Blur is confined to chrome that genuinely floats; a modal backdrop is the
+       canonical case for it. */
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: var(--z-modal, 205000);
-    animation: fadeIn 0.2s ease;
+    /* Above the app's custom-select dropdowns (--z-dropdown), below toasts. */
+    z-index: var(--z-modal);
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .modal-content {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--border-color, #333333);
-    border-radius: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     width: 80%;
     max-width: 800px;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: var(--shadow-modal);
 }
 
 .modal-header {
-    padding: 20px;
-    border-bottom: 1px solid var(--border-color, #333333);
+    padding: var(--modal-padding);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0,0,0,0.2);
+    /* One tonal step down from the panel, taken from the ramp rather than a
+       black overlay that lands on an off-ramp grey. */
+    background: var(--bg-dark);
 }
 
 .modal-header h2 {
     margin: 0;
-    color: #fff;
-    font-size: 1.5em;
+    color: var(--text-main);
+    /* A dialog title is a section title, not the page title. */
+    font-size: var(--t-fs-h2);
 }
 
 .close-btn {
     background: none;
     border: none;
-    color: var(--text-muted, #a3adc2);
-    font-size: 1.5em;
+    color: var(--text-muted);
+    font-size: var(--t-fs-h2);
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color var(--dur-fast) var(--t-ease);
 }
 
 .close-btn:hover {
-    color: #fff;
+    color: var(--text-main);
 }
 
+.close-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
 .modal-body {
-    padding: 20px;
+    padding: var(--modal-padding);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--t-4);
 }
 
 .version-group {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
-    padding: 15px;
+    /* An inset well inside the modal panel — one honest tonal step down, rather
+       than a white-alpha film that lands off the ramp. */
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
 }
 
 .version-title {
-    font-size: 1.2em;
-    color: var(--accent-blue, #5ec6ff);
+    font-size: var(--t-fs-h2);
+    /* The version number is what the reader is scanning this list for, so it
+       keeps the accent — themable, and the only coloured thing in the group. */
+    color: var(--accent-blue);
     margin-top: 0;
-    margin-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 8px;
+    margin-bottom: var(--t-4);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--t-2);
 }
 
 .commit-item {
     display: flex;
-    gap: 15px;
-    margin-bottom: 12px;
+    gap: var(--t-4);
+    margin-bottom: var(--t-3);
     align-items: flex-start;
 }
 
@@ -291,76 +356,90 @@
 }
 
 .commit-hash {
-    font-family: monospace;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 4px 8px;
-    border-radius: 4px;
-    color: #a3adc2;
+    /* Monospace is load-bearing here: this is a git SHA, and fixed-width digits
+       are what make one hash comparable to the next. */
+    font-family: var(--font-numeric);
+    background: var(--bg-dark);
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-control);
+    color: var(--text-muted);
     text-decoration: none;
-    font-size: 0.9em;
-    transition: all 0.2s;
+    font-size: var(--t-fs-label);
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
 .commit-hash:hover {
-    color: #fff;
-    background: var(--accent-blue, #5ec6ff);
+    /* Ink on an accent fill is recomputed per accent at runtime, so this stays
+       legible whichever colour the user picks. */
+    color: var(--accent-ink);
+    background: var(--accent-blue);
 }
 
+.commit-hash:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
 .commit-message {
-    color: #fff;
+    color: var(--text-main);
     flex: 1;
     word-break: break-word;
-    font-size: 0.95em;
-    line-height: 1.4;
+    font-size: var(--t-fs-body);
+    line-height: 1.5;
 }
 
 .loading-spinner {
     text-align: center;
     color: var(--text-muted);
-    font-size: 1.2em;
-    padding: 40px;
+    font-size: var(--t-fs-body);
+    padding: var(--t-6);
 }
 
 .commit-prefix {
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    margin-right: 6px;
+    font-weight: 800;
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-pill);
+    font-size: var(--t-fs-micro);
+    margin-right: var(--t-1);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #e2e8f0;
+    letter-spacing: 1px;
+    background: var(--bg-hover);
+    color: var(--text-muted);
 }
-.commit-prefix.prefix-feat { background: rgba(40, 167, 69, 0.2); color: #4ade80; }
-.commit-prefix.prefix-fix { background: rgba(220, 53, 69, 0.2); color: #ff7b72; }
-.commit-prefix.prefix-chore { background: rgba(108, 117, 125, 0.2); color: #a8a29e; }
-.commit-prefix.prefix-docs { background: rgba(23, 162, 184, 0.2); color: #38bdf8; }
-.commit-prefix.prefix-refactor { background: rgba(111, 66, 193, 0.2); color: #c084fc; }
-.commit-prefix.prefix-style { background: rgba(253, 126, 20, 0.2); color: #fb923c; }
-.commit-prefix.prefix-test { background: rgba(255, 193, 7, 0.2); color: #fbbf24; }
-.commit-prefix.prefix-perf { background: rgba(232, 62, 140, 0.2); color: #f472b6; }
+/* Eight hand-picked hues used to live here — a green, a red, a grey, a cyan, a
+   purple, an orange, an amber and a pink — which is four more colours than the
+   system has. Colour now says only what the four semantics can say: something
+   arrived, something broke, something needs attention. The category itself is
+   already spelled out in the label, so the remaining prefixes stay neutral
+   rather than inventing a fifth and sixth meaning. */
+.commit-prefix.prefix-feat { background: rgba(var(--success-rgb), 0.2); color: var(--success-ink); }
+.commit-prefix.prefix-fix { background: rgba(var(--danger-rgb), 0.2); color: var(--danger-ink); }
+.commit-prefix.prefix-chore { background: var(--bg-hover); color: var(--text-muted); }
+.commit-prefix.prefix-docs { background: var(--bg-hover); color: var(--text-muted); }
+.commit-prefix.prefix-refactor { background: var(--bg-hover); color: var(--text-muted); }
+.commit-prefix.prefix-style { background: rgba(var(--warning-rgb), 0.2); color: var(--warning-ink); }
+.commit-prefix.prefix-test { background: rgba(var(--warning-rgb), 0.2); color: var(--warning-ink); }
+.commit-prefix.prefix-perf { background: var(--bg-hover); color: var(--text-muted); }
 
 .contributors-container {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 10px;
+    gap: var(--t-3);
+    margin-top: var(--t-2);
 }
-/* Supporters get the loudest treatment in About — gold gradient pills with
-   a pink heart, centered, soft glow, gentle lift on hover. The intent is
-   "these are the people who keep the lights on, look at them". */
+/* Supporters are the emphasis of this section, and emphasis here is carried by
+   centring, weight and space — not by a gold gradient, a text-shadow halo and a
+   coloured wash, which were three colours the palette doesn't have doing the
+   job that layout already does. */
 .about-section-supporters .section-title {
     justify-content: center;
     text-align: center;
 }
 .about-section-supporters .section-title i {
-    color: #ffd166;
-    text-shadow: 0 0 14px rgba(255, 209, 102, 0.55);
+    /* Heading icons are structural, so they stay muted (accent and semantics
+       both mean something more specific than "look here"). */
+    color: var(--text-muted);
 }
 .supporter-thanks {
     text-align: center;
-    margin-top: 6px;
+    margin-top: var(--t-1);
     color: var(--text-main);
 }
 .supporters-container {
@@ -368,113 +447,116 @@
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 12px;
-    margin-top: 16px;
-    padding: 18px 14px;
-    border-radius: 14px;
-    background: radial-gradient(ellipse at center, rgba(255, 209, 102, 0.10), rgba(255, 184, 60, 0.03) 60%, transparent 80%);
+    gap: var(--t-3);
+    margin-top: var(--t-4);
+    padding: var(--t-4) var(--t-3);
+    border-radius: var(--radius-surface);
 }
 .supporter-chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px 18px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, rgba(255, 209, 102, 0.20), rgba(255, 138, 76, 0.12));
-    border: 1px solid rgba(255, 209, 102, 0.55);
-    color: #fff;
-    font-size: 1em;
+    gap: var(--t-2);
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-pill);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
     font-weight: 700;
     line-height: 1.1;
-    letter-spacing: 0.2px;
-    box-shadow: 0 4px 14px rgba(255, 184, 60, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    /* Inset 1px top light — an inner highlight, not elevation. */
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: transform var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
 }
 .supporter-chip:hover {
-    transform: translateY(-2px);
-    border-color: rgba(255, 209, 102, 0.95);
-    box-shadow: 0 10px 24px rgba(255, 184, 60, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+    border-color: rgba(var(--accent-rgb), 0.5);
 }
 .supporter-chip-heart {
-    color: #ff6b9d;
-    font-size: 0.9em;
-    filter: drop-shadow(0 0 6px rgba(255, 107, 157, 0.55));
+    /* The palette holds exactly one red; a support heart uses it as a fill, the
+       same way a status dot does — it is not signalling an error. */
+    color: var(--danger);
+    font-size: var(--icon-optical);
     animation: supporter-heart-pulse 2.8s ease-in-out infinite;
 }
 .supporter-chip:hover .supporter-chip-heart {
     animation-duration: 1s;
 }
 .supporter-chip-name {
-    background: linear-gradient(135deg, #fff 0%, #ffe7b3 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
+    /* Was a gold gradient clipped to the text. Emphasis in this system comes
+       from weight and space, and gradient-filled text also drops out entirely
+       for anyone whose renderer doesn't support background-clip. */
+    color: var(--text-main);
 }
 @keyframes supporter-heart-pulse {
     0%, 100% { transform: scale(1); }
     50%      { transform: scale(1.18); }
 }
-@media (prefers-reduced-motion: reduce) {
-    .supporter-chip-heart { animation: none; }
-}
 .translation-region {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-top: 8px;
+    gap: var(--t-3);
+    margin-top: var(--t-2);
 }
 .translation-region-title {
-    font-size: 0.95em;
-    font-weight: bold;
-    color: #fff;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+    color: var(--text-main);
 }
 .translation-pill-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--t-2);
 }
 .translation-pill {
     display: inline-flex;
     align-items: center;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     overflow: hidden;
     border: 1px solid rgba(var(--accent-rgb), 0.22);
-    background: rgba(255, 255, 255, 0.04);
-    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    background-color: var(--bg-hover);
+    transition: border-color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
 }
 .translation-pill:hover {
+    /* Hover is carried by the border alone — the fill used to shift as well,
+       which meant two things moving to say one thing. */
     border-color: rgba(var(--accent-rgb), 0.45);
-    background: rgba(255, 255, 255, 0.06);
     transform: translateY(-1px);
 }
 .translation-pill-name,
 .translation-pill-role {
     display: inline-flex;
     align-items: center;
-    padding: 6px 10px;
-    font-size: 0.88em;
+    padding: var(--t-1) 10px;
+    font-size: var(--t-fs-label);
     line-height: 1;
 }
 .translation-pill-name {
     background: rgba(var(--accent-rgb), 0.14);
-    color: #dbeafe;
+    color: var(--text-main);
 }
 .translation-pill-role {
     max-width: 0;
     padding-left: 0;
     padding-right: 0;
     white-space: nowrap;
-    color: var(--text-muted, #a3adc2);
+    color: var(--text-muted);
     opacity: 0;
-    transition: max-width 0.25s ease, opacity 0.2s ease, padding 0.25s ease;
+    transform: translateX(-4px);
+    /* max-width and padding still switch on hover — the role genuinely has to
+       take no space until it's asked for — but they switch instantly and are
+       deliberately NOT in the transition. Animating max-width and padding
+       relayouts the whole pill row on every frame; the reveal reads just as
+       well as an opacity-and-transform move. */
+    transition: opacity var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
 }
 .translation-pill:hover .translation-pill-role {
     max-width: 320px;
     padding-left: 10px;
-    padding-right: 12px;
+    padding-right: var(--t-3);
     opacity: 1;
+    transform: translateX(0);
 }
 .translation-note {
     margin-top: 2px;
@@ -482,12 +564,13 @@
 .contributor-avatar {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     overflow: hidden;
     display: block;
-    border: 2px solid var(--border-color);
-    transition: all 0.2s;
-    background: rgba(0,0,0,0.3);
+    /* Borders in this system are always exactly 1px. */
+    border: 1px solid var(--border-color);
+    transition: border-color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
+    background: var(--bg-dark);
 }
 .contributor-avatar img {
     width: 100%;
@@ -496,34 +579,31 @@
 }
 .contributor-avatar:hover {
     border-color: var(--accent-blue);
-    transform: translateY(-3px) scale(1.1);
+    transform: translateY(-1px) scale(1.1);
 }
+.contributor-avatar:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
-.license-item { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; }
-.license-title { font-size: 1.1em; color: var(--accent-blue, #5ec6ff); font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; }
-.license-title a { color: var(--text-muted); transition: color 0.2s; }
-.license-title a:hover { color: #fff; }
-.license-desc { color: #fff; font-size: 0.9em; line-height: 1.4; }
+.license-item { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-control); padding: var(--surface-padding); }
+.license-title { font-size: var(--t-fs-h2); color: var(--accent-blue); font-weight: 600; margin-bottom: var(--t-1); display: flex; justify-content: space-between; }
+.license-title a { color: var(--text-muted); transition: color var(--dur-fast) var(--t-ease); }
+.license-title a:hover { color: var(--text-main); }
+/* A one-line package description is secondary copy, so it reads muted like the
+   rest of the app's body text rather than louder than the titles above it. */
+.license-desc { color: var(--text-muted); font-size: var(--t-fs-body); line-height: 1.5; }
 
-/* Concise module pass */
-.about-view-container {
-    padding: 32px 24px;
-}
-
-.about-header-hero {
-    margin-bottom: 30px;
-}
-
-.about-section {
-    padding: 22px;
-    gap: 10px;
-}
-
-.credits-footer {
-    margin-top: 34px;
-    padding-top: 18px;
-}
-
-.contributors-container {
-    gap: 10px;
+/* Reduced motion: nothing disappears, it just stops moving. Kept last in the
+   file on purpose — a media query adds no specificity, so placed earlier these
+   would lose to the equally-specific :hover rules further down. */
+@media (prefers-reduced-motion: reduce) {
+    .about-view-container,
+    .modal-overlay,
+    .supporter-chip-heart { animation: none; }
+    .about-link:hover,
+    .donate-cta:hover,
+    .donate-icon:hover,
+    .supporter-chip:hover,
+    .translation-pill:hover,
+    .contributor-avatar:hover { transform: none; }
+    .translation-pill-role,
+    .translation-pill:hover .translation-pill-role { transform: none; }
 }

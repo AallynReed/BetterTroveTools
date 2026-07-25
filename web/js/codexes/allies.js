@@ -7,7 +7,7 @@ function initAlliesView() {
     if (typeof Vue === 'undefined') {
         console.error("Vue.js failed to load!");
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Ally Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Ally Codex.</div>`;
         return;
     }
 
@@ -553,7 +553,7 @@ function initAlliesView() {
     } catch (err) {
         console.error("Failed to initialize Ally Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Ally Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Ally Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
         delete root.dataset.alliesInitializing;
     }

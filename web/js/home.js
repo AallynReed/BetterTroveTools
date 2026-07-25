@@ -993,6 +993,12 @@ document.addEventListener('home_loaded', () => {
                 };
             });
 
+            // The `color` on each card is an ENTITY IDENTITY hue (Corruxion purple,
+            // Fluxion blue, Stampy amber, D15/gardening greens, Mana cyan): it says
+            // which rotation this is, not what its status is, so it is not a design
+            // token and stays literal. Note the gardening greens (#8bc34a 2-day,
+            // #4caf50 3-day) and the D15 green are repeated in openMerchantSchedule
+            // below — if one moves, move the other.
             const merchantCards = computed(() => {
                 const cards = [];
                 const m = merchants.value;
@@ -1099,6 +1105,9 @@ document.addEventListener('home_loaded', () => {
                         title: t(chaos.name),
                         emoji: '',
                         icon: chaos.iconUrl,
+                        // Chaos Chest identity amber, sibling to the merchant/biome
+                        // hues above — deliberately NOT the --warning semantic, which
+                        // would read as "needs attention".
                         color: '#ffb74d',
                         metaHtml: chaos.timeHtml,
                         action: () => chaos.identifier && openUrl(`https://trovesaurus.com/${chaos.identifier}`)
@@ -1256,12 +1265,16 @@ document.addEventListener('home_loaded', () => {
                             const d = scheduleData[i.toString()];
                             if (!d) continue;
                             const isActive = i === currentDayIndex;
+                            // The active row's hue is live server data and is the only thing
+                            // saying WHICH buff this is, so it survives — but as the colour of
+                            // the row's existing 1px border on all four sides. A coloured 4px
+                            // border-left stripe is banned (DESIGN.md > Shapes).
                             rotationModal.list.push({
-                                isNext: isActive, isActive: isActive, style: isActive ? `border-left: 4px solid #${d.color}; background: rgba(255,255,255,0.05);` : '',
+                                isNext: isActive, isActive: isActive, style: isActive ? `border-color: #${d.color}; background: var(--bg-panel);` : '',
                                 timeColStyle: 'min-width: 120px;', titleLabel: t(d.weekday), timeText: '',
                                 contentColStyle: 'flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;',
-                                contentHtml: `<div style="font-weight: bold; color: #fff;">${d.emoji} ${t(d.name)}</div>
-                                              <div style="font-size: 0.85em; color: var(--text-muted);"><ul style="margin: 0; padding-left: 15px;">
+                                contentHtml: `<div style="font-weight: bold; color: var(--text-main);">${d.emoji} ${t(d.name)}</div>
+                                              <div style="font-size: var(--t-fs-label); color: var(--text-muted);"><ul style="margin: 0; padding-left: var(--t-4);">
                                               ${d.normal_buffs.map(b => `<li>${t(b)}</li>`).join('')}</ul></div>`
                             });
                         }
@@ -1275,12 +1288,14 @@ document.addEventListener('home_loaded', () => {
                             const w = scheduleData[targetIndex.toString()];
                             if (!w) continue;
                             const isActive = i === 0;
+                            // Same deal as the daily rows above: the week's server-provided
+                            // hue moves onto the 1px border, no 4px stripe.
                             rotationModal.list.push({
-                                isNext: isActive, isActive: isActive, style: isActive ? `border-left: 4px solid #${w.color}; background: rgba(255,255,255,0.05);` : '',
+                                isNext: isActive, isActive: isActive, style: isActive ? `border-color: #${w.color}; background: var(--bg-panel);` : '',
                                 timeColStyle: 'min-width: 120px;', titleLabel: isActive ? t('home.current_week') : t("home.week_num").replace("{num}", i), timeText: '',
                                 contentColStyle: 'flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;',
-                                contentHtml: `<div style="font-weight: bold; color: #fff;">${w.emoji} ${t(w.name)}</div>
-                                              <div style="font-size: 0.85em; color: var(--text-muted);"><ul style="margin: 0; padding-left: 15px;">
+                                contentHtml: `<div style="font-weight: bold; color: var(--text-main);">${w.emoji} ${t(w.name)}</div>
+                                              <div style="font-size: var(--t-fs-label); color: var(--text-muted);"><ul style="margin: 0; padding-left: var(--t-4);">
                                               ${w.buffs.map(b => `<li>${t(b)}</li>`).join('')}</ul></div>`
                             });
                         }
@@ -1328,7 +1343,7 @@ document.addEventListener('home_loaded', () => {
                                 isNext, isActive: false, style: '', timeColStyle: 'min-width: 150px;',
                                 titleLabel: isNext ? nextStr : futureStr.replace("{num}", index + 1), timeText,
                                 contentColStyle: 'flex-direction: column; justify-content: center; gap: 4px;',
-                                contentHtml: `${phaseLabel}<div style="font-size: 0.9em; color: #eee;"><i class="fa-solid ${iconStart}"></i> ${startStr}</div><div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid ${iconEnd}"></i> ${endStr}</div>`
+                                contentHtml: `${phaseLabel}<div style="font-size: var(--t-fs-label); color: var(--text-main);"><i class="fa-solid ${iconStart}"></i> ${startStr}</div><div style="font-size: var(--t-fs-label); color: var(--text-muted);"><i class="fa-solid ${iconEnd}"></i> ${endStr}</div>`
                             });
                         });
                     }
@@ -1356,18 +1371,20 @@ document.addEventListener('home_loaded', () => {
                             const startStr = formatDisplayDate(rot.start * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             const endStr = formatDisplayDate(rot.end * 1000, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' });
                             let timeText = rot.start * 1000 < Date.now() ? t("home.ends_in_time").replace("{time}", getCountdown(rot.end, false)) : t("home.starts_in_time").replace("{time}", getCountdown(rot.start, false));
+                            // Gardening identity greens — the same pair merchantCards uses.
                             const phaseColor = rot.name.includes('3') ? '#4caf50' : '#8bc34a';
                             
                             rotationModal.list.push({
                                 isNext, isActive: false, style: '', timeColStyle: 'min-width: 150px;',
                                 titleLabel: isNext ? t('home.next_cycle') : t("home.cycle_num").replace("{num}", index + 1), timeText,
                                 contentColStyle: 'flex-direction: column; justify-content: center; gap: 4px;',
-                                contentHtml: `<div style="font-weight: bold; color: ${phaseColor}; margin-bottom: 2px;">${t(rot.name)}</div><div style="font-size: 0.9em; color: #eee;"><i class="fa-solid fa-play"></i> ${startStr}</div><div style="font-size: 0.9em; color: #a3adc2;"><i class="fa-solid fa-stop"></i> ${endStr}</div>`
+                                contentHtml: `<div style="font-weight: bold; color: ${phaseColor}; margin-bottom: 2px;">${t(rot.name)}</div><div style="font-size: var(--t-fs-label); color: var(--text-main);"><i class="fa-solid fa-play"></i> ${startStr}</div><div style="font-size: var(--t-fs-label); color: var(--text-muted);"><i class="fa-solid fa-stop"></i> ${endStr}</div>`
                             });
                         });
                     }
                 } else if (card.type === 'd15') {
                     rotationModal.type = 'd15';
+                    // D15 identity green — same hue as the d15 card in merchantCards.
                     rotationModal.titleHtml = `<i class="fa-solid fa-leaf" style="color: #4caf50;"></i> ${t("home.upcoming_d15_biomes")}`;
                     
                     const daysData = [];
@@ -1549,12 +1566,12 @@ document.addEventListener('home_loaded', () => {
                                     }
                                 }
                                 
-                                let tooltipText = `<div style="font-weight: bold; color: var(--accent-blue); margin-bottom: 5px; font-size: 1.1em;">${t(ev.name)}</div>`;
-                                if (ev.biome_names && ev.biome_names.length > 0) tooltipText += `<div style="margin-bottom: 5px; color: #fff;">${ev.biome_names.map(b => '• ' + t(b)).join('<br>')}</div>`;
-                                tooltipText += `<div style="color: var(--text-muted); font-size: 0.85em; margin-top: 4px;"><i class="fa-regular fa-clock"></i> ${formatDisplayDate(eStartTs, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} - ${formatDisplayDate(eEndTs, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</div>`;
+                                let tooltipText = `<div style="font-weight: bold; color: var(--accent-blue); margin-bottom: var(--t-1); font-size: var(--t-fs-h2);">${t(ev.name)}</div>`;
+                                if (ev.biome_names && ev.biome_names.length > 0) tooltipText += `<div style="margin-bottom: var(--t-1); color: var(--text-main);">${ev.biome_names.map(b => '• ' + t(b)).join('<br>')}</div>`;
+                                tooltipText += `<div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);"><i class="fa-regular fa-clock"></i> ${formatDisplayDate(eStartTs, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })} - ${formatDisplayDate(eEndTs, { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</div>`;
                                 
                                 let iconsHtml = "";
-                                if (ev.icons?.length > 0) iconsHtml = `<div style="display: flex; gap: 2px; align-items: center; margin-right: 4px;">${ev.icons.map(ic => `<img src="/assets/images/biomes/${ic}.png" onerror="this.style.display='none'" style="width: 14px; height: 14px; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.5));">`).join('')}</div>`;
+                                if (ev.icons?.length > 0) iconsHtml = `<div style="display: flex; gap: 2px; align-items: center; margin-right: 4px;">${ev.icons.map(ic => `<img src="/assets/images/biomes/${ic}.png" onerror="this.style.display='none'" alt="" style="width: 14px; height: 14px; filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.5));">`).join('')}</div>`;
                                 else if (ev.type === 'fluxion') iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid ${ev.name.includes('Voting') ? 'fa-check-to-slot' : 'fa-sack-dollar'}"></i></div>`;
                                 else if (ev.type.startsWith('gardening')) iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-seedling"></i></div>`;
                                 else if (ev.type === 'corruxion') iconsHtml = `<div style="display: flex; align-items: center;"><i class="fa-solid fa-dragon"></i></div>`;

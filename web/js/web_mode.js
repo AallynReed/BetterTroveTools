@@ -11,6 +11,13 @@
     const forceAndroid = params.get('android') === '1';
     window.BTT_NATIVE = forceAndroid || !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
         && window.Capacitor.isNativePlatform());
+    // Views hidden OUTRIGHT in every web build (hosted web *and* Android) rather
+    // than badged "Desktop App". The badge is an invitation to go install the
+    // desktop app, which only earns its space when the desktop app can offer the
+    // same user the same thing. The Trove launcher drives a local Glyph-free game
+    // install on the machine it runs on — a browser tab or a phone has nothing to
+    // convert to — so it is not advertised off desktop at all.
+    window.BTT_WEB_HIDDEN_VIEWS = window.BTT_WEB_MODE ? ['trove'] : [];
     // Hosted web build (BTT_WEB_MODE && !BTT_NATIVE) keeps Modder Tools available
     // — only the Extract TMod tab is exposed there (see web/views/modder_tools.html)
     // and Extract runs entirely in the browser via TmodUnpacker. Android still
@@ -22,6 +29,9 @@
             // users sign in on the site itself, so hide the in-app Account view.
             'mod_manager', 'game_explorer', 'codexes', 'allies', 'mounts', 'dragons', 'mementos', 'recipes', 'items', 'account',
             ...(window.BTT_NATIVE ? ['modder_tools'] : []),
+            // Everything hidden outright is also unavailable — this keeps the
+            // command palette, deep links and btt_navigate blocked, not just nav.
+            ...window.BTT_WEB_HIDDEN_VIEWS,
         ]
         : [];
     // Flag the document so CSS can hide desktop-only affordances (e.g. Ctrl+K

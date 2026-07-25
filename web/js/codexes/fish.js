@@ -5,7 +5,7 @@ function initFishView() {
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Fish Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Fish Codex.</div>`;
         return;
     }
 
@@ -105,7 +105,7 @@ function initFishView() {
                 const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 return safe.replace(new RegExp(`(${escaped})`, 'ig'), '<mark>$1</mark>');
             };
-            const rarityColor = (r) => RARITY_COLORS[r] || '#9aa7b4';
+            const rarityColor = (r) => RARITY_COLORS[r] || 'var(--text-muted)';
             const trophyCount = (fish) => fish.trophies ? Object.keys(fish.trophies).length : 0;
             const weightText = (fish) => (fish.weight_min != null && fish.weight_max != null)
                 ? `${fish.weight_min} - ${fish.weight_max}` : '';
@@ -273,7 +273,7 @@ function initFishView() {
     } catch (err) {
         console.error("Failed to initialize Fish Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Fish Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Fish Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
         delete root.dataset.fishInitializing;
     }

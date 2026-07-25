@@ -2,7 +2,7 @@
                 <h3>{{ t('modder_tools.mod_project_manager') }}</h3>
                 <p class="help-text">{{ t('modder_tools.manage_persistent_mod_projects_versionin_78357a') }}</p>
 
-                <div class="form-group" style="background: var(--bg-dark); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div class="form-group" style="background: var(--bg-dark); padding: 15px; border-radius: var(--radius-control); border: 1px solid var(--border-color);">
                     <label>{{ t('modder_tools.project_folder') }}</label>
                     <div class="input-row">
                         <input type="text" v-model="project.dir" :placeholder="t('modder_tools.select_or_create_a_project_folder')" readonly :class="{ 'field-invalid': isProjectFieldInvalid('dir') }">
@@ -94,11 +94,11 @@
                             <label style="margin: 0;">{{ t("modder_tools.version_files_ignores_prefix") }}</label>
                             <div style="display: flex; gap: 10px;">
                                 <button class="icon-btn-small" @click="refreshProjectFiles" :title="t('modder_tools.refresh_files')"><i class="fa-solid" :class="store.isWorking.refreshProjectFiles ? 'fa-spinner fa-spin' : 'fa-rotate-right'"></i></button>
-                                <button class="primary-btn" @click="autoStructureProject" :disabled="store.isWorking.autoStructuringProject" style="background: var(--accent-blue); padding: 4px 10px; font-size: 13px;"><i class="fa-solid" :class="store.isWorking.autoStructuringProject ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.structure_relative_to_game') }}</span></button>
+                                <button class="primary-btn" @click="autoStructureProject" :disabled="store.isWorking.autoStructuringProject" style="background: var(--accent-blue); padding: 4px 10px; font-size: var(--t-fs-body);"><i class="fa-solid" :class="store.isWorking.autoStructuringProject ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.structure_relative_to_game') }}</span></button>
                             </div>
                         </div>
-                        <div class="table-container" :class="{ 'field-invalid': isProjectFieldInvalid('files') }" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
-                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                        <div class="table-container" :class="{ 'field-invalid': isProjectFieldInvalid('files') }" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-surface); background: var(--bg-panel);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body);">
                                 <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                     <tr>
                                         <th style="padding: 8px 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.relative_path') }}</th>
@@ -126,12 +126,12 @@
                             </button>
                         </div>
 
-                        <div style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 6px; border: 1px dashed var(--border-color);">
-                            <button class="primary-btn" @click="placeOverrides" :disabled="store.isWorking.placingOverrides" style="background: #28a745;">
+                        <div style="display: flex; gap: 10px; background: rgba(0,0,0,0.2); padding: 10px; border-radius: var(--radius-control); border: 1px dashed var(--border-color);">
+                            <button class="primary-btn" @click="placeOverrides" :disabled="store.isWorking.placingOverrides" style="background: var(--success);">
                                 <template v-if="store.isWorking.placingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.placing') }}</template>
                                 <template v-else><i class="fa-solid fa-play"></i> <span>{{ t('modder_tools.test_in_game') }}</span></template>
                             </button>
-                            <button class="primary-btn" @click="removeOverrides" :disabled="project.activeOverrides.length === 0 || store.isWorking.removingOverrides" style="background: #dc3545;">
+                            <button class="primary-btn" @click="removeOverrides" :disabled="project.activeOverrides.length === 0 || store.isWorking.removingOverrides" style="background: var(--danger);">
                                 <template v-if="store.isWorking.removingOverrides"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.removing') }}</template>
                                 <template v-else><i class="fa-solid fa-stop"></i> <span>{{ t('modder_tools.remove_overrides') }}</span></template>
                             </button>

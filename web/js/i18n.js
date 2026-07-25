@@ -291,6 +291,21 @@ const I18nManager = {
             if (el.getAttribute('title') !== value) el.setAttribute('title', value);
         });
 
+        // Icon-only controls carry their name in aria-label, and that name has to
+        // translate like any other. `title` alone is not enough: it is the
+        // last-resort source in the accessible-name spec, is not announced on
+        // touch, and several screen readers skip it entirely.
+        document.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+            let key = el.getAttribute('data-i18n-aria-label');
+            if (!key && el.hasAttribute('aria-label')) {
+                key = el.getAttribute('aria-label').trim();
+                el.setAttribute('data-i18n-aria-label', key);
+            }
+            if (!key) return;
+            const value = this.t(key);
+            if (el.getAttribute('aria-label') !== value) el.setAttribute('aria-label', value);
+        });
+
         this.resumeObserver();
     },
 
@@ -378,8 +393,9 @@ const I18nManager = {
                 node.hasAttribute('data-i18n')
                 || node.hasAttribute('data-i18n-placeholder')
                 || node.hasAttribute('data-i18n-title')
+                || node.hasAttribute('data-i18n-aria-label')
             )) return true;
-            return !!(node.querySelector && node.querySelector('[data-i18n], [data-i18n-placeholder], [data-i18n-title]'));
+            return !!(node.querySelector && node.querySelector('[data-i18n], [data-i18n-placeholder], [data-i18n-title], [data-i18n-aria-label]'));
         };
 
         this.observer = new MutationObserver((mutations) => {

@@ -1,23 +1,43 @@
+/* Gem Simulator (Gems & Builds).
+   Every colour, size, radius, spacing step and z-index below comes from the
+   token layer in style.css `:root`. This file previously carried its own
+   palette via `var(--x, #hex)` fallbacks that disagreed with the real tokens
+   (#1d232b for the panel, #444c5e for the hairline, #10151a for the page) plus
+   four undefined tokens (--slot-bg, --slot-border, --slot-bg-active,
+   --bg-main) that only ever resolved to those fallbacks. Both are gone: the
+   tokens are always defined in :root, so nothing here needs a second opinion.
+
+   The trailing "Concise module pass" override block that used to sit at the
+   bottom of this file was folded into the rules it overrode — it re-declared
+   the same properties on the same selectors, so keeping both would have meant
+   two competing density stories in one file. Its glass gradient + 10px
+   backdrop-filter on .gem-sim-column is deliberately NOT preserved: those are
+   in-view content panels, and blur is confined to floating chrome
+   (DESIGN.md > The Blur Budget Rule). */
+
 [v-cloak] {
     display: none !important;
 }
 
 .gem-sim-container {
     display: flex;
-    gap: 20px;
-    padding: 20px;
+    gap: var(--surface-gap);
+    padding: var(--view-padding);
+    /* Real conditional fallback, not a palette one: this custom property is set
+       on .gems-and-builds-container, so the view needs a floor if it is ever
+       mounted outside that wrapper. 420px matches the clamp's own minimum. */
     min-height: var(--gems-builds-min-height, 420px);
     height: auto;
     max-width: 1600px;
     margin: 0 auto;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) var(--t-ease);
     box-sizing: border-box;
 }
 
 .gem-sim-column {
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 8px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -25,15 +45,22 @@
 
 .left-column { flex: 0 0 380px; }
 .center-column { flex: 1; min-width: 350px; }
-.right-column { flex: 1; min-width: 450px; max-width: 530px; } 
+.right-column { flex: 1; min-width: 450px; max-width: 530px; }
 
+/* The uppercase + 1px-tracked treatment already in place here IS the Micro
+   role (DESIGN.md > Typography > Micro: "sidebar section labels"), so it takes
+   Micro's size and weight rather than sitting at an untyped inherited size.
+   Colour is muted, not accent: accent marks the primary action, the current
+   selection, focus and live state — never a heading, which is structure
+   (DESIGN.md > The Meaning-Only Rule). */
 .column-header {
-    padding: 15px;
-    background: var(--bg-dark, #10151a);
-    border-bottom: 1px solid var(--border-color, #444c5e);
-    font-weight: bold;
+    padding: var(--t-3);
+    background: var(--bg-dark);
+    border-bottom: 1px solid var(--border-color);
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-align: center;
-    color: var(--accent-blue, #5ec6ff);
+    color: var(--text-muted);
     flex-shrink: 0;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -42,23 +69,23 @@
 .column-scroll-area {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: var(--surface-padding);
 }
 
 .panel-divider {
     border: 0;
-    border-top: 1px dashed var(--border-color, #444c5e);
-    margin: 20px 0;
+    border-top: 1px dashed var(--border-color);
+    margin: var(--t-4) 0;
 }
 
 .placeholder-text {
     text-align: center;
-    color: var(--text-muted, #a3adc2);
+    color: var(--text-muted);
     font-style: italic;
-    margin-top: 40px;
+    margin-top: var(--t-6);
 }
 
-.slots { display: grid; gap: 10px; }
+.slots { display: grid; gap: var(--control-gap); }
 .right-slots {
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
     grid-auto-columns: 40px;
@@ -66,45 +93,57 @@
     justify-content: center;
 }
 
+/* The circle is the gem art's own silhouette (the tier ring and gem image are
+   both round), so --radius-circle is carrying the artwork, not decoration.
+   The 2px border became 1px — borders in this system are always exactly 1px
+   (DESIGN.md > Shapes) — and the resting drop shadow is gone: a slot does not
+   float above the page. */
 .slot, .big-slot {
     width: 40px;
     height: 40px;
-    background: var(--slot-bg, #232b34);
-    border: 2px solid var(--slot-border, #444c5e);
-    border-radius: 50%;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-circle);
     display: flex;
     align-items: center;
     justify-content: center;
     user-select: none;
     position: relative;
-    transition: border 0.2s, background 0.2s;
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
 
+/* An occupied slot is something you can act on (drag out, click to inspect),
+   which is exactly what --bg-hover means. The lit rim replaces a second blue
+   (#88c0d0) that would have stayed blue while the user's UI turned orange. */
 .slot[data-has-item="true"] {
-    background: var(--slot-bg-active, #3b4252);
-    border-color: var(--slot-border-active, #88c0d0);
+    background: var(--bg-hover);
+    border-color: rgba(var(--accent-rgb), 0.45);
 }
 
+/* Drag-target state is a 2px ring, but written as an `outline` rather than a
+   zero-offset box-shadow: in this system a box-shadow means "this floats", and
+   the ring vocabulary is already `outline: 2px solid` (DESIGN.md > Shadow
+   Vocabulary > Focus ring). Same pixels, no elevation claim. */
 .slot.slot-drop-valid {
-    border-color: #34d058 !important;
-    box-shadow: 0 0 0 2px rgba(52, 208, 88, 0.45);
+    border-color: var(--success) !important;
+    outline: 2px solid var(--success);
 }
 
 .slot.slot-drop-invalid {
-    border-color: #ff5555 !important;
-    box-shadow: 0 0 0 2px rgba(255, 85, 85, 0.45);
+    border-color: var(--danger) !important;
+    outline: 2px solid var(--danger);
 }
 
+/* A hint is weaker than a verdict, so its ring is the accent at partial alpha. */
 .slot.slot-drop-hint {
-    border-color: var(--accent-blue, #5ec6ff) !important;
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb, 94, 198, 255), 0.35);
+    border-color: var(--accent-blue) !important;
+    outline: 2px solid rgba(var(--accent-rgb), 0.5);
 }
 
 .equipped-slot-placeholder {
     width: 30px;
     height: 30px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -117,38 +156,43 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
 }
 
 .equipped-row {
     display: flex;
-    gap: 40px;
-    margin-bottom: 15px;
+    gap: var(--t-5);
+    margin-bottom: var(--t-3);
     justify-content: center;
-    border-radius: 10px;
-    padding: 10px;
+    border-radius: var(--radius-surface);
+    padding: var(--t-3);
 }
 
 .equipped-row .slot { width: 50px; height: 50px; }
 .equipped-row .item { width: 40px; height: 40px; }
 .equipped-row .item-img-holder { width: 40px; height: 40px; }
 
+/* Section title -> the Heading role. The text-shadow is gone: nothing sits
+   behind this label except a flat panel, so it was legibility theatre. */
 .equipped-row-label {
     text-align: center;
-    font-weight: bold;
-    margin-bottom: 5px;
-    margin-top: 5px;
-    font-size: 1.1em;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+    margin-bottom: var(--t-1);
+    margin-top: var(--t-1);
 }
 
+/* A neutral group divider, not a coloured category stripe — but still 1px,
+   because that is the only border weight the system has. The negative inline
+   margin is an optical pull that lets it sit between two slot groups without
+   widening the row. */
 .slot-vertical-separator {
-    border-left: 2px dashed #555;
-    margin: 0px -15px;
+    border-left: 1px dashed var(--border-color);
+    margin: 0 calc(var(--t-4) * -1);
 }
 
 .item {
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -164,7 +208,7 @@
 .item-img-holder {
     width: 32px; height: 32px;
     position: relative;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
 }
 
 .item-tier-bg, .item-gem-img {
@@ -172,37 +216,41 @@
     object-fit: cover;
     position: absolute;
     top: 0; left: 0;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
 }
 .item-tier-bg { z-index: 1; }
 .item-gem-img { z-index: 2; }
 
+/* Badges pinned to the gem art. The black fill is a legibility scrim over an
+   arbitrary image, not a surface, so it stays a literal rgba — there is no
+   surface token that would survive sitting on top of artwork. */
 .item-lv, .item-power {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, 0.8);
-    color: #fff;
-    border-radius: 4px;
+    color: var(--text-main);
+    border-radius: var(--radius-pill);
     z-index: 3;
-    padding: 1px 4px;
-    font-weight: bold;
+    padding: 1px var(--t-1);
+    font-weight: 800;
     white-space: nowrap;
 }
-.item-lv { top: -6px; font-size: 9px; color: #a3adc2; }
-.item-power { bottom: -6px; font-size: 10px; color: var(--accent-blue); }
+/* -6px pulls each badge half off the 32px art; that overlap is optical, not spacing. */
+.item-lv { top: -6px; font-size: var(--t-fs-micro); color: var(--text-muted); }
+.item-power { bottom: -6px; font-size: var(--t-fs-micro); color: var(--accent-blue); }
 
 .gem-form-row {
     display: flex;
-    gap: 15px;
-    margin-bottom: 12px;
+    gap: var(--t-4);
+    margin-bottom: var(--t-3);
 }
 .gem-form-row label {
     flex: 1;
     display: flex;
     flex-direction: column;
-    font-size: 0.9em;
-    color: var(--text-muted, #a3adc2);
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
 }
 
 .creator-advanced-row {
@@ -216,33 +264,35 @@
 .slider-field {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
     min-width: 0;
 }
 
 .slider-inline {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--control-gap);
 }
 
 .slider-input {
     flex: 1;
-    accent-color: var(--accent-blue, #5ec6ff);
+    accent-color: var(--accent-blue);
 }
 
+/* 34px is the width of the widest value this readout carries (three digits at
+   700); it is a measured column, not a spacing step. */
 .slider-value {
     width: 34px;
     text-align: right;
     font-weight: 700;
-    color: var(--text-main, #e0e0e0);
+    color: var(--text-main);
 }
 
 .augment-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--control-gap);
     margin: 0;
     cursor: pointer;
     user-select: none;
@@ -253,29 +303,31 @@
 }
 
 .creator-generate-row {
-    margin-top: 10px;
+    margin-top: var(--t-3);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .augment-toggle-inline {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
     margin: 0;
     white-space: nowrap;
-    font-size: 0.86em;
-    color: var(--text-muted, #a3adc2);
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
     user-select: none;
     cursor: pointer;
 }
 
+/* 13px is the checkbox's optical match to the label's cap height — a glyph
+   size, not a spacing step. */
 .augment-toggle-inline input[type="checkbox"] {
     width: 13px;
     height: 13px;
     margin: 0;
-    accent-color: var(--accent-blue, #5ec6ff);
+    accent-color: var(--accent-blue);
 }
 
 .creator-generate-btn {
@@ -283,58 +335,80 @@
     width: auto !important;
 }
 
+/* Disabled inputs are 0.55 everywhere in this system (buttons are 0.5); 0.45
+   was a fourth value for the same concept. */
 .augment-field .slider-input:disabled {
-    opacity: 0.45;
+    opacity: 0.55;
     cursor: not-allowed;
 }
 .gem-form-row select, .gem-form-row input[type="text"] {
-    margin-top: 5px;
-    padding: 8px;
-    background: var(--bg-main, #10151a);
-    border: 1px solid var(--border-color, #444c5e);
-    color: #fff;
-    border-radius: 4px;
+    margin-top: var(--t-1);
+    padding: 9px 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
+    border-radius: var(--radius-control);
     outline: none;
+    transition: border-color var(--dur-fast) var(--t-ease);
 }
-.gem-form-row select:focus { border-color: var(--accent-blue, #5ec6ff); }
-.gem-form-row select:disabled { opacity: 0.5; cursor: not-allowed; }
+.gem-form-row select:focus { border-color: var(--accent-blue); }
+.gem-form-row select:disabled,
+.gem-form-row input[type="text"]:disabled { opacity: 0.55; cursor: not-allowed; }
+.gem-form-row input[type="text"]::placeholder { color: var(--text-placeholder); }
+
+/* `outline: none` above kills the UA ring for the mouse case, so the keyboard
+   case has to be put back explicitly — focus is not optional here
+   (DESIGN.md > Buttons > Focus). */
+.gem-form-row select:focus-visible,
+.gem-form-row input[type="text"]:focus-visible,
+.slider-input:focus-visible,
+.gem-action-btn:focus-visible,
+.save-gem-btn:focus-visible,
+.danger-btn:focus-visible,
+.primordial-toggle-checkbox:focus-visible + .primordial-toggle-slider {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
 
 .selected-container {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 20px;
-    margin-bottom: 20px;
+    gap: var(--t-4);
+    margin-bottom: var(--t-5);
 }
 .big-slot {
     width: 100px; height: 100px;
     min-width: 100px;
 }
-.big-slot-inner-holder { width: 100%; height: 100%; position: relative; border-radius: 50%; }
-.big-slot-tier-bg, .big-slot-gem-img { position: absolute; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.big-slot-inner-holder { width: 100%; height: 100%; position: relative; border-radius: var(--radius-circle); }
+.big-slot-tier-bg, .big-slot-gem-img { position: absolute; width: 100%; height: 100%; object-fit: cover; border-radius: var(--radius-circle); }
 .big-slot-tier-bg { z-index: 1; }
 .big-slot-gem-img { z-index: 2; }
-.big-slot-lv { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #ccc; font-size: 0.8em; padding: 2px 6px; border-radius: 4px; z-index: 3; font-weight: bold;}
-.big-slot-power { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: var(--accent-blue); font-size: 0.9em; padding: 2px 6px; border-radius: 4px; z-index: 3; font-weight: bold;}
+/* Same scrim reasoning as .item-lv / .item-power: these badges sit on gem art. */
+.big-slot-lv { position: absolute; top: var(--t-1); left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: var(--text-muted); font-size: var(--t-fs-label); padding: 2px var(--t-2); border-radius: var(--radius-pill); z-index: 3; font-weight: 800; }
+.big-slot-power { position: absolute; bottom: var(--t-1); left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: var(--accent-blue); font-size: var(--t-fs-body); padding: 2px var(--t-2); border-radius: var(--radius-pill); z-index: 3; font-weight: 800; }
 
 .selected-stats-square {
-    background: var(--bg-dark, #10151a);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 8px;
-    padding: 15px;
-    font-size: 0.9em;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
+    font-size: var(--t-fs-body);
     flex: 1;
 }
 
-.stat-list-column { display: flex; flex-direction: column; gap: 10px; }
+.stat-list-column { display: flex; flex-direction: column; gap: var(--t-2); }
+/* A small clickable inner row, so it takes the control radius, not the surface one. */
 .stat-vert-square {
-    padding: 12px;
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 8px;
-    background: var(--bg-dark, #10151a);
+    padding: var(--t-3);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
     position: relative;
 }
 .stat-vert-square:hover { border-color: var(--accent-blue); }
@@ -342,179 +416,189 @@
     border-color: var(--accent-blue) !important;
     background: rgba(var(--accent-rgb), 0.1) !important;
 }
-.stat-label { font-weight: bold; margin-bottom: 8px; }
-.stat-augment-pct { position: absolute; right: 12px; top: 12px; color: var(--accent-blue); font-weight: bold; font-size: 0.9em; }
-.container-chip-row { display: flex; gap: 8px; }
+.stat-label { font-weight: bold; margin-bottom: var(--t-2); }
+/* Accent here is meaning, not decoration: it marks the stat that carries the
+   augment the user is actually spending on. */
+.stat-augment-pct { position: absolute; right: var(--t-3); top: var(--t-3); color: var(--accent-blue); font-weight: bold; font-size: var(--t-fs-label); }
+.container-chip-row { display: flex; gap: var(--t-2); }
 .container-chip-vert { display: flex; flex-direction: column; align-items: center; flex: 1; }
-.container-chip-val { font-size: 0.85em; color: #aaa; margin-bottom: 4px; }
-.container-chip-bar-wrap { width: 100%; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
-.container-chip-bar { height: 100%; border-radius: 3px; }
+.container-chip-val { font-size: var(--t-fs-label); color: var(--text-muted); margin-bottom: var(--t-1); }
+/* DESIGN.md specifies a page-graphite track, but this bar already sits ON
+   page graphite (.stat-vert-square), so a page-graphite track would be
+   invisible. It takes the hairline tone instead — same token the old #333
+   literal resolved to, now for a stated reason. 6px is the canonical bar height. */
+.container-chip-bar-wrap { width: 100%; height: 6px; background: var(--border-color); border-radius: var(--radius-pill); overflow: hidden; }
+.container-chip-bar { height: 100%; border-radius: var(--radius-pill); }
 
-.button-row { display: flex; justify-content: center; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
-.action-square { width: 40px; height: 40px; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-dark); }
+.button-row { display: flex; justify-content: center; gap: var(--control-gap); margin-top: var(--t-4); flex-wrap: wrap;}
+.action-square { width: 40px; height: 40px; border: 1px solid var(--border-color); border-radius: var(--radius-control); cursor: pointer; display: flex; align-items: center; justify-content: center; background: var(--bg-dark); }
 .action-square:hover { border-color: var(--accent-blue); }
-.action-square.selected { border-color: #34d058; background: rgba(52, 208, 88, 0.1); }
+.action-square.selected { border-color: var(--success); background: rgba(var(--success-rgb), 0.12); }
 .action-square img { width: 30px; height: 30px; display: block; }
-.action-separator { width: 1px; background: var(--border-color); margin: 0 5px; }
+.action-separator { width: 1px; background: var(--border-color); margin: 0 var(--t-1); }
 
-.gem-actions-row { display: flex; justify-content: center; gap: 10px; margin-top: 15px; width: 100%; }
+.gem-actions-row { display: flex; justify-content: center; gap: var(--control-gap); margin-top: var(--t-4); width: 100%; }
 .gem-action-btn, .save-gem-btn {
-    padding: 8px 16px;
+    padding: var(--t-2) var(--t-4);
     background: var(--bg-dark);
-    border: 1px solid var(--accent-blue, #5ec6ff);
-    color: var(--accent-blue, #5ec6ff);
-    border-radius: 6px;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    border-radius: var(--radius-control);
     cursor: pointer;
+    font-size: var(--t-fs-body);
     font-weight: bold;
-    transition: all 0.2s;
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
     flex: 1;
 }
-.gem-action-btn:hover:not(:disabled), .save-gem-btn:hover:not(:disabled) { background: var(--accent-blue, #5ec6ff); color: #111; }
-.gem-action-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: #555; color: #888; background: var(--bg-dark); }
+/* --accent-ink is recomputed per accent at runtime, so the label stays legible
+   whichever colour the user picks; the old #111 only worked for light accents. */
+.gem-action-btn:hover:not(:disabled), .save-gem-btn:hover:not(:disabled) { background: var(--accent-blue); color: var(--accent-ink); }
+.gem-action-btn:disabled { opacity: 0.5; cursor: not-allowed; border-color: var(--border-color); color: var(--text-muted); background: var(--bg-dark); }
 
 .primordial-toggles-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-top: 15px;
-    margin-bottom: 20px;
+    gap: var(--t-4);
+    margin-top: var(--t-4);
+    margin-bottom: var(--t-5);
     background: var(--bg-dark);
-    padding: 15px;
-    border-radius: 8px;
+    padding: var(--surface-padding);
+    border-radius: var(--radius-surface);
     border: 1px solid var(--border-color);
 }
-.primordial-toggle-label { display: flex; align-items: center; font-size: 0.9em; cursor: pointer; }
-.primordial-toggle-checkbox { display: none; }
-.primordial-toggle-slider { width: 34px; height: 20px; background: #444; border-radius: 10px; position: relative; margin-right: 10px; transition: background 0.2s; }
-.primordial-toggle-slider:after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: left 0.2s; }
-.primordial-toggle-checkbox:checked + .primordial-toggle-slider { background: #34d058; }
-.primordial-toggle-checkbox:checked + .primordial-toggle-slider:after { left: 16px; }
-
-.trash-slot { 
-    width: 50px; 
-    height: 50px; 
-    background: rgba(211, 47, 47, 0.1); 
-    border: 2px dashed #d32f2f; 
-    border-radius: 50%; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    margin: 20px auto 0 auto; 
-    cursor: pointer; 
-    transition: all 0.2s; 
-    color: #d32f2f; 
+.primordial-toggle-label { display: flex; align-items: center; font-size: var(--t-fs-body); cursor: pointer; }
+/* Visually hidden rather than `display: none`: a display-none checkbox is
+   removed from the tab order entirely, which made this toggle unreachable by
+   keyboard and left nothing for :focus-visible to ring. It stays a sibling of
+   the slider, so the :checked selectors below are unchanged. */
+.primordial-toggle-checkbox {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    margin: 0;
 }
-.trash-slot:hover { background: rgba(211, 47, 47, 0.2); border-style: solid; }
-.trash-label { text-align: center; color: #d32f2f; font-size: 0.8em; margin-top: 5px; text-transform: uppercase; font-weight: bold;}
+/* The app's one switch: 44x24 track, 16px knob, 3px inset, 20px travel —
+   byte-identical to `.switch` in settings.css and `.calc-switch` in
+   calculators.css. This was a third geometry (34x20 / 14px travel) with a
+   green checked track, which made "on" here look like "succeeded" everywhere
+   else. On is the accent, the same as every other selection in the app. */
+.primordial-toggle-slider { width: 44px; height: 24px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-pill); position: relative; margin-right: var(--control-gap); transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease); }
+.primordial-toggle-slider:after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; background: var(--text-muted); border-radius: var(--radius-circle); transition: transform var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease); }
+.primordial-toggle-checkbox:checked + .primordial-toggle-slider { background: rgba(var(--accent-rgb), 0.2); border-color: rgba(var(--accent-rgb), 0.5); }
+/* The knob travels on transform, not `left` — animating a layout property
+   relayouts the row every frame (DESIGN.md > Do's: animate transform/opacity). */
+.primordial-toggle-checkbox:checked + .primordial-toggle-slider:after { transform: translateX(20px); background: var(--accent-blue); }
 
+.trash-slot {
+    width: 50px;
+    height: 50px;
+    background: rgba(var(--danger-rgb), 0.12);
+    border: 1px dashed var(--danger);
+    border-radius: var(--radius-circle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: var(--t-5) auto 0 auto;
+    cursor: pointer;
+    transition: background-color var(--dur) var(--t-ease);
+    /* Red as text/glyph needs the -ink tint: --danger itself is 4.4:1 and fails AA. */
+    color: var(--danger-ink);
+}
+.trash-slot:hover { background: rgba(var(--danger-rgb), 0.2); border-style: solid; }
+.trash-label { text-align: center; color: var(--danger-ink); font-size: var(--t-fs-micro); letter-spacing: 1px; margin-top: var(--t-1); text-transform: uppercase; font-weight: 800;}
+
+/* A modal genuinely floats, so it is the one place in this file that gets a
+   shadow and a blur. The z-index MUST come from the token: the app's custom
+   selects sit at 200000, so the old literal 10000 rendered this dialog
+   underneath any open dropdown. */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    display: none; 
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
+    display: none;
     align-items: center;
     justify-content: center;
-    z-index: 10000;
-    animation: fadeIn 0.2s ease;
+    z-index: var(--z-modal);
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .modal-content {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 24px;
-    width: 320px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    border-radius: var(--radius-surface);
+    padding: var(--modal-padding);
+    /* 92vw cap so the dialog never runs off a narrow window. */
+    width: min(320px, 92vw);
+    box-shadow: var(--shadow-modal);
     text-align: center;
 }
 
 .modal-content h3 {
     margin-top: 0;
-    color: var(--danger);
-    margin-bottom: 10px;
+    /* Destructive heading, and headings are text — hence -ink, not --danger. */
+    color: var(--danger-ink);
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+    margin-bottom: var(--t-3);
 }
 
 .modal-content p {
     color: var(--text-main);
-    margin-bottom: 24px;
-    font-size: 0.95em;
-    line-height: 1.4;
+    margin-bottom: var(--t-5);
+    font-size: var(--t-fs-body);
+    line-height: 1.5;
 }
 
 .modal-actions {
     display: flex;
-    gap: 15px;
+    gap: var(--control-gap);
     justify-content: center;
 }
 
 .danger-btn {
     background: var(--danger);
-    color: #fff;
+    color: var(--text-main);
     border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-control);
     cursor: pointer;
+    font-size: var(--t-fs-body);
     font-weight: bold;
-    transition: filter 0.2s;
+    transition: filter var(--dur) var(--t-ease);
 }
 .danger-btn:hover { filter: brightness(1.2); }
 
+/* A tooltip floats, so it keeps a shadow — the floating one, not a hand-rolled
+   pair. It has to clear the custom-select dropdowns (200000) and the modal
+   above, so it stacks at the top token rather than a literal 10000. */
 .gem-tooltip {
     position: fixed;
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 10px;
+    border-radius: var(--radius-surface);
+    padding: var(--t-3);
     pointer-events: none;
-    z-index: 10000;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: var(--z-toast);
+    box-shadow: var(--shadow-floating);
     width: 220px;
-    font-size: 0.9em;
+    font-size: var(--t-fs-body);
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: var(--t-1);
 }
-.gem-tooltip-title { font-weight: bold; color: var(--accent-blue); margin-bottom: 5px; text-align: center; }
+/* Muted, not accent: a tooltip title is structure. Weight and the divider of
+   whitespace carry the hierarchy instead (DESIGN.md > The Weight-Before-Size Rule). */
+.gem-tooltip-title { font-weight: 700; color: var(--text-main); margin-bottom: var(--t-1); text-align: center; }
 .gem-tooltip-row { display: flex; justify-content: space-between; }
-.gem-tooltip-stat { font-weight: bold; color: #fff; }
+.gem-tooltip-stat { font-weight: bold; color: var(--text-main); }
 .gem-tooltip-muted { color: var(--text-muted); }
 
-/* Concise module pass */
-.gem-sim-container {
-    gap: 14px;
-    padding: 14px;
-    min-height: var(--gems-builds-min-height, 420px);
-    height: auto;
-}
-
-.gem-sim-column {
-    background: linear-gradient(160deg, var(--glass-top, rgba(255, 255, 255, 0.08)), var(--glass-bottom, rgba(12, 16, 24, 0.42)));
-    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
-    box-shadow: none;
-    backdrop-filter: blur(10px) saturate(120%);
-    -webkit-backdrop-filter: blur(10px) saturate(120%);
-}
-
-.column-header {
-    padding: 11px 12px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.2));
-    border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
-}
-
-.column-scroll-area {
-    padding: 14px;
-}
-
-.panel-divider {
-    margin: 14px 0;
-}
-
-.equipped-row {
-    gap: 26px;
-    margin-bottom: 10px;
-}
-
+/* 900px is the shell breakpoint (rail -> drawer), which is a genuine viewport
+   question, so a viewport query is the right instrument here rather than a
+   content-box container query. */
 @media (max-width: 900px) {
     .creator-advanced-row {
         flex-direction: column;
@@ -524,5 +608,25 @@
     .creator-generate-row {
         flex-direction: column;
         align-items: stretch;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .gem-sim-container,
+    .modal-overlay {
+        animation: none;
+    }
+    .slot,
+    .big-slot,
+    .stat-vert-square,
+    .gem-action-btn,
+    .save-gem-btn,
+    .danger-btn,
+    .primordial-toggle-slider,
+    .primordial-toggle-slider:after,
+    .trash-slot,
+    .gem-form-row select,
+    .gem-form-row input[type="text"] {
+        transition: none;
     }
 }

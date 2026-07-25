@@ -160,15 +160,15 @@ document.addEventListener("gem_builds_loaded", () => {
                 return `
                     <div style="min-width: 220px;">
                         <h3>${t("gems.gem_builds.build_rank_details").replace("{rank}", build.rank)}</h3>
-                        <p style="margin: 0 0 10px 0; color: var(--text-muted); line-height: 1.45;">${tradeoffText}</p>
+                        <p style="margin: 0 0 var(--t-3) 0; color: var(--text-muted); line-height: 1.5;">${tradeoffText}</p>
                         <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="margin-bottom: 4px;"><strong>${t("common.light")}:</strong> <span style="float: right; color: #fff;">${build.light.toLocaleString()}</span></li>
-                            <li style="margin-bottom: 4px;"><strong>${t("gems.gem_builds.base_dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.base_dmg).toLocaleString()}</span></li>
-                            <li style="margin-bottom: 4px;"><strong>${t("gems.gem_builds.bonus_dmg")}:</strong> <span style="float: right; color: #fff;">${build.bonus_dmg.toFixed(2)}%${classBonusText}</span></li>
-                            <li style="margin-bottom: 4px;"><strong>${t("gems.gem_builds.crit_dmg")}:</strong> <span style="float: right; color: #fff;">${build.crit_dmg.toFixed(1)}%</span></li>
-                            <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: 8px 0;">
-                            <li style="margin-bottom: 4px;"><strong>${t("gems.gem_builds.total_dmg")}:</strong> <span style="float: right; color: #fff;">${Math.round(build.total_dmg).toLocaleString()}</span></li>
-                            <li style="margin-bottom: 4px;"><strong>${t("gems.gem_builds.coefficient")}:</strong> <span style="float: right; color: var(--accent-orange); font-weight: bold;">${build.coefficient.toLocaleString()}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("common.light")}:</strong> <span style="float: right; color: var(--text-main);">${build.light.toLocaleString()}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.base_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${Math.round(build.base_dmg).toLocaleString()}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.bonus_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${build.bonus_dmg.toFixed(2)}%${classBonusText}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.crit_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${build.crit_dmg.toFixed(1)}%</span></li>
+                            <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: var(--t-2) 0;">
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.total_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${Math.round(build.total_dmg).toLocaleString()}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.coefficient")}:</strong> <span style="float: right; color: var(--accent-blue); font-weight: 700;">${build.coefficient.toLocaleString()}</span></li>
                         </ul>
                     </div>
                 `.replace(/"/g, '&quot;');
@@ -178,7 +178,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 try {
                     await navigator.clipboard.writeText(layout);
                     const originalColor = e.target.style.color;
-                    e.target.style.color = "#4CAF50";
+                    e.target.style.color = "var(--success-ink)";
                     setTimeout(() => e.target.style.color = originalColor, 500);
                     if(window.showToast) window.showToast(t("gems.gem_builds.copied_build_layout_to_clipboard"));
                 } catch (err) {

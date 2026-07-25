@@ -5,7 +5,7 @@ function initDragonsView() {
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Dragon Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Dragon Codex.</div>`;
         return;
     }
 
@@ -480,7 +480,7 @@ function initDragonsView() {
     } catch (err) {
         console.error("Failed to initialize Dragon Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Dragon Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Dragon Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
         delete root.dataset.dragonsInitializing;
     }

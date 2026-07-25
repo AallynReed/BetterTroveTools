@@ -5,7 +5,7 @@ function initBadgesView() {
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Badge Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Badge Codex.</div>`;
         return;
     }
 
@@ -105,7 +105,7 @@ function initBadgesView() {
                 const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 return safe.replace(new RegExp(`(${escaped})`, 'ig'), '<mark>$1</mark>');
             };
-            const tierColor = (t) => TIER_COLORS[t] || '#9aa7b4';
+            const tierColor = (t) => TIER_COLORS[t] || 'var(--text-muted)';
             const masteryText = (b) => (b.base && b.multiplier > 1)
                 ? `${b.mastery} (${b.base} × ${b.multiplier})` : `${b.mastery}`;
 
@@ -300,7 +300,7 @@ function initBadgesView() {
     } catch (err) {
         console.error("Failed to initialize Badge Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Badge Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Badge Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
         delete root.dataset.badgesInitializing;
     }

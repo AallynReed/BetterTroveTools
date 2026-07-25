@@ -1,38 +1,57 @@
+/* Mod Manager tab ("My Mods").
+   Every value here comes from the token layer in style.css `:root`: the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. The view root, header, search bar and grid gap
+   are also enrolled in the CROSS-APP DENSITY LAYER at the bottom of style.css —
+   the values restated here are kept identical to it so this file never teaches a
+   number that does not actually render. */
+
 [v-cloak] {
     display: none !important;
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.file-manager-container { padding: 24px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; animation: fadeIn 0.3s ease; }
-.file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
-.placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
+.file-manager-container {
+    padding: var(--view-padding);
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    box-sizing: border-box;
+    animation: fadeIn var(--dur) var(--t-ease);
+}
+.file-manager-header { margin-bottom: var(--t-3); border-bottom: 1px solid var(--border-color); padding-bottom: var(--t-2); }
+/* Stands in for a card while the grid is empty or loading, so it takes the
+   surface radius rather than a control radius. */
+.placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: var(--radius-surface); padding: var(--t-6) var(--t-5); text-align: center; color: var(--text-muted); }
 
 .mod-manager-root {
-    padding-top: 22px;
+    padding-top: var(--t-5);
 }
 
-.mm-tabs-container { margin-bottom: 14px; }
+.mm-tabs-container { margin-bottom: var(--t-4); }
 .mm-tab-buttons {
     display: flex;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+    padding-bottom: var(--t-2);
 }
 .mm-tab-btn {
     border: 1px solid transparent;
     background: transparent;
     color: var(--text-muted);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     padding: 10px 20px;
-    font-size: 15px;
+    font-size: var(--t-fs-body);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     font-weight: 700;
-    transition: all 0.2s ease;
+    /* Enumerated: `all` would animate the layout properties too and costs frames
+       on low-end hardware. */
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 .mm-tab-btn span {
     white-space: nowrap;
@@ -46,45 +65,55 @@
     background: var(--bg-hover);
     color: var(--text-main);
 }
+.mm-tab-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
 .mm-tab-btn.active {
     background: var(--bg-panel);
     color: var(--accent-blue);
     border: 1px solid var(--border-color);
-    border-bottom: 2px solid var(--accent-blue);
+    /* Borders are always 1px in this system; the tint + accent text already
+       carry "current tab", the underline only has to point at it. Keeping it at
+       1px also stops the tab shifting a pixel as it activates. */
+    border-bottom: 1px solid var(--accent-blue);
 }
 .mm-tab-content { display: none; }
 .mm-tab-content.active { display: block; }
 
-.file-controls { flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+.file-controls { flex-wrap: wrap; align-items: center; margin-bottom: var(--t-4); }
 .file-controls .custom-select-wrapper { flex: 1 1 360px; min-width: 260px; }
 
 .mod-toolbar {
     display: grid;
     grid-template-columns: minmax(320px, 1.4fr) repeat(2, minmax(230px, 1fr));
-    gap: 10px;
-    margin: 12px 0 14px;
+    gap: var(--control-gap);
+    margin: var(--t-3) 0 var(--t-4);
 }
 
 .toolbar-cluster {
-    padding: 10px 12px;
+    padding: var(--t-3);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    background: linear-gradient(160deg, rgba(255,255,255,0.03), rgba(0,0,0,0.14));
+    border-radius: var(--radius-surface);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.14));
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .toolbar-cluster-primary {
     min-height: 100%;
 }
 
+/* The signature micro eyebrow. It labels a group rather than marking a primary
+   action or a selection, so it stays muted — accent is meaning, not decoration
+   (DESIGN.md > The Meaning-Only Rule). */
 .toolbar-cluster-label {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
-    letter-spacing: 0.9px;
+    letter-spacing: 1px;
     font-weight: 800;
-    color: var(--accent-blue);
+    color: var(--text-muted);
 }
 
 .toolbar-select-grow {
@@ -100,28 +129,33 @@
     cursor: pointer;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--t-1);
 }
 
 .toolbar-cluster-summary::-webkit-details-marker {
     display: none;
 }
 
+.toolbar-cluster-summary:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
 .toolbar-cluster-summary-copy {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .toolbar-cluster-actions-advanced {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    margin-top: var(--t-2);
+    padding-top: var(--t-2);
+    border-top: 1px solid var(--border-color);
 }
 
 .toolbar-cluster-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
 }
 
@@ -135,10 +169,10 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 8px 10px;
-    font-size: 12px;
-    min-height: 34px;
+    gap: var(--t-2);
+    padding: var(--t-2) 10px;
+    font-size: var(--t-fs-body);
+    min-height: var(--control-height);
 }
 
 .mod-toolbar .primary-btn span,
@@ -152,26 +186,30 @@
     margin-right: 1px;
 }
 
-.search-filter-bar { display: flex; gap: 15px; align-items: center; background: var(--bg-panel); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+.search-filter-bar { display: flex; gap: var(--control-gap); align-items: center; background: var(--bg-panel); padding: var(--surface-padding); border-radius: var(--radius-surface); border: 1px solid var(--border-color); margin-bottom: var(--t-2); }
 .search-wrapper { position: relative; flex-grow: 1; }
 .search-wrapper-primary { min-width: 260px; }
-.search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.5; }
-#mod-search-input { width: 100%; padding: 10px 10px 10px 35px; background: #111; border: 1px solid var(--border-color); border-radius: 4px; color: var(--text-main); outline: none; }
+.search-icon { position: absolute; left: var(--t-3); top: 50%; transform: translateY(-50%); opacity: 0.5; }
+/* 35px of left padding is optical — it clears the search glyph above, not a
+   spacing step. */
+#mod-search-input { width: 100%; padding: 10px 10px 10px 35px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-control); color: var(--text-main); outline: none; }
+#mod-search-input::placeholder { color: var(--text-placeholder); }
 #mod-search-input:focus { border-color: var(--accent-blue); }
-#mod-filter-status { padding: 10px; background: #111; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; cursor: pointer; }
+#mod-search-input:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+#mod-filter-status { padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); cursor: pointer; }
 .search-result-nav {
     display: inline-flex;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .mod-filter-select {
     width: 200px;
 }
 
-.mod-count-display { font-size: 12px; color: var(--text-muted); min-width: 120px; text-align: right; }
+.mod-count-display { font-size: var(--t-fs-label); color: var(--text-muted); min-width: 120px; text-align: right; }
 
 @media (max-width: 900px) {
-    .file-manager-container { padding: 20px; }
+    .file-manager-container { padding: var(--view-padding); }
     .mod-toolbar { grid-template-columns: 1fr; }
     .search-filter-bar { flex-wrap: wrap; }
     .mod-count-display { width: 100%; text-align: left; }
@@ -189,39 +227,43 @@
     }
 }
 
-.mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); grid-auto-rows: 260px; gap: 15px; padding: 10px 0; animation: fadeIn 0.3s ease; align-items: stretch; }
+/* Cards hug their content: `stretch` drew a short card out into an empty box
+   (DESIGN.md > Cards). The rows stay definite, so `height: 100%` below still
+   resolves. */
+.mod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); grid-auto-rows: 260px; gap: var(--t-3); padding: var(--t-2) 0; animation: fadeIn var(--dur) var(--t-ease); align-items: start; }
 .mod-card {
     height: 100%;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     position: relative;
 }
 
+/* A resting surface: no shadow. The tonal step from page to panel plus the 1px
+   hairline is the whole of the depth here (DESIGN.md > The Floating-Only Rule). */
 .mod-card-content {
     position: relative;
     height: 100%;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     border: 1px solid var(--border-color);
     background: linear-gradient(170deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.15)), var(--bg-panel);
-    padding: 12px;
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
 }
 
+/* Conflict state used to be a coloured glow, which reads as elevation in this
+   system. It is now a border-colour change on all four sides — the same signal,
+   no fake float, and it survives on a low-end GPU. */
 .mod-card.is-conflicting .mod-card-content {
-    box-shadow:
-    0 0 10px rgba(255, 85, 85, 0.22),
-    0 0 18px rgba(255, 85, 85, 0.14),
-        0 8px 20px rgba(0, 0, 0, 0.35);
+    border-color: rgba(var(--danger-rgb), 0.6);
 }
 
 .mod-card.is-potential-conflict .mod-card-content {
-    box-shadow:
-    0 0 10px rgba(255, 193, 7, 0.2),
-    0 0 18px rgba(255, 193, 7, 0.12),
-        0 8px 20px rgba(0, 0, 0, 0.35);
+    border-color: rgba(var(--warning-rgb), 0.55);
 }
 
+/* Radius stays 0 here: this rule resets an absolutely-positioned variant back to
+   a transparent, borderless icon button, where a corner radius has nothing to
+   round. */
 .mod-card-delete-hover {
     position: static;
     width: auto;
@@ -239,7 +281,7 @@
     cursor: pointer;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease, color 0.15s ease, transform 0.2s ease;
+    transition: opacity var(--dur) var(--t-ease), color var(--dur-fast) var(--t-ease), transform var(--dur) var(--t-ease);
     z-index: 4;
 }
 
@@ -250,7 +292,16 @@
 
 .mod-card-delete-hover:hover {
     transform: scale(1.05);
-    color: #ff6b6b;
+    color: var(--danger-ink);
+}
+
+/* Keyboard users never get the hover reveal, so the control has to be reachable
+   and visible on focus. */
+.mod-card-delete-hover:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .mod-card.kbd-active-result {
@@ -263,44 +314,47 @@
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform var(--dur) var(--t-ease);
 }
 
 .mod-card:hover .mod-card-flip {
     transform: rotateY(180deg);
 }
 
+/* Same resting surface as .mod-card-content — the front face previously carried
+   a drop shadow, which is reserved for things that genuinely float. */
 .mod-face {
     position: absolute;
     inset: 0;
     backface-visibility: hidden;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     border: 1px solid var(--border-color);
     background: linear-gradient(170deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.15)), var(--bg-panel);
-    padding: 12px;
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
 }
 
-.mod-face-front {
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-}
-
 .mod-face-back {
     transform: rotateY(180deg);
-    gap: 10px;
+    gap: var(--t-2);
 }
 
 .mod-front-top {
     display: flex;
     flex-direction: row;
     align-items: flex-start;
-    gap: 6px;
+    gap: var(--t-2);
 }
 
-.mod-title mark, .mod-meta mark { background: rgba(var(--accent-rgb), 0.2); color: #fff; padding: 0 2px; border-radius: 3px; }
+/* The search hit sits on a 20% accent tint, not an accent fill, so the label is
+   still ink — --accent-ink would be dark-on-dark here. */
+.mod-title mark, .mod-meta mark { background: rgba(var(--accent-rgb), 0.2); color: var(--text-main); padding: 0 2px; border-radius: var(--radius-control); }
+/* This is the card's title, so it takes the heading role and its weight rather
+   than sitting a step below body. */
 .mod-title {
-    font-size: 14px;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
     color: var(--text-main);
     margin: 0;
     flex: 1;
@@ -311,8 +365,8 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
-    line-height: 1.25;
-    min-height: 2.5em;
+    line-height: 1.3;
+    min-height: 2.6em;
 }
 
 .mod-link {
@@ -325,6 +379,11 @@
     text-decoration: underline;
 }
 
+.mod-link:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
 .mod-conflict-icon {
     flex: 0 0 auto;
     width: 18px;
@@ -332,7 +391,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 13px;
+    font-size: var(--icon-optical);
     margin-top: 2px;
     cursor: help;
     background: transparent;
@@ -348,11 +407,11 @@
 }
 
 .mod-conflict-icon.active {
-    color: #ff9a9a;
+    color: var(--danger-ink);
 }
 
 .mod-conflict-icon.inactive {
-    color: #ffc88d;
+    color: var(--warning-ink);
 }
 
 .mod-author-link {
@@ -363,28 +422,40 @@
     color: var(--accent-blue);
     text-decoration: underline;
 }
-.mod-meta { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-.mod-status-pill { display: inline-flex; align-items: center; gap: 6px; width: fit-content; font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; border: 1px solid transparent; }
+
+.mod-author-link:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+.mod-meta { font-size: var(--t-fs-label); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: var(--t-1); }
+.mod-status-pill { display: inline-flex; align-items: center; gap: var(--t-2); width: fit-content; font-size: var(--t-fs-micro); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: var(--t-1) 10px; border-radius: var(--radius-pill); border: 1px solid transparent; }
 .mod-status-toggle { margin-top: auto; cursor: pointer; width: 100%; justify-content: center; }
-.mod-status-toggle:disabled { cursor: not-allowed; opacity: 0.75; }
-.mod-status-pill.enabled { color: #5ee383; background: rgba(40, 167, 69, 0.14); border-color: rgba(94, 227, 131, 0.45); }
-.mod-status-pill.disabled { color: #b8c0cc; background: rgba(130, 140, 160, 0.16); border-color: rgba(184, 192, 204, 0.35); }
+.mod-status-toggle:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+/* One disabled value everywhere (DESIGN.md > Buttons). */
+.mod-status-toggle:disabled { cursor: not-allowed; opacity: 0.5; }
+/* Pill recipe: ~14% tint under a same-hue border at ~35%. */
+.mod-status-pill.enabled { color: var(--success-ink); background: rgba(var(--success-rgb), 0.14); border-color: rgba(var(--success-rgb), 0.35); }
+/* "Disabled" is not a semantic status — it is simply off, so it reads in the
+   neutral ramp instead of inventing a fifth colour. */
+.mod-status-pill.disabled { color: var(--text-muted); background: var(--bg-hover); border-color: var(--border-color); }
 
 .mod-front-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
+    gap: var(--t-2);
+    margin-top: var(--t-2);
 }
 
+/* The preview well is inset, so it takes page graphite — one step below the
+   panel it sits on. 88px is a fixed thumbnail band, not a spacing step. */
 .mod-front-preview {
-    margin-top: 8px;
+    margin-top: var(--t-2);
     width: 100%;
     height: 88px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.25);
+    background: var(--bg-dark);
     padding: 0;
     cursor: pointer;
     display: flex;
@@ -392,6 +463,13 @@
     justify-content: center;
 }
 
+.mod-front-preview:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+/* Not a disabled control but an empty state — it still has to be readable, so
+   it deliberately does not take the 0.5 disabled value. */
 .mod-front-preview:disabled {
     cursor: default;
     opacity: 0.8;
@@ -410,41 +488,45 @@
 
 .mod-front-preview-empty {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
 }
 
+/* Neutral chip. The label text is data (a branch name), so it is not forced to
+   uppercase and does not take the micro tracking. */
 .mod-flag {
-    font-size: 10px;
-    font-weight: 700;
-    border-radius: 999px;
-    padding: 3px 8px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    background: rgba(0, 0, 0, 0.2);
+    gap: var(--t-1);
+    background: transparent;
 }
 
 .mod-flag-update {
-    color: #ffd564;
-    border-color: rgba(255, 193, 7, 0.4);
-    background: rgba(255, 193, 7, 0.12);
+    color: var(--warning-ink);
+    border-color: rgba(var(--warning-rgb), 0.35);
+    background: rgba(var(--warning-rgb), 0.14);
 }
 
+/* "May conflict" and "is conflicting" are the same two semantics as everywhere
+   else — amber then red — rather than a third amber and a second red. */
 .mod-flag-conflict {
-    color: #ffc88d;
-    border-color: rgba(255, 152, 0, 0.38);
-    background: rgba(255, 152, 0, 0.12);
+    color: var(--warning-ink);
+    border-color: rgba(var(--warning-rgb), 0.35);
+    background: rgba(var(--warning-rgb), 0.14);
 }
 
 .mod-flag-conflict-active {
-    color: #ff9a9a;
-    border-color: rgba(255, 85, 85, 0.45);
-    background: rgba(255, 85, 85, 0.14);
+    color: var(--danger-ink);
+    border-color: rgba(var(--danger-rgb), 0.35);
+    background: rgba(var(--danger-rgb), 0.14);
 }
 
 .mod-front-flip-indicator {
@@ -452,28 +534,28 @@
     align-self: flex-end;
     width: 24px;
     height: 24px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(0, 0, 0, 0.28);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     pointer-events: none;
 }
 
 .mod-inline-actions {
-    margin-top: 10px;
+    margin-top: var(--t-2);
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
 }
 
 .mod-back-title {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
     color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;
@@ -483,59 +565,111 @@
 .mod-back-conflict {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
     width: fit-content;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 9px;
-    border-radius: 999px;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-pill);
     border: 1px solid transparent;
     cursor: help;
 }
 
 .mod-back-conflict.active {
-    color: #ff9a9a;
-    border-color: rgba(255, 85, 85, 0.5);
-    background: rgba(255, 85, 85, 0.14);
+    color: var(--danger-ink);
+    border-color: rgba(var(--danger-rgb), 0.35);
+    background: rgba(var(--danger-rgb), 0.14);
 }
 
 .mod-back-conflict.inactive {
-    color: #ffc88d;
-    border-color: rgba(255, 152, 0, 0.4);
-    background: rgba(255, 152, 0, 0.12);
+    color: var(--warning-ink);
+    border-color: rgba(var(--warning-rgb), 0.35);
+    background: rgba(var(--warning-rgb), 0.14);
 }
 
 .mod-back-actions {
     display: grid;
-    gap: 7px;
+    gap: var(--t-2);
 }
 
 .mod-back-actions button {
     width: 100%;
     justify-content: center;
     margin-right: 0;
-    min-height: 30px;
-    font-size: 11px;
+    min-height: var(--control-height);
+    font-size: var(--t-fs-body);
 }
 
 .mod-back-actions .secondary-btn {
-    padding: 5px 10px;
-    border-radius: 4px;
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
     border: 1px solid var(--border-color);
 }
 
-.toggle-mod-btn { background: rgba(40, 167, 69, 0.1); border: 1px solid #28a745; color: #28a745; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: all 0.2s; }
-.toggle-mod-btn:hover { background: #28a745; color: white; }
-.toggle-mod-btn.active { background: rgba(255, 85, 85, 0.1); color: #ff5555; border-color: #ff5555; }
-.toggle-mod-btn.active:hover { background: #ff5555; color: white; }
+/* ---- Card actions -------------------------------------------------------
+   Enable/disable, update and delete are the same button: a semantic tint under
+   a same-hue border with semantic ink, deepening on hover. They used to invert
+   to a solid fill with `color: white`, which is 3.0:1 on the old green and 1.6:1
+   on the old amber — the tint-only hover keeps the meaning and clears AA. The
+   four off-system colours (#28a745, #ff5555, #ffc107, #ff9a9a) collapse onto the
+   two semantics that were actually being expressed. */
+.toggle-mod-btn {
+    background: rgba(var(--success-rgb), 0.12);
+    border: 1px solid rgba(var(--success-rgb), 0.4);
+    color: var(--success-ink);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    font-size: var(--t-fs-body);
+    font-weight: 600;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
+}
+.toggle-mod-btn:hover { background: rgba(var(--success-rgb), 0.2); border-color: rgba(var(--success-rgb), 0.6); }
+.toggle-mod-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.toggle-mod-btn.active { background: rgba(var(--danger-rgb), 0.12); color: var(--danger-ink); border-color: rgba(var(--danger-rgb), 0.4); }
+.toggle-mod-btn.active:hover { background: rgba(var(--danger-rgb), 0.2); border-color: rgba(var(--danger-rgb), 0.6); }
 
 @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-.update-mod-btn { background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; color: #ffc107; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-.update-mod-btn:hover { background: #ffc107; color: #111; }
+.update-mod-btn {
+    background: rgba(var(--warning-rgb), 0.12);
+    border: 1px solid rgba(var(--warning-rgb), 0.4);
+    color: var(--warning-ink);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    font-size: var(--t-fs-body);
+    margin-right: var(--t-2);
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--t-2);
+}
+.update-mod-btn:hover { background: rgba(var(--warning-rgb), 0.2); border-color: rgba(var(--warning-rgb), 0.6); }
+.update-mod-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.update-mod-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .update-mod-btn.hidden { display: none; }
 
-.delete-mod-btn { background: rgba(255, 85, 85, 0.1); border: 1px solid #ff5555; color: #ff5555; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
-.delete-mod-btn:hover { background: #ff5555; color: white; }
+.delete-mod-btn {
+    background: rgba(var(--danger-rgb), 0.12);
+    border: 1px solid rgba(var(--danger-rgb), 0.4);
+    color: var(--danger-ink);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    font-size: var(--t-fs-body);
+    margin-right: var(--t-2);
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--t-2);
+}
+.delete-mod-btn:hover { background: rgba(var(--danger-rgb), 0.2); border-color: rgba(var(--danger-rgb), 0.6); }
+.delete-mod-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.delete-mod-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 900px) {
     .mod-card:hover .mod-card-flip {
@@ -552,56 +686,87 @@
     }
 }
 
-.image-modal { display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px); align-items: center; justify-content: center; flex-direction: column; }
-.image-modal.active { display: flex; animation: fadeIn 0.2s ease; }
-.modal-content { max-width: 90%; max-height: 80vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); object-fit: contain; }
-.close-modal { position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; transition: color 0.2s; }
+/* ---- Image lightbox ----
+   Genuinely floating chrome, so it is the one place in this file that gets a
+   shadow and a blur — and it must sit above the app's custom-select dropdowns
+   (200000), which a literal 9999 did not. */
+.image-modal { display: none; position: fixed; z-index: var(--z-modal); left: 0; top: 0; width: 100%; height: 100%; background-color: var(--modal-backdrop); backdrop-filter: var(--modal-blur); -webkit-backdrop-filter: var(--modal-blur); align-items: center; justify-content: center; flex-direction: column; }
+.image-modal.active { display: flex; animation: fadeIn var(--dur) var(--t-ease); }
+.modal-content { max-width: 90%; max-height: 80vh; border-radius: var(--radius-surface); box-shadow: var(--shadow-modal); object-fit: contain; }
+.close-modal { position: absolute; top: var(--t-5); right: var(--t-6); color: var(--text-main); font-size: var(--t-fs-title); font-weight: 700; cursor: pointer; transition: color var(--dur-fast) var(--t-ease); }
 .close-modal:hover { color: var(--accent-blue); }
-#modal-caption { margin-top: 15px; color: #ccc; font-size: 18px; font-weight: bold; text-align: center; }
+#modal-caption { margin-top: var(--t-4); color: var(--text-main); font-size: var(--t-fs-h2); font-weight: 600; text-align: center; }
 
-/* Concise module pass */
+/* Concise module pass. These selectors are also enrolled in the cross-app
+   density layer; the values are restated with the same tokens so nothing here
+   contradicts what renders. */
 .file-manager-container {
-    padding: 22px;
+    padding: var(--view-padding);
 }
 
 .file-manager-header {
-    margin-bottom: 18px;
-    padding-bottom: 12px;
+    margin-bottom: var(--t-3);
+    padding-bottom: var(--t-2);
 }
 
 .search-filter-bar {
-    gap: 12px;
+    gap: var(--control-gap);
 }
 
 .mod-grid {
-    gap: 12px;
+    gap: var(--t-3);
     grid-auto-rows: 248px;
 }
 
 .mod-card-content {
-    padding: 10px;
+    padding: var(--surface-padding);
 }
 
 /* Profile name input modal — reuses .mh-variant-modal / .mh-variant-dialog. */
 .profile-name-dialog {
     max-width: 460px;
 }
+/* An input is an inset well: page graphite, one step below the dialog panel.
+   The old --bg-input/--bg-deep fallback chain named tokens that do not exist. */
 .profile-name-input {
-    margin: 16px 18px 0;
-    padding: 10px 12px;
-    background: var(--bg-input, var(--bg-deep, var(--bg-panel)));
+    margin: var(--t-4) var(--t-4) 0;
+    padding: 10px var(--t-3);
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     color: var(--text-main);
-    font-size: 14px;
+    font-size: var(--t-fs-body);
     outline: none;
+}
+.profile-name-input::placeholder {
+    color: var(--text-placeholder);
 }
 .profile-name-input:focus {
     border-color: var(--accent-blue);
 }
+.profile-name-input:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
 .profile-name-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    padding: 16px 18px 18px;
+    gap: var(--control-gap);
+    padding: var(--t-4);
+}
+
+/* Reduced motion: state still changes, it just stops moving. */
+@media (prefers-reduced-motion: reduce) {
+    .file-manager-container,
+    .mod-grid,
+    .image-modal.active { animation: none; }
+    .mm-tab-btn,
+    .mod-card-delete-hover,
+    .mod-card-flip,
+    .toggle-mod-btn,
+    .update-mod-btn,
+    .delete-mod-btn,
+    .close-modal { transition-duration: 0.01ms; }
+    .mod-card-delete-hover:hover { transform: none; }
+    .mod-card:hover .mod-card-flip { transform: none; }
 }

@@ -1,29 +1,45 @@
+/* Gem Builds view.
+   Every value here comes from the token layer in style.css `:root` — the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. Nothing is redefined locally.
+
+   Note this view is enrolled in the CROSS-APP DENSITY LAYER at the bottom of
+   style.css (.view-container, .card, .config-section, .results-panel,
+   .results-toolbar, .input-row, .gem-builds-grid, .btt-table cells). The local
+   declarations for those are kept but written from the density tokens, so a
+   value read here is no longer a different number from the one that renders. */
 [v-cloak] {
     display: none !important;
 }
 
-.view-container { padding: 20px; }
-.header h2 { font-size: 2.5rem; margin-bottom: 5px; }
-.header p { color: var(--text-muted); margin-bottom: 30px; }
+.view-container { padding: var(--view-padding); }
+/* The page title, once per view — 2.5rem was a seventh type size. */
+.header h2 { font-size: var(--t-fs-title); margin-bottom: var(--t-1); }
+.header p { color: var(--text-muted); margin-bottom: var(--t-6); }
 
 .gem-builds-grid {
     display: grid;
     grid-template-columns: 390px 1fr;
-    gap: 20px;
+    gap: var(--surface-gap);
     min-height: min(700px, 100%);
+    /* Without this the results card is stretched to the grid's min-height and
+       reads as a drawn empty box before a calculation has run. */
+    align-items: start;
 }
 
 .card {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
+    /* Resting surface: depth here is one tonal step plus a hairline. A shadow
+       in this system means "this floats above the page". */
 }
 
 .config-panel-wrapper {
     position: sticky;
-    top: 20px;
+    /* Sticks flush with the view's own padding rather than at a second number. */
+    top: var(--view-padding);
     align-self: start;
     width: 100%;
 }
@@ -35,41 +51,46 @@
 }
 
 .config-panel-head {
-    margin-bottom: 14px;
-    padding-bottom: 12px;
+    margin-bottom: var(--t-4);
+    padding-bottom: var(--t-3);
     border-bottom: 1px solid var(--border-color);
 }
 
 .config-panel-title {
-    font-size: 1.05rem;
+    font-size: var(--t-fs-h2);
     font-weight: 700;
     color: var(--text-main);
 }
 
 .config-panel-subtitle {
-    margin-top: 3px;
+    margin-top: var(--t-1);
     color: var(--text-muted);
-    font-size: 0.83rem;
+    font-size: var(--t-fs-label);
 }
 
+/* "Live" is the accent's job (DESIGN.md > The Meaning-Only Rule); the old
+   rgba(255,166,0,…) was a fifth semantic that also stayed orange while the
+   user's UI changed colour. Pill tint/border alphas follow the badge spec. */
 .config-panel-live {
-    margin-top: 8px;
+    margin-top: var(--t-2);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    border-radius: 999px;
-    padding: 4px 10px;
-    color: var(--accent-orange);
-    border: 1px solid rgba(255, 166, 0, 0.35);
-    background: rgba(255, 166, 0, 0.1);
+    gap: var(--t-2);
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
+    color: var(--accent-blue);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    background: rgba(var(--accent-rgb), 0.12);
 }
 
-.card h3 { margin-top: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+/* h3 carried the UA default (1.17em) — a card title is the heading role. */
+.card h3 { margin-top: 0; margin-bottom: var(--t-4); font-size: var(--t-fs-h2); border-bottom: 1px solid var(--border-color); padding-bottom: var(--t-3); }
 
-.input-group { margin-bottom: 12px; }
-.input-group label { display: block; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 600; }
+.input-group { margin-bottom: var(--t-3); }
+.input-group label { display: block; font-size: var(--t-fs-label); color: var(--text-muted); margin-bottom: var(--t-1); font-weight: 600; }
 .label-inline-controls {
     display: flex !important;
     align-items: center;
@@ -93,58 +114,62 @@
 .star-chart-controls {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--control-gap);
 }
 .input-group select, .input-group input:not([type="range"]) {
     width: 100%;
-    padding: 9px 12px;
-    background: var(--bg-dark); color: #fff;
+    padding: 9px var(--t-3);
+    background: var(--bg-dark); color: var(--text-main);
     /* border: 1px solid var(--border-color); */
-    border-radius: 8px;
-    font-size: 0.95rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
+    transition: border-color var(--dur) var(--t-ease);
 }
 .input-group select:focus, .input-group input:not([type="range"]):focus {
+    /* The border change carries "focused". The zero-offset accent halo it used
+       to stand behind was decoration, and it is not a focus ring. */
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
     outline: none;
 }
-
-.input-group input[type="range"] {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: transparent;
+/* …the real ring, because `outline: none` above would otherwise leave keyboard
+   users with no focus indicator at all. */
+.input-group select:focus-visible, .input-group input:not([type="range"]):focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
-.input-row { display: flex; gap: 15px; }
+
+.input-row { display: flex; gap: var(--control-gap); }
 .input-row .input-group { flex: 1; }
 .build-gear-row .input-group { min-width: 0; }
 
 .full-width { width: 100%; justify-content: center; }
-.mt-3 { margin-top: 20px; }
+.mt-3 { margin-top: var(--t-4); }
 
 .select-with-icon {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--control-gap);
 }
 .select-icon {
-    width: 38px;
-    height: 38px;
+    /* Squared off against the control it sits beside, so the row has one height. */
+    width: var(--control-height);
+    height: var(--control-height);
     object-fit: contain;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    padding: 4px;
+    padding: var(--t-1);
     flex-shrink: 0;
 }
 
+/* An inset well inside the card, not a nested card — so it takes the page
+   graphite the system uses for the inside of controls, not a black wash. */
 .config-section {
-    background: rgba(0, 0, 0, 0.2);
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-dark);
+    padding: var(--surface-padding);
+    border-radius: var(--radius-surface);
+    margin-bottom: var(--t-3);
+    border: 1px solid var(--border-color);
     position: relative;
     overflow: visible;
     z-index: 0;
@@ -154,42 +179,46 @@
 .config-panel .config-section:has(.select2-container--open) {
     z-index: 3;
 }
+/* The signature eyebrow. Muted, not accent: the accent marks the primary
+   action, selection, focus and live state — never a section heading. */
 .config-section h4 {
     margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 0.85rem;
-    color: var(--accent-blue);
+    margin-bottom: var(--t-3);
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--t-2);
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .section-intro {
     margin: 0;
     color: var(--text-muted);
-    font-size: 0.84rem;
+    font-size: var(--t-fs-label);
     line-height: 1.45;
 }
 
 .field-helper {
-    margin: 8px 0 0;
+    margin: var(--t-2) 0 0;
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: var(--t-fs-label);
     line-height: 1.4;
 }
 
 .info-icon-btn {
-    margin-left: 6px;
+    margin-left: var(--t-2);
     padding: 0;
     border: 0;
     background: transparent;
     color: var(--text-muted);
     cursor: help;
-    font-size: 0.82rem;
+    /* An icon glyph optically trimmed beside its label. */
+    font-size: var(--icon-optical);
     line-height: 1;
     display: inline-flex;
     align-items: center;
@@ -198,11 +227,16 @@
 }
 
 .label-inline-controls .info-icon-btn {
-    margin-left: 6px;
+    margin-left: var(--t-2);
 }
 
 .info-icon-btn:hover {
     color: var(--accent-blue);
+}
+
+.info-icon-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .section-collapse-btn {
@@ -219,48 +253,57 @@
     text-align: left;
 }
 
+.section-collapse-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
 .section-collapse-btn h4 {
     margin-bottom: 0;
 }
 
 .modifiers-section .toggles-grid {
-    margin-top: 12px;
+    margin-top: var(--t-3);
 }
 
 .collapse-caret {
     color: var(--text-muted);
-    transition: transform 0.2s ease, color 0.2s ease;
+    transition: transform var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
+/* Expanded is a state, which is what the accent is for. */
 .collapse-caret.is-open {
     transform: rotate(180deg);
     color: var(--accent-blue);
 }
 .config-section:last-child { margin-bottom: 0; }
 
-.toggles-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.toggles-grid { display: grid; grid-template-columns: 1fr; gap: var(--control-gap); }
+/* One tonal step up from the well it sits in, so the row reads as actionable. */
 .toggle-container {
-    display: flex; align-items: center; gap: 10px;
-    font-size: 0.88rem; cursor: pointer; user-select: none;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.02);
+    display: flex; align-items: center; gap: var(--control-gap);
+    font-size: var(--t-fs-body); cursor: pointer; user-select: none;
+    padding: var(--t-2) 10px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-panel);
 }
 
 .toggle-inline {
-    margin-top: 4px;
+    margin-top: var(--t-1);
 }
 .toggle-container input { display: none; }
 .checkmark {
     width: 20px; height: 20px; background: var(--bg-dark);
-    border: 1px solid var(--border-color); border-radius: 4px;
+    border: 1px solid var(--border-color); border-radius: var(--radius-control);
     position: relative; display: flex; justify-content: center; align-items: center;
-    transition: 0.2s;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
 }
-.toggle-container input:checked ~ .checkmark { background: var(--accent-orange); border-color: var(--accent-orange); }
+.toggle-container input:checked ~ .checkmark { background: var(--accent-blue); border-color: var(--accent-blue); }
+/* --accent-ink is recomputed per accent, so the tick stays legible whether the
+   user picks a light or a dark colour; the old drop shadow assumed white-on-dark. */
 .toggle-container input:checked ~ .checkmark::after {
-    content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: #fff; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    content: '\f00c'; font-family: 'Font Awesome 6 Free'; font-weight: 900; color: var(--accent-ink); font-size: var(--t-fs-body);
 }
 
 .text-right { text-align: right !important; }
@@ -268,55 +311,59 @@
 .text-center { text-align: center !important; }
 .text-muted { color: var(--text-muted); }
 
-.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--t-4); }
 
 .results-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-    padding-bottom: 10px;
+    gap: var(--control-gap);
+    margin-bottom: var(--t-3);
+    padding-bottom: var(--t-3);
     border-bottom: 1px solid var(--border-color);
 }
 
+/* The accent tint is the whole point of this card — it marks the recommended
+   result. The white wash under it was inventing a second surface tone, and the
+   shadow made a resting card float. */
 .recommended-build-card {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr);
-    gap: 16px;
-    margin-bottom: 14px;
-    padding: 16px;
-    border-radius: 14px;
+    gap: var(--t-4);
+    margin-bottom: var(--t-4);
+    padding: var(--surface-padding);
+    border-radius: var(--radius-surface);
     border: 1px solid rgba(var(--accent-rgb), 0.28);
     background:
         linear-gradient(135deg, rgba(var(--accent-rgb), 0.16), rgba(0, 0, 0, 0.08)),
-        rgba(255, 255, 255, 0.02);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+        var(--bg-panel);
 }
 
 .eyebrow {
-    margin-bottom: 8px;
+    margin-bottom: var(--t-2);
     color: var(--accent-blue);
-    font-size: 0.75rem;
-    font-weight: 700;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.12em;
+    letter-spacing: 1px;
 }
 
 .recommended-build-layout {
-    font-family: monospace;
-    font-size: 1.5rem;
+    /* Monospace is load-bearing: the layout string is a code the user copies
+       and compares column-by-column against the table below. */
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-title);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-main);
     cursor: pointer;
 }
 
 .recommended-build-layout:hover {
-    color: var(--accent-orange);
+    color: var(--accent-blue);
 }
 
 .recommended-build-reason {
-    margin: 8px 0 0;
+    margin: var(--t-2) 0 0;
     color: var(--text-muted);
     line-height: 1.5;
 }
@@ -324,63 +371,66 @@
 .recommended-build-stats {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--control-gap);
 }
 
 .recommended-stat {
-    padding: 12px;
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: var(--t-3);
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
 }
 
 .recommended-stat span {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
     color: var(--text-muted);
-    font-size: 0.76rem;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 1px;
 }
 
 .recommended-stat strong {
-    font-size: 1.05rem;
-    color: #fff;
+    font-size: var(--t-fs-h2);
+    color: var(--text-main);
 }
 
 .mobile-build-summary {
     display: none;
 }
 
+/* Amber is the one warning hue — the old rgba(255,166,0,…) field and #ffd27a
+   title were a second and third amber that also ignored the token. */
 .tips-card {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 14px;
-    padding: 14px 16px;
-    border-radius: 12px;
-    background: rgba(255, 166, 0, 0.08);
-    border: 1px solid rgba(255, 166, 0, 0.24);
+    gap: var(--t-3);
+    margin-bottom: var(--t-4);
+    padding: var(--surface-padding) var(--t-4);
+    border-radius: var(--radius-surface);
+    background: rgba(var(--warning-rgb), 0.08);
+    border: 1px solid rgba(var(--warning-rgb), 0.24);
 }
 
 .tips-card-title {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: var(--t-2);
+    margin-bottom: var(--t-2);
     font-weight: 700;
-    color: #ffd27a;
+    color: var(--warning-ink);
 }
 
 .tips-list {
     margin: 0;
-    padding-left: 18px;
+    padding-left: var(--t-4);
     color: var(--text-muted);
     line-height: 1.5;
 }
 
 .tips-dismiss-btn {
-    padding: 6px;
+    padding: var(--t-2);
     border: 0;
     background: transparent;
     color: var(--text-muted);
@@ -388,52 +438,64 @@
 }
 
 .tips-dismiss-btn:hover {
-    color: #fff;
+    color: var(--text-main);
+}
+
+.tips-dismiss-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .results-metrics {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
+/* Badge box per DESIGN.md: transparent on a hairline, not a white wash that
+   invents a fourth surface tone. Mixed-case meta, so label type, not micro. */
 .metric-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: var(--t-2);
+    font-size: var(--t-fs-label);
     color: var(--text-main);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 999px;
-    padding: 4px 10px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
 }
 
 .results-state {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
 }
 
+/* Calculating is live state, which the accent owns. */
 .results-state.busy {
-    color: var(--accent-orange);
+    color: var(--accent-blue);
 }
 
-.pagination-container { display: flex; justify-content: flex-end; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
-.pagination { display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-size: 0.95rem; }
-.btn-icon { background: none; border: none; color: var(--text-main); cursor: pointer; padding: 5px; transition: 0.2s; }
-.btn-icon:hover { background: rgba(255, 255, 255, 0.05); }
+.pagination-container { display: flex; justify-content: flex-end; margin-top: var(--t-4); padding-top: var(--t-4); border-top: 1px solid var(--border-color); }
+.pagination { display: flex; align-items: center; gap: var(--control-gap); color: var(--text-muted); font-size: var(--t-fs-body); }
+.btn-icon { background: none; border: none; color: var(--text-main); cursor: pointer; padding: var(--t-1); transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease); }
+.btn-icon:hover { background: var(--bg-hover); }
 .btn-icon:hover { color: var(--accent-blue); }
+.btn-icon:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 .table-responsive { overflow-x: auto; max-height: 700px; }
-.btt-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
-.btt-table th { background: var(--bg-dark); color: #e2e8f0; font-weight: 600; padding: 12px 15px; position: sticky; top: 0; z-index: 10; letter-spacing: 0.05em; }
-.btt-table td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
+.btt-table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body); }
+/* z-index 10 is local to the sticky header inside this table, not app chrome. */
+.btt-table th { background: var(--bg-dark); color: var(--text-main); font-weight: 600; padding: var(--t-3) var(--t-4); position: sticky; top: 0; z-index: 10; letter-spacing: 0.05em; }
+.btt-table td { padding: var(--t-3) var(--t-4); border-bottom: 1px solid var(--border-color); }
 
+/* Zebra and sort-column washes stay as neutral alphas: they have to sit under
+   the accent row tint below without becoming a fifth surface colour. */
 .btt-table tbody tr:nth-child(even) { background-color: rgba(255, 255, 255, 0.015); }
-.btt-table tbody tr:hover { background: rgba(255,255,255,0.05); }
+.btt-table tbody tr:hover { background: var(--bg-hover); }
 
 .btt-table tbody tr.row-best {
     background: rgba(var(--accent-rgb), 0.1);
@@ -444,38 +506,42 @@
 }
 
 .build-layout-cell {
-    font-family: monospace;
-    color: var(--accent-orange);
+    /* Same code string as the recommended layout — the column is compared and
+       copied, so the monospace is alignment, not costume. */
+    font-family: var(--font-numeric);
+    color: var(--accent-blue);
     cursor: pointer;
 }
 
+/* Parsed-and-live, so the accent hairline stays — but solid: every border in
+   this system is one 1px solid hairline, and the dashed edge was decoration. */
 .star-chart-summary {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px dashed var(--accent-blue);
-    border-radius: 8px;
-    padding: 15px 20px;
-    margin-top: 10px;
-    font-size: 0.85rem;
+    background: var(--bg-panel);
+    border: 1px solid rgba(var(--accent-rgb), 0.4);
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
+    margin-top: var(--t-3);
+    font-size: var(--t-fs-body);
     line-height: 1.5;
 }
 .star-chart-summary h4 {
-    margin: 0 0 5px 0;
-    color: var(--accent-blue);
-    font-size: 0.9rem;
+    margin: 0 0 var(--t-1) 0;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
 }
 .star-chart-summary ul {
     margin: 0;
-    padding-left: 20px;
+    padding-left: var(--t-4);
     color: var(--text-muted);
 }
 .star-chart-summary li {
-    margin-bottom: 3px;
+    margin-bottom: var(--t-1);
 }
 
 .results-panel .table-responsive {
-    max-height: none !important; 
-    overflow-y: visible !important; 
-    overflow-x: auto; 
+    max-height: none !important;
+    overflow-y: visible !important;
+    overflow-x: auto;
 }
 
 .results-panel {
@@ -516,19 +582,21 @@
         grid-template-columns: 1fr;
     }
 
+    /* Sticky in-view content, not floating chrome: the fill was already 94%
+       opaque, so the backdrop blur cost a full-frame filter to show almost
+       nothing. Opaque panel + hairline does the same job for free. */
     .mobile-build-summary {
         position: sticky;
-        top: 12px;
+        top: var(--t-3);
         z-index: 12;
         display: flex;
         justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 12px;
-        padding: 10px 12px;
-        border-radius: 10px;
-        background: rgba(15, 18, 24, 0.94);
+        gap: var(--control-gap);
+        margin-bottom: var(--t-3);
+        padding: var(--t-2) var(--t-3);
+        border-radius: var(--radius-surface);
+        background: var(--bg-panel);
         border: 1px solid rgba(var(--accent-rgb), 0.22);
-        backdrop-filter: blur(8px);
     }
 }
 
@@ -538,7 +606,7 @@
     }
 
     .recommended-build-layout {
-        font-size: 1.2rem;
+        font-size: var(--t-fs-h2);
     }
 
     .recommended-build-stats {
@@ -549,35 +617,37 @@
         flex-direction: column;
     }
 }
-/* Concise module pass */
+/* Concise module pass. These selectors are all enrolled in the density layer in
+   style.css, which wins with !important — they are written from the same tokens
+   so the file no longer states a competing number. */
 .view-container {
-    padding: 16px;
+    padding: var(--view-padding);
 }
 
 .header p {
-    margin-bottom: 16px;
+    margin-bottom: var(--t-4);
 }
 
 .gem-builds-grid {
-    gap: 14px;
+    gap: var(--surface-gap);
 }
 
 .card {
-    padding: 16px;
+    padding: var(--surface-padding);
 }
 
 .config-section {
-    padding: 12px;
-    margin-bottom: 10px;
+    padding: var(--surface-padding);
+    margin-bottom: var(--t-3);
 }
 
 .results-header,
 .results-toolbar {
-    margin-bottom: 10px;
-    gap: 8px;
+    margin-bottom: var(--t-2);
+    gap: var(--control-gap);
 }
 
 .btt-table th,
 .btt-table td {
-    padding: 10px 12px;
+    padding: var(--control-gap) var(--t-3);
 }

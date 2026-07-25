@@ -1,137 +1,167 @@
+/* Account tab.
+   This view root is not enrolled in the CROSS-APP DENSITY LAYER in style.css,
+   so it states its own density — but from the same tokens, not from new
+   numbers. Everything here comes from the token layer in style.css `:root`:
+   the 4pt spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the
+   three radii and the four semantic colours.
+
+   The one exception is Discord blurple (#5865F2). A third-party account
+   provider is recognised by its own colour, so it is deliberately outside the
+   palette and is never themed by the user's accent. */
+
 .account-view {
     max-width: 720px;
     margin: 0 auto;
-    padding: 32px 24px 48px;
+    padding: var(--t-5) var(--view-padding) var(--t-6);
 }
 
 .account-loading {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: var(--control-gap);
     color: var(--text-muted);
-    padding: 80px 0;
+    padding: calc(var(--t-6) * 2) 0;
 }
 
 /* --- Signed out ---------------------------------------------------------- */
 .account-hero {
     text-align: center;
-    padding: 48px 28px;
+    padding: calc(var(--t-5) * 2) var(--t-5);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: var(--radius-surface);
 }
 .account-hero-icon {
+    /* Sized as a graphic, not as type — it is the illustration for an empty
+       state, with no text on its baseline to match. */
     font-size: 56px;
     color: #5865F2;
-    margin-bottom: 14px;
+    margin-bottom: var(--t-3);
 }
 .account-hero h1 {
-    font-size: 22px;
-    margin-bottom: 10px;
+    font-size: var(--t-fs-title);
+    margin-bottom: var(--t-2);
 }
 .account-hero-copy {
     color: var(--text-muted);
-    line-height: 1.55;
+    line-height: 1.5;
     max-width: 440px;
-    margin: 0 auto 24px;
+    margin: 0 auto var(--t-5);
 }
 .account-hero-note {
     color: var(--text-muted);
-    font-size: 0.82em;
-    opacity: 0.75;
-    margin-top: 16px;
+    /* The label role and muted ink already make this recede; the 0.75 opacity
+       that used to sit on top of them pushed it under 4.5:1. */
+    font-size: var(--t-fs-label);
+    margin-top: var(--t-4);
 }
 
 .account-discord-btn {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--t-2);
+    min-height: var(--control-height);
     background: #5865F2;
-    color: #fff;
+    color: var(--text-main);
     border: none;
     font-weight: 600;
-    font-size: 1em;
-    padding: 12px 26px;
-    border-radius: 10px;
+    font-size: var(--t-fs-body);
+    padding: var(--t-3) var(--t-5);
+    border-radius: var(--radius-control);
     cursor: pointer;
-    transition: background 0.15s, transform 0.08s;
+    transition: filter var(--dur-fast) var(--t-ease), transform var(--dur-fast) var(--t-ease);
 }
-.account-discord-btn:hover:not(:disabled) { background: #4752c4; }
+/* Darkening the brand fill rather than naming a second brand hex keeps one
+   literal in play instead of two. */
+.account-discord-btn:hover:not(:disabled) { filter: brightness(0.9); }
 .account-discord-btn:active:not(:disabled) { transform: translateY(1px); }
-.account-discord-btn:disabled { opacity: 0.65; cursor: default; }
+.account-discord-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.account-discord-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* --- Signed in ----------------------------------------------------------- */
 .account-card {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 16px;
+    border-radius: var(--radius-surface);
     overflow: hidden;
 }
 .account-card-head {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 24px;
+    gap: var(--t-4);
+    padding: var(--t-5);
     border-bottom: 1px solid var(--border-color);
+    /* Accent here is meaning, not decoration: this header is the one surface in
+       the app that is literally the user's own identity. Tinted from their
+       chosen colour, never a literal. */
     background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), transparent);
 }
 .account-avatar,
 .account-avatar-fallback {
     width: 64px;
     height: 64px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     flex-shrink: 0;
 }
 .account-avatar {
     object-fit: cover;
-    border: 2px solid var(--glass-border);
+    /* Borders are always 1px, and --glass-border belongs to floating chrome. */
+    border: 1px solid var(--border-color);
 }
 .account-avatar-fallback {
+    /* Matched to the avatar box above so the placeholder glyph fills the same
+       64px slot — a graphic dimension, not a type size. */
     font-size: 64px;
     line-height: 1;
     color: var(--text-muted);
 }
 .account-identity { flex: 1; min-width: 0; }
 .account-name {
-    font-size: 1.25em;
-    font-weight: 700;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .account-handle {
     color: var(--text-muted);
-    font-size: 0.9em;
+    font-size: var(--t-fs-label);
     margin-top: 2px;
 }
-.account-handle .fa-discord { color: #5865F2; }
+.account-handle .fa-discord { color: #5865F2; font-size: var(--icon-optical); }
 
 .account-badge {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.78em;
-    font-weight: 600;
-    padding: 5px 10px;
-    border-radius: 999px;
+    gap: var(--t-1);
+    /* Status pill: the micro role (800, 1px tracking, uppercase) is the app's
+       signature badge gesture. */
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: var(--t-1) 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
     flex-shrink: 0;
 }
-.account-badge.is-verified { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
-.account-badge.is-unverified { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+.account-badge.is-verified { color: var(--success-ink); background: rgba(var(--success-rgb), 0.14); border-color: rgba(var(--success-rgb), 0.35); }
+.account-badge.is-unverified { color: var(--warning-ink); background: rgba(var(--warning-rgb), 0.14); border-color: rgba(var(--warning-rgb), 0.35); }
 
-.account-fields { list-style: none; padding: 8px 24px; }
+.account-fields { list-style: none; padding: var(--t-2) var(--t-5); }
 .account-fields li {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    padding: 12px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    gap: var(--t-4);
+    padding: var(--t-3) 0;
+    border-bottom: 1px solid var(--border-color);
 }
 .account-fields li:last-child { border-bottom: none; }
-.account-field-label { color: var(--text-muted); font-size: 0.9em; }
+.account-field-label { color: var(--text-muted); font-size: var(--t-fs-label); }
 .account-field-value {
+    font-size: var(--t-fs-body);
     font-weight: 500;
     text-align: right;
     word-break: break-word;
@@ -139,44 +169,52 @@
 .account-field-value.account-muted { color: var(--text-muted); font-weight: 400; }
 
 .account-claim-badge {
-    margin-left: 8px;
-    font-size: 0.72em;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 999px;
+    margin-left: var(--t-2);
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: var(--t-1) var(--t-2);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
     vertical-align: middle;
 }
-.account-claim-badge.ok { color: #4ade80; background: rgba(74, 222, 128, 0.12); }
-.account-claim-badge.pending { color: #fbbf24; background: rgba(251, 191, 36, 0.12); }
+.account-claim-badge.ok { color: var(--success-ink); background: rgba(var(--success-rgb), 0.14); border-color: rgba(var(--success-rgb), 0.35); }
+.account-claim-badge.pending { color: var(--warning-ink); background: rgba(var(--warning-rgb), 0.14); border-color: rgba(var(--warning-rgb), 0.35); }
 
 .account-actions {
     display: flex;
-    gap: 12px;
-    padding: 20px 24px 24px;
+    gap: var(--t-3);
+    padding: var(--t-4) var(--t-5) var(--t-5);
     flex-wrap: wrap;
 }
 .account-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
+    min-height: var(--control-height);
     border: 1px solid var(--border-color);
     background: var(--bg-hover);
     color: var(--text-main);
+    font-size: var(--t-fs-body);
     font-weight: 600;
-    padding: 10px 18px;
-    border-radius: 10px;
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-control);
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background-color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease),
+                color var(--dur-fast) var(--t-ease);
 }
-.account-btn:disabled { opacity: 0.6; cursor: default; }
+.account-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.account-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .account-btn-secondary:hover:not(:disabled) { border-color: var(--accent-blue); color: var(--accent-blue); }
 .account-btn-danger { margin-left: auto; }
-.account-btn-danger:hover:not(:disabled) { border-color: #ef4444; color: #ef4444; }
+/* --danger is 4.4:1 on panel and fails AA as text, so the border takes the
+   fill colour and the label takes the lighter danger ink. */
+.account-btn-danger:hover:not(:disabled) { border-color: var(--danger); color: var(--danger-ink); }
 
 .account-cloud-hint {
     text-align: center;
     color: var(--text-muted);
-    font-size: 0.85em;
-    margin-top: 20px;
-    opacity: 0.8;
+    font-size: var(--t-fs-label);
+    margin-top: var(--t-4);
 }

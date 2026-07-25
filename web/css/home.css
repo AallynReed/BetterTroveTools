@@ -1,46 +1,54 @@
+/* Home view — the default landing surface.
+   View padding, .community-panel padding/rhythm and .media-tabs gap are owned
+   by the CROSS-APP DENSITY LAYER in style.css; the values written here match it
+   so the file reads true, but that layer is what renders. Everything else comes
+   from the token layer in style.css `:root` — the 4pt spacing scale (--t-1..6),
+   the six type roles (--t-fs-*), the three radii and the four semantics.
+   Nothing is redefined locally. */
 [v-cloak] {
     display: none !important;
 }
 
 .home-container {
-    padding: 30px;
-    animation: fadeIn 0.4s ease-out;
+    padding: var(--view-padding);
+    /* Entrance is opacity + transform only, at the system duration. */
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .home-header {
-    margin-bottom: 30px;
+    margin-bottom: var(--t-6);
 }
 
 .home-header h1 {
-    font-size: 2.2em;
-    margin-bottom: 5px;
-    color: #fff;
+    font-size: var(--t-fs-title);
+    margin-bottom: var(--t-1);
+    color: var(--text-main);
 }
 
 .subtitle {
-    color: var(--text-muted, #a3adc2);
-    font-size: 1.1em;
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
 }
 
 .section-header {
-    margin-bottom: 15px;
-    border-bottom: 1px solid var(--border-color, #333333);
-    padding-bottom: 8px;
+    margin-bottom: var(--t-4);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--t-2);
 }
 
 .section-header h2 {
-    font-size: 1.3em;
+    font-size: var(--t-fs-h2);
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #fff;
+    gap: var(--t-2);
+    color: var(--text-main);
 }
 
 .section-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
+    gap: var(--t-4);
 }
 
 .section-title-reset {
@@ -48,82 +56,96 @@
 }
 
 .section-spaced {
-    margin-top: 40px;
+    margin-top: var(--t-6);
 }
 
 .section-icon-accent {
     color: var(--accent-blue);
 }
 
+/* Two section icons carried a fifth amber (#f3b64b) and a third green
+   (#4caf50); both collapse onto the semantics. */
 .section-icon-warm {
-    color: #f3b64b;
+    color: var(--warning);
 }
 
 .section-icon-success {
-    color: #4caf50;
+    color: var(--success);
 }
 
 .community-panel {
-    padding: 14px 16px;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.08));
-    margin-bottom: 8px;
+    padding: var(--surface-padding);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
+    margin-bottom: var(--t-2);
 }
 
 .community-header {
-    margin-bottom: 8px;
+    margin-bottom: var(--t-2);
 }
 
 .community-disclaimer {
-    margin: 0 0 10px;
+    margin: 0 0 var(--t-3);
     color: var(--text-muted);
-    font-size: 11px;
-    line-height: 1.35;
+    font-size: var(--t-fs-label);
+    line-height: 1.4;
 }
 
 .community-subtitle {
     color: var(--text-muted);
-    font-size: 13px;
-    margin-bottom: 10px;
+    font-size: var(--t-fs-body);
+    margin-bottom: var(--t-3);
 }
 
 .media-tabs {
     display: flex;
-    gap: 6px;
-    background: rgba(0,0,0,0.18);
-    padding: 4px;
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.08);
+    gap: var(--control-gap);
+    /* Inset well: one step darker than the panel it sits on. */
+    background: var(--bg-dark);
+    padding: var(--t-1);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
 }
 
 .media-tab {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    padding: 6px 10px;
-    border-radius: 6px;
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
     cursor: pointer;
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--t-fs-body);
     display: flex;
     align-items: center;
-    gap: 6px;
-    transition: all 0.2s;
+    gap: var(--t-2);
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
 .media-tab:hover {
-    background: rgba(255,255,255,0.1);
-    color: #fff;
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+.media-tab:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .media-tab.active {
-    color: #fff;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    color: var(--text-main);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
-.media-tab.active.tab-youtube { background: #c43131; }
-.media-tab.active.tab-bilibili { background: #1087af; }
-.media-tab.active.tab-twitch { background: #6840b1; }
+/* Third-party platform identity, not app status — these are the only hues in
+   the file that are deliberately neither the accent nor one of the four
+   semantics, because they name YouTube / Bilibili / Twitch. */
+/* Ink per fill, measured: white clears AA on the YouTube red (5.5) and the
+   Twitch purple (7.1); the Bilibili blue is light enough that it needs the
+   dark ink instead (4.7 vs 4.1). --text-main fails on all three. */
+.media-tab.active.tab-youtube { background: #c43131; color: var(--ink-on-dark-fill); }
+.media-tab.active.tab-bilibili { background: #1087af; color: var(--ink-on-light-fill); }
+.media-tab.active.tab-twitch { background: #6840b1; color: var(--ink-on-dark-fill); }
 
 .carousel-wrapper {
     /* In-flow flex row: [left btn] [carousel: flex:1 min-w:0] [right btn].
@@ -134,15 +156,15 @@
        carousel into a real flex item that .min-width:0 can shrink. */
     display: flex;
     align-items: stretch;
-    gap: 6px;
+    gap: var(--t-2);
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    margin-bottom: 8px;
+    margin-bottom: var(--t-2);
 }
 
 .community-carousel-wrapper {
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
 }
 
 .streams-carousel {
@@ -154,10 +176,10 @@
     flex: 1 1 0;
     min-width: 0;
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding: 6px 4px;
+    padding: var(--t-1);
     scrollbar-width: none;
 }
 
@@ -166,30 +188,35 @@
 .stream-card {
     min-width: 240px;
     max-width: 240px;
-    background: var(--bg-panel, #1e1e1e);
-    border-radius: 10px;
+    background: var(--bg-panel);
+    border-radius: var(--radius-surface);
     overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.08);
+    border: 1px solid var(--border-color);
     text-decoration: none;
     cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    transition: transform var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
 
-.stream-card:hover { transform: translateY(-3px); border-color: rgba(var(--accent-rgb), 0.6); background: rgba(255,255,255,0.02); }
+/* A clickable card lifts exactly 1px (DESIGN.md > Buttons > Hover); the old
+   -3px was the only element in the app moving that far. */
+.stream-card:hover { transform: translateY(-1px); border-color: rgba(var(--accent-rgb), 0.6); background: var(--bg-hover); }
+.stream-card:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 .stream-thumb { position: relative; aspect-ratio: 16/9; }
 .stream-thumb img { width: 100%; height: 100%; object-fit: cover; }
 
+/* Scrim badge over a thumbnail: the black wash is reading protection against an
+   arbitrary photo, not a surface, so it stays a literal. */
 .badge.viewers {
-    position: absolute; top: 8px; left: 8px;
+    position: absolute; top: var(--t-2); left: var(--t-2);
     background: rgba(0, 0, 0, 0.7);
-    color: #fff; padding: 3px 8px; border-radius: 4px;
-    font-size: 0.72em; font-weight: 700;
+    color: var(--text-main); padding: var(--t-1) var(--t-2); border-radius: var(--radius-pill);
+    font-size: var(--t-fs-micro); font-weight: 800;
 }
 
-.stream-info { padding: 10px; }
-.stream-title { font-size: 0.85em; font-weight: 700; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.stream-user { font-size: 0.76em; color: var(--text-muted); margin-top: 3px; }
+.stream-info { padding: var(--t-3); }
+.stream-title { font-size: var(--t-fs-body); font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream-user { font-size: var(--t-fs-label); color: var(--text-muted); margin-top: var(--t-1); }
 
 .carousel-btn {
     /* In-flow flex items now (not position:absolute over the carousel).
@@ -200,17 +227,21 @@
     flex: 0 0 30px;
     align-self: center;
     position: relative;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: white;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
     width: 30px; height: 30px;
-    border-radius: 50%;
+    /* Round floating-style button = pill, not --radius-circle (that token is
+       reserved for avatars and status dots). */
+    border-radius: var(--radius-pill);
     cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(4px);
+    /* backdrop-filter dropped: these buttons sit in normal flow beside the
+       carousel, so they are in-view content, not floating chrome
+       (DESIGN.md > The Blur Budget Rule). */
     opacity: 0.55;
     padding: 0;
-    transition: opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    transition: opacity var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
 }
 .carousel-btn > i { pointer-events: none; }
 /* The wrapping element used to be .community-panel; the home refresh moved
@@ -219,6 +250,7 @@
 .community-panel:hover .carousel-btn,
 .home-section:hover .carousel-btn { opacity: 1; }
 .carousel-btn:hover { background: rgba(var(--accent-rgb), 0.32); border-color: rgba(var(--accent-rgb), 0.7); }
+.carousel-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; opacity: 1; }
 /* .left / .right used to set left/right offsets when the buttons were
    position:absolute; in the new in-flow flex layout the buttons sit
    naturally on either side of the carousel and need no offset. */
@@ -226,100 +258,90 @@
 .community-empty {
     width: 100%;
     text-align: center;
-    padding: 24px 16px;
+    padding: var(--t-5) var(--t-4);
     color: var(--text-muted);
-    background: rgba(0,0,0,0.12);
-    border: 1px dashed rgba(255,255,255,0.12);
-    border-radius: 10px;
+    background: var(--bg-dark);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-surface);
 }
 
 .community-empty-icon {
-    font-size: 32px;
+    /* Empty-state glyph read as artwork, so it takes the display step rather
+       than inventing a 32px seventh size. */
+    font-size: var(--t-fs-display);
     opacity: 0.4;
-    margin-bottom: 15px;
+    margin-bottom: var(--t-4);
     display: block;
 }
 
 .community-empty-copy {
-    font-size: 14px;
+    font-size: var(--t-fs-body);
 }
 
 .verified-badge {
-    color: var(--accent-blue, #5ec6ff);
-    margin-left: 6px;
+    color: var(--accent-blue);
+    margin-left: var(--t-2);
 }
 
 .news-panel {
-    margin-top: 18px;
+    margin-top: var(--t-4);
 }
 
 .news-header {
-    margin-bottom: 12px;
+    margin-bottom: var(--t-3);
 }
 
 .news-header-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--t-3);
     flex-wrap: wrap;
 }
 
 .news-header-actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     flex-wrap: wrap;
 }
 
-.news-filter-btn {
-    border: 1px solid rgba(255,255,255,0.14);
-    background: rgba(7, 11, 17, 0.42);
-    color: var(--text-muted);
-    border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 12px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
+/* These two were byte-identical rulesets declared twice; they are one chip
+   button with two names, so they share one definition. */
+.news-filter-btn,
 .news-collapse-btn {
-    border: 1px solid rgba(255,255,255,0.14);
-    background: rgba(7, 11, 17, 0.42);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
     color: var(--text-muted);
-    border-radius: 999px;
-    padding: 7px 12px;
-    font-size: 12px;
+    border-radius: var(--radius-pill);
+    padding: var(--t-2) var(--t-3);
+    font-size: var(--t-fs-label);
     font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
-.news-filter-btn:hover {
-    color: #fff;
-    border-color: rgba(255,255,255,0.28);
-}
-
+.news-filter-btn:hover,
 .news-collapse-btn:hover {
-    color: #fff;
-    border-color: rgba(255,255,255,0.28);
+    color: var(--text-main);
+    border-color: rgba(var(--accent-rgb), 0.45);
 }
 
-.news-filter-btn.active {
-    color: #fff;
-    border-color: rgba(243, 182, 75, 0.6);
-    background: rgba(243, 182, 75, 0.14);
+.news-filter-btn:focus-visible,
+.news-collapse-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
+/* "Active" here means selected, and selected is the accent — the filter chip
+   used to be a fifth amber (#f3b64b) while the collapse chip beside it was
+   already accent, so the same state read as two different colours. */
+.news-filter-btn.active,
 .news-collapse-btn.active {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.55);
     background: rgba(var(--accent-rgb), 0.14);
 }
@@ -330,10 +352,10 @@
 
 .news-carousel {
     display: flex;
-    gap: 14px;
+    gap: var(--t-4);
     overflow-x: auto;
     scroll-behavior: smooth;
-    padding: 4px;
+    padding: var(--t-1);
     scrollbar-width: none;
     /* See .streams-carousel above — same flex-item min-width fix so the
        carousel actually scrolls inside the clipped home container. */
@@ -345,12 +367,12 @@
 }
 
 .news-card {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     overflow: hidden;
     cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    transition: transform var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
     display: flex;
     flex-direction: column;
     min-height: 100%;
@@ -358,16 +380,22 @@
     max-width: 300px;
 }
 
+/* No hover shadow: a card that stays in the page does not float
+   (DESIGN.md > The Floating-Only Rule). Hover is the 1px lift + accent border. */
 .news-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.45);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.26);
+}
+
+.news-card:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .news-image-wrap {
     position: relative;
     aspect-ratio: 16 / 9;
-    background: rgba(0,0,0,0.2);
+    background: var(--bg-dark);
 }
 
 .news-image {
@@ -379,46 +407,46 @@
 
 .news-category {
     position: absolute;
-    left: 10px;
-    top: 10px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(8, 12, 18, 0.78);
-    border: 1px solid rgba(255,255,255,0.12);
-    color: #fff;
-    font-size: 11px;
+    left: var(--t-3);
+    top: var(--t-3);
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.3px;
+    letter-spacing: 1px;
 }
 
 .news-body {
-    padding: 12px;
+    padding: var(--t-3);
     display: flex;
     flex-direction: column;
-    gap: 9px;
+    gap: var(--t-2);
     flex: 1;
 }
 
 .news-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--t-2);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .news-title {
     margin: 0;
-    color: #fff;
-    font-size: 1rem;
-    line-height: 1.35;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
+    line-height: 1.3;
 }
 
 .news-summary {
     margin: 0;
-    color: #d3dbea;
-    font-size: 0.84rem;
-    line-height: 1.45;
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
+    line-height: 1.5;
     flex: 1;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -426,41 +454,56 @@
     overflow: hidden;
 }
 
+/* Links are accent (DESIGN.md > Primary); this one was a standalone amber. */
 .news-link {
-    color: #f3b64b;
-    font-size: 0.82rem;
+    color: var(--accent-blue);
+    font-size: var(--t-fs-label);
     font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--t-2);
 }
 
 .news-state {
-    padding: 18px;
-    border-radius: 12px;
-    border: 1px dashed rgba(255,255,255,0.12);
+    padding: var(--t-4);
+    border-radius: var(--radius-surface);
+    border: 1px dashed var(--border-color);
     color: var(--text-muted);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    background: rgba(0,0,0,0.12);
+    gap: var(--t-2);
+    background: var(--bg-dark);
 }
 
 .news-state-error {
-    color: #ff9d9d;
+    /* --danger is 4.4:1 on panel and fails AA as text, so error copy takes
+       --danger-ink and the hue is carried by the border/fill. */
+    color: var(--danger-ink);
     border-style: solid;
-    border-color: rgba(255, 85, 85, 0.28);
-    background: rgba(255, 85, 85, 0.08);
+    border-color: rgba(var(--danger-rgb), 0.28);
+    background: rgba(var(--danger-rgb), 0.08);
 }
 
 .news-collapsed-state {
     justify-content: flex-start;
 }
 
+/* Responsive: measured on the CONTENT box, not the viewport. The shell reserves
+   260px for the rail until 900px, so a raw viewport query collapses ~250px too
+   late (DESIGN.md > The Content-Box Rule). `.home-section` is the query
+   container — see its rule below for why the view root can't be one. The
+   viewport rule is the fallback where container queries are unsupported. */
+@container (max-width: 700px) {
+    .carousel-btn { display: none; }
+    .community-panel { padding: var(--t-3); }
+    .media-tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
+    .news-card { min-width: 260px; max-width: 260px; }
+}
+
 @media (max-width: 900px) {
     .carousel-btn { display: none; }
-    .community-panel { padding: 12px; }
+    .community-panel { padding: var(--t-3); }
     .media-tabs { width: 100%; justify-content: flex-start; overflow-x: auto; }
     .news-card { min-width: 260px; max-width: 260px; }
 }
@@ -468,8 +511,19 @@
 .split-layout {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
-    gap: 30px;
-    margin-bottom: 40px;
+    gap: var(--t-5);
+    margin-bottom: var(--t-6);
+    /* Multi-column card grid: short columns hug their content instead of being
+       stretched into drawn empty boxes (DESIGN.md > Cards). */
+    align-items: start;
+}
+
+/* 1200px viewport minus the 260px rail is a ~940px content box — that is the
+   width the two columns actually stop fitting in. */
+@container (max-width: 940px) {
+    .split-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 1200px) {
@@ -478,57 +532,62 @@
     }
 }
 
-.buffs-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.buffs-grid { display: grid; grid-template-columns: 1fr; gap: var(--t-3); align-items: start; }
 
+/* The buff colour is data-driven (JS writes --buff-color per buff). It used to
+   arrive as a 4px left stripe, which is banned outright (DESIGN.md > Shapes);
+   it is now the card's 1px border on all four sides, so the category still
+   reads without the stripe. */
 .buff-card {
-    background: var(--bg-panel); border: 1px solid var(--border-color);
-    border-radius: 10px; overflow: hidden;
-    border-left: 4px solid var(--buff-color, #5ec6ff);
+    background: var(--bg-panel);
+    border: 1px solid var(--buff-color, var(--border-color));
+    border-radius: var(--radius-surface); overflow: hidden;
 }
 
 .buff-header {
-    padding: 9px 14px; display: flex; align-items: center; gap: 10px;
-    font-weight: bold; color: #fff; font-size: 0.96em;
+    padding: var(--t-2) var(--surface-padding); display: flex; align-items: center; gap: var(--t-2);
+    font-weight: 700; color: var(--text-main); font-size: var(--t-fs-body);
 }
 .buff-header img { width: 22px; height: 22px; }
 
 .buff-split-container {
-    display: flex; gap: 10px; padding: 10px 12px;
-    background: rgba(0, 0, 0, 0.15);
+    display: flex; gap: var(--t-3); padding: var(--t-3);
+    background: var(--bg-dark);
 }
 
 .buff-column { flex: 1; display: flex; flex-direction: column; }
 
 .buff-column-title {
-    font-size: 0.7em; font-weight: 800; text-transform: uppercase;
-    letter-spacing: 0.4px; margin-bottom: 6px; display: flex;
-    align-items: center; gap: 6px;
+    font-size: var(--t-fs-micro); font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: var(--t-2); display: flex;
+    align-items: center; gap: var(--t-2);
 }
 
-.buff-column.normal-buffs .buff-column-title { color: #666; }
-.buff-column.patron-buffs .buff-column-title { color: #fbc02d; }
+/* #666 is 2.9:1 on panel and fails AA; the patron gold was a fourth amber. */
+.buff-column.normal-buffs .buff-column-title { color: var(--text-muted); }
+.buff-column.patron-buffs .buff-column-title { color: var(--warning); }
 
-.buff-list { margin: 0; padding-left: 18px; list-style-type: square; }
-.buff-list li { font-size: 0.8em; color: #fff; margin-bottom: 3px; line-height: 1.25; }
+.buff-list { margin: 0; padding-left: var(--t-4); list-style-type: square; }
+.buff-list li { font-size: var(--t-fs-body); color: var(--text-main); margin-bottom: var(--t-1); line-height: 1.5; }
 
 .buff-column-icon-muted {
     opacity: 0.5;
 }
 
 .buff-content-padded {
-    padding: 15px;
+    padding: var(--surface-padding);
 }
 
-.merchants-grid { display: flex; flex-direction: column; gap: 8px; }
+.merchants-grid { display: flex; flex-direction: column; gap: var(--t-2); }
 
 .merchant-info-fill {
     width: 100%;
 }
 
 .merchant-biomes {
-    margin-top: 10px;
+    margin-top: var(--t-3);
     display: flex;
-    gap: 8px;
+    gap: var(--t-2);
     flex-wrap: wrap;
 }
 
@@ -536,6 +595,9 @@
     cursor: pointer;
 }
 
+/* Merchant colours are data (JS writes --merchant-color per merchant); the
+   chaos card is the one merchant whose colour is authored here rather than
+   fetched, so this declaration is the single place that literal may live. */
 .merchant-card-chaos {
     --merchant-color: #ab47bc;
 }
@@ -551,13 +613,13 @@
 }
 
 .merchant-name-chaos {
-    color: #ab47bc;
+    color: var(--merchant-color);
 }
 
 .merchant-warning-icon {
-    color: #fbc02d;
-    font-size: 0.8em;
-    margin-left: 8px;
+    color: var(--warning);
+    font-size: var(--icon-optical);
+    margin-left: var(--t-2);
     cursor: help;
 }
 
@@ -566,18 +628,18 @@
 }
 
 .calendar-spotlight {
-    margin-top: 8px;
-    margin-bottom: 10px;
+    margin-top: var(--t-2);
+    margin-bottom: var(--t-3);
     border: 1px solid rgba(var(--accent-rgb), 0.45);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.16), rgba(0, 0, 0, 0.18));
-    border-radius: 10px;
-    padding: 10px 12px;
+    background: rgba(var(--accent-rgb), 0.12);
+    border-radius: var(--radius-surface);
+    padding: var(--t-3);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--t-3);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: border-color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
 }
 
 .calendar-spotlight:hover {
@@ -585,192 +647,213 @@
     transform: translateY(-1px);
 }
 
+.calendar-spotlight:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
 .calendar-spotlight-copy {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-}
-
-.modal-content-wide {
-    max-width: 95%;
-    width: 1200px;
+    gap: var(--t-1);
 }
 
 .calendar-spotlight-title {
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     font-weight: 800;
-    color: #fff;
+    color: var(--text-main);
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--t-2);
 }
 
 .calendar-spotlight-subtitle {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
 }
 
 .calendar-spotlight-cta {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     font-weight: 700;
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 999px;
-    padding: 5px 10px;
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) var(--t-3);
     white-space: nowrap;
 }
 
 .merchant-card {
     background: var(--bg-panel); border: 1px solid var(--border-color);
-    border-radius: 8px; padding: 10px 12px; display: flex; align-items: center;
-    gap: 10px; transition: all 0.22s ease; border-left: 4px solid transparent;
+    border-radius: var(--radius-surface); padding: var(--t-3); display: flex; align-items: center;
+    gap: var(--t-3);
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), filter var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
 }
 
+/* The 4px left stripe is gone (DESIGN.md > Shapes: a coloured border-left is
+   banned). "Active" now reads from the merchant hue on all four borders — the
+   same signal the icon and the status badge already carry — and the resting
+   drop shadow plus the inset coloured glow are both deleted, because a card in
+   the page does not float. */
 .merchant-card:not(.inactive) {
-    border-left: 4px solid var(--merchant-color);
-    background: linear-gradient(to right, rgba(255, 255, 255, 0.05), transparent);
-    box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.5), inset 0 0 10px -5px var(--merchant-color);
+    border-color: var(--merchant-color);
 }
 
-.merchant-card.inactive { opacity: 0.5; filter: grayscale(0.8); border-left: 4px solid #333; }
+.merchant-card.inactive { opacity: 0.5; filter: grayscale(0.8); border-color: var(--border-color); }
 
 .merchant-card.hover-card:hover {
     filter: brightness(1.2);
     border-color: var(--merchant-color);
 }
 
+.merchant-card.is-clickable:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
 .merchant-icon {
-    width: 36px; height: 36px; background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px; display: flex; align-items: center;
-    justify-content: center; font-size: 1.15em; color: var(--merchant-color);
+    width: 36px; height: 36px; background: var(--bg-hover);
+    border-radius: var(--radius-control); display: flex; align-items: center;
+    justify-content: center; font-size: var(--t-fs-h2); color: var(--merchant-color);
 }
 
-.merchant-name { 
-    font-weight: bold; 
-    color: #fff; 
-    display: flex; 
-    align-items: center; 
-    width: 100%; 
-    font-size: 0.92em;
+.merchant-name {
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    width: 100%;
+    font-size: var(--t-fs-body);
 }
 
-.merchant-status-badge { 
-    font-size: 0.6em; 
-    padding: 2px 6px; 
-    border-radius: 4px; 
-    background: var(--merchant-color); 
-    color: #000; 
-    font-weight: 900; 
-    box-shadow: 0 0 10px var(--merchant-color);
-    margin-left: 8px; 
+.merchant-status-badge {
+    font-size: var(--t-fs-micro);
+    padding: 2px var(--t-2);
+    border-radius: var(--radius-pill);
+    /* The fill used to be var(--merchant-color) with a fixed dark ink. That
+       colour is live server data — it can be any hue — so no fixed ink is safe
+       on it (the purple merchant measured 2.6:1). The hue identifies just as
+       well from the border and the text stays readable whatever arrives. */
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--merchant-color);
+    color: var(--text-main);
+    font-weight: 800;
+    letter-spacing: 1px;
+    margin-left: var(--t-2);
     vertical-align: middle;
     white-space: nowrap;
 }
 
-.merchant-time { font-size: 0.78em; color: var(--text-muted); margin-top: 3px; }
+.merchant-time { font-size: var(--t-fs-label); color: var(--text-muted); margin-top: var(--t-1); }
 
 .biome-pill {
-    background: rgba(255, 255, 255, 0.08);
-    padding: 3px 8px;
-    border-radius: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    font-size: 0.78em;
-    color: #fff;
+    background: var(--bg-hover);
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    font-size: var(--t-fs-label);
+    color: var(--text-main);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
     cursor: help;
-    transition: background 0.2s;
+    transition: background-color var(--dur) var(--t-ease);
 }
 
-.biome-pill:hover { background: rgba(255, 255, 255, 0.15); }
+.biome-pill:hover { background: var(--bg-hover); filter: brightness(1.25); }
 .biome-pill img { width: 14px; height: 14px; object-fit: contain; }
 
-.events-list { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 12px; 
+.events-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--t-3);
 }
 
 .event-card {
-    background: var(--bg-panel); 
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px; 
-    display: flex; 
-    align-items: center; 
-    padding: 12px 15px;
-    gap: 15px; 
-    text-decoration: none; 
-    transition: all 0.2s;
+    border-radius: var(--radius-surface);
+    display: flex;
+    align-items: center;
+    padding: var(--t-3) var(--t-4);
+    gap: var(--t-4);
+    text-decoration: none;
+    transition: transform var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
 
-.event-card:hover { 
-    transform: translateX(5px); 
-    border-color: #fff; 
-    background: var(--bg-dark); 
+.event-card:hover {
+    transform: translateX(2px);
+    border-color: rgba(var(--accent-rgb), 0.42);
+    background: var(--bg-hover);
 }
 
-.event-image { 
-    width: 50px; 
-    height: 50px; 
-    border-radius: 8px; 
-    background: rgba(0,0,0,0.3); 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    overflow: hidden; 
-    flex-shrink: 0; 
+.event-card:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.event-image {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
 }
 
 .event-image img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
 .event-main {
-    flex: 1; 
+    flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
 }
 
-.event-name-row { display: flex; align-items: center; gap: 8px; }
+.event-name-row { display: flex; align-items: center; gap: var(--t-2); }
 
-.event-name { 
-    font-weight: bold; 
-    color: #fff; 
-    font-size: 1em;
+.event-name {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
 }
 
-.event-category { 
-    font-size: 0.6em; 
-    padding: 2px 6px; 
-    background: rgba(255, 255, 255, 0.1); 
-    color: #fff; 
-    border: 1px solid rgba(255, 255, 255, 0.2); 
-    border-radius: 4px; 
+.event-category {
+    font-size: var(--t-fs-micro);
+    padding: 2px var(--t-2);
+    background: var(--bg-hover);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
     font-weight: 800;
-    margin-left: 5px;
+    letter-spacing: 1px;
+    margin-left: var(--t-1);
     text-transform: uppercase;
 }
 
-.event-dates { 
-    font-size: 0.8em; 
-    color: #a3adc2; 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 10px; 
-    align-items: center; 
-    margin-top: 4px;
+.event-dates {
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--t-2);
+    align-items: center;
+    margin-top: var(--t-1);
 }
 
 .event-status-pill {
-    margin-left: 12px;
+    margin-left: var(--t-3);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    border-radius: 999px;
-    padding: 3px 9px;
-    font-size: 11px;
+    gap: var(--t-2);
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) var(--t-2);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.3px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
     border: 1px solid transparent;
 }
 
@@ -778,10 +861,14 @@
     animation: none;
 }
 
+/* Three status pills, three of the four semantics. "Running now" kept its red
+   reading (it is the urgent one), but it came from a fifth red (#ff5555 /
+   #ffb4b4) — text takes --danger-ink because --danger itself is 4.4:1 on panel
+   and fails AA as text. */
 .event-status-pill.is-active {
-    color: #ffb4b4;
-    background: rgba(255, 85, 85, 0.12);
-    border-color: rgba(255, 85, 85, 0.4);
+    color: var(--danger-ink);
+    background: rgba(var(--danger-rgb), 0.12);
+    border-color: rgba(var(--danger-rgb), 0.4);
 }
 
 .event-status-pill.is-active i {
@@ -789,55 +876,63 @@
 }
 
 .event-status-pill.is-upcoming {
-    color: #9dd7ff;
+    color: var(--accent-blue);
     background: rgba(var(--accent-rgb), 0.14);
     border-color: rgba(var(--accent-rgb), 0.45);
 }
 
 .event-status-pill.is-ended {
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--bg-hover);
+    border-color: var(--border-color);
 }
 
 .event-link-icon {
     margin-left: auto;
     color: var(--text-muted);
     opacity: 0.4;
-    font-size: 1.1em;
+    font-size: var(--icon-optical);
 }
 
+/* ---- Modal. One modal everywhere (DESIGN.md > Modals): panel graphite,
+   surface radius, the token backdrop + blur, modal shadow, --z-modal. This is
+   floating chrome, so it is the one place in the file that keeps a shadow and
+   a backdrop-filter. ---- */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(5px);
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-modal, 205000);
+    z-index: var(--z-modal);
 }
 
 .modal-content {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    animation: fadeIn 0.2s ease-out;
+    box-shadow: var(--shadow-modal);
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
+/* There used to be a second, lower-specificity `.modal-content-wide` here
+   declaring `width: 1200px; max-width: 95%` — it never rendered, because this
+   rule outranks it on both properties. One definition now. */
 .modal-content.modal-content-wide {
     width: min(96vw, 1400px);
     max-width: 96vw;
 }
 
 .modal-header {
-    padding: 20px;
+    padding: var(--modal-padding);
     border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
@@ -846,71 +941,73 @@
 
 .modal-header h3 {
     margin: 0;
-    color: #fff;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--t-2);
 }
 
 .modal-close {
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 1.5em;
+    font-size: var(--t-fs-title);
     cursor: pointer;
-    transition: color 0.2s;
+    transition: color var(--dur) var(--t-ease);
 }
 
-.modal-close:hover { color: #ff5555; }
+.modal-close:hover { color: var(--danger-ink); }
+.modal-close:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 .modal-body {
-    padding: 20px;
+    padding: var(--modal-padding);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
 .modal-rotation-row {
     display: flex;
     align-items: center;
-    gap: 20px;
-    padding: 15px;
-    background: rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 8px;
+    gap: var(--t-5);
+    padding: var(--surface-padding);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
 }
 
 .modal-time-col {
     min-width: 130px;
-    border-right: 1px solid rgba(255,255,255,0.1);
-    padding-right: 15px;
+    border-right: 1px solid var(--border-color);
+    padding-right: var(--t-4);
 }
 
 .modal-biomes-col {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
     flex: 1;
 }
 
 .modal-pill {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-hover);
 }
 
 /* Weekly Schedule Grid for Rotations */
 .weekly-schedule-grid {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
     overflow-x: auto;
-    padding-bottom: 10px;
+    padding-bottom: var(--t-3);
     scrollbar-width: thin;
 }
 
 .schedule-row {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     width: max-content;
 }
 
@@ -919,7 +1016,7 @@
     top: 0;
     z-index: 3;
     background: var(--bg-panel);
-    padding-bottom: 5px;
+    padding-bottom: var(--t-1);
 }
 
 .schedule-time-col {
@@ -933,11 +1030,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.85em;
-    font-weight: bold;
+    font-size: var(--t-fs-body);
+    font-weight: 700;
     color: var(--text-muted);
-    border-right: 1px dashed rgba(255, 255, 255, 0.1);
-    padding: 10px 8px;
+    border-right: 1px dashed var(--border-color);
+    padding: var(--t-3) var(--t-2);
     text-align: center;
 }
 
@@ -951,26 +1048,27 @@
     flex-shrink: 0;
     box-sizing: border-box;
     text-align: center;
-    font-weight: bold;
-    padding: 8px 5px;
-    background: rgba(0, 0, 0, 0.3);
-    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px 6px 0 0;
-    color: #fff;
+    font-weight: 700;
+    padding: var(--t-2) var(--t-1);
+    background: var(--bg-dark);
+    /* Borders are always exactly 1px (DESIGN.md > Shapes); this was 2px. */
+    border-bottom: 1px solid var(--border-color);
+    border-radius: var(--radius-control) var(--radius-control) 0 0;
+    color: var(--text-main);
 }
 
 .schedule-slot {
     width: 118px;
     flex-shrink: 0;
     box-sizing: border-box;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
-    padding: 7px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    padding: var(--t-2);
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    transition: border-color 0.2s, background 0.2s;
+    gap: var(--t-2);
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
 
 .schedule-expand-toggle {
@@ -982,19 +1080,19 @@
 }
 
 .schedule-expand-toggle .expand-icon {
-    font-size: 0.62rem;
+    font-size: var(--t-fs-micro);
     line-height: 0;
 }
 
 .schedule-slot:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(var(--accent-rgb), 0.45);
+    background: var(--bg-hover);
 }
 
 .schedule-biomes {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--t-1);
 }
 
 /* Yearly Calendar Timeline */
@@ -1006,7 +1104,7 @@
     position: relative;
     background: var(--bg-panel);
     scrollbar-width: thin;
-    padding-bottom: 20px;
+    padding-bottom: var(--t-5);
     min-height: 350px;
 }
 
@@ -1015,10 +1113,10 @@
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: var(--control-gap);
+    padding: var(--t-3);
     border-bottom: 1px solid var(--border-color);
-    background: rgba(0,0,0,0.22);
+    background: var(--bg-dark);
 }
 
 .calendar-toolbar-left,
@@ -1026,62 +1124,67 @@
 .calendar-jump-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     flex-wrap: wrap;
 }
 
 .calendar-jump-row {
-    padding: 8px 12px;
-    border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+    padding: var(--t-2) var(--t-3);
+    border-bottom: 1px dashed var(--border-color);
 }
 
 .calendar-chip-btn {
-    border: 1px solid rgba(255,255,255,0.16);
-    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
     color: var(--text-muted);
-    border-radius: 999px;
-    padding: 5px 10px;
-    font-size: 12px;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) var(--t-3);
+    font-size: var(--t-fs-label);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
 .calendar-chip-btn:hover {
-    color: #fff;
-    border-color: rgba(255,255,255,0.35);
+    color: var(--text-main);
+    border-color: rgba(var(--accent-rgb), 0.45);
+}
+
+.calendar-chip-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .calendar-chip-btn.active {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.75);
     background: rgba(var(--accent-rgb), 0.2);
 }
 
 .calendar-helper-text {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    margin-right: 4px;
+    margin-right: var(--t-1);
 }
 
 .calendar-skeleton-wrap {
-    padding: 20px 14px;
+    padding: var(--t-5) var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
 .calendar-skeleton-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
 .calendar-skeleton-label,
 .calendar-skeleton-track {
     position: relative;
     overflow: hidden;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.07);
+    border-radius: var(--radius-control);
+    background: var(--bg-hover);
 }
 
 .calendar-skeleton-label {
@@ -1094,21 +1197,23 @@
     height: 20px;
 }
 
+/* The sweep travels on `transform`, not `left`. `left` is a layout property, so
+   the old version relaid out every skeleton row on every frame of a loop that
+   never stops while the calendar is loading. The white sheen stays a literal:
+   it is a highlight over the placeholder, not a surface colour. */
 .calendar-skeleton-label::after,
 .calendar-skeleton-track::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: -150px;
-    width: 120px;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.16), transparent);
-    animation: homeSkeletonSweep 1.2s infinite;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16) 50%, transparent);
+    transform: translateX(-100%);
+    animation: homeSkeletonSweep 1.2s linear infinite;
 }
 
 @keyframes homeSkeletonSweep {
-    from { left: -150px; }
-    to { left: 100%; }
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
 }
 .calendar-timeline-wrapper.draggable {
     cursor: grab;
@@ -1128,8 +1233,8 @@
 }
 .calendar-months-row {
     display: flex;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-dark);
 }
 .calendar-days-row {
     display: flex;
@@ -1137,18 +1242,18 @@
 .calendar-month-col {
     flex-shrink: 0;
     box-sizing: border-box;
-    border-right: 1px dashed rgba(255, 255, 255, 0.1);
+    border-right: 1px dashed var(--border-color);
     position: relative;
 }
 .calendar-month-label {
     position: sticky;
     display: inline-block;
-    padding: 6px 15px;
-    font-weight: bold;
-    color: var(--accent-blue, #5ec6ff);
+    padding: var(--t-2) var(--t-4);
+    font-weight: 700;
+    color: var(--accent-blue);
     white-space: nowrap;
     z-index: 6;
-    font-size: 0.95em;
+    font-size: var(--t-fs-body);
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1160,80 +1265,87 @@
     flex-shrink: 0;
     box-sizing: border-box;
     text-align: center;
-    border-right: 1px dashed rgba(255,255,255,0.05);
+    border-right: 1px dashed var(--border-color);
     display: flex;
     flex-direction: column;
 }
 .calendar-day-weekday {
-    font-size: 0.65em;
+    font-size: var(--t-fs-micro);
     color: var(--text-muted);
-    font-weight: bold;
+    font-weight: 800;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    background: rgba(0,0,0,0.2);
+    background: var(--bg-dark);
     padding: 2px 0;
     height: 20px;
     overflow: hidden;
 }
 .calendar-day-num {
-    font-size: 0.85em;
-    color: #fff;
-    padding: 4px 0;
+    font-size: var(--t-fs-label);
+    color: var(--text-main);
+    padding: var(--t-1) 0;
 }
-.calendar-day-col.is-today { background: rgba(255, 255, 255, 0.05); }
-.calendar-day-col.is-today .calendar-day-num { color: var(--accent-blue); font-weight: bold; }
+.calendar-day-col.is-today { background: var(--bg-hover); }
+.calendar-day-col.is-today .calendar-day-num { color: var(--accent-blue); font-weight: 700; }
 .calendar-tracks {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-top: 15px;
-    padding-bottom: 15px;
+    gap: var(--t-3);
+    padding-top: var(--t-4);
+    padding-bottom: var(--t-4);
 }
 .calendar-track {
     position: relative;
     height: 34px;
     display: flex;
     align-items: center;
-    background: rgba(0,0,0,0.2);
-    border-radius: 6px;
+    background: var(--bg-dark);
+    border-radius: var(--radius-control);
 }
+/* Sticky first column of the timeline. The drop shadow it used to carry was
+   resting elevation; the hairline it overlaps on is what separates it, and
+   borders are 1px (this was 2px). */
 .calendar-track-label {
     position: sticky;
     left: 0;
     background: var(--bg-panel);
     z-index: 5;
-    padding: 0 15px;
-    font-weight: bold;
-    font-size: 0.85em;
-    color: #fff;
+    padding: 0 var(--t-4);
+    font-weight: 700;
+    font-size: var(--t-fs-label);
+    color: var(--text-main);
     height: 100%;
     display: flex;
     align-items: center;
-    border-right: 2px solid var(--border-color);
-    box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+    border-right: 1px solid var(--border-color);
     box-sizing: border-box;
 }
 .calendar-event {
     position: absolute;
     height: 22px;
-    border-radius: 11px;
+    border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75em;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    color: #000;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    letter-spacing: 1px;
+    /* Base has no fill of its own — the .event-* classes below paint it. Dark
+       ink here meant an unclassified event rendered near-invisible on the dark
+       track, so the fallback is ink and each .event-* sets what it needs. */
+    color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: clip;
-    padding: 0 8px;
+    padding: 0 var(--t-2);
     box-sizing: border-box;
-    transition: filter 0.2s;
+    transition: filter var(--dur) var(--t-ease);
     cursor: pointer;
     z-index: 2;
 }
 .calendar-event:hover { filter: brightness(1.2); z-index: 3; }
+.calendar-event:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 .calendar-today-line {
     position: absolute;
     top: 0;
@@ -1249,52 +1361,56 @@
 }
 
 .calendar-empty-state {
-    margin: 8px 12px;
-    padding: 12px;
+    margin: var(--t-2) var(--t-3);
+    padding: var(--t-3);
     border: 1px dashed var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 .calendar-tracks i {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* 2px optical nudge to sit the glyph on the text baseline — not a scale value. */
     top: 2px;
     position: relative;
 }
-.event-corruxion { background: #7a1e8a; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-.event-fluxion { background: #3a9cbd; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
-.event-invasion { background: #ff5252; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
-.event-mana { background: #3e5a63; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
-.event-stampy { background: #6b513d; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.1); }
-.event-weekly { text-transform: uppercase; font-weight: normal; }
+/* Per-event-type identity fills on the timeline. Like the merchant colours
+   these name a specific in-game event rather than a status, so they are not
+   folded into the four semantics; only the ink and hairline are tokenised. */
+.event-corruxion { background: #7a1e8a; color: var(--text-main); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.event-fluxion { background: #3a9cbd; color: var(--text-main); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); }
+.event-invasion { background: #ff5252; color: var(--text-main); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); border: 1px solid var(--border-color); }
+.event-mana { background: #3e5a63; color: var(--text-main); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); border: 1px solid var(--border-color); }
+.event-stampy { background: #6b513d; color: var(--text-main); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8); border: 1px solid var(--border-color); }
+.event-weekly { text-transform: uppercase; font-weight: 400; }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse-opacity { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
 /* Concise module pass */
 .home-container {
-    padding: 20px;
+    padding: var(--view-padding);
 }
 
 .home-header {
-    margin-bottom: 18px;
+    margin-bottom: var(--t-4);
 }
 
 .section-header,
 .community-header {
-    margin-bottom: 10px;
+    margin-bottom: var(--t-3);
 }
 
 .community-panel {
-    padding: 12px;
+    padding: var(--t-3);
 }
 
 .streams-carousel {
-    gap: 10px;
+    gap: var(--t-3);
 }
 
 .stream-card {
@@ -1302,95 +1418,111 @@
     max-width: 220px;
 }
 
-/* Home refresh aligned with current app style */
+/* Home refresh aligned with current app style.
+   NOTE: no `container-type` here even though this is the view root. The three
+   `.modal-overlay` dialogs are direct children of this element, and a query
+   container is also a containing block for `position: fixed` descendants — the
+   overlays would stop covering the viewport and start covering the (scrolling,
+   full-content-height) view. `.home-section` carries the container instead. */
 #home-vue-app.home-container {
     max-width: none;
     width: 100%;
     margin: 0;
-    padding: 24px 40px;
+    padding: var(--t-5) var(--t-6);
     box-sizing: border-box;
     overflow-x: hidden;
     min-height: 100%;
 }
 @media (min-width: 1500px) {
     #home-vue-app.home-container {
-        padding: 28px 56px;
+        padding: var(--t-6) calc(var(--t-6) * 2);
     }
 }
 
 #home-vue-app .split-layout {
-    gap: 22px;
-    margin-bottom: 24px;
+    gap: var(--surface-gap);
+    margin-bottom: var(--t-5);
 }
 
 #home-vue-app .split-column {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
 #home-vue-app .section-header {
-    margin: 4px 0 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-    padding-bottom: 10px;
+    margin: var(--t-1) 0 var(--t-2);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--t-3);
 }
 
 #home-vue-app .section-header h2 {
-    font-size: 1.08rem;
-    letter-spacing: 0.2px;
-    color: #eef6ff;
+    font-size: var(--t-fs-h2);
+    color: var(--text-main);
 }
 
+/* Every resting surface in the view is one tonal step above the page with a
+   1px hairline — no gradient, no glass. The --glass-* tokens are for chrome
+   that genuinely floats (DESIGN.md > The Blur Budget Rule); these are in-view
+   content panels. */
 #home-vue-app .community-panel,
 #home-vue-app .news-card,
 #home-vue-app .buff-card,
 #home-vue-app .merchant-card,
 #home-vue-app .event-card,
 #home-vue-app .calendar-spotlight {
-    background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom));
-    border: 1px solid var(--glass-border);
-    box-shadow: none;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
 }
 
 #home-vue-app .community-panel {
-    border-radius: 14px;
-    padding: 14px 14px 12px;
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
 }
 
 #home-vue-app .news-card {
-    border-radius: 14px;
-    background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom));
-    border-color: rgba(255, 255, 255, 0.12);
+    border-radius: var(--radius-surface);
 }
 
 #home-vue-app .news-card:hover {
-    background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.1), rgba(10, 14, 21, 0.38));
+    background: var(--bg-hover);
 }
 
 .delve-weeks {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
+/* The whole Delve module was themed in a private lilac palette (#f3e5f5,
+   #cba8d4, #f1d7f6, rgba(171,71,188,…)) that exists nowhere else in the app.
+   Structure now comes from the neutral ramp; the only colour left is the
+   semantic one below. */
 .delve-week-card,
 .delve-depth-card {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
     overflow: hidden;
 }
 
+/* A vault depth is the thing worth attention → warning, carried by the border
+   rather than by a coloured halo. */
 .delve-depth-card-vault {
-    border-color: rgba(255, 202, 40, 0.7);
-    box-shadow: inset 0 0 0 1px rgba(255, 202, 40, 0.18), 0 0 14px rgba(255, 202, 40, 0.12);
+    border-color: rgba(var(--warning-rgb), 0.7);
 }
 
 .delve-week-summary,
 .delve-depth-summary {
     list-style: none;
     cursor: pointer;
-    padding: 10px 12px;
+    padding: var(--t-3);
+}
+
+.delve-week-summary:focus-visible,
+.delve-depth-summary:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .delve-week-summary::-webkit-details-marker,
@@ -1404,46 +1536,47 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
 .delve-week-title {
-    font-size: 0.95rem;
+    font-size: var(--t-fs-h2);
     font-weight: 700;
-    color: #f3e5f5;
+    color: var(--text-main);
 }
 
 .delve-week-meta,
 .delve-depth-subheading,
 .delve-depth-objective {
     color: var(--text-muted);
-    font-size: 0.82rem;
+    font-size: var(--t-fs-label);
 }
 
 .delve-week-meta {
-    margin-top: 4px;
+    margin-top: var(--t-1);
 }
 
+/* "Current" is a selection, and selection is the accent. */
 .delve-current-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: #f3e5f5;
-    color: #5d2a67;
-    border: 1px solid rgba(93, 42, 103, 0.18);
-    font-size: 0.72rem;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    background: rgba(var(--accent-rgb), 0.16);
+    color: var(--accent-blue);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.02em;
+    letter-spacing: 1px;
     text-transform: uppercase;
 }
 
 .delve-depth-list {
-    padding: 0 10px 10px;
+    padding: 0 var(--t-3) var(--t-3);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .delve-depth-heading {
@@ -1452,77 +1585,81 @@
 
 .delve-depth-heading-inline {
     flex-wrap: wrap;
-    row-gap: 4px;
+    row-gap: var(--t-1);
 }
 
 .delve-depth-value {
     font-weight: 700;
-    color: #fff;
-    font-size: 0.92rem;
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
 }
 
 .delve-depth-separator {
-    color: rgba(255, 255, 255, 0.28);
-    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
 }
 
 .delve-chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    margin-top: 6px;
+    gap: var(--t-1);
+    margin-top: var(--t-2);
 }
 
 .delve-chip {
     display: inline-flex;
     align-items: center;
-    border-radius: 999px;
-    padding: 3px 7px;
-    font-size: 0.68rem;
-    background: rgba(171, 71, 188, 0.14);
-    color: #f1d7f6;
-    border: 1px solid rgba(171, 71, 188, 0.28);
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) var(--t-2);
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    background: var(--bg-hover);
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
 }
 
 .delve-depth-body {
-    padding: 0 12px 12px;
+    padding: 0 var(--t-3) var(--t-3);
     display: grid;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .delve-block {
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+    padding-top: var(--t-2);
 }
 
 .delve-block-title {
-    font-size: 0.72rem;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #cba8d4;
-    margin-bottom: 6px;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: var(--t-2);
 }
 
 .delve-boss-name,
 .delve-enemy-name,
 .delve-room-number {
     font-weight: 600;
-    color: #fff;
+    color: var(--text-main);
 }
 
 .delve-enemy-list,
 .delve-room-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 6px;
+    gap: var(--t-2);
+    align-items: start;
 }
 
 .delve-enemy-item,
 .delve-room-pill {
-    border-radius: 10px;
-    background: rgba(0, 0, 0, 0.22);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 7px 9px;
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    padding: var(--t-2);
     min-height: 0;
 }
 
@@ -1530,88 +1667,88 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .delve-enemy-count {
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: var(--t-fs-label);
     white-space: nowrap;
 }
 
 .delve-room-pill {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     justify-content: space-between;
 }
 
 .delve-room-enemy {
     color: var(--text-muted);
     text-align: right;
-    font-size: 0.8rem;
+    font-size: var(--t-fs-label);
 }
 
 #home-vue-app .media-tabs {
-    background: rgba(9, 13, 20, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 10px;
-    padding: 4px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    padding: var(--t-1);
 }
 
 #home-vue-app .media-tab {
-    border-radius: 7px;
-    padding: 7px 11px;
+    border-radius: var(--radius-control);
+    padding: var(--t-2) var(--t-3);
 }
 
 #home-vue-app .stream-card {
     min-width: 236px;
     max-width: 236px;
-    border-radius: 12px;
-    border-color: rgba(255, 255, 255, 0.12);
-    background: rgba(16, 22, 32, 0.8);
+    border-radius: var(--radius-surface);
+    border-color: var(--border-color);
+    background: var(--bg-panel);
 }
 
 #home-vue-app .stream-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.6);
-    box-shadow: 0 10px 18px rgba(0, 0, 0, 0.34);
 }
 
 #home-vue-app .stream-info {
-    padding: 11px;
+    padding: var(--t-3);
 }
 
 #home-vue-app .carousel-btn {
     width: 32px;
     height: 32px;
-    border-color: rgba(255, 255, 255, 0.28);
-    background: rgba(10, 14, 21, 0.7);
+    border-color: var(--border-color);
+    background: var(--bg-panel);
 }
 
+/* Restores the data-driven buff hue that the shared surface rule above resets:
+   all four borders, 1px, no stripe. */
 #home-vue-app .buff-card {
-    border-radius: 12px;
-    border-left-width: 3px;
+    border-radius: var(--radius-surface);
+    border-color: var(--buff-color, var(--border-color));
 }
 
 #home-vue-app .buff-header {
     min-height: 42px;
-    padding: 10px 14px;
+    padding: var(--t-3) var(--surface-padding);
 }
 
 #home-vue-app .buff-content,
 #home-vue-app .buff-split-container {
-    background: rgba(8, 12, 18, 0.24);
+    background: var(--bg-dark);
 }
 
 #home-vue-app .merchant-card {
-    border-radius: 11px;
-    border-left-width: 3px;
+    border-radius: var(--radius-surface);
     min-height: 60px;
 }
 
 #home-vue-app .merchant-card:not(.inactive) {
-    background: linear-gradient(120deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.03));
+    background: var(--bg-panel);
     border-color: var(--merchant-color);
 }
 
@@ -1622,15 +1759,13 @@
 #home-vue-app .merchant-icon {
     width: 38px;
     height: 38px;
-    border-radius: 9px;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18) !important;
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-control);
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
 }
 #home-vue-app .merchant-card.inactive {
     opacity: 0.62;
     filter: grayscale(0.95) saturate(0.7);
-    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12) !important;
 }
 
 #home-vue-app .merchant-card.inactive .merchant-icon {
@@ -1645,9 +1780,11 @@
     right: 10%;
     top: 50%;
     height: 2px;
-    background: rgba(255, 85, 85, 0.95);
+    background: var(--danger);
     transform: translateY(-50%) rotate(-45deg);
     transform-origin: center;
+    /* A 1px dark outline on the strike bar, not elevation — it keeps the bar
+       legible over whatever icon art sits behind it. */
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
     pointer-events: none;
     z-index: 2;
@@ -1658,81 +1795,79 @@
 }
 
 #home-vue-app .calendar-spotlight {
-    border-radius: 12px;
-    padding: 11px 13px;
+    border-radius: var(--radius-surface);
+    padding: var(--t-3);
     border-color: rgba(var(--accent-rgb), 0.38);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(10, 14, 21, 0.38));
+    background: rgba(var(--accent-rgb), 0.12);
 }
 
 #home-vue-app .calendar-spotlight:hover {
     border-color: rgba(var(--accent-rgb), 0.7);
-    box-shadow: none;
 }
 
 #home-vue-app .calendar-spotlight-cta {
-    background: rgba(0, 0, 0, 0.24);
+    background: var(--bg-dark);
 }
 
 #home-vue-app .event-card {
-    border-radius: 12px;
-    border-color: rgba(255, 255, 255, 0.11);
-    padding: 11px 14px;
+    border-radius: var(--radius-surface);
+    border-color: var(--border-color);
+    padding: var(--t-3) var(--surface-padding);
 }
 
 #home-vue-app .event-card:hover {
     transform: translateX(2px);
     border-color: rgba(var(--accent-rgb), 0.42);
-    background: linear-gradient(160deg, rgba(var(--accent-rgb), 0.12), rgba(10, 14, 21, 0.34));
+    background: var(--bg-hover);
 }
 
 #home-vue-app .event-category {
-    border-radius: 999px;
-    padding: 3px 8px;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) var(--t-2);
 }
 
 #home-vue-app .modal-overlay {
-    background: rgba(6, 9, 14, 0.78);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
 }
 
 #home-vue-app .modal-content {
-    background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom));
-    border: 1px solid var(--glass-border);
-    border-radius: 14px;
-    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.45);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    box-shadow: var(--shadow-modal);
 }
 
 #home-vue-app .modal-header {
-    padding: 16px 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: var(--modal-padding);
+    border-bottom: 1px solid var(--border-color);
 }
 
 #home-vue-app .modal-body {
-    padding: 16px;
+    padding: var(--modal-padding);
 }
 
 #home-vue-app .calendar-toolbar,
 #home-vue-app .calendar-jump-row {
-    background: rgba(7, 11, 17, 0.4);
+    background: var(--bg-dark);
 }
 
 #home-vue-app .calendar-timeline-wrapper {
-    background: rgba(6, 9, 15, 0.28);
+    background: var(--bg-panel);
 }
 
 #home-vue-app .calendar-track {
-    background: rgba(7, 11, 17, 0.36);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
 }
 
-@media (max-width: 900px) {
-    #home-vue-app.home-container {
-        padding: 14px;
-    }
-
+/* Content-box branch (see the note on `.home-section`). The view root's own
+   padding cannot live here — an element can never match a query against its
+   own container — so it stays in the viewport rule below. */
+@container (max-width: 700px) {
     #home-vue-app .split-layout {
-        gap: 16px;
+        gap: var(--surface-gap);
     }
 
     #home-vue-app .stream-card {
@@ -1741,16 +1876,44 @@
     }
 
     #home-vue-app .event-card {
-        gap: 11px;
-        padding: 10px 12px;
+        gap: var(--t-3);
+        padding: var(--t-3);
     }
 
     #home-vue-app .event-name {
-        font-size: 0.95em;
+        font-size: var(--t-fs-body);
     }
 
     #home-vue-app .news-meta {
-        gap: 8px;
+        gap: var(--t-2);
+    }
+}
+
+@media (max-width: 900px) {
+    #home-vue-app.home-container {
+        padding: var(--view-padding);
+    }
+
+    #home-vue-app .split-layout {
+        gap: var(--surface-gap);
+    }
+
+    #home-vue-app .stream-card {
+        min-width: 210px;
+        max-width: 210px;
+    }
+
+    #home-vue-app .event-card {
+        gap: var(--t-3);
+        padding: var(--t-3);
+    }
+
+    #home-vue-app .event-name {
+        font-size: var(--t-fs-body);
+    }
+
+    #home-vue-app .news-meta {
+        gap: var(--t-2);
     }
 }
 
@@ -1759,44 +1922,50 @@
 .home-whats-new {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
+    gap: var(--t-3);
+    padding: var(--t-2) var(--t-3);
     border: 1px solid rgba(var(--accent-rgb), 0.22);
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.08), rgba(0,0,0,0.18));
-    border-radius: 10px;
-    margin-bottom: 20px;
-    font-size: 13px;
+    background: rgba(var(--accent-rgb), 0.08);
+    border-radius: var(--radius-surface);
+    margin-bottom: var(--t-5);
+    font-size: var(--t-fs-body);
     color: var(--text-muted);
 }
 .home-whats-new-icon {
     color: var(--accent-blue);
-    font-size: 14px;
+    font-size: var(--icon-optical);
 }
 .home-whats-new-body {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     flex: 1;
     min-width: 0;
     cursor: pointer;
-    outline: none;
     padding: 2px 0;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
 }
 .home-whats-new-body:hover,
 .home-whats-new-body:focus-visible {
-    color: #fff;
+    color: var(--text-main);
+}
+/* This is a role="link" with tabindex="0"; `outline: none` used to remove its
+   only keyboard affordance and the :focus-visible rule above changed colour
+   alone. Keyboard focus is not optional (DESIGN.md > Buttons > Focus). */
+.home-whats-new-body:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .home-whats-new-tag {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 1px;
     color: var(--accent-blue);
     background: rgba(var(--accent-rgb), 0.14);
     border: 1px solid rgba(var(--accent-rgb), 0.32);
-    padding: 2px 6px;
-    border-radius: 999px;
+    padding: 2px var(--t-2);
+    border-radius: var(--radius-pill);
 }
 .home-whats-new-text {
     white-space: nowrap;
@@ -1808,38 +1977,47 @@
     border: 0;
     color: var(--text-muted);
     cursor: pointer;
-    font-size: 18px;
+    font-size: var(--t-fs-h2);
     line-height: 1;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: background 0.15s, color 0.15s;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-control);
+    transition: background-color var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease);
 }
 .home-whats-new-dismiss:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.07);
+    color: var(--text-main);
+    background: var(--bg-hover);
+}
+.home-whats-new-dismiss:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 /* Support-the-project nudge — sits below "What's New" if present, above the
    Quick Tools section. Designed to read as a soft recommendation, not a CTA
    that competes with anything functional. */
+/* The card used to be built out of a private pink (rgba(255,120,160,…),
+   #ff6f91, #ff7aa1→#ff5d8c) — a sixth hue that meant nothing in the system and
+   stayed pink whatever accent the user picked. The card is now an ordinary
+   resting surface and its one action is the accent primary, which is exactly
+   what "support" is here: the single primary action on this surface. */
 .home-support-card {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 14px;
-    margin: 0 0 12px;
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255, 120, 160, 0.09), rgba(255, 120, 160, 0.03));
-    border: 1px solid rgba(255, 120, 160, 0.20);
+    gap: var(--surface-padding);
+    padding: var(--surface-padding);
+    margin: 0 0 var(--t-3);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
 }
 .home-support-card-icon {
     flex-shrink: 0;
     width: 36px; height: 36px;
     display: flex; align-items: center; justify-content: center;
-    border-radius: 8px;
-    background: rgba(255, 120, 160, 0.14);
-    color: #ff6f91;
-    font-size: 1.1em;
+    border-radius: var(--radius-control);
+    background: rgba(var(--accent-rgb), 0.14);
+    color: var(--accent-blue);
+    font-size: var(--t-fs-h2);
 }
 .home-support-card-body {
     flex: 1; min-width: 0;
@@ -1847,48 +2025,62 @@
 .home-support-card-title {
     color: var(--text-main);
     font-weight: 600;
-    font-size: 0.95em;
+    font-size: var(--t-fs-body);
 }
 .home-support-card-copy {
     color: var(--text-muted);
-    font-size: 0.85em;
+    font-size: var(--t-fs-label);
     margin-top: 2px;
     line-height: 1.4;
 }
 .home-support-card-cta {
     flex-shrink: 0;
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 14px;
-    background: linear-gradient(180deg, #ff7aa1, #ff5d8c);
-    color: #fff;
+    display: inline-flex; align-items: center; gap: var(--t-2);
+    padding: var(--t-2) var(--surface-padding);
+    /* Depth from a light/dark overlay over the user's accent, never a literal
+       gradient pair (DESIGN.md > Buttons > Primary). */
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.12)),
+                var(--accent-blue);
+    color: var(--accent-ink);
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     font-weight: 600;
-    font-size: 0.88em;
+    font-size: var(--t-fs-body);
     cursor: pointer;
-    transition: transform 0.15s, filter 0.15s;
+    transition: transform var(--dur-fast) var(--t-ease), filter var(--dur-fast) var(--t-ease);
 }
 .home-support-card-cta:hover {
     transform: translateY(-1px);
     filter: brightness(1.07);
+}
+.home-support-card-cta:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .home-support-card-dismiss {
     flex-shrink: 0;
     background: transparent;
     border: none;
     color: var(--text-muted);
-    font-size: 1.4em;
+    font-size: var(--t-fs-h2);
     line-height: 1;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-control);
+    transition: color var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease);
 }
 .home-support-card-dismiss:hover {
     color: var(--text-main);
-    background: rgba(255,255,255,0.05);
+    background: var(--bg-hover);
 }
-/* Tablet/mobile: stack the CTA below the copy so nothing wraps awkwardly. */
+.home-support-card-dismiss:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+/* Tablet/mobile: stack the CTA below the copy so nothing wraps awkwardly.
+   Stays a viewport query: this card is a direct child of the view root, and the
+   root cannot be a query container (see `#home-vue-app.home-container`), so
+   there is no content box to measure against. */
 @media (max-width: 720px) {
     .home-support-card { flex-wrap: wrap; }
     .home-support-card-body { flex-basis: 100%; }
@@ -1898,28 +2090,32 @@
 .home-now-strip {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
-    margin-bottom: 22px;
+    gap: var(--t-3);
+    margin-bottom: var(--t-5);
+    /* Multi-column card grid: short cells hug their content. */
+    align-items: start;
 }
 .now-cell {
     --now-color: var(--accent-blue);
     display: flex;
-    gap: 10px;
+    gap: var(--t-3);
     align-items: center;
-    padding: 12px 14px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.18));
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
+    padding: var(--t-3) var(--surface-padding);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     cursor: pointer;
-    outline: none;
-    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    transition: transform var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
     min-width: 0;
 }
 .now-cell:hover,
 .now-cell:focus-visible {
     transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.45);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.28);
+}
+.now-cell:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .now-cell-icon {
     display: flex;
@@ -1927,11 +2123,12 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     flex-shrink: 0;
-    background: color-mix(in srgb, var(--now-color) 18%, rgba(0,0,0,0.3));
+    /* --now-color is per-item data and defaults to the user's accent. */
+    background: color-mix(in srgb, var(--now-color) 18%, var(--bg-dark));
     color: var(--now-color);
-    font-size: 18px;
+    font-size: var(--t-fs-h2);
     border: 1px solid color-mix(in srgb, var(--now-color) 45%, transparent);
 }
 .now-cell-icon img {
@@ -1940,85 +2137,88 @@
     object-fit: contain;
 }
 .now-cell-emoji {
-    font-size: 20px;
+    font-size: var(--t-fs-h2);
 }
 .now-cell-body {
     min-width: 0;
     flex: 1;
 }
 .now-cell-label {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.7px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--text-muted);
     margin-bottom: 2px;
 }
 .now-cell-title {
-    font-size: 14px;
+    font-size: var(--t-fs-body);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-main);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .now-cell-meta {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    margin-top: 3px;
+    margin-top: var(--t-1);
 }
 .now-cell-urgent {
-    border-color: rgba(255, 99, 71, 0.55);
-    box-shadow: 0 0 0 1px rgba(255, 99, 71, 0.18), 0 0 14px rgba(255, 99, 71, 0.18);
-    animation: home-urgent-pulse 2.6s ease-in-out infinite;
+    border-color: var(--danger);
+    animation: home-urgent-pulse 2.6s var(--t-ease) infinite;
 }
 .now-cell-urgent .now-cell-label {
-    color: #ff8a65;
+    color: var(--danger-ink);
 }
 
+/* "Urgent" was a tomato (rgba(255,99,71,…)) fifth red drawn as a two-layer
+   glow, animated on box-shadow — the most expensive property to loop on. It is
+   now --danger on the border the element already paints, and the pulse fades
+   that one border colour. Static state still reads with motion disabled. */
 @keyframes home-urgent-pulse {
-    0%, 100% { box-shadow: 0 0 0 1px rgba(255, 99, 71, 0.18), 0 0 14px rgba(255, 99, 71, 0.18); }
-    50%      { box-shadow: 0 0 0 1px rgba(255, 99, 71, 0.45), 0 0 22px rgba(255, 99, 71, 0.36); }
+    0%, 100% { border-color: rgba(var(--danger-rgb), 0.45); }
+    50%      { border-color: var(--danger); }
 }
 
 .home-quick-tools {
-    margin-bottom: 22px;
-    padding: 14px 16px;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.10));
+    margin-bottom: var(--t-5);
+    padding: var(--surface-padding);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
 }
 .home-quick-tools-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 14px;
-    gap: 8px;
+    margin-bottom: var(--surface-padding);
+    gap: var(--t-2);
 }
 .home-quick-tools-title {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: #fff;
+    gap: var(--t-2);
+    color: var(--text-main);
     font-weight: 700;
-    font-size: 13px;
+    font-size: var(--t-fs-body);
 }
 .home-quick-tools-title i {
     color: var(--accent-blue);
 }
 .home-quick-tools-mode {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 2px 7px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.10);
-    background: rgba(255,255,255,0.04);
+    gap: var(--t-1);
+    padding: 2px var(--t-2);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--bg-hover);
 }
 .home-quick-tools-mode.mode-custom {
     color: var(--accent-blue);
@@ -2028,28 +2228,32 @@
 .home-quick-tools-actions {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 .home-quick-tools-toggle {
-    background: rgba(0,0,0,0.24);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 12px;
+    border-radius: var(--radius-control);
+    padding: var(--t-2) var(--t-3);
+    font-size: var(--t-fs-label);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    gap: var(--t-2);
+    transition: color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease);
 }
 .home-quick-tools-toggle:hover {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.55);
     background: rgba(var(--accent-rgb), 0.14);
 }
+.home-quick-tools-toggle:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
 .home-quick-tools-toggle.is-primary {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.55);
     background: rgba(var(--accent-rgb), 0.18);
 }
@@ -2060,47 +2264,55 @@
 .home-quick-tools-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 10px;
+    gap: var(--t-3);
+    align-items: start;
 }
 .home-quick-tool-slot {
     position: relative;
 }
+/* These tiles sit inside the quick-tools panel and are the thing you click, so
+   they take Raised Graphite — "you can act on this" — rather than a second
+   card fill nested inside the first. */
 .home-quick-tool {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.10);
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.16));
-    color: #fff;
+    gap: var(--t-3);
+    padding: var(--t-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-hover);
+    color: var(--text-main);
     font-weight: 700;
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     text-align: left;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s, background 0.15s;
+    transition: transform var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease);
 }
 .home-quick-tool:hover:not(:disabled) {
     transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.55);
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(255,255,255,0.02));
+    background: rgba(var(--accent-rgb), 0.18);
+}
+.home-quick-tool:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .home-quick-tool:disabled {
     cursor: not-allowed;
-    opacity: 0.55;
+    opacity: 0.5;
 }
 .home-quick-tool-icon {
     width: 30px;
     height: 30px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     background: rgba(var(--accent-rgb), 0.14);
     color: var(--accent-blue);
     flex-shrink: 0;
-    font-size: 14px;
+    font-size: var(--t-fs-body);
 }
 .home-quick-tool-label {
     flex: 1;
@@ -2110,31 +2322,34 @@
 }
 .home-quick-tool-edit-hint {
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: var(--t-fs-label);
 }
+/* The hatch is a "nothing assigned here" texture, not a surface colour — the
+   only place a white overlay survives in this file. */
 .home-quick-tool-empty {
     color: var(--text-muted);
-    background: repeating-linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 6px, rgba(255,255,255,0.04) 6px, rgba(255,255,255,0.04) 12px);
+    background: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.02) 6px, rgba(255, 255, 255, 0.04) 6px, rgba(255, 255, 255, 0.04) 12px);
     border-style: dashed;
 }
 .home-quick-tool-empty .home-quick-tool-icon {
-    background: rgba(255,255,255,0.06);
+    background: var(--bg-hover);
     color: var(--text-muted);
 }
 .home-quick-tool-slot.is-custom-mode .home-quick-tool {
     border-color: rgba(var(--accent-rgb), 0.28);
 }
+/* A popover: this one genuinely floats, so it keeps the floating shadow. */
 .home-quick-tool-picker {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + var(--t-2));
     left: 0;
     right: 0;
     z-index: 30;
-    background: var(--bg-panel, #1e1e1e);
+    background: var(--bg-panel);
     border: 1px solid rgba(var(--accent-rgb), 0.32);
-    border-radius: 10px;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.55);
-    padding: 8px;
+    border-radius: var(--radius-surface);
+    box-shadow: var(--shadow-floating);
+    padding: var(--t-2);
     max-height: 280px;
     overflow-y: auto;
 }
@@ -2142,24 +2357,28 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 6px 8px;
-    font-size: 12px;
+    padding: var(--t-1) var(--t-2) var(--t-2);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    margin-bottom: 6px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: var(--t-2);
 }
-.home-quick-tool-picker-header strong { color: #fff; }
+.home-quick-tool-picker-header strong { color: var(--text-main); }
 .home-quick-tool-picker-close {
     background: transparent;
     border: 0;
     color: var(--text-muted);
     cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 6px;
+    padding: 2px var(--t-2);
+    border-radius: var(--radius-control);
 }
 .home-quick-tool-picker-close:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.06);
+    color: var(--text-main);
+    background: var(--bg-hover);
+}
+.home-quick-tool-picker-close:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .home-quick-tool-picker-list {
     display: flex;
@@ -2169,15 +2388,15 @@
 .home-quick-tool-picker-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 8px;
-    border-radius: 6px;
+    gap: var(--t-2);
+    padding: var(--t-2);
+    border-radius: var(--radius-control);
     background: transparent;
     border: 0;
-    color: #fff;
+    color: var(--text-main);
     text-align: left;
     cursor: pointer;
-    font-size: 13px;
+    font-size: var(--t-fs-body);
 }
 .home-quick-tool-picker-item i {
     color: var(--accent-blue);
@@ -2187,26 +2406,30 @@
 .home-quick-tool-picker-item:hover {
     background: rgba(var(--accent-rgb), 0.12);
 }
+.home-quick-tool-picker-item:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
+}
 .home-quick-tool-picker-clear {
     color: var(--text-muted);
-    border-top: 1px dashed rgba(255,255,255,0.08);
-    margin-top: 4px;
-    padding-top: 8px;
+    border-top: 1px dashed var(--border-color);
+    margin-top: var(--t-1);
+    padding-top: var(--t-2);
 }
 .home-quick-tool-picker-clear i {
-    color: #ff8a65;
+    color: var(--danger-ink);
 }
 
 .home-section-controls {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
-    margin-bottom: 10px;
-    padding: 0 4px;
+    gap: var(--control-gap);
+    margin-bottom: var(--t-3);
+    padding: 0 var(--t-1);
 }
 .home-section-controls-hint {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     opacity: 0.75;
 }
@@ -2214,17 +2437,19 @@
 .home-section-drop-line {
     height: 0;
     margin: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--accent-blue);
-    box-shadow: 0 0 14px rgba(var(--accent-rgb), 0.55);
-    transition: height 0.12s ease, margin 0.12s ease, opacity 0.12s ease;
+    /* Only opacity animates. height/margin are layout properties and this
+       indicator flips many times per second during a drag; the accent glow was
+       decoration, and the line itself already says "drop here". */
+    transition: opacity var(--dur-fast) var(--t-ease);
     opacity: 0;
     pointer-events: none;
     position: relative;
 }
 .home-section-drop-line.active {
     height: 3px;
-    margin: 8px 0;
+    margin: var(--t-2) 0;
     opacity: 1;
 }
 .home-section-drop-line.active::before {
@@ -2235,26 +2460,35 @@
     width: 11px;
     height: 11px;
     background: var(--accent-blue);
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     transform: translateY(-50%);
-    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.65);
 }
 .home-section-drop-line-tail {
     pointer-events: auto;
-    min-height: 16px;
+    min-height: var(--t-4);
 }
 .home-section-drop-line-tail:not(.active) {
-    height: 16px;
+    height: var(--t-4);
     opacity: 0;
 }
 
+/* A section is a grouping frame, not a card — it holds cards, and a card inside
+   a card is banned (DESIGN.md > Cards). So it takes the hairline and the
+   surface radius but no fill of its own.
+
+   This is also the view's query container: the shell reserves 260px for the
+   rail until 900px, so component breakpoints have to be measured here rather
+   than against the viewport. It is `.home-section` and not the view root
+   because a query container is also the containing block for `position: fixed`
+   descendants, and the root holds all three modal overlays. */
 .home-section {
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.10));
-    margin-bottom: 20px;
+    container-type: inline-size;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    background: transparent;
+    margin-bottom: var(--t-5);
     overflow: visible;
-    transition: border-color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
+    transition: border-color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease), opacity var(--dur) var(--t-ease);
 }
 .home-section.is-dragging {
     opacity: 0.45;
@@ -2266,9 +2500,9 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    padding: 14px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    gap: var(--t-3);
+    padding: var(--surface-padding) var(--t-4);
+    border-bottom: 1px solid var(--border-color);
     user-select: none;
 }
 .home-section.is-collapsed .home-section-header {
@@ -2277,7 +2511,7 @@
 .home-section-title-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     min-width: 0;
     flex: 1;
 }
@@ -2285,14 +2519,19 @@
     color: var(--text-muted);
     opacity: 0.6;
     cursor: grab;
-    padding: 4px 6px;
-    border-radius: 6px;
-    transition: opacity 0.15s, color 0.15s, background 0.15s;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-control);
+    transition: opacity var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease);
 }
 .home-section-drag:hover {
     opacity: 1;
     color: var(--accent-blue);
     background: rgba(var(--accent-rgb), 0.10);
+}
+.home-section-drag:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+    opacity: 1;
 }
 .home-section-drag:active {
     cursor: grabbing;
@@ -2307,36 +2546,42 @@
     border: 0;
     color: var(--text-muted);
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-control);
+    transition: color var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease);
+    /* 26px keeps the chevron optically centred on the header row; it is a hit
+       area, not a spacing step. */
     width: 26px;
     height: 26px;
 }
 .home-section-collapse:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.06);
+    color: var(--text-main);
+    background: var(--bg-hover);
+}
+.home-section-collapse:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .home-section-header h2 {
     margin: 0;
-    font-size: 1.15em;
-    color: #fff;
+    font-size: var(--t-fs-h2);
+    color: var(--text-main);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     min-width: 0;
 }
 .home-section-body {
-    padding: 20px 22px 22px;
+    padding: var(--t-5);
 }
 .home-section-body .section-spaced {
-    margin-top: 32px;
+    margin-top: var(--t-6);
 }
 .home-section-body .section-spaced:first-child {
     margin-top: 0;
 }
 .home-section-body > * + * {
-    margin-top: 14px;
+    margin-top: var(--surface-gap);
 }
 .home-section-body .split-layout {
     margin-bottom: 0;
@@ -2345,22 +2590,22 @@
 .home-server-time-inline {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: var(--t-2);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    background: rgba(0,0,0,0.22);
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 4px 10px;
-    border-radius: 999px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    padding: var(--t-1) var(--t-3);
+    border-radius: var(--radius-pill);
 }
 .home-server-time-label {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
     font-weight: 800;
-    letter-spacing: 0.6px;
+    letter-spacing: 1px;
 }
 .home-server-time-value {
-    color: #fff;
+    color: var(--text-main);
     font-variant-numeric: tabular-nums;
     font-weight: 700;
 }
@@ -2368,159 +2613,191 @@
 .home-news-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 4px;
+    gap: var(--t-2);
+    margin-bottom: var(--t-1);
 }
 .home-news-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.10);
-    background: rgba(0,0,0,0.22);
+    gap: var(--t-2);
+    padding: var(--t-1) var(--t-3);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     font-weight: 600;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    transition: color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease);
 }
 .home-news-chip:hover {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.45);
     background: rgba(var(--accent-rgb), 0.10);
 }
+.home-news-chip:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
 .home-news-chip.active {
-    color: #fff;
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.28), rgba(var(--accent-rgb), 0.10));
+    color: var(--text-main);
+    background: rgba(var(--accent-rgb), 0.18);
     border-color: rgba(var(--accent-rgb), 0.55);
 }
 .home-news-chip-count {
-    font-size: 10px;
-    background: rgba(255,255,255,0.10);
+    font-size: var(--t-fs-micro);
+    background: var(--bg-hover);
     color: inherit;
-    padding: 1px 6px;
-    border-radius: 999px;
-    font-weight: 700;
+    padding: 1px var(--t-2);
+    border-radius: var(--radius-pill);
+    font-weight: 800;
+    letter-spacing: 1px;
 }
 .home-news-chip.active .home-news-chip-count {
-    background: rgba(255,255,255,0.18);
+    background: rgba(var(--accent-rgb), 0.24);
 }
 
 .home-empty-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    border: 1px dashed rgba(255,255,255,0.10);
-    border-radius: 10px;
+    gap: var(--t-3);
+    padding: var(--t-3) var(--surface-padding);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-surface);
     color: var(--text-muted);
-    font-size: 13px;
-    background: rgba(0,0,0,0.12);
+    font-size: var(--t-fs-body);
+    background: var(--bg-dark);
 }
 .home-empty-row i {
     color: var(--text-muted);
     opacity: 0.7;
 }
 .home-empty-row-error {
-    border-color: rgba(255, 99, 71, 0.35);
-    color: #ffb7a8;
-    background: rgba(255, 99, 71, 0.06);
+    border-color: rgba(var(--danger-rgb), 0.35);
+    color: var(--danger-ink);
+    background: rgba(var(--danger-rgb), 0.06);
 }
 .home-empty-row-error i {
-    color: #ffab8a;
+    color: var(--danger-ink);
     opacity: 1;
 }
 
+/* The tomato glow becomes the danger border. No pulse here: the border-colour
+   pulse cannot beat this rule's `!important` (which is pre-existing and still
+   needed to outrank `#home-vue-app .merchant-card:not(.inactive)`, the merchant
+   hue), and the row already carries an explicit .merchant-urgent-pill saying
+   so — one always-on animation per visible merchant was the expensive way to
+   repeat a label that is right there. */
 .merchant-card.is-urgent {
-    border-color: rgba(255, 99, 71, 0.55) !important;
-    box-shadow: 0 0 0 1px rgba(255, 99, 71, 0.20) inset, 0 0 18px rgba(255, 99, 71, 0.22);
-    animation: home-urgent-pulse 2.6s ease-in-out infinite;
+    border-color: var(--danger) !important;
 }
 .merchant-urgent-pill {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    margin-left: 8px;
-    padding: 2px 8px;
-    font-size: 10px;
+    gap: var(--t-1);
+    margin-left: var(--t-2);
+    padding: 2px var(--t-2);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #ff8a65;
-    background: rgba(255, 99, 71, 0.12);
-    border: 1px solid rgba(255, 99, 71, 0.45);
-    border-radius: 999px;
+    letter-spacing: 1px;
+    color: var(--danger-ink);
+    background: rgba(var(--danger-rgb), 0.12);
+    border: 1px solid rgba(var(--danger-rgb), 0.45);
+    border-radius: var(--radius-pill);
 }
 
-/* Density: compact */
+/* Density: compact. This is a density variant, so it only ever moves values
+   down the same 4pt scale — it never introduces a size of its own. */
 .home-density-compact .home-now-strip {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 6px;
+    gap: var(--t-2);
 }
 .home-density-compact .now-cell {
-    padding: 8px 10px;
-    gap: 8px;
+    padding: var(--t-2) var(--t-3);
+    gap: var(--t-2);
 }
 .home-density-compact .now-cell-icon {
     width: 32px;
     height: 32px;
-    font-size: 15px;
+    font-size: var(--t-fs-body);
 }
 .home-density-compact .now-cell-title {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 .home-density-compact .now-cell-meta {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
 }
 .home-density-compact .home-quick-tool {
-    padding: 8px 10px;
-    font-size: 12px;
+    padding: var(--t-2) var(--t-3);
+    font-size: var(--t-fs-label);
 }
 .home-density-compact .home-quick-tool-icon {
     width: 24px;
     height: 24px;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 .home-density-compact .home-section {
-    margin-bottom: 14px;
+    margin-bottom: var(--surface-padding);
 }
 .home-density-compact .home-section-header {
-    padding: 10px 14px;
+    padding: var(--t-3) var(--surface-padding);
 }
 .home-density-compact .home-section-body {
-    padding: 14px 16px 16px;
+    padding: var(--surface-padding);
 }
 .home-density-compact .home-section-body .section-spaced {
-    margin-top: 22px;
+    margin-top: var(--t-5);
 }
 .home-density-compact .home-now-strip,
 .home-density-compact .home-quick-tools {
-    margin-bottom: 14px;
+    margin-bottom: var(--surface-padding);
 }
 .home-density-compact .news-card {
-    font-size: 0.9em;
+    font-size: var(--t-fs-label);
 }
 .home-density-compact .stream-card {
     width: 200px;
 }
 .home-density-compact .buff-card .buff-header {
-    padding: 10px 12px;
-    font-size: 0.95em;
+    padding: var(--t-3);
+    font-size: var(--t-fs-body);
 }
 .home-density-compact .merchant-card {
-    padding: 8px 10px;
+    padding: var(--t-2) var(--t-3);
 }
 .home-density-compact .home-container,
 .home-density-compact.home-container {
-    padding: 18px;
+    padding: var(--view-padding);
+}
+
+/* Header stacking is measured on the section's own content box; the viewport
+   rule is the fallback. `.home-section-controls` is a direct child of the view
+   root, which cannot be a query container (see `#home-vue-app.home-container`),
+   so it can only be reached from the viewport branch. */
+@container (max-width: 700px) {
+    .home-section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--t-2);
+    }
+    .home-server-time-inline {
+        align-self: stretch;
+        justify-content: center;
+    }
+    /* full-width media tabs once the header is stacked */
+    .media-tabs {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+    }
 }
 
 @media (max-width: 900px) {
     .home-section-header {
         flex-direction: column;
         align-items: flex-start;
-        gap: 8px;
+        gap: var(--t-2);
     }
     .home-section-controls {
         flex-direction: column;
@@ -2544,8 +2821,8 @@
 .home-stat-row {
     display: flex;
     align-items: stretch;
-    gap: 12px;
-    margin-bottom: 14px;
+    gap: var(--t-3);
+    margin-bottom: var(--t-4);
     min-width: 0;
 }
 .home-stat-tile {
@@ -2558,16 +2835,16 @@
 .home-activity-tile {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.18));
+    gap: var(--t-3);
+    padding: var(--t-3) var(--surface-padding);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
     cursor: help;
 }
 .home-activity-tile.is-error {
-    border-color: rgba(255, 99, 71, 0.40);
-    background: rgba(255, 99, 71, 0.05);
+    border-color: rgba(var(--danger-rgb), 0.4);
+    background: rgba(var(--danger-rgb), 0.05);
 }
 .home-activity-icon {
     width: 36px;
@@ -2575,16 +2852,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 9px;
+    border-radius: var(--radius-control);
     background: rgba(var(--accent-rgb), 0.18);
     color: var(--accent-blue);
-    font-size: 16px;
+    font-size: var(--t-fs-h2);
     flex-shrink: 0;
 }
 .home-activity-body {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--t-2);
     flex: 1 1 auto;
     min-width: 0;
 }
@@ -2592,19 +2869,19 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--t-3);
     min-width: 0;
 }
 .home-activity-label {
-    font-size: 10.5px;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.7px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--text-muted);
     white-space: nowrap;
 }
 .home-activity-updated {
-    font-size: 10.5px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     opacity: 0.75;
     white-space: nowrap;
@@ -2612,7 +2889,7 @@
 .home-activity-stats {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: var(--t-4);
     flex-wrap: wrap;
 }
 .home-activity-stat {
@@ -2622,26 +2899,27 @@
     line-height: 1.1;
 }
 .home-activity-stat-value {
-    font-size: 18px;
+    font-size: var(--t-fs-h2);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-main);
     font-variant-numeric: tabular-nums;
 }
 .home-activity-stat-label {
-    font-size: 10.5px;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.6px;
+    letter-spacing: 1px;
     margin-top: 2px;
 }
 .home-activity-divider {
     width: 1px;
     height: 26px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--border-color);
 }
 .home-activity-error {
-    color: #ffb7a8;
-    font-size: 14px;
+    color: var(--danger-ink);
+    font-size: var(--t-fs-body);
 }
 
 /* Giveaway tile — same outer shape as the activity tile, plus a click
@@ -2651,30 +2929,32 @@
     text-align: left;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
+    gap: var(--t-3);
+    padding: var(--t-3) var(--surface-padding);
     border: 1px solid rgba(var(--accent-rgb), 0.30);
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(0,0,0,0.18));
+    border-radius: var(--radius-surface);
+    background: rgba(var(--accent-rgb), 0.10);
     color: inherit;
     font: inherit;
     cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+    transition: transform var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
 }
 .home-giveaway-tile:hover,
 .home-giveaway-tile:focus-visible {
     transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.60);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+.home-giveaway-tile:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 .home-giveaway-tile.is-urgent {
-    border-color: rgba(255, 99, 71, 0.55);
-    box-shadow: 0 0 0 1px rgba(255, 99, 71, 0.18) inset, 0 0 14px rgba(255, 99, 71, 0.18);
-    animation: home-urgent-pulse 2.6s ease-in-out infinite;
+    border-color: var(--danger);
+    animation: home-urgent-pulse 2.6s var(--t-ease) infinite;
 }
 .home-giveaway-tile.is-error {
-    border-color: rgba(255, 99, 71, 0.40);
-    background: rgba(255, 99, 71, 0.05);
+    border-color: rgba(var(--danger-rgb), 0.4);
+    background: rgba(var(--danger-rgb), 0.05);
 }
 .home-giveaway-icon {
     width: 36px;
@@ -2682,16 +2962,18 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 9px;
-    background: rgba(255, 209, 102, 0.16);
-    color: #ffd166;
-    font-size: 16px;
+    border-radius: var(--radius-control);
+    /* Prizes read as "worth attention" — the gold (#ffd166 / rgba(255,209,102))
+       was a fourth amber, so it folds onto the one warning hue. */
+    background: rgba(var(--warning-rgb), 0.16);
+    color: var(--warning);
+    font-size: var(--t-fs-h2);
     flex-shrink: 0;
 }
 .home-giveaway-body {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--t-2);
     flex: 1 1 auto;
     min-width: 0;
 }
@@ -2699,39 +2981,39 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--t-3);
     min-width: 0;
 }
 .home-giveaway-label {
-    font-size: 10.5px;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.7px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--text-muted);
     white-space: nowrap;
 }
 .home-giveaway-status {
-    font-size: 10.5px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     white-space: nowrap;
 }
 .home-giveaway-line {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--t-1);
     min-width: 0;
 }
 .home-giveaway-line-main {
-    font-size: 14px;
+    font-size: var(--t-fs-body);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-main);
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .home-giveaway-line-sub {
-    font-size: 11.5px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -2740,9 +3022,9 @@
 .home-giveaway-chevron {
     color: var(--text-muted);
     opacity: 0.6;
-    font-size: 12px;
+    font-size: var(--icon-optical);
     flex-shrink: 0;
-    transition: transform 0.15s, opacity 0.15s;
+    transition: transform var(--dur-fast) var(--t-ease), opacity var(--dur-fast) var(--t-ease);
 }
 .home-giveaway-tile:hover .home-giveaway-chevron,
 .home-giveaway-tile:focus-visible .home-giveaway-chevron {
@@ -2756,24 +3038,26 @@
 .giveaway-modal-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--t-3);
 }
+/* Rows inside the modal body: inner rows take the control radius, not a second
+   surface radius nested in the modal's. */
 .giveaway-modal-row {
     border: 1px solid rgba(var(--accent-rgb), 0.25);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08), rgba(0,0,0,0.20));
-    border-radius: 10px;
-    padding: 12px 14px;
+    background: rgba(var(--accent-rgb), 0.08);
+    border-radius: var(--radius-control);
+    padding: var(--t-3) var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
 }
 .giveaway-modal-row.is-urgent {
-    border-color: rgba(255, 99, 71, 0.50);
+    border-color: rgba(var(--danger-rgb), 0.5);
 }
 .giveaway-modal-head {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--t-3);
 }
 .giveaway-row-icon {
     width: 30px;
@@ -2781,222 +3065,231 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    background: rgba(255, 209, 102, 0.16);
-    color: #ffd166;
-    font-size: 14px;
+    border-radius: var(--radius-control);
+    background: rgba(var(--warning-rgb), 0.16);
+    color: var(--warning);
+    font-size: var(--t-fs-body);
     flex-shrink: 0;
 }
 .giveaway-modal-titles {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--t-1);
     min-width: 0;
 }
 .giveaway-modal-prize {
     font-weight: 700;
-    color: #fff;
-    font-size: 15px;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
     line-height: 1.25;
     overflow-wrap: anywhere;
 }
 .giveaway-modal-subtitle {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     overflow-wrap: anywhere;
 }
 .giveaway-modal-desc {
     margin: 0;
     color: var(--text-main);
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: var(--t-fs-body);
+    line-height: 1.5;
     white-space: pre-wrap;
 }
 .giveaway-modal-meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--t-2);
 }
 .giveaway-meta-pill {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.30);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    gap: var(--t-1);
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
     color: var(--text-main);
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     line-height: 1.3;
     white-space: nowrap;
 }
-.giveaway-meta-pill i { opacity: 0.75; font-size: 10.5px; }
+.giveaway-meta-pill i { opacity: 0.75; font-size: var(--icon-optical); }
 .giveaway-meta-ends.is-urgent {
-    background: rgba(255, 99, 71, 0.12);
-    border-color: rgba(255, 99, 71, 0.40);
-    color: #ffb7a8;
+    background: rgba(var(--danger-rgb), 0.12);
+    border-color: rgba(var(--danger-rgb), 0.4);
+    color: var(--danger-ink);
 }
 .giveaway-modal-times {
     display: flex;
     flex-wrap: wrap;
-    gap: 14px;
-    font-size: 12px;
+    gap: var(--t-4);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    padding-top: 6px;
-    border-top: 1px dashed rgba(255, 255, 255, 0.08);
+    padding-top: var(--t-2);
+    border-top: 1px dashed var(--border-color);
 }
 .giveaway-modal-time-label {
     font-weight: 600;
     color: var(--text-main);
-    margin-right: 4px;
+    margin-right: var(--t-1);
 }
 
 /* Modal is split into three sections (Open now / Upcoming / Recently ended).
    Each section gets its own header with an inline count chip + an empty/
    loading/error placeholder line when its bucket has nothing. */
 .giveaway-modal-section + .giveaway-modal-section {
-    margin-top: 18px;
+    margin-top: var(--t-4);
 }
 .giveaway-modal-section-title {
-    margin: 0 0 8px 0;
-    font-size: 12px;
+    margin: 0 0 var(--t-2) 0;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    letter-spacing: 0.7px;
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--text-muted);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 .giveaway-modal-section-title i {
     color: var(--accent-blue);
-    font-size: 11px;
+    font-size: var(--icon-optical);
 }
 .giveaway-modal-section-count {
-    font-size: 11px;
-    font-weight: 700;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 999px;
-    padding: 1px 7px;
+    background: var(--bg-hover);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: 1px var(--t-2);
     margin-left: auto;
 }
 .giveaway-modal-state {
     color: var(--text-muted);
-    font-size: 12.5px;
-    padding: 8px 10px;
-    border-radius: 8px;
-    border: 1px dashed rgba(255, 255, 255, 0.10);
-    background: rgba(0, 0, 0, 0.18);
+    font-size: var(--t-fs-body);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    border: 1px dashed var(--border-color);
+    background: var(--bg-dark);
 }
-.giveaway-modal-state i { margin-right: 6px; opacity: 0.75; }
+.giveaway-modal-state i { margin-right: var(--t-2); opacity: 0.75; }
 .giveaway-modal-state.is-error {
-    color: #ffb7a8;
-    border-color: rgba(255, 99, 71, 0.35);
-    background: rgba(255, 99, 71, 0.06);
+    color: var(--danger-ink);
+    border-color: rgba(var(--danger-rgb), 0.35);
+    background: rgba(var(--danger-rgb), 0.06);
     border-style: solid;
 }
+/* The `94, 198, 255` fallbacks here pinned the DEFAULT accent, so a user who
+   picked orange got orange rows everywhere except these three declarations.
+   --accent-rgb is always defined in :root; the fallback only ever hid bugs. */
 .giveaway-modal-row.is-upcoming {
-    border-color: rgba(var(--accent-rgb, 94, 198, 255), 0.30);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb, 94, 198, 255), 0.08), rgba(0,0,0,0.20));
+    border-color: rgba(var(--accent-rgb), 0.30);
+    background: rgba(var(--accent-rgb), 0.08);
 }
 .giveaway-modal-row.is-upcoming .giveaway-row-icon {
-    background: rgba(var(--accent-rgb, 94, 198, 255), 0.16);
+    background: rgba(var(--accent-rgb), 0.16);
     color: var(--accent-blue);
 }
 .giveaway-modal-row.is-ended {
-    border-color: rgba(255, 255, 255, 0.08);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0,0,0,0.20));
+    border-color: var(--border-color);
+    background: var(--bg-hover);
     opacity: 0.92;
 }
 .giveaway-modal-row.is-ended .giveaway-row-icon {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--bg-hover);
     color: var(--text-muted);
 }
 .giveaway-meta-pill.is-winner {
-    background: rgba(255, 209, 102, 0.14);
-    border-color: rgba(255, 209, 102, 0.40);
-    color: #ffd166;
+    background: rgba(var(--warning-rgb), 0.14);
+    border-color: rgba(var(--warning-rgb), 0.4);
+    color: var(--warning);
 }
 
 /* "Enter giveaway" CTA — primary action on each ongoing-row in the modal.
-   Yellow accent so it reads as the headline action of the row. */
+   Reads as the headline action via --warning (a prize is the thing to act on);
+   the gold pair it used to be (#ffd166 / rgba(255,209,102) / rgba(255,184,60))
+   was a fourth amber, and the hover glow was elevation on a resting control. */
 .giveaway-enter-btn {
     align-self: flex-start;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
-    margin-top: 4px;
-    padding: 7px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 209, 102, 0.55);
-    background: linear-gradient(135deg, rgba(255, 209, 102, 0.22), rgba(255, 184, 60, 0.16));
-    color: #ffd166;
+    gap: var(--t-2);
+    margin-top: var(--t-1);
+    padding: var(--t-2) var(--surface-padding);
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(var(--warning-rgb), 0.55);
+    background: rgba(var(--warning-rgb), 0.2);
+    color: var(--warning);
     font: inherit;
-    font-size: 12.5px;
+    font-size: var(--t-fs-body);
     font-weight: 700;
     cursor: pointer;
-    transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: transform var(--dur-fast) var(--t-ease), background-color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease);
 }
 .giveaway-enter-btn:hover,
 .giveaway-enter-btn:focus-visible {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, rgba(255, 209, 102, 0.32), rgba(255, 184, 60, 0.24));
-    border-color: rgba(255, 209, 102, 0.85);
-    box-shadow: 0 6px 14px rgba(255, 184, 60, 0.18);
-    color: #fff;
+    background: rgba(var(--warning-rgb), 0.3);
+    border-color: rgba(var(--warning-rgb), 0.85);
+    color: var(--text-main);
 }
-.giveaway-enter-btn i { font-size: 11px; opacity: 0.85; }
+.giveaway-enter-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+.giveaway-enter-btn i { font-size: var(--icon-optical); opacity: 0.85; }
 
-/* "Sign in to enter" variant — accent (not gold) so it reads as a different
+/* "Sign in to enter" variant — accent (not amber) so it reads as a different
    action than a real entry. */
 .giveaway-enter-btn.is-signin {
     border-color: rgba(var(--accent-rgb), 0.55);
-    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.20), rgba(var(--accent-rgb), 0.10));
+    background: rgba(var(--accent-rgb), 0.2);
     color: var(--accent-blue);
 }
 .giveaway-enter-btn.is-signin:hover,
 .giveaway-enter-btn.is-signin:focus-visible {
-    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.30), rgba(var(--accent-rgb), 0.16));
+    background: rgba(var(--accent-rgb), 0.3);
     border-color: var(--accent-blue);
-    box-shadow: 0 6px 14px rgba(var(--accent-rgb), 0.18);
 }
 /* "Entered" confirmation — green, non-interactive. */
 .giveaway-enter-btn.is-entered {
-    border-color: rgba(74, 222, 128, 0.5);
-    background: linear-gradient(135deg, rgba(74, 222, 128, 0.18), rgba(74, 222, 128, 0.10));
-    color: #6ee7a0;
+    border-color: rgba(var(--success-rgb), 0.5);
+    background: rgba(var(--success-rgb), 0.18);
+    color: var(--success-ink);
     cursor: default;
 }
-.giveaway-enter-btn.is-entered:hover { transform: none; box-shadow: none; color: #6ee7a0; }
-.giveaway-enter-btn:disabled { opacity: 0.7; cursor: default; }
+.giveaway-enter-btn.is-entered:hover { transform: none; color: var(--success-ink); }
+.giveaway-enter-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Sign-in hint banner at the top of the giveaway modal (desktop, logged out). */
 .giveaway-signin-hint {
     display: flex;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 14px;
-    padding: 11px 14px;
-    border-radius: 10px;
+    gap: var(--t-3);
+    margin-bottom: var(--t-4);
+    padding: var(--t-3) var(--surface-padding);
+    border-radius: var(--radius-surface);
     border: 1px solid rgba(var(--accent-rgb), 0.35);
     background: rgba(var(--accent-rgb), 0.07);
     color: var(--text-main);
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease;
+    transition: background-color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
 }
 .giveaway-signin-hint:hover { background: rgba(var(--accent-rgb), 0.13); border-color: var(--accent-blue); }
-.giveaway-signin-hint > i { color: var(--accent-blue); font-size: 15px; }
+.giveaway-signin-hint:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.giveaway-signin-hint > i { color: var(--accent-blue); font-size: var(--t-fs-h2); }
 .giveaway-signin-hint > span:first-of-type { flex: 1; }
 .giveaway-signin-hint-cta {
     flex-shrink: 0;
     font-weight: 700;
     color: var(--accent-blue);
     border: 1px solid rgba(var(--accent-rgb), 0.5);
-    border-radius: 999px;
-    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) var(--t-3);
 }
 
 /* Tile-embedded variant: smaller padding so the tile keeps its compact
@@ -3005,14 +3298,17 @@
 .home-giveaway-enter {
     align-self: center;
     margin-top: 0;
-    padding: 6px 10px;
-    font-size: 11.5px;
+    padding: var(--t-2) var(--t-3);
+    font-size: var(--t-fs-label);
     flex-shrink: 0;
     white-space: nowrap;
 }
+/* These two stay viewport queries: everything they touch lives in
+   `.home-stat-row`, a direct child of the view root, which cannot be a query
+   container (see `#home-vue-app.home-container`). */
 @media (max-width: 720px) {
     .home-giveaway-enter span { display: none; }
-    .home-giveaway-enter { padding: 6px 9px; }
+    .home-giveaway-enter { padding: var(--t-2); }
 }
 
 @media (max-width: 720px) {
@@ -3023,7 +3319,55 @@
     .home-giveaway-head {
         flex-wrap: wrap;
     }
-    .home-activity-stat-value { font-size: 16px; }
+    .home-activity-stat-value { font-size: var(--t-fs-body); }
+}
+
+/* Reduced motion: state still reads, it just stops moving. The urgent border
+   settles on --danger, the skeleton stops sweeping, and hover lifts hold at
+   rest (DESIGN.md > Do: ship a prefers-reduced-motion branch with every
+   animation). */
+@media (prefers-reduced-motion: reduce) {
+    .home-container,
+    .modal-content,
+    .stream-card,
+    .news-card,
+    .event-card,
+    .merchant-card,
+    .now-cell,
+    .home-quick-tool,
+    .home-quick-tools-toggle,
+    .home-news-chip,
+    .news-filter-btn,
+    .news-collapse-btn,
+    .calendar-chip-btn,
+    .media-tab,
+    .calendar-spotlight,
+    .home-support-card-cta,
+    .home-giveaway-tile,
+    .home-giveaway-chevron,
+    .giveaway-enter-btn,
+    .giveaway-signin-hint,
+    .home-section,
+    .home-section-drop-line,
+    .schedule-slot {
+        transition-duration: 0.01ms;
+        animation: none;
+    }
+    .now-cell-urgent,
+    .home-giveaway-tile.is-urgent { border-color: var(--danger); }
+    .event-status-pill.is-active i { animation: none; }
+    .calendar-skeleton-label::after,
+    .calendar-skeleton-track::after { animation: none; transform: none; opacity: 0.35; }
+    .stream-card:hover,
+    .news-card:hover,
+    .now-cell:hover,
+    .home-quick-tool:hover:not(:disabled),
+    .calendar-spotlight:hover,
+    .home-support-card-cta:hover,
+    .home-giveaway-tile:hover,
+    .giveaway-enter-btn:hover,
+    .event-card:hover,
+    #home-vue-app .merchant-card.hover-card:hover { transform: none; }
 }
 
 

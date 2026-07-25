@@ -79,9 +79,9 @@
                             <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.how_many_of_your_gear_rolls_are_crit_dam_f442e1')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
-                            <span class="label-inline-value" style="color: var(--accent-orange); font-weight: bold;">{{ config.critical_damage_count }}</span>
+                            <span class="label-inline-value" style="color: var(--accent-blue); font-weight: bold;">{{ config.critical_damage_count }}</span>
                         </label>
-                        <input type="range" v-model.number="config.critical_damage_count" min="0" max="3" step="1" style="width: 100%; cursor: pointer; accent-color: var(--accent-orange);">
+                        <input type="range" v-model.number="config.critical_damage_count" min="0" max="3" step="1" style="width: 100%; cursor: pointer; accent-color: var(--accent-blue);">
                     </div>
                 </div>
 
@@ -110,19 +110,19 @@
                 
                 <div v-if="starChartSummary" class="star-chart-summary">
                     <template v-if="starChartSummary.error">
-                        <span style="color: #ff4444;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('common.invalid_build_code') }}</span>
+                        <span style="color: var(--danger-ink);"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('common.invalid_build_code') }}</span>
                     </template>
                     <template v-else>
                         <h4><i class="fa-solid fa-chart-network"></i> {{ t('gems.gem_builds.star_chart_loaded') }}</h4>
-                        <ul style="margin-bottom: 8px;">
+                        <ul style="margin-bottom: var(--t-2);">
                             <li v-html="t('gems.gem_builds.count_nodes_detected').replace('{count}', `<strong>${starChartSummary.pathsCount}</strong>`)"></li>
                         </ul>
                         <template v-if="Object.keys(filteredStarChartStats).length > 0">
-                            <hr class="divider" style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">
+                            <hr class="divider" style="margin: var(--t-2) 0; border: 0; border-top: 1px solid var(--border-color);">
                             <ul style="list-style-type: none; padding-left: 0;">
                                 <li v-for="(values, statName) in filteredStarChartStats" :key="statName">
                                     <strong>{{ t(statName) }}:</strong> 
-                                    <span style="color: var(--accent-orange);">
+                                    <span style="color: var(--accent-blue);">
                                         <template v-if="values.flat > 0">+{{ values.flat }}</template>
                                         <template v-if="values.flat > 0 && values.pct > 0"> / </template>
                                         <template v-if="values.pct > 0">+{{ values.pct }}%</template>
@@ -258,10 +258,10 @@
                             </td>
                             <td class="text-right">{{ Math.round(build.total_dmg).toLocaleString() }}</td>
                             <td class="text-right">{{ build.crit_dmg.toFixed(1) }}%</td>
-                            <td class="text-right sort-col" style="font-weight: bold; color: #fff;">{{ build.coefficient.toLocaleString() }}</td>
+                            <td class="text-right sort-col" style="font-weight: bold; color: var(--text-main);">{{ build.coefficient.toLocaleString() }}</td>
                             <td class="text-right">
                                 <span v-if="build.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('gems.gem_builds.best') }}</span>
-                                <span v-else style="color: #e57373;">-{{ (((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3) }}%</span>
+                                <span v-else style="color: var(--danger-ink);">-{{ (((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3) }}%</span>
                             </td>
                         </tr>
                     </tbody>
@@ -269,7 +269,7 @@
             </div>
             
             <div class="pagination-container">
-                <button class="btn-icon" :title="t('gems.gem_builds.export_to_csv')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: 4px; border: 1px solid rgba(var(--accent-rgb), 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('common.export') }}</span></button>
+                <button class="btn-icon" :title="t('gems.gem_builds.export_to_csv')" @click="exportCsv" style="margin-right: auto; color: var(--accent-blue); padding: 5px 10px; border-radius: var(--radius-control); border: 1px solid rgba(var(--accent-rgb), 0.3);"><i class="fa-solid fa-file-csv"></i> <span>{{ t('common.export') }}</span></button>
                 <div class="pagination">
                     <button class="btn-icon" @click="prevPage" :disabled="currentPage === 0"><i class="fa-solid fa-chevron-left"></i></button>
                     <span><span>{{ t('common.page') }}</span> <span>{{ currentPage + 1 }}</span> / <span>{{ maxPages }}</span></span>

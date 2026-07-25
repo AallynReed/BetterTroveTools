@@ -79,7 +79,7 @@
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(memento.displayName || memento.name || memento.fallbackName))"></div>
                     <div class="ally-category">{{ t(memento.category || 'Unknown') }}</div>
-                    <div v-if="memento.designer && memento.designer !== 'Trove Team'" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
+                    <div v-if="memento.designer && memento.designer !== 'Trove Team'" style="font-size: var(--t-fs-label); color: var(--text-muted); margin-top: var(--t-1);">
                         <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(memento.designer)"></span>
                     </div>
                 </div>
@@ -93,7 +93,7 @@
                 </div>
             </div>
             <div v-if="memento.mastery" class="ally-footer">
-                <span v-if="parseInt(memento.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('common.mastery_val').replace('{val}', parseInt(memento.mastery)) }}</span>
+                <span v-if="parseInt(memento.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: var(--warning);"></i> {{ t('common.mastery_val').replace('{val}', parseInt(memento.mastery)) }}</span>
             </div>
         </div>
     </div>

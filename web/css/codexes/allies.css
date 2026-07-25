@@ -1,33 +1,41 @@
+/* Ally codex — and the shared base for every other codex tab (mounts, dragons,
+   mementos, recipes, items and their fish/badge variants all @import this file).
+   Because it is the base, nothing here may define a local palette, size or
+   radius: every value comes from the token layer in style.css `:root`. View
+   padding, card padding and surface radius arrive from the CROSS-APP DENSITY
+   LAYER in style.css, so they are deliberately not restated here. */
 [v-cloak] {
     display: none !important;
 }
 
 .allies-container {
-    padding: 30px;
-    animation: fadeIn 0.4s ease-out;
+    /* Padding is owned by the density layer (`.allies-container` is enrolled
+       there); this states the same token so reading the file isn't misleading. */
+    padding: var(--view-padding);
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .page-header {
-    margin-bottom: 30px;
+    margin-bottom: var(--t-4);
 }
 
 .page-header h1 {
-    font-size: 2.2em;
-    margin-bottom: 5px;
-    color: #fff;
+    font-size: var(--t-fs-title);
+    margin-bottom: var(--t-1);
+    color: var(--text-main);
 }
 
 .search-section {
-    margin-bottom: 30px;
+    margin-bottom: var(--t-4);
 }
 
 .codex-toolbar {
-    margin-bottom: 15px;
+    margin-bottom: var(--t-4);
 }
 
 .codex-search-row {
     align-items: stretch;
-    margin-bottom: 12px;
+    margin-bottom: var(--t-3);
 }
 
 .codex-search-input-wrap {
@@ -37,7 +45,7 @@
 
 .codex-toolbar-actions {
     display: flex;
-    gap: 10px;
+    gap: var(--control-gap);
     flex-wrap: wrap;
 }
 
@@ -45,11 +53,11 @@
 .codex-toolbar-actions .secondary-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .codex-install-picker {
-    margin-bottom: 12px;
+    margin-bottom: var(--t-3);
 }
 
 .codex-install-select {
@@ -57,16 +65,17 @@
 }
 
 .codex-advanced-actions {
-    border-top: 1px solid rgba(255,255,255,0.08);
-    margin-top: 4px;
-    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    margin-top: var(--t-1);
+    padding-top: var(--t-3);
 }
 
 .codex-advanced-actions summary {
     cursor: pointer;
     list-style: none;
     color: var(--text-muted);
-    font-size: 0.85em;
+    /* A disclosure summary is a control, not meta text — body, carried by weight. */
+    font-size: var(--t-fs-body);
     font-weight: 700;
 }
 
@@ -77,30 +86,31 @@
 .codex-advanced-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 12px;
+    gap: var(--control-gap);
+    margin-top: var(--t-3);
     align-items: center;
 }
 
 .codex-advanced-action-btn {
     width: auto;
-    padding: 0 14px;
+    padding: 0 var(--t-3);
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .codex-search-help {
     color: var(--text-muted);
-    font-size: 0.84em;
+    font-size: var(--t-fs-label);
     line-height: 1.4;
     flex: 1 1 240px;
 }
 
 .codex-warning-banner-error {
-    background: rgba(255, 85, 85, 0.12);
-    border-color: rgba(255, 85, 85, 0.35);
-    color: #ffd7d7;
+    background: rgba(var(--danger-rgb), 0.12);
+    border-color: rgba(var(--danger-rgb), 0.35);
+    /* --danger is 4.4:1 on panel and fails AA as text; --danger-ink is the text tint. */
+    color: var(--danger-ink);
 }
 
 .filter-group-compact {
@@ -112,80 +122,101 @@
 }
 
 .search-stats-summary {
+    /* Optical nudge so the count line sits flush with the panel edge above it —
+       not a spacing step. */
     padding: 2px 2px 0;
 }
 
 .codex-warning-banner {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
-    padding: 7px 10px;
-    border: 1px solid rgba(255, 184, 77, 0.16);
-    border-left: 2px solid rgba(255, 184, 77, 0.55);
-    border-radius: 6px;
-    background: rgba(255, 184, 77, 0.04);
-    color: rgba(255, 224, 165, 0.9);
-    font-size: 0.82em;
+    gap: var(--t-2);
+    margin-bottom: var(--t-3);
+    padding: var(--t-2) 10px;
+    /* Was a 2px amber border-left stripe (banned — DESIGN.md > Shapes). The
+       caution now reads from a hairline in the warning hue on all four sides,
+       which is also what the pill/badge vocabulary already does. */
+    border: 1px solid rgba(var(--warning-rgb), 0.35);
+    border-radius: var(--radius-surface);
+    background: rgba(var(--warning-rgb), 0.08);
+    color: var(--warning-ink);
+    font-size: var(--t-fs-body);
 }
 
 .codex-warning-banner i {
-    color: rgba(255, 184, 77, 0.8);
-    font-size: 0.95em;
+    color: var(--warning);
+    font-size: var(--icon-optical);
 }
 
 .search-bar-wrapper {
     display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
+    gap: var(--t-3);
+    margin-bottom: var(--t-3);
 }
 
 .search-icon {
     position: absolute;
-    left: 15px;
+    /* Sits on the field's own 10px inset so icon and text share one left edge. */
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--text-muted, #a3adc2);
-    font-size: 1.2em;
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
 }
 
 #ally-search-input {
     width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 8px;
-    padding: 15px 15px 15px 45px;
-    color: #fff;
-    font-size: 1.1em;
-    transition: all 0.2s ease;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    /* 9px/10px is the system field box; the 32px left inset is optical — it
+       clears the absolutely positioned search icon. */
+    padding: 9px 10px 9px var(--t-6);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
+}
+
+#ally-search-input::placeholder {
+    color: var(--text-placeholder);
 }
 
 #ally-search-input:focus {
     outline: none;
-    border-color: #ff9800;
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    /* Focus is the border going accent. The zero-offset amber halo that used to
+       sit here was decoration, and a shadow in this system means "floating". */
+    border-color: var(--accent-blue);
+}
+
+/* The `outline: none` above is an ID selector, so it beats the app-wide
+   focus-visible floor in style.css — the ring has to be restated here. */
+#ally-search-input:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .btn-reset-filters {
-    background: rgba(255, 85, 85, 0.1);
-    color: #ff5555;
-    border: 1px solid rgba(255, 85, 85, 0.3);
+    background: rgba(var(--danger-rgb), 0.1);
+    color: var(--danger-ink);
+    border: 1px solid rgba(var(--danger-rgb), 0.3);
     width: 52px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     cursor: pointer;
-    transition: all 0.2s ease;
-    font-size: 1.2em;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
+    font-size: var(--t-fs-body);
 }
+/* Hover deepens the tint rather than flipping to a solid red fill: the system
+   has no on-danger ink token, and both --text-main and --danger-ink fail AA on
+   solid #ef4444. */
 .btn-reset-filters:hover {
-    background: #ff5555;
-    color: #fff;
+    background: rgba(var(--danger-rgb), 0.2);
+    border-color: rgba(var(--danger-rgb), 0.55);
 }
 
 .filters-row {
     display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
+    gap: var(--t-3);
+    margin-bottom: var(--t-3);
     flex-wrap: wrap;
 }
 
@@ -194,42 +225,46 @@
     min-width: 200px;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: var(--t-1);
 }
 
+/* Uppercase + tracked + heavy is the micro eyebrow, so it takes the micro role
+   rather than an in-between size. */
 .filter-group label {
-    font-size: 0.85em;
+    font-size: var(--t-fs-micro);
     color: var(--text-muted);
     text-transform: uppercase;
-    font-weight: bold;
-    letter-spacing: 0.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
 }
 
 .custom-select {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color, #444c5e);
-    color: #fff;
-    padding: 10px 15px;
-    border-radius: 8px;
-    font-size: 1em;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 9px 10px;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
     cursor: pointer;
-    height: 42px;
+    /* One control height across the app; 42px here was a second one. */
+    height: var(--control-height);
 }
 
-.custom-select:focus { outline: none; border-color: #ff9800; }
+.custom-select:focus { outline: none; border-color: var(--accent-blue); }
+.custom-select:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 #allies-vue-app .custom-select-trigger {
-    height: 42px;
-    min-height: 42px;
-    padding: 10px 12px;
-    border-radius: 8px;
+    height: var(--control-height);
+    min-height: var(--control-height);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
 }
 
 #allies-vue-app .select2-container--btt-dark .select2-selection--multiple {
-    height: 42px;
-    min-height: 42px;
-    padding: 4px 10px;
-    border-radius: 8px;
+    height: var(--control-height);
+    min-height: var(--control-height);
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-control);
     display: flex;
     align-items: center;
     overflow-y: auto;
@@ -241,9 +276,11 @@
     display: flex;
     align-items: center;
     align-content: center;
-    row-gap: 4px;
+    row-gap: var(--t-1);
 }
 
+/* Chip geometry is fitted, not spaced: 24px + 4px padding + 2px border is
+   exactly the 34px control height, so these stay off the 4pt scale. */
 #allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice {
     min-height: 24px;
     height: 24px;
@@ -251,8 +288,8 @@
 }
 
 #allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove {
-    color: #ff8a8a;
-    font-size: 14px;
+    color: var(--danger-ink);
+    font-size: var(--t-fs-body);
     font-weight: 800;
     width: 14px;
     height: 14px;
@@ -260,7 +297,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-right: 8px;
+    margin-right: var(--t-2);
     padding: 0;
     position: relative;
     top: 0;
@@ -268,17 +305,17 @@
 
 #allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove:hover,
 #allies-vue-app .select2-container--btt-dark .select2-selection__clear:hover {
-    color: #ffd2d2;
-    background: rgba(255, 90, 90, 0.22);
+    color: var(--text-main);
+    background: rgba(var(--danger-rgb), 0.22);
 }
 
 #allies-vue-app .select2-container--btt-dark .select2-selection__clear {
-    color: #ff9a9a;
-    font-size: 14px;
+    color: var(--danger-ink);
+    font-size: var(--t-fs-body);
     font-weight: 800;
     line-height: 1;
-    border-radius: 4px;
-    padding: 0 4px;
+    border-radius: var(--radius-control);
+    padding: 0 var(--t-1);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -296,12 +333,12 @@
 }
 
 .search-stats {
-    font-size: 0.9em;
-    color: var(--text-muted, #a3adc2);
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
 }
 
 .cache-status {
-    margin-bottom: 12px;
+    margin-bottom: var(--t-3);
 }
 
 .allies-grid {
@@ -312,56 +349,65 @@
        past the screen edge). Desktop is unchanged: the container is always
        wider than 380px there, so the floor stays 380px. */
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr));
-    gap: 20px;
+    gap: var(--t-3);
+    /* Cards hug their content instead of being stretched into drawn empty
+       boxes by the tallest tile in the row (DESIGN.md > Cards). */
+    align-items: start;
 }
 
 .ally-card {
-    background: var(--bg-panel, #1d232b);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: transform 0.2s ease, border-color 0.2s ease;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    animation: allyCardFadeIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+    transition: transform var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
+    /* No resting shadow: a card that isn't floating is separated by the tonal
+       step and its hairline alone. The entrance easing was an overshoot
+       cubic-bezier; the system has one curve. */
+    animation: allyCardFadeIn var(--dur) var(--t-ease) both;
 }
 
 .ally-card:hover {
-    transform: translateY(-5px);
-    border-color: #ff9800;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    /* The one hover lift in the system (DESIGN.md > Buttons). */
+    transform: translateY(-1px);
+    border-color: var(--accent-blue);
 }
 
 .ally-card.kbd-active-result {
     outline: 2px solid var(--accent-blue);
-    outline-offset: 1px;
+    outline-offset: 2px;
 }
 
 .ally-name mark,
 .ally-desc mark,
 .ally-title-area mark {
     background: rgba(var(--accent-rgb), 0.2);
-    color: #fff;
+    color: var(--text-main);
     padding: 0 2px;
-    border-radius: 3px;
+    border-radius: var(--radius-control);
 }
 
+/* The card's three bands all take the surface padding so the tile reads as one
+   rhythm instead of three near-misses (15 / 15 / 10-15). */
 .ally-header {
     display: flex;
     align-items: center;
-    gap: 15px;
-    padding: 15px;
-    background: rgba(0, 0, 0, 0.2);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    gap: var(--t-3);
+    padding: var(--surface-padding);
+    background: var(--bg-dark);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .ally-icon {
     width: 48px;
     height: 48px;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(0,0,0,0.2));
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-    border-radius: 8px;
+    /* Neutral light/dark overlay plus an inset vignette — an inner well, not
+       elevation, so it survives the no-resting-shadow rule. */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.2));
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    border-radius: var(--radius-control);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -380,47 +426,49 @@
 }
 
 .ally-name {
-    font-weight: bold;
-    color: #fff;
-    font-size: 1.1em;
-    margin-bottom: 4px;
+    font-weight: 600;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
+    margin-bottom: var(--t-1);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+/* A category is not a status and not the primary action, so it gets no colour
+   (DESIGN.md > The Meaning-Only Rule) — the micro eyebrow carries it. */
 .ally-category {
-    font-size: 0.75em;
-    color: #ff9800;
+    font-size: var(--t-fs-micro);
+    color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     font-weight: 800;
 }
 
 .ally-body {
-    padding: 15px;
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--t-3);
     flex: 1;
 }
 
 .ally-desc {
-    font-size: 0.85em;
+    font-size: var(--t-fs-body);
     color: var(--text-muted);
     font-style: italic;
 }
 
 .ally-stats-list {
     margin: 0;
-    padding-left: 18px;
-    color: #fff;
-    font-size: 0.9em;
+    padding-left: var(--t-4);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
     list-style-type: square;
 }
 
 .ally-stats-list li {
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
 }
 
 .ally-stats-list li strong {
@@ -428,13 +476,15 @@
 }
 
 .ally-stats-list-single {
-    margin: 0 0 4px 0;
+    margin: 0 0 var(--t-1) 0;
 }
 
+/* A sub-heading inside a card body: weight before size, so it stays on body
+   rather than reaching for the h2 role a second time in the same tile. */
 .ally-stats-heading {
-    margin: 10px 0 4px;
+    margin: var(--t-2) 0 var(--t-1);
     color: var(--accent-blue);
-    font-size: 0.9em;
+    font-size: var(--t-fs-body);
     font-weight: 700;
 }
 
@@ -443,19 +493,23 @@
 }
 
 .ally-ability {
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(var(--accent-rgb), 0.15);
-    border-left: 3px solid var(--accent-blue);
-    padding: 10px 12px;
-    border-radius: 4px;
-    font-size: 0.85em;
-    color: #fff;
-    margin-top: auto; 
+    background: var(--bg-dark);
+    /* Was a 3px accent border-left stripe (banned). The block is still marked
+       as "this is the ability" — the accent hairline now runs all four sides at
+       double the old alpha, which is the same signal without the stripe. */
+    border: 1px solid rgba(var(--accent-rgb), 0.3);
+    padding: 10px var(--t-3);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
+    color: var(--text-main);
+    margin-top: auto;
     position: relative;
 }
 
+/* Matches the accent emphasis `.ally-stats-list li strong` already uses, so a
+   card has one highlight colour rather than two. */
 .ally-ability strong {
-    color: #ff9800;
+    color: var(--accent-blue);
 }
 
 .ally-ability::before {
@@ -463,90 +517,66 @@
     font-family: 'Font Awesome 6 Free';
     font-weight: 900;
     position: absolute;
-    right: 12px;
+    right: var(--t-3);
     top: 50%;
     transform: translateY(-50%);
     color: rgba(var(--accent-rgb), 0.08);
-    font-size: 1.8em;
+    font-size: var(--t-fs-title);
     pointer-events: none;
 }
 
 .ally-footer {
     display: flex;
     justify-content: flex-start;
-    gap: 10px;
-    padding: 10px 15px;
-    background: rgba(0, 0, 0, 0.3);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    gap: var(--t-2);
+    padding: 10px var(--surface-padding);
+    background: var(--bg-dark);
+    border-top: 1px solid var(--border-color);
 }
 
 .footer-stat {
-    font-size: 0.7em;
+    /* Badge type. Weight 700 keeps it legible at the micro size, since these
+       carry mixed-case values rather than an uppercase eyebrow. */
+    font-size: var(--t-fs-micro);
+    font-weight: 700;
     color: var(--text-main);
-    background: rgba(255, 255, 255, 0.05);
-    padding: 4px 12px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-panel);
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--t-1);
 }
 
-@keyframes allyCardFadeIn { 
-    from { opacity: 0; transform: translateY(15px); } 
-    to { opacity: 1; transform: translateY(0); } 
-}
-
-/* Concise module pass */
-.allies-container {
-    padding: 22px;
-}
-
-.page-header,
-.search-section {
-    margin-bottom: 18px;
-}
-
-.search-bar-wrapper,
-.filters-row,
-.allies-grid {
-    gap: 12px;
-}
-
-#ally-search-input {
-    padding: 11px 12px 11px 38px;
-    font-size: 1em;
-}
-
-.ally-header {
-    padding: 12px;
-}
-
-.ally-card:hover {
-    transform: translateY(-3px);
+@keyframes allyCardFadeIn {
+    from { opacity: 0; transform: translateY(var(--t-4)); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .allies-pagination {
-    margin-top: 14px;
+    margin-top: var(--t-4);
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
     justify-content: center;
     align-items: center;
 }
 
 .pagination-page-btn {
+    /* Hit-target floor, not a spacing step. */
     min-width: 36px;
 }
 
 .pagination-page-btn.active {
     background: rgba(var(--accent-rgb), 0.2);
     border-color: rgba(var(--accent-rgb), 0.6);
-    color: #fff;
+    color: var(--text-main);
 }
 
 .allies-pagination .secondary-btn:disabled {
-    opacity: 0.45;
+    /* One disabled value everywhere (DESIGN.md > Buttons). */
+    opacity: 0.5;
     cursor: not-allowed;
 }
 

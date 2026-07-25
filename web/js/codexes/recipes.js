@@ -5,7 +5,7 @@ function initRecipesView() {
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Recipe Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Recipe Codex.</div>`;
         return;
     }
 
@@ -313,7 +313,7 @@ function initRecipesView() {
     } catch (err) {
         console.error("Failed to initialize Recipe Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Recipe Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Recipe Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
         delete root.dataset.recipesInitializing;
     }

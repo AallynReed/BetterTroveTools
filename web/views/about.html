@@ -4,14 +4,16 @@
 <div id="about-vue-app" class="about-view-container" v-cloak>
     <div class="about-header-hero">
         <img src="assets/favicon.png" alt="Logo" class="about-logo">
-        <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 5px;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: var(--control-gap); margin-top: 5px;">
             <p class="version-tag" style="margin: 0;">{{ t('about.version_version').replace('{version}', appVersion) }}</p>
-            <button @click="copyDebug" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1em; transition: color 0.2s;" :title="t('about.copy_debug_info')">
-                <i class="fa-solid" :class="debugCopied ? 'fa-check' : 'fa-clipboard'" :style="{ color: debugCopied ? '#4ade80' : '' }"></i>
+            <button @click="copyDebug" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--t-fs-body); transition: color var(--dur) var(--t-ease);" :title="t('about.copy_debug_info')">
+                <i class="fa-solid" :class="debugCopied ? 'fa-check' : 'fa-clipboard'" :style="{ color: debugCopied ? 'var(--success)' : '' }"></i>
             </button>
         </div>
         <p style="color: var(--text-muted); font-style: italic; margin-top: 10px;">{{ t(appDescription) }}</p>
-        <p style="color: var(--text-muted); font-size: 0.85em; margin-top: 5px; opacity: 0.7;">{{ sysInfoStrShort }}</p>
+        <!-- The muted-ink token already IS the muted step; the opacity 0.7 that used to
+             sit on top of it was a second muted value and dropped this line below AA. -->
+        <p style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: 5px;">{{ sysInfoStrShort }}</p>
     </div>
 
     <!-- Hero donate banner: the primary "support the project" call-to-action.
@@ -22,7 +24,7 @@
          Project" button scrolls here on land via window.pendingViewScroll. -->
     <div id="donate-hero" class="donate-hero">
         <div class="donate-hero-headline">
-            <i class="fa-solid fa-heart" style="color: #ff6f91;"></i>
+            <i class="fa-solid fa-heart" style="color: var(--donate-pink);"></i>
             <h2>{{ t('about.donate_hero_title') }}</h2>
         </div>
         <p class="donate-hero-copy">{{ t('about.donate_hero_copy') }}</p>
@@ -170,7 +172,7 @@
             </div>
             <div class="modal-body">
                 <div v-if="!changelogLoaded" class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('about.loading_commits') }}</span></div>
-                <p v-else-if="changelogError" style="color: #ff5e5b;">{{ changelogError }}</p>
+                <p v-else-if="changelogError" style="color: var(--danger-ink);">{{ changelogError }}</p>
                 <p v-else-if="changelogGroups.length === 0">{{ t('about.no_commits_found') }}</p>
                 <template v-else>
                     <div v-for="group in changelogGroups" :key="group.version" class="version-group">
@@ -220,7 +222,7 @@
                 <button @click="modals.appLicense = false" class="close-btn"><i class="fa-solid fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <pre style="color: #fff; font-family: monospace; white-space: pre-wrap; font-size: 0.9em; line-height: 1.5; margin: 0;">{{ appLicenseText || t('about.loading_license') }}</pre>
+                <pre style="color: var(--text-main); font-family: monospace; white-space: pre-wrap; font-size: var(--t-fs-body); line-height: 1.5; margin: 0;">{{ appLicenseText || t('about.loading_license') }}</pre>
             </div>
         </div>
     </div>

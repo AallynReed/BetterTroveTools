@@ -254,13 +254,13 @@
 
     <section class="mm-tab-content" data-mm-panel="trovesaurus">
         <div id="trovesaurus-vue-app" class="trovesaurus-container" v-cloak>
-            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--t-4);">
                 <div>
-                    <p style="color: var(--text-muted); margin-top: 5px;">{{ t('common.discover_and_install_mods_directly_from_a5845b') }}</p>
+                    <p style="color: var(--text-muted); margin-top: var(--t-1);">{{ t('common.discover_and_install_mods_directly_from_a5845b') }}</p>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
+                <div style="display: flex; align-items: center; gap: var(--control-gap);">
+                    <label style="font-size: var(--t-fs-label); color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
                     <div style="width: 250px;">
                         <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
                     </div>
@@ -278,7 +278,7 @@
                 </div>
             </div>
 
-            <div class="search-filter-bar" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+            <div class="search-filter-bar" style="margin-top: var(--t-5); display: flex; flex-wrap: wrap; gap: var(--t-4); align-items: center;">
                 <div class="search-wrapper" style="flex: 1; min-width: 250px;">
                     <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" id="ts-search-input" v-model="searchQuery" @keyup.enter="fetchMods(1)" :placeholder="t('common.search_by_name_author_or_id')">
@@ -297,9 +297,9 @@
                 </button>
             </div>
 
-            <div id="ts-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+            <div id="ts-mod-grid" class="mod-grid" style="margin-top: var(--t-5);" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
                 <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.browsing_trovesaurus') }}</div>
-                <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+                <div v-else-if="error" class="placeholder-box" style="color: var(--danger-ink);"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
                 <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('common.no_mods_found_matching_your_search') }}</div>
                 <template v-else>
                     <div v-for="mod in mods" :key="mod.id" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
@@ -317,12 +317,12 @@
                             </span>
 
                             <button class="ts-front-preview" @click="openImageModal(mod)" :title="t('common.click_to_enlarge_image')">
-                                <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                                <img :src="mod.image || '/assets/images/no_preview.png'" :alt="mod.name" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
                             </button>
 
                             <div class="ts-mod-stats">
-                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(mod.downloads) }}</span>
-                                <span class="ts-stat-item" :title="t('common.likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ formatCount(mod.likes) }}</span>
+                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: var(--success);"></i> {{ formatCount(mod.downloads) }}</span>
+                                <span class="ts-stat-item" :title="t('common.likes')"><i class="fa-solid fa-heart" style="color: var(--danger);"></i> {{ formatCount(mod.likes) }}</span>
                             </div>
 
                             <div class="ts-inline-actions">
@@ -338,7 +338,7 @@
                 </template>
             </div>
 
-            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: var(--t-4); margin-top: var(--t-5); padding-bottom: var(--t-5);">
                 <button class="primary-btn" :disabled="currentPage <= 1 || isLoading" @click="fetchMods(currentPage - 1)">
                     <i class="fa-solid fa-chevron-left"></i> <span>{{ t('common.previous') }}</span>
                 </button>
@@ -350,7 +350,7 @@
 
             <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
                 <span class="close-modal" @click="closeImageModal">&times;</span>
-                <img class="modal-content" :src="modal.src" v-if="modal.src">
+                <img class="modal-content" :src="modal.src" v-if="modal.src" :alt="modal.caption">
                 <div id="modal-caption">{{ modal.caption }}</div>
                 <button v-if="modal.modId" id="modal-view-ts-btn" @click="openUrl(`https://trovesaurus.com/mod=${modal.modId}`)">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('common.view_on_trovesaurus') }}</span>
@@ -377,13 +377,13 @@
 
     <section class="mm-tab-content" data-mm-panel="mods_hub">
         <div id="mods-hub-vue-app" class="trovesaurus-container mods-hub-container" v-cloak>
-            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--t-4);">
                 <div>
-                    <p style="color: var(--text-muted); margin-top: 5px;">{{ t('mods_hub.discover_copy') }}</p>
+                    <p style="color: var(--text-muted); margin-top: var(--t-1);">{{ t('mods_hub.discover_copy') }}</p>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
+                <div style="display: flex; align-items: center; gap: var(--control-gap);">
+                    <label style="font-size: var(--t-fs-label); color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
                     <div style="width: 250px;">
                         <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
                     </div>
@@ -401,7 +401,7 @@
                 </div>
             </div>
 
-            <div class="search-filter-bar" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+            <div class="search-filter-bar" style="margin-top: var(--t-5); display: flex; flex-wrap: wrap; gap: var(--t-4); align-items: center;">
                 <div class="search-wrapper" style="flex: 1; min-width: 250px;">
                     <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" id="mh-search-input" v-model="searchQuery" @keyup.enter="fetchMods(1)" :placeholder="t('mods_hub.search_placeholder')">
@@ -420,9 +420,9 @@
                 </button>
             </div>
 
-            <div id="mh-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+            <div id="mh-mod-grid" class="mod-grid" style="margin-top: var(--t-5);" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
                 <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mods_hub.browsing') }}</div>
-                <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+                <div v-else-if="error" class="placeholder-box" style="color: var(--danger-ink);"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
                 <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('mods_hub.no_mods') }}</div>
                 <template v-else>
                     <div v-for="mod in mods" :key="mod.ref" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
@@ -439,7 +439,7 @@
                             </span>
 
                             <button class="ts-front-preview" @click="openImageModal(mod)" :title="t('common.click_to_enlarge_image')">
-                                <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                                <img :src="mod.image || '/assets/images/no_preview.png'" :alt="mod.name" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
                             </button>
 
                             <div v-if="mod.tags && mod.tags.length" class="mh-mod-tags">
@@ -447,8 +447,8 @@
                             </div>
 
                             <div class="ts-mod-stats">
-                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(mod.downloads) }}</span>
-                                <span class="ts-stat-item" :title="t('mods_hub.stars')"><i class="fa-solid fa-star" style="color: #ffc107;"></i> {{ formatCount(mod.stars) }}</span>
+                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: var(--success);"></i> {{ formatCount(mod.downloads) }}</span>
+                                <span class="ts-stat-item" :title="t('mods_hub.stars')"><i class="fa-solid fa-star" style="color: var(--warning);"></i> {{ formatCount(mod.stars) }}</span>
                             </div>
 
                             <div class="ts-inline-actions">
@@ -468,7 +468,7 @@
                 </template>
             </div>
 
-            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: var(--t-4); margin-top: var(--t-5); padding-bottom: var(--t-5);">
                 <button class="primary-btn" :disabled="currentPage <= 1 || isLoading" @click="fetchMods(currentPage - 1)">
                     <i class="fa-solid fa-chevron-left"></i> <span>{{ t('common.previous') }}</span>
                 </button>
@@ -480,7 +480,7 @@
 
             <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
                 <span class="close-modal" @click="closeImageModal">&times;</span>
-                <img class="modal-content" :src="modal.src" v-if="modal.src">
+                <img class="modal-content" :src="modal.src" v-if="modal.src" :alt="modal.caption">
                 <div id="modal-caption">{{ modal.caption }}</div>
                 <button v-if="modal.pageUrl" id="modal-view-mh-btn" @click="openUrl(modal.pageUrl)">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('mods_hub.view_on_hub') }}</span>
@@ -519,13 +519,13 @@
 
     <section class="mm-tab-content" data-mm-panel="modpacks">
         <div id="modpacks-vue-app" class="trovesaurus-container modpacks-container" v-cloak>
-            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+            <div class="file-manager-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--t-4);">
                 <div>
-                    <p style="color: var(--text-muted); margin-top: 5px;">{{ t('modpacks.discover_copy') }}</p>
+                    <p style="color: var(--text-muted); margin-top: var(--t-1);">{{ t('modpacks.discover_copy') }}</p>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
+                <div style="display: flex; align-items: center; gap: var(--control-gap);">
+                    <label style="font-size: var(--t-fs-label); color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
                     <div style="width: 250px;">
                         <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
                     </div>
@@ -539,7 +539,7 @@
                 </div>
             </div>
 
-            <div class="search-filter-bar" style="margin-top: 20px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;">
+            <div class="search-filter-bar" style="margin-top: var(--t-5); display: flex; flex-wrap: wrap; gap: var(--t-4); align-items: center;">
                 <div class="search-wrapper" style="flex: 1; min-width: 250px;">
                     <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" id="mp-search-input" v-model="searchQuery" @keyup.enter="fetchModpacks(1)" :placeholder="t('modpacks.search_placeholder')">
@@ -554,9 +554,9 @@
                 </button>
             </div>
 
-            <div id="mp-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="modpacks.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+            <div id="mp-mod-grid" class="mod-grid" style="margin-top: var(--t-5);" :style="modpacks.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
                 <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modpacks.browsing') }}</div>
-                <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+                <div v-else-if="error" class="placeholder-box" style="color: var(--danger-ink);"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
                 <div v-else-if="modpacks.length === 0" class="placeholder-box">{{ t('modpacks.no_modpacks') }}</div>
                 <template v-else>
                     <div v-for="pack in modpacks" :key="pack.ref" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, pack)">
@@ -570,7 +570,7 @@
                             </span>
 
                             <button class="ts-front-preview" @click="openImageModal(pack)" :title="t('common.click_to_enlarge_image')">
-                                <img :src="pack.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                                <img :src="pack.image || '/assets/images/no_preview.png'" :alt="pack.name" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
                             </button>
 
                             <div v-if="pack.tags && pack.tags.length" class="mh-mod-tags">
@@ -578,10 +578,10 @@
                             </div>
 
                             <div class="ts-mod-stats">
-                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(pack.downloads) }}</span>
-                                <span class="ts-stat-item" :title="t('modpacks.stars_label')"><i class="fa-solid fa-star" style="color: #ffc107;"></i> {{ formatCount(pack.stars) }}</span>
-                                <span class="ts-stat-item" :title="t('modpacks.mods_label')"><i class="fa-solid fa-cubes" style="color: #5ec6ff;"></i> {{ formatCount(pack.mod_count) }}</span>
-                                <span v-if="pack.variant_count > 1" class="ts-stat-item" :title="t('modpacks.variants_label')"><i class="fa-solid fa-code-branch" style="color: #b39ddb;"></i> {{ formatCount(pack.variant_count) }}</span>
+                                <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: var(--success);"></i> {{ formatCount(pack.downloads) }}</span>
+                                <span class="ts-stat-item" :title="t('modpacks.stars_label')"><i class="fa-solid fa-star" style="color: var(--warning);"></i> {{ formatCount(pack.stars) }}</span>
+                                <span class="ts-stat-item" :title="t('modpacks.mods_label')"><i class="fa-solid fa-cubes" style="color: var(--accent-blue);"></i> {{ formatCount(pack.mod_count) }}</span>
+                                <span v-if="pack.variant_count > 1" class="ts-stat-item" :title="t('modpacks.variants_label')"><i class="fa-solid fa-code-branch" style="color: var(--text-muted);"></i> {{ formatCount(pack.variant_count) }}</span>
                             </div>
 
                             <div class="ts-inline-actions">
@@ -599,7 +599,7 @@
                 </template>
             </div>
 
-            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; padding-bottom: 20px;">
+            <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: var(--t-4); margin-top: var(--t-5); padding-bottom: var(--t-5);">
                 <button class="primary-btn" :disabled="currentPage <= 1 || isLoading" @click="fetchModpacks(currentPage - 1)">
                     <i class="fa-solid fa-chevron-left"></i> <span>{{ t('common.previous') }}</span>
                 </button>
@@ -611,7 +611,7 @@
 
             <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
                 <span class="close-modal" @click="closeImageModal">&times;</span>
-                <img class="modal-content" :src="modal.src" v-if="modal.src">
+                <img class="modal-content" :src="modal.src" v-if="modal.src" :alt="modal.caption">
                 <div id="modal-caption">{{ modal.caption }}</div>
                 <button v-if="modal.pageUrl" id="modal-view-mp-btn" @click="openUrl(modal.pageUrl)">
                     <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('modpacks.view_on_hub') }}</span>

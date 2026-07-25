@@ -1,84 +1,124 @@
-﻿.gem-evaluator-shell {
+/* Gem evaluator.
+   Every value here comes from the token layer in style.css `:root`: the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. Nothing is redefined locally.
+
+   Two structural decisions run through the whole file:
+   1. Depth is one tonal step, never a shadow. A block nested inside a card
+      recesses to --bg-dark; anything nested inside *that* comes back up to
+      --bg-panel on a hairline. That is the only stacking vocabulary used.
+   2. Colour means something. Accent lights the computed result (the live
+      value the user came here for) and interactive state; it never tints a
+      heading, an icon or a panel for emphasis, and amber/red only appear
+      where the app is actually reporting a warning or an error. */
+
+.gem-evaluator-shell {
     display: grid;
     grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
-    gap: 16px;
-    padding: 20px;
+    gap: var(--t-4);
+    padding: var(--view-padding);
     box-sizing: border-box;
 }
 
 .gem-evaluator-main {
     display: grid;
     grid-template-columns: minmax(320px, 420px) minmax(420px, 1fr);
-    gap: 20px;
+    gap: var(--t-4);
     min-width: 0;
+    /* The input panel is much shorter than the results column; without this it
+       is stretched into a drawn empty box below the last field. */
+    align-items: start;
 }
 
 .gem-evaluator-shell.has-results .gem-evaluator-main {
     grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
 }
 
+/* Resting surfaces: one tonal step above the page plus a hairline, and nothing
+   else. A drop shadow here would claim these float above the view. */
 .gem-evaluator-panel,
 .gem-evaluator-result-card,
 .gem-evaluator-placeholder {
-    background: rgba(29, 35, 43, 0.92);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 14px;
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.18);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
 }
 
 .gem-evaluator-panel {
-    padding: 18px;
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    /* Section separation (24) against the 12px field spacing inside each
+       section = a 2x step, so proximity actually groups. */
+    gap: var(--t-5);
 }
 
+/* ---- Mode switch ---- */
+/* The track is an inset well (a small surface holding controls), the buttons
+   inside it are controls — hence surface radius outside, control radius in. */
 .evaluator-mode-tabs {
     display: inline-flex;
-    gap: 8px;
-    padding: 6px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
+    gap: var(--t-2);
+    padding: var(--t-1);
+    border-radius: var(--radius-surface);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
     width: fit-content;
 }
 
 .mode-tab-btn {
     border: none;
-    padding: 10px 14px;
-    border-radius: 10px;
+    padding: 10px var(--t-3);
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
+    font-size: var(--t-fs-body);
     font-weight: 600;
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
+/* Accent as "this is the current selection" — one of the four things it is
+   allowed to mean. */
 .mode-tab-btn.active {
-    background: rgba(var(--accent-rgb, 94, 198, 255), 0.18);
+    background: rgba(var(--accent-rgb), 0.18);
     color: var(--text-main);
 }
 
+/* ---- Panel header ---- */
 .gem-evaluator-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    gap: 16px;
+    gap: var(--t-4);
 }
 
 .gem-evaluator-header h3 {
-    margin: 0 0 6px;
-    color: var(--accent-blue);
+    margin: 0 0 var(--t-1);
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* Heading icons are structural, so they stay muted — the accent is reserved
+   for the primary action, the selection and the computed result. */
+.gem-evaluator-header h3 i {
+    color: var(--text-muted);
+    font-size: var(--icon-optical);
 }
 
 .gem-evaluator-header p {
     margin: 0;
     color: var(--text-muted);
+    font-size: var(--t-fs-label);
     line-height: 1.5;
 }
 
+/* ---- Input grids ---- */
 .gem-evaluator-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .simple-evaluator-grid {
@@ -93,56 +133,70 @@
 .simple-evaluator-grid-secondary {
     grid-template-columns: minmax(180px, 260px);
     justify-content: start;
-    margin-top: -4px;
+    /* Pulls the trailing single field back onto the 12px field rhythm; the
+       parent panel's 24px section gap is too wide for a continuation row. */
+    margin-top: calc(var(--t-1) * -1);
 }
 
 .gem-evaluator-grid label,
 .gem-evaluator-stat-row {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 4px;
+    /* DESIGN.md > Inputs: the label sits 4px above its field. */
+    gap: var(--t-1);
+    margin-bottom: var(--t-1);
 }
 
 .gem-evaluator-grid label span {
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: var(--t-fs-label);
 }
 
+/* Fields are inset: page graphite is darker than the panel they sit on, which
+   is what says "you type here". */
 .evaluator-input {
-    color: #f3f7ff;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    min-height: 44px;
-    padding: 10px 12px;
-    border-radius: 10px;
+    color: var(--text-main);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    min-height: var(--control-height);
+    padding: 9px 10px;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
+    transition: border-color var(--dur-fast) var(--t-ease);
+}
+
+.evaluator-input:focus {
+    border-color: var(--accent-blue);
 }
 
 .evaluator-input::placeholder {
-    color: #aeb8c9;
+    color: var(--text-placeholder);
 }
 
 .gem-evaluator-proc-summary {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: rgba(var(--accent-rgb, 94, 198, 255), 0.08);
+    gap: var(--t-3);
+    padding: var(--t-3) var(--t-4);
+    border-radius: var(--radius-control);
+    /* Accent tint reads as "this value was derived for you, not typed" — live
+       state, which is one of the accent's sanctioned meanings. */
+    background: rgba(var(--accent-rgb), 0.08);
     color: var(--text-main);
+    font-size: var(--t-fs-body);
 }
 
 .gem-evaluator-stat-list {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--t-4);
 }
 
 .gem-evaluator-stat-row {
     display: grid;
     grid-template-columns: 1.1fr auto 1.6fr;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
 }
 
@@ -153,36 +207,38 @@
 .gem-evaluator-stepper {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--control-gap);
     padding: 0 10px;
-    height: 44px;
-    border-radius: 10px;
-    border: 1px solid var(--border-color, #444c5e);
-    background: rgba(255, 255, 255, 0.03);
+    height: var(--control-height);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
 }
 
 .stepper-btn {
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: 8px;
-    background: rgba(var(--accent-rgb, 94, 198, 255), 0.15);
+    border-radius: var(--radius-control);
+    background: rgba(var(--accent-rgb), 0.15);
     color: var(--text-main);
+    font-size: var(--t-fs-body);
     cursor: pointer;
+    transition: background-color var(--dur) var(--t-ease);
 }
 
 .auto-proc-btn {
     width: auto;
     min-width: 98px;
-    padding: 0 12px;
-    height: 34px;
-    font-size: 0.85rem;
+    padding: 0 var(--t-3);
+    height: var(--control-height);
+    font-size: var(--t-fs-body);
 }
 
 .evaluator-actions {
     display: flex;
     justify-content: flex-end;
-    padding-top: 4px;
+    padding-top: var(--t-1);
 }
 
 .bottom-calc-btn {
@@ -190,43 +246,46 @@
 }
 
 .stepper-btn:disabled {
-    opacity: 0.4;
+    /* One disabled treatment everywhere (DESIGN.md > Buttons). */
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
+/* ---- Results ---- */
 .gem-evaluator-results {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--surface-gap);
 }
 
 .gem-evaluator-placeholder {
-    padding: 28px;
+    padding: var(--t-5);
     color: var(--text-muted);
-    line-height: 1.6;
+    font-size: var(--t-fs-body);
+    line-height: 1.5;
 }
 
 .simple-result-card {
-    padding: 16px;
-    border-radius: 14px;
-    background: rgba(29, 35, 43, 0.92);
-    border: 1px solid var(--border-color, #444c5e);
+    padding: var(--surface-padding);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--t-4);
 }
 
 .simple-result-head {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: var(--t-3);
 }
 
 .simple-result-sub {
-    margin-top: 4px;
+    margin-top: var(--t-1);
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: var(--t-fs-label);
 }
 
 .simple-meta {
@@ -239,15 +298,16 @@
 }
 
 .gem-evaluator-result-card {
-    padding: 18px;
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--t-4);
 }
 
+/* "Best match" is carried by the accent border alone. The halo and drop shadow
+   that used to sit here made a resting card look like it floated. */
 .gem-evaluator-result-card.best {
-    border-color: rgba(var(--accent-rgb, 94, 198, 255), 0.8);
-    box-shadow: 0 0 0 1px rgba(var(--accent-rgb, 94, 198, 255), 0.2), 0 18px 28px rgba(0, 0, 0, 0.22);
+    border-color: rgba(var(--accent-rgb), 0.8);
 }
 
 .gem-evaluator-result-card.invalid {
@@ -258,7 +318,7 @@
 .result-meta,
 .result-stat-row {
     display: grid;
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .result-card-header {
@@ -271,9 +331,15 @@
     margin: 0;
 }
 
+.result-card-header h4 {
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+}
+
 .result-card-header p {
-    margin-top: 6px;
+    margin-top: var(--t-1);
     color: var(--text-muted);
+    font-size: var(--t-fs-label);
 }
 
 .result-quality {
@@ -284,11 +350,14 @@
 .result-meta span {
     display: block;
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: var(--t-fs-label);
 }
 
+/* The card's headline numeral. Display (2.1rem) is reserved for the page-level
+   hero readout, so a per-card figure takes the next role down rather than an
+   in-between size. */
 .result-quality strong {
-    font-size: 1.45rem;
+    font-size: var(--t-fs-title);
     color: var(--accent-blue);
 }
 
@@ -296,55 +365,66 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+/* ---- Focus plan ----
+   Recessed well inside the result card rather than a second card: DESIGN.md
+   forbids nesting a card in a card, so the tier break is tone, not a border. */
 .focus-plan-card {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 14px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
+    gap: var(--t-3);
+    padding: var(--surface-padding);
+    border-radius: var(--radius-surface);
+    background: var(--bg-dark);
 }
 
 .focus-plan-title {
-    color: var(--accent-blue);
-    font-weight: 700;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
 }
 
 .focus-plan-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: var(--t-3);
+    /* Tiles carry different numbers of chips; without this the short ones are
+       stretched to match the tallest. */
+    align-items: start;
 }
 
 .focus-plan-empty {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
+    gap: var(--t-3);
+    padding: var(--t-3) var(--t-4);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
+    font-size: var(--t-fs-body);
 }
 
 .focus-plan-empty strong {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
     color: var(--text-main);
 }
 
+/* One step back up from the well. The hairline is what keeps the tile readable
+   in the compact (transparent) variant, where the well is not drawn. */
 .focus-plan-tile {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    gap: var(--t-3);
+    padding: var(--surface-padding);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
 }
 
 .focus-plan-tile-header {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: center;
 }
 
@@ -357,41 +437,44 @@
 
 .focus-plan-label {
     color: var(--text-main);
-    font-size: 0.92rem;
+    font-size: var(--t-fs-h2);
     font-weight: 600;
 }
 
 .focus-plan-total {
-    margin-top: 4px;
+    margin-top: var(--t-1);
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: var(--t-fs-label);
 }
 
 .focus-plan-focuses,
 .focus-plan-recipes {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
 }
 
 .focus-plan-divider {
     width: 100%;
     height: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--border-color);
 }
 
+/* Pill shape, but body type rather than micro: these chips carry a count and a
+   material name ("240 Fire Focus"), not a one-word status label. */
 .focus-chip,
 .recipe-chip {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-height: 34px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.05);
+    gap: var(--t-2);
+    min-height: var(--control-height);
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
     color: var(--text-main);
-    font-size: 0.85rem;
+    font-size: var(--t-fs-body);
 }
 
 .focus-chip img,
@@ -401,111 +484,129 @@
     object-fit: contain;
 }
 
+/* Flux is the one material the plan singles out, so it takes the standard pill
+   treatment: a ~12% tint under a 35% border of the same semantic hue. */
 .recipe-chip.flux {
-    background: rgba(255, 194, 92, 0.12);
-    border: 1px solid rgba(255, 194, 92, 0.2);
+    background: rgba(var(--warning-rgb), 0.12);
+    border-color: rgba(var(--warning-rgb), 0.35);
 }
 
 .result-stat-table {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .result-warning {
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: rgba(255, 170, 64, 0.1);
-    border: 1px solid rgba(255, 170, 64, 0.25);
-    color: #ffd089;
+    padding: var(--t-3) var(--t-4);
+    border-radius: var(--radius-surface);
+    background: rgba(var(--warning-rgb), 0.1);
+    border: 1px solid rgba(var(--warning-rgb), 0.35);
+    color: var(--warning-ink);
+    font-size: var(--t-fs-body);
     line-height: 1.5;
 }
 
 .result-warning strong {
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
 }
 
 .result-stat-row {
     grid-template-columns: 1.6fr 1fr 0.8fr 0.9fr;
     align-items: center;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    padding: 10px var(--t-3);
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
+    font-size: var(--t-fs-body);
 }
 
 .result-stat-row-invalid {
-    border: 1px solid rgba(255, 120, 120, 0.28);
-    background: rgba(255, 120, 120, 0.08);
+    border: 1px solid rgba(var(--danger-rgb), 0.35);
+    background: rgba(var(--danger-rgb), 0.1);
 }
 
+/* #ef4444 is 4.4:1 on panel and fails AA as text, so the glyph takes the
+   lighter ink variant. */
 .result-stat-flag {
-    margin-left: 6px;
-    color: #ff9a76;
+    margin-left: var(--t-1);
+    color: var(--danger-ink);
 }
 
+/* The header row is differentiated by type, not by fill — it sits flush with
+   the card so the data rows below read as the recessed ones. */
 .result-stat-head {
-    font-size: 0.85rem;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.05);
+    background: transparent;
 }
 
 /* ===== History sidebar ===== */
 .gem-evaluator-history {
-    background: rgba(29, 35, 43, 0.92);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 14px;
-    padding: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
     min-height: 220px;
     align-self: start;
     position: sticky;
-    top: 16px;
-    max-height: calc(100vh - 32px);
+    top: var(--t-4);
+    max-height: calc(100vh - var(--t-6));
 }
+
+/* The app's signature eyebrow: micro type, 800, 1px tracking, muted ink. */
 .gem-evaluator-history-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-weight: 700;
-    color: var(--accent-blue);
-    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
-    letter-spacing: 0.6px;
-    padding: 2px 4px 6px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    letter-spacing: 1px;
+    padding: 2px var(--t-1) var(--t-2);
+    border-bottom: 1px solid var(--border-color);
 }
+
 .gem-history-clear-btn {
     background: transparent;
     border: 0;
     color: var(--text-muted);
     cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
+    padding: var(--t-1);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
+    transition: color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
+
 .gem-history-clear-btn:hover {
-    color: #ff8a65;
-    background: rgba(255,99,71,0.10);
+    color: var(--danger-ink);
+    background: rgba(var(--danger-rgb), 0.12);
 }
+
 .gem-history-empty {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 24px 12px;
+    gap: var(--t-2);
+    padding: var(--t-5) var(--t-3);
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: var(--t-fs-label);
     text-align: center;
     opacity: 0.7;
 }
+
+/* A standalone empty-state glyph is an illustration, not a type role, so 22px
+   stays optical. Muted rather than accent: it marks nothing, it decorates. */
 .gem-history-empty i {
     font-size: 22px;
-    color: var(--accent-blue);
-    opacity: 0.5;
+    color: var(--text-muted);
 }
+
 .gem-history-list {
     list-style: none;
     margin: 0;
@@ -515,167 +616,196 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--t-2);
 }
+
 .gem-history-item {
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.03);
-    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    border-radius: var(--radius-surface);
     overflow: hidden;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
+
 .gem-history-item:hover {
     border-color: rgba(var(--accent-rgb), 0.45);
     background: rgba(var(--accent-rgb), 0.06);
 }
+
 .gem-history-restore {
     width: 100%;
     background: transparent;
     border: 0;
     color: inherit;
     text-align: left;
-    padding: 8px 10px;
+    padding: var(--t-2) 10px;
     display: flex;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
     cursor: pointer;
 }
+
 .gem-history-icon {
     width: 30px;
     height: 30px;
-    border-radius: 8px;
-    background: rgba(255,255,255,0.05);
+    border-radius: var(--radius-control);
+    background: var(--bg-panel);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
+
 .gem-history-icon img {
     width: 22px;
     height: 22px;
     object-fit: contain;
 }
+
 .gem-history-body {
     min-width: 0;
     flex: 1;
 }
+
 .gem-history-title {
-    color: #fff;
+    color: var(--text-main);
     font-weight: 700;
-    font-size: 0.85rem;
+    font-size: var(--t-fs-body);
 }
+
 .gem-history-sub {
     color: var(--text-muted);
-    font-size: 0.7rem;
+    font-size: var(--t-fs-label);
     margin-top: 2px;
 }
+
 .gem-history-stats {
     color: var(--text-muted);
-    font-size: 0.7rem;
+    font-size: var(--t-fs-label);
     margin-top: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     opacity: 0.75;
 }
+
 .gem-history-actions {
     display: flex;
-    gap: 4px;
-    padding: 0 8px 8px;
+    gap: var(--t-1);
+    padding: 0 var(--t-2) var(--t-2);
 }
+
 .gem-history-pin,
 .gem-history-delete {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.7rem;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-label);
     font-weight: 700;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    transition: color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
+
 .gem-history-pin:hover {
     color: var(--accent-blue);
     border-color: rgba(var(--accent-rgb), 0.55);
-    background: rgba(var(--accent-rgb), 0.10);
+    background: rgba(var(--accent-rgb), 0.1);
 }
+
 .gem-history-delete {
     margin-left: auto;
 }
+
 .gem-history-delete:hover {
-    color: #ff8a65;
-    border-color: rgba(255,99,71,0.45);
+    color: var(--danger-ink);
+    border-color: rgba(var(--danger-rgb), 0.45);
 }
 
-/* ===== Sticky overall readout ===== */
+/* ===== Sticky overall readout =====
+   This bar genuinely floats: it detaches and rides over the result card as the
+   column scrolls, which is the one case where a shadow and a blur are allowed
+   (DESIGN.md > The Floating-Only Rule / The Blur Budget Rule). The glass tokens
+   are the shared vocabulary for exactly that. */
 .gem-result-sticky-bar {
     position: sticky;
-    top: 4px;
+    top: var(--t-1);
     z-index: 5;
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 10px 14px;
-    border-radius: 12px;
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.14), rgba(0,0,0,0.40));
+    gap: var(--t-3);
+    padding: 10px var(--t-4);
+    border-radius: var(--radius-surface);
+    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.14), var(--glass-bottom));
     border: 1px solid rgba(var(--accent-rgb), 0.32);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-    backdrop-filter: blur(6px);
+    box-shadow: var(--shadow-floating);
+    backdrop-filter: var(--modal-blur);
 }
+
 .gem-result-sticky-icon {
     width: 40px;
     height: 40px;
-    background: rgba(0,0,0,0.30);
-    border-radius: 10px;
+    background: var(--bg-dark);
+    border-radius: var(--radius-control);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
+
 .gem-result-sticky-icon img {
     width: 32px;
     height: 32px;
     object-fit: contain;
 }
+
 .gem-result-sticky-metrics {
     display: flex;
-    gap: 22px;
+    gap: var(--t-5);
     flex: 1;
 }
+
 .gem-result-sticky-metric {
     display: flex;
     flex-direction: column;
 }
+
 .gem-result-sticky-metric span {
-    font-size: 0.65rem;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
-    letter-spacing: 0.7px;
+    letter-spacing: 1px;
     color: var(--text-muted);
-    font-weight: 700;
+    font-weight: 800;
 }
+
+/* The computed result is the live value this whole view exists to produce —
+   the one place in the results column the accent belongs. */
 .gem-result-sticky-metric strong {
-    font-size: 1.4rem;
+    font-size: var(--t-fs-title);
     color: var(--accent-blue);
     font-variant-numeric: tabular-nums;
 }
+
 .gem-result-sticky-actions {
     display: flex;
-    gap: 6px;
+    gap: var(--t-2);
 }
+
 .gem-pin-btn {
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 0.75rem;
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-label);
     font-weight: 700;
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    transition: color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
+
 .gem-pin-btn:hover {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.55);
     background: rgba(var(--accent-rgb), 0.14);
 }
@@ -684,300 +814,385 @@
 .gem-evaluator-stat-block {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--t-2);
 }
+
 .gem-stat-range-hint {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 0.72rem;
+    gap: var(--t-2);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    padding: 2px 4px;
+    padding: 2px var(--t-1);
 }
+
 .gem-stat-range-hint b {
     color: var(--text-main);
     font-weight: 700;
 }
-.gem-stat-range-hint.out-of-range {
-    color: #ff8a65;
-}
+
+/* Out of range is the same condition the result table flags as invalid, so it
+   speaks with the same red — as ink, since --danger fails AA as text. */
+.gem-stat-range-hint.out-of-range,
 .gem-stat-range-hint.out-of-range b {
-    color: #ffab8a;
+    color: var(--danger-ink);
 }
+
 .gem-stat-range-percent {
     margin-left: auto;
-    background: rgba(var(--accent-rgb), 0.10);
+    background: rgba(var(--accent-rgb), 0.1);
     color: var(--accent-blue);
-    padding: 2px 7px;
-    border-radius: 999px;
+    padding: 2px var(--t-2);
+    border-radius: var(--radius-pill);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
 }
+
 .gem-stat-range-hint.out-of-range .gem-stat-range-percent {
-    background: rgba(255,99,71,0.10);
-    color: #ff8a65;
+    background: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger-ink);
 }
 
-/* ===== Next focus sim ===== */
+/* ===== Next focus sim =====
+   A recommendation, not a warning — the amber wash it used to carry was the
+   only thing making it look urgent. It is now a plain recessed well and the
+   heading carries the emphasis by weight. */
 .gem-next-focus-panel {
-    border: 1px solid rgba(255, 202, 40, 0.32);
-    background: linear-gradient(180deg, rgba(255, 202, 40, 0.08), rgba(0,0,0,0.18));
-    border-radius: 12px;
-    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    border-radius: var(--radius-surface);
+    padding: var(--t-3) var(--t-4);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
 }
+
 .gem-next-focus-head {
-    color: #ffd166;
-    font-weight: 700;
-    font-size: 0.85rem;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: var(--t-fs-h2);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
+
+.gem-next-focus-head i {
+    color: var(--text-muted);
+    font-size: var(--icon-optical);
+}
+
 .gem-next-focus-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
+    gap: var(--t-3);
 }
+
 .gem-next-focus-card {
-    padding: 10px 12px;
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
+    padding: 10px var(--t-3);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--t-1);
 }
+
 .gem-next-focus-card-label {
-    font-size: 0.7rem;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
     color: var(--text-muted);
-    font-weight: 700;
-    letter-spacing: 0.6px;
+    font-weight: 800;
+    letter-spacing: 1px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
 }
+
 .gem-next-focus-card-stat {
     font-weight: 700;
-    color: #fff;
-    font-size: 1.05rem;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
 }
+
 .gem-next-focus-card-detail {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 0.85rem;
+    gap: var(--t-2);
+    font-size: var(--t-fs-body);
 }
+
 .gem-next-focus-delta.pos {
-    color: #79e07f;
+    color: var(--success-ink);
     font-weight: 700;
 }
+
 .gem-next-focus-target {
     color: var(--text-muted);
 }
 
-/* ===== Total cost line ===== */
+/* ===== Total cost line =====
+   A material cost is not a warning state, so it does not get amber. */
 .gem-total-cost-line {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: rgba(255, 194, 92, 0.08);
-    border: 1px solid rgba(255, 194, 92, 0.22);
+    gap: var(--t-2);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
     color: var(--text-main);
-    font-size: 0.9rem;
+    font-size: var(--t-fs-body);
 }
+
 .gem-total-cost-line i {
-    color: #ffc25c;
+    color: var(--text-muted);
+    font-size: var(--icon-optical);
 }
+
 .gem-total-cost-line strong {
     margin-left: auto;
-    color: #ffc25c;
+    color: var(--text-main);
     font-variant-numeric: tabular-nums;
 }
 
 /* ===== Compare panel ===== */
 .gem-compare-panel {
-    border: 1px solid rgba(var(--accent-rgb), 0.32);
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(0,0,0,0.18));
-    border-radius: 12px;
-    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    border-radius: var(--radius-surface);
+    padding: var(--t-3) var(--t-4);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--t-3);
 }
+
 .gem-compare-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: var(--accent-blue);
-    font-weight: 700;
-    font-size: 0.9rem;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: var(--t-fs-h2);
 }
+
+.gem-compare-head i {
+    color: var(--text-muted);
+    font-size: var(--icon-optical);
+}
+
 .gem-compare-actions {
     display: flex;
-    gap: 4px;
+    gap: var(--t-1);
 }
+
 .gem-compare-actions button {
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
     color: var(--text-muted);
     width: 28px;
     height: 28px;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
 }
+
 .gem-compare-actions button:hover:not(:disabled) {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.55);
 }
+
 .gem-compare-actions button:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Stretch is deliberate here: A and B are a matched pair and must stay level
+   for the deltas between them to read. */
 .gem-compare-grid {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    gap: 10px;
+    gap: var(--t-3);
     align-items: stretch;
 }
+
 .gem-compare-slot {
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
-    padding: 10px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    padding: 10px var(--t-3);
     display: flex;
-    gap: 10px;
+    gap: var(--t-3);
     align-items: center;
     position: relative;
     min-height: 90px;
 }
+
+/* An empty slot is stated by the dashed hairline and the recessed tone; the
+   diagonal hatch that used to fill it was decoration at four untokened alphas. */
 .gem-compare-slot.is-empty {
-    background: repeating-linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) 6px, rgba(255,255,255,0.04) 6px, rgba(255,255,255,0.04) 12px);
+    background: var(--bg-dark);
     border-style: dashed;
     justify-content: center;
     color: var(--text-muted);
-    font-size: 0.85rem;
+    font-size: var(--t-fs-label);
     text-align: center;
 }
+
 .gem-compare-slot-label {
     position: absolute;
-    top: 6px;
-    left: 8px;
-    font-size: 0.7rem;
+    top: var(--t-1);
+    left: var(--t-2);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
+    letter-spacing: 1px;
     color: var(--text-muted);
     text-transform: uppercase;
 }
+
 .gem-compare-slot-icon {
     width: 44px;
     height: 44px;
-    background: rgba(0,0,0,0.20);
-    border-radius: 10px;
+    background: var(--bg-dark);
+    border-radius: var(--radius-control);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
+
 .gem-compare-slot-icon img { width: 32px; height: 32px; object-fit: contain; }
 .gem-compare-slot-body { min-width: 0; flex: 1; }
+
+/* Weight before size (DESIGN.md): 700 at the heading role separates this from
+   the 0.75rem sub beneath it without inventing a step between h2 and title. */
 .gem-compare-slot-title {
-    font-size: 1.2rem;
+    font-size: var(--t-fs-h2);
     font-weight: 700;
     color: var(--accent-blue);
     font-variant-numeric: tabular-nums;
 }
+
 .gem-compare-slot-sub {
-    font-size: 0.75rem;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     font-weight: 700;
 }
+
 .gem-compare-slot-meta {
-    font-size: 0.7rem;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     margin-top: 2px;
 }
+
 .gem-compare-delta {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 6px;
+    gap: var(--t-2);
     min-width: 110px;
 }
+
 .gem-compare-delta-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 6px 10px;
-    border-radius: 8px;
-    background: rgba(0,0,0,0.20);
-    border: 1px solid rgba(255,255,255,0.06);
-    font-size: 0.8rem;
+    padding: var(--t-2) 10px;
+    border-radius: var(--radius-control);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
 }
+
 .gem-compare-delta-row strong {
-    color: #fff;
+    color: var(--text-main);
     font-variant-numeric: tabular-nums;
 }
-.gem-compare-delta-row.pos strong { color: #79e07f; }
-.gem-compare-delta-row.neg strong { color: #ff8a65; }
+
+.gem-compare-delta-row.pos strong { color: var(--success-ink); }
+.gem-compare-delta-row.neg strong { color: var(--danger-ink); }
+
 .gem-compare-delta-hint {
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: var(--t-fs-label);
     text-align: center;
-    padding: 8px 4px;
+    padding: var(--t-2) var(--t-1);
 }
 
 /* ===== Math expander ===== */
 .gem-math-expander {
-    background: rgba(0,0,0,0.18);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     padding: 0;
+    /* Collapsed, this is a secondary affordance; opening it restores it to
+       full weight. Opacity is the only thing that moves. */
     opacity: 0.75;
-    transition: opacity 0.15s;
+    transition: opacity var(--dur-fast) var(--t-ease);
 }
+
 .gem-math-expander[open] {
     opacity: 1;
 }
+
 .gem-math-expander summary {
-    padding: 8px 12px;
+    padding: var(--t-2) var(--t-3);
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 0.78rem;
+    font-size: var(--t-fs-label);
     font-weight: 600;
     list-style: none;
     user-select: none;
 }
+
 .gem-math-expander summary::-webkit-details-marker { display: none; }
+
 .gem-math-expander summary i {
-    margin-right: 6px;
-    color: var(--accent-blue);
-    opacity: 0.65;
+    margin-right: var(--t-2);
+    color: var(--text-muted);
+    font-size: var(--icon-optical);
 }
+
 .gem-math-expander summary:hover {
     color: var(--text-main);
 }
+
+/* The derivation lines are aligned figures, so they take the numeric face —
+   the app's one monospace, not a second one imported for the look of it. */
 .gem-math-lines {
     list-style: none;
     margin: 0;
-    padding: 6px 12px 12px;
+    padding: var(--t-2) var(--t-3) var(--t-3);
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    font-size: 0.78rem;
+    gap: var(--t-2);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     line-height: 1.5;
-    font-family: 'JetBrains Mono', 'Consolas', monospace;
+    font-family: var(--font-numeric);
 }
+
 .gem-math-lines li:first-child {
     color: var(--text-main);
     font-family: inherit;
+}
+
+/* ---- Keyboard focus ----
+   Every control in this view is reachable by tab and none of them drew a ring
+   before. One treatment, matching the rest of the app. */
+.mode-tab-btn:focus-visible,
+.evaluator-input:focus-visible,
+.stepper-btn:focus-visible,
+.gem-history-clear-btn:focus-visible,
+.gem-history-restore:focus-visible,
+.gem-history-pin:focus-visible,
+.gem-history-delete:focus-visible,
+.gem-pin-btn:focus-visible,
+.gem-compare-actions button:focus-visible,
+.gem-math-expander summary:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 @media (max-width: 1280px) {
@@ -1063,5 +1278,21 @@
 
     .bottom-calc-btn {
         width: 100%;
+    }
+}
+
+/* State still changes under reduced motion, it just stops easing into place. */
+@media (prefers-reduced-motion: reduce) {
+    .mode-tab-btn,
+    .evaluator-input,
+    .stepper-btn,
+    .gem-history-clear-btn,
+    .gem-history-item,
+    .gem-history-pin,
+    .gem-history-delete,
+    .gem-pin-btn,
+    .gem-compare-actions button,
+    .gem-math-expander {
+        transition: none;
     }
 }

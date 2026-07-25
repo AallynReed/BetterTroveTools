@@ -1,45 +1,61 @@
 @import url('./allies.css');
 
+/* Same field box as every other codex search input (see allies.css) — restated
+   only because the ID differs per tab. */
 #recipe-search-input {
     width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color, #444c5e);
-    border-radius: 8px;
-    padding: 15px 15px 15px 45px;
-    color: #fff;
-    font-size: 1.1em;
-    transition: all 0.2s ease;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    /* The 32px left inset is optical: it clears the absolutely positioned
+       `.search-icon`. */
+    padding: 9px 10px 9px var(--t-6);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
+}
+
+#recipe-search-input::placeholder {
+    color: var(--text-placeholder);
 }
 
 #recipe-search-input:focus {
     outline: none;
-    border-color: #ff9800;
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    /* Focus is the border going accent; the amber halo it replaced was both a
+       hardcoded accent and a resting shadow. */
+    border-color: var(--accent-blue);
+}
+
+/* An ID-level `outline: none` outranks the app-wide focus-visible floor in
+   style.css, so the keyboard ring is restated here. */
+#recipe-search-input:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 #recipes-vue-app .custom-select-trigger {
-    height: 42px;
-    min-height: 42px;
-    padding: 10px 12px;
-    border-radius: 8px;
+    height: var(--control-height);
+    min-height: var(--control-height);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
 }
 
 .recipe-card .ally-body {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    /* Tighter than the ally tile's 12px: recipe bodies stack more, shorter rows. */
+    gap: var(--t-2);
 }
 
 .recipe-output-path {
-    font-size: 0.82rem;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     word-break: break-word;
 }
 
 .recipe-output-count {
-    margin-top: 6px;
-    font-size: 0.76rem;
+    margin-top: var(--t-1);
+    font-size: var(--t-fs-label);
     color: var(--accent-blue);
     font-weight: 700;
 }
@@ -47,41 +63,47 @@
 .recipe-chip-group {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .recipe-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(94, 198, 255, 0.14);
-    border: 1px solid rgba(94, 198, 255, 0.22);
+    gap: var(--t-1);
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(var(--accent-rgb), 0.14);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
     color: var(--text-main);
-    font-size: 0.78rem;
+    /* Label, not micro: these chips carry mixed-case ingredient names, not an
+       uppercase eyebrow. */
+    font-size: var(--t-fs-label);
     line-height: 1.2;
 }
 
+/* "Secondary ingredient" is not a warning, and the amber here was inventing a
+   fifth semantic. Neutral raised keeps the distinction from the accent-tinted
+   primaries without claiming a meaning the colour doesn't have. */
 .recipe-chip-group-secondary .recipe-chip,
 .recipe-chip-secondary {
-    background: rgba(255, 213, 79, 0.12);
-    border-color: rgba(255, 213, 79, 0.2);
+    background: var(--bg-hover);
+    border-color: var(--border-color);
 }
 
 .recipe-chip-count {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    /* Fitted to the chip's cap height, not a spacing step. */
     min-width: 22px;
     height: 22px;
-    padding: 0 6px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
+    padding: 0 var(--t-1);
+    border-radius: var(--radius-pill);
+    background: var(--bg-hover);
     font-weight: 700;
 }
 
 .item-footer {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--t-2);
 }

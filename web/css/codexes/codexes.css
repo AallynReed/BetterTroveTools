@@ -3,12 +3,12 @@
 .codexes-install-picker {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
     min-width: min(720px, 100%);
 }
 
 .codexes-install-picker label {
-    font-size: 13px;
+    font-size: var(--t-fs-label);
     font-weight: 700;
     color: var(--text-muted);
 }
@@ -16,7 +16,7 @@
 .codexes-install-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--control-gap);
 }
 
 #codexes-vue-app .tabs-container {
@@ -31,20 +31,24 @@
     display: block;
 }
 
+/* Skeletons for the not-yet-mounted tab. They exist to reserve exactly the box
+   the real control will occupy, so every value here has to be the control's
+   value — one height, one radius, one field fill — or the tab jumps when Vue
+   mounts. */
 .codex-shell-input-wrap {
-    min-height: 46px;
+    min-height: var(--control-height);
 }
 
 .codex-shell-input,
 .codex-shell-select {
     width: 100%;
-    min-height: 42px;
+    min-height: var(--control-height);
     display: flex;
     align-items: center;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
+    padding: 9px 10px;
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
     color: var(--text-muted);
     box-sizing: border-box;
 }

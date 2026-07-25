@@ -51,7 +51,7 @@
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
-        <div v-if="showOnboardingTips" class="onboarding-tour" style="margin-top: 10px;">
+        <div v-if="showOnboardingTips" class="onboarding-tour" style="margin-top: var(--t-3);">
             <div class="onboarding-tour-header">
                 <span class="onboarding-tour-title"><i class="fa-solid fa-graduation-cap"></i> {{ t('allies.quick_tour_ally_codex_search') }}</span>
                 <button class="onboarding-dismiss" @click="dismissOnboardingTips">{{ t('common.skip_tour') }}</button>
@@ -110,7 +110,7 @@
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(ally.name))"></div>
                     <div class="ally-category">{{ t(ally.category || 'Unknown') }}</div>
-                    <div v-if="ally.designer" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
+                    <div v-if="ally.designer" style="font-size: var(--t-fs-label); color: var(--text-muted); margin-top: var(--t-1);">
                         <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(ally.designer)"></span>
                     </div>
                 </div>
@@ -128,8 +128,11 @@
             </div>
             
             <div v-if="ally.mastery || ally.mastery_geode || ally.powerrank" class="ally-footer">
-                <span v-if="ally.powerrank !== ''" class="footer-stat"><i class="fa-solid fa-bolt" style="color: #ffd54f;"></i> {{ t('allies.power_rank_val').replace('{val}', parseInt(ally.powerrank)) }}</span>
-                <span v-if="parseInt(ally.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('common.mastery_val').replace('{val}', parseInt(ally.mastery)) }}</span>
+                <span v-if="ally.powerrank !== ''" class="footer-stat"><i class="fa-solid fa-bolt" style="color: var(--warning);"></i> {{ t('allies.power_rank_val').replace('{val}', parseInt(ally.powerrank)) }}</span>
+                <span v-if="parseInt(ally.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: var(--warning);"></i> {{ t('common.mastery_val').replace('{val}', parseInt(ally.mastery)) }}</span>
+                <!-- #00bcd4 is the Geode track's own hue (game data, not a theme colour): it has to stay
+                     distinct from the amber Mastery crown whatever accent the user picks, so it cannot be
+                     a token. The same literal appears on the Geode gem in views/codexes/styles.html. -->
                 <span v-if="parseInt(ally.mastery_geode) > 0" class="footer-stat"><i class="fa-solid fa-gem" style="color: #00bcd4;"></i> {{ t('allies.geode_mastery_val').replace('{val}', parseInt(ally.mastery_geode)) }}</span>
             </div>
         </div>

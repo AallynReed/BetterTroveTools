@@ -100,13 +100,17 @@
                 </div>
                 <div class="ally-footer item-footer">
                     <span v-if="style.mastery != null" class="footer-stat">
-                        <i class="fa-solid fa-star" style="color:#ffd54f;"></i> {{ style.mastery }}
+                        <i class="fa-solid fa-star" style="color: var(--warning);"></i> {{ style.mastery }}
                     </span>
                     <span v-else class="footer-stat" style="opacity:.6;" :title="t('styles.mastery_review_only_hint')">
                         <i class="fa-solid fa-circle-question"></i> {{ t('styles.review_only') }}
                     </span>
+                    <!-- #00bcd4 is the Geode track's own hue (game data, not a theme colour): it has to stay
+                         distinct from the amber Mastery star whatever accent the user picks, so it cannot be
+                         a token. Was #7ad7ff here, which sat a few degrees off the default accent and read as
+                         a stray accent; unified with the Geode gem in views/codexes/allies.html. -->
                     <span v-if="style.mastery_geode != null" class="footer-stat" :title="t('styles.geode_mastery')">
-                        <i class="fa-solid fa-gem" style="color:#7ad7ff;"></i> {{ style.mastery_geode }}
+                        <i class="fa-solid fa-gem" style="color: #00bcd4;"></i> {{ style.mastery_geode }}
                     </span>
                 </div>
             </div>

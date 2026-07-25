@@ -42,11 +42,11 @@
             <div class="search-container" style="margin-top: 20px;">
                 <div style="position: relative; flex: 1; display: flex; align-items: center;">
                     <input type="text" id="tree-search" v-model="searchQuery" @input="debouncedSearch" :placeholder="t('file_manager.search_files_e_g_swf_dragon_ui')" />
-                    <button @click="clearSearch" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px;">&times;</button>
+                    <button @click="clearSearch" style="position: absolute; right: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: var(--t-fs-h2);">&times;</button>
                 </div>
                 <button class="secondary-btn" @click="prevSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-up"></i></button>
                 <button class="secondary-btn" @click="nextSearchMatch" :disabled="!isSearching"><i class="fa-solid fa-arrow-down"></i></button>
-                <span class="file-meta" style="font-size: 12px; color: var(--accent-blue); font-weight: bold;">{{ searchCountText }}</span>
+                <span class="file-meta" style="font-size: var(--t-fs-label); color: var(--accent-blue); font-weight: bold;">{{ searchCountText }}</span>
             </div>
             <div class="search-helper-row">
                 <span>{{ t('file_manager.search_starts_after_4_characters_and_aut_92af6e') }}</span>
@@ -172,7 +172,7 @@
                     </div>
                 </div>
 
-                <div v-show="showTrackerAdvanced" class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: 6px; border: 1px solid var(--border-color); width: max-content;">
+                <div v-show="showTrackerAdvanced" class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 15px; background: rgba(0,0,0,0.2); padding: 10px 15px; border-radius: var(--radius-control); border: 1px solid var(--border-color); width: max-content;">
                     <input type="checkbox" v-model="runCatalogMode" id="tracker-catalog-toggle" style="width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer;">
                     <label for="tracker-catalog-toggle" style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                         <span>{{ t('file_manager.run_catalog_mode') }}</span>
@@ -180,9 +180,9 @@
                     </label>
                 </div>
                 <div class="placeholder-box" style="margin-top: 20px; padding: 30px 20px;">
-                    <i class="fa-solid fa-circle-info" style="font-size: 24px; color: var(--text-muted); margin-bottom: 10px;"></i>
+                    <i class="fa-solid fa-circle-info" style="font-size: var(--t-fs-title); color: var(--text-muted); margin-bottom: 10px;"></i>
                     <div class="tracker-status-kicker">{{ trackerNextAction }}</div>
-                    <p :style="{ color: trackerStatusColor, fontWeight: 'bold', fontSize: '16px' }">{{ trackerStatus.text }}</p>
+                    <p :style="{ color: trackerStatusColor, fontWeight: 'bold', fontSize: 'var(--t-fs-h2)' }">{{ trackerStatus.text }}</p>
                     <p class="help-text" style="margin-top: 5px; white-space: pre-wrap;">{{ trackerStatus.subText }}</p>
                     
                     <div v-show="trackerStatus.state !== 'empty'" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
@@ -192,7 +192,7 @@
                             <template v-else><i class="fa-solid fa-database"></i> {{ t('file_manager.build_baseline_cache') }}</template>
                         </button>
                         
-                        <button v-show="trackerStatus.state === 'baseline'" @click="scanUpdates" class="primary-btn" :disabled="isAnyOperationRunning" style="background-color: #28a745;">
+                        <button v-show="trackerStatus.state === 'baseline'" @click="scanUpdates" class="primary-btn" :disabled="isAnyOperationRunning" style="background-color: var(--success);">
                             <template v-if="trackerStatus.isScanning"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('file_manager.scanning_for_updates') }}</template>
                             <template v-else><i class="fa-solid fa-satellite-dish"></i> {{ t('file_manager.scan_extract_updates') }}</template>
                         </button>
@@ -208,7 +208,7 @@
 
     <div class="image-modal" :class="{ active: modals.addTracker }" style="display: flex;" v-show="modals.addTracker">
     <div class="tool-panel" style="width: 450px; position: relative; padding-top: 35px;">
-            <span @click="modals.addTracker = false" class="close-modal" style="top: 10px; right: 15px; font-size: 24px;" :style="isAnyOperationRunning ? 'pointer-events: none; opacity: 0.5;' : ''">&times;</span>
+            <span @click="modals.addTracker = false" class="close-modal" style="top: 10px; right: 15px; font-size: var(--t-fs-title);" :style="isAnyOperationRunning ? 'pointer-events: none; opacity: 0.5;' : ''">&times;</span>
             <h3 style="margin-top: 0; margin-bottom: 20px;">{{ t('file_manager.add_extraction_path') }}</h3>
         <div class="form-group">
                 <label>{{ t('file_manager.name') }}</label>
@@ -240,8 +240,8 @@
             <span class="progress-percent">{{ progress.percent }}%</span>
         </div>
             <details style="width: 100%;">
-                <summary style="cursor: pointer; color: var(--text-muted); font-size: 12px;">{{ t('file_manager.details') }}</summary>
-                <div style="font-size: 12px; color: var(--text-main); display: grid; gap: 3px; margin-top: 6px;">
+                <summary style="cursor: pointer; color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('file_manager.details') }}</summary>
+                <div style="font-size: var(--t-fs-label); color: var(--text-main); display: grid; gap: 3px; margin-top: 6px;">
                     <span v-if="progress.status">{{ t('file_manager.status') }} {{ progress.status }}</span>
                     <span v-if="progress.elapsed">{{ t('file_manager.elapsed') }} {{ progress.elapsed }}</span>
                     <span v-if="progress.eta">{{ t('file_manager.eta') }} {{ progress.eta }}</span>

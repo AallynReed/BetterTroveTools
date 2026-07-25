@@ -1,18 +1,31 @@
+/* Modder Tools view.
+   View padding, header rhythm, .tool-panel padding/radius, control radius and
+   control height come from the CROSS-APP DENSITY LAYER in style.css — this view
+   is enrolled there, so the local copies are deliberately NOT set here. (They
+   used to be set twice, 32px then 22px in a "concise module pass", and both
+   lost to the !important layer anyway.) Everything else reads from the token
+   layer in style.css `:root`: the 4pt scale (--t-1..--t-6), the six type roles
+   (--t-fs-*), the three radii and the four semantic colours. */
+
 [v-cloak] {
     display: none !important;
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.modder-tools-container { padding: 32px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; animation: fadeIn 0.3s ease; }
-.modder-tools-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
+.modder-tools-container { width: 100%; max-width: none; margin: 0; box-sizing: border-box; animation: fadeIn var(--dur) var(--t-ease); }
+.modder-tools-header { border-bottom: 1px solid var(--border-color); }
 
-.tabs-container { display: flex; flex-direction: column; gap: 20px; }
-.tab-buttons { display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-.tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+.tabs-container { display: flex; flex-direction: column; gap: var(--t-4); }
+.tab-buttons { display: flex; gap: var(--control-gap); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+.tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: var(--t-fs-body); font-weight: 600; cursor: pointer; border-radius: var(--radius-control); transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease); display: flex; align-items: center; gap: var(--t-2); }
 .tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
-.tab-btn.active { background: var(--bg-panel); color: var(--accent-blue); border: 1px solid var(--border-color); border-bottom: 2px solid var(--accent-blue); }
-.tab-btn .beta-label { margin-left: 2px; }
+/* Selection used to be a 2px accent underline. Borders in this system are
+   always 1px, so "current" is carried the way the sidebar carries it: an accent
+   tint plus an accent border on all four sides. */
+.tab-btn.active { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-blue); border-color: rgba(var(--accent-rgb), 0.45); }
+.tab-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.tab-btn .beta-label { margin-left: var(--t-1); }
 /* Third-party software: de-emphasized secondary tab. Pushed to the far right of
    the row (margin-left:auto) and rendered muted/icon-only so it reads as an
    "extra" rather than a core modding tool. */
@@ -20,28 +33,28 @@
     margin-left: auto;
     color: var(--text-muted);
     opacity: 0.6;
-    padding: 10px 12px;
+    padding: 10px var(--t-3);
 }
 .tab-buttons .tab-btn-muted:hover { opacity: 1; }
 .tab-buttons .tab-btn-muted.active { opacity: 1; }
 
-/* Online-management tabs (Mods / Modpacks). Stand out slightly from the local
-   tools with a faint accent tint + a left accent bar so they read as a distinct
-   "your online stuff" group, without being as loud as the active tab. */
+/* Online-management tabs (Mods / Modpacks). They read as a distinct "your
+   online stuff" group. That grouping used to be an inset 2px accent bar down
+   the left edge — a coloured edge stripe, which DESIGN.md bans outright — so it
+   is now carried by a faint accent tint plus an accent-tinted border on all
+   four sides, quieter than the active tab but unmistakably a set. */
 .tab-buttons .tab-btn-cloud {
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.10), rgba(var(--accent-rgb), 0.03));
-    box-shadow: inset 2px 0 0 rgba(var(--accent-rgb), 0.55);
+    background: rgba(var(--accent-rgb), 0.07);
+    border-color: rgba(var(--accent-rgb), 0.3);
     color: var(--text-main);
 }
 .tab-buttons .tab-btn-cloud:hover {
-    background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.06));
+    background: rgba(var(--accent-rgb), 0.12);
 }
 .tab-buttons .tab-btn-cloud.active {
-    background: var(--bg-panel);
+    background: rgba(var(--accent-rgb), 0.14);
     color: var(--accent-blue);
-    border: 1px solid var(--border-color);
-    border-bottom: 2px solid var(--accent-blue);
-    box-shadow: inset 2px 0 0 var(--accent-blue);
+    border-color: rgba(var(--accent-rgb), 0.45);
 }
 
 /* Signed-out pseudo-tab — inviting but quiet; a dashed accent border signals
@@ -57,87 +70,106 @@
 }
 .tab-btn:hover .beta-label,
 .tab-btn.active .beta-label {
-    border-color: rgba(255, 184, 77, 0.4);
-    background: linear-gradient(180deg, rgba(255, 184, 77, 0.26), rgba(255, 184, 77, 0.12));
-    color: #ffe4ae;
+    border-color: rgba(var(--beta-rgb), 0.4);
+    background: linear-gradient(180deg, rgba(var(--beta-rgb), 0.26), rgba(var(--beta-rgb), 0.12));
+    color: var(--beta);
 }
-.tab-content { display: none; animation: fadeIn 0.2s ease; }
+.tab-content { display: none; animation: fadeIn var(--dur) var(--t-ease); }
 .tab-content.active { display: block; }
 
-.tool-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 25px; }
-.tool-panel h3 { margin-bottom: 5px; color: var(--text-main); }
-.help-text { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
-.edit-tmod-layout { display: flex; gap: 30px; align-items: flex-start; }
-.edit-tmod-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
-.edit-tmod-actions { display: inline-flex; gap: 8px; align-items: center; }
-.form-label-with-action { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; }
+.tool-panel { background: var(--bg-panel); border: 1px solid var(--border-color); }
+.tool-panel h3 { margin-bottom: var(--t-1); color: var(--text-main); }
+.help-text { color: var(--text-muted); font-size: var(--t-fs-label); margin-bottom: var(--t-4); }
+/* Column gap, not a control gap: the two halves are distinct groups, so they
+   sit a full surface gap apart rather than the 10px used inside a toolbar. */
+.edit-tmod-layout { display: flex; gap: var(--surface-gap); align-items: flex-start; }
+.edit-tmod-toolbar { display: flex; justify-content: space-between; align-items: center; gap: var(--t-3); margin-bottom: var(--t-3); }
+.edit-tmod-actions { display: inline-flex; gap: var(--t-2); align-items: center; }
+.form-label-with-action { display: flex !important; align-items: center; justify-content: space-between; gap: var(--control-gap); }
 .form-label-with-action .icon-btn-small { flex: 0 0 auto; }
 .edit-tmod-file-removed td { opacity: 0.55; text-decoration: line-through; }
 .edit-tmod-file-removed td:last-child { text-decoration: none; opacity: 1; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; margin-bottom: 8px; color: var(--text-main); font-size: 14px; font-weight: 500; }
-.form-group input[type="text"] { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; }
+.form-group { margin-bottom: var(--t-3); }
+.form-group label { display: block; margin-bottom: var(--t-1); color: var(--text-main); font-size: var(--t-fs-label); font-weight: 500; }
+.form-group input[type="text"] { width: 100%; padding: 10px var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none; transition: border-color var(--dur) var(--t-ease); }
 .form-group input[type="text"]:focus { border-color: var(--accent-blue); }
+.form-group input[type="text"]::placeholder { color: var(--text-placeholder); }
+/* The fields above kill their outline, so keyboard focus has to be given back
+   explicitly — a border tint alone is not a focus indicator. */
+.form-group input[type="text"]:focus-visible,
+textarea:focus-visible,
+select:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+/* Invalid state is carried by the border alone. The old zero-offset red halo
+   was a second 1px ring doing the same job at half the contrast. */
 .field-invalid,
 .field-invalid input:not(.select2-search__field),
 .field-invalid textarea,
 input.field-invalid,
 textarea.field-invalid {
-    border-color: #ff5555 !important;
-    box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.2) !important;
+    border-color: var(--danger) !important;
 }
 
 .field-invalid .custom-select-trigger,
 .field-invalid.custom-select-wrapper .custom-select-trigger {
-    border-color: #ff5555 !important;
-    box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.2) !important;
+    border-color: var(--danger) !important;
 }
 
 .field-invalid .select2-container--btt-dark .select2-selection,
 .field-invalid .select2-container .select2-selection {
-    border-color: #ff5555 !important;
-    box-shadow: 0 0 0 1px rgba(255, 85, 85, 0.2) !important;
+    border-color: var(--danger) !important;
 }
-.input-row { display: flex; gap: 10px; }
-textarea, select { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; font-family: inherit; resize: vertical; }
+.input-row { display: flex; }
+textarea, select { width: 100%; padding: 10px var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none; transition: border-color var(--dur) var(--t-ease); font-family: inherit; resize: vertical; }
 textarea:focus, select:focus { border-color: var(--accent-blue); }
+textarea::placeholder { color: var(--text-placeholder); }
 
-.execute-btn { width: 100%; margin-top: 10px; font-size: 16px; padding: 12px; display: flex; justify-content: center; gap: 8px; }
-.build-split-layout { display: flex; gap: 30px; align-items: flex-start; }
+.execute-btn { width: 100%; margin-top: var(--t-3); font-size: var(--t-fs-body); padding: var(--t-3); display: flex; justify-content: center; gap: var(--t-2); }
+.build-split-layout { display: flex; gap: var(--surface-gap); align-items: flex-start; }
 .build-left-col { flex: 0 0 250px; }
 .build-right-col { flex: 1; min-width: 0; }
-.form-row { display: flex; gap: 15px; }
+.form-row { display: flex; }
 
-.mod-preview-picker { position: relative; width: 100%; aspect-ratio: 400 / 230; background: var(--bg-dark); border: 2px dashed var(--border-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: border-color 0.2s; }
+/* Dropzone. The dashed rim was 2px; borders here are always 1px, and dashes
+   already read as "drop something in me" without the extra weight. */
+.mod-preview-picker { position: relative; width: 100%; aspect-ratio: 400 / 230; background: var(--bg-dark); border: 1px dashed var(--border-color); border-radius: var(--radius-control); overflow: hidden; cursor: pointer; transition: border-color var(--dur) var(--t-ease); }
 .mod-preview-picker:hover { border-color: var(--accent-blue); }
 .mod-preview-picker img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.preview-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; opacity: 0; transition: opacity 0.2s; }
+/* A wash over the user's image, not app chrome — so it stays a plain black
+   scrim rather than a surface token. */
+.preview-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: var(--text-main); padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--t-1); opacity: 0; transition: opacity var(--dur) var(--t-ease); }
 .mod-preview-picker:hover .preview-overlay { opacity: 1; }
 
-.icon-btn-small { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; transition: color 0.2s; }
+.icon-btn-small { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: var(--t-1); transition: color var(--dur) var(--t-ease); }
 .icon-btn-small:hover { color: var(--text-main); }
-.icon-btn-small.danger:hover { color: #ff5555; }
+/* Red as text needs the lighter ink: --danger is 4.4:1 on panel and fails AA. */
+.icon-btn-small.danger:hover { color: var(--danger-ink); }
 #build-files-table tbody tr:hover { background: var(--bg-hover); }
-#build-files-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
+#build-files-table td { padding: var(--t-2) var(--t-3); border-bottom: 1px solid var(--border-color); }
 
-.software-badge { background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease; text-decoration: none; cursor: pointer; }
-.software-badge i { color: var(--accent-blue); }
-.software-badge:hover { border-color: var(--accent-blue); background-color: var(--bg-hover); color: #ffffff; transform: translateY(-2px); }
+.software-badge { background-color: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); padding: var(--t-2) var(--t-3); border-radius: var(--radius-control); font-size: var(--t-fs-body); font-weight: 500; display: inline-flex; align-items: center; gap: var(--t-2); transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease); text-decoration: none; cursor: pointer; }
+/* Accent means "primary action / current / live". A row of third-party links is
+   none of those, so the glyphs stay structural. */
+.software-badge i { color: var(--text-muted); }
+.software-badge:hover { border-color: var(--accent-blue); background-color: var(--bg-hover); color: var(--text-main); transform: translateY(-1px); }
 
-.sw-price-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; margin-left: auto; letter-spacing: 0.5px; }
-.sw-price-tag.free { background-color: rgba(76, 175, 80, 0.15); color: #81c784; border: 1px solid rgba(76, 175, 80, 0.3); }
-.sw-price-tag.paid { background-color: rgba(255, 152, 0, 0.15); color: #ffb74d; border: 1px solid rgba(255, 152, 0, 0.3); }
-.software-badge:hover .sw-price-tag.free { background-color: #4CAF50; color: white; }
-.software-badge:hover .sw-price-tag.paid { background-color: #ff9800; color: white; }
+.sw-price-tag { font-size: var(--t-fs-micro); font-weight: 800; text-transform: uppercase; padding: var(--t-1) var(--t-2); border-radius: var(--radius-pill); margin-left: auto; letter-spacing: 1px; }
+.sw-price-tag.free { background-color: rgba(var(--success-rgb), 0.15); color: var(--success-ink); border: 1px solid rgba(var(--success-rgb), 0.3); }
+.sw-price-tag.paid { background-color: rgba(var(--warning-rgb), 0.15); color: var(--warning-ink); border: 1px solid rgba(var(--warning-rgb), 0.3); }
+/* On hover the tag goes solid. White on a semantic fill is ~1.8:1, so the ink
+   flips dark the same way --accent-ink does on the accent. */
+.software-badge:hover .sw-price-tag.free { background-color: var(--success); color: var(--bg-dark); }
+.software-badge:hover .sw-price-tag.paid { background-color: var(--warning); color: var(--bg-dark); }
 
 .remove-preview-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
+    top: var(--t-2);
+    right: var(--t-2);
     background: rgba(0, 0, 0, 0.65);
-    color: white;
+    color: var(--text-main);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-control);
+    /* Optical: a 26px square keeps the button clear of the 400x230 thumbnail's
+       corner without covering the image. Not a scale value. */
     width: 26px;
     height: 26px;
     display: flex;
@@ -145,11 +177,11 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     justify-content: center;
     cursor: pointer;
     z-index: 5;
-    transition: background 0.2s, transform 0.1s;
+    transition: background-color var(--dur) var(--t-ease), transform var(--dur-fast) var(--t-ease);
 }
 
 .remove-preview-btn:hover {
-    background: #ff5555;
+    background: var(--danger);
     transform: scale(1.1);
 }
 
@@ -161,38 +193,8 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 }
 
 @media (max-width: 900px) {
-    .modder-tools-container { padding: 20px; }
     .tab-buttons { flex-wrap: wrap; }
     .input-row { flex-wrap: wrap; }
-}
-
-/* Concise module pass */
-.modder-tools-container {
-    padding: 22px;
-}
-
-.modder-tools-header {
-    margin-bottom: 18px;
-    padding-bottom: 12px;
-}
-
-.tabs-container {
-    gap: 14px;
-}
-
-.tab-buttons,
-.form-row,
-.input-row,
-.build-split-layout {
-    gap: 10px;
-}
-
-.tool-panel {
-    padding: 18px;
-}
-
-.form-group {
-    margin-bottom: 14px;
 }
 
 #modder-tools-file-manager-host .file-manager-container {
@@ -203,27 +205,32 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     gap: 0;
 }
 
+/* ---- QB (voxel) editor ---- */
+
 .qb-editor-panel {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--surface-gap);
 }
 
+/* Warning banner: one amber, from the semantic set. The old fill mixed beta
+   amber with a second orange, which reads as a fifth semantic. */
 .qb-warning-banner {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 184, 77, 0.45);
-    background: linear-gradient(180deg, rgba(255, 184, 77, 0.18), rgba(255, 120, 50, 0.12));
-    color: #ffe7bf;
-    font-size: 13px;
-    line-height: 1.45;
+    gap: var(--control-gap);
+    padding: var(--t-3) var(--t-4);
+    border-radius: var(--radius-surface);
+    border: 1px solid rgba(var(--warning-rgb), 0.45);
+    background: linear-gradient(180deg, rgba(var(--warning-rgb), 0.18), rgba(var(--warning-rgb), 0.08));
+    color: var(--warning-ink);
+    font-size: var(--t-fs-body);
+    line-height: 1.5;
 }
 
 .qb-warning-banner i {
-    color: #ffb84d;
+    color: var(--warning);
+    /* Optical: drops the glyph onto the first line's baseline. */
     margin-top: 2px;
     flex: 0 0 auto;
 }
@@ -233,7 +240,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-workspace-top,
 .qb-slice-toolbar {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -243,14 +250,14 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-paint-actions,
 .qb-slice-controls {
     display: flex;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
     flex-wrap: wrap;
 }
 
 .qb-summary-bar {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     justify-content: space-between;
     flex-wrap: wrap;
     align-items: stretch;
@@ -261,16 +268,17 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     flex: 1 1 150px;
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: var(--radius-control);
+    padding: 10px var(--t-3);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--t-1);
 }
 
+/* Unsaved state is a border colour change. The zero-offset inset halo it used
+   to carry was a second ring saying the same thing. */
 .qb-summary-status.dirty {
-    border-color: rgba(255, 182, 72, 0.55);
-    box-shadow: inset 0 0 0 1px rgba(255, 182, 72, 0.18);
+    border-color: rgba(var(--warning-rgb), 0.55);
 }
 
 .qb-summary-label,
@@ -280,7 +288,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-hover-readout span,
 .qb-slice-table-header span {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .qb-summary-value {
@@ -292,13 +300,15 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-settings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 12px;
+    gap: var(--t-3);
+    /* Short cards hug their content instead of stretching into empty boxes. */
+    align-items: start;
 }
 
 .qb-collapsible-card {
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
 }
 
 .qb-collapsible-summary {
@@ -306,9 +316,9 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--t-3);
     cursor: pointer;
-    padding: 12px 14px;
+    padding: var(--t-3) var(--t-4);
 }
 
 .qb-collapsible-summary::-webkit-details-marker {
@@ -318,17 +328,17 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-collapsible-summary strong {
     color: var(--text-main);
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
 }
 
 .qb-collapsible-summary span {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .qb-collapsible-summary i {
     color: var(--text-muted);
-    transition: transform 0.18s ease;
+    transition: transform var(--dur) var(--t-ease);
 }
 
 .qb-collapsible-card[open] .qb-collapsible-summary i {
@@ -336,84 +346,87 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 }
 
 .qb-collapsible-body {
-    padding: 0 14px 14px;
+    padding: 0 var(--t-4) var(--t-4);
 }
 
 .qb-meta-card .qb-collapsible-body {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .qb-toggle-card {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: flex-start;
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
+    border-radius: var(--radius-control);
+    padding: var(--t-3);
     cursor: pointer;
 }
 
 .qb-toggle-card input {
-    margin-top: 4px;
+    margin-top: var(--t-1);
 }
 
 .qb-toggle-card strong {
     color: var(--text-main);
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--t-1);
 }
 
 .qb-toggle-card span {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     display: block;
 }
 
 .qb-decode-card {
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 12px;
+    border-radius: var(--radius-surface);
+    padding: var(--t-3);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .qb-decode-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 10px;
+    gap: var(--t-3);
+    align-items: start;
 }
 
+/* These tiles sit inside a page-graphite card, so the resting surface above it
+   is panel graphite — not a white overlay tint inventing a fourth grey. */
 .qb-decode-pill {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    padding: 10px var(--t-3);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--t-1);
     min-width: 0;
 }
 
 .qb-layout {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
-    gap: 16px;
+    gap: var(--surface-gap);
     align-items: start;
 }
 
 .qb-matrix-sidebar {
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--control-gap);
     position: sticky;
     top: 0;
     min-width: 0;
@@ -422,38 +435,38 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-blueprint-panel {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding-bottom: 10px;
-    margin-bottom: 4px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    gap: var(--t-2);
+    padding-bottom: var(--control-gap);
+    margin-bottom: var(--t-1);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .qb-sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .qb-sidebar-header h4 {
-    margin: 0 0 4px 0;
+    margin: 0 0 var(--t-1) 0;
     color: var(--text-main);
 }
 
 .qb-matrix-item {
     width: 100%;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    border-radius: 8px;
-    padding: 10px 12px;
+    border-radius: var(--radius-control);
+    padding: 10px var(--t-3);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: var(--t-3);
     cursor: pointer;
     text-align: left;
-    transition: border-color 0.2s ease, transform 0.15s ease, background 0.2s ease;
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease), transform var(--dur-fast) var(--t-ease);
 }
 
 .qb-matrix-item:hover {
@@ -463,30 +476,30 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 
 .qb-matrix-item.active {
     border-color: var(--accent-blue);
-    background: rgba(94, 198, 255, 0.08);
+    background: rgba(var(--accent-rgb), 0.08);
 }
 
 .qb-asset-item,
 .qb-asset-group {
     width: 100%;
-    min-height: 40px;
-    border-radius: 8px;
+    min-height: var(--control-height);
+    border-radius: var(--radius-control);
     text-align: left;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--control-gap);
     min-width: 0;
     overflow: hidden;
 }
 
 .qb-asset-item {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
     color: var(--text-main);
     cursor: pointer;
-    padding: 9px 12px;
-    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    padding: 9px var(--t-3);
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease), transform var(--dur-fast) var(--t-ease);
 }
 
 .qb-asset-item:hover {
@@ -496,24 +509,25 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 
 .qb-asset-item.active {
     border-color: var(--accent-blue);
-    background: rgba(94, 198, 255, 0.08);
+    background: rgba(var(--accent-rgb), 0.08);
 }
 
 .qb-asset-group {
     color: var(--text-muted);
-    padding: 7px 12px;
+    padding: var(--t-2) var(--t-3);
     flex-direction: column;
     align-items: flex-start;
 }
 
+/* "no matrices in this asset" — a failure note, so it reads in danger ink. */
 .qb-asset-group small {
-    color: #ff8b8b;
+    color: var(--danger-ink);
 }
 
 .qb-asset-item-label {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
     min-width: 0;
     max-width: 100%;
     flex: 1 1 auto;
@@ -534,7 +548,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--t-1);
 }
 
 .qb-matrix-item-main strong {
@@ -545,11 +559,12 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 }
 
 .qb-matrix-item-count {
+    /* Optical: wide enough that a 1- and a 3-digit count keep the same column. */
     min-width: 34px;
     text-align: center;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    background: var(--bg-hover);
     font-weight: 700;
 }
 
@@ -559,11 +574,11 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 
 .qb-empty-matrices,
 .qb-empty-state {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-panel);
     border: 1px dashed var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     color: var(--text-muted);
-    padding: 18px;
+    padding: var(--t-4);
     text-align: center;
 }
 
@@ -573,18 +588,20 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: var(--t-3);
 }
 
+/* The empty-state mark is a hero-scale glyph, so it takes the display step
+   rather than a 34px one-off. */
 .qb-empty-state i {
-    font-size: 34px;
+    font-size: var(--t-fs-display);
     color: var(--accent-blue);
 }
 
 .qb-editor-workspace {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--surface-gap);
     min-width: 0;
 }
 
@@ -595,8 +612,8 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-slice-table-card {
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 14px;
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
 }
 
 .qb-matrix-form,
@@ -609,7 +626,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     display: grid;
     grid-template-columns: 1fr;
     align-items: start;
-    gap: 12px;
+    gap: var(--t-3);
 }
 
 .qb-matrix-apply-wrap {
@@ -619,14 +636,14 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-paint-panel {
     display: flex;
     flex-direction: column;
-    margin-top: 4px;
+    margin-top: var(--t-1);
 }
 
 .qb-paint-panel .qb-collapsible-body,
 .qb-matrix-form .qb-collapsible-body {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--control-gap);
 }
 
 .qb-paint-panel .form-group,
@@ -635,18 +652,18 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 }
 
 .qb-attachment-card {
-    margin-top: 2px;
-    padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: var(--t-1);
+    padding-top: var(--control-gap);
+    border-top: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .qb-attachment-header,
 .qb-attachment-actions {
     display: flex;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -656,31 +673,36 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     color: var(--text-main);
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
+/* Magenta is data, not styling: it is the exact voxel colour the game viewers
+   treat as the attachment point, so it must not follow the accent or a
+   semantic. The inner white rim keeps it visible on any background. */
 .qb-attachment-swatch {
     width: 12px;
     height: 12px;
-    border-radius: 3px;
+    border-radius: var(--radius-circle);
     display: inline-block;
     background: #ff00ff;
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55) inset, 0 0 0 1px rgba(255, 0, 255, 0.18);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55) inset;
 }
 
 .qb-attachment-header span,
 .qb-attachment-meta {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
+/* Monospace is load-bearing here: this is an x, y, z coordinate readout that
+   must not jitter as the numbers change. */
 .qb-attachment-meta {
-    font-family: monospace;
+    font-family: var(--font-numeric);
 }
 
 .qb-attachment-note {
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     line-height: 1.4;
 }
 
@@ -696,101 +718,111 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 
 .qb-paint-row {
     display: flex;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
 }
 
+/* Colour inputs, the hex readout, the icon buttons and the inline clip select
+   all used a private 42px control height. They now sit on the app's --control-height,
+   which also lets the 50px tool rail column actually fit its buttons. */
 .qb-color-input {
+    /* Optical: wide enough to read as a swatch rather than a text field. */
     width: 56px;
     min-width: 56px;
-    height: 42px;
+    height: var(--control-height);
     padding: 0;
     border: none;
     background: transparent;
 }
 
 .qb-color-code {
-    min-height: 42px;
-    padding: 0 12px;
+    min-height: var(--control-height);
+    padding: 0 var(--t-3);
     display: flex;
     align-items: center;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-control);
+    background: var(--bg-hover);
     border: 1px solid var(--border-color);
-    font-family: monospace;
+    /* Fixed-width digits so the hex value doesn't reflow while painting. */
+    font-family: var(--font-numeric);
     color: var(--text-main);
 }
 
 .qb-export-render-btn {
     width: 100%;
-    margin-top: 10px;
+    margin-top: var(--t-3);
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .qb-material-presets {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: var(--t-2);
 }
 
 .qb-material-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.05);
+    gap: var(--t-2);
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    background: var(--bg-hover);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    font-size: 0.82rem;
+    font-size: var(--t-fs-label);
     cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    transition: background-color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
 }
 
 .qb-material-chip:hover {
-    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(var(--accent-rgb), 0.5);
 }
 
+/* Was var(--accent-color, #6b9bff) — that token does not exist, so this always
+   rendered the literal periwinkle fallback and stayed blue whatever accent the
+   user picked. */
 .qb-material-chip.active {
-    border-color: var(--accent-color, #6b9bff);
-    background: rgba(107, 155, 255, 0.18);
+    border-color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.18);
 }
 
+/* Colour swatches take the dot shape: the control radius on a 14px square reads
+   as a blob, and a swatch is the same object as a status dot. */
 .qb-material-swatch {
     width: 14px;
     height: 14px;
-    border-radius: 3px;
-    border: 1px solid rgba(0, 0, 0, 0.35);
+    border-radius: var(--radius-circle);
+    border: 1px solid var(--border-color);
     flex: 0 0 auto;
 }
 
 .qb-readonly-note {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border-radius: 6px;
-    background: rgba(107, 155, 255, 0.12);
-    border: 1px solid rgba(107, 155, 255, 0.35);
+    gap: var(--t-2);
+    padding: var(--t-2) 10px;
+    border-radius: var(--radius-control);
+    background: rgba(var(--accent-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-rgb), 0.35);
     color: var(--text-main);
-    font-size: 0.82rem;
+    font-size: var(--t-fs-label);
 }
 
 .qb-slice-toolbar {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 12px 14px;
+    border-radius: var(--radius-surface);
+    padding: var(--t-3) var(--t-4);
 }
 
 .qb-slice-readout {
     min-width: 120px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--t-1);
 }
 
 .qb-slice-readout strong,
@@ -800,8 +832,8 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 }
 
 .qb-canvas-header > strong {
-    font-size: 18px;
-    line-height: 1.1;
+    font-size: var(--t-fs-h2);
+    line-height: 1.3;
 }
 
 .qb-slice-range {
@@ -812,27 +844,27 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     min-width: 170px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--t-2);
 }
 
 .qb-canvas-card,
 .qb-slice-table-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--t-3);
     min-width: 0;
 }
 
 .qb-viewport-card {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--t-3);
     min-width: 0;
 }
 
 .qb-display-toolbar {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -840,7 +872,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 
 .qb-view-mode-toggle {
     display: inline-flex;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
     flex-wrap: wrap;
 }
@@ -857,7 +889,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-canvas-header,
 .qb-slice-table-header {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
@@ -867,14 +899,14 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: var(--control-gap);
     flex-wrap: wrap;
 }
 
 .qb-viewport-header-inline > strong,
 .qb-viewport-header-inline > span {
     line-height: 1;
-    min-height: 42px;
+    min-height: var(--control-height);
     display: inline-flex;
     align-items: center;
 }
@@ -883,33 +915,34 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 2px;
+    gap: var(--t-1);
     text-align: right;
 }
 
+/* Live cursor coordinates — monospace stops the readout twitching per pixel. */
 .qb-hover-readout strong {
     color: var(--text-main);
-    font-family: monospace;
+    font-family: var(--font-numeric);
 }
 
 .qb-tool-buttons {
     display: flex;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
     flex-wrap: wrap;
 }
 
 .qb-tool-btn {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--bg-hover);
     color: var(--text-main);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 9px 12px;
+    border-radius: var(--radius-control);
+    padding: 9px var(--t-3);
     cursor: pointer;
     display: inline-flex;
-    gap: 8px;
+    gap: var(--t-2);
     align-items: center;
-    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease), transform var(--dur-fast) var(--t-ease);
 }
 
 .qb-tool-btn:hover {
@@ -917,23 +950,29 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     transform: translateY(-1px);
 }
 
+.qb-tool-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+/* An accent tint, not an accent fill — so the label keeps the normal ink. */
 .qb-tool-btn.active {
-    background: rgba(94, 198, 255, 0.14);
+    background: rgba(var(--accent-rgb), 0.14);
     border-color: var(--accent-blue);
-    color: #ffffff;
+    color: var(--text-main);
 }
 
 .qb-tool-icon-btn {
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
+    width: var(--control-height);
+    min-width: var(--control-height);
+    height: var(--control-height);
     padding: 0;
     justify-content: center;
 }
 
 .qb-tool-settings {
     display: flex;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: flex-end;
     flex-wrap: wrap;
 }
@@ -943,7 +982,7 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     min-width: 150px;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .qb-inline-clip label {
@@ -951,12 +990,12 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     align-items: center;
     margin-bottom: 0;
     white-space: nowrap;
-    min-height: 42px;
+    min-height: var(--control-height);
 }
 
 .qb-inline-clip select {
     min-width: 140px;
-    height: 42px;
+    height: var(--control-height);
     padding-top: 0;
     padding-bottom: 0;
 }
@@ -964,26 +1003,29 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-viewport-shell {
     display: grid;
     grid-template-columns: 50px minmax(0, 1fr);
-    gap: 12px;
+    gap: var(--t-3);
     align-items: stretch;
 }
 
 .qb-tool-rail {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 6px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.03);
+    gap: var(--t-2);
+    padding: var(--t-2);
+    border-radius: var(--radius-surface);
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
 }
 
+/* The two canvases are artboards, not app surfaces: qb_editor.js paints their
+   backing white before drawing voxels, so the wrapper matches it. Changing this
+   to a surface token would leave a white rectangle inside a dark frame. */
 .qb-viewport-wrap {
     width: 100%;
     height: 460px;
     overflow: hidden;
-    border-radius: 10px;
-    border: 1px solid rgba(24, 35, 54, 0.12);
+    border-radius: var(--radius-surface);
+    border: 1px solid var(--border-color);
     background: #ffffff;
 }
 
@@ -1001,10 +1043,10 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-canvas-wrap {
     overflow: auto;
     max-width: 100%;
-    border-radius: 8px;
-    border: 1px solid rgba(24, 35, 54, 0.12);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
     background: #ffffff;
-    padding: 12px;
+    padding: var(--t-3);
 }
 
 .qb-slice-canvas {
@@ -1016,14 +1058,14 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
 .qb-voxel-color-cell {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .qb-voxel-swatch {
     width: 14px;
     height: 14px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--radius-circle);
+    border: 1px solid var(--border-color);
 }
 
 @media (max-width: 1200px) {
@@ -1061,5 +1103,33 @@ textarea:focus, select:focus { border-color: var(--accent-blue); }
     .qb-tool-rail {
         flex-direction: row;
         flex-wrap: wrap;
+    }
+}
+
+/* Reduced motion: state still changes, it just stops moving. Tabs and rows keep
+   their colour and border feedback; only the travel and the fade are dropped. */
+@media (prefers-reduced-motion: reduce) {
+    .modder-tools-container,
+    .tab-content {
+        animation: none;
+    }
+
+    .tab-btn,
+    .software-badge,
+    .remove-preview-btn,
+    .qb-matrix-item,
+    .qb-asset-item,
+    .qb-tool-btn,
+    .qb-material-chip,
+    .qb-collapsible-summary i {
+        transition-duration: 0.01ms;
+    }
+
+    .software-badge:hover,
+    .qb-matrix-item:hover,
+    .qb-asset-item:hover,
+    .qb-tool-btn:hover,
+    .remove-preview-btn:hover {
+        transform: none;
     }
 }

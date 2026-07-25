@@ -40,27 +40,144 @@
     font-size-adjust: 100%;
 }
 
+/* =========================================================================
+   DESIGN TOKENS — the single source of truth. See DESIGN.md.
+
+   One value per concept. If a value you need isn't here, it is drift: either
+   it maps onto an existing token, or the token set is wrong and DESIGN.md
+   changes with it. Do not introduce an in-between size, a fourth radius or a
+   second green in a view stylesheet.
+   ========================================================================= */
 :root {
     --app-font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font: var(--app-font);
+    /* Clocks, countdowns and hero numerals only — never as a "technical" costume. */
+    --font-numeric: 'Courier New', Courier, monospace;
     /* Android UI-size scale. 1 = default; set <1 (with root `zoom`) to shrink the
        UI. Full-height shell elements divide their vh by this so they still fill
        the screen once `zoom` scales them down. No-op everywhere it stays 1. */
     --ui-scale: 1;
-    --bg-dark: #121212;
-    --bg-panel: #1e1e1e;
-    --bg-hover: #2d2d30;
+
+    /* ---- Surfaces (DESIGN.md > Colors > Neutral) ------------------------ */
+    --bg-dark: #121212;    /* page + the inside of inset controls */
+    --bg-panel: #1e1e1e;   /* every resting surface — exactly one step up */
+    --bg-hover: #2d2d30;   /* "you can act on this", not "this is elevated" */
     --text-main: #e0e0e0;
-    --text-muted: #a3adc2;
+    --text-muted: #a3adc2; /* 7.4:1 on panel */
+    /* Placeholders sit inside page-graphite wells; --text-muted at 60% would
+       fail AA there, so placeholder is its own token at 5.2:1 on --bg-dark. */
+    --text-placeholder: #7d8798;
+    --border-color: #333333;
+
+    /* ---- Accent (DESIGN.md > The Borrowed Light Rule) -------------------
+       User-chosen at runtime from Settings; #5ec6ff is only the default.
+       NEVER write an accent literal — use var(--accent-blue) / rgba(var(--accent-rgb), a).
+       --accent-ink is the text colour that sits ON the accent; main.js recomputes
+       it per accent so a light accent gets dark ink and a dark accent gets white.
+       `color: white` on the accent is 1.9:1 with the default and is a bug. */
     --accent-blue: #5ec6ff;
     --accent-rgb: 94, 198, 255;
     --accent-hover: #0098ff;
-    --border-color: #333333;
+    --accent-ink: #06222f;
+
+    /* ---- Semantic status (DESIGN.md > The Four Semantics Rule) ----------
+       One green, one amber, one red, one beta amber. Status colour is meaning,
+       so it does NOT follow the accent. The *-ink variants are the on-dark text
+       tints: only danger needs one (#ef4444 is 4.4:1 on panel and fails AA as
+       text), but every semantic exposes one so call sites read the same way. */
+    --success: #4ade80;
+    --success-rgb: 74, 222, 128;
+    --success-ink: #4ade80;
+    --warning: #fbbf24;
+    --warning-rgb: 251, 191, 36;
+    --warning-ink: #fbbf24;
+    --danger: #ef4444;
+    --danger-rgb: 239, 68, 68;
+    --danger-ink: #f87171;
+    --beta: #ffd58a;
+    --beta-rgb: 255, 184, 77;
+
+    /* ---- Ink for third-party brand fills -------------------------------
+       A few surfaces are deliberately painted in someone else's brand colour
+       (Ko-fi, PayPal, Discord, YouTube, Twitch, Bilibili). Those hues are
+       fixed, so the text on them cannot be --text-main: #e0e0e0 measures
+       2.3:1 on Ko-fi red and 3.0:1 on YouTube red. Each brand fill picks the
+       one of these two that clears AA against it. */
+    --ink-on-dark-fill: #ffffff;
+    --ink-on-light-fill: #0d0d0d;
+
+    /* ---- Type scale — six roles (DESIGN.md > The Six Steps Rule) --------
+       No in-between sizes. 10.5px / 12.5px / 0.86em are drift, not nuance. */
+    --t-fs-display: 2.1rem;   /* 800 · lh 1   — hero numerals only */
+    --t-fs-title: 1.5rem;     /* 700 · lh 1.2 — page title, once per view */
+    --t-fs-h2: 1rem;          /* 600 · lh 1.3 — card + section titles */
+    --t-fs-body: 0.875rem;    /* 400 · lh 1.5 — copy, controls, table content */
+    --t-fs-label: 0.75rem;    /* 400 · lh 1.4 — field labels, meta */
+    --t-fs-micro: 0.625rem;   /* 800 · 1px tracking · uppercase — eyebrows, pills */
+    /* An icon glyph set beside text needs an optical trim to match its
+       x-height. That is one adjustment, not a seventh type role — so it gets
+       one value rather than the ad-hoc 0.85em/0.86em/0.88em/0.9em/0.92em spread. */
+    --icon-optical: 0.9em;
+
+    /* ---- Shape — three radii and one circle (DESIGN.md > Shapes) -------- */
+    --radius-control: 8px;    /* buttons, inputs, selects, textareas, inner rows */
+    --radius-surface: 10px;   /* cards, panels, modals, nav items */
+    --radius-pill: 999px;     /* pills, badges, chips, round floating buttons */
+    --radius-circle: 50%;     /* avatars and status dots only */
+
+    /* ---- Spacing — 4pt scale (DESIGN.md > Layout) ----------------------- */
+    --t-1: 4px;
+    --t-2: 8px;
+    --t-3: 12px;
+    --t-4: 16px;
+    --t-5: 24px;
+    --t-6: 32px;
+
+    /* ---- Density. Mirrors the CROSS-APP DENSITY LAYER further down so the
+       numbers are readable in one place; that block is what enforces them. */
+    --view-padding: 14px;
+    --surface-padding: 14px;
+    --surface-gap: 16px;
+    --control-gap: 10px;
+    --control-height: 34px;
+
+    /* ---- Elevation (DESIGN.md > The Floating-Only Rule) -----------------
+       Shadows mean "this floats above the page". A resting card has none. */
+    --shadow-floating: 0 12px 28px rgba(0, 0, 0, 0.32);
+    --shadow-modal: 0 18px 48px rgba(0, 0, 0, 0.5);
+    --modal-backdrop: rgba(0, 0, 0, 0.7);
+    --modal-blur: blur(8px);
+    --modal-padding: 24px;
+
+    /* ---- Motion. transform/opacity only, enumerated, 0.15-0.2s. --------- */
+    --t-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --dur-fast: 0.15s;
+    --dur: 0.2s;
+
+    /* ---- Floating chrome glass. Blur is the most expensive effect we have
+       and this app must stay fast on low-end hardware, so it is confined to
+       chrome that genuinely floats — never an in-view content panel. */
     --glass-top: rgba(255, 255, 255, 0.08);
     --glass-bottom: rgba(12, 16, 24, 0.42);
     --glass-border: rgba(255, 255, 255, 0.14);
     --glass-highlight: rgba(var(--accent-rgb), 0.2);
     --glass-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+
+    /* ---- Stacking — the whole ladder, bottom to top. Hand-written z-index
+       loses: the custom-select dropdowns sit at 200000, so a literal 1000/9999
+       modal renders underneath them. Read the order here, never invent a value.
+       Small local values (1-30) inside one component are fine and stay local. */
+    /* The donate row is deliberately NOT the user's accent: it marks a
+       different category of action and must stay recognisable whatever colour
+       the user picks. One name, so it can't become four scattered pinks. */
+    --donate-pink: #ff6f91;
+    --donate-pink-rgb: 255, 120, 160;
+
+    --z-shell: 100;             /* the sidebar rail, above view content */
+    --z-drawer-backdrop: 250;   /* <900px: scrim behind the nav drawer */
+    --z-drawer-topbar: 260;     /* <900px: fixed top bar */
+    --z-drawer: 300;            /* <900px: the off-canvas drawer itself */
+    --z-floating: 10040;        /* job-queue + network chrome, bottom-right */
     --z-dropdown: 200000;
     --z-dropdown-menu: 200001;
     --z-modal: 205000;
@@ -113,10 +230,15 @@ body.app-update-active #network-tracker-vue-app {
     overflow: hidden;
     background: radial-gradient(120% 100% at 0% 0%, rgba(var(--accent-rgb), 0.08), transparent 55%), var(--bg-panel);
     border-right: 1px solid var(--border-color);
-    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    /* The one sanctioned width animation in the app. Everywhere else a layout
+       property is animated it can become a transform; here it genuinely cannot
+       — the rail's width is what the content area flexes against, and a
+       scaleX() would squash the nav instead of moving the boundary. Disabled
+       under prefers-reduced-motion at the bottom of this file. */
+    transition: width 0.3s var(--t-ease);
     display: flex;
     flex-direction: column;
-    z-index: 100;
+    z-index: var(--z-shell);
 }
 
 .sidebar-nav-scroll {
@@ -150,19 +272,19 @@ body.app-update-active #network-tracker-vue-app {
     background: rgba(0,0,0,0.22);
     border: 1px solid rgba(255,255,255,0.09);
     color: var(--text-muted);
-    font-size: 18px;
+    font-size: var(--t-fs-h2);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     width: 38px;
     height: 38px;
-    border-radius: 10px;
-    transition: all 0.2s;
+    border-radius: var(--radius-surface);
+    transition: background-color var(--dur) var(--t-ease), background var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease), opacity var(--dur) var(--t-ease);
 }
 
 #burger-btn:hover {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.55);
     background: rgba(var(--accent-rgb), 0.14);
 }
@@ -178,17 +300,17 @@ body.app-update-active #network-tracker-vue-app {
 }
 
 .app-name-text {
-    font-size: 16px;
+    font-size: var(--t-fs-h2);
     font-weight: 700;
     letter-spacing: 0.3px;
     line-height: 1.1;
-    color: #f0f6ff;
+    color: var(--text-main);
     text-overflow: ellipsis;
     overflow: hidden;
 }
 
 .app-version-text {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     font-weight: 700;
     color: var(--text-muted);
     margin-top: 0;
@@ -202,9 +324,8 @@ body.app-update-active #network-tracker-vue-app {
     content: "";
     width: 6px;
     height: 6px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     background: rgba(var(--accent-rgb), 0.85);
-    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 }
 
 .app-beta-pill {
@@ -212,13 +333,13 @@ body.app-update-active #network-tracker-vue-app {
     align-items: center;
     justify-content: center;
     padding: 1px 6px;
-    border-radius: 999px;
-    font-size: 9px;
+    border-radius: var(--radius-pill);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
     letter-spacing: 0.6px;
-    color: #111;
-    background: #fbc02d;
-    border: 1px solid rgba(251, 192, 45, 0.5);
+    color: var(--beta);
+    background: rgba(var(--beta-rgb), 0.18);
+    border: 1px solid rgba(var(--beta-rgb), 0.4);
     text-transform: uppercase;
 }
 
@@ -260,7 +381,7 @@ body.app-update-active #network-tracker-vue-app {
 .menu-section-label {
     margin: 12px 10px 2px;
     padding: 0 6px;
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 800;
@@ -275,11 +396,11 @@ body.app-update-active #network-tracker-vue-app {
     color: var(--text-muted);
     padding: 10px 11px;
     text-align: left;
-    font-size: 14px;
+    font-size: var(--t-fs-body);
     font-weight: 600;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: background-color var(--dur) var(--t-ease), background var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease), opacity var(--dur) var(--t-ease);
     display: flex;
     align-items: center;
     gap: 9px;
@@ -296,9 +417,8 @@ body.app-update-active #network-tracker-vue-app {
 
 .nav-btn.active {
     background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.30), rgba(var(--accent-rgb), 0.14));
-    color: #ffffff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.28);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.24);
 }
 
 /* Support-the-project nav row — visually distinct from the other admin items
@@ -307,20 +427,19 @@ body.app-update-active #network-tracker-vue-app {
    accent (pink) regardless of the user's app theme color; the left rail hints at
    "this is a different category of action" without being loud. */
 .nav-btn.nav-btn-donate {
-    background: linear-gradient(180deg, rgba(255, 120, 160, 0.10), rgba(255, 120, 160, 0.04));
-    border-color: rgba(255, 120, 160, 0.28);
-    box-shadow: inset 3px 0 0 rgba(255, 120, 160, 0.65);
+    background: linear-gradient(180deg, rgba(var(--donate-pink-rgb), 0.10), rgba(var(--donate-pink-rgb), 0.04));
+    border-color: rgba(var(--donate-pink-rgb), 0.28);
 }
 .nav-btn.nav-btn-donate .nav-icon {
-    color: #ff6f91;
-    background: rgba(255, 120, 160, 0.16);
+    color: var(--donate-pink);
+    background: rgba(var(--donate-pink-rgb), 0.16);
 }
 .nav-btn.nav-btn-donate:hover {
-    background: linear-gradient(180deg, rgba(255, 120, 160, 0.18), rgba(255, 120, 160, 0.08));
-    border-color: rgba(255, 120, 160, 0.45);
+    background: linear-gradient(180deg, rgba(var(--donate-pink-rgb), 0.18), rgba(var(--donate-pink-rgb), 0.08));
+    border-color: rgba(var(--donate-pink-rgb), 0.45);
 }
 .nav-btn.nav-btn-donate:hover .nav-icon {
-    color: #ff8eab;
+    color: var(--donate-pink);
     transform: scale(1.05);
     transition: transform 0.2s, color 0.2s;
 }
@@ -330,7 +449,6 @@ body.app-update-active #network-tracker-vue-app {
     border-color: rgba(var(--accent-rgb), 0.38);
     color: rgba(255, 255, 255, 0.72);
     opacity: 0.82;
-    box-shadow: inset 3px 0 0 rgba(var(--accent-rgb), 0.75);
 }
 
 .nav-btn.web-desktop-only-btn .nav-icon {
@@ -350,7 +468,7 @@ body.app-update-active #network-tracker-vue-app {
     width: 24px;
     height: 24px;
     margin: 0;
-    border-radius: 7px;
+    border-radius: var(--radius-control);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -366,7 +484,7 @@ body.app-update-active #network-tracker-vue-app {
     min-width: 24px;
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     object-fit: cover;
     flex-shrink: 0;
 }
@@ -385,7 +503,7 @@ body.app-update-active #network-tracker-vue-app {
 /* Small "opens externally" indicator on the Documentation shortcut */
 .nav-external-icon {
     margin-left: auto;
-    font-size: 10px;
+    font-size: var(--icon-optical);
     color: var(--text-muted);
     opacity: 0.6;
     transition: opacity 0.18s ease, color 0.18s ease;
@@ -399,11 +517,11 @@ body.app-update-active #network-tracker-vue-app {
 .beta-label {
     margin-left: auto;
     padding: 2px 7px;
-    border: 1px solid rgba(255, 184, 77, 0.28);
-    border-radius: 999px;
-    background: linear-gradient(180deg, rgba(255, 184, 77, 0.18), rgba(255, 184, 77, 0.08));
-    color: #ffd58a;
-    font-size: 10px;
+    border: 1px solid rgba(var(--beta-rgb), 0.28);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(180deg, rgba(var(--beta-rgb), 0.18), rgba(var(--beta-rgb), 0.08));
+    color: var(--beta);
+    font-size: var(--t-fs-micro);
     font-weight: 800;
     letter-spacing: 0.8px;
     line-height: 1.2;
@@ -417,23 +535,22 @@ body.app-update-active #network-tracker-vue-app {
     right: -1px;
     margin-left: 0;
     padding: 1px 5px;
-    border: 1px solid rgba(255, 193, 7, 0.55);
-    background: rgba(255, 193, 7, 0.16);
-    color: #ffd76a;
-    font-size: 8px;
+    border: 1px solid rgba(var(--warning-rgb), 0.55);
+    background: rgba(var(--warning-rgb), 0.16);
+    color: var(--warning);
+    font-size: var(--t-fs-micro);
     font-weight: 900;
     letter-spacing: 0.7px;
     line-height: 1.2;
     text-transform: uppercase;
     white-space: nowrap;
-    box-shadow: 0 0 0 1px rgba(0,0,0,0.16), 0 2px 8px rgba(0,0,0,0.22);
 }
 
 .nav-btn:hover .beta-label,
 .nav-btn.active .beta-label {
-    border-color: rgba(255, 184, 77, 0.4);
-    background: linear-gradient(180deg, rgba(255, 184, 77, 0.26), rgba(255, 184, 77, 0.12));
-    color: #ffe4ae;
+    border-color: rgba(var(--beta-rgb), 0.4);
+    background: linear-gradient(180deg, rgba(var(--beta-rgb), 0.26), rgba(var(--beta-rgb), 0.12));
+    color: var(--beta);
 }
 
 #sidebar.collapsed .nav-text {
@@ -479,14 +596,13 @@ body.app-update-active #network-tracker-vue-app {
     gap: 5px;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.14));
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     margin: 0 10px 10px;
     transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .sidebar-lang-container:hover {
     background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.12), rgba(0,0,0,0.14));
-    box-shadow: 0 6px 14px rgba(0,0,0,0.24);
     transform: translateY(-1px);
 }
 
@@ -497,11 +613,11 @@ body.app-update-active #network-tracker-vue-app {
 }
 
 .sidebar-lang-label {
-    font-size: 9px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
     letter-spacing: 0.8px;
     font-weight: 800;
-    color: var(--accent-blue, #5ec6ff);
+    color: var(--accent-blue);
 }
 
 .sidebar-lang-container .nav-icon {
@@ -521,7 +637,7 @@ body.app-update-active #network-tracker-vue-app {
 .sidebar-language-select {
     width: 100%;
     min-height: 34px;
-    border-radius: 7px;
+    border-radius: var(--radius-control);
     border-color: rgba(255, 255, 255, 0.14);
     background: rgba(0,0,0,0.3);
 }
@@ -529,14 +645,13 @@ body.app-update-active #network-tracker-vue-app {
 .sidebar-lang-container .custom-select-trigger {
     min-height: 34px;
     padding: 6px 10px;
-    border-radius: 7px;
-    font-size: 0.85rem;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
 }
 
 .sidebar-language-select:hover,
 .sidebar-language-select:focus {
     border-color: rgba(var(--accent-rgb), 0.65);
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.16);
 }
 
 #sidebar.collapsed .sidebar-lang-container {
@@ -572,19 +687,19 @@ body.app-update-active #network-tracker-vue-app {
 }
 .custom-select-trigger {
     background: rgba(0,0,0,0.3);
-    border: 1px solid var(--border-color, #333333);
-    color: #fff;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.9rem;
+    font-size: var(--t-fs-body);
     transition: border-color 0.2s ease;
 }
 .custom-select-trigger:hover {
-    border-color: var(--accent-blue, #5ec6ff);
+    border-color: var(--accent-blue);
 }
 .custom-select-trigger-text {
     display: inline-flex;
@@ -610,10 +725,10 @@ body.app-update-active #network-tracker-vue-app {
     top: 100%;
     left: 0;
     right: 0;
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--accent-blue, #5ec6ff);
-    border-radius: 6px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-blue);
+    border-radius: var(--radius-control);
+    box-shadow: var(--shadow-floating);
     z-index: var(--z-dropdown-menu);
     margin-top: 5px;
     max-height: 250px;
@@ -621,7 +736,7 @@ body.app-update-active #network-tracker-vue-app {
     opacity: 0;
     visibility: hidden;
     transform: translateY(-5px);
-    transition: all 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), background var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease), opacity var(--dur) var(--t-ease);
 }
 .custom-select-wrapper.open .custom-select-options {
     opacity: 1;
@@ -641,20 +756,22 @@ body.app-update-active #network-tracker-vue-app {
 .custom-select-option {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 12px;
+    gap: var(--t-2);
+    padding: 10px var(--t-3);
     cursor: pointer;
-    font-size: 0.9em;
-    color: var(--text-main, #e0e0e0);
-    transition: background 0.15s ease, padding-left 0.15s ease;
+    font-size: var(--t-fs-body);
+    color: var(--text-main);
+    /* Was also sliding padding-left 12->16px on hover. Padding is a layout
+       property: every frame of that slide relaid out the whole open list, and
+       the fill + text lift already say "this row is hovered". */
+    transition: background-color var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .custom-select-option:hover {
-    background: rgba(255, 255, 255, 0.05);
-    padding-left: 16px;
-    color: #fff;
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
 }
 .custom-select-option.selected {
     background: rgba(var(--accent-rgb), 0.15);
@@ -667,39 +784,46 @@ body.app-update-active #network-tracker-vue-app {
 }
 
 .update-app-btn {
-    background-color: rgba(255, 193, 7, 0.1) !important;
-    color: #ffc107 !important;
-    border: 1px solid rgba(255, 193, 7, 0.3) !important;
+    background-color: rgba(var(--warning-rgb), 0.12) !important;
+    color: var(--warning) !important;
+    border: 1px solid rgba(var(--warning-rgb), 0.35) !important;
     animation: appUpdatePulse 2s infinite;
     bottom: 10px;
     position: relative;
 }
 
 .update-app-btn:hover {
-    background-color: #ffc107 !important;
-    color: #121212 !important;
-    border-color: #ffc107 !important;
+    background-color: var(--warning) !important;
+    color: var(--bg-dark) !important;
+    border-color: var(--warning) !important;
     animation: none;
 }
 
 @keyframes appUpdatePulse {
-    0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
-    70% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.62; }
 }
 
 .danger-btn {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 4px;
+    background-color: rgba(var(--danger-rgb), 0.12);
+    color: var(--danger-ink);
+    border: 1px solid rgba(var(--danger-rgb), 0.35);
+    padding: var(--t-2) var(--t-3);
+    min-height: var(--control-height);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
 }
 
 .danger-btn:hover {
-    background-color: #c82333;
+    background-color: rgba(var(--danger-rgb), 0.2);
+    border-color: rgba(var(--danger-rgb), 0.55);
+}
+
+.danger-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 #view-container {
@@ -715,7 +839,7 @@ body.app-update-active #network-tracker-vue-app {
 
 .view-placeholder {
     padding: 40px;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .sidebar-footer-menu {
@@ -769,36 +893,37 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     inset: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 10005;
+    background: var(--modal-backdrop);
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .app-overlay-blur {
-    backdrop-filter: blur(4px);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
 }
 
 .app-overlay-top {
-    z-index: 100000;
+    z-index: var(--z-modal);
     align-items: flex-start;
     padding-top: 12vh;
 }
 
 .app-modal-card {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--border-color, #333333);
-    border-radius: 12px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    box-shadow: var(--shadow-modal);
     overflow: hidden;
     display: flex;
     flex-direction: column;
 }
 
 .app-modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid var(--border-color, #333333);
+    padding: var(--t-4) var(--modal-padding);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -807,8 +932,8 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 
 .app-modal-title {
     margin: 0;
-    color: var(--text-main, #fff);
-    font-size: 1.2em;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -829,9 +954,9 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     padding: 20px;
     overflow-y: auto;
     flex: 1;
-    color: var(--text-muted, #a3adc2);
-    font-family: monospace;
-    font-size: 0.9em;
+    color: var(--text-muted);
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-label);
 }
 
 .request-log-list {
@@ -847,7 +972,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .request-log-time {
-    color: #666;
+    color: var(--text-muted);
 }
 
 .request-log-status.is-active {
@@ -855,15 +980,15 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .request-log-status.is-error {
-    color: #ff5555;
+    color: var(--danger-ink);
 }
 
 .request-log-status.is-success {
-    color: #4ade80;
+    color: var(--success);
 }
 
 .request-log-label {
-    color: var(--text-main, #fff);
+    color: var(--text-main);
     word-break: break-word;
 }
 
@@ -874,19 +999,19 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .request-log-url-secondary {
-    font-size: 0.85em;
+    font-size: var(--t-fs-label);
     margin-left: 20px;
     display: inline-block;
     word-break: break-all;
 }
 
 .command-palette {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--accent-blue, #5ec6ff);
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-blue);
     width: 90%;
     max-width: 600px;
-    border-radius: 8px;
-    box-shadow: 0 15px 50px rgba(0,0,0,0.7);
+    border-radius: var(--radius-control);
+    box-shadow: var(--shadow-modal);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -897,29 +1022,29 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     align-items: center;
     gap: 15px;
     padding: 15px;
-    border-bottom: 1px solid var(--border-color, #333333);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .command-palette-icon {
-    color: var(--accent-blue, #5ec6ff);
-    font-size: 1.2em;
+    color: var(--accent-blue);
+    font-size: var(--t-fs-h2);
 }
 
 .command-palette-input {
     flex: 1;
     background: transparent;
     border: none;
-    color: #fff;
-    font-size: 1.1em;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
     outline: none;
 }
 
 .command-palette-kbd {
-    font-size: 0.7em;
-    color: var(--text-muted, #a3adc2);
+    font-size: var(--t-fs-micro);
+    color: var(--text-muted);
     background: rgba(255,255,255,0.1);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: var(--radius-control);
     font-weight: bold;
 }
 
@@ -931,13 +1056,13 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 
 .command-palette-footer {
     padding: 10px 14px;
-    border-top: 1px solid var(--border-color, #333333);
+    border-top: 1px solid var(--border-color);
 }
 
 .panel-card {
     background: linear-gradient(160deg, rgba(255,255,255,0.03), rgba(0,0,0,0.16));
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
+    border-radius: var(--radius-surface);
     padding: 14px;
 }
 
@@ -947,7 +1072,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     justify-content: center;
     gap: 10px;
     padding: 18px;
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     border: 1px dashed rgba(255,255,255,0.12);
     background: rgba(0,0,0,0.12);
     color: var(--text-muted);
@@ -956,15 +1081,15 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 .ui-state-compact {
     justify-content: flex-start;
     padding: 12px 14px;
-    font-size: 0.92em;
-    border-radius: 10px;
+    font-size: var(--t-fs-label);
+    border-radius: var(--radius-surface);
 }
 
 .ui-state-loading {
     border-style: solid;
     border-color: rgba(var(--accent-rgb), 0.22);
     background: rgba(var(--accent-rgb), 0.08);
-    color: #dfeffd;
+    color: var(--text-main);
 }
 
 .ui-state-empty {
@@ -973,16 +1098,16 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 
 .ui-state-error {
     border-style: solid;
-    border-color: rgba(255, 85, 85, 0.3);
-    background: rgba(255, 85, 85, 0.08);
-    color: #ffd7d7;
+    border-color: rgba(var(--danger-rgb), 0.3);
+    background: rgba(var(--danger-rgb), 0.08);
+    color: var(--danger-ink);
 }
 
 .ui-state-warning {
     border-style: solid;
-    border-color: rgba(255, 184, 77, 0.3);
-    background: rgba(255, 184, 77, 0.08);
-    color: #ffe0ac;
+    border-color: rgba(var(--warning-rgb), 0.3);
+    background: rgba(var(--warning-rgb), 0.08);
+    color: var(--warning);
 }
 
 .ui-state-stacked {
@@ -991,23 +1116,42 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .ui-state-icon {
-    font-size: 24px;
+    font-size: var(--t-fs-title);
 }
 
 .primary-btn {
-    background-color: var(--accent-blue);
-    color: white;
+    /* Depth comes from a light-to-dark overlay ON the user's accent, never a
+       hardcoded second colour — the accent changes at runtime. */
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.12)),
+                var(--accent-blue);
+    /* Derived per-accent in main.js applyAccentColor(). A literal `white` here
+       was 1.9:1 against the default accent — unreadable, and only accidentally
+       fine if the user happened to pick a dark colour. */
+    color: var(--accent-ink);
     border: none;
     padding: 10px 20px;
-    border-radius: 4px;
-    font-size: 14px;
+    min-height: var(--control-height);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: filter var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
 }
 
 .primary-btn:hover {
-    background-color: var(--accent-hover);
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.primary-btn:active {
+    transform: translateY(0);
+}
+
+.primary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: none;
+    transform: none;
 }
 
 .nav-icon.fa-solid {
@@ -1021,7 +1165,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     text-align: left;
     border-top: 1px solid rgba(255, 255, 255, 0.05);
     background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.16));
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     margin: 0 10px 12px;
     display: flex;
     flex-direction: column;
@@ -1034,7 +1178,6 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 #server-time-wrapper:hover {
     transform: translateY(-1px);
     background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.14), rgba(0,0,0,0.16));
-    box-shadow: 0 6px 16px rgba(0,0,0,0.28);
 }
 
 #server-time-wrapper:focus-visible {
@@ -1054,29 +1197,29 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 #server-time-label {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 800;
-    color: var(--accent-blue, #5ec6ff);
+    color: var(--accent-blue);
 }
 
 #server-time-date {
-    font-size: 12px;
-    color: #a3adc2;
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
     font-weight: 600;
 }
 
 #server-time-clock {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 18px;
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-h2);
     font-weight: bold;
-    color: #fff;
+    color: var(--text-main);
     text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .server-time-hint {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     line-height: 1.35;
 }
@@ -1088,27 +1231,26 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     padding: 12px 15px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
 }
 .tz-row.highlight {
     background: rgba(var(--accent-rgb), 0.1);
     border-color: var(--accent-blue);
-    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.2);
 }
 .tz-name {
     font-weight: 600;
     color: var(--text-main);
-    font-size: 0.95em;
+    font-size: var(--t-fs-body);
 }
 .tz-row.highlight .tz-name { color: var(--accent-blue); }
 .tz-time {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 1.15em;
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-h2);
     font-weight: bold;
-    color: #fff;
+    color: var(--text-main);
 }
 .tz-date {
-    font-size: 0.75em;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     margin-top: 2px;
 }
@@ -1135,7 +1277,7 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
     text-align: left;
     border: 1px solid rgba(var(--accent-rgb), 0.32);
     background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(0,0,0,0.16));
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -1152,7 +1294,6 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 .sidebar-quick-open:hover {
     transform: translateY(-1px);
     border-color: rgba(var(--accent-rgb), 0.68);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.26);
 }
 
 .sidebar-quick-open-topline {
@@ -1169,20 +1310,20 @@ html.btt-web:not(.btt-native) #notifications-shortcut-btn {
 }
 
 .sidebar-quick-open-label {
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 800;
-    color: #dff5ff;
+    color: var(--accent-blue);
 }
 
 .sidebar-quick-open-kbd {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     font-weight: 800;
-    color: #fff;
+    color: var(--text-main);
     border: 1px solid rgba(255,255,255,0.25);
     background: rgba(0,0,0,0.22);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 3px 8px;
     white-space: nowrap;
 }
@@ -1199,11 +1340,11 @@ html.btt-native .command-palette-footer { display: none !important; }
 .sidebar-quick-open-dismiss {
     width: 24px;
     height: 24px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 15px;
+    font-size: var(--t-fs-h2);
     color: rgba(255,255,255,0.86);
     background: rgba(0,0,0,0.18);
     border: 1px solid rgba(255,255,255,0.14);
@@ -1215,17 +1356,17 @@ html.btt-native .command-palette-footer { display: none !important; }
 .sidebar-quick-open-dismiss:focus-visible {
     background: rgba(0,0,0,0.3);
     border-color: rgba(255,255,255,0.28);
-    color: #fff;
+    color: var(--text-main);
 }
 
 .sidebar-quick-open-title {
-    font-size: 14px;
+    font-size: var(--t-fs-body);
     font-weight: 800;
-    color: #fff;
+    color: var(--text-main);
 }
 
 .sidebar-quick-open-copy {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     line-height: 1.35;
     color: rgba(255,255,255,0.78);
 }
@@ -1249,12 +1390,12 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .server-time-modal-card {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--border-color, #333333);
-    border-radius: 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
     width: min(94vw, 920px);
     max-height: 84vh;
-    box-shadow: 0 18px 40px rgba(0,0,0,0.55);
+    box-shadow: var(--shadow-modal);
     animation: fadeIn 0.2s ease-out;
     overflow: hidden;
     display: flex;
@@ -1262,8 +1403,8 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .server-time-modal-header {
-    padding: 16px 18px;
-    border-bottom: 1px solid var(--border-color, #333333);
+    padding: var(--t-4) var(--modal-padding);
+    border-bottom: 1px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1273,8 +1414,8 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 .server-time-modal-title {
     margin: 0;
-    color: #fff;
-    font-size: 1.15em;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1283,7 +1424,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-modal-subtitle {
     margin-top: 4px;
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .server-time-modal-actions {
@@ -1296,7 +1437,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 .icon-btn {
     width: 34px;
     height: 34px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(0,0,0,0.16);
     color: var(--text-muted);
@@ -1304,17 +1445,17 @@ html.btt-native .command-palette-footer { display: none !important; }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), background var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease), opacity var(--dur) var(--t-ease);
 }
 
 .icon-btn:hover {
-    color: #fff;
+    color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.5);
     background: rgba(var(--accent-rgb), 0.12);
 }
 
 .server-time-modal-content {
-    padding: 18px;
+    padding: var(--modal-padding);
     display: flex;
     flex-direction: column;
     gap: 14px;
@@ -1324,7 +1465,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-hero {
     border: 1px solid rgba(var(--accent-rgb), 0.35);
     background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(0,0,0,0.16));
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     padding: 14px 16px;
     display: flex;
     flex-direction: column;
@@ -1332,7 +1473,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .server-time-hero-label {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-muted);
@@ -1340,16 +1481,16 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .server-time-hero-time {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 2.1rem;
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-display);
     font-weight: 800;
-    color: #fff;
+    color: var(--text-main);
     line-height: 1;
 }
 
 .server-time-hero-date {
-    color: #d7ddea;
-    font-size: 13px;
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
 }
 
 .server-time-layout {
@@ -1362,7 +1503,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-panel {
     background: rgba(0,0,0,0.18);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
+    border-radius: var(--radius-surface);
     padding: 14px;
     min-width: 0;
 }
@@ -1377,8 +1518,8 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 .server-time-panel-header h3 {
     margin: 0;
-    color: #fff;
-    font-size: 1.02em;
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -1386,7 +1527,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 .server-time-panel-hint {
     color: var(--text-muted);
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     text-align: right;
     line-height: 1.35;
 }
@@ -1408,8 +1549,8 @@ html.btt-native .command-palette-footer { display: none !important; }
     padding: 12px 14px;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 10px;
-    transition: all 0.18s ease;
+    border-radius: var(--radius-surface);
+    transition: background-color var(--dur) var(--t-ease), background var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease), opacity var(--dur) var(--t-ease);
     min-height: 88px;
 }
 
@@ -1422,26 +1563,25 @@ html.btt-native .command-palette-footer { display: none !important; }
 .tz-row.highlight {
     background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), rgba(0,0,0,0.12));
     border-color: rgba(var(--accent-rgb), 0.55);
-    box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.12);
 }
 
 .tz-name {
     font-weight: 700;
     color: var(--text-main);
-    font-size: 0.92em;
+    font-size: var(--t-fs-label);
 }
 
-.tz-row.highlight .tz-name { color: #fff; }
+.tz-row.highlight .tz-name { color: var(--text-main); }
 
 .tz-time {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 1.08em;
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-h2);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-main);
 }
 
 .tz-date {
-    font-size: 0.75em;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     margin-top: 2px;
 }
@@ -1457,17 +1597,16 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-input {
     width: 100%;
     background: rgba(0,0,0,0.3);
-    border: 1px solid var(--border-color, #333333);
-    color: #fff;
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     font-family: inherit;
     outline: none;
 }
 
 .server-time-input:focus {
     border-color: var(--accent-blue);
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.14);
 }
 
 .server-time-select,
@@ -1478,14 +1617,14 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-converter-result {
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(255,255,255,0.04);
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     padding: 12px;
     display: grid;
     gap: 10px;
 }
 
 .server-time-result-label {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-muted);
@@ -1495,8 +1634,8 @@ html.btt-native .command-palette-footer { display: none !important; }
 .server-time-result-value {
     margin-top: 3px;
     font-weight: 800;
-    color: #fff;
-    font-size: 1.08em;
+    color: var(--text-main);
+    font-size: var(--t-fs-h2);
 }
 
 .server-time-discord-row {
@@ -1508,7 +1647,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 .server-time-copy-btn {
     padding: 8px 12px;
-    font-size: 0.85em;
+    font-size: var(--icon-optical);
     width: auto;
     min-width: 44px;
 }
@@ -1548,7 +1687,7 @@ html.btt-native .command-palette-footer { display: none !important; }
     }
 
     .server-time-hero-time {
-        font-size: 1.75rem;
+        font-size: var(--t-fs-title);
     }
 
     .server-time-converter-grid {
@@ -1566,7 +1705,7 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border-color, #333333) transparent;
+    scrollbar-color: var(--border-color) transparent;
 }
 
 ::-webkit-scrollbar {
@@ -1576,16 +1715,16 @@ html.btt-native .command-palette-footer { display: none !important; }
 
 ::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.1);
-    border-radius: 4px;
+    border-radius: var(--radius-control);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--border-color, #333333);
-    border-radius: 4px;
+    background: var(--border-color);
+    border-radius: var(--radius-control);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted, #a3adc2);
+    background: var(--text-muted);
 }
 
 ::-webkit-scrollbar-corner {
@@ -1593,34 +1732,32 @@ html.btt-native .command-palette-footer { display: none !important; }
 }
 
 .flatpickr-calendar {
-    background: var(--bg-panel, #1e1e1e) !important;
-    border: 1px solid var(--border-color, #333333) !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    /* Surface (background/border/shadow) is set once, in the floating-chrome
+       block further down — declaring it here too only made these lines dead. */
     z-index: var(--z-dropdown) !important;
 }
-.flatpickr-calendar.arrowTop:after { border-bottom-color: var(--bg-panel, #1e1e1e) !important; }
-.flatpickr-calendar.arrowTop:before { border-bottom-color: var(--border-color, #333333) !important; }
-.flatpickr-calendar.arrowBottom:after { border-top-color: var(--bg-panel, #1e1e1e) !important; }
-.flatpickr-calendar.arrowBottom:before { border-top-color: var(--border-color, #333333) !important; }
+.flatpickr-calendar.arrowTop:after { border-bottom-color: var(--bg-panel) !important; }
+.flatpickr-calendar.arrowTop:before { border-bottom-color: var(--border-color) !important; }
+.flatpickr-calendar.arrowBottom:after { border-top-color: var(--bg-panel) !important; }
+.flatpickr-calendar.arrowBottom:before { border-top-color: var(--border-color) !important; }
 
 .flatpickr-months .flatpickr-month,
 .flatpickr-weekdays,
 span.flatpickr-weekday {
     background: transparent !important;
-    color: var(--text-muted, #a3adc2) !important;
+    color: var(--text-muted) !important;
 }
 
-.flatpickr-day { color: var(--text-main, #e0e0e0) !important; }
+.flatpickr-day { color: var(--text-main) !important; }
 
 .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
-    background: var(--accent-blue, #5ec6ff) !important;
-    border-color: var(--accent-blue, #5ec6ff) !important;
-    color: #fff !important;
-    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.4) !important;
+    background: var(--accent-blue) !important;
+    border-color: var(--accent-blue) !important;
+    color: var(--accent-ink) !important;
 }
 
 .flatpickr-day.today {
-    border-color: var(--accent-blue, #5ec6ff) !important;
+    border-color: var(--accent-blue) !important;
 }
 
 .flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover, .flatpickr-day:focus, .flatpickr-day.prevMonthDay:focus, .flatpickr-day.nextMonthDay:focus {
@@ -1628,19 +1765,25 @@ span.flatpickr-weekday {
     border-color: transparent !important;
 }
 
-.flatpickr-time { border-top: 1px solid var(--border-color, #333333) !important; }
+.flatpickr-time { border-top: 1px solid var(--border-color) !important; }
 .flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus {
     background: rgba(255, 255, 255, 0.05) !important;
 }
 
+/* The keyboard-selected row used a 3px accent rail on its left edge. The fill
+   now carries selection instead, at two strengths so "hovered" and "selected
+   by the keyboard" stay tellable apart — which the shared rail never did. */
 .cmd-result-item {
-    padding: 12px 20px; display: flex; align-items: center; gap: 15px;
-    color: var(--text-main); cursor: pointer; border-left: 3px solid transparent;
+    padding: var(--t-3) var(--t-5); display: flex; align-items: center; gap: var(--t-4);
+    color: var(--text-muted); cursor: pointer;
 }
-.cmd-result-item.active, .cmd-result-item:hover {
-    background: rgba(var(--accent-rgb), 0.1); border-left-color: var(--accent-blue); color: #fff;
+.cmd-result-item:hover {
+    background: rgba(var(--accent-rgb), 0.08); color: var(--text-main);
 }
-.cmd-result-icon { width: 24px; text-align: center; color: var(--text-muted); font-size: 1.1em; }
+.cmd-result-item.active {
+    background: rgba(var(--accent-rgb), 0.18); color: var(--text-main);
+}
+.cmd-result-icon { width: 24px; text-align: center; color: var(--text-muted); font-size: var(--t-fs-h2); }
 .cmd-result-item.active .cmd-result-icon { color: var(--accent-blue); }
 .cmd-result-item:hover .cmd-result-icon { color: var(--accent-blue); }
 
@@ -1649,32 +1792,32 @@ span.flatpickr-weekday {
     gap: 8px;
     align-items: center;
     flex-wrap: wrap;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
 }
 
 .shortcut-kbd {
     border: 1px solid var(--border-color);
     border-bottom-width: 2px;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     padding: 2px 7px;
     background: rgba(0, 0, 0, 0.25);
     color: var(--text-main);
     font-weight: 700;
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     line-height: 1.4;
 }
 
 .search-shortcut-hint {
     margin-top: 10px;
     margin-bottom: 10px;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     border: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(255, 255, 255, 0.03);
     max-width: 100%;
@@ -1686,7 +1829,7 @@ span.flatpickr-weekday {
     font-family: "Font Awesome 6 Free";
     font-weight: 900;
     color: var(--accent-blue);
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     line-height: 1;
 }
 
@@ -1702,13 +1845,13 @@ span.flatpickr-weekday {
     color: var(--text-muted);
     width: 20px;
     height: 20px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
-    transition: all 0.15s ease;
+    transition: background-color var(--dur-fast) var(--t-ease), background var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease), transform var(--dur-fast) var(--t-ease), opacity var(--dur-fast) var(--t-ease);
 }
 
 .search-shortcut-dismiss:hover {
@@ -1719,10 +1862,10 @@ span.flatpickr-weekday {
 
 .context-menu {
     position: fixed;
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--accent-blue, #5ec6ff);
-    border-radius: 6px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.7);
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-blue);
+    border-radius: var(--radius-control);
+    box-shadow: var(--shadow-floating);
     z-index: var(--z-dropdown-menu);
     min-width: 180px;
     display: flex;
@@ -1731,38 +1874,77 @@ span.flatpickr-weekday {
     animation: fadeIn 0.1s ease-out;
 }
 .context-menu-item {
-    padding: 10px 15px; color: var(--text-main); font-size: 0.9em;
+    padding: 10px 15px; color: var(--text-main); font-size: var(--t-fs-label);
     cursor: pointer; display: flex; align-items: center; gap: 10px;
     transition: background 0.15s ease, color 0.15s ease;
 }
-.context-menu-item:hover { background: rgba(var(--accent-rgb), 0.1); color: #fff; }
-.context-menu-item.danger { color: #ff5555; }
-.context-menu-item.danger:hover { background: rgba(255, 85, 85, 0.1); color: #ff5555; }
+.context-menu-item:hover { background: rgba(var(--accent-rgb), 0.1); color: var(--text-main); }
+.context-menu-item.danger { color: var(--danger-ink); }
+.context-menu-item.danger:hover { background: rgba(var(--danger-rgb), 0.12); color: var(--danger-ink); }
 .context-menu-separator {
     height: 1px;
-    background: var(--border-color, #333333);
+    background: var(--border-color);
     margin: 4px 0;
 }
 
+/* Secondary = Raised Graphite on a hairline (DESIGN.md > Components > Buttons).
+   It was transparent, which is the *ghost* recipe — so the app had two ghost
+   buttons and no secondary, and a row of them read as unclickable text. */
 .secondary-btn {
-    background: transparent;
+    background: var(--bg-hover);
     color: var(--text-main);
     border: 1px solid var(--border-color);
-    padding: 8px 14px;
-    border-radius: 6px;
+    padding: var(--t-2) var(--t-3);
+    min-height: var(--control-height);
+    font-size: var(--t-fs-body);
+    border-radius: var(--radius-control);
     cursor: pointer;
+    /* Secondary and ghost buttons do not move on hover — only the primary
+       button and clickable cards do. */
+    transition: border-color var(--dur) var(--t-ease), filter var(--dur) var(--t-ease);
 }
 
 .secondary-btn:hover {
     border-color: var(--accent-blue);
-    color: #fff;
+    filter: brightness(1.15);
+}
+
+.secondary-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: none;
+}
+
+/* The genuine ghost: tertiary and destructive-adjacent actions. */
+.ghost-btn {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    padding: var(--t-2) var(--t-3);
+    min-height: var(--control-height);
+    font-size: var(--t-fs-body);
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    transition: border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
+}
+
+.ghost-btn:hover {
+    border-color: var(--accent-blue);
+    color: var(--text-main);
+}
+
+.ghost-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .global-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: var(--z-modal, 205000);
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1773,9 +1955,9 @@ span.flatpickr-weekday {
     width: min(92vw, 680px);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-    padding: 18px;
+    border-radius: var(--radius-surface);
+    box-shadow: var(--shadow-modal);
+    padding: var(--modal-padding);
 }
 
 .global-modal-card h3 {
@@ -1804,14 +1986,14 @@ span.flatpickr-weekday {
 
 .app-update-overlay-card {
     width: min(92vw, 520px);
-    padding: 30px 28px;
-    border-radius: 18px;
+    padding: var(--t-6) var(--modal-padding);
+    border-radius: var(--radius-surface);
     border: 1px solid rgba(var(--accent-rgb), 0.28);
     background:
         radial-gradient(120% 120% at 0% 0%, rgba(var(--accent-rgb), 0.18), transparent 55%),
         linear-gradient(160deg, rgba(255,255,255,0.06), rgba(5,10,18,0.92)),
-        var(--bg-panel, #1e1e1e);
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+        var(--bg-panel);
+    box-shadow: var(--shadow-modal);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1822,20 +2004,19 @@ span.flatpickr-weekday {
 .app-update-overlay-icon {
     width: 72px;
     height: 72px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    color: #fff;
+    font-size: var(--t-fs-title);
+    color: var(--text-main);
     background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.85), rgba(var(--accent-rgb), 0.45));
-    box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.28);
 }
 
 .app-update-overlay-card h2 {
     margin: 0;
-    color: #fff;
-    font-size: 1.4rem;
+    color: var(--text-main);
+    font-size: var(--t-fs-title);
     line-height: 1.2;
 }
 
@@ -1847,14 +2028,14 @@ span.flatpickr-weekday {
 }
 
 .app-update-overlay-spinner {
-    font-size: 1.55rem;
+    font-size: var(--t-fs-h2);
     color: var(--accent-blue);
 }
 
 .onboarding-tour {
     margin: 10px 0 14px;
     padding: 14px;
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     border: 1px solid rgba(var(--accent-rgb), 0.45);
     background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.16), rgba(0, 0, 0, 0.18));
 }
@@ -1871,7 +2052,7 @@ span.flatpickr-weekday {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     font-weight: 700;
     color: var(--text-main);
 }
@@ -1880,7 +2061,7 @@ span.flatpickr-weekday {
     margin: 0;
     padding-left: 20px;
     color: var(--text-main);
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     line-height: 1.45;
 }
 
@@ -1893,16 +2074,16 @@ span.flatpickr-weekday {
 
 .onboarding-tour-actions .secondary-btn {
     padding: 7px 11px;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .onboarding-dismiss {
     border: 1px solid var(--border-color);
     background: transparent;
     color: var(--text-muted);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 6px 10px;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     cursor: pointer;
 }
 
@@ -1915,17 +2096,18 @@ span.flatpickr-weekday {
     position: fixed;
     right: 18px;
     bottom: 18px;
-    z-index: 10050;
+    /* Above the job-queue panel it shares the bottom-right corner with. */
+    z-index: calc(var(--z-floating) + 10);
     width: 44px;
     height: 44px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: var(--text-main, #fff);
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--border-color, #333333);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    color: var(--text-main);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-floating);
     cursor: pointer;
 }
 
@@ -1938,15 +2120,15 @@ span.flatpickr-weekday {
     position: fixed;
     right: 18px;
     bottom: 72px;
-    z-index: 10040;
+    z-index: var(--z-floating);
     width: 44px;
     height: 44px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1px solid var(--border-color);
     background: var(--bg-panel);
     color: var(--text-main);
     cursor: pointer;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-floating);
 }
 
 .job-queue-badge {
@@ -1955,10 +2137,11 @@ span.flatpickr-weekday {
     right: -6px;
     min-width: 18px;
     height: 18px;
-    border-radius: 999px;
-    background: #ff5555;
-    color: #fff;
-    font-size: 11px;
+    border-radius: var(--radius-pill);
+    background: rgba(var(--danger-rgb), 0.22);
+    border: 1px solid rgba(var(--danger-rgb), 0.5);
+    color: var(--danger-ink);
+    font-size: var(--t-fs-label);
     line-height: 18px;
     text-align: center;
 }
@@ -1971,12 +2154,12 @@ span.flatpickr-weekday {
     max-height: min(70vh, 560px);
     display: flex;
     flex-direction: column;
-    z-index: 10045;
+    z-index: calc(var(--z-floating) + 5);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: var(--radius-surface);
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-floating);
 }
 
 .job-queue-header {
@@ -1998,7 +2181,7 @@ span.flatpickr-weekday {
 
 .job-item {
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     padding: 8px;
     background: rgba(0, 0, 0, 0.2);
 }
@@ -2011,12 +2194,12 @@ span.flatpickr-weekday {
 }
 
 .job-item .job-label {
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     color: var(--text-main);
 }
 
 .job-item .job-status {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     text-transform: uppercase;
     letter-spacing: 0.4px;
     color: var(--text-muted);
@@ -2026,7 +2209,7 @@ span.flatpickr-weekday {
     width: 100%;
     height: 16px;
     background: var(--bg-dark);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     overflow: hidden;
     position: relative;
     margin-bottom: 6px;
@@ -2049,16 +2232,16 @@ span.flatpickr-weekday {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: var(--t-fs-micro);
     font-weight: 700;
-    color: #fff;
+    color: var(--text-main);
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
     pointer-events: none;
 }
 
 .job-item .job-error {
-    font-size: 12px;
-    color: #ff9a9a;
+    font-size: var(--t-fs-label);
+    color: var(--danger-ink);
     margin-bottom: 6px;
 }
 
@@ -2071,9 +2254,9 @@ span.flatpickr-weekday {
     background: transparent;
     color: var(--text-main);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     padding: 4px 8px;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     cursor: pointer;
 }
 
@@ -2088,7 +2271,7 @@ span.flatpickr-weekday {
 .job-details summary {
     cursor: pointer;
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
 
 .job-details-content {
@@ -2096,7 +2279,7 @@ span.flatpickr-weekday {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-main);
 }
 
@@ -2105,7 +2288,7 @@ span.flatpickr-weekday {
 .danger-btn,
 .custom-select-wrapper .custom-select-display {
     min-height: 38px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
 }
 
 .select2-container--btt-dark {
@@ -2113,17 +2296,15 @@ span.flatpickr-weekday {
 }
 
 .select2-container--btt-dark .select2-selection {
-    background: rgba(18, 24, 34, 0.62) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    border-radius: 8px;
+    background: var(--bg-dark) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-control);
     min-height: 36px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .select2-container--btt-dark.select2-container--focus .select2-selection {
     border-color: rgba(var(--accent-rgb), 0.45) !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(var(--accent-rgb), 0.16) !important;
 }
 
 .select2-container--btt-dark .select2-selection--multiple {
@@ -2148,7 +2329,7 @@ span.flatpickr-weekday {
     background: rgba(var(--accent-rgb), 0.14);
     border: 1px solid rgba(var(--accent-rgb), 0.5);
     color: var(--text-main);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     margin: 0;
     padding: 2px 8px;
     display: inline-flex;
@@ -2160,7 +2341,7 @@ span.flatpickr-weekday {
 }
 
 .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove {
-    color: #ff5555;
+    color: var(--danger-ink);
     margin-right: 6px;
     border: none;
     padding-right: 6px;
@@ -2168,7 +2349,7 @@ span.flatpickr-weekday {
 }
 
 .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #ff0000;
+    color: var(--danger);
 }
 
 .select2-container--btt-dark .select2-search--inline .select2-search__field {
@@ -2194,10 +2375,10 @@ span.flatpickr-weekday {
 }
 
 .select2-container--btt-dark .select2-dropdown {
-    background: rgba(21, 27, 37, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 8px;
-    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    box-shadow: var(--shadow-floating);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     overflow: hidden;
@@ -2212,7 +2393,7 @@ span.flatpickr-weekday {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    border-radius: 4px;
+    border-radius: var(--radius-control);
     padding: 6px;
     outline: none;
 }
@@ -2234,12 +2415,12 @@ span.flatpickr-weekday {
 
 .select2-container--btt-dark .select2-results__option--highlighted[aria-selected] {
     background: rgba(var(--accent-rgb), 0.18);
-    color: #fff;
+    color: var(--text-main);
 }
 
 .select2-container--btt-dark .select2-results__option[aria-selected="true"] {
     background: rgba(var(--accent-rgb), 0.12);
-    color: #fff;
+    color: var(--text-main);
 }
 
 /* =========================================================================
@@ -2304,7 +2485,7 @@ span.flatpickr-weekday {
     .trove-hero,
     .results-panel
 ) {
-    border-radius: 10px !important;
+    border-radius: var(--radius-surface) !important;
 }
 
 /* Surface padding. */
@@ -2393,7 +2574,7 @@ span.flatpickr-weekday {
     textarea,
     button:not(.tab-btn)
 ) {
-    border-radius: 8px;
+    border-radius: var(--radius-control);
 }
 
 /* Control height. */
@@ -2467,7 +2648,7 @@ span.flatpickr-weekday {
         padding: env(safe-area-inset-top, 0px) 12px 0;
         background: var(--bg-panel);
         border-bottom: 1px solid var(--border-color);
-        z-index: 260;
+        z-index: var(--z-drawer-topbar);
     }
 
     #mobile-nav-toggle {
@@ -2476,11 +2657,11 @@ span.flatpickr-weekday {
         justify-content: center;
         width: 38px;
         height: 38px;
-        border-radius: 9px;
+        border-radius: var(--radius-control);
         background: rgba(0, 0, 0, 0.22);
         border: 1px solid rgba(255, 255, 255, 0.09);
         color: var(--text-main);
-        font-size: 18px;
+        font-size: var(--t-fs-h2);
         cursor: pointer;
     }
 
@@ -2490,7 +2671,7 @@ span.flatpickr-weekday {
 
     .mobile-topbar-title {
         font-weight: 700;
-        font-size: 0.98rem;
+        font-size: var(--t-fs-h2);
         color: var(--text-main);
         white-space: nowrap;
         overflow: hidden;
@@ -2511,7 +2692,7 @@ span.flatpickr-weekday {
         padding-top: env(safe-area-inset-top, 0px);
         transform: translateX(-100%);
         transition: transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1);
-        z-index: 300;
+        z-index: var(--z-drawer);
         border-right: 1px solid var(--border-color);
         border-bottom: none;
         overflow: hidden;
@@ -2536,7 +2717,7 @@ span.flatpickr-weekday {
         opacity: 0;
         pointer-events: none;
         transition: opacity 0.28s ease;
-        z-index: 250;
+        z-index: var(--z-drawer-backdrop);
     }
 
     body.mobile-nav-open #mobile-nav-backdrop {
@@ -2615,7 +2796,24 @@ span.flatpickr-weekday {
 /* (The "Concise force layer" that used to live here has been folded into the
    single cross-app density layer above. Don't reintroduce it.) */
 
-/* Global glassmorphism layer */
+/* =========================================================================
+   CROSS-APP SURFACE BASELINE — was the "Global glassmorphism layer".
+
+   What it used to do, and why it had to change: it forced
+   `background: var(--glass-bottom) !important` — rgba(12,16,24,0.42), a
+   translucent dark blue — onto EVERY button and input inside a view. Because
+   it won on `!important`, no button's own fill ever rendered: the primary,
+   secondary and destructive buttons were all the same dark blue slab, so the
+   app had no visible primary action anywhere inside a view, and any dark
+   label on one was unreadable. It also put a resting shadow and a glass
+   border on every content panel, which is what DESIGN.md's Floating-Only and
+   Blur Budget rules exist to prevent.
+
+   What it does now: states the one flat resting surface, and leaves buttons
+   alone so each keeps the fill that says what it is. Deliberately carries NO
+   `!important` — `#view-container :is(...)` is already (1,1,0), so it wins
+   against ordinary view rules while still yielding to a deliberate override.
+   ========================================================================= */
 #view-container :is(
     .tool-panel,
     .settings-section,
@@ -2636,47 +2834,59 @@ span.flatpickr-weekday {
     .onboarding-tour,
     .search-shortcut-hint
 ) {
-    background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom)) !important;
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: var(--glass-shadow) !important;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    box-shadow: none;
 }
 
 #view-container :is(.tabs-container, .tab-content) {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
 }
 
+/* Form controls DO share one recipe — an inset well one step darker than the
+   panel they sit on, ink text, a hairline (DESIGN.md > Components > Inputs).
+   Buttons are absent here on purpose: a button's fill is how it declares rank.
+
+   `color` and `border` are load-bearing, not tidiness. The layer this replaced
+   set only `background`, so any input in a view that didn't style its own text
+   inherited the UA default — black on #121212, a contrast ratio of 1.05:1, i.e.
+   an invisible field. The UA border came through as 2px #767676 for the same
+   reason. Both are now stated once, here. */
 #view-container :is(
-    input:not(.select2-search__field),
+    input:not(.select2-search__field):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
     select,
     textarea,
     .custom-select-trigger,
-    .custom-dropdown,
-    .primary-btn,
-    .secondary-btn,
-    .danger-btn,
-    .icon-btn,
-    .job-item .job-actions button
+    .custom-dropdown
 ) {
-    background: rgba(18, 24, 34, 0.62) !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18) !important;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    font-family: inherit;
+    font-size: var(--t-fs-body);
 }
 
+/* Hover reaches for the accent on the border only. The old version also fired
+   a drop shadow plus a 1px accent halo on every control and button in the app,
+   on `!important` — a resting element does not gain elevation by being pointed
+   at. Primary is excluded: it is a solid accent fill, not a bordered control.
+   Destructive is excluded too — a delete button turning the "primary action"
+   colour on hover is the wrong signal at exactly the wrong moment; it deepens
+   its own red instead. */
 #view-container :is(
-    .primary-btn:hover,
     .secondary-btn:hover,
-    .danger-btn:hover,
+    .ghost-btn:hover,
     .icon-btn:hover,
     .custom-select-trigger:hover,
     input:not(.select2-search__field):hover,
     select:hover,
     textarea:hover
 ) {
-    border-color: rgba(var(--accent-rgb), 0.45) !important;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(var(--accent-rgb), 0.16) !important;
+    border-color: rgba(var(--accent-rgb), 0.45);
 }
 
 .global-modal-card,
@@ -2687,16 +2897,16 @@ span.flatpickr-weekday {
 .flatpickr-calendar {
     background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom)) !important;
     border: 1px solid var(--glass-border) !important;
-    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.35) !important;
+    box-shadow: var(--shadow-floating) !important;
     backdrop-filter: blur(12px) saturate(125%);
     -webkit-backdrop-filter: blur(12px) saturate(125%);
 }
 
 .custom-select-options,
 .select2-container--btt-dark .select2-dropdown {
-    background: rgba(21, 27, 37, 0.98) !important;
-    border: 1px solid rgba(255, 255, 255, 0.16) !important;
-    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.32) !important;
+    background: var(--bg-panel) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: var(--shadow-floating) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
@@ -2717,17 +2927,96 @@ span.flatpickr-weekday {
     z-index: var(--z-dropdown-menu) !important;
 }
 
+/* =========================================================================
+   RANGE SLIDERS — one recipe, no handle.
+
+   The value is read off the filled length of the track, not off a knob riding
+   on it. That means the track itself has to be the whole control, so:
+
+   - The thumb still EXISTS at full size — it is just painted with nothing.
+     `display: none` (or a zero-width thumb) makes the grab target vanish or
+     shrink, and dragging degrades to click-to-seek. An invisible 20px thumb
+     drags exactly as it did before; you simply cannot see it.
+   - The element keeps the standard control height while the track is drawn
+     6px. A 6px-tall hit area would be unusable — the rest is invisible but it
+     is what you actually grab, and it is what keeps this workable on Android.
+   - The fill comes from `--val-pct` where a view binds it (the Calculators
+     sliders do). Everything else falls back to `accent-color`, which paints
+     the same filled lower track natively.
+   ========================================================================= */
 input[type="range"] {
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    box-sizing: border-box;
+    /* Matches the cross-app control height, which the density layer forces on
+       inputs anyway — stating it here means the two agree instead of one
+       silently winning. The track is painted on the pseudo-element below, so
+       this box is purely the hit area. */
+    height: var(--control-height);
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    accent-color: var(--accent-blue);
+    cursor: pointer;
 }
+
+input[type="range"]::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background:
+        linear-gradient(to right,
+            var(--accent-blue) 0%,
+            var(--accent-blue) var(--val-pct, 0%),
+            var(--bg-dark) var(--val-pct, 0%),
+            var(--bg-dark) 100%);
+}
+
+input[type="range"]::-moz-range-track {
+    height: 6px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+}
+
+input[type="range"]::-moz-range-progress {
+    height: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--accent-blue);
+}
+
+/* Invisible, not absent — see the note above. Full size so the grab target and
+   the drag behaviour are exactly what they were; only the paint is gone. */
 input[type="range"]::-webkit-slider-thumb {
-  margin-right: 0;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    /* Centres the 20px thumb on the 6px track: (6 - 20) / 2. */
+    margin-top: -7px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
 }
-input[type="range"]::-ms-fill-lower {
-  margin-right: 0;
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Focus lands on the track, since there is no knob to ring. */
+input[type="range"]:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+input[type="range"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Unified layout constraints: concise spacing + inner-container scrolling */
@@ -2856,13 +3145,13 @@ input[type="range"]::-ms-fill-lower {
         align-items: center !important;
         font-size: 0 !important;               /* hides label text + raw text nodes */
         border: 1px solid var(--border-color) !important;
-        border-radius: 10px !important;
+        border-radius: var(--radius-surface) !important;
         flex: 0 0 auto !important;
         overflow: hidden;
     }
 
     .tab-buttons > .tab-btn > i {
-        font-size: 17px !important;            /* restore the icon glyph */
+        font-size: var(--t-fs-h2)!important;            /* restore the icon glyph */
         margin: 0 !important;
     }
 
@@ -2879,10 +3168,10 @@ input[type="range"]::-ms-fill-lower {
         height: 44px;
         padding: 0;
         border: 1px dashed rgba(255, 255, 255, 0.22);
-        border-radius: 10px;
+        border-radius: var(--radius-surface);
         background: rgba(0, 0, 0, 0.22);
         color: var(--text-muted);
-        font-size: 17px;
+        font-size: var(--t-fs-h2);
         cursor: pointer;
         flex: 0 0 auto;
         order: 99;                              /* sits at the end of the collapsed row */
@@ -2907,7 +3196,7 @@ input[type="range"]::-ms-fill-lower {
         padding: 11px 14px !important;
         gap: 10px !important;
         justify-content: flex-start !important;
-        font-size: 14px !important;            /* labels visible again */
+        font-size: var(--t-fs-body)!important;            /* labels visible again */
         overflow: visible;
     }
 
@@ -2935,7 +3224,7 @@ input[type="range"]::-ms-fill-lower {
     flex-direction: column;
 }
 .feedback-modal-content {
-    padding: 16px 20px 20px;
+    padding: var(--t-4) var(--modal-padding) var(--modal-padding);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -2944,11 +3233,11 @@ input[type="range"]::-ms-fill-lower {
 .feedback-intro {
     margin: 0 0 6px;
     color: var(--text-muted, var(--text-main));
-    font-size: 0.92rem;
+    font-size: var(--t-fs-body);
     line-height: 1.4;
 }
 .feedback-label {
-    font-size: 0.85rem;
+    font-size: var(--t-fs-body);
     font-weight: 600;
     color: var(--text-main);
     margin-top: 8px;
@@ -2956,13 +3245,13 @@ input[type="range"]::-ms-fill-lower {
 .feedback-input {
     width: 100%;
     box-sizing: border-box;
-    background: var(--bg-input, rgba(255, 255, 255, 0.04));
+    background: var(--bg-dark);
     color: var(--text-main);
     border: 1px solid rgba(var(--accent-rgb), 0.25);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     padding: 8px 10px;
     font: inherit;
-    font-size: 0.95rem;
+    font-size: var(--t-fs-h2);
     transition: border-color 0.15s ease;
 }
 .feedback-input:focus {
@@ -2977,24 +3266,24 @@ input[type="range"]::-ms-fill-lower {
 }
 .feedback-count {
     align-self: flex-end;
-    font-size: 0.78rem;
+    font-size: var(--t-fs-label);
     color: var(--text-muted, rgba(255, 255, 255, 0.55));
     margin-top: -4px;
 }
 .feedback-hint {
-    font-size: 0.8rem;
+    font-size: var(--t-fs-label);
     color: var(--text-muted, rgba(255, 255, 255, 0.55));
 }
 .feedback-status {
     margin-top: 4px;
     padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.9rem;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
     line-height: 1.35;
 }
-.feedback-status-info    { background: rgba(var(--accent-rgb, 94, 198, 255), 0.12); color: var(--accent-blue, #5ec6ff); }
-.feedback-status-success { background: rgba( 76, 217, 100, 0.14); color: #4cd964; }
-.feedback-status-error   { background: rgba(255,  85,  85, 0.15); color: #ff8a8a; }
+.feedback-status-info    { background: rgba(var(--accent-rgb), 0.12); color: var(--accent-blue); }
+.feedback-status-success { background: rgba(var(--success-rgb), 0.14); color: var(--success-ink); }
+.feedback-status-error   { background: rgba(var(--danger-rgb), 0.15); color: var(--danger-ink); }
 .feedback-actions {
     display: flex;
     justify-content: flex-end;
@@ -3023,10 +3312,10 @@ input[type="range"]::-ms-fill-lower {
     position: relative;
     width: 72px;
     height: 72px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     overflow: hidden;
     border: 1px solid rgba(var(--accent-rgb), 0.25);
-    background: var(--bg-input, rgba(255, 255, 255, 0.04));
+    background: var(--bg-dark);
 }
 .feedback-attachment-thumb img {
     width: 100%;
@@ -3040,11 +3329,11 @@ input[type="range"]::-ms-fill-lower {
     right: 2px;
     width: 22px;
     height: 22px;
-    border-radius: 50%;
+    border-radius: var(--radius-circle);
     border: none;
     background: rgba(0, 0, 0, 0.65);
-    color: #fff;
-    font-size: 0.75rem;
+    color: var(--text-main);
+    font-size: var(--t-fs-label);
     line-height: 1;
     cursor: pointer;
     display: flex;
@@ -3059,17 +3348,17 @@ input[type="range"]::-ms-fill-lower {
 .feedback-attachment-add {
     width: 72px;
     height: 72px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     border: 1px dashed rgba(var(--accent-rgb), 0.45);
     background: transparent;
     color: var(--text-muted, rgba(255, 255, 255, 0.55));
-    font-size: 1.25rem;
+    font-size: var(--t-fs-h2);
     cursor: pointer;
     transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 .feedback-attachment-add:hover:not(:disabled) {
     border-color: rgba(var(--accent-rgb), 0.8);
-    color: var(--accent-blue, #5ec6ff);
+    color: var(--accent-blue);
     background: rgba(var(--accent-rgb), 0.06);
 }
 .feedback-attachment-add:disabled {
@@ -3112,14 +3401,41 @@ summary:focus-visible,
 .icon-btn:focus-visible,
 .custom-select-trigger:focus-visible,
 .custom-select-option:focus-visible {
-    outline: 2px solid var(--accent-blue, #5ec6ff);
+    outline: 2px solid var(--accent-blue);
     outline-offset: 2px;
 }
 
-/* Reduced motion. One app-wide guard instead of per-stylesheet blocks: it
-   neutralises every transition and animation (including the pulses, skeleton
-   sweep and fades defined in the view stylesheets) while leaving the UI fully
-   functional — nothing here changes layout, display or visibility. */
+/* The select2 skin's own `outline: none` sits at 3-selector (and one #id)
+   specificity, so it outranks the bare `input:focus-visible` above. These two
+   restate the ring at matching weight — without them the search field inside
+   every multi-select is a keyboard dead end. */
+#view-container .select2-container--btt-dark .select2-search__field:focus-visible,
+.select2-container--btt-dark .select2-search--inline .select2-search__field:focus-visible,
+.select2-container--btt-dark .select2-search--dropdown .select2-search__field:focus-visible {
+    outline: 2px solid var(--accent-blue) !important;
+    outline-offset: 2px;
+}
+
+/* Placeholders sit in page-graphite wells. --text-muted at any opacity below
+   ~85% drops under 4.5:1 there, so they get their own measured token. */
+input::placeholder,
+textarea::placeholder,
+.select2-container--btt-dark .select2-selection__placeholder {
+    color: var(--text-placeholder);
+    opacity: 1; /* Firefox dims placeholders by default; the token is already measured. */
+}
+
+/* Reduced motion. One app-wide guard instead of per-stylesheet blocks.
+   Reduced motion means "stop moving", not "stop telling me things", so this is
+   two rules rather than one blanket kill:
+
+   1. Transitions and one-shot animations collapse to ~0 and land on their END
+      state. Nothing here changes layout, display or visibility, so an entrance
+      animation still ends up visible instead of stuck at opacity 0.
+   2. Loading spinners are exempt. Freezing `fa-spin` at iteration 1 leaves a
+      tilted glyph parked mid-rotation and the app reads as hung — worse than
+      the motion it removed. They keep animating, but as a slow opacity pulse:
+      same message ("still working"), none of the rotation. */
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -3129,6 +3445,27 @@ summary:focus-visible,
         transition-duration: 0.01ms !important;
         scroll-behavior: auto !important;
     }
+
+    .fa-spin,
+    .fa-spin-pulse,
+    .fa-pulse,
+    .fa-spinner {
+        animation: bttWorkingPulse 1.6s ease-in-out infinite !important;
+        animation-duration: 1.6s !important;
+        animation-iteration-count: infinite !important;
+    }
+
+    /* The rail's width animation is the app's one sanctioned layout transition
+       (see #sidebar). Under reduced motion it simply snaps. */
+    #sidebar,
+    #mobile-nav-toggle {
+        transition: none !important;
+    }
+}
+
+@keyframes bttWorkingPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
 }
 
 

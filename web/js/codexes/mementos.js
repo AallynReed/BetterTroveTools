@@ -5,7 +5,7 @@ function initMementosView() {
 
     if (typeof Vue === 'undefined') {
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Vue failed to load for Memento Codex.</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Memento Codex.</div>`;
         return;
     }
 
@@ -325,7 +325,7 @@ function initMementosView() {
     } catch (err) {
         console.error("Failed to initialize Memento Codex app:", err);
         root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: #ff5555; padding: 20px;">Failed to initialize Memento Codex: ${String((err && err.message) || err)}</div>`;
+        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Memento Codex: ${String((err && err.message) || err)}</div>`;
     } finally {
         delete root.dataset.mementosInitializing;
     }

@@ -7,11 +7,17 @@ document.addEventListener('star_chart_loaded', async () => {
 
     const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } = Vue;
 
+    // Chart data hues, NOT design-system colour. Each constellation carries its own
+    // identity colour (and a minor/major tier within it) the way a rarity tier does,
+    // so these stay literal instead of becoming tokens. They are also fed through
+    // mixColors() below, which parses hex — a var() reference would not survive it.
     const COLORS = {
         Combat: { minor: "#FF8F00", major: "#D84315" },
         Gathering: { minor: "#00695C", major: "#558B2F" },
         Pve: { minor: "#6A1B9A", major: "#283593" }
     };
+    // Same reason: the "this node replaces another" marker is blended with the node's
+    // own constellation hue, so it has to be a parseable hex, not a token.
     const REPLACEMENT_GOLD = "#d8ab45";
     const COMPACT_CODE_PREFIX = 'SC:';
     const ROOT_TO_ABBREV = { combat: 'c', gathering: 'g', pve: 'p' };
@@ -488,7 +494,10 @@ document.addEventListener('star_chart_loaded', async () => {
                         muted: !isSelected && !isOverwritten && node.Type !== 'Root',
                         style: node.Type === 'Root'
                             ? {
-                                fill: rootActive ? 'rgba(255, 255, 255, 0.06)' : 'var(--bg-dark, #111)',
+                                // Surfaces come from the tonal ramp: the resting root sits
+                                // inset (page graphite) on the panel, the active one lifts to
+                                // raised graphite ("you can act on this").
+                                fill: rootActive ? 'var(--bg-hover)' : 'var(--bg-dark)',
                                 stroke: isReplacementTip ? REPLACEMENT_GOLD : mixColors(node.stroke, '#ffffff', rootActive ? 0.24 : 0)
                             }
                             : {
@@ -497,7 +506,7 @@ document.addEventListener('star_chart_loaded', async () => {
                                     : (isSelected || isStatHighlighted ? mixColors(baseColor, '#ffffff', isStatHighlighted ? 0.32 : 0.22) : baseColor),
                                 stroke: isReplacementTip
                                     ? mixColors(REPLACEMENT_GOLD, '#ffffff', 0.18)
-                                    : (isSelected || isStatHighlighted ? mixColors(baseColor, '#ffffff', isStatHighlighted ? 0.5 : 0.38) : '#0f1319'),
+                                    : (isSelected || isStatHighlighted ? mixColors(baseColor, '#ffffff', isStatHighlighted ? 0.5 : 0.38) : 'var(--bg-dark)'),
                                 opacity: isOverwritten
                                     ? 0.24
                                     : (isSelected || isReplacementTip || isStatHighlighted

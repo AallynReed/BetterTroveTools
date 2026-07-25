@@ -1769,7 +1769,12 @@
 "Account renamed.": "trove.renamed",
 "Reveal email": "trove.reveal_emails",
 "Hide email": "trove.hide_emails",
-"Installed version": "trove.installed_version"
+"Installed version": "trove.installed_version",
+"Collapse sidebar": "app.collapse_sidebar",
+"Open menu": "app.open_menu",
+"Command palette": "app.command_palette",
+"Commands": "app.commands",
+"Search commands or jump to a tool...": "app.search_commands_or_jump_to_a_tool"
 },
 "en": {
 "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3606,6 +3611,11 @@
 "trove.renamed": "Account renamed.",
 "trove.reveal_emails": "Reveal email",
 "trove.hide_emails": "Hide email",
-"trove.installed_version": "Installed version"
+"trove.installed_version": "Installed version",
+"app.collapse_sidebar": "Collapse sidebar",
+"app.open_menu": "Open menu",
+"app.command_palette": "Command palette",
+"app.commands": "Commands",
+"app.search_commands_or_jump_to_a_tool": "Search commands or jump to a tool..."
 }
 }

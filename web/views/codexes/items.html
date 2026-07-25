@@ -95,12 +95,12 @@
             </div>
             <div v-if="item.tradability || item.lootbox || item.decay || item.unlocks.length" class="ally-footer item-footer">
                 <span v-if="item.tradability" class="footer-stat">
-                    <i class="fa-solid" :class="item.tradability === 'Tradable' ? 'fa-right-left' : 'fa-lock'" :style="{ color: item.tradability === 'Tradable' ? '#7ed957' : '#b0bec5' }"></i>
+                    <i class="fa-solid" :class="item.tradability === 'Tradable' ? 'fa-right-left' : 'fa-lock'" :style="{ color: item.tradability === 'Tradable' ? 'var(--success)' : 'var(--text-muted)' }"></i>
                     {{ t(item.tradability) }}
                 </span>
-                <span v-if="item.lootbox" class="footer-stat"><i class="fa-solid fa-box-open" style="color: #ffd54f;"></i> {{ t('items.lootbox') }}</span>
-                <span v-if="item.decay" class="footer-stat"><i class="fa-solid fa-hourglass-half" style="color: #ff9800;"></i> {{ t('items.decay') }}</span>
-                <span v-if="item.unlocks.length" class="footer-stat"><i class="fa-solid fa-unlock" style="color: #5ec6ff;"></i> {{ t('common.unlocks_count').replace('{count}', item.unlocks.length) }}</span>
+                <span v-if="item.lootbox" class="footer-stat"><i class="fa-solid fa-box-open" style="color: var(--warning);"></i> {{ t('items.lootbox') }}</span>
+                <span v-if="item.decay" class="footer-stat"><i class="fa-solid fa-hourglass-half" style="color: var(--warning);"></i> {{ t('items.decay') }}</span>
+                <span v-if="item.unlocks.length" class="footer-stat"><i class="fa-solid fa-unlock" style="color: var(--accent-blue);"></i> {{ t('common.unlocks_count').replace('{count}', item.unlocks.length) }}</span>
             </div>
         </div>
     </div>

@@ -141,16 +141,9 @@ document.addEventListener('settings_loaded', async () => {
                 }
             };
 
-            const applyAccentColor = (accentColor) => {
-                document.documentElement.style.setProperty('--accent-blue', accentColor);
-                const hex = String(accentColor || '').replace('#', '');
-                if (hex.length === 6) {
-                    const r = parseInt(hex.substring(0, 2), 16);
-                    const g = parseInt(hex.substring(2, 4), 16);
-                    const b = parseInt(hex.substring(4, 6), 16);
-                    document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
-                }
-            };
+            // Shared with startup (main.js) so --accent-blue, --accent-rgb and the
+            // derived --accent-ink can never drift apart between the two call sites.
+            const applyAccentColor = (accentColor) => window.applyAccentColor(accentColor);
 
             const applyAppFont = (appFont) => {
                 // Apply font globally

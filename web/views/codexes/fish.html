@@ -98,13 +98,13 @@
                 </div>
                 <div class="ally-footer item-footer">
                     <span v-if="weightText(fish)" class="footer-stat" :title="t('fish.weight_range_lbs')">
-                        <i class="fa-solid fa-weight-hanging" style="color:#5ec6ff;"></i> {{ weightText(fish) }}
+                        <i class="fa-solid fa-weight-hanging" style="color: var(--accent-blue);"></i> {{ weightText(fish) }}
                     </span>
                     <span v-if="trophyCount(fish)" class="footer-stat" :title="t('fish.trophy_variants_basic_silver_gold')">
-                        <i class="fa-solid fa-trophy" style="color:#ffd54f;"></i> {{ t('fish.count_trophies').replace('{count}', trophyCount(fish)) }}
+                        <i class="fa-solid fa-trophy" style="color: var(--warning);"></i> {{ t('fish.count_trophies').replace('{count}', trophyCount(fish)) }}
                     </span>
                     <span v-if="fish.tradable !== null && fish.tradable !== undefined" class="footer-stat">
-                        <i class="fa-solid" :class="fish.tradable ? 'fa-right-left' : 'fa-lock'" :style="{ color: fish.tradable ? '#7ed957' : '#b0bec5' }"></i>
+                        <i class="fa-solid" :class="fish.tradable ? 'fa-right-left' : 'fa-lock'" :style="{ color: fish.tradable ? 'var(--success)' : 'var(--text-muted)' }"></i>
                         {{ t(fish.tradable ? 'Tradable' : 'Untradable') }}
                     </span>
                 </div>

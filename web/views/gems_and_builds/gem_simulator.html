@@ -13,8 +13,8 @@
                             <div class="slot" :class="slotDragClass('equipped', slot.idx)" :data-has-item="!!equipped[slot.idx]" @dragenter.prevent="onEquippedDragEnter($event, slot.idx)" @dragover.prevent="onEquippedDragOver($event, slot.idx)" @dragleave="onSlotDragLeave('equipped', slot.idx, $event)" @drop="onDropEquipped($event, row.elementId, slot.typeRestriction, slot.idx)">
                                 <div v-if="equipped[slot.idx]" class="item" draggable="true" @dragstart="onDragStart($event, 'equipped', slot.idx)" @click="selectGem(equipped[slot.idx], 'equipped', slot.idx)" @contextmenu.prevent.stop="showContextMenu($event, equipped[slot.idx], 'equipped', slot.idx)" @mouseenter="showTooltip($event, equipped[slot.idx])" @mousemove="moveTooltip" @mouseleave="hideTooltip">
                                     <div class="item-img-holder">
-                                        <img class="item-tier-bg" :src="gemTierBgUrl(equipped[slot.idx])" draggable="false">
-                                        <img class="item-gem-img" :src="gemImageUrl(equipped[slot.idx])" draggable="false">
+                                        <img class="item-tier-bg" :src="gemTierBgUrl(equipped[slot.idx])" draggable="false" alt="">
+                                        <img class="item-gem-img" :src="gemImageUrl(equipped[slot.idx])" draggable="false" :alt="equipped[slot.idx].gem_name ? t(equipped[slot.idx].gem_name) : ''">
                                         <div class="item-lv">Lv.{{ equipped[slot.idx].level }}</div>
                                         <div class="item-power">{{ equipped[slot.idx].power_rank }}</div>
                                     </div>
@@ -32,17 +32,17 @@
                     <div class="primordial-toggles-row">
                         <label v-for="element in elementsList" :key="element.id" class="primordial-toggle-label">
                             <input type="checkbox" class="primordial-toggle-checkbox" v-model="primordialToggles[element.id]">
-                            <span class="primordial-toggle-slider" :style="{ background: primordialToggles[element.id] ? element.color : '#333' }"></span>
+                            <span class="primordial-toggle-slider" :style="{ background: primordialToggles[element.id] ? element.color : 'var(--border-color)' }"></span>
                             <span :style="{ color: element.color }">{{ element.name }}</span>
                         </label>
                     </div>
 
                     <div class="selected-stats-square" style="width: 100%; max-width: 100%; box-sizing: border-box;">
-                        <div style="text-align:center; font-weight:bold; font-size:1.1em; margin-bottom:10px; color:var(--accent-blue);">
+                        <div style="text-align:center; font-weight:bold; font-size:var(--t-fs-h2); margin-bottom:10px; color:var(--accent-blue);">
                             {{ t("gems.gem_simulator.total_power_rank_pr").replace("{pr}", totalPRBuffed) }}
                         </div>
-                        <hr style="width:100%; border-color:#444c5e; margin-bottom: 10px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9em;">
+                        <hr style="width:100%; border-color:var(--border-color); margin-bottom: 10px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--t-2); font-size: var(--t-fs-body);">
                             <div v-for="stat in sortedStatTotals" :key="stat.name">
                                 <span style="color:var(--text-muted);">{{ t(stat.name) }}</span><br>
                                 <b>{{ formatStat(stat.value) }}</b>
@@ -100,22 +100,22 @@
                 <div class="placeholder-text">{{ t('gems.gem_simulator.select_a_gem_to_view_details') }}</div>
             </div>
             <div v-else>
-                <div style="text-align: center; font-weight: bold; font-size: 1.2em; margin-bottom: 15px;">
+                <div style="text-align: center; font-weight: bold; font-size: var(--t-fs-h2); margin-bottom: 15px;">
                     {{ selected.gem_name ? t(selected.gem_name) : `(${t('gems.gem_simulator.unnamed_gem')})` }}
                 </div>
 
                 <div class="selected-container">
                     <div class="big-slot" draggable="true" @dragstart="onDragStart($event, 'selected', 0)">
                         <div class="big-slot-inner-holder">
-                            <img class="big-slot-tier-bg" :src="gemTierBgUrl(selected)" draggable="false">
-                            <img class="big-slot-gem-img" :src="gemImageUrl(selected)" draggable="false">
+                            <img class="big-slot-tier-bg" :src="gemTierBgUrl(selected)" draggable="false" alt="">
+                            <img class="big-slot-gem-img" :src="gemImageUrl(selected)" draggable="false" :alt="selected.gem_name ? t(selected.gem_name) : ''">
                             <div class="big-slot-lv">Lv.{{ selected.level }}</div>
                             <div class="big-slot-power">{{ selected.power_rank }}</div>
                         </div>
                     </div>
 
                     <div class="selected-stats-square" style="flex: 1;">
-                        <div style="font-size: 0.9em; line-height: 1.6;">
+                        <div style="font-size: var(--t-fs-body); line-height: 1.6;">
                             <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.power') }}</span> <b>{{ selected.power_rank }}</b></div>
                             <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.level') }}</span> <b>{{ selected.level }}</b></div>
                             <div><span style="color:var(--text-muted)">{{ t('gems.gem_simulator.type') }}</span> <b>{{ getTypeDisplayName(selected.type) }}</b></div>
@@ -127,9 +127,9 @@
 
                 <div class="stat-list-column">
                     <div v-for="(stat, idx) in selected.stats" :key="'stat-'+idx" class="stat-vert-square" :class="{ 'stat-vert-square-selected': selectedStatIdx === idx }" @click="selectedStatIdx = idx">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: var(--t-2);">
                             <div class="stat-label" style="margin: 0;">
-                                <b>{{ getStatValue(selected, idx).toFixed(2) }}</b> <span style="color:var(--text-muted); font-size:0.9em; font-weight:normal;">{{ t(getStatName(selected, idx)) }}</span>
+                                <b>{{ getStatValue(selected, idx).toFixed(2) }}</b> <span style="color:var(--text-muted); font-size:var(--t-fs-label); font-weight:normal;">{{ t(getStatName(selected, idx)) }}</span>
                             </div>
                             <div class="stat-augment-pct" style="position: relative; right: 0; top: 0; margin: 0;">{{ ((stat.augmentation_progress || 0) * 100).toFixed(1) }}%</div>
                         </div>
@@ -146,13 +146,17 @@
                 </div>
 
                 <div class="button-row">
+                    <!-- The augment/modifier options carry no human-readable name in the
+                         data (only an augment id and the modifier keys), so their icons
+                         have nothing to be described with; the picker is labelled by the
+                         action button below it, hence alt="". -->
                     <div class="action-group" style="display: flex;">
                         <div v-for="aug in augmentOptions" :key="aug.key" class="action-square" :class="{ selected: selectedActionKey === aug.key }" @click="selectedActionKey = aug.key">
-                            <img :src="aug.img">
+                            <img :src="aug.img" alt="">
                         </div>
                         <div class="action-separator"></div>
                         <div v-for="mod in modifierOptions" :key="mod.key" class="action-square" :class="{ selected: selectedActionKey === mod.key }" @click="selectedActionKey = mod.key">
-                            <img :src="mod.img">
+                            <img :src="mod.img" alt="">
                         </div>
                     </div>
                 </div>
@@ -189,8 +193,8 @@
                 <div v-for="(item, idx) in inventory" :key="'inv-'+idx" class="slot" :data-has-item="!!item" @dragenter.prevent="onInventoryDragEnter($event, idx)" @dragover.prevent="onInventoryDragOver($event, idx)" @dragleave="onSlotDragLeave('inventory', idx, $event)" @drop="onDropInventory($event, idx)">
                     <div v-if="item" class="item" draggable="true" @dragstart="onDragStart($event, 'inventory', idx)" @click="selectGem(item, 'inventory', idx)" @contextmenu.prevent.stop="showContextMenu($event, item, 'inventory', idx)" @mouseenter="showTooltip($event, item)" @mousemove="moveTooltip" @mouseleave="hideTooltip">
                         <div class="item-img-holder">
-                            <img class="item-tier-bg" :src="gemTierBgUrl(item)" draggable="false">
-                            <img class="item-gem-img" :src="gemImageUrl(item)" draggable="false">
+                            <img class="item-tier-bg" :src="gemTierBgUrl(item)" draggable="false" alt="">
+                            <img class="item-gem-img" :src="gemImageUrl(item)" draggable="false" :alt="item.gem_name ? t(item.gem_name) : ''">
                             <div class="item-lv">Lv.{{ item.level }}</div>
                             <div class="item-power">{{ item.power_rank }}</div>
                         </div>

@@ -83,8 +83,8 @@
                         <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_file') }}</span></button>
                         <button class="primary-btn" @click="autoStructureBuild" :disabled="store.isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="store.isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.auto_fix_file_locations') }}</span></button>
                     </div>
-                    <div class="table-container" :class="{ 'field-invalid': isBuildFieldInvalid('files') }" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                    <div class="table-container" :class="{ 'field-invalid': isBuildFieldInvalid('files') }" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-surface); background: var(--bg-panel);">
+                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body);">
                             <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                 <tr>
                                     <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
@@ -93,9 +93,9 @@
                             </thead>
                             <tbody>
                                 <tr v-for="file in build.files" :key="file.path">
-                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('modder_tools.click_to_open_containing_folder')" style="color: var(--text-main); font-size: 13px; word-break: break-all; cursor: pointer;">
+                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('modder_tools.click_to_open_containing_folder')" style="color: var(--text-main); font-size: var(--t-fs-body); word-break: break-all; cursor: pointer;">
                                         <div>{{ file.internal_path }}</div>
-                                        <div style="color: var(--text-muted); font-size: 11px;">{{ file.path }}</div>
+                                        <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ file.path }}</div>
                                     </td>
                                     <td style="text-align: right;"><button class="icon-btn-small danger" :title="t('modder_tools.remove_file')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
                                 </tr>

@@ -1,94 +1,124 @@
+/* Calculators tab.
+   Every value here comes from the token layer in style.css `:root` — the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. Nothing is redefined locally.
+
+   One local indirection survives: `--calc-accent`, set per tab panel from the
+   markup. It is consumed as `var(--calc-accent, var(--accent-blue))` so a card
+   outside a tab still follows the user's accent. The literals it is *fed* live
+   in calculators.html and are out of this file's reach. */
 .calculators-container {
-    padding: 20px;
-    animation: fadeIn 0.4s ease-out;
+    /* The shell reserves 260px for the sidebar until 900px, so this view has to
+       respond to the space it is actually in, not to the window. */
+    container-type: inline-size;
+    padding: var(--view-padding);
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .page-header {
-    margin-bottom: 18px;
+    margin-bottom: var(--t-4);
 }
 
 .page-header h1 {
-    font-size: 2.2em;
-    margin-bottom: 5px;
-    color: #fff;
+    /* Page title role — once per view. */
+    font-size: var(--t-fs-title);
+    line-height: 1.2;
+    margin-bottom: var(--t-1);
+    color: var(--text-main);
 }
 
 .tabs-wrapper {
     max-width: none;
     width: 100%;
     margin: 0;
-    background: var(--bg-panel, #1e1e1e);
-    border-radius: 12px;
+    background: var(--bg-panel);
+    border-radius: var(--radius-surface);
     overflow: hidden;
 }
 
+/* One tab vocabulary, app-wide. This block used to be a full-width segmented
+   control — `flex: 1` cells, square bottoms, a 2px accent underline — while
+   Settings, Modder Tools and File Manager used a content-width row of tinted
+   pills for the identical job. DESIGN.md names that split explicitly ("two
+   incompatible definitions already collide by name"), so this converges on the
+   majority form.
+
+   The equal-width version was also the more fragile one: four `flex: 1` cells
+   divide the row regardless of label length, and this app ships 9 locales where
+   German and Russian run ~2x long. A content-width row just wraps. */
 .tab-buttons {
     display: flex;
-    background: rgba(0, 0, 0, 0.2);
+    flex-wrap: wrap;
+    gap: var(--control-gap);
+    padding: var(--t-3) var(--t-4) 0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .tab-btn {
-    flex: 1;
     background: transparent;
-    border: none;
-    border-radius: 0;
-    padding: 11px 14px;
-    color: var(--text-muted, #a3adc2);
-    font-size: 1em;
-    font-weight: bold;
+    color: var(--text-muted);
+    border: 1px solid transparent;
+    padding: 10px 20px;
+    font-size: var(--t-fs-body);
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    border-bottom: 3px solid transparent;
+    border-radius: var(--radius-control);
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 10px;
+    gap: var(--t-2);
 }
 
 .tab-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--bg-hover);
+    color: var(--text-main);
+}
+
+/* Negative offset because .tabs-wrapper clips overflow — an outward ring would
+   be cut off on the first and last tab. */
+.tab-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: -2px;
 }
 
 .tab-btn.active {
-    color: #fff;
-    border-bottom: 3px solid var(--accent-blue);
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(var(--accent-rgb), 0.14);
+    color: var(--accent-blue);
+    border-color: rgba(var(--accent-rgb), 0.45);
 }
-
-.tab-btn[data-tab="pr-tab"].active { border-bottom-color: #fbc02d; }
-.tab-btn[data-tab="mastery-tab"].active { border-bottom-color: #ff9800; }
-.tab-btn[data-tab="mf-tab"].active { border-bottom-color: var(--accent-blue); }
-.tab-btn[data-tab="light-tab"].active { border-bottom-color: #00bcd4; }
 
 .tab-content {
     display: none;
-    padding: 0 18px 18px 18px;
+    padding: 0 var(--t-4) var(--t-4);
     min-height: 500px;
 }
 
 .tab-content.active {
     display: block;
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
+/* Sticky section header. It scrolls with the view rather than floating above
+   the page, so it gets an opaque surface and a hairline instead of the shadow
+   and blur it used to carry (DESIGN.md > The Floating-Only Rule / Blur Budget). */
 .mf-header {
     text-align: left;
-    margin: 0 -18px 16px -18px;
-    background: rgba(29, 35, 43, 0.9);
-    backdrop-filter: blur(12px);
-    padding: 14px 18px;
-    border-bottom: 2px solid var(--border-color);
+    margin: 0 calc(var(--t-4) * -1) var(--t-4);
+    background: var(--bg-panel);
+    padding: var(--surface-padding) var(--t-4);
+    border-bottom: 1px solid var(--border-color);
     position: sticky;
     top: 0;
+    /* Local ordering only — the container-type on .calculators-container gives
+       this view its own stacking context, so it never competes with the app's
+       dropdowns and must not borrow their token. */
     z-index: 100;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 
 .compact-header {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--control-gap);
     flex-wrap: wrap;
 }
 
@@ -101,7 +131,7 @@
     flex: 1 1 520px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
 }
 
@@ -110,7 +140,7 @@
     min-height: 1px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: var(--control-gap);
     align-items: center;
 }
 
@@ -124,30 +154,34 @@
     margin-left: auto;
 }
 
-.mf-total-label { 
-    font-size: 0.85em; 
-    color: var(--text-muted); 
-    display: block; 
-    margin-bottom: 6px; 
+/* Uppercase eyebrow over the hero numeral — the micro role, weight and
+   tracking included. */
+.mf-total-label {
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: var(--t-1);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
+/* The one hero numeral per tab. The coloured text-shadow halo it used to carry
+   was decoration, not state, so it is gone. */
 .mf-total-value {
-    font-size: 2.8em;
-    font-weight: 900;
+    font-size: var(--t-fs-display);
+    font-weight: 800;
     color: var(--calc-accent, var(--accent-blue));
-    text-shadow: 0 0 20px color-mix(in srgb, var(--calc-accent, var(--accent-blue)) 40%, transparent);
     line-height: 1;
 }
 
-.mf-breakdown { 
-    font-size: 0.9em; 
-    color: #a3adc2; 
-    background: rgba(0,0,0,0.3);
+.mf-breakdown {
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
+    background: var(--bg-dark);
     display: inline-block;
-    padding: 6px 15px;
-    border-radius: 20px;
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-pill);
     max-width: 100%;
 }
 
@@ -156,10 +190,10 @@
 }
 
 .mastery-stat-box {
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    padding: 9px 16px;
-    border-radius: 8px;
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-control);
     display: flex;
     flex-direction: column;
     min-width: 120px;
@@ -168,13 +202,13 @@
 .summary-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.28);
-    color: #d7ddea;
-    font-size: 0.86em;
+    gap: var(--t-2);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
     white-space: nowrap;
 }
 
@@ -182,43 +216,56 @@
     color: var(--text-main);
 }
 
+/* Secondary readouts, not a second hero. The tab's one display-sized numeral is
+   .mf-total-value, so these sit at heading size and lean on weight instead. */
 .mastery-stat-box .stat-val {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #fff;
+    font-size: var(--t-fs-h2);
+    font-weight: 700;
+    color: var(--text-main);
 }
 
 .mastery-stat-box .stat-label {
-    font-size: 0.8em;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
     color: var(--text-muted);
     text-transform: uppercase;
-    margin-top: 4px;
+    margin-top: var(--t-1);
 }
 
 .btn-reset {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--bg-hover);
     color: var(--text-muted);
     border: 1px solid var(--border-color);
-    padding: 7px 14px;
-    border-radius: 6px;
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
     cursor: pointer;
-    font-size: 0.85em;
+    font-size: var(--t-fs-body);
     font-weight: 600;
-    transition: all 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
+/* Destructive-adjacent: the fill and border take --danger, the label takes
+   --danger-ink because #ef4444 is 4.4:1 on panel and fails AA as text. */
 .btn-reset:hover {
-    background: rgba(255, 85, 85, 0.15);
-    color: #ff5555;
-    border-color: #ff5555;
+    background: rgba(var(--danger-rgb), 0.15);
+    color: var(--danger-ink);
+    border-color: var(--danger);
+}
+.btn-reset:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .mf-calculator-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 14px;
+    gap: var(--surface-gap);
+    /* A toggle card is much shorter than a slider card; without this the short
+       one is stretched into a drawn empty box. */
+    align-items: start;
 }
 
 /* The mastery tab only has two cards; cap their width so they don't stretch
@@ -228,16 +275,19 @@
     justify-content: start;
 }
 
+/* Panel tone on a panel-toned wrapper: the hairline does the separating, which
+   is the whole depth model here. The controls inside then step *down* to the
+   page tone, so the inset fields read as inset. */
 .calc-item {
-    background: rgba(255,255,255,0.03);
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    padding: 14px 16px;
-    border-radius: 10px;
+    padding: var(--surface-padding) var(--t-4);
+    border-radius: var(--radius-surface);
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--control-gap);
     min-height: 92px;
-    transition: all 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), transform var(--dur) var(--t-ease);
 }
 
 /* Center the control (toggle/slider) in whatever vertical space the card has,
@@ -251,167 +301,202 @@
     flex: 1;
 }
 
-.calc-item:hover { 
-    background: rgba(255,255,255,0.05); 
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    border-color: rgba(255, 255, 255, 0.1);
+/* Hover is a lift plus an accent border — no shadow, because a card that stays
+   in the page does not float. */
+.calc-item:hover {
+    background: var(--bg-hover);
+    transform: translateY(-1px);
+    border-color: rgba(var(--accent-rgb), 0.4);
 }
 
 .calc-item-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    font-weight: bold;
-    color: #fff;
-    gap: 10px;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
+    color: var(--text-main);
+    gap: var(--control-gap);
 }
 
+/* Label role rather than micro: these badges carry a translated phrase ("soft
+   cap 1000"), not a one-word eyebrow, and micro at 10px would not survive the
+   longer locales. */
 .calc-item-badge {
     background: color-mix(in srgb, var(--calc-accent, var(--accent-blue)) 12%, transparent);
     color: var(--calc-accent, var(--accent-blue));
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.78em;
+    padding: var(--t-1) var(--t-2);
+    border-radius: var(--radius-pill);
+    font-size: var(--t-fs-label);
     line-height: 1.3;
     white-space: nowrap;
 }
 
 .calc-item-badge.bonus {
-    background: rgba(76, 175, 80, 0.1);
-    color: #4caf50;
+    background: rgba(var(--success-rgb), 0.12);
+    color: var(--success-ink);
 }
 
 .calc-item-badge.patron {
-    background: rgba(251, 192, 45, 0.1);
-    color: #fbc02d;
+    background: rgba(var(--warning-rgb), 0.12);
+    color: var(--warning-ink);
 }
 
-.calc-slider-wrapper { display: flex; gap: 10px; align-items: center; }
+.calc-slider-wrapper { display: flex; gap: var(--control-gap); align-items: center; }
+/* Handle-less, like every other range input in the app — the shared recipe
+   lives in style.css. This block only re-states the track so the fill can use
+   --calc-accent (each calculator tints its own) instead of the plain accent. */
 .calc-slider {
-    -webkit-appearance: none;
-    appearance: none;
     flex: 1;
+}
+.calc-slider::-webkit-slider-runnable-track {
     height: 6px;
-    border-radius: 999px;
-    cursor: pointer;
-    outline: none;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border-color);
     background: linear-gradient(
         to right,
         var(--calc-accent, var(--accent-blue)) 0%,
         var(--calc-accent, var(--accent-blue)) var(--val-pct, 0%),
-        rgba(255, 255, 255, 0.12) var(--val-pct, 0%),
-        rgba(255, 255, 255, 0.12) 100%
+        var(--bg-dark) var(--val-pct, 0%),
+        var(--bg-dark) 100%
     );
 }
-.calc-slider::-webkit-slider-runnable-track {
-    height: 6px;
-    border-radius: 999px;
-    background: transparent;
+.calc-slider::-moz-range-progress {
+    background: var(--calc-accent, var(--accent-blue));
 }
-.calc-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    margin-top: -5px;
-    border-radius: 50%;
-    background: #fff;
-    border: 2px solid var(--calc-accent, var(--accent-blue));
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
-    cursor: pointer;
-    transition: transform 0.12s ease;
-}
-.calc-slider::-webkit-slider-thumb:hover { transform: scale(1.18); }
-.calc-slider:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18); }
 .calc-number-input {
     width: 68px;
-    background: rgba(0,0,0,0.4);
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    color: #fff;
-    padding: 6px;
-    border-radius: 4px;
+    color: var(--text-main);
+    padding: var(--t-2);
+    border-radius: var(--radius-control);
     text-align: center;
-    font-family: monospace;
-    font-size: 1.1em;
+    font-size: var(--t-fs-body);
 }
 
+.calc-number-input::placeholder { color: var(--text-placeholder); }
 .calc-number-input:focus { outline: none; border-color: var(--accent-blue); }
+.calc-number-input:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
+/* The 4px amber left-stripe that used to mark this card is banned outright
+   (DESIGN.md > Shapes). The category now reads from a tinted hairline on all
+   four sides, which is the same information without the tell. */
 .star-chart-calc-item {
-    border-left: 4px solid #ff9800;
+    border-color: color-mix(in srgb, var(--calc-accent, var(--accent-blue)) 45%, var(--border-color));
 }
 
 .star-chart-inline-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--t-2);
 }
 
 .star-chart-template-select {
     width: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    color: #fff;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-size: 0.9em;
+    color: var(--text-main);
+    padding: var(--t-2) 10px;
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-body);
 }
 
+/* Focus is the accent everywhere in this app — it reports "the keyboard is
+   here", which is not a per-tab decoration. */
 .star-chart-template-select:focus {
     outline: none;
-    border-color: #ff9800;
+    border-color: var(--accent-blue);
+}
+.star-chart-template-select:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .star-chart-code-input {
     width: 100%;
     text-align: left;
-    font-size: 0.92em;
-    font-family: monospace;
+    font-size: var(--t-fs-body);
+    /* Monospace is load-bearing here: this is a pasted build code where the
+       user scans character by character to spot a typo. */
+    font-family: var(--font-numeric);
 }
 
 .star-chart-breakdown {
     margin-top: 2px;
-    line-height: 1.45;
+    line-height: 1.5;
 }
 
-.calc-switch { position: relative; display: inline-block; width: 48px; height: 26px; }
+/* One toggle, everywhere. This is the same 44x24 track / 16px knob / 3px inset
+   geometry as .switch in settings.css, rather than a second, larger switch that
+   means exactly the same thing. */
+.calc-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
 .calc-switch input { opacity: 0; width: 0; height: 0; }
 .slider-toggle {
     position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0,0,0,0.5); transition: .3s; border-radius: 26px;
+    background-color: var(--bg-dark);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease);
 }
 .slider-toggle:before {
-    position: absolute; content: ""; height: 18px; width: 18px;
-    left: 3px; bottom: 3px; background-color: #a3adc2;
-    transition: .3s; border-radius: 50%;
+    position: absolute; content: ""; height: 16px; width: 16px;
+    left: 3px; bottom: 3px;
+    background-color: var(--text-muted);
+    border-radius: var(--radius-circle);
+    transition: transform var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
 }
-.calc-switch input:checked + .slider-toggle { background-color: var(--accent-blue); border-color: var(--accent-blue); }
-.calc-switch input:checked + .slider-toggle:before { transform: translateX(22px); background-color: #fff; }
-
-.calc-switch input:checked + .slider-toggle.pr-slider-toggle { 
-    background-color: #fbc02d !important; 
-    border-color: #fbc02d !important; 
+/* The real checkbox is size-zero, so the ring has to be borrowed by the track
+   or keyboard focus is invisible. */
+.calc-switch input:focus-visible + .slider-toggle {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
+.calc-switch input:checked + .slider-toggle { background-color: rgba(var(--accent-rgb), 0.2); border-color: var(--accent-blue); }
+.calc-switch input:checked + .slider-toggle:before { transform: translateX(20px); background-color: var(--accent-blue); }
 
+/* The tab's own hue marks ON here so the switch matches the readout it drives.
+   It is read from --calc-accent instead of the hardcoded #fbc02d / #00bcd4 that
+   used to sit here, and the two !important flags propping those up are gone —
+   the class selector already outranks the base rule. */
+.calc-switch input:checked + .slider-toggle.pr-slider-toggle,
 .calc-switch input:checked + .slider-toggle.light-slider-toggle {
-    background-color: #00bcd4 !important;
-    border-color: #00bcd4 !important;
+    background-color: color-mix(in srgb, var(--calc-accent, var(--accent-blue)) 20%, transparent);
+    border-color: var(--calc-accent, var(--accent-blue));
+}
+.calc-switch input:checked + .slider-toggle.pr-slider-toggle:before,
+.calc-switch input:checked + .slider-toggle.light-slider-toggle:before {
+    background-color: var(--calc-accent, var(--accent-blue));
 }
 
-@keyframes fadeIn { 
-    from { opacity: 0; transform: translateY(5px); } 
-    to { opacity: 1; transform: translateY(0); } 
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(var(--t-1)); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 980px) {
+/* ---- Responsive -------------------------------------------------------
+   Measured on the CONTENT box, not the viewport. The shell reserves 260px for
+   the sidebar until 900px and then drops it entirely, which is why the two
+   viewport queries that used to live here (980px and 720px) both resolved to
+   roughly the same ~690px of real content and fired one on top of the other.
+   One content-box breakpoint replaces both.
+
+   View padding is deliberately not re-declared: it is owned by the cross-app
+   density layer in style.css, and an element cannot match its own container
+   query in any case. */
+@container (max-width: 700px) {
     .mf-header {
         align-items: stretch;
+        margin: 0 calc(var(--t-3) * -1) var(--t-4);
+        padding: var(--t-3);
+    }
+
+    .tab-content {
+        padding: 0 var(--t-3) var(--t-3);
     }
 
     .compact-header {
-        gap: 12px;
+        gap: var(--t-3);
     }
 
     .mastery-summary-strip,
@@ -421,21 +506,6 @@
 
     .mf-header-actions {
         margin-left: 0;
-    }
-}
-
-@media (max-width: 720px) {
-    .calculators-container {
-        padding: 16px;
-    }
-
-    .tab-content {
-        padding: 0 16px 16px 16px;
-    }
-
-    .mf-header {
-        margin: 0 -16px 18px -16px;
-        padding: 16px;
     }
 
     .tab-buttons {
@@ -447,17 +517,13 @@
         white-space: nowrap;
     }
 
-    .mf-total-value {
-        font-size: 2.3em;
-    }
-
     .mastery-stats-grid {
-        gap: 10px;
+        gap: var(--control-gap);
     }
 
     .mastery-stat-box {
         min-width: 104px;
-        padding: 8px 12px;
+        padding: var(--t-2) var(--t-3);
     }
 
     .summary-chip {
@@ -468,9 +534,35 @@
     .mf-calculator-grid {
         grid-template-columns: 1fr;
     }
+}
 
-    .star-chart-breakdown {
-        font-size: 0.84em;
+/* Fallback for engines without container queries only — running it alongside
+   the query above would collapse the layout ~250px early once the sidebar
+   turns into a drawer. */
+@supports not (container-type: inline-size) {
+    @media (max-width: 900px) {
+        .mastery-summary-strip,
+        .mf-summary-strip { flex-basis: 100%; }
+        .mf-header-actions { margin-left: 0; }
+        .tab-buttons { overflow-x: auto; }
+        .tab-btn { min-width: 150px; white-space: nowrap; }
+        .mf-calculator-grid { grid-template-columns: 1fr; }
+        .summary-chip { width: 100%; justify-content: space-between; }
     }
 }
 
+/* Reduced motion: every state still changes, it just stops moving. */
+@media (prefers-reduced-motion: reduce) {
+    .calculators-container,
+    .tab-content.active { animation: none; }
+
+    .tab-btn,
+    .btn-reset,
+    .calc-item,
+    .calc-number-input,
+    .star-chart-template-select,
+    .slider-toggle,
+    .slider-toggle:before { transition-duration: 0.01ms; }
+
+    .calc-item:hover { transform: none; }
+}

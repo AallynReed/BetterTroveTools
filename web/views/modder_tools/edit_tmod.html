@@ -132,8 +132,8 @@
                                 <button class="primary-btn secondary-btn" @click="addEditTmodFilesFromTmod"><i class="fa-solid fa-file-import"></i> <span>{{ t('modder_tools.add_from_tmod') }}</span></button>
                             </div>
                         </div>
-                        <div class="table-container" :class="{ 'field-invalid': isEditTmodFieldInvalid('files') }" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-panel);">
-                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+                        <div class="table-container" :class="{ 'field-invalid': isEditTmodFieldInvalid('files') }" style="max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-surface); background: var(--bg-panel);">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body);">
                                 <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                     <tr>
                                         <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
@@ -143,11 +143,11 @@
                                 </thead>
                                 <tbody>
                                     <tr v-for="file in editTmodDisplayFiles" :key="file.internal_path" :class="{ 'edit-tmod-file-removed': isEditTmodFileRemoved(file) }">
-                                        <td style="color: var(--text-main); font-size: 13px; word-break: break-all;">
+                                        <td style="color: var(--text-main); font-size: var(--t-fs-body); word-break: break-all;">
                                             <div>{{ file.internal_path }}</div>
-                                            <div style="color: var(--text-muted); font-size: 11px;">{{ file.path || file.imported_from || t('modder_tools.embedded_in_archive_memory') }}</div>
+                                            <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ file.path || file.imported_from || t('modder_tools.embedded_in_archive_memory') }}</div>
                                         </td>
-                                        <td style="padding: 10px; color: var(--text-muted); font-size: 12px;">
+                                        <td style="padding: 10px; color: var(--text-muted); font-size: var(--t-fs-label);">
                                             <template v-if="isEditTmodFileRemoved(file)">{{ t('modder_tools.removed_from_in_memory_build') }}</template>
                                             <template v-else-if="file.source === 'disk'">{{ t('modder_tools.replacement_from_disk') }}</template>
                                             <template v-else-if="file.source === 'tmod'">{{ t('modder_tools.imported_from_another_tmod') }}</template>

@@ -1,46 +1,54 @@
-/* Manage Mods / Modpacks tabs — list of your projects + create/edit/delete. */
-.manage-panel { padding: 4px 2px; }
+/* Manage Mods / Modpacks tabs — list of your projects + create/edit/delete.
+   Values come from the token layer in style.css `:root`: the 4pt scale
+   (--t-1..--t-6), the six type roles, the three radii and the four semantics.
+   Nothing is redefined locally. */
+.manage-panel { padding: var(--t-1) 2px; }
 
 .manage-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: var(--t-4);
+    margin-bottom: var(--t-4);
 }
-.manage-header h3 { margin: 0 0 4px; color: var(--text-main); }
-.manage-header .help-text { margin: 0; color: var(--text-muted); font-size: 13px; }
-.manage-header-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.manage-header h3 { margin: 0 0 var(--t-1); color: var(--text-main); }
+.manage-header .help-text { margin: 0; color: var(--text-muted); font-size: var(--t-fs-label); }
+.manage-header-actions { display: flex; gap: var(--control-gap); flex-shrink: 0; }
 
 .manage-create {
     display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
-    padding: 14px;
+    gap: var(--control-gap);
+    margin-bottom: var(--t-4);
+    padding: var(--surface-padding);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    /* A panel, so surface radius rather than the control radius it used. */
+    border-radius: var(--radius-surface);
 }
 .manage-create input[type="text"] { flex: 1; }
 
+/* 40px of vertical air is what makes an empty/loading state read as one —
+   deliberately optical, not snapped onto the 4pt scale. */
 .manage-state {
     text-align: center;
     color: var(--text-muted);
     padding: 40px 0;
 }
-.manage-state.manage-error { color: #ff7a7a; }
+/* --danger (#ef4444) is 4.4:1 on panel and fails AA as text, so error copy uses
+   the ink variant. */
+.manage-state.manage-error { color: var(--danger-ink); }
 
-.manage-list { display: flex; flex-direction: column; gap: 12px; }
+.manage-list { display: flex; flex-direction: column; gap: var(--t-3); }
 
 .manage-card {
     display: flex;
-    gap: 14px;
+    gap: var(--t-4);
     align-items: center;
-    padding: 12px 14px;
+    padding: var(--t-3) var(--t-4);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    transition: border-color 0.15s;
+    border-radius: var(--radius-surface);
+    transition: border-color var(--dur-fast) var(--t-ease);
 }
 .manage-card:hover { border-color: rgba(var(--accent-rgb), 0.4); }
 
@@ -48,19 +56,20 @@
     width: 72px;
     height: 48px;
     flex-shrink: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     overflow: hidden;
     background: var(--bg-dark);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
+    /* Placeholder glyph size, not a type role — this box holds an icon, not copy. */
     font-size: 20px;
 }
 .manage-thumb img { width: 100%; height: 100%; object-fit: cover; }
 
 .manage-card-body { flex: 1; min-width: 0; }
-.manage-card-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.manage-card-top { display: flex; align-items: center; gap: var(--t-2); flex-wrap: wrap; }
 .manage-card-title {
     font-weight: 700;
     color: var(--text-main);
@@ -71,84 +80,101 @@
 }
 .manage-card-summary {
     color: var(--text-muted);
-    font-size: 13px;
-    margin-top: 3px;
+    font-size: var(--t-fs-label);
+    margin-top: var(--t-1);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 .manage-card-stats {
     display: flex;
-    gap: 14px;
-    margin-top: 6px;
+    gap: var(--t-4);
+    margin-top: var(--t-2);
     color: var(--text-muted);
-    font-size: 12px;
+    font-size: var(--t-fs-label);
 }
-.manage-card-stats i { margin-right: 4px; opacity: 0.8; }
+.manage-card-stats i { margin-right: var(--t-1); opacity: 0.8; }
 
+/* Badges: micro type, pill radius, semantic tint. The transparent border keeps
+   every variant the same box, so the outlined .mode marker doesn't jump. */
 .manage-badge {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 2px 8px;
-    border-radius: 999px;
+    letter-spacing: 1px;
+    padding: 2px var(--t-2);
+    border-radius: var(--radius-pill);
+    border: 1px solid transparent;
     background: var(--bg-hover);
     color: var(--text-muted);
 }
-.manage-badge.vis-public { background: rgba(74, 222, 128, 0.14); color: #6ee7a0; }
-.manage-badge.vis-unlisted { background: rgba(251, 191, 36, 0.14); color: #fbbf24; }
-.manage-badge.vis-draft { background: rgba(148, 163, 184, 0.16); color: #cbd5e1; }
+.manage-badge.vis-public { background: rgba(var(--success-rgb), 0.14); color: var(--success-ink); }
+.manage-badge.vis-unlisted { background: rgba(var(--warning-rgb), 0.14); color: var(--warning-ink); }
+/* Draft has no status colour — it is the absence of one, so it keeps the
+   neutral badge instead of inventing a fifth slate. */
+.manage-badge.vis-draft { background: var(--bg-hover); color: var(--text-muted); }
 .manage-badge.collab { background: rgba(var(--accent-rgb), 0.16); color: var(--accent-blue); }
-.manage-badge.mode { background: rgba(168, 130, 255, 0.16); color: #c4b1ff; }
+/* "Releases only" / "Uploaded" is a mode marker, not a status: the four
+   semantics are reserved for state, so it reads as a neutral outline rather
+   than the fifth (purple) hue it used to carry. */
+.manage-badge.mode { background: transparent; border-color: var(--border-color); color: var(--text-muted); }
 
-.manage-card-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.manage-card-actions select { min-width: 104px; padding: 9px 12px; }
+.manage-card-actions { display: flex; align-items: center; gap: var(--t-2); flex-shrink: 0; }
+.manage-card-actions select { min-width: 104px; padding: 9px var(--t-3); }
 
 .icon-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 15px;
+    /* Square on the shared control height, so icon buttons line up with every
+       other control in a row instead of standing 4px taller. */
+    width: var(--control-height);
+    height: var(--control-height);
+    font-size: var(--t-fs-body);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--border-color);
     background: var(--bg-hover);
     color: var(--text-main);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
+    transition: border-color var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease);
 }
 .icon-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
-.icon-btn.danger:hover { border-color: #ef4444; color: #ef4444; }
+/* Border takes the danger fill; the label takes the ink variant, which is the
+   only one of the two that clears AA as text. */
+.icon-btn.danger:hover { border-color: var(--danger); color: var(--danger-ink); }
 
 /* Edit modal */
 .manage-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 10010;
+    /* A hand-written 10010 rendered underneath the app's custom-select
+       dropdowns (200000). */
+    z-index: var(--z-modal);
 }
 .manage-modal-overlay.active { display: flex; }
 .manage-modal {
     width: min(480px, 92vw);
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px 22px;
+    border-radius: var(--radius-surface);
+    padding: var(--modal-padding);
     max-height: 88vh;
     overflow: auto;
+    /* It floats, so it gets the modal shadow — the one place elevation is real. */
+    box-shadow: var(--shadow-modal);
 }
-.manage-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.manage-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--t-3); }
 .manage-modal-head h3 { margin: 0; color: var(--text-main); }
-.manage-modal label { display: block; margin: 12px 0 5px; font-size: 13px; color: var(--text-main); font-weight: 600; }
+.manage-modal label { display: block; margin: var(--t-3) 0 var(--t-1); font-size: var(--t-fs-label); color: var(--text-main); font-weight: 600; }
 .manage-modal input[type="text"], .manage-modal select { width: 100%; }
-.manage-modal-note { color: var(--text-muted); font-size: 12px; margin: 14px 0 0; }
-.manage-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.manage-modal-note { color: var(--text-muted); font-size: var(--t-fs-label); margin: var(--t-4) 0 0; }
+.manage-modal-actions { display: flex; justify-content: flex-end; gap: var(--control-gap); margin-top: var(--t-4); }
 
 /* Shared control styling so injected fragments match the app even though the
    manage views don't reuse a tool-specific input class. */
@@ -156,28 +182,39 @@
 .manage-modal input[type="text"], .manage-modal select {
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
     color: var(--text-main);
-    border-radius: 6px;
-    padding: 9px 11px;
+    padding: 9px 10px;
     outline: none;
-    font-size: 14px;
+    font-size: var(--t-fs-body);
 }
 .manage-panel input[type="text"]:focus, .manage-panel select:focus,
 .manage-modal input[type="text"]:focus, .manage-modal select:focus {
     border-color: var(--accent-blue);
 }
+/* The `outline: none` above out-specifies the app-wide focus floor at the end
+   of style.css, so the keyboard ring has to be restored here. */
+.manage-panel input[type="text"]:focus-visible, .manage-panel select:focus-visible,
+.manage-modal input[type="text"]:focus-visible, .manage-modal select:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+.manage-panel input[type="text"]::placeholder,
+.manage-modal input[type="text"]::placeholder {
+    color: var(--text-placeholder);
+}
 
 /* clickable list cards (open editor) */
 .manage-card { cursor: pointer; }
-.manage-card-actions .primary-btn { padding: 9px 16px; }
+.manage-card-actions .primary-btn { padding: 9px var(--t-4); }
 
 /* ===================== Per-project editor ===================== */
 .manage-editor-bar {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
+    gap: var(--t-4);
+    margin-bottom: var(--t-4);
+    padding-bottom: var(--t-3);
     border-bottom: 1px solid var(--border-color);
 }
 .manage-editor-title {
@@ -192,21 +229,24 @@
 .manage-section {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
+    margin-bottom: var(--surface-gap);
 }
+/* An uppercase, tracked section eyebrow — that is the micro role, not a
+   14px heading wearing micro's clothes. */
 .manage-section > h4 {
-    margin: 0 0 12px;
+    margin: 0 0 var(--t-3);
     color: var(--text-main);
-    font-size: 14px;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
 }
 .manage-section label {
     display: block;
-    margin: 12px 0 5px;
-    font-size: 13px;
+    margin: var(--t-3) 0 var(--t-1);
+    font-size: var(--t-fs-label);
     color: var(--text-main);
     font-weight: 600;
 }
@@ -216,28 +256,36 @@
     width: 100%;
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
     color: var(--text-main);
-    border-radius: 6px;
-    padding: 9px 11px;
+    padding: 9px 10px;
     outline: none;
-    font-size: 14px;
+    font-size: var(--t-fs-body);
     font-family: inherit;
 }
 .manage-section input[type="text"]:focus,
 .manage-section select:focus,
 .manage-section textarea:focus { border-color: var(--accent-blue); }
+.manage-section input[type="text"]:focus-visible,
+.manage-section select:focus-visible,
+.manage-section textarea:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+.manage-section input[type="text"]::placeholder,
+.manage-section textarea::placeholder { color: var(--text-placeholder); }
 .manage-section textarea { resize: vertical; }
-.manage-row { display: flex; gap: 12px; }
+.manage-row { display: flex; gap: var(--t-3); }
 .manage-row > div { flex: 1; min-width: 0; }
-.manage-section-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
-.manage-muted { color: var(--text-muted); font-size: 13px; }
+.manage-section-actions { display: flex; justify-content: flex-end; margin-top: var(--t-4); }
+.manage-muted { color: var(--text-muted); font-size: var(--t-fs-label); }
 
 /* banner */
-.manage-banner-row { display: flex; align-items: center; gap: 16px; }
+.manage-banner-row { display: flex; align-items: center; gap: var(--t-4); }
 .manage-banner-preview {
     width: 200px;
     height: 112px;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
     overflow: hidden;
@@ -249,73 +297,73 @@
 
 /* releases */
 .manage-release-upload {
-    padding: 12px;
+    padding: var(--t-3);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 14px;
+    border-radius: var(--radius-control);
+    margin-bottom: var(--t-4);
 }
-.manage-release-list { display: flex; flex-direction: column; gap: 8px; }
+.manage-release-list { display: flex; flex-direction: column; gap: var(--t-2); }
 .manage-release {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 10px 12px;
+    gap: var(--t-3);
+    padding: var(--t-2) var(--t-3);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
 }
-.manage-release-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.manage-release-info { display: flex; align-items: center; gap: var(--t-2); flex-wrap: wrap; }
 .manage-release-tag { font-weight: 700; color: var(--text-main); }
-.manage-release-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.manage-release-actions { display: flex; gap: var(--t-1); flex-shrink: 0; }
 
 /* variants + entries */
-.manage-variant-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.manage-variant-bar { display: flex; align-items: center; gap: var(--t-2); margin-bottom: var(--t-3); }
 .manage-variant-bar select { flex: 1; }
-.manage-entry-list { display: flex; flex-direction: column; gap: 8px; }
+.manage-entry-list { display: flex; flex-direction: column; gap: var(--t-2); }
 .manage-entry {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 9px 12px;
+    gap: var(--t-3);
+    padding: var(--t-2) var(--t-3);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
 }
 .manage-entry.unavailable { opacity: 0.6; }
-.manage-entry-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.manage-entry-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--t-2); flex-wrap: wrap; }
 .manage-entry-title { font-weight: 600; color: var(--text-main); }
-.manage-entry-controls { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-.manage-lock { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.manage-entry-controls { display: flex; align-items: center; gap: var(--t-2); flex-shrink: 0; }
+.manage-lock { display: flex; align-items: center; gap: var(--t-1); font-size: var(--t-fs-label); color: var(--text-muted); white-space: nowrap; }
 .manage-lock-tag { width: 90px; }
-.manage-entry-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.manage-entry-actions { display: flex; gap: var(--t-1); flex-shrink: 0; }
 
-.manage-addmod { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color); }
-.manage-addmod > h4 { margin: 0 0 10px; font-size: 13px; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; }
-.manage-search-results { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; max-height: 260px; overflow: auto; }
+.manage-addmod { margin-top: var(--t-4); padding-top: var(--t-4); border-top: 1px solid var(--border-color); }
+.manage-addmod > h4 { margin: 0 0 var(--t-2); font-size: var(--t-fs-micro); font-weight: 800; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px; }
+.manage-search-results { display: flex; flex-direction: column; gap: var(--t-1); margin-top: var(--t-2); max-height: 260px; overflow: auto; }
 .manage-search-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
+    gap: var(--t-2);
+    padding: var(--t-2) var(--t-3);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--radius-control);
 }
 .manage-search-row .manage-entry-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* collaborators */
-.manage-collab-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.manage-collab-list { display: flex; flex-direction: column; gap: var(--t-1); margin-bottom: var(--t-2); }
 .manage-collab {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 12px;
+    padding: var(--t-2) var(--t-3);
     background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     color: var(--text-main);
 }
-.manage-collab-add { display: flex; gap: 8px; align-items: center; }
+.manage-collab-add { display: flex; gap: var(--t-2); align-items: center; }
 .manage-collab-add input[type="text"] { flex: 1; }

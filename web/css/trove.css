@@ -1,27 +1,14 @@
 /* Trove tab.
-   Card padding (16px) and radius (10px) come from the shared density layer in
+   Card padding (14px) and radius (10px) come from the shared density layer in
    style.css — this view is enrolled there, so they are deliberately NOT set here.
-   Everything else runs off the 4pt scale and 5-step type scale below. */
+   Every other value comes from the token layer in style.css `:root`: the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. Nothing is redefined locally. */
 .trove-container {
-    --t-1: 4px;
-    --t-2: 8px;
-    --t-3: 12px;
-    --t-4: 16px;
-    --t-5: 24px;
-    --t-6: 32px;
-
-    --t-fs-title: 1.5rem;
-    --t-fs-h2: 1rem;
-    --t-fs-body: 0.875rem;
-    --t-fs-sm: 0.8125rem;
-    --t-fs-xs: 0.75rem;
-
-    --t-ease: cubic-bezier(0.22, 1, 0.36, 1);
-
     container-type: inline-size;
     max-width: 980px;
     margin: 0 auto;
-    color: var(--text-main, #e0e0e0);
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
     /* Section separation (24) vs in-card field spacing (12) = a 2x step, so
@@ -45,8 +32,8 @@
     align-items: center;
     gap: var(--t-2);
 }
-.trove-header h1 i { color: var(--accent-blue, #5ec6ff); font-size: 0.85em; }
-.trove-subtitle { margin: var(--t-1) 0 0; color: var(--text-muted, #a3adc2); font-size: var(--t-fs-sm); }
+.trove-header h1 i { color: var(--accent-blue); font-size: var(--icon-optical); }
+.trove-subtitle { margin: var(--t-1) 0 0; color: var(--text-muted); font-size: var(--t-fs-label); }
 .trove-header-status { display: flex; gap: var(--t-2); align-items: center; }
 
 .trove-pill {
@@ -54,13 +41,13 @@
     align-items: center;
     gap: var(--t-2);
     padding: var(--t-1) 10px;
-    border-radius: 999px;
-    font-size: var(--t-fs-xs);
-    border: 1px solid var(--border-color, #333);
-    color: var(--text-muted, #a3adc2);
+    border-radius: var(--radius-pill);
+    font-size: var(--t-fs-label);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
 }
-.trove-pill.ok { color: #6ee7a8; border-color: rgba(110, 231, 168, 0.35); }
-.trove-pill i { font-size: 0.85em; }
+.trove-pill.ok { color: var(--success-ink); border-color: rgba(var(--success-rgb), 0.35); }
+.trove-pill i { font-size: var(--icon-optical); }
 
 /* ---- Notice ---- */
 .trove-notice {
@@ -68,21 +55,23 @@
     align-items: center;
     gap: var(--t-2);
     padding: 10px var(--t-3);
-    border-radius: 10px;
-    border: 1px solid var(--border-color, #333);
-    background: var(--bg-panel, #1e1e1e);
+    border-radius: var(--radius-surface);
+    border: 1px solid var(--border-color);
+    background: var(--bg-panel);
     font-size: var(--t-fs-body);
 }
-.trove-notice.ok { border-color: rgba(110, 231, 168, 0.4); color: #b8f2d0; }
-.trove-notice.error { border-color: rgba(255, 107, 107, 0.45); color: #ffb4b4; }
-.trove-notice.info { border-color: rgba(var(--accent-rgb, 94, 198, 255), 0.4); color: var(--accent-blue, #5ec6ff); }
+.trove-notice.ok { border-color: rgba(var(--success-rgb), 0.4); color: var(--success-ink); }
+.trove-notice.error { border-color: rgba(var(--danger-rgb), 0.45); color: var(--danger-ink); }
+.trove-notice.info { border-color: rgba(var(--accent-rgb), 0.4); color: var(--accent-blue); }
 .trove-notice span { flex: 1; }
 .trove-notice-close { background: none; border: none; color: inherit; cursor: pointer; opacity: 0.7; padding: var(--t-1); }
 .trove-notice-close:hover { opacity: 1; }
 
 /* ---- Hero (primary control surface) ----
-   Deliberately NOT a card: no border + real elevation makes it a distinct tier
-   from the bordered cards below, instead of a fourth box of the same recipe. */
+   Deliberately NOT a card, but the tier break is carried by tone and the
+   absence of a border — not by a resting shadow, which in this system means
+   "this floats above the page" (DESIGN.md > The Floating-Only Rule). The inset
+   top hairline is a 1px inner light, not elevation. */
 .trove-hero {
     display: flex;
     align-items: center;
@@ -91,10 +80,8 @@
     padding: var(--t-4) var(--t-5);
     background:
         linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
-        var(--bg-panel, #1e1e1e);
-    box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.05),
-        0 8px 24px rgba(0, 0, 0, 0.35);
+        var(--bg-panel);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 .trove-play-main { display: flex; flex-direction: column; gap: var(--t-2); }
 .trove-play-btn {
@@ -103,23 +90,24 @@
     justify-content: center;
     gap: 10px;
     padding: 14px var(--t-6);
-    font-size: 1.05rem;
+    font-size: var(--t-fs-h2);
     font-weight: 700;
-    color: #06222f;
+    /* Derived from the user's accent at runtime (main.js applyAccentColor) so
+       the label stays legible whichever colour they pick. */
+    color: var(--accent-ink);
     /* Tinted from the USER'S accent (themable at runtime), never a literal hex —
        the depth comes from a light/dark overlay, not a hardcoded second colour. */
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.12)),
-                var(--accent-blue, #5ec6ff);
+                var(--accent-blue);
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-control);
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(var(--accent-rgb, 94, 198, 255), 0.32);
-    transition: transform 0.16s var(--t-ease), filter 0.16s var(--t-ease), box-shadow 0.16s var(--t-ease);
+    transition: transform var(--dur-fast) var(--t-ease), filter var(--dur-fast) var(--t-ease);
 }
-.trove-play-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 6px 18px rgba(var(--accent-rgb, 94, 198, 255), 0.4); }
+.trove-play-btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.06); }
 .trove-play-btn:active:not(:disabled) { transform: translateY(0); }
-.trove-play-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-.trove-play-btn i { font-size: 0.9em; }
+.trove-play-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.trove-play-btn i { font-size: var(--icon-optical); }
 
 .trove-play-config { display: flex; gap: var(--t-3); flex: 1; min-width: 240px; }
 /* Reset the inherited field margin so the selects sit on the hero's optical
@@ -127,7 +115,7 @@
 .trove-play-config .trove-field { flex: 1; max-width: 220px; margin-bottom: 0; }
 
 /* ---- Cards ---- */
-.trove-card { background: var(--bg-panel, #1e1e1e); border: 1px solid var(--border-color, #333); }
+.trove-card { background: var(--bg-panel); border: 1px solid var(--border-color); }
 .trove-card-head {
     display: flex;
     align-items: center;
@@ -146,19 +134,19 @@
 }
 /* Accent is reserved for the primary action and live state; heading icons are
    structural, so they stay muted. */
-.trove-card-title i { color: var(--text-muted, #a3adc2); font-size: 0.9em; }
-.trove-card-hint { margin: 0 0 var(--t-4); color: var(--text-muted, #a3adc2); font-size: var(--t-fs-sm); line-height: 1.5; }
+.trove-card-title i { color: var(--text-muted); font-size: var(--icon-optical); }
+.trove-card-hint { margin: 0 0 var(--t-4); color: var(--text-muted); font-size: var(--t-fs-label); line-height: 1.5; }
 .trove-card-note {
     margin: var(--t-3) 0 0;
-    font-size: var(--t-fs-xs);
-    color: var(--text-muted, #a3adc2);
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
     line-height: 1.5;
     display: flex;
     gap: var(--t-2);
     align-items: flex-start;
 }
 .trove-card-note i { margin-top: 2px; opacity: 0.7; }
-.trove-version { font-size: var(--t-fs-xs); color: var(--text-muted, #a3adc2); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+.trove-version { font-size: var(--t-fs-label); color: var(--text-muted); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
 
 /* ---- Grid: cards hug their content (no stretched empty panel) ---- */
 .trove-grid {
@@ -172,39 +160,39 @@
 /* ---- Fields ---- */
 .trove-field { display: flex; flex-direction: column; gap: var(--t-1); margin-bottom: var(--t-3); }
 .trove-field:last-child { margin-bottom: 0; }
-.trove-field > label { font-size: var(--t-fs-xs); color: var(--text-muted, #a3adc2); }
+.trove-field > label { font-size: var(--t-fs-label); color: var(--text-muted); }
 .trove-field input,
 .trove-field select {
     padding: 9px 10px;
-    background: var(--bg-dark, #121212);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 8px;
-    color: var(--text-main, #e0e0e0);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    color: var(--text-main);
     font-size: var(--t-fs-body);
     font-family: inherit;
     outline: none;
-    transition: border-color 0.16s var(--t-ease);
+    transition: border-color var(--dur-fast) var(--t-ease);
 }
 .trove-field input:focus,
-.trove-field select:focus { border-color: var(--accent-blue, #5ec6ff); }
+.trove-field select:focus { border-color: var(--accent-blue); }
 .trove-field input:disabled,
 .trove-field select:disabled { opacity: 0.55; cursor: not-allowed; }
-.trove-field input::placeholder { color: #7d8798; }
+.trove-field input::placeholder { color: var(--text-placeholder); }
 
 .trove-acct-email {
     margin: var(--t-2) 0 0;
-    font-size: var(--t-fs-sm);
-    color: var(--text-main, #e0e0e0);
+    font-size: var(--t-fs-label);
+    color: var(--text-main);
     display: flex;
     align-items: center;
     gap: var(--t-2);
 }
-.trove-acct-email i { color: var(--text-muted, #a3adc2); font-size: 0.85em; }
+.trove-acct-email i { color: var(--text-muted); font-size: var(--icon-optical); }
 
-.trove-check { display: inline-flex; align-items: center; gap: var(--t-2); font-size: var(--t-fs-sm); color: var(--text-muted, #a3adc2); cursor: pointer; }
-.trove-check input { accent-color: var(--accent-blue, #5ec6ff); }
+.trove-check { display: inline-flex; align-items: center; gap: var(--t-2); font-size: var(--t-fs-label); color: var(--text-muted); cursor: pointer; }
+.trove-check input { accent-color: var(--accent-blue); }
 .trove-checks { display: flex; flex-wrap: wrap; gap: var(--t-2) var(--t-4); margin: var(--t-3) 0; }
-.trove-lock { font-size: var(--t-fs-xs); color: var(--text-muted, #a3adc2); opacity: 0.8; }
+.trove-lock { font-size: var(--t-fs-label); color: var(--text-muted); opacity: 0.8; }
 
 .trove-rename-row { display: flex; gap: var(--t-2); align-items: stretch; }
 .trove-rename-row input { flex: 1; min-width: 0; }
@@ -216,22 +204,22 @@
     align-items: center;
     gap: var(--t-2);
     padding: 8px var(--t-3);
-    border-radius: 8px;
-    border: 1px solid var(--border-color, #333);
-    background: var(--bg-hover, #2d2d30);
-    color: var(--text-main, #e0e0e0);
-    font-size: var(--t-fs-sm);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-hover);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
     font-family: inherit;
     cursor: pointer;
-    transition: border-color 0.16s var(--t-ease), filter 0.16s var(--t-ease);
+    transition: border-color var(--dur-fast) var(--t-ease), filter var(--dur-fast) var(--t-ease);
 }
-.trove-btn:hover:not(:disabled) { filter: brightness(1.15); border-color: #4a4a4e; }
-.trove-btn:focus-visible { outline: 2px solid var(--accent-blue, #5ec6ff); outline-offset: 2px; }
-.trove-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.trove-btn.primary { background: rgba(var(--accent-rgb, 94, 198, 255), 0.16); border-color: rgba(var(--accent-rgb, 94, 198, 255), 0.5); color: var(--accent-blue, #5ec6ff); }
-.trove-btn.warn { color: #ffd39b; border-color: rgba(255, 176, 87, 0.4); background: transparent; }
+.trove-btn:hover:not(:disabled) { filter: brightness(1.15); border-color: rgba(var(--accent-rgb), 0.5); }
+.trove-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.trove-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.trove-btn.primary { background: rgba(var(--accent-rgb), 0.16); border-color: rgba(var(--accent-rgb), 0.5); color: var(--accent-blue); }
+.trove-btn.warn { color: var(--warning-ink); border-color: rgba(var(--warning-rgb), 0.4); background: transparent; }
 .trove-btn.ghost { background: transparent; }
-.trove-btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.trove-btn-row { display: flex; gap: var(--control-gap); flex-wrap: wrap; }
 .trove-account-row { display: flex; gap: var(--t-2); flex-wrap: wrap; margin-top: var(--t-3); }
 
 .trove-reveal-btn {
@@ -239,17 +227,17 @@
     align-items: center;
     gap: var(--t-2);
     padding: var(--t-1) 10px;
-    font-size: var(--t-fs-xs);
+    font-size: var(--t-fs-label);
     font-family: inherit;
     background: transparent;
-    color: var(--text-muted, #a3adc2);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 999px;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
     cursor: pointer;
-    transition: color 0.16s var(--t-ease), border-color 0.16s var(--t-ease);
+    transition: color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
 }
-.trove-reveal-btn:hover { color: var(--text-main, #e0e0e0); border-color: #4a4a4e; }
-.trove-reveal-btn:focus-visible { outline: 2px solid var(--accent-blue, #5ec6ff); outline-offset: 2px; }
+.trove-reveal-btn:hover { color: var(--text-main); border-color: rgba(var(--accent-rgb), 0.5); }
+.trove-reveal-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 /* ---- Running instances ---- */
 .trove-run-row {
@@ -257,32 +245,32 @@
     align-items: center;
     gap: var(--t-3);
     padding: 10px var(--t-3);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 8px;
-    background: var(--bg-dark, #121212);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
     flex-wrap: wrap;
 }
 .trove-run-row + .trove-run-row { margin-top: var(--t-2); }
 .trove-run-acct { font-weight: 600; font-size: var(--t-fs-body); display: inline-flex; align-items: center; gap: var(--t-2); min-width: 0; }
-.trove-live-dot { color: #6ee7a8; font-size: 0.5rem; animation: trove-pulse 1.8s ease-in-out infinite; }
+.trove-live-dot { color: var(--success); font-size: var(--t-fs-micro); animation: trove-pulse 1.8s ease-in-out infinite; }
 @keyframes trove-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.trove-run-meta { color: var(--text-muted, #a3adc2); font-size: var(--t-fs-xs); font-variant-numeric: tabular-nums; }
+.trove-run-meta { color: var(--text-muted); font-size: var(--t-fs-label); font-variant-numeric: tabular-nums; }
 .trove-run-relog { margin-left: auto; }
 
 /* ---- Progress ---- */
 .trove-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--t-3); margin-bottom: var(--t-2); flex-wrap: wrap; }
 .trove-progress-stage { font-size: var(--t-fs-body); }
-.trove-progress-count { font-size: var(--t-fs-xs); color: var(--text-muted, #a3adc2); font-variant-numeric: tabular-nums; }
-.trove-bar { height: 6px; background: var(--bg-dark, #121212); border-radius: 999px; overflow: hidden; border: 1px solid var(--border-color, #333); }
+.trove-progress-count { font-size: var(--t-fs-label); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.trove-bar { height: 6px; background: var(--bg-dark); border-radius: var(--radius-pill); overflow: hidden; border: 1px solid var(--border-color); }
 /* Animated with transform, not width/margin — those are layout properties and
    thrash on every frame. */
 .trove-bar-fill {
     height: 100%;
     width: 100%;
-    background: var(--accent-blue, #5ec6ff);
+    background: var(--accent-blue);
     transform-origin: left center;
     transform: scaleX(0);
-    transition: transform 0.2s var(--t-ease);
+    transition: transform var(--dur) var(--t-ease);
 }
 .trove-bar-fill.indeterminate { animation: trove-indeterminate 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
 @keyframes trove-indeterminate {
@@ -293,55 +281,62 @@
     margin: var(--t-3) 0 0;
     max-height: 180px;
     overflow-y: auto;
-    background: var(--bg-dark, #121212);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 8px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
     padding: 10px var(--t-3);
-    font-size: var(--t-fs-xs);
+    font-size: var(--t-fs-label);
     line-height: 1.6;
-    color: var(--text-muted, #a3adc2);
+    color: var(--text-muted);
     white-space: pre-wrap;
     word-break: break-word;
-    font-family: 'Consolas', 'Menlo', monospace;
+    /* Monospace here is load-bearing: this is a machine log where column
+       alignment carries meaning, not a "technical" costume. */
+    font-family: var(--font-numeric);
 }
 
 /* ---- 2FA modal ---- */
 .trove-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.62);
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
     display: flex;
     align-items: center;
     justify-content: center;
     /* Above the app's custom-select dropdowns (--z-dropdown), below toasts. */
-    z-index: var(--z-modal, 205000);
+    z-index: var(--z-modal);
 }
 .trove-modal {
-    background: var(--bg-panel, #1e1e1e);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 10px;
-    padding: var(--t-5);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    padding: var(--modal-padding);
     width: min(420px, 92vw);
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-modal);
 }
 .trove-modal h3 { margin: 0 0 var(--t-2); font-size: var(--t-fs-h2); display: flex; align-items: center; gap: var(--t-2); }
-.trove-modal h3 i { color: var(--accent-blue, #5ec6ff); font-size: 0.9em; }
-.trove-modal p { margin: 0 0 var(--t-4); color: var(--text-muted, #a3adc2); font-size: var(--t-fs-sm); line-height: 1.5; }
+.trove-modal h3 i { color: var(--accent-blue); font-size: var(--icon-optical); }
+.trove-modal p { margin: 0 0 var(--t-4); color: var(--text-muted); font-size: var(--t-fs-label); line-height: 1.5; }
 .trove-modal input {
     width: 100%;
     padding: 10px var(--t-3);
-    background: var(--bg-dark, #121212);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 8px;
-    color: var(--text-main, #e0e0e0);
-    font-size: 1.1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    color: var(--text-main);
+    /* A 6-digit code reads as a code through tracking, centring and tabular
+       figures — it does not need a seventh type size to do it. */
+    font-size: var(--t-fs-h2);
     font-family: inherit;
+    font-variant-numeric: tabular-nums;
     letter-spacing: 0.25em;
     text-align: center;
     outline: none;
 }
-.trove-modal input:focus { border-color: var(--accent-blue, #5ec6ff); }
-.trove-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: var(--t-4); }
+.trove-modal input:focus { border-color: var(--accent-blue); }
+.trove-modal-actions { display: flex; justify-content: flex-end; gap: var(--control-gap); margin-top: var(--t-4); }
 
 /* ---- Responsive: measured on the CONTENT box, not the viewport (the shell
    reserves 260px for the sidebar until 900px, so a viewport query collapses
@@ -356,6 +351,9 @@
     .trove-grid { grid-template-columns: 1fr; }
 }
 
+/* Reduced motion: state still changes, it just stops moving. The progress bar
+   keeps reporting (indeterminate becomes a static dimmed fill rather than
+   vanishing) and the live dot stays visible — only the animation stops. */
 @media (prefers-reduced-motion: reduce) {
     .trove-bar-fill,
     .trove-play-btn,

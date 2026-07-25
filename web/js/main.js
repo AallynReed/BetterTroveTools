@@ -11,6 +11,12 @@
             if (!box) {
                 box = document.createElement('div');
                 box.id = 'btt-error-surface';
+                // Deliberately hardcoded, and deliberately at the maximum
+                // z-index: this is the surface that reports a crash. If
+                // style.css failed to load, every var() here would resolve to
+                // nothing and the error would be invisible — which is exactly
+                // the situation this exists for. It is the one place in the app
+                // where a literal is the correct choice.
                 box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;max-height:45vh;overflow:auto;background:#2a0d0d;color:#ffd7d7;border-top:2px solid #ff5555;font:12px/1.5 monospace;padding:10px 14px;white-space:pre-wrap;';
                 const parent = document.body || document.documentElement;
                 if (parent) parent.appendChild(box);
@@ -75,20 +81,24 @@ document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 const globalTooltip = document.createElement('div');
 globalTooltip.id = 'global-tooltip';
-globalTooltip.style.cssText = 'position: fixed; background: var(--bg-panel, #1d232b); border: 1px solid var(--border-color, #444c5e); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: none; z-index: 10010; display: none; color: #fff; font-size: 0.9em; line-height: 1.4; max-width: 450px;';
+// z-index comes from the token: at the old literal 10010 this tooltip rendered
+// UNDERNEATH the app's custom-select dropdowns (200000), so hovering anything
+// inside an open dropdown produced a tooltip you could not see. The two var()
+// fallbacks it used (#1d232b, #444c5e) were also not the real token values.
+globalTooltip.style.cssText = 'position: fixed; background: var(--bg-panel); border: 1px solid var(--border-color); padding: var(--t-2) var(--t-3); border-radius: var(--radius-control); box-shadow: var(--shadow-floating); pointer-events: none; z-index: var(--z-toast); display: none; color: var(--text-main); font-size: var(--t-fs-body); line-height: 1.4; max-width: 450px;';
 document.body.appendChild(globalTooltip);
 
 const tooltipStyle = document.createElement('style');
 tooltipStyle.innerHTML = `
     @keyframes tooltipFadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    #global-tooltip { animation: tooltipFadeIn 0.15s ease-out; }
-    #global-tooltip h3 { margin: 0 0 5px 0; color: var(--accent-blue, #5ec6ff); font-size: 1.1em; }
-    #global-tooltip p { margin: 5px 0; color: var(--text-muted, #a3adc2); }
-    #global-tooltip ul { margin: 5px 0; padding-left: 20px; }
-    #global-tooltip hr { border: 0; border-top: 1px dashed var(--border-color, #444c5e); margin: 8px 0; }
-    #global-tooltip .type { font-size: 0.8em; color: var(--text-muted, #a3adc2); text-transform: uppercase; font-weight: bold; }
-    .clickable-log-url { transition: color 0.15s ease-in-out; }
-    .clickable-log-url:hover { color: var(--text-main, #fff) !important; }
+    #global-tooltip { animation: tooltipFadeIn var(--dur-fast) var(--t-ease); }
+    #global-tooltip h3 { margin: 0 0 var(--t-1) 0; color: var(--accent-blue); font-size: var(--t-fs-h2); }
+    #global-tooltip p { margin: var(--t-1) 0; color: var(--text-muted); }
+    #global-tooltip ul { margin: var(--t-1) 0; padding-left: var(--t-5); }
+    #global-tooltip hr { border: 0; border-top: 1px solid var(--border-color); margin: var(--t-2) 0; }
+    #global-tooltip .type { font-size: var(--t-fs-micro); color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+    .clickable-log-url { transition: color var(--dur-fast) var(--t-ease); }
+    .clickable-log-url:hover { color: var(--text-main) !important; }
 `;
 document.head.appendChild(tooltipStyle);
 
@@ -204,6 +214,104 @@ window.BTT_CODEX_SUBVIEW_SCRIPTS = {
     badges: 'js/codexes/badges.js',
     styles: 'js/codexes/styles.js',
 };
+
+/**
+ * Write the user's chosen accent into the CSS token layer.
+ *
+ * Three tokens move together and must never drift apart, which is why this is
+ * one function called from both startup (main.js) and the Settings picker
+ * (settings.js) rather than duplicated parsing in each:
+ *   --accent-blue  the colour itself
+ *   --accent-rgb   the same colour as an "r, g, b" triple, for rgba(..., alpha)
+ *   --accent-ink   the text/icon colour that sits ON the accent
+ *
+ * --accent-ink is derived, not fixed, because the accent is arbitrary. A hard
+ * `color: white` on the primary button is 1.9:1 against the default #5ec6ff —
+ * a real WCAG failure that flips to fine only if the user happens to pick a
+ * dark accent. We measure both candidates and take the higher contrast, so a
+ * pale accent gets near-black ink and a deep one gets white.
+ */
+window.applyAccentColor = function (accentColor) {
+    const hex = String(accentColor || '').replace('#', '').trim();
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return false;
+
+    const root = document.documentElement;
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // WCAG relative luminance.
+    const channel = (c) => {
+        c /= 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const lum = 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    // Contrast against white (lum 1) vs against our dark ink (#06222f).
+    const DARK_INK = '#06222f';
+    const DARK_INK_LUM = 0.0166;
+    const vsWhite = 1.05 / (lum + 0.05);
+    const vsDark = (lum + 0.05) / (DARK_INK_LUM + 0.05);
+
+    root.style.setProperty('--accent-blue', '#' + hex);
+    root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
+    root.style.setProperty('--accent-ink', vsDark >= vsWhite ? DARK_INK : '#ffffff');
+    return true;
+};
+
+/**
+ * Keep every range slider's filled track in sync with its value.
+ *
+ * The sliders have no handle — the value is read off how much of the track is
+ * filled — so the fill is not decoration, it is the entire readout. CSS cannot
+ * see an input's value, so the percentage is published as `--val-pct` and the
+ * track gradient stops there.
+ *
+ * The Calculators view already binds `--val-pct` itself through Vue. This
+ * covers every other slider in the app (Gem Builds, Gem Simulator, the
+ * Blueprint Editor), which previously relied on the browser's native filled
+ * track and would otherwise render an empty bar at every value.
+ */
+window.syncRangeFills = function (root) {
+    const scope = root && root.querySelectorAll ? root : document;
+    for (const el of scope.querySelectorAll('input[type="range"]')) {
+        const min = Number(el.min === '' ? 0 : el.min);
+        const max = Number(el.max === '' ? 100 : el.max);
+        const span = max - min;
+        // A zero-width range has no meaningful fill; show it full rather than
+        // dividing by zero and writing NaN into the gradient.
+        const pct = span > 0 ? ((Number(el.value) - min) / span) * 100 : 100;
+        el.style.setProperty('--val-pct', Math.max(0, Math.min(100, pct)) + '%');
+    }
+};
+
+(() => {
+    const sync = (e) => {
+        const el = e.target;
+        if (el && el.tagName === 'INPUT' && el.type === 'range') window.syncRangeFills(el.parentElement || document);
+    };
+    // Covers dragging and keyboard stepping.
+    document.addEventListener('input', sync, true);
+    document.addEventListener('change', sync, true);
+
+    // Covers view swaps and Vue re-renders that mount or replace sliders.
+    // Debounced so a burst of mutations costs one pass. Deliberately NOT
+    // requestAnimationFrame: rAF is suspended while the window is hidden or
+    // backgrounded (routine on Android), which would leave a slider mounted in
+    // that state showing an empty track until something else touched it.
+    let queued = false;
+    const schedule = () => {
+        if (queued) return;
+        queued = true;
+        setTimeout(() => { queued = false; window.syncRangeFills(); }, 0);
+    };
+    const start = () => {
+        window.syncRangeFills();
+        const host = document.getElementById('view-container');
+        if (host) new MutationObserver(schedule).observe(host, { childList: true, subtree: true });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+    else start();
+})();
 
 window.AppSettings = {
     _cache: null,
@@ -391,7 +499,7 @@ const networkTrackerApp = Vue.createApp({
                     
                     let statusHtml = '';
                     if (req.status === 'active') statusHtml = `<span style="color: var(--accent-blue);" title="${t('common.active')}"><i class="fa-solid fa-circle-notch fa-spin"></i></span> `;
-                    else if (req.status === 'error') statusHtml = `<span style="color: #ff5555;" title="${t('app.failed')}"><i class="fa-solid fa-xmark"></i></span> `;
+                    else if (req.status === 'error') statusHtml = `<span style="color: var(--danger-ink);" title="${t('app.failed')}"><i class="fa-solid fa-xmark"></i></span> `;
                     else statusHtml = `<span style="color: #4ade80;" title="${t('common.done')}"><i class="fa-solid fa-check"></i></span> `;
                     
                     content += `<li>${statusHtml}${safeLabel}</li>`;
@@ -400,11 +508,11 @@ const networkTrackerApp = Vue.createApp({
                 if (networkState.activeRequests.length > 10) {
                     content += `<li><i>...${t('app.and_count_more').replace('{count}', networkState.activeRequests.length - 10)}</i></li>`;
                 }
-                content += `</ul><hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('app.total_requests_made')} ${networkState.fullLog.length}</div>`;
+                content += `</ul><hr style="margin: var(--t-2) 0; border: 0; border-top: 1px solid var(--border-color);"><div style="font-size: var(--t-fs-label); color: var(--text-muted);">${t('app.total_requests_made')} ${networkState.fullLog.length}</div>`;
                 return content;
             } else {
                 return networkState.fullLog.length > 0 
-                    ? `${t('app.no_active_requests')}<hr style="margin: 8px 0; border: 0; border-top: 1px dashed var(--border-color, #444c5e);"><div style="font-size: 0.85em; color: var(--text-muted, #a3adc2);">${t('app.total_requests_made')} ${networkState.fullLog.length}</div>` 
+                    ? `${t('app.no_active_requests')}<hr style="margin: var(--t-2) 0; border: 0; border-top: 1px solid var(--border-color);"><div style="font-size: var(--t-fs-label); color: var(--text-muted);">${t('app.total_requests_made')} ${networkState.fullLog.length}</div>` 
                     : t('app.no_external_requests_made_yet');
             }
         });
@@ -898,12 +1006,18 @@ window.showToast = function(message, isError = false, options = {}) {
     }
 
     const toast = document.createElement('div');
-    toast.style.backgroundColor = isError ? '#ff5555' : '#28a745';
-    toast.style.color = 'white';
-    toast.style.padding = '12px 16px';
-    toast.style.borderRadius = '8px';
-    toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-    toast.style.fontSize = '14px';
+    // Tint + hairline + text-safe ink. A solid #ff5555 / #28a745 fill with white
+    // text measured 3.1-3.4:1 — below AA, and the only two solid-filled surfaces
+    // left in the app.
+    const hue = isError ? '--danger' : '--success';
+    toast.style.backgroundColor = 'var(--bg-panel)';
+    toast.style.backgroundImage = `linear-gradient(0deg, rgba(var(${hue}-rgb), 0.16), rgba(var(${hue}-rgb), 0.16))`;
+    toast.style.border = `1px solid rgba(var(${hue}-rgb), 0.45)`;
+    toast.style.color = `var(${hue}-ink)`;
+    toast.style.padding = 'var(--t-3) var(--t-4)';
+    toast.style.borderRadius = 'var(--radius-control)';
+    toast.style.boxShadow = 'var(--shadow-floating)';
+    toast.style.fontSize = 'var(--t-fs-body)';
     toast.style.opacity = '0';
     toast.style.transition = 'opacity 0.3s ease';
     toast.style.whiteSpace = 'pre-wrap';
@@ -925,9 +1039,9 @@ window.showToast = function(message, isError = false, options = {}) {
         closeBtn.innerHTML = '&times;';
         closeBtn.setAttribute('aria-label', 'Dismiss');
         closeBtn.style.background = 'transparent';
-        closeBtn.style.color = '#fff';
+        closeBtn.style.color = 'inherit';
         closeBtn.style.border = 'none';
-        closeBtn.style.fontSize = '18px';
+        closeBtn.style.fontSize = 'var(--t-fs-h2)';
         closeBtn.style.lineHeight = '1';
         closeBtn.style.cursor = 'pointer';
         closeBtn.style.padding = '0 0 0 4px';
@@ -942,10 +1056,10 @@ window.showToast = function(message, isError = false, options = {}) {
         const actionBtn = document.createElement('button');
         actionBtn.innerText = options.actionLabel;
         actionBtn.style.background = 'rgba(0,0,0,0.2)';
-        actionBtn.style.color = '#fff';
-        actionBtn.style.border = '1px solid rgba(255,255,255,0.4)';
-        actionBtn.style.padding = '4px 10px';
-        actionBtn.style.borderRadius = '6px';
+        actionBtn.style.color = 'inherit';
+        actionBtn.style.border = '1px solid currentColor';
+        actionBtn.style.padding = 'var(--t-1) 10px';
+        actionBtn.style.borderRadius = 'var(--radius-control)';
         actionBtn.style.cursor = 'pointer';
         actionBtn.onclick = async () => {
             try {
@@ -2079,16 +2193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const accentColor = window.AppSettings.get('accent_color');
-    if (accentColor) {
-        document.documentElement.style.setProperty('--accent-blue', accentColor);
-        const hex = String(accentColor).replace('#', '');
-        if (hex.length === 6) {
-            const r = parseInt(hex.substring(0, 2), 16);
-            const g = parseInt(hex.substring(2, 4), 16);
-            const b = parseInt(hex.substring(4, 6), 16);
-            document.documentElement.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
-        }
-    }
+    if (accentColor) window.applyAccentColor(accentColor);
 
     // Android-only UI scale: shrink the whole interface (via root zoom) so more
     // content fits on small screens. Capped at 1.0 — only goes smaller, never larger.
@@ -2335,9 +2440,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     input.focus();
                     input.select();
                     
-                    const originalBoxShadow = input.style.boxShadow;
-                    input.style.boxShadow = '0 0 15px var(--accent-blue, #5ec6ff)';
-                    setTimeout(() => input.style.boxShadow = originalBoxShadow, 400);
+                    // Flash the same ring keyboard focus uses, so "we jumped you
+                    // here" and "you are focused here" read as one thing. Was a
+                    // 15px accent glow, which is decoration wearing depth.
+                    input.style.outline = '2px solid var(--accent-blue)';
+                    input.style.outlineOffset = '2px';
+                    setTimeout(() => {
+                        input.style.outline = '';
+                        input.style.outlineOffset = '';
+                    }, 400);
                     break;
                 }
             }
@@ -2388,6 +2499,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const webUnavailableViews = new Set(window.BTT_UNAVAILABLE_WEB_VIEWS || []);
     const isWebUnavailableView = (target) => window.BTT_WEB_MODE === true && webUnavailableViews.has(target);
+    // The subset that is removed from the sidebar entirely instead of being
+    // badged "Desktop App" — see BTT_WEB_HIDDEN_VIEWS in web_mode.js.
+    const webHiddenViews = new Set(window.BTT_WEB_HIDDEN_VIEWS || []);
+    const isWebHiddenView = (target) => window.BTT_WEB_MODE === true && webHiddenViews.has(target);
     const areBetaFeaturesHidden = () => window.AppSettings && window.AppSettings.get('hide_beta_features', false) === true;
 
     const isCommandVisible = (command) => {
@@ -2494,9 +2609,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.querySelectorAll('#sidebar .nav-btn').forEach((btn) => {
             const target = btn.getAttribute('data-target');
             const shouldHideForWeb = isWebUnavailableView(target);
-            if (shouldHideForWeb && window.BTT_NATIVE === true) {
+            if (shouldHideForWeb && (window.BTT_NATIVE === true || isWebHiddenView(target))) {
                 // Native (Android): hide desktop-only views outright -- no point
-                // offering "the desktop app" from inside the mobile app.
+                // offering "the desktop app" from inside the mobile app. Views in
+                // BTT_WEB_HIDDEN_VIEWS take this path on hosted web too.
                 btn.classList.remove('web-desktop-only-btn');
                 btn.querySelector('.desktop-app-label')?.remove();
                 const menuItem = btn.closest('li');

@@ -1,77 +1,114 @@
+/* Modder Tools > File Manager.
+   Every value here comes from the token layer in style.css `:root` — the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. The view roots, headers, .tool-panel and
+   .search-container are also enrolled in the CROSS-APP DENSITY LAYER at the end
+   of style.css, which sets their padding/margins with `!important`; the values
+   written here are the intent, that block is what renders. */
 [v-cloak] {
     display: none !important;
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-.file-manager-container { padding: 32px; width: 100%; max-width: none; margin: 0; box-sizing: border-box; animation: fadeIn 0.3s ease; }
-.file-manager-header { margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
-.placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: 8px; padding: 60px 20px; text-align: center; color: var(--text-muted); }
+.file-manager-container { padding: var(--t-6); width: 100%; max-width: none; margin: 0; box-sizing: border-box; animation: fadeIn var(--dur) var(--t-ease); }
+.file-manager-header { margin-bottom: var(--t-6); border-bottom: 1px solid var(--border-color); padding-bottom: var(--t-5); }
+/* 60px of vertical air is the empty state's whole job — deliberately optical,
+   not snapped down onto the 4pt scale. */
+.placeholder-box { background-color: var(--bg-panel); border: 1px dashed var(--border-color); border-radius: var(--radius-surface); padding: 60px var(--t-5); text-align: center; color: var(--text-muted); }
 
-.tabs-container { display: flex; flex-direction: column; gap: 20px; }
-.tab-buttons { display: flex; gap: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-.tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: all 0.2s ease; display: flex; align-items: center; gap: 8px; }
+/* Tabs. `.tab-btn` is unscoped here and in every other view that defines it, so
+   any divergence silently re-skins the other views' tabs depending on which
+   stylesheet loaded last. This block is kept byte-identical to the one in
+   modder_tools/index.css and settings.css — do not fork it.
+   `transition: all` is gone: it animates layout properties by accident and
+   costs frames on the low-end hardware this ships to. */
+.tabs-container { display: flex; flex-direction: column; gap: var(--t-4); }
+.tab-buttons { display: flex; gap: var(--control-gap); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+.tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: var(--t-fs-body); font-weight: 600; cursor: pointer; border-radius: var(--radius-control); transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease); display: flex; align-items: center; gap: var(--t-2); }
 .tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
-.tab-btn.active { background: var(--bg-panel); color: var(--accent-blue); border: 1px solid var(--border-color); border-bottom: 2px solid var(--accent-blue); }
+/* Selection used to be a 2px accent underline. Borders in this system are
+   always 1px, so "current" is carried the way the sidebar carries it: an accent
+   tint plus an accent border on all four sides. */
+.tab-btn.active { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-blue); border-color: rgba(var(--accent-rgb), 0.45); }
+.tab-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 .tab-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.tab-content { display: none; animation: fadeIn 0.2s ease; }
+.tab-content { display: none; animation: fadeIn var(--dur) var(--t-ease); }
 .tab-content.active { display: block; }
 
-.tool-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 8px; padding: 25px; }
-.tool-panel h3 { margin-bottom: 5px; color: var(--text-main); }
-.help-text { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
-.form-group { margin-bottom: 20px; }
-.form-group label { display: block; margin-bottom: 8px; color: var(--text-main); font-size: 14px; font-weight: 500; }
-.input-row { display: flex; gap: 10px; }
-.form-group input[type="text"] { width: 100%; padding: 10px 12px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; }
+.tool-panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: var(--radius-surface); padding: var(--t-5); }
+.tool-panel h3 { margin-bottom: var(--t-1); color: var(--text-main); }
+.help-text { color: var(--text-muted); font-size: var(--t-fs-label); margin-bottom: var(--t-4); }
+.form-group { margin-bottom: var(--t-4); }
+.form-group label { display: block; margin-bottom: var(--t-2); color: var(--text-main); font-size: var(--t-fs-label); font-weight: 500; }
+.input-row { display: flex; gap: var(--control-gap); }
+.form-group input[type="text"] { width: 100%; padding: 9px 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none; transition: border-color var(--dur-fast) var(--t-ease); }
 .form-group input[type="text"]:focus { border-color: var(--accent-blue); }
+/* `outline: none` above out-specifies the app-wide focus floor at the end of
+   style.css, so the ring has to be restored here. Keyboard focus is not optional. */
+.form-group input[type="text"]:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.form-group input[type="text"]::placeholder { color: var(--text-placeholder); }
 
-select { width: 100%; padding: 10px 12px; background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none; transition: border-color 0.2s; font-family: inherit; }
+select { width: 100%; padding: 9px 10px; background: var(--bg-panel); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none; transition: border-color var(--dur-fast) var(--t-ease); font-family: inherit; }
 select:focus { border-color: var(--accent-blue); }
+select:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
-.mod-badge { position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: bold; padding: 4px 8px; border-radius: 4px; color: white; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.5); pointer-events: none; }
+/* Badge, not a floating layer — the drop shadow it used to carry claimed an
+   elevation it doesn't have (DESIGN.md > The Floating-Only Rule). */
+.mod-badge { position: absolute; top: var(--t-2); right: var(--t-2); font-size: var(--t-fs-micro); font-weight: 800; padding: var(--t-1) var(--t-2); border-radius: var(--radius-pill); color: var(--text-main); letter-spacing: 1px; text-transform: uppercase; pointer-events: none; }
 
 .tracker-mode-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: var(--t-fs-micro);
     font-weight: 800;
-    padding: 4px 9px;
-    border-radius: 999px;
-    color: #dff5ff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: var(--t-1) 10px;
+    border-radius: var(--radius-pill);
+    /* Was a fixed pale blue, which stayed blue the moment the user picked
+       orange. The fill is an accent tint, so the ink is the accent too. */
+    color: var(--accent-blue);
     border: 1px solid rgba(var(--accent-rgb), 0.4);
     background: rgba(var(--accent-rgb), 0.14);
 }
 
-.search-container { padding: 15px 20px; background: var(--bg-panel); border: 1px solid var(--border-color); border-bottom: none; border-radius: 8px 8px 0 0; display: flex; align-items: center; gap: 15px; }
-#tree-search { flex: 1; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px 12px; border-radius: 4px; outline: none; }
+.search-container { padding: var(--t-4) var(--t-5); background: var(--bg-panel); border: 1px solid var(--border-color); border-bottom: none; border-radius: var(--radius-surface) var(--radius-surface) 0 0; display: flex; align-items: center; gap: var(--control-gap); }
+/* `--bg-main` was never defined in :root, so this well rendered transparent.
+   Inset controls sit on page graphite. */
+#tree-search { flex: 1; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); padding: 9px 10px; border-radius: var(--radius-control); outline: none; }
 #tree-search:focus { border-color: var(--accent-blue); }
-#search-count { font-size: 12px; color: var(--accent-blue); font-weight: bold; }
+#tree-search:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+#tree-search::placeholder { color: var(--text-placeholder); }
+/* Accent here means "live result count", not decoration. */
+#search-count { font-size: var(--t-fs-label); color: var(--accent-blue); font-weight: bold; }
 
 .search-helper-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    padding: 10px 14px 0;
-    font-size: 12px;
+    gap: var(--t-3);
+    padding: var(--t-3) var(--t-4) 0;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
 }
 
 .tracker-steps {
     display: grid;
-    gap: 10px;
-    margin-bottom: 18px;
+    gap: var(--t-2);
+    margin-bottom: var(--t-4);
 }
 
+/* Inner rows inside .tool-panel, not cards in their own right — control radius,
+   page graphite, and the same hairline as everything else. */
 .tracker-step {
     display: flex;
-    gap: 12px;
+    gap: var(--t-3);
     align-items: flex-start;
-    padding: 11px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(0,0,0,0.18);
+    padding: var(--t-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
 }
 
 .tracker-step.active {
@@ -82,48 +119,55 @@ select:focus { border-color: var(--accent-blue); }
 .tracker-step-num {
     width: 24px;
     height: 24px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     font-weight: 800;
-    color: #fff;
-    background: rgba(255,255,255,0.12);
+    color: var(--text-main);
+    background: var(--bg-hover);
     flex: 0 0 auto;
 }
 
+/* Ink on an accent fill is recomputed per accent in main.js — a literal dark
+   hex here would fail against a dark user accent. */
 .tracker-step.active .tracker-step-num {
     background: var(--accent-blue);
-    color: #111;
+    color: var(--accent-ink);
 }
 
 .tracker-step-title {
-    font-size: 13px;
+    font-size: var(--t-fs-body);
     font-weight: 700;
     color: var(--text-main);
 }
 
 .tracker-step-copy {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     line-height: 1.4;
-    margin-top: 3px;
+    margin-top: var(--t-1);
 }
 
+/* Eyebrow naming the next action — accent because it points at the primary
+   action, which is one of the meanings accent is allowed to carry. */
 .tracker-status-kicker {
-    font-size: 11px;
+    font-size: var(--t-fs-micro);
     text-transform: uppercase;
-    letter-spacing: 0.9px;
+    letter-spacing: 1px;
     font-weight: 800;
     color: var(--accent-blue);
-    margin-bottom: 10px;
+    margin-bottom: var(--t-2);
 }
 
+/* "Build baseline" is the attention action, so it borrows the warning semantic
+   rather than an invented amber. Tinted fill + warning ink, because there is no
+   dark-on-amber ink token and white on #e8b031 was ~2:1. */
 .tracker-build-btn {
-    background-color: #e8b031;
-    color: #fff;
-    border: none;
+    background-color: rgba(var(--warning-rgb), 0.16);
+    color: var(--warning-ink);
+    border: 1px solid rgba(var(--warning-rgb), 0.4);
 }
 
 .tracker-build-btn i,
@@ -138,16 +182,18 @@ select:focus { border-color: var(--accent-blue); }
 }
 
 .file-tree-shell { position: relative; }
-.file-tree { text-align: left; font-size: 14px; background: var(--bg-panel); padding: 10px; border-radius: 0 0 8px 8px; border: 1px solid var(--border-color); max-height: 70vh; overflow-y: auto; contain: content; }
+.file-tree { text-align: left; font-size: var(--t-fs-body); background: var(--bg-panel); padding: var(--t-2); border-radius: 0 0 var(--radius-surface) var(--radius-surface); border: 1px solid var(--border-color); max-height: 70vh; overflow-y: auto; contain: content; }
+/* A scrim over the tree, not a surface — plain black alpha so it dims whatever
+   is underneath instead of introducing a navy that isn't in the palette. */
 .file-tree-busy-overlay {
     position: absolute;
     inset: 0;
     display: flex;
     align-items: flex-start;
     justify-content: center;
-    padding-top: 18px;
-    background: linear-gradient(180deg, rgba(7, 11, 18, 0.58), rgba(7, 11, 18, 0.18));
-    border-radius: 0 0 8px 8px;
+    padding-top: var(--t-4);
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.58), rgba(0, 0, 0, 0.18));
+    border-radius: 0 0 var(--radius-surface) var(--radius-surface);
     pointer-events: none;
 }
 
@@ -158,14 +204,15 @@ select:focus { border-color: var(--accent-blue); }
 .file-tree-busy-card {
     display: inline-flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 14px;
-    border-radius: 999px;
-    background: rgba(10, 16, 24, 0.9);
+    gap: var(--t-2);
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-pill);
+    background: var(--bg-panel);
     border: 1px solid rgba(var(--accent-rgb), 0.28);
     color: var(--text-main);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
-    font-size: 13px;
+    /* This one genuinely floats: it sits detached above the scrolled tree. */
+    box-shadow: var(--shadow-floating);
+    font-size: var(--t-fs-body);
     font-weight: 600;
 }
 
@@ -173,30 +220,33 @@ select:focus { border-color: var(--accent-blue); }
     color: var(--accent-blue);
 }
 details.folder { margin: 2px 0; }
-details.folder > summary, details.files-group > summary { cursor: pointer; padding: 6px 10px; border-radius: 4px; user-select: none; color: var(--text-main); font-weight: 500; list-style: none; display: flex; align-items: center; justify-content: space-between; }
-.lazy-placeholder { color: var(--text-muted); padding: 10px 20px; font-style: italic; }
+details.folder > summary, details.files-group > summary { cursor: pointer; padding: var(--t-2) var(--t-3); border-radius: var(--radius-control); user-select: none; color: var(--text-main); font-weight: 500; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+.lazy-placeholder { color: var(--text-muted); padding: var(--t-2) var(--t-5); font-style: italic; }
 details > summary::-webkit-details-marker { display: none; }
 details > summary:hover { background: var(--bg-hover); }
-details.folder > summary .fa-folder { color: #e8b031; }
-details.files-group > summary .fa-folder-open { color: #e8b031; }
+/* Folder glyphs are structural, so they stay muted: the app's only amber means
+   "warning", and the accent is reserved for the files you can actually act on. */
+details.folder > summary .fa-folder { color: var(--text-muted); }
+details.files-group > summary .fa-folder-open { color: var(--text-muted); }
 .file-name .fa-file { color: var(--accent-blue); }
 .folder-meta {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     font-weight: normal;
-    margin-right: 10px;
+    margin-right: var(--t-2);
     flex-shrink: 0;
 }
-.folder-content { margin-left: 18px; padding-left: 12px; border-left: 1px solid rgba(255, 255, 255, 0.07); }
+/* 1px neutral tree guide, not a coloured accent stripe. */
+.folder-content { margin-left: var(--t-4); padding-left: var(--t-3); border-left: 1px solid var(--border-color); }
 
-.file-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; margin: 1px 0; border-radius: 4px; color: var(--text-muted); min-height: 36px; gap: 15px; }
+.file-item { display: flex; justify-content: space-between; align-items: center; padding: var(--t-2) var(--t-3); margin: 1px 0; border-radius: var(--radius-control); color: var(--text-muted); min-height: 36px; gap: var(--t-4); }
 .file-item:hover { background: var(--bg-hover); color: var(--text-main); }
-.checkbox-container { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-.file-label { display: flex; align-items: center; gap: 8px; line-height: 1; overflow: hidden; }
+.checkbox-container { display: flex; align-items: center; gap: var(--t-3); flex: 1; min-width: 0; }
+.file-label { display: flex; align-items: center; gap: var(--t-2); line-height: 1; overflow: hidden; }
 .file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; accent-color: var(--accent-blue); }
-.file-actions { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
-.file-meta { font-size: 11px; color: var(--text-muted); opacity: 0.7; white-space: nowrap; }
+.file-actions { display: flex; align-items: center; gap: var(--t-4); flex-shrink: 0; }
+.file-meta { font-size: var(--t-fs-label); color: var(--text-muted); opacity: 0.7; white-space: nowrap; }
 
 .searching .file-item, .searching details.folder, .searching details.files-group { display: none !important; }
 .searching .is-match { display: flex !important; }
@@ -207,24 +257,40 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 }
 
 @keyframes slideUp { from { transform: translate(-50%, 100px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-#extraction-bar { display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--bg-hover); border: 1px solid var(--border-color); padding: 12px 25px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); z-index: 9999; align-items: center; gap: 20px; backdrop-filter: blur(10px); }
-#extraction-bar.active { display: flex; animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-.progress-container { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 550px; max-width: 80vw; }
-.progress-track { width: 100%; height: 18px; background: var(--bg-dark); border-radius: 10px; overflow: hidden; position: relative; }
-.progress-percent { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65); pointer-events: none; }
-.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.75), var(--accent-blue)); transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1); }
+/* Genuinely floating chrome: fixed to the viewport, above the view. That is why
+   it keeps both a shadow and a blur — and why its z-index comes from a token.
+   A literal 9999 renders *underneath* the app's custom-select dropdowns (200000).
+   --z-dropdown puts it above view content while an open dropdown MENU (200001)
+   still wins, which is the behaviour you want. */
+#extraction-bar { display: none; position: fixed; bottom: var(--t-6); left: 50%; transform: translateX(-50%); background: var(--bg-hover); border: 1px solid var(--border-color); padding: var(--t-3) var(--t-5); border-radius: var(--radius-surface); box-shadow: var(--shadow-floating); z-index: var(--z-dropdown); align-items: center; gap: var(--t-5); backdrop-filter: var(--modal-blur); -webkit-backdrop-filter: var(--modal-blur); }
+/* Overshoot easing removed: one ease across the app, no bounce. */
+#extraction-bar.active { display: flex; animation: slideUp var(--dur) var(--t-ease); }
+.progress-container { display: flex; flex-direction: column; align-items: center; gap: var(--t-2); width: 550px; max-width: 80vw; }
+/* Taller than the 6px system bar because the percentage readout is centred
+   inside the track — the height is load-bearing here, not decoration. */
+.progress-track { width: 100%; height: 18px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-pill); overflow: hidden; position: relative; }
+/* text-shadow, not box-shadow: legibility over a moving fill, not elevation. */
+.progress-percent { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: var(--t-fs-label); font-weight: 700; color: var(--text-main); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65); pointer-events: none; }
+/* The width itself is bound inline in file_manager.html, so this stays a width
+   until that binding becomes a scaleX. What is gone is the *transition* on it:
+   animating width relayouts the whole bar every frame (DESIGN.md > Progress). */
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.75), var(--accent-blue)); }
 
-#btn-collapse-all { background: #444; color: #ccc; border: 1px solid var(--border-color); }
-#btn-collapse-all:hover { background: #555; color: #fff; }
+#btn-collapse-all { background: var(--bg-hover); color: var(--text-main); border: 1px solid var(--border-color); }
+#btn-collapse-all:hover { border-color: rgba(var(--accent-rgb), 0.5); filter: brightness(1.15); }
 
 .file-controls { flex-wrap: wrap; align-items: center; }
 .file-controls .custom-select-wrapper { flex: 1 1 360px; min-width: 260px; }
+/* Disabled is one value everywhere: 0.5 + not-allowed. The extra grayscale
+   filter was a second dialect for the same state. */
 .file-controls .primary-btn:disabled {
-    opacity: 0.45;
-    filter: grayscale(0.35);
+    opacity: 0.5;
     cursor: not-allowed;
 }
 
+/* Hatch = "you must choose a filter first". Neutral white alphas, so it reads
+   the same whatever accent the user picked; the inset ring it used to draw was
+   decoration and is gone. */
 .file-controls .primary-btn.is-filter-required:disabled {
     background: repeating-linear-gradient(
         -45deg,
@@ -233,80 +299,86 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
         rgba(255, 255, 255, 0.03) 8px,
         rgba(255, 255, 255, 0.03) 16px
     );
-    border: 1px dashed rgba(255, 255, 255, 0.22);
-    color: rgba(255, 255, 255, 0.72);
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+    border: 1px dashed var(--border-color);
+    color: var(--text-muted);
 }
 
 @media (max-width: 900px) {
-    .file-manager-container { padding: 20px; }
+    .file-manager-container { padding: var(--t-5); }
     .tab-buttons { flex-wrap: wrap; }
     .search-container { flex-wrap: wrap; }
-    .search-helper-row { padding: 10px 0 0; }
+    .search-helper-row { padding: var(--t-3) 0 0; }
 }
 
 .image-modal {
-    display: none; 
-    position: fixed; 
-    z-index: 9999; 
-    left: 0; 
-    top: 0; 
-    width: 100%; 
-    height: 100%; 
-    background-color: rgba(0, 0, 0, 0.85); 
-    backdrop-filter: blur(5px); 
-    align-items: center; 
-    justify-content: center; 
-    flex-direction: column; 
+    display: none;
+    position: fixed;
+    /* Above the custom-select dropdowns, below toasts — a literal 9999 lost to
+       them and rendered behind an open dropdown. */
+    z-index: var(--z-modal);
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 
-.image-modal.active { 
-    display: flex; 
-    animation: fadeIn 0.2s ease; 
+.image-modal.active {
+    display: flex;
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
-.close-modal { 
-    position: absolute; 
-    top: 15px; 
-    right: 20px; 
-    color: #888; 
-    font-size: 28px; 
-    font-weight: bold; 
-    cursor: pointer; 
-    transition: color 0.2s; 
-    line-height: 1; 
+.close-modal {
+    position: absolute;
+    top: var(--t-4);
+    right: var(--t-5);
+    /* #888 is 2.9:1 on the backdrop and fails AA. */
+    color: var(--text-muted);
+    /* A dismiss glyph, sized from the title role rather than a seventh size. */
+    font-size: var(--t-fs-title);
+    font-weight: bold;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--t-ease);
+    line-height: 1;
 }
 
-.close-modal:hover { 
-    color: var(--accent-blue); 
+.close-modal:hover {
+    color: var(--accent-blue);
 }
 
-/* Concise module pass */
+/* Concise module pass. These override the values above; the density layer in
+   style.css overrides both. Kept in token form so nothing here teaches a
+   number that isn't on the scale. */
 .file-manager-container {
-    padding: 22px;
+    padding: var(--t-5);
 }
 
 .file-manager-header {
-    margin-bottom: 18px;
-    padding-bottom: 12px;
+    margin-bottom: var(--t-4);
+    padding-bottom: var(--t-3);
 }
 
 .tabs-container {
-    gap: 14px;
+    gap: var(--t-4);
 }
 
 .tab-buttons,
 .search-container,
 .file-controls {
-    gap: 10px;
+    gap: var(--control-gap);
 }
 
 .tool-panel {
-    padding: 18px;
+    padding: var(--t-4);
 }
 
 .form-group {
-    margin-bottom: 14px;
+    margin-bottom: var(--t-3);
 }
 
 .file-tree {

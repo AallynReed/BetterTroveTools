@@ -1,14 +1,19 @@
 <head>
     <link rel="stylesheet" href="css/calculators.css">
 </head>
+<!-- #00bcd4 is Trove's Light-stat hue, not design-system drift: it marks the
+     Light category in four places below (tab icon, the Light readout in the
+     mastery strip, the Geode Mastery card, the Light tab panel). The four
+     semantics hold no cyan, so it stays a literal — but it is one hue in four
+     spots, and if it ever moves it has to move in all four. -->
 <div id="calculators-vue-app" class="calculators-container">
     <div class="tabs-wrapper">
         <div class="tab-buttons">
             <button data-tab="pr-tab" :class="['tab-btn', { active: activeTab === 'pr-tab' }]" @click="activeTab = 'pr-tab'">
-                <i class="fa-solid fa-star" style="color: #fbc02d;"></i> {{ t('common.power_rank') }}
+                <i class="fa-solid fa-star" style="color: var(--warning);"></i> {{ t('common.power_rank') }}
             </button>
             <button data-tab="mastery-tab" :class="['tab-btn', { active: activeTab === 'mastery-tab' }]" @click="activeTab = 'mastery-tab'">
-                <i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('calculators.mastery') }}
+                <i class="fa-solid fa-crown" style="color: var(--warning);"></i> {{ t('calculators.mastery') }}
             </button>
             <button data-tab="mf-tab" :class="['tab-btn', { active: activeTab === 'mf-tab' }]" @click="activeTab = 'mf-tab'">
                 <i class="fa-solid fa-gem" style="color: var(--accent-blue);"></i> {{ t('calculators.magic_find') }}
@@ -18,7 +23,7 @@
             </button>
         </div>
 
-        <div class="tab-content pr-tab-content" :class="{ active: activeTab === 'pr-tab' }" style="--calc-accent: #fbc02d;">
+        <div class="tab-content pr-tab-content" :class="{ active: activeTab === 'pr-tab' }" style="--calc-accent: var(--warning);">
             <div class="mf-header compact-header pr-header" style="border-color: var(--calc-accent);">
                 <div class="mf-total-box">
                     <span class="mf-total-label">{{ t('calculators.total_power_rank') }}</span>
@@ -26,7 +31,7 @@
                 </div>
                 <div class="pr-summary-strip">
                     <span class="summary-chip"><strong>{{ t('calculators.mastery_pr') }}</strong> {{ prBreakdown.masteryPR.toLocaleString() }}</span>
-                    <span v-if="prBreakdown.patronActive" class="summary-chip"><i class="fa-solid fa-crown" style="color: #fbc02d;"></i> {{ t('common.patron') }}</span>
+                    <span v-if="prBreakdown.patronActive" class="summary-chip"><i class="fa-solid fa-crown" style="color: var(--warning);"></i> {{ t('common.patron') }}</span>
                 </div>
                 <div class="mf-header-actions">
                     <button class="btn-reset" @click="resetPr"><i class="fa-solid fa-rotate-left"></i> {{ t('calculators.reset_defaults') }}</button>
@@ -53,7 +58,7 @@
             </div>
         </div>
 
-        <div class="tab-content mastery-tab-content" :class="{ active: activeTab === 'mastery-tab' }" style="--calc-accent: #ff9800;">
+        <div class="tab-content mastery-tab-content" :class="{ active: activeTab === 'mastery-tab' }" style="--calc-accent: var(--warning);">
             <div class="mf-header compact-header mastery-header" style="border-color: var(--calc-accent);">
                 <div class="mf-total-box">
                     <span class="mf-total-label">{{ t('calculators.total_mastery_power_rank') }}</span>
@@ -84,7 +89,7 @@
             </div>
 
             <div class="mf-calculator-grid">
-                <div class="calc-item" style="--calc-accent: #fbc02d; border-left: 4px solid var(--calc-accent);">
+                <div class="calc-item" style="--calc-accent: var(--warning);">
                     <div class="calc-item-header">
                         <span><i class="fa-solid fa-crown" style="color: var(--calc-accent);"></i> {{ t('calculators.trove_mastery') }}</span>
                         <span class="calc-item-badge">{{ t('calculators.soft_cap_1000') }}</span>
@@ -95,7 +100,7 @@
                     </div>
                 </div>
 
-                <div class="calc-item" style="--calc-accent: #00bcd4; border-left: 4px solid var(--calc-accent);">
+                <div class="calc-item" style="--calc-accent: #00bcd4;">
                     <div class="calc-item-header">
                         <span><i class="fa-solid fa-gem" style="color: var(--calc-accent);"></i> {{ t('calculators.geode_mastery') }}</span>
                         <span class="calc-item-badge">{{ t('calculators.soft_cap_100') }}</span>
@@ -150,7 +155,7 @@
                     </div>
                 </div>
 
-                <div class="calc-item star-chart-calc-item" style="--calc-accent: #ff9800;">
+                <div class="calc-item star-chart-calc-item" style="--calc-accent: var(--warning);">
                     <div class="calc-item-header">
                         <span><i class="fa-solid fa-chart-network" style="color: var(--calc-accent);"></i> {{ t('common.star_chart') }}</span>
                         <span class="calc-item-badge">{{ t('calculators.mf_only') }}</span>
@@ -161,12 +166,12 @@
                     </div>
                     <div class="mf-breakdown star-chart-breakdown" v-if="starChartCode">
                         <template v-if="starChartMf.error">
-                            <span style="color: #ff6b6b;"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('common.invalid_build_code') }}</span>
+                            <span style="color: var(--danger-ink);"><i class="fa-solid fa-triangle-exclamation"></i> {{ t('common.invalid_build_code') }}</span>
                         </template>
                         <template v-else>
                             <span>
                                 <strong>{{ t('common.nodes') }}:</strong> {{ starChartMf.pathsCount }}
-                                <span style="margin: 0 8px; opacity: 0.55;">|</span>
+                                <span style="margin: 0 var(--t-2); opacity: 0.55;">|</span>
                                 <strong>{{ t('calculators.magic_find') }}:</strong>
                                 <template v-if="starChartMf.flat > 0">+{{ starChartMf.flat }}</template>
                                 <template v-if="starChartMf.flat > 0 && starChartMf.pct > 0"> / </template>

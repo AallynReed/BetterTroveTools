@@ -37,7 +37,7 @@ document.addEventListener('game_explorer_loaded', async () => {
     } catch (e) {
         console.error('Failed to load Game Explorer view:', e);
         const t = (id) => (window.I18nManager && window.I18nManager.t) ? window.I18nManager.t(id) : id;
-        host.innerHTML = `<div style="color:#ff5555;padding:40px;text-align:center;">${t('game_explorer.failed_to_load')}</div>`;
+        host.innerHTML = `<div style="color:var(--danger-ink);padding:var(--t-6);text-align:center;">${t('game_explorer.failed_to_load')}</div>`;
     }
 });
 

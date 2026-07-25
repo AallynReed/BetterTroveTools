@@ -3,19 +3,24 @@
    `.ts-*`, `.trovesaurus-container`, `.placeholder-box`, `.search-filter-bar`,
    `.pagination-controls` and `.image-modal` classes). Only the id-scoped rules —
    which can't carry across to this panel's unique ids — and the hub-specific
-   extras (tag chips, the modal CTA) live here. */
+   extras (tag chips, the modal CTA, the variant picker) live here. Every value
+   comes from the token layer in style.css `:root`. */
 
+/* 35px of left padding is optical — it clears the search glyph, not a spacing
+   step. */
 #mh-search-input {
     width: 100%;
     padding: 10px 10px 10px 35px;
-    background: #111;
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: var(--radius-control);
     color: var(--text-main);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color var(--dur) var(--t-ease);
 }
+#mh-search-input::placeholder { color: var(--text-placeholder); }
 #mh-search-input:focus { border-color: var(--accent-blue); }
+#mh-search-input:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 #mh-mod-grid {
     display: grid;
@@ -24,8 +29,8 @@
        chips) aren't clipped; the per-card min-height below keeps a 300px floor. */
     grid-auto-rows: auto;
     align-items: start;
-    gap: 12px;
-    padding: 10px 0;
+    gap: var(--t-3);
+    padding: var(--t-2) 0;
 }
 
 /* The shared .ts-* card pins height:100% for fixed-height rows; here we let the
@@ -33,65 +38,72 @@
 #mh-mod-grid .ts-mod-card { height: auto; }
 #mh-mod-grid .ts-card-content { height: auto; min-height: 300px; }
 
-/* Category chips — the hub returns each mod's categories, surfaced as small tags. */
+/* Category chips — the hub returns each mod's categories, surfaced as small tags.
+   They are data labels, not state: nothing here is selected, live or primary, so
+   they read in the neutral ramp rather than borrowing the user's accent
+   (DESIGN.md > The Meaning-Only Rule). */
 .mh-mod-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 8px;
+    gap: var(--t-1);
+    margin-top: var(--t-2);
 }
 
 .mh-mod-tag {
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 1px;
     color: var(--text-muted);
-    background: rgba(var(--accent-rgb), 0.10);
-    border: 1px solid rgba(var(--accent-rgb), 0.25);
-    border-radius: 999px;
-    padding: 2px 8px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 100%;
 }
 
+/* Accent fill on hover, so the label takes --accent-ink — main.js recomputes it
+   per accent, where a literal #111 would go unreadable on a dark user accent. */
 #modal-view-mh-btn {
     background: rgba(var(--accent-rgb), 0.15);
     border: 1px solid var(--accent-blue);
     color: var(--accent-blue);
-    margin-top: 15px;
-    padding: 8px 16px;
-    border-radius: 4px;
+    margin-top: var(--t-4);
+    padding: var(--t-2) var(--t-4);
+    border-radius: var(--radius-control);
     cursor: pointer;
-    transition: all 0.2s;
-    font-size: 14px;
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
+    font-size: var(--t-fs-body);
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--t-2);
 }
-#modal-view-mh-btn:hover { background: var(--accent-blue); color: #111; }
+#modal-view-mh-btn:hover { background: var(--accent-blue); color: var(--accent-ink); }
+#modal-view-mh-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 /* Mods Hub card: visible "switch variant" control under the install button,
-   shown for installed mods (the install button itself is locked to "Installed"). */
+   shown for installed mods (the install button itself is locked to "Installed").
+   Accent is earned here — this is the card's live action. */
 .mh-switch-variant-btn {
     width: 100%;
     margin-top: 0;
-    padding: 7px 12px;
-    border-radius: 4px;
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--t-fs-body);
     font-weight: 600;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
     color: var(--accent-blue);
     background: rgba(var(--accent-rgb), 0.10);
     border: 1px solid rgba(var(--accent-rgb), 0.35);
-    transition: background 0.15s, border-color 0.15s;
+    transition: background-color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -105,9 +117,12 @@
     background: rgba(var(--accent-rgb), 0.2);
     border-color: rgba(var(--accent-rgb), 0.6);
 }
+.mh-switch-variant-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 .mh-switch-variant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* "Mods Hub" variant chip on a My Mods card — click to switch variant. */
+/* "Mods Hub" variant chip on a My Mods card — click to switch variant. It is a
+   control rather than a label, which is why it keeps the accent while the plain
+   .mod-flag chips stay neutral. */
 .mod-flag-hub {
     cursor: pointer;
     color: var(--accent-blue);
@@ -117,26 +132,30 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background-color var(--dur-fast) var(--t-ease), border-color var(--dur-fast) var(--t-ease);
 }
 .mod-flag-hub:hover {
     background: rgba(var(--accent-rgb), 0.22);
     border-color: rgba(var(--accent-rgb), 0.6);
 }
+.mod-flag-hub:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
-/* Variant picker — shown when a mod has more than one variant (branch). */
+/* Variant picker — shown when a mod has more than one variant (branch).
+   Floating chrome, so shadow + blur belong here; the overlay also has to clear
+   the app's custom-select dropdowns at 200000, which a literal 9999 did not. */
 .mh-variant-modal {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.78);
-    backdrop-filter: blur(4px);
+    z-index: var(--z-modal);
+    background: var(--modal-backdrop);
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: var(--t-5);
 }
-.mh-variant-modal.active { display: flex; animation: fadeIn 0.2s ease; }
+.mh-variant-modal.active { display: flex; animation: fadeIn var(--dur) var(--t-ease); }
 
 .mh-variant-dialog {
     width: 100%;
@@ -146,8 +165,8 @@
     flex-direction: column;
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+    border-radius: var(--radius-surface);
+    box-shadow: var(--shadow-modal);
     overflow: hidden;
 }
 
@@ -155,75 +174,94 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: 12px;
-    padding: 16px 18px 10px;
+    gap: var(--t-3);
+    padding: var(--t-4) var(--t-4) var(--t-2);
     border-bottom: 1px solid var(--border-color);
 }
-.mh-variant-title { margin: 0; font-size: 16px; font-weight: 700; color: var(--text-main); }
-.mh-variant-mod-name { margin: 2px 0 0; font-size: 13px; color: var(--accent-blue); font-weight: 600; }
+.mh-variant-title { margin: 0; font-size: var(--t-fs-h2); font-weight: 700; color: var(--text-main); }
+/* Names the mod being configured — subject matter, not a selection or a live
+   state, so it stays in ink rather than taking the accent. */
+.mh-variant-mod-name { margin: var(--t-1) 0 0; font-size: var(--t-fs-body); color: var(--text-main); font-weight: 600; }
 .mh-variant-close {
     background: transparent;
     border: 0;
     color: var(--text-muted);
-    font-size: 18px;
+    font-size: var(--t-fs-h2);
     cursor: pointer;
-    padding: 2px 6px;
+    padding: var(--t-1) var(--t-2);
     line-height: 1;
-    transition: color 0.15s;
+    transition: color var(--dur-fast) var(--t-ease);
 }
 .mh-variant-close:hover { color: var(--text-main); }
+.mh-variant-close:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
-.mh-variant-hint { margin: 0; padding: 10px 18px 0; font-size: 12px; color: var(--text-muted); }
+.mh-variant-hint { margin: 0; padding: var(--t-3) var(--t-4) 0; font-size: var(--t-fs-label); color: var(--text-muted); }
 
 .mh-variant-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 14px 18px 18px;
+    gap: var(--t-2);
+    padding: var(--t-4);
     overflow-y: auto;
 }
 
+/* An inner row on a panel: page graphite behind a hairline, control radius —
+   the same recipe as every other list row in the app. */
 .mh-variant-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 12px 14px;
+    gap: var(--t-3);
+    padding: var(--t-3) var(--t-4);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: linear-gradient(170deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.12));
-    transition: border-color 0.15s;
+    border-radius: var(--radius-control);
+    background: var(--bg-dark);
+    transition: border-color var(--dur-fast) var(--t-ease);
 }
 .mh-variant-row:hover { border-color: rgba(var(--accent-rgb), 0.55); }
+/* "Currently installed" is a selection, which is exactly what the accent is for. */
 .mh-variant-row.current { border-color: rgba(var(--accent-rgb), 0.5); background: rgba(var(--accent-rgb), 0.06); }
 
-.mh-variant-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.mh-variant-name-line { display: flex; align-items: center; gap: 8px; }
+.mh-variant-info { display: flex; flex-direction: column; gap: var(--t-1); min-width: 0; }
+.mh-variant-name-line { display: flex; align-items: center; gap: var(--t-2); }
 .mh-variant-name {
-    font-size: 14px;
-    font-weight: 700;
+    font-size: var(--t-fs-body);
+    font-weight: 600;
     color: var(--text-main);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
 }
-.mh-variant-name i { color: var(--accent-blue); font-size: 12px; }
+/* Structural heading icon, so it stays muted — the accent marks actions and
+   selections, never decoration. */
+.mh-variant-name i { color: var(--text-muted); font-size: var(--icon-optical); }
 .mh-variant-installed-pill {
-    font-size: 10px;
-    font-weight: 700;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 1px;
     color: var(--accent-blue);
     background: rgba(var(--accent-rgb), 0.14);
     border: 1px solid rgba(var(--accent-rgb), 0.4);
-    border-radius: 999px;
-    padding: 1px 8px;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
 }
 .mh-variant-meta {
-    font-size: 12px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.mh-variant-install { width: auto; margin-top: 0; flex: 0 0 auto; padding: 8px 14px; }
+.mh-variant-install { width: auto; margin-top: 0; flex: 0 0 auto; padding: var(--t-2) var(--t-4); }
+
+/* Reduced motion: state still changes, it just stops moving. */
+@media (prefers-reduced-motion: reduce) {
+    .mh-variant-modal.active { animation: none; }
+    #mh-search-input,
+    #modal-view-mh-btn,
+    .mh-switch-variant-btn,
+    .mod-flag-hub,
+    .mh-variant-close,
+    .mh-variant-row { transition-duration: 0.01ms; }
+}

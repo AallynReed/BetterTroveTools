@@ -239,7 +239,7 @@
                                     <button class="primary-btn" @click="fillQbSlice">
                                         <i class="fa-solid fa-fill-drip"></i> <span>{{ t('modder_tools.fill_slice') }}</span>
                                     </button>
-                                    <button class="primary-btn" @click="clearQbSlice" style="background: #a23a3a;">
+                                    <button class="primary-btn" @click="clearQbSlice" style="background: var(--danger);">
                                         <i class="fa-solid fa-eraser"></i> <span>{{ t('modder_tools.clear_slice') }}</span>
                                     </button>
                                 </div>
@@ -461,7 +461,7 @@
                                     <span>{{ qbSliceVoxels.length }} {{ t('modder_tools.voxel_s') }}</span>
                                 </div>
                                 <div class="table-container" style="max-height: 220px; overflow-y: auto;">
-                                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body);">
                                         <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
                                             <tr>
                                                 <th style="padding: 8px 10px;">{{ t('modder_tools.coord') }}</th>

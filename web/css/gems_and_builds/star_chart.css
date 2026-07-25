@@ -1,3 +1,17 @@
+/* Star Chart tab.
+   Every value here comes from the token layer in style.css `:root`: the 4pt
+   spacing scale (--t-1..--t-6), the six type roles (--t-fs-*), the three radii
+   and the four semantic colours. The view root, its header and .placeholder-box
+   are additionally enrolled in the shared density layer at the bottom of
+   style.css, so the values written for them here restate what that layer
+   already enforces rather than fighting it.
+
+   The chart itself is an SVG whose node fills/strokes are data — star_chart.js
+   writes them inline per constellation — so the rules below only style the
+   states the chart layers on top of that data (hover, selected, replacement,
+   stat-highlight). Inline styles beat class rules, which is why a few of these
+   carry a pre-existing !important. */
+
 [v-cloak] {
     display: none !important;
 }
@@ -5,21 +19,25 @@
 .star-chart-container {
     --star-chart-panel-height: auto;
     --star-chart-panel-max-height: calc(100vh - 120px);
-    padding: 40px;
-    max-width: 1400px;
+    /* Enrolled in the shared density layer (style.css > CROSS-APP DENSITY
+       LAYER), which forces this with !important. Stated with the token so the
+       file doesn't teach a different number than the one that renders. */
+    padding: var(--view-padding);
+    max-width: 1320px;
     margin: 0 auto;
-    animation: fadeIn 0.3s ease;
+    animation: fadeIn var(--dur) var(--t-ease);
 }
 
 .star-chart-header {
-    margin-bottom: 20px;
+    /* Also density-layer enrolled; these match what it enforces. */
+    margin-bottom: var(--t-3);
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 20px;
+    padding-bottom: var(--t-2);
 }
 
 .chart-layout {
     display: flex;
-    gap: 20px;
+    gap: var(--control-gap);
     align-items: flex-start;
 }
 
@@ -31,52 +49,69 @@
     align-items: flex-start;
     background-color: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
     min-height: 600px;
     position: relative;
     overflow: visible;
-    padding-top: 42px;
+    max-height: calc(100vh - 200px);
+    /* Optical, not spacing: the toolbar is absolutely positioned inside this
+       card, so the top pad is the card pad plus the room that row needs. */
+    padding-top: 38px;
 }
 
 .chart-toolbar {
     position: absolute;
-    top: 12px;
-    left: 14px;
-    right: 14px;
+    top: var(--t-3);
+    left: var(--surface-padding);
+    right: var(--surface-padding);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    gap: var(--control-gap);
+    /* Local stacking inside the chart card only — not a global layer. */
     z-index: 5;
 }
 
 .chart-toolbar-title {
-    font-size: 13px;
-    font-weight: 700;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
     color: var(--text-main);
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
+}
+
+.chart-toolbar-title i {
+    /* Structural heading icon: accent means "primary action / selection / live",
+       so a title icon stays muted (DESIGN.md > The Meaning-Only Rule). */
+    color: var(--text-muted);
+    font-size: var(--icon-optical);
 }
 
 .chart-toolbar-hints {
     display: flex;
-    gap: 8px;
+    gap: var(--control-gap);
     flex-wrap: wrap;
     justify-content: flex-end;
 }
 
+/* Neutral chip, same box as .trove-pill: hairline border, no white-wash fill.
+   The old rgba(255,255,255,0.03)/0.1 pair was a second border palette. */
 .chart-hint-chip {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 999px;
-    padding: 3px 9px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: var(--t-2);
+}
+
+.chart-hint-chip i {
+    font-size: var(--icon-optical);
 }
 
 #chart-svg {
@@ -94,48 +129,69 @@
 
 .chart-zoom-controls {
     display: flex;
-    gap: 4px;
+    gap: var(--t-1);
     flex-shrink: 0;
 }
 
 .chart-zoom-controls .secondary-btn {
-    padding: 4px 8px;
-    font-size: 12px;
+    padding: var(--t-1) var(--t-2);
+    font-size: var(--t-fs-body);
     line-height: 1;
 }
 
 .node-search-controls input {
-    background: var(--bg-main);
+    /* --bg-main is not a token and never has been, so this well rendered with
+       no fill at all. Inputs are inset page graphite (DESIGN.md > Inputs). */
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
     color: var(--text-main);
-    padding: 8px 10px;
-    border-radius: 4px;
+    padding: 9px 10px;
+    border-radius: var(--radius-control);
     outline: none;
-    font-size: 12px;
+    font-size: var(--t-fs-body);
+    transition: border-color var(--dur-fast) var(--t-ease);
+}
+
+.node-search-controls input::placeholder {
+    color: var(--text-placeholder);
 }
 
 .node-search-controls input:focus {
     border-color: var(--accent-blue);
 }
 
+.node-search-controls input:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+/* Connector lines are structure, so they are drawn from the muted-ink token at
+   low alpha rather than from a grey-blue that exists nowhere else. */
 .chart-line {
-    stroke: rgba(117, 127, 141, 0.42);
+    stroke: var(--text-muted);
+    stroke-opacity: 0.32;
     stroke-width: 2.5;
 }
 
 .star-node {
     cursor: pointer;
-    transition: all 0.2s;
+    /* Enumerated: `all` also animates the inline fill/stroke geometry the chart
+       rewrites every frame while panning. */
+    transition: fill var(--dur) var(--t-ease), stroke var(--dur) var(--t-ease),
+                stroke-width var(--dur) var(--t-ease), filter var(--dur) var(--t-ease),
+                opacity var(--dur) var(--t-ease);
 }
 
+/* Hover is ink, selection is accent — two different signals, so they no longer
+   both read as "white glow". The zero-offset drop-shadow that used to carry
+   hover was decoration and is gone (DESIGN.md > The Floating-Only Rule). */
 .star-node:hover {
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
-    stroke: #ffffff !important;
+    stroke: var(--text-main) !important;
     stroke-width: 3px;
 }
 
 .root-node {
-    cursor: default; 
+    cursor: default;
     stroke-width: 4px;
 }
 
@@ -143,19 +199,18 @@
     cursor: pointer;
     transform-box: fill-box;
     transform-origin: center;
-    transition: transform 0.15s ease, stroke 0.2s ease, filter 0.2s ease;
+    transition: transform var(--dur-fast) var(--t-ease), stroke var(--dur) var(--t-ease),
+                fill var(--dur) var(--t-ease);
 }
 
 .center-clear-anchor:hover {
     transform: scale(1.08);
-    stroke: #ffffff;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.42));
+    stroke: var(--text-main);
 }
 
 .node-selected {
     stroke-width: 1.25px;
-    stroke: #ffffff !important;
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
+    stroke: var(--text-main) !important;
 }
 
 .node-overwritten {
@@ -167,39 +222,46 @@
     filter: saturate(0.62) brightness(0.92);
 }
 
+/* "Something is selected" is state, and state in this system is the user's
+   accent — which also replaces the white halo that used to announce it. On Root
+   polygons star_chart.js sets fill inline, so this reaches the centre anchor. */
 .root-active {
-    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.3));
-    fill: rgba(255, 255, 255, 0.06);
+    fill: rgba(var(--accent-rgb), 0.12);
 }
 
 .center-clear-anchor.root-active {
-    stroke: #ffffff !important;
-    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
-    fill: rgba(255, 255, 255, 0.08);
+    stroke: var(--accent-blue) !important;
+    fill: rgba(var(--accent-rgb), 0.16);
 }
 
+/* The path you have actually taken lights up in the user's colour; everything
+   else stays structural. */
 .line-selected {
-    stroke: rgba(206, 214, 224, 0.54);
+    stroke: rgba(var(--accent-rgb), 0.55);
+    stroke-opacity: 1;
 }
 
+/* "This node would be replaced" is a needs-attention state → the one amber.
+   Alpha alone separates the resting curve from the active one, so the glow that
+   used to double it up is gone. */
 .replacement-line {
     fill: none;
-    stroke: rgba(216, 171, 69, 0.5);
+    stroke: rgba(var(--warning-rgb), 0.5);
     stroke-width: 2.5;
     stroke-linecap: round;
-    filter: drop-shadow(0 0 6px rgba(216, 171, 69, 0.22));
     pointer-events: none;
 }
 
 .replacement-line-active {
-    stroke: rgba(216, 171, 69, 0.92);
-    filter: drop-shadow(0 0 10px rgba(216, 171, 69, 0.45));
+    stroke: rgba(var(--warning-rgb), 0.92);
 }
 
 .node-replacement-tip {
     stroke-width: 2px;
-    stroke: rgba(216, 171, 69, 0.8) !important;
-    filter: drop-shadow(0 0 10px rgba(216, 171, 69, 0.6)) saturate(1.16) brightness(1.03);
+    stroke: rgba(var(--warning-rgb), 0.8) !important;
+    /* Not elevation — a saturation/brightness lift on the node's own data
+       colour, which survives whatever fill the constellation gave it. */
+    filter: saturate(1.16) brightness(1.03);
 }
 
 .node-stat-highlight-active,
@@ -209,37 +271,28 @@
     animation: starPulse 1.35s ease-in-out infinite;
 }
 
+/* Transform-only: a scale pulse costs nothing to composite, where the old
+   drop-shadow re-rasterised the node on every frame of an infinite loop. */
 @keyframes starPulse {
-    0% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
-    }
-    50% {
-        transform: scale(1.14);
-        filter: drop-shadow(0 0 12px var(--pulse-color, rgba(255, 255, 255, 0.72)));
-    }
-    100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
-    }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.14); }
+    100% { transform: scale(1); }
 }
 
 .node-stat-highlight-active {
-    --pulse-color: rgba(84, 255, 138, 0.85);
-    stroke: rgba(84, 255, 138, 0.95) !important;
+    stroke: rgba(var(--success-rgb), 0.95) !important;
 }
 
 .node-stat-highlight-inactive {
-    --pulse-color: rgba(255, 101, 101, 0.82);
-    stroke: rgba(255, 101, 101, 0.92) !important;
+    stroke: rgba(var(--danger-rgb), 0.92) !important;
 }
 
 #build-summary-panel {
     width: 350px;
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 20px;
+    border-radius: var(--radius-surface);
+    padding: var(--surface-padding);
     box-sizing: border-box;
     flex-shrink: 0;
     align-self: flex-start;
@@ -254,6 +307,7 @@
 
 .build-template-controls {
     position: relative;
+    /* Local stacking against the panel's own siblings only. */
     z-index: 12;
 }
 
@@ -267,29 +321,35 @@
 
 #build-summary-panel h3 {
     margin-top: 0;
-    margin-bottom: 15px;
+    margin-bottom: var(--t-4);
     color: var(--text-main);
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
+    padding-bottom: var(--t-3);
 }
 
 .build-meta-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: var(--t-2);
+    margin-bottom: var(--t-3);
 }
 
 .build-meta-chip {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
-    border: 1px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.03);
-    border-radius: 999px;
-    padding: 3px 9px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    border-radius: var(--radius-pill);
+    padding: var(--t-1) 10px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--t-2);
+}
+
+.build-meta-chip i {
+    font-size: var(--icon-optical);
 }
 
 .build-meta-chip.active {
@@ -301,7 +361,8 @@
 .cheat-mode-chip {
     cursor: pointer;
     user-select: none;
-    transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    transition: color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease),
+                background-color var(--dur) var(--t-ease);
 }
 
 .cheat-mode-chip:hover {
@@ -314,38 +375,46 @@
     color: var(--text-main);
     border-color: rgba(var(--accent-rgb), 0.38);
     background: rgba(var(--accent-rgb), 0.1);
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.16);
-    outline: none;
+    /* The one focus ring, not a bespoke box-shadow halo. */
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .build-share-controls {
     display: flex;
-    gap: 8px;
+    gap: var(--control-gap);
 }
 
 .stat-filter-controls {
     display: flex;
-    gap: 8px;
-    margin-top: 10px;
+    gap: var(--t-2);
+    margin-top: var(--t-3);
 }
 
 .stat-filter-meta {
-    margin-top: 6px;
-    margin-bottom: 12px;
-    font-size: 12px;
+    margin-top: var(--t-1);
+    margin-bottom: var(--t-3);
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
 }
 
 #build-code-input {
     flex: 1;
-    background: var(--bg-main);
+    background: var(--bg-dark);
     border: 1px solid var(--border-color);
     color: var(--accent-blue);
-    padding: 8px 10px;
-    border-radius: 4px;
+    padding: 9px 10px;
+    border-radius: var(--radius-control);
     outline: none;
-    font-size: 12px;
-    font-family: monospace;
+    font-size: var(--t-fs-body);
+    /* Load-bearing monospace: this is a share code the user reads aloud and
+       retypes, so 0/O and 1/l have to stay distinguishable. */
+    font-family: var(--font-numeric);
+    transition: border-color var(--dur-fast) var(--t-ease), color var(--dur-fast) var(--t-ease);
+}
+
+#build-code-input::placeholder {
+    color: var(--text-placeholder);
 }
 
 #build-code-input:focus {
@@ -353,25 +422,41 @@
     color: var(--text-main);
 }
 
-.build-buttons {
-    display: flex;
-    gap: 5px;
+#build-code-input:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
+.build-buttons {
+    display: flex;
+    gap: var(--t-1);
+}
+
+/* .secondary-btn is a global component that this view stylesheet redefines, and
+   the link tag stays in the document once the tab has been opened — so the
+   resting fill is matched to the app-wide rule in style.css rather than being a
+   third value. Page graphite was wrong here anyway: --bg-dark is for inset
+   wells, and using it left no tonal room for the hover lift below. */
 .secondary-btn {
-    background: var(--bg-dark);
+    background: transparent;
     color: var(--text-main);
     border: 1px solid var(--border-color);
-    padding: 8px 12px;
-    border-radius: 4px;
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease),
+                border-color var(--dur) var(--t-ease);
 }
 
 .secondary-btn:hover {
     background: var(--bg-hover);
     color: var(--accent-blue);
     border-color: var(--accent-blue);
+}
+
+.secondary-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 #summary-content {
@@ -381,11 +466,13 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-gutter: stable;
+    /* Optical: breathing room against the reserved scrollbar gutter, not a
+       spacing step. */
     padding-right: 6px;
 }
 
 .summary-section {
-    margin-bottom: 15px;
+    margin-bottom: var(--t-4);
 }
 
 .summary-section-toggle {
@@ -393,18 +480,19 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: var(--control-gap);
     border: 0;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--accent-blue);
-    margin: 0 0 5px 0;
-    padding: 4px 2px;
-    font-size: 14px;
+    margin: 0 0 var(--t-1);
+    /* 2px is an optical inset that keeps the label flush with the list below it. */
+    padding: var(--t-1) 2px;
+    font-size: var(--t-fs-body);
     font-weight: 600;
     text-align: left;
     cursor: pointer;
-    transition: background 0.2s ease, color 0.2s ease;
+    transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease);
 }
 
 .summary-section-toggle:hover {
@@ -413,14 +501,14 @@
 }
 
 .summary-section-toggle:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.2);
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
 }
 
 .summary-section-toggle i {
-    font-size: 11px;
+    font-size: var(--icon-optical);
     color: var(--text-muted);
-    transition: color 0.2s ease;
+    transition: color var(--dur) var(--t-ease);
 }
 
 .summary-section-toggle.expanded i {
@@ -429,75 +517,61 @@
 
 .summary-section ul {
     margin: 0;
+    /* Bullet indent is set by the marker, not by the spacing scale. */
     padding-left: 20px;
-    font-size: 13px;
-    color: #ccc;
+    font-size: var(--t-fs-body);
+    color: var(--text-main);
 }
 
+/* Floating chrome: this genuinely detaches from the page, so it keeps a shadow
+   and sits above the app's custom-select dropdowns (200000) — the literal 1000
+   it used to carry rendered it underneath them. Below --z-modal so it can never
+   cover a dialog. */
 #star-tooltip {
     position: fixed;
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 12px;
+    border-radius: var(--radius-surface);
+    padding: var(--t-3);
     max-width: 250px;
     pointer-events: none;
-    z-index: 1000;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    z-index: var(--z-dropdown-menu);
+    box-shadow: var(--shadow-floating);
     color: var(--text-main);
-    font-size: 13px;
+    font-size: var(--t-fs-body);
 }
 
 #star-tooltip h3 {
-    margin: 0 0 5px 0;
+    margin: 0 0 var(--t-1);
     color: var(--accent-blue);
-    font-size: 15px;
+    font-size: var(--t-fs-h2);
+    font-weight: 600;
 }
 
 #star-tooltip .type {
-    font-size: 11px;
+    font-size: var(--t-fs-label);
     color: var(--text-muted);
     display: block;
-    margin-bottom: 8px;
+    margin-bottom: var(--t-2);
 }
 
-#star-tooltip p { margin: 0 0 8px 0; line-height: 1.4; }
+#star-tooltip p { margin: 0 0 var(--t-2); line-height: 1.4; }
 #star-tooltip ul { margin: 0; padding-left: 20px; }
-#star-tooltip li { margin-bottom: 4px; color: #ccc; }
-#star-tooltip hr { border-color: var(--border-color); margin: 8px 0; }
+#star-tooltip li { margin-bottom: var(--t-1); color: var(--text-main); }
+#star-tooltip hr { border-color: var(--border-color); margin: var(--t-2) 0; }
 
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
+    background: var(--modal-backdrop);
+    /* Blur is affordable here because this floats; it is banned on in-view
+       content panels (DESIGN.md > The Blur Budget Rule). */
+    backdrop-filter: var(--modal-blur);
+    -webkit-backdrop-filter: var(--modal-blur);
     align-items: center;
     justify-content: center;
-    z-index: 10000;
-}
-
-/* Concise module pass */
-.star-chart-container {
-    padding: 24px;
-    max-width: 1320px;
-}
-
-.star-chart-header {
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-}
-
-.chart-layout,
-.chart-toolbar,
-.chart-toolbar-hints,
-.build-share-controls {
-    gap: 10px;
-}
-
-#chart-wrapper {
-    padding: 14px;
-    padding-top: 38px;
-    max-height: calc(100vh - 200px);
+    /* Above the custom-select dropdowns, below toasts. */
+    z-index: var(--z-modal);
 }
 
 /* Mobile/tablet: stack the chart above the build panel, full width, and drop
@@ -505,19 +579,21 @@
 @media (max-width: 900px) {
     /* Trim outer padding so the chart can use nearly the full screen width. */
     .star-chart-container {
-        padding: 8px;
+        padding: var(--t-2);
     }
 
     .chart-layout {
         flex-direction: column;
-        gap: 14px;
+        gap: var(--t-4);
     }
 
     #chart-wrapper {
         width: 100%;
         min-height: 0;
         max-height: none;
-        padding: 6px;
+        padding: var(--t-2);
+        /* Optical clearance for the absolutely positioned toolbar, which wraps
+           taller here than it does on desktop. */
         padding-top: 44px;
         /* Scale the chart past the wrapper width so it's noticeably bigger in
            both dimensions (the viewBox is landscape, so fit-to-width was short).
@@ -544,6 +620,24 @@
     }
 
     .chart-toolbar {
-        gap: 8px;
+        gap: var(--t-2);
     }
+}
+
+/* Reduced motion: every state still changes, it just stops moving. The
+   stat-filter highlight keeps its success/danger stroke, so the filter is still
+   readable with the pulse switched off. */
+@media (prefers-reduced-motion: reduce) {
+    .star-chart-container { animation: none; }
+    .star-node,
+    .center-clear-anchor,
+    .cheat-mode-chip,
+    .secondary-btn,
+    .summary-section-toggle,
+    .summary-section-toggle i,
+    .node-search-controls input,
+    #build-code-input { transition-duration: 0.01ms; }
+    .node-stat-highlight-active,
+    .node-stat-highlight-inactive { animation: none; }
+    .center-clear-anchor:hover { transform: none; }
 }

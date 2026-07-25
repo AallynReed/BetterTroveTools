@@ -13,19 +13,19 @@
         <div class="tab-content" :class="{ active: activeTab === 'general' }">
             <div class="settings-section">
                 <h3>{{ t('settings.appearance') }}</h3>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.app_accent_color') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.customize_the_main_accent_color_of_the_a_666684') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.app_accent_color') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.customize_the_main_accent_color_of_the_a_666684') }}</div>
                     </div>
-                    <input type="color" v-model="settings.accent_color" @input="previewAccentColor" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; width: 44px; height: 32px; padding: 2px;">
+                    <input type="color" v-model="settings.accent_color" @input="previewAccentColor" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-control); cursor: pointer; width: 44px; height: var(--control-height); padding: 2px;">
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.app_font') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.select_a_font_family_that_supports_your_448276') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.app_font') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.select_a_font_family_that_supports_your_448276') }}</div>
                     </div>
-                    <select v-model="settings.app_font" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 8px 12px; cursor: pointer; min-width: 180px; outline: none;">
+                    <select v-model="settings.app_font" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); padding: var(--t-2) var(--t-3); cursor: pointer; min-width: 180px; outline: none;">
                         <option value="system">{{ t('settings.system_font') }}</option>
                         <option value="product-sans">Product Sans</option>
                         <option value="noto-sans">Noto Sans</option>
@@ -35,12 +35,12 @@
                         <option value="arial">Arial</option>
                     </select>
                 </div>
-                <div v-if="isNative" style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div v-if="isNative" style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.ui_size') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.ui_size_desc') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.ui_size') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.ui_size_desc') }}</div>
                     </div>
-                    <select v-model.number="settings.ui_scale" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 8px 12px; cursor: pointer; min-width: 180px; outline: none;">
+                    <select v-model.number="settings.ui_scale" @change="saveGeneralSettings" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); padding: var(--t-2) var(--t-3); cursor: pointer; min-width: 180px; outline: none;">
                         <option :value="1">100% ({{ t('settings.default') }})</option>
                         <option :value="0.95">95%</option>
                         <option :value="0.9">90%</option>
@@ -54,10 +54,10 @@
 
             <div v-if="!isWebMode && !isNative" class="settings-section">
                 <h3>{{ t('settings.window_behavior') }}</h3>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.close_to_tray') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.close_to_tray_desc') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.close_to_tray') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.close_to_tray_desc') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.close_to_tray" @change="saveGeneralSettings">
@@ -68,30 +68,30 @@
 
             <div class="settings-section">
                 <h3>{{ t('settings.home_page_preferences') }}</h3>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_community_content') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_livestreams_and_videos_on_home_turn_5a3438') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.show_community_content') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.show_livestreams_and_videos_on_home_turn_5a3438') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_community_content" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_official_news') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_the_official_trove_news_carousel_on_f9bd20') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.show_official_news') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.show_the_official_trove_news_carousel_on_f9bd20') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_official_news" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_player_activity') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_player_activity_desc') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.show_player_activity') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.show_player_activity_desc') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_player_activity" @change="saveGeneralSettings">
@@ -102,20 +102,20 @@
             
             <div v-if="!isWebMode" class="settings-section">
                 <h3>{{ t('settings.mod_manager_preferences') }}</h3>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.auto_fix_mod_names') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.keeps_local_mod_filenames_aligned_with_t_1760b6') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.auto_fix_mod_names') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.keeps_local_mod_filenames_aligned_with_t_1760b6') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.auto_fix_names" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.show_mod_preview_on_info_side') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.shows_thumbnails_directly_on_each_mod_ca_61f774') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.show_mod_preview_on_info_side') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.shows_thumbnails_directly_on_each_mod_ca_61f774') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.show_mod_preview_on_info_side" @change="saveGeneralSettings">
@@ -127,20 +127,20 @@
             <div class="settings-section">
                 <h3>{{ t('settings.ux_preferences') }}</h3>
                 <p class="settings-help-text">{{ t('settings.these_controls_help_the_app_explain_itse_e05a64') }}</p>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.hide_beta_features') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.hide_tools_in_the_sidebar_that_are_still_f580f5') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.hide_beta_features') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.hide_tools_in_the_sidebar_that_are_still_f580f5') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.hide_beta_features" @change="saveGeneralSettings">
                         <span class="slider round"></span>
                     </label>
                 </div>
-                <div class="settings-action-row" style="margin-top: 15px;">
+                <div class="settings-action-row" style="margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.reset_onboarding_tips') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.show_quick_tours_shortcut_reminders_and_6bfdbd') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.reset_onboarding_tips') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.show_quick_tours_shortcut_reminders_and_6bfdbd') }}</div>
                     </div>
                     <button class="secondary-btn" @click="resetOnboardingTips"><i class="fa-solid fa-rotate-left"></i> <span>{{ t('settings.reset_tips') }}</span></button>
                 </div>
@@ -154,20 +154,20 @@
                 <p class="settings-help-text">{{ t('settings.add_custom_trove_installations_here_they_c088d8') }}</p>
                 
                 <div class="custom-dirs-list">
-                    <div v-if="customDirs.length === 0" class="placeholder-box" style="padding: 10px;">{{ t('settings.no_custom_directories_added') }}</div>
+                    <div v-if="customDirs.length === 0" class="placeholder-box" style="padding: var(--t-3);">{{ t('settings.no_custom_directories_added') }}</div>
                     <div v-else v-for="(dir, idx) in customDirs" :key="idx" class="custom-dir-item">
-                        <div style="display: flex; flex-direction: column; overflow: hidden; margin-right: 15px;">
-                            <span style="font-weight: 600; font-size: 14px; margin-bottom: 4px; color: var(--text-main);">{{ dir.name }}</span>
+                        <div style="display: flex; flex-direction: column; overflow: hidden; margin-right: var(--t-4);">
+                            <span style="font-weight: 600; font-size: var(--t-fs-body); margin-bottom: var(--t-1); color: var(--text-main);">{{ dir.name }}</span>
                             <span class="dir-path" :title="dir.path">{{ dir.path }}</span>
                         </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="primary-btn edit-dir-btn" style="padding: 6px 10px;" @click="openEditModal(dir)"><i class="fa-solid fa-pen"></i></button>
+                        <div style="display: flex; gap: var(--t-2);">
+                            <button class="primary-btn edit-dir-btn" style="padding: var(--t-2) var(--t-3);" @click="openEditModal(dir)"><i class="fa-solid fa-pen"></i></button>
                             <button class="danger-btn remove-dir-btn" @click="removeDir(dir.path)"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                 </div>
                 
-                <button class="primary-btn" @click="openAddModal" style="margin-top: 15px;">
+                <button class="primary-btn" @click="openAddModal" style="margin-top: var(--t-4);">
                     <i class="fa-solid fa-folder-plus"></i> <span>{{ t('settings.add_custom_directory') }}</span>
                 </button>
             </div>
@@ -181,10 +181,10 @@
                 <p class="settings-help-text">{{ t('settings.notifications_help') }}</p>
                 <p v-if="isDesktopNotify && !isNative" class="settings-help-text">{{ t('settings.notifications_desktop_note') }}</p>
 
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.notifications_enable') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.notifications_enable_desc') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.notifications_enable') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.notifications_enable_desc') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.notifications.enabled" @change="saveAndSyncNotifications">
@@ -192,7 +192,7 @@
                     </label>
                 </div>
 
-                <button class="primary-btn" :disabled="!settings.notifications.enabled" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, marginTop: '15px' }" @click="sendTestNotification">
+                <button class="primary-btn" :disabled="!settings.notifications.enabled" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, marginTop: 'var(--t-4)' }" @click="sendTestNotification">
                     <i class="fa-solid fa-paper-plane"></i> <span>{{ t('settings.notifications_test') }}</span>
                 </button>
             </div>
@@ -203,22 +203,22 @@
                 <h3>{{ t('settings.notifications_bg_health') }}</h3>
                 <p class="settings-help-text">{{ t('settings.notifications_bg_help') }}</p>
 
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i :class="bgStatus.notificationsEnabled ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.notificationsEnabled ? '#4caf50' : '#ffb84d', fontSize: '16px' }"></i>
-                        <span style="color: var(--text-main); font-size: 14px;">{{ t('settings.notifications_status_post') }}</span>
+                <div style="display: flex; flex-direction: column; gap: var(--control-gap); margin-top: var(--t-4);">
+                    <div style="display: flex; align-items: center; gap: var(--control-gap);">
+                        <i :class="bgStatus.notificationsEnabled ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.notificationsEnabled ? 'var(--success)' : 'var(--warning)', fontSize: 'var(--icon-optical)' }"></i>
+                        <span style="color: var(--text-main); font-size: var(--t-fs-body);">{{ t('settings.notifications_status_post') }}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i :class="bgStatus.canScheduleExactAlarms ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.canScheduleExactAlarms ? '#4caf50' : '#ffb84d', fontSize: '16px' }"></i>
-                        <span style="color: var(--text-main); font-size: 14px;">{{ t('settings.notifications_status_exact') }}</span>
+                    <div style="display: flex; align-items: center; gap: var(--control-gap);">
+                        <i :class="bgStatus.canScheduleExactAlarms ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.canScheduleExactAlarms ? 'var(--success)' : 'var(--warning)', fontSize: 'var(--icon-optical)' }"></i>
+                        <span style="color: var(--text-main); font-size: var(--t-fs-body);">{{ t('settings.notifications_status_exact') }}</span>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <i :class="bgStatus.ignoresBatteryOptimizations ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.ignoresBatteryOptimizations ? '#4caf50' : '#ffb84d', fontSize: '16px' }"></i>
-                        <span style="color: var(--text-main); font-size: 14px;">{{ t('settings.notifications_status_battery') }}</span>
+                    <div style="display: flex; align-items: center; gap: var(--control-gap);">
+                        <i :class="bgStatus.ignoresBatteryOptimizations ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'" :style="{ color: bgStatus.ignoresBatteryOptimizations ? 'var(--success)' : 'var(--warning)', fontSize: 'var(--icon-optical)' }"></i>
+                        <span style="color: var(--text-main); font-size: var(--t-fs-body);">{{ t('settings.notifications_status_battery') }}</span>
                     </div>
                 </div>
 
-                <button class="primary-btn" style="margin-top: 15px;" @click="grantBackgroundAccess">
+                <button class="primary-btn" style="margin-top: var(--t-4);" @click="grantBackgroundAccess">
                     <i class="fa-solid fa-shield-halved"></i> <span>{{ t('settings.notifications_grant_bg') }}</span>
                 </button>
             </div>
@@ -226,17 +226,17 @@
             <!-- Last-synced row + refresh button (Android scheduler only). -->
             <div v-if="isNative && settings.notifications.enabled" class="settings-section">
                 <h3>{{ t('settings.notifications_sync_status') }}</h3>
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--t-3); margin-top: var(--t-3);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.notifications_last_synced') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ lastSyncedText() }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.notifications_last_synced') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ lastSyncedText() }}</div>
                     </div>
                     <button class="primary-btn" @click="refreshNotifications">
                         <i class="fa-solid fa-rotate"></i> <span>{{ t('settings.notifications_refresh') }}</span>
                     </button>
                 </div>
-                <p v-if="isNative" class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note') }}</p>
-                <p v-else class="settings-help-text" style="margin-top: 12px;">{{ t('settings.notifications_close_note_desktop') }}</p>
+                <p v-if="isNative" class="settings-help-text" style="margin-top: var(--t-3);">{{ t('settings.notifications_close_note') }}</p>
+                <p v-else class="settings-help-text" style="margin-top: var(--t-3);">{{ t('settings.notifications_close_note_desktop') }}</p>
             </div>
 
             <div v-if="isNative" class="settings-section" :style="{ opacity: settings.notifications.enabled ? 1 : 0.5, pointerEvents: settings.notifications.enabled ? 'auto' : 'none' }">
@@ -244,11 +244,11 @@
 
                 <div v-for="entry in notifyRegistry" :key="entry.id" class="custom-dir-item" style="flex-direction: column; align-items: stretch;">
                     <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                        <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
-                            <i :class="entry.icon" style="color: var(--accent-blue); font-size: 18px;"></i>
+                        <div style="display: flex; align-items: center; gap: var(--t-3); min-width: 0;">
+                            <i :class="entry.icon" style="color: var(--accent-blue); font-size: var(--icon-optical);"></i>
                             <div style="display: flex; flex-direction: column; min-width: 0;">
-                                <span style="font-weight: 600; font-size: 14px; color: var(--text-main);">{{ t(entry.labelKey) }}</span>
-                                <span style="color: var(--text-muted); font-size: 13px;">{{ t(entry.descKey) }}</span>
+                                <span style="font-weight: 600; font-size: var(--t-fs-body); color: var(--text-main);">{{ t(entry.labelKey) }}</span>
+                                <span style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t(entry.descKey) }}</span>
                             </div>
                         </div>
                         <label class="switch">
@@ -259,18 +259,18 @@
 
                     <!-- Per-rotation timing: lead minutes + on-time toggle.
                          Only rendered when this rotation is enabled. -->
-                    <div v-if="settings.notifications.types[entry.id].enabled" style="margin-top: 12px; padding-left: 30px; display: flex; flex-direction: column; gap: 10px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                    <div v-if="settings.notifications.types[entry.id].enabled" style="margin-top: var(--t-3); padding-left: var(--t-6); display: flex; flex-direction: column; gap: var(--control-gap);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--t-3);">
                             <div style="display: flex; flex-direction: column;">
-                                <span style="color: var(--text-main); font-size: 13px;">{{ t('settings.notifications_row_lead') }}</span>
-                                <span style="color: var(--text-muted); font-size: 12px;">{{ t('settings.notifications_row_lead_desc') }}</span>
+                                <span style="color: var(--text-main); font-size: var(--t-fs-body);">{{ t('settings.notifications_row_lead') }}</span>
+                                <span style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.notifications_row_lead_desc') }}</span>
                             </div>
-                            <input type="number" min="5" max="1440" step="1" v-model.number="settings.notifications.types[entry.id].lead_minutes" @change="saveAndSyncNotifications" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; padding: 6px 10px; outline: none; width: 80px;">
+                            <input type="number" min="5" max="1440" step="1" v-model.number="settings.notifications.types[entry.id].lead_minutes" @change="saveAndSyncNotifications" style="background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); padding: var(--t-2) var(--t-3); outline: none; width: 80px;">
                         </div>
-                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: var(--t-3);">
                             <div style="display: flex; flex-direction: column;">
-                                <span style="color: var(--text-main); font-size: 13px;">{{ t('settings.notifications_row_on_time') }}</span>
-                                <span style="color: var(--text-muted); font-size: 12px;">{{ t('settings.notifications_row_on_time_desc') }}</span>
+                                <span style="color: var(--text-main); font-size: var(--t-fs-body);">{{ t('settings.notifications_row_on_time') }}</span>
+                                <span style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.notifications_row_on_time_desc') }}</span>
                             </div>
                             <label class="switch">
                                 <input type="checkbox" v-model="settings.notifications.types[entry.id].on_time" @change="saveAndSyncNotifications">
@@ -280,18 +280,18 @@
                     </div>
 
                     <!-- Sub-options: only render when this rotation is enabled. -->
-                    <div v-if="settings.notifications.types[entry.id].enabled && entry.subOptions" style="margin-top: 12px; padding-left: 30px; display: flex; flex-direction: column; gap: 8px;">
+                    <div v-if="settings.notifications.types[entry.id].enabled && entry.subOptions" style="margin-top: var(--t-3); padding-left: var(--t-6); display: flex; flex-direction: column; gap: var(--t-2);">
                         <!-- checkbox-set: small fixed set of named options (Fluxion phases, gardening cycles). -->
                         <template v-if="entry.subOptions.kind === 'checkbox-set'">
-                            <label v-for="opt in entry.subOptions.values" :key="opt.value" style="display: flex; align-items: center; gap: 8px; color: var(--text-main); font-size: 13px; cursor: pointer;">
+                            <label v-for="opt in entry.subOptions.values" :key="opt.value" style="display: flex; align-items: center; gap: var(--t-2); color: var(--text-main); font-size: var(--t-fs-body); cursor: pointer;">
                                 <input type="checkbox" :value="opt.value" v-model="settings.notifications.types[entry.id][entry.subOptions.key]" @change="saveAndSyncNotifications">
                                 <span>{{ t(opt.labelKey) }}</span>
                             </label>
                         </template>
                         <!-- biome-multi: large list (D15) — chip grid driven by d15Biomes. -->
                         <template v-else-if="entry.subOptions.kind === 'biome-multi'">
-                            <div style="color: var(--text-muted); font-size: 13px;">{{ t('settings.notifications_d15_pick') }}</div>
-                            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                            <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.notifications_d15_pick') }}</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: var(--t-2);">
                                 <label v-for="biome in d15Biomes" :key="biome" class="biome-chip" :class="{ active: settings.notifications.types[entry.id][entry.subOptions.key].includes(biome) }">
                                     <input type="checkbox" :value="biome" v-model="settings.notifications.types[entry.id][entry.subOptions.key]" @change="saveAndSyncNotifications" style="display: none;">
                                     <span>{{ biome }}</span>
@@ -309,9 +309,9 @@
                 <h3>{{ t('settings.notifications_events') }}</h3>
                 <p class="settings-help-text">{{ t('settings.notifications_events_help') }}</p>
                 <template v-for="group in desktopEventCatalog" :key="group.groupKey">
-                    <div style="margin-top: 18px; margin-bottom: 4px; color: var(--accent-blue); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">{{ t(group.groupKey) }}</div>
-                    <div v-for="item in group.items" :key="item.key" style="display: flex; align-items: center; justify-content: space-between; margin-top: 12px;">
-                        <div style="color: var(--text-main); font-size: 14px;">{{ t(item.labelKey) }}</div>
+                    <div style="margin-top: var(--t-4); margin-bottom: var(--t-1); color: var(--accent-blue); font-weight: 800; font-size: var(--t-fs-micro); text-transform: uppercase; letter-spacing: 1px;">{{ t(group.groupKey) }}</div>
+                    <div v-for="item in group.items" :key="item.key" style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-3);">
+                        <div style="color: var(--text-main); font-size: var(--t-fs-body);">{{ t(item.labelKey) }}</div>
                         <label class="switch">
                             <input type="checkbox" v-model="settings.notifications.events[item.key]" @change="saveAndSyncNotifications">
                             <span class="slider"></span>
@@ -327,10 +327,10 @@
             <div class="settings-section">
                 <h3>{{ t('settings.legacy_features') }}</h3>
                 <p class="settings-help-text">{{ t('settings.legacy_features_help') }}</p>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 15px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
                     <div>
-                        <div style="color: var(--text-main); font-weight: 500; font-size: 14px;">{{ t('settings.legacy_projects') }}</div>
-                        <div style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">{{ t('settings.legacy_projects_desc') }}</div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.legacy_projects') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.legacy_projects_desc') }}</div>
                     </div>
                     <label class="switch">
                         <input type="checkbox" v-model="settings.enable_legacy_projects" @change="saveGeneralSettings">
@@ -348,14 +348,14 @@
                 <button class="settings-close-modal" @click="modals.add = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
-            <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('settings.display_name') }}</label>
-                    <input type="text" v-model="addForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('settings.e_g_pts_server')">
+            <div style="margin-bottom: var(--t-4);">
+                    <label style="display: block; margin-bottom: var(--t-1); color: var(--text-main); font-size: var(--t-fs-label);">{{ t('settings.display_name') }}</label>
+                    <input type="text" v-model="addForm.name" style="width: 100%; padding: var(--t-2) var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none;" :placeholder="t('settings.e_g_pts_server')">
             </div>
-            <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('settings.folder_path') }}</label>
-                <div style="display: flex; gap: 10px;">
-                        <input type="text" v-model="addForm.path" readonly style="flex-grow: 1; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 4px; outline: none;" :placeholder="t('settings.no_folder_selected')">
+            <div style="margin-bottom: var(--t-5);">
+                    <label style="display: block; margin-bottom: var(--t-1); color: var(--text-main); font-size: var(--t-fs-label);">{{ t('settings.folder_path') }}</label>
+                <div style="display: flex; gap: var(--control-gap);">
+                        <input type="text" v-model="addForm.path" readonly style="flex-grow: 1; padding: var(--t-2) var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: var(--radius-control); outline: none;" :placeholder="t('settings.no_folder_selected')">
                         <button class="primary-btn" @click="browseDir" :disabled="isBrowsing">
                             <template v-if="!isBrowsing"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></template>
                             <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
@@ -379,9 +379,9 @@
                 <button class="settings-close-modal" @click="modals.edit = false"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="settings-modal-body">
-            <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: var(--text-main); font-size: 14px;">{{ t('settings.display_name') }}</label>
-                    <input type="text" v-model="editForm.name" style="width: 100%; padding: 10px; background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; outline: none;" :placeholder="t('settings.e_g_pts_server')">
+            <div style="margin-bottom: var(--t-4);">
+                    <label style="display: block; margin-bottom: var(--t-1); color: var(--text-main); font-size: var(--t-fs-label);">{{ t('settings.display_name') }}</label>
+                    <input type="text" v-model="editForm.name" style="width: 100%; padding: var(--t-2) var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none;" :placeholder="t('settings.e_g_pts_server')">
             </div>
             <div style="display: flex; justify-content: flex-end;">
                     <button class="primary-btn" @click="saveEditDir" :disabled="isSaving" :style="{ opacity: isSaving ? 0.5 : 1 }">

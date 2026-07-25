@@ -79,7 +79,7 @@
                 <div class="ally-title-area">
                     <div class="ally-name" v-html="highlightSearch(t(dragon.name))"></div>
                     <div class="ally-category">{{ t(dragon.category || 'Unknown') }}</div>
-                    <div v-if="dragon.designer" style="font-size: 0.75em; color: var(--text-muted); margin-top: 4px;">
+                    <div v-if="dragon.designer" style="font-size: var(--t-fs-label); color: var(--text-muted); margin-top: var(--t-1);">
                         <i class="fa-solid fa-pen-nib"></i> <span v-html="highlightSearch(dragon.designer)"></span>
                     </div>
                 </div>
@@ -98,7 +98,7 @@
             </div>
 
             <div v-if="dragon.mastery" class="ally-footer">
-                <span v-if="parseInt(dragon.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: #ff9800;"></i> {{ t('common.mastery_val').replace('{val}', parseInt(dragon.mastery)) }}</span>
+                <span v-if="parseInt(dragon.mastery) > 0" class="footer-stat"><i class="fa-solid fa-crown" style="color: var(--warning);"></i> {{ t('common.mastery_val').replace('{val}', parseInt(dragon.mastery)) }}</span>
             </div>
         </div>
     </div>

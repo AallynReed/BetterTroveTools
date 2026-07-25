@@ -44,7 +44,7 @@
     <!-- Mobile-only top bar + drawer backdrop. Direct children of <body> so the
          sidebar's off-canvas transform (which moves #sidebar) never moves them. -->
     <header id="mobile-topbar">
-        <button id="mobile-nav-toggle" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+        <button id="mobile-nav-toggle" type="button" aria-label="Open menu" data-i18n-aria-label="app.open_menu" aria-controls="sidebar" aria-expanded="false">
             <i class="fa-solid fa-bars"></i>
         </button>
         <span class="mobile-topbar-title">Better Trove Tools</span>
@@ -52,16 +52,16 @@
     <div id="mobile-nav-backdrop"></div>
 
     <div id="network-tracker-vue-app" v-cloak>
-        <div id="external-request-indicator" class="network-status-indicator" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true">
+        <div id="external-request-indicator" class="network-status-indicator" role="button" tabindex="0" :aria-label="t('app.external_request_log')" :data-tooltip="tooltipContent" @click="networkState.isModalOpen = true" @keydown.enter="networkState.isModalOpen = true" @keydown.space.prevent="networkState.isModalOpen = true">
             <i class="fa-solid fa-wifi" :class="{ 'fa-fade': hasActive }"></i>
         </div>
         <div id="request-log-modal" class="app-overlay request-log-overlay" :style="{ display: networkState.isModalOpen ? 'flex' : 'none' }" @click.self="networkState.isModalOpen = false">
-            <div class="app-modal-card request-log-card">
+            <div class="app-modal-card request-log-card" role="dialog" aria-modal="true" aria-labelledby="request-log-title">
                 <div class="app-modal-header">
-                    <h2 class="app-modal-title"><i class="fa-solid fa-list"></i> <span>{{ t('app.external_request_log') }}</span></h2>
+                    <h2 class="app-modal-title" id="request-log-title"><i class="fa-solid fa-list"></i> <span>{{ t('app.external_request_log') }}</span></h2>
                     <div class="app-modal-actions">
                         <button @click="copyLog" class="icon-btn" :title="t('app.copy_entire_log')"><i class="fa-regular fa-copy"></i></button>
-                        <button @click="networkState.isModalOpen = false" class="icon-btn"><i class="fa-solid fa-xmark"></i></button>
+                        <button @click="networkState.isModalOpen = false" class="icon-btn" :title="t('common.close')" :aria-label="t('common.close')"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
                 <div id="request-log-content" class="request-log-content">
@@ -89,13 +89,13 @@
 
     <nav id="sidebar">
         <div class="sidebar-header">
-            <button id="burger-btn">
+            <button id="burger-btn" type="button" title="Collapse sidebar" data-i18n-title="app.collapse_sidebar" aria-label="Collapse sidebar" data-i18n-aria-label="app.collapse_sidebar" aria-controls="sidebar" aria-expanded="true">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <h3 id="app-title">
+            <div id="app-title">
                 <span class="app-name-text">Better Trove Tools</span>
                 <span class="app-version-text">Desktop App</span>
-            </h3>
+            </div>
         </div>
         <div class="sidebar-nav-scroll">
             <ul class="menu">
@@ -225,10 +225,10 @@
     </main>
 
     <div id="server-time-modal" class="app-overlay app-overlay-blur" style="display: none;">
-        <div class="server-time-modal-card">
+        <div class="server-time-modal-card" role="dialog" aria-modal="true" aria-labelledby="server-time-modal-title">
             <div class="server-time-modal-header">
                 <div>
-                    <h2 class="server-time-modal-title"><i class="fa-solid fa-globe" style="color: var(--accent-blue);"></i> <span data-i18n="app.global_times">Global Times</span></h2>
+                    <h2 class="server-time-modal-title" id="server-time-modal-title"><i class="fa-solid fa-globe" style="color: var(--accent-blue);"></i> <span data-i18n="app.global_times">Global Times</span></h2>
                     <div class="server-time-modal-subtitle" data-i18n="app.reference_clocks_timezone_comparison_and_b425b3">Reference clocks, timezone comparison, and quick conversion tools.</div>
                 </div>
                 <div class="server-time-modal-actions">
@@ -291,7 +291,7 @@
     <!-- Feedback modal — POSTs to /v1/misc/feedback on the Kiwi API via BTT_Kiwi.post.
          Public, tokenless; rate-limited to 3 submissions/hour per IP server-side. -->
     <div id="feedback-modal" class="app-overlay app-overlay-blur" style="display: none;">
-        <div class="app-modal-card feedback-modal-card">
+        <div class="app-modal-card feedback-modal-card" role="dialog" aria-modal="true" aria-labelledby="feedback-modal-title">
             <div class="app-modal-header">
                 <h2 class="app-modal-title"><i class="fa-solid fa-comment-dots" style="color: var(--accent-blue);"></i> <span data-i18n="feedback.title">Send Feedback</span></h2>
                 <button id="feedback-close-btn" class="icon-btn" aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
@@ -342,13 +342,13 @@
     </div>
 
     <div id="command-palette-overlay" class="app-overlay app-overlay-blur app-overlay-top" style="display: none;">
-        <div id="command-palette" class="command-palette">
+        <div id="command-palette" class="command-palette" role="dialog" aria-modal="true" aria-label="Command palette" data-i18n-aria-label="app.command_palette">
             <div class="command-palette-header">
                 <i class="fa-solid fa-magnifying-glass command-palette-icon"></i>
-                <input type="text" id="cmd-input" placeholder="Search commands or jump to a tool..." class="command-palette-input">
+                <input type="text" id="cmd-input" placeholder="Search commands or jump to a tool..." data-i18n-placeholder="app.search_commands_or_jump_to_a_tool" class="command-palette-input" role="combobox" aria-expanded="true" aria-controls="cmd-results" aria-autocomplete="list">
                 <div class="command-palette-kbd">ESC</div>
             </div>
-            <div id="cmd-results" class="command-palette-results"></div>
+            <div id="cmd-results" class="command-palette-results" role="listbox" aria-label="Commands" data-i18n-aria-label="app.commands"></div>
             <div class="shortcut-hint-row command-palette-footer">
                 <span class="shortcut-kbd">Ctrl/Cmd+K</span><span>Open</span>
                 <span class="shortcut-kbd">↑/↓</span><span>Navigate</span>
@@ -361,7 +361,7 @@
     <div id="custom-context-menu" class="context-menu" style="display: none;"></div>
 
     <div id="global-confirm-overlay" style="display: none;" class="global-modal-overlay">
-        <div class="global-modal-card">
+        <div class="global-modal-card" role="alertdialog" aria-modal="true" aria-labelledby="global-confirm-title" aria-describedby="global-confirm-message">
             <h3 id="global-confirm-title">Confirm</h3>
             <p id="global-confirm-message"></p>
             <div class="global-modal-actions">
@@ -375,7 +375,7 @@
     </div>
 
     <div id="app-update-overlay" class="app-overlay app-overlay-blur app-overlay-top" style="display: none;">
-        <div class="app-update-overlay-card">
+        <div class="app-update-overlay-card" role="dialog" aria-modal="true" aria-labelledby="app-update-overlay-title" aria-describedby="app-update-overlay-message">
             <div class="app-update-overlay-icon"><i class="fa-solid fa-cloud-arrow-down fa-bounce"></i></div>
             <h2 id="app-update-overlay-title">Updating Better Trove Tools</h2>
             <p id="app-update-overlay-message">Downloading the installer and preparing the update. The app will close and reopen automatically.</p>
@@ -392,7 +392,7 @@
             <strong data-i18n="app.jobs_title">Jobs</strong>
             <div style="display:flex; align-items:center; gap:6px;">
                 <button id="job-queue-clear" class="icon-btn-small" title="Clear finished jobs" data-i18n-title="app.jobs_clear_finished" style="display:none;"><i class="fa-solid fa-broom"></i></button>
-                <button id="job-queue-close" class="icon-btn-small"><i class="fa-solid fa-xmark"></i></button>
+                <button id="job-queue-close" class="icon-btn-small" type="button" title="Close" data-i18n-title="common.close" aria-label="Close" data-i18n-aria-label="common.close"><i class="fa-solid fa-xmark"></i></button>
             </div>
         </div>
         <div id="job-queue-list" class="job-queue-list"></div>

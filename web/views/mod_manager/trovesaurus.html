@@ -8,7 +8,7 @@
         </div>
         
         <div style="display: flex; align-items: center; gap: 10px;">
-            <label style="font-size: 13px; color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
+            <label style="font-size: var(--t-fs-label); color: var(--text-muted); font-weight: bold;">{{ t('common.install_to') }}</label>
             <div style="width: 250px;">
                 <custom-vue-select v-model="selectedGame" :options="gameOptions" :translate-options="false"></custom-vue-select>
             </div>
@@ -47,7 +47,7 @@
 
     <div id="ts-mod-grid" class="mod-grid" style="margin-top: 20px;" :style="mods.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
         <div v-if="isLoading" class="placeholder-box"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.browsing_trovesaurus') }}</div>
-        <div v-else-if="error" class="placeholder-box" style="color: #ff5555;"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
+        <div v-else-if="error" class="placeholder-box" style="color: var(--danger-ink);"><i class="fa-solid fa-triangle-exclamation"></i> {{ error }}</div>
         <div v-else-if="mods.length === 0" class="placeholder-box">{{ t('common.no_mods_found_matching_your_search') }}</div>
         <template v-else>
             <div v-for="mod in mods" :key="mod.id" class="ts-mod-card" @contextmenu.prevent.stop="showContextMenu($event, mod)">
@@ -65,12 +65,12 @@
                     </span>
 
                     <button class="ts-front-preview" @click="openImageModal(mod)" :title="t('common.click_to_enlarge_image')">
-                        <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
+                        <img :src="mod.image || '/assets/images/no_preview.png'" class="mod-preview-img" loading="lazy" :alt="mod.name" @error="$event.target.src='/assets/images/no_preview.png'">
                     </button>
 
                     <div class="ts-mod-stats">
-                        <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: #4CAF50;"></i> {{ formatCount(mod.downloads) }}</span>
-                        <span class="ts-stat-item" :title="t('common.likes')"><i class="fa-solid fa-heart" style="color: #ff4444;"></i> {{ formatCount(mod.likes) }}</span>
+                        <span class="ts-stat-item" :title="t('common.downloads')"><i class="fa-solid fa-download" style="color: var(--success-ink);"></i> {{ formatCount(mod.downloads) }}</span>
+                        <span class="ts-stat-item" :title="t('common.likes')"><i class="fa-solid fa-heart" style="color: var(--danger-ink);"></i> {{ formatCount(mod.likes) }}</span>
                     </div>
 
                     <div class="ts-inline-actions">
@@ -98,7 +98,7 @@
 
     <div class="image-modal" :class="{ active: modal.show }" @click.self="closeImageModal">
         <span class="close-modal" @click="closeImageModal">&times;</span>
-        <img class="modal-content" :src="modal.src" v-if="modal.src">
+        <img class="modal-content" :src="modal.src" v-if="modal.src" :alt="modal.caption">
         <div id="modal-caption">{{ modal.caption }}</div>
         <button v-if="modal.modId" id="modal-view-ts-btn" @click="openUrl(`https://trovesaurus.com/mod=${modal.modId}`)">
             <i class="fa-solid fa-arrow-up-right-from-square"></i> <span>{{ t('common.view_on_trovesaurus') }}</span>

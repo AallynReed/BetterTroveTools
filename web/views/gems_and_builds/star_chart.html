@@ -53,7 +53,7 @@
                 </div>
             </div>
 
-            <div class="node-search-controls" style="display: flex; gap: 5px; margin-bottom: 8px;">
+            <div class="node-search-controls" style="display: flex; gap: var(--t-1); margin-bottom: var(--t-2);">
                 <input type="text" v-model="nodeSearchQuery" :placeholder="t('gems.star_chart.search_nodes_abilities')" autocomplete="off" spellcheck="false" style="flex: 1; min-width: 0;" />
                 <button class="secondary-btn" :disabled="!nodeSearchQuery" :title="t('gems.star_chart.clear_search')" @click="clearNodeSearch">
                     <i class="fa-solid fa-xmark"></i>
@@ -73,13 +73,13 @@
                 {{ t('gems.star_chart.highlighted_nodes') }}: {{ highlightedStatNodeCount }}
             </div>
             
-            <div class="build-template-controls" style="display: flex; gap: 5px; margin-top: 10px;">
+            <div class="build-template-controls" style="display: flex; gap: var(--t-1); margin-top: var(--control-gap);">
                 <custom-vue-select v-model="selectedTemplate" :options="templateOptions" style="flex: 1; min-width: 0;"></custom-vue-select>
                 <button class="primary-btn" @click="saveTemplate" :disabled="cheatModeEnabled" :title="cheatModeEnabled ? t('gems.star_chart.disable_cheat_mode_before_saving_templat_aaf290') : t('gems.star_chart.save_template')"><i class="fa-solid fa-floppy-disk"></i> {{ t('common.save') }}</button>
                 <button class="secondary-btn" v-if="selectedTemplate" @click="renameTemplate" :title="t('gems.star_chart.rename_template')"><i class="fa-solid fa-pen"></i></button>
                 <button class="danger-btn" v-if="selectedTemplate" @click="deleteTemplate" :title="t('gems.star_chart.delete_template')"><i class="fa-solid fa-trash"></i></button>
             </div>
-            <div class="build-template-io" style="display: flex; gap: 5px; margin-top: 5px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
+            <div class="build-template-io" style="display: flex; gap: var(--t-1); margin-top: 5px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color);">
                 <button class="secondary-btn" style="flex: 1;" @click="exportTemplates" :title="t('gems.star_chart.export_all_templates_to_a_file')"><i class="fa-solid fa-file-export"></i> {{ t('common.export') }}</button>
                 <button class="secondary-btn" style="flex: 1;" @click="triggerImportTemplates" :title="t('gems.star_chart.import_templates_from_a_file')"><i class="fa-solid fa-file-import"></i> {{ t('gems.star_chart.import') }}</button>
                 <input ref="importTemplatesRef" type="file" accept="application/json,.json" style="display: none;" @change="onImportTemplatesFile" />
@@ -88,7 +88,7 @@
             <div id="summary-content">
                 <p v-if="selectedNodeCount === 0" class="file-meta">{{ t('gems.star_chart.select_nodes_to_calculate_stats') }}</p>
                 <template v-else>
-                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: 12px;">{{ t('gems.star_chart.nodes_active_count_limit').replace('{count}', selectedNodeCount).replace('{limit}', maxNodeLimit) }}</div>
+                    <div style="margin-bottom: 15px; color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('gems.star_chart.nodes_active_count_limit').replace('{count}', selectedNodeCount).replace('{limit}', maxNodeLimit) }}</div>
                     
                     <div v-if="summaryStats.length > 0" class="summary-section">
                         <button type="button" class="summary-section-toggle" :class="{ expanded: summarySectionState.stats }" @click="toggleSummarySection('stats')" :aria-expanded="summarySectionState.stats">
@@ -134,11 +134,14 @@
     </div>
 
     <div id="st-modal-overlay" class="modal-overlay" v-show="modal.show" style="display: flex;">
-        <div style="background:var(--bg-panel, #1e1e2e); padding:20px; border-radius:8px; width:350px; text-align:center; border: 1px solid var(--border-color, #333); box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
-            <h3 style="margin-top:0; color:var(--text-main, #fff);">{{ modal.title }}</h3>
-            <p style="color:var(--text-muted, #aaa); margin-bottom:15px; font-size:14px;">{{ modal.msg }}</p>
-            <input v-if="modal.showInput" type="text" v-model="modal.inputValue" style="width:calc(100% - 22px); margin-bottom:15px; padding:10px; background:var(--bg-dark, #111); border:1px solid var(--border-color, #333); color:#fff; border-radius:4px; outline: none;" :placeholder="t('gems.star_chart.template_name')" ref="modalInputRef" />
-            <div style="display:flex; gap:10px; justify-content:center;">
+        <!-- The panel/well/border fallbacks this box used to carry disagreed with the
+             real tokens and taught the wrong palette, so they are gone. The dialog is
+             a genuinely floating layer, so it keeps the modal shadow. -->
+        <div style="background:var(--bg-panel); padding:var(--t-5); border-radius:var(--radius-surface); width:350px; text-align:center; border: 1px solid var(--border-color); box-shadow: var(--shadow-modal);">
+            <h3 style="margin-top:0; color:var(--text-main);">{{ modal.title }}</h3>
+            <p style="color:var(--text-muted); margin-bottom:15px; font-size:var(--t-fs-body);">{{ modal.msg }}</p>
+            <input v-if="modal.showInput" type="text" v-model="modal.inputValue" style="width:calc(100% - 22px); margin-bottom:15px; padding:10px; background:var(--bg-dark); border:1px solid var(--border-color); color:var(--text-main); border-radius:var(--radius-control);" :placeholder="t('gems.star_chart.template_name')" ref="modalInputRef" />
+            <div style="display:flex; gap:var(--control-gap); justify-content:center;">
                 <button class="primary-btn" style="flex:1;" @click="confirmModal">{{ t('gems.star_chart.confirm') }}</button>
                 <button class="secondary-btn" style="flex:1;" @click="modal.show = false">{{ t('common.cancel') }}</button>
             </div>
