@@ -48,7 +48,9 @@ document.addEventListener('trovesaurus_loaded', () => {
             // Mods Hub promo: nudge Trovesaurus browsers toward the first-party hub.
             // Shows once per app launch until permanently dismissed. "Don't show
             // again" persists; "Maybe later" only hides it for this session so the
-            // nudge keeps surfacing on future launches.
+            // nudge keeps surfacing on future launches. Never shown while the hub
+            // is disabled — there'd be nowhere to send them.
+            const modsHubEnabled = window.BTT_ENABLE_MODS_HUB === true;
             const hubPromo = reactive({ show: false });
             const goToModsHub = () => {
                 hubPromo.show = false;
@@ -429,7 +431,7 @@ document.addEventListener('trovesaurus_loaded', () => {
                 const promoDismissed = window.AppSettings
                     ? window.AppSettings.getPref(PREF_HUB_PROMO_KEY, '') === 'dismissed'
                     : false;
-                if (!promoDismissed) {
+                if (modsHubEnabled && !promoDismissed) {
                     setTimeout(() => { hubPromo.show = true; }, 600);
                 }
             });

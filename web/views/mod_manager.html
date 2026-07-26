@@ -59,7 +59,7 @@
                     </div>
                 </div>
 
-                <div class="toolbar-cluster toolbar-cluster-primary">
+                <div v-if="modsHubEnabled" class="toolbar-cluster toolbar-cluster-primary">
                     <div class="toolbar-cluster-label">{{ t('mod_manager.modpack') }}</div>
                     <div class="toolbar-cluster-actions">
                         <button @click="importTpack" class="primary-btn" :disabled="!selectedInstall || isImportingTpack" :title="t('mod_manager.import_tpack_title')">
@@ -69,7 +69,7 @@
                     </div>
                 </div>
 
-                <div class="toolbar-cluster toolbar-cluster-primary">
+                <div v-if="modsHubEnabled" class="toolbar-cluster toolbar-cluster-primary">
                     <div class="toolbar-cluster-label">{{ t('profiles.profiles') }}</div>
                     <div class="toolbar-cluster-actions">
                         <custom-vue-select v-model="selectedProfileId" :options="profileOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>

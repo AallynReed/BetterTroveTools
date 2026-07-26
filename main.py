@@ -25,6 +25,8 @@ os.environ["GOOGLE_API_KEY"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
+from backend.feature_flags import MODS_HUB_ENABLED
+
 import backend.about
 import backend.auth
 import backend.codexes.allies
@@ -49,9 +51,14 @@ import backend.settings
 import backend.trove
 import backend.gems_and_builds.star_chart
 import backend.mod_manager.trovesaurus
-import backend.mod_manager.mods_hub
-import backend.mod_manager.modpacks
-import backend.mod_manager.profiles
+
+# Mods Hub endpoints are only registered while the hub is enabled — see
+# backend/feature_flags.py. Profiles ride on the hub's .tpack pipeline, so it
+# goes with them.
+if MODS_HUB_ENABLED:
+    import backend.mod_manager.mods_hub
+    import backend.mod_manager.modpacks
+    import backend.mod_manager.profiles
 
 if getattr(sys, 'frozen', False):
     base_dir = os.path.dirname(sys.executable)

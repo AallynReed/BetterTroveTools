@@ -105,6 +105,15 @@ document.head.appendChild(tooltipStyle);
 // Feature flags
 window.BTT_ENABLE_ONBOARDING_TOURS = false;
 
+// Mods Hub — the first-party mod/modpack hub on trove.aallyn.net. Off: the Mod
+// Manager sources mods from Trovesaurus only. The code all stays in place, so
+// flipping this to `true` restores the Mods Hub + Modpacks browse tabs, the hub
+// promo on the Trovesaurus tab, and the hub-backed parts of My Mods (variant
+// switching, .tpack import, Modpack Profiles).
+// Keep in sync with MODS_HUB_ENABLED in backend/feature_flags.py — the backend
+// only registers the hub's eel endpoints when that one is true.
+window.BTT_ENABLE_MODS_HUB = false;
+
 // --- Lazy script + stylesheet loader -----------------------------------
 // View-specific JS modules are no longer loaded eagerly from index.html.
 // `window.loadScript(src)` caches by src and dedupes concurrent requests,

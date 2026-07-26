@@ -57,9 +57,19 @@
     white-space: nowrap;
     line-height: 1;
 }
+/* `display: inline-flex` above outbids the UA sheet's [hidden] rule, so tabs
+   switched off by a feature flag need this to actually leave the strip. */
+.mm-tab-btn[hidden] {
+    display: none;
+}
 /* Push the Trovesaurus tab to the far right, apart from the first-party tabs. */
 .mm-tab-trovesaurus {
     margin-left: auto;
+}
+/* ...unless the Mods Hub is off, in which case there are no first-party tabs to
+   stand apart from and Trovesaurus just follows My Mods. */
+.mm-tab-buttons.mm-hub-off .mm-tab-trovesaurus {
+    margin-left: 0;
 }
 .mm-tab-btn:hover {
     background: var(--bg-hover);

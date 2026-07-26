@@ -4,15 +4,39 @@ document.addEventListener('mod_manager_loaded', async () => {
         return;
     }
 
+    const modsHubEnabled = window.BTT_ENABLE_MODS_HUB === true;
+
     // Lazy-loaded sub-tabs: each loads its script once on first activation, then
     // fires its `<section>_loaded` event so the (just-attached) listener mounts.
     const lazySections = {
-        trovesaurus: { script: 'js/mod_manager/trovesaurus.js', event: 'trovesaurus_loaded', initialized: false },
-        mods_hub: { script: 'js/mod_manager/mods_hub.js', event: 'mods_hub_loaded', initialized: false },
-        modpacks: { script: 'js/mod_manager/modpacks.js', event: 'modpacks_loaded', initialized: false }
+        trovesaurus: { script: 'js/mod_manager/trovesaurus.js', event: 'trovesaurus_loaded', initialized: false }
     };
+    if (modsHubEnabled) {
+        lazySections.mods_hub = { script: 'js/mod_manager/mods_hub.js', event: 'mods_hub_loaded', initialized: false };
+        lazySections.modpacks = { script: 'js/mod_manager/modpacks.js', event: 'modpacks_loaded', initialized: false };
+    }
+
+    // With the hub off its two browse tabs stay in the markup but drop out of the
+    // strip, and Trovesaurus loses the `margin-left: auto` that had held it apart
+    // from the first-party tabs — it's the only mod source now, so it sits next
+    // to My Mods.
+    if (!modsHubEnabled) {
+        ['mods_hub', 'modpacks'].forEach((name) => {
+            document.querySelectorAll(`[data-mm-tab="${name}"], [data-mm-panel="${name}"]`).forEach((el) => {
+                el.hidden = true;
+                el.classList.remove('active');
+            });
+        });
+        const strip = document.querySelector('.mm-tab-buttons');
+        if (strip) strip.classList.add('mm-hub-off');
+    }
+
+    const isSectionAvailable = (section) => section === 'mod_manager' || !!lazySections[section];
+
     let activeSection = null;
-    const setModManagerSection = (section) => {
+    const setModManagerSection = (requested) => {
+        // A deep-link into a disabled section (Mods Hub / Modpacks) lands on My Mods.
+        const section = isSectionAvailable(requested) ? requested : 'mod_manager';
         const previousSection = activeSection;
         activeSection = section;
         const buttons = document.querySelectorAll('[data-mm-tab]');
@@ -212,8 +236,10 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             // Mods Hub is authoritative: a mod resolved here uses hub data (variant
             // branch + variant-scoped update flag) and is excluded from the
-            // Trovesaurus enrichment below.
+            // Trovesaurus enrichment below. With the hub off nothing resolves here,
+            // so every mod falls through to Trovesaurus.
             const applyHubStates = async (token) => {
+                if (!modsHubEnabled) return;
                 if (!selectedInstall.value) return;
                 const response = await window.callBackend(eel.get_mods_hub_install_states(selectedInstall.value)(), 'Failed to load Mods Hub state');
                 if (!loadGuard.isCurrent(token)) return;
@@ -435,6 +461,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
 
             const openVariantPicker = async (mod) => {
+                if (!modsHubEnabled) return;
                 if (!mod.fromHub || !mod.hubRef) return;
                 const resp = await window.callBackend(eel.get_mods_hub_variants(mod.hubRef)(), 'Failed to load variants');
                 if (!resp.success) {
@@ -515,6 +542,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             // the backend decompiles it into the individual .tmods, quarantines
             // same-name conflicts into mods/disabled/, and installs.
             const importTpack = async () => {
+                if (!modsHubEnabled) return;
                 if (!selectedInstall.value) return window.showToast(t('common.select_a_game_first'), true);
                 if (isImportingTpack.value) return;
                 isImportingTpack.value = true;
@@ -553,6 +581,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             const selectedProfile = computed(() => profiles.value.find(p => p.id === selectedProfileId.value) || null);
 
             const loadProfiles = async () => {
+                // Profiles are saved from the Modpacks tab and check the hub for
+                // updates, so they go dark with it. Leaving the list empty is what
+                // disables apply/rename/remove — each returns on a null selection.
+                if (!modsHubEnabled) return;
                 const response = await window.callBackend(eel.list_profiles()(), 'Failed to load profiles');
                 if (!response.success) return;
                 profiles.value = response.data.profiles || response.raw?.profiles || [];
@@ -961,6 +993,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             return {
                 t,
+                modsHubEnabled,
                 installs,
                 selectedInstall,
                 installOptions,
