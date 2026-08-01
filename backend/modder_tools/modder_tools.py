@@ -90,11 +90,20 @@ def _normalize_internal_path(path) -> str | None:
     return normalized or None
 
 
-def _default_config_path() -> Path:
-    return Path("ui/default.cfg")
+def _config_internal_path(title) -> Path:
+    """Where a mod's config file lives inside the .tmod: `ui/<title>.cfg`.
+
+    Named after the mod rather than a shared `ui/default.cfg` because these land
+    in the game's single `ui/` directory — every mod using the old fixed name
+    fought over the same file. Reading is unaffected either way: the path is
+    recorded per-mod in the `configPath` header property, so mods built before
+    this still resolve their own config.
+    """
+    clean_title = re.sub(r'[\\/*?:"<>|]', "", str(title or "")).strip()
+    return Path(f"ui/{clean_title}.cfg")
 
 
-def _validate_special_paths(file_paths, preview_path=None, include_config=False):
+def _validate_special_paths(file_paths, preview_path=None, include_config=False, title=None):
     normalized_files = []
     seen_files = set()
     for path in file_paths or []:
@@ -110,19 +119,22 @@ def _validate_special_paths(file_paths, preview_path=None, include_config=False)
     if preview_normalized and preview_normalized in seen_files:
         return "Preview image path cannot also be included in the files list."
 
-    default_cfg = _default_config_path().as_posix()
+    # Derived from the title whether or not the config option was used, so a cfg
+    # hand-added at the mod's own path still validates (as ui/default.cfg did
+    # before the rename) instead of being rejected outright.
+    mod_cfg = _normalize_internal_path(_config_internal_path(title).as_posix())
     cfg_paths = [path for path in normalized_files if path.endswith(".cfg")]
     if include_config:
-        cfg_paths.append(default_cfg)
-        if default_cfg in seen_files:
-            return "default.cfg can only be added through the config file option."
+        cfg_paths.append(mod_cfg)
+        if mod_cfg in seen_files:
+            return "The config file can only be added through the config file option."
 
     if not cfg_paths:
         return None
     if len(cfg_paths) > 1:
         return "Only one config file can be included in a mod."
-    if cfg_paths[0] != default_cfg:
-        return "default.cfg can only be added through the config file option."
+    if cfg_paths[0] != mod_cfg:
+        return "The config file can only be added through the config file option."
     return None
 
 
@@ -662,7 +674,9 @@ def load_tmod_for_edit(tmod_path_str):
                 continue
             if normalized_path and normalized_path == mod.config_path:
                 config_data = _encode_data_url(file.data, "text/plain")
-                config_name = "default.cfg"
+                # The real embedded name, not a fixed "default.cfg": mods built
+                # since the rename carry ui/<title>.cfg, older ones ui/default.cfg.
+                config_name = Path(file.trove_path).name
                 continue
 
             regular_files.append({
@@ -877,7 +891,7 @@ def build_tmod(payload):
         if not files: return {"success": False, "error": "At least one file is required."}
 
         config_data = _decode_data_url(payload.get("configBase64"))
-        config_path = _default_config_path() if config_data is not None else None
+        config_path = _config_internal_path(title) if config_data is not None else None
 
         preview_name = payload.get("previewName", "preview.png")
         clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
@@ -887,6 +901,7 @@ def build_tmod(payload):
             [f.get("internal_path", f.get("name", "unknown_file")) for f in files],
             preview_path=preview_path.as_posix() if preview_path else None,
             include_config=config_data is not None,
+            title=title,
         )
         if path_error:
             return {"success": False, "error": path_error}
@@ -1022,12 +1037,13 @@ def save_tmod_in_place(payload):
         preview_path = Path(f"ui/{clean_preview_name}") if payload.get("previewBase64") else None
 
         config_data = _decode_data_url(payload.get("configBase64"))
-        config_path = _default_config_path() if config_data is not None else None
+        config_path = _config_internal_path(title) if config_data is not None else None
 
         path_error = _validate_special_paths(
             [f.get("internal_path", f.get("name", "unknown_file")) for f in files],
             preview_path=preview_path.as_posix() if preview_path else None,
             include_config=config_data is not None,
+            title=title,
         )
         if path_error:
             return {"success": False, "error": path_error}
@@ -1447,11 +1463,12 @@ def compile_project(project_path_str, version, game_path_str):
         clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
         preview_path = Path(f"ui/{clean_preview_name}") if preview_b64 else None
         config_data = _decode_data_url(meta.get("configBase64"))
-        config_path = _default_config_path() if config_data is not None else None
+        config_path = _config_internal_path(title) if config_data is not None else None
         path_error = _validate_special_paths(
             [file_path.relative_to(target_dir).as_posix() for file_path in target_dir.rglob("*") if file_path.is_file()],
             preview_path=preview_path.as_posix() if preview_path else None,
             include_config=config_data is not None,
+            title=title,
         )
         if path_error:
             return {"success": False, "error": path_error}

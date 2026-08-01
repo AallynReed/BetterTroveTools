@@ -29,7 +29,8 @@ document.addEventListener('modder_projects_loaded', () => {
                 files: project.files.map(file => ({ internal_path: file.rel_path })),
                 previewName: project.previewName,
                 hasPreview: Boolean(project.preview),
-                hasConfig: Boolean(project.config)
+                hasConfig: Boolean(project.config),
+                title: project.title
             }));
 
             const isProjectFieldInvalid = (field) => {
@@ -83,7 +84,7 @@ document.addEventListener('modder_projects_loaded', () => {
                 const file = result?.file;
                 if (file) {
                     project.config = file.data;
-                    project.configName = 'default.cfg';
+                    project.configName = window.ModderTools.configDisplayName(project.title);
                 }
             };
 
@@ -322,6 +323,7 @@ document.addEventListener('modder_projects_loaded', () => {
 
             return {
                 t, store, gameOptions, lastCompiledProjectPath, project,
+                configDisplayName: window.ModderTools.configDisplayName,
                 isProjectFieldInvalid,
                 openSelectedGamePath, openProjectFolder, openCompileOutputFolder, openProjectFileLocation,
                 chooseProjectPreview, chooseProjectConfig, refreshProjectFiles, browseProject, saveProject, newVersion, autoStructureProject, compileProject, placeOverrides, removeOverrides

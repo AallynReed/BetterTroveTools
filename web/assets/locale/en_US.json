@@ -1096,6 +1096,7 @@
         "mod_manager.modpacks": "Modpacks",
         "mod_manager.mods_hub": "Mods Hub",
         "mod_manager.my_mods": "My Mods",
+        "mod_manager.new_badge": "New",
         "mod_manager.next_result_arrow_down": "Next result (Arrow Down)",
         "mod_manager.no_mods_found_in_the_selected_directory": "No mods found in the selected directory.",
         "mod_manager.no_mods_match_your_current_filters": "No mods match your current filters.",
@@ -1198,7 +1199,7 @@
         "modder_tools.create_new_version_folder": "Create New Version Folder",
         "modder_tools.current_slice_voxels": "Current Slice Voxels",
         "modder_tools.decode_insight": "Decode Insight",
-        "modder_tools.default_cfg_must_use_config_option": "default.cfg can only be added through the config file option.",
+        "modder_tools.default_cfg_must_use_config_option": "The config file can only be added through the config file option.",
         "modder_tools.delete_voxel": "Delete Voxel",
         "modder_tools.denied_count_file_s_cfg_files_must_be_ad_7eabd1": "Denied {count} file(s):\n.cfg files must be added through the Config File option.",
         "modder_tools.denied_count_file_s_selected_files_must_6dca21": "Denied {count} file(s):\nSelected files must be located within the active game path.",
@@ -4095,6 +4096,7 @@
         "trove.install": "",
         "trove.no_installs": "",
         "Your achievements make your personality grow.. literally!": "",
-        "Squashling Stroller": ""
+        "Squashling Stroller": "",
+        "Rondir the Resplendent": ""
     }
 }

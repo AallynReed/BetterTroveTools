@@ -112,7 +112,7 @@ window.BTT_ENABLE_ONBOARDING_TOURS = false;
 // switching, .tpack import, Modpack Profiles).
 // Keep in sync with MODS_HUB_ENABLED in backend/feature_flags.py — the backend
 // only registers the hub's eel endpoints when that one is true.
-window.BTT_ENABLE_MODS_HUB = false;
+window.BTT_ENABLE_MODS_HUB = true;
 
 // --- Lazy script + stylesheet loader -----------------------------------
 // View-specific JS modules are no longer loaded eagerly from index.html.

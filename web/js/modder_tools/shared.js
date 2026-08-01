@@ -54,11 +54,15 @@
     });
 
     const normalizeInternalPath = (value) => String(value || '').replaceAll('\\', '/').trim().toLowerCase();
-    const defaultConfigInternalPath = 'ui/default.cfg';
+    // A mod's config sits at ui/<title>.cfg rather than a shared ui/default.cfg —
+    // they all land in the game's one ui/ folder, so a fixed name collided across
+    // mods. Mirrors _config_internal_path() in backend/modder_tools.
+    const configInternalPath = (title) => `ui/${String(title || '').replace(/[\\/*?:"<>|]/g, '').trim()}.cfg`;
+    const configDisplayName = (title) => `${String(title || '').replace(/[\\/*?:"<>|]/g, '').trim() || 'config'}.cfg`;
     const previewInternalPath = (name) => `ui/${String(name || '').replace(/[\\/*?:"<>|]/g, '').trim()}`;
 
     // Returns an i18n id (callers pass it through t() before showing it) or null.
-    const validateSpecialFileSelections = ({ files, previewName, hasPreview, hasConfig }) => {
+    const validateSpecialFileSelections = ({ files, previewName, hasPreview, hasConfig, title }) => {
         const seen = new Set();
         for (const file of files || []) {
             const internalPath = normalizeInternalPath(file.internal_path);
@@ -67,7 +71,9 @@
             seen.add(internalPath);
         }
 
-        if (hasConfig && seen.has(defaultConfigInternalPath)) {
+        const modConfigPath = normalizeInternalPath(configInternalPath(title));
+
+        if (hasConfig && seen.has(modConfigPath)) {
             return 'modder_tools.default_cfg_must_use_config_option';
         }
 
@@ -77,10 +83,10 @@
         }
 
         const cfgPaths = [...seen].filter(path => path.endsWith('.cfg'));
-        if (hasConfig) cfgPaths.push(defaultConfigInternalPath);
+        if (hasConfig) cfgPaths.push(modConfigPath);
         if (cfgPaths.length > 1) return 'modder_tools.only_one_config_file_per_mod';
         if (cfgPaths.length === 1) {
-            if (cfgPaths[0] !== defaultConfigInternalPath) return 'modder_tools.default_cfg_must_use_config_option';
+            if (cfgPaths[0] !== modConfigPath) return 'modder_tools.default_cfg_must_use_config_option';
         }
 
         return null;
@@ -140,6 +146,8 @@
         hasIllegalTitleChars,
         normalizeInternalPath,
         previewInternalPath,
+        configInternalPath,
+        configDisplayName,
         runQueuedModderOperation,
         unwrapResponse,
         readSettings,

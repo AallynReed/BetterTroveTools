@@ -17,9 +17,8 @@ document.addEventListener('mod_manager_loaded', async () => {
     }
 
     // With the hub off its two browse tabs stay in the markup but drop out of the
-    // strip, and Trovesaurus loses the `margin-left: auto` that had held it apart
-    // from the first-party tabs — it's the only mod source now, so it sits next
-    // to My Mods.
+    // strip, leaving My Mods and Trovesaurus. Every tab sits in normal flow, so
+    // the two just close up the gap.
     if (!modsHubEnabled) {
         ['mods_hub', 'modpacks'].forEach((name) => {
             document.querySelectorAll(`[data-mm-tab="${name}"], [data-mm-panel="${name}"]`).forEach((el) => {
@@ -27,8 +26,6 @@ document.addEventListener('mod_manager_loaded', async () => {
                 el.classList.remove('active');
             });
         });
-        const strip = document.querySelector('.mm-tab-buttons');
-        if (strip) strip.classList.add('mm-hub-off');
     }
 
     const isSectionAvailable = (section) => section === 'mod_manager' || !!lazySections[section];

@@ -27,7 +27,8 @@ document.addEventListener('modder_build_loaded', () => {
                 files: build.files,
                 previewName: build.previewName,
                 hasPreview: Boolean(build.preview),
-                hasConfig: Boolean(build.config)
+                hasConfig: Boolean(build.config),
+                title: build.title
             }));
 
             const isBuildFieldInvalid = (field) => {
@@ -78,7 +79,7 @@ document.addEventListener('modder_build_loaded', () => {
                 const file = result?.file;
                 if (file) {
                     build.config = file.data;
-                    build.configName = 'default.cfg';
+                    build.configName = window.ModderTools.configDisplayName(build.title);
                 }
             };
 
@@ -125,7 +126,8 @@ document.addEventListener('modder_build_loaded', () => {
                         files: build.files,
                         previewName: build.previewName,
                         hasPreview: Boolean(build.preview),
-                        hasConfig: Boolean(build.config)
+                        hasConfig: Boolean(build.config),
+                        title: build.title
                     });
                     if (validationError) {
                         build.files = build.files.filter(file => !result.files.some(added => added.path === file.path));
@@ -164,7 +166,8 @@ document.addEventListener('modder_build_loaded', () => {
                                 files: build.files,
                                 previewName: build.previewName,
                                 hasPreview: Boolean(build.preview),
-                                hasConfig: Boolean(build.config)
+                                hasConfig: Boolean(build.config),
+                                title: build.title
                             });
                             if (validationError) {
                                 build.files = build.files.filter(file => !newFiles.some(added => added.path === file.path));
@@ -300,6 +303,7 @@ document.addEventListener('modder_build_loaded', () => {
 
             return {
                 t, store, gameOptions, lastBuildOutputPath, build,
+                configDisplayName: window.ModderTools.configDisplayName,
                 isBuildFieldInvalid,
                 openSelectedGamePath, openBuildOutputFolder, openBuildFileLocation,
                 chooseBuildPreview, chooseBuildConfig, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod

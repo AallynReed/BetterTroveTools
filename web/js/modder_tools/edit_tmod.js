@@ -183,7 +183,8 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
                 files: getActiveEditTmodFiles(),
                 previewName: editTmod.previewName,
                 hasPreview: Boolean(editTmod.preview),
-                hasConfig: Boolean(editTmod.config)
+                hasConfig: Boolean(editTmod.config),
+                title: editTmod.title
             }));
 
             const editTmodDisplayFiles = computed(() => {
@@ -311,7 +312,7 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
                     const previousConfig = editTmod.config;
                     const previousConfigName = editTmod.configName;
                     editTmod.config = file.data;
-                    editTmod.configName = 'default.cfg';
+                    editTmod.configName = window.ModderTools.configDisplayName(editTmod.title);
                     window.showUndoToast(
                         t('modder_tools.config_updated_restore_previous_config'),
                         8,
@@ -355,7 +356,8 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
                                 files: merged,
                                 previewName: editTmod.previewName,
                                 hasPreview: Boolean(editTmod.preview),
-                                hasConfig: Boolean(editTmod.config)
+                                hasConfig: Boolean(editTmod.config),
+                                title: editTmod.title
                             });
                             if (validationError) {
                                 window.showToast(t(validationError), true);
@@ -438,7 +440,8 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
                         files: merged,
                         previewName: editTmod.previewName,
                         hasPreview: Boolean(editTmod.preview),
-                        hasConfig: Boolean(editTmod.config)
+                        hasConfig: Boolean(editTmod.config),
+                        title: editTmod.title
                     });
                     if (validationError) {
                         window.showToast(t(validationError), true);
@@ -576,6 +579,7 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
 
             return {
                 t, store, editTmod, editTmodDisplayFiles, previousEditTmodSnapshot,
+                configDisplayName: window.ModderTools.configDisplayName,
                 isEditTmodFieldInvalid, hasEditTmodFieldChanged, restoreEditTmodField, canRestoreOriginalEditTmodFile, restoreOriginalEditTmodFile, isEditTmodFileRemoved,
                 browseEditTmodSource, loadEditTmod, restorePreviousEditTmod, restoreRemovedEditTmodFile, chooseEditTmodPreview, chooseEditTmodConfig, addEditTmodFiles, addEditTmodFilesFromTmod, replaceEditTmodFile, removeEditTmodFile, saveEditTmod
             };

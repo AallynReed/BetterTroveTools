@@ -1005,7 +1005,12 @@ class TroveModList:
     def _ensure_mod_configs(self):
         self.read_only_configs = []
         for mod in self.mods:
-            if mod.is_ui_mod:
+            # A mod earns a config by shipping one, not just by being a UI mod:
+            # gating on is_ui_mod alone skipped mods that carry an embedded config
+            # but no .swf, so their .cfg was never placed. Both checks are cheap
+            # (file names and a header property); ensure_config only decompresses
+            # the config itself, and writes nothing when there is nothing to write.
+            if mod.is_ui_mod or mod.config_path:
                 try:
                     mod.ensure_config()
                 except (PermissionError, OSError):

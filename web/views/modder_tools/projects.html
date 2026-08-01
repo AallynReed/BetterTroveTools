@@ -28,7 +28,7 @@
                             <div class="form-group" style="margin-top: 15px;">
                                 <label>{{ t('modder_tools.config_file_cfg') }}</label>
                                 <div class="input-row">
-                                    <input type="text" :value="project.configName" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
+                                    <input type="text" :value="project.config ? configDisplayName(project.title) : ''" :placeholder="t('modder_tools.optional_ui_config_file')" readonly>
                                     <button class="primary-btn" @click="chooseProjectConfig">
                                         <i class="fa-solid fa-file-lines"></i> <span>{{ t('common.browse') }}</span>
                                     </button>

@@ -10,4 +10,4 @@ behind it. Both sides have to agree, so flip them together.
 # `backend.mod_manager.mods_hub`, `.modpacks` and `.profiles`, so none of their
 # `@eel.expose`d endpoints are registered and nothing calls out to the hub.
 # Mirrors `window.BTT_ENABLE_MODS_HUB`.
-MODS_HUB_ENABLED = False
+MODS_HUB_ENABLED = True
