@@ -224,6 +224,27 @@ function initStylesView() {
                 else dataSourceText.value = '';
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                window.CodexExport.run({
+                    rows: filteredStyles.value,
+                    basename: 'styles',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Family', value: (row) => t(row.family || '') },
+                        { label: 'Category', value: (row) => t(row.category || '') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Mastery', value: (row) => row.mastery || 0 },
+                        { label: 'Geode Mastery', value: (row) => row.mastery_geode || 0 },
+                        { label: 'Equipment Ref', value: (row) => row.equipment_ref || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -260,7 +281,7 @@ function initStylesView() {
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage, totalMastery,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                highlightSearch, clearCacheAndReload, dataSourceText
+                highlightSearch, clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });

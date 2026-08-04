@@ -251,6 +251,26 @@ function initBadgesView() {
                 else dataSourceText.value = '';
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                window.CodexExport.run({
+                    rows: filteredBadges.value,
+                    basename: 'badges',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Group', value: (row) => t(row.group || '') },
+                        { label: 'Tier', value: (row) => t(row.tier || '') },
+                        { label: 'Category', value: (row) => t(row.in_game_category || '') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Mastery', value: (row) => row.mastery || 0 },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -287,7 +307,7 @@ function initBadgesView() {
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage, tierColor, masteryText, totalMastery,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                highlightSearch, clearCacheAndReload, dataSourceText
+                highlightSearch, clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });

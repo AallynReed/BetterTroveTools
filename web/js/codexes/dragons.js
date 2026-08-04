@@ -398,6 +398,27 @@ function initDragonsView() {
                 }
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                const { statsText } = window.CodexExport;
+                window.CodexExport.run({
+                    rows: filteredDragons.value,
+                    basename: 'dragons',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Category', value: (row) => t(row.category || 'Unknown') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Mastery', value: (row) => row.mastery || '0' },
+                        { label: 'Stats', value: (row) => statsText(row.rawStats) },
+                        { label: 'Designer', value: (row) => row.designer || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -466,7 +487,7 @@ function initDragonsView() {
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
                 resetFilters, formatStat, highlightSearch,
                 nextSearchResult, prevSearchResult,
-                clearCacheAndReload, dataSourceText
+                clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });

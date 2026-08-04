@@ -260,6 +260,36 @@ function initRecipesView() {
                 }
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                const { joinList, yesNo } = window.CodexExport;
+                window.CodexExport.run({
+                    rows: filteredRecipes.value,
+                    basename: 'recipes',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Category', value: (row) => t(row.category || '') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Output', value: (row) => row.outputLabel || row.outputPath || '' },
+                        { label: 'Output Amount', value: (row) => row.outputAmount },
+                        {
+                            label: 'Ingredients',
+                            value: (row) => joinList((row.ingredients || []).map(i => `${i.amount || 1}x ${t(i.name || i.path || '')}`)),
+                        },
+                        { label: 'Requirements', value: (row) => joinList((row.requirements || []).map(r => t(r))) },
+                        { label: 'Mastery', value: (row) => row.mastery || '0' },
+                        { label: 'Lootbox', value: (row) => yesNo(row.lootbox, t) },
+                        { label: 'Decay', value: (row) => yesNo(row.decay, t) },
+                        { label: 'Unlock Count', value: (row) => row.unlockCount },
+                        { label: 'Designer', value: (row) => row.designer || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -300,7 +330,7 @@ function initRecipesView() {
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                resetFilters, highlightSearch, clearCacheAndReload, dataSourceText
+                resetFilters, highlightSearch, clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });

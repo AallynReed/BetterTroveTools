@@ -224,6 +224,31 @@ function initFishView() {
                 else dataSourceText.value = '';
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                const { joinList } = window.CodexExport;
+                window.CodexExport.run({
+                    rows: filteredFish.value,
+                    basename: 'fish',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Source', value: (row) => t(row.source || '') },
+                        { label: 'Rarity', value: (row) => t(row.rarity || '') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Weight Min', value: (row) => (row.weight_min === null || row.weight_min === undefined ? '' : row.weight_min) },
+                        { label: 'Weight Max', value: (row) => (row.weight_max === null || row.weight_max === undefined ? '' : row.weight_max) },
+                        { label: 'Trophy Count', value: (row) => trophyCount(row) },
+                        // trophies is {basic|silver|gold: deco path}; the slots are what the card shows.
+                        { label: 'Trophy Variants', value: (row) => joinList(Object.keys(row.trophies || {})) },
+                        { label: 'Tradable', value: (row) => (row.tradable === null || row.tradable === undefined ? '' : t(row.tradable ? 'Tradable' : 'Untradable')) },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -260,7 +285,7 @@ function initFishView() {
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage, rarityColor, trophyCount, weightText,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                highlightSearch, clearCacheAndReload, dataSourceText
+                highlightSearch, clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });
