@@ -15,8 +15,5 @@
     "@capacitor/cli": "^7.6.6",
     "@capacitor/core": "^7.6.6",
     "@capacitor/local-notifications": "^7.0.6"
-  },
-  "devDependencies": {
-    "@capacitor/assets": "^3.0.5"
   }
 }

@@ -179,20 +179,27 @@ const I18nManager = {
             if (this.idByNorm[n]) id = this.idByNorm[n];
         }
 
+        // `value` is only ever assigned from a loaded dictionary -- uiStrings,
+        // content, or idEnglish. When there is nothing to assign it stays null
+        // and `raw` is set, rather than echoing the caller's token back through
+        // it. That keeps the token (which for a data-i18n pass is an attribute
+        // read off the page) out of every value-rendering path: callers fall
+        // back to capToken deliberately, and only as text.
         if (id) {
-            const english = this.idEnglish[id] !== undefined ? this.idEnglish[id] : token;
+            const english = this.idEnglish[id];
             // id-keyed (migrated) OR source-keyed (legacy) translation
             const byId = this.uiStrings[id];
-            const bySource = this.content[english];
+            const bySource = english !== undefined ? this.content[english] : undefined;
             const tr = this._present(byId) ? byId : (this._present(bySource) ? bySource : null);
             if (tr != null) return { value: tr, hit: true, kind: 'ui', capToken: id };
-            return { value: english, hit: false, kind: 'ui', capToken: id };
+            if (english !== undefined) return { value: english, hit: false, kind: 'ui', capToken: id };
+            return { value: null, hit: false, kind: 'ui', capToken: id, raw: true };
         }
 
         // content / source text
         const bySource = this.content[token];
         if (this._present(bySource)) return { value: bySource, hit: true, kind: 'content', capToken: token };
-        return { value: token, hit: false, kind: 'content', capToken: token };
+        return { value: null, hit: false, kind: 'content', capToken: token, raw: true };
     },
 
     _present(v) {
@@ -212,17 +219,20 @@ const I18nManager = {
     },
 
     // ---- public translate ---------------------------------------------
+    // Returns a string either way; `raw` just means it is the token verbatim,
+    // so callers that build markup must escape it (see main.js's palette).
     t(token, params) {
         const r = this._resolve(token);
         if (!r.hit) this._maybeCapture(r);
-        return this.interpolate(this._flatten(r.value, r.capToken), params);
+        const value = r.raw ? r.capToken : this._flatten(r.value, r.capToken);
+        return this.interpolate(value, params);
     },
 
     // plural-aware: value may be { one, other, ... }; picks by Intl.PluralRules
     tn(token, count, params) {
         const r = this._resolve(token);
         if (!r.hit) this._maybeCapture(r);
-        let value = r.value;
+        let value = r.raw ? r.capToken : r.value;
         if (value && typeof value === 'object') {
             let cat = 'other';
             try { cat = new Intl.PluralRules(this._locale()).select(count); } catch (e) { /* keep other */ }
@@ -274,16 +284,29 @@ const I18nManager = {
         document.querySelectorAll('[data-i18n]').forEach(el => {
             let key = el.getAttribute('data-i18n');
             if (!key) {
-                key = el.innerHTML.trim();
-                el.setAttribute('data-i18n', key); // preserve the source key after we overwrite innerHTML
+                key = el.textContent.trim();
+                el.setAttribute('data-i18n', key); // preserve the source key after we overwrite the element
             }
             if (!key) return;
-            // Translations legitimately carry markup (<br>, <b>, icon <i>), so
-            // this stays innerHTML -- but a locale file is data, and community
-            // translations are contributed, so it goes through the allowlist
-            // sanitizer first.
-            const value = this._html(this.t(key));
-            if (el.innerHTML !== value) el.innerHTML = value;
+
+            const r = this._resolve(key);
+            if (!r.hit) this._maybeCapture(r);
+
+            if (r.raw) {
+                // Nothing is known about this token, so all we can show is the
+                // data-i18n attribute we just read off the page. An attribute is
+                // not a template -- render it as text so a crafted one can never
+                // become markup.
+                const text = this.interpolate(r.capToken);
+                if (el.textContent !== text) el.textContent = text;
+                return;
+            }
+            // r.value came from a locale file or the id/English table, which
+            // legitimately carry markup (<br>, <b>, icon <i>). Still sanitized:
+            // translations are contributed data. Note the flatten fallback is ''
+            // and not capToken -- the attribute must not reach this branch.
+            const html = this._html(this.interpolate(this._flatten(r.value, '')));
+            if (el.innerHTML !== html) el.innerHTML = html;
         });
 
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {

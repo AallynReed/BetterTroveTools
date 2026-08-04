@@ -103,11 +103,20 @@ def _email_hash(email: str) -> str:
     # Filename discriminator only — never an authentication or integrity check.
     # SHA-256 regardless, so nothing in the tree hands a scanner (or a reader) a
     # reason to think a broken digest is load-bearing somewhere.
-    return hashlib.sha256((email or "").strip().lower().encode("utf-8")).hexdigest()[:12]
+    # usedforsecurity=False states that contract to the interpreter as well as
+    # to anyone reading, and keeps this usable on FIPS-restricted builds.
+    return hashlib.sha256(
+        (email or "").strip().lower().encode("utf-8"), usedforsecurity=False
+    ).hexdigest()[:12]
 
 
 def _legacy_email_hash(email: str) -> str:
-    return hashlib.sha1((email or "").strip().lower().encode("utf-8")).hexdigest()[:12]
+    # Exists purely to locate files written before the switch to SHA-256, so it
+    # can never be replaced with a stronger digest — the old names are already
+    # on disk. It computes a filename and nothing else; see _hashed_path.
+    return hashlib.sha1(
+        (email or "").strip().lower().encode("utf-8"), usedforsecurity=False
+    ).hexdigest()[:12]
 
 
 def _hashed_path(prefix: str, email: str) -> Path:
