@@ -154,6 +154,23 @@ document.addEventListener("gem_builds_loaded", () => {
                 return getTradeoffSummary(build);
             };
 
+            // Every hint on this page (see window.createHelpTips).
+            const { helpOpen, toggleHelp } = window.createHelpTips(Vue);
+
+            // Display a build layout with its gem-groups spaced for clarity:
+            // "9/0/0/18 + 3/0/0/1/1/4" -> "9/0 0/18 + 3/0/0 1/1/4". A 4-number
+            // segment is an Empowered/Lesser pair (split after 2); a 6-number one
+            // is the Cosmic Emp/Lesser triples. Elemental->Cosmic keeps its " + ".
+            const fmtLayout = (layout) => {
+                if (typeof layout !== "string") return layout;
+                return layout.split(" + ").map((seg) => {
+                    const p = seg.trim().split("/");
+                    if (p.length === 4) return p[0] + "/" + p[1] + " " + p[2] + "/" + p[3];
+                    if (p.length === 6) return p.slice(0, 3).join("/") + " " + p.slice(3).join("/");
+                    return p.join("/");
+                }).join(" + ");
+            };
+
             const getTooltipHtml = (build) => {
                 const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
                 const tradeoffText = getTradeoffSummary(build);
@@ -217,7 +234,7 @@ document.addEventListener("gem_builds_loaded", () => {
                     {
                         label: 'Copy Build Layout',
                         icon: 'fa-copy',
-                        action: () => navigator.clipboard.writeText(build.layout).then(() => { if(window.showToast) window.showToast(t("gems.gem_builds.copied_build_layout_to_clipboard")); })
+                        action: () => navigator.clipboard.writeText(fmtLayout(build.layout)).then(() => { if(window.showToast) window.showToast(t("gems.gem_builds.copied_build_layout_to_clipboard")); })
                     },
                     {
                         label: 'Copy Coefficient',
@@ -231,7 +248,7 @@ document.addEventListener("gem_builds_loaded", () => {
                             const classBonusText = build.class_bonus ? ` + ${build.class_bonus}%` : "";
                             const statsText = [
                                 `${t("gems.gem_builds.build_rank")}: #${build.rank}`,
-                                `${t("gems.gem_builds.build")}: ${build.layout}`,
+                                `${t("gems.gem_builds.build")}: ${fmtLayout(build.layout)}`,
                                 `${t("common.light")}: ${build.light.toLocaleString()}`,
                                 `${t("gems.gem_builds.base_dmg")}: ${Math.round(build.base_dmg).toLocaleString()}`,
                                 `${t("gems.gem_builds.bonus_dmg")}: ${build.bonus_dmg.toFixed(2)}%${classBonusText}`,
@@ -396,7 +413,8 @@ document.addEventListener("gem_builds_loaded", () => {
                 classIcon, subclassIcon, onImageError,
                 modifiersOpen, tipsDismissed,
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff, buildsUnavailable,
-                nextPage, prevPage, getTooltipHtml, copyLayout, exportCsv, showContextMenu,
+                nextPage, prevPage, getTooltipHtml, copyLayout, fmtLayout, exportCsv, showContextMenu,
+                helpOpen, toggleHelp,
                 getBuildHeadline, dismissTips
             };
         }

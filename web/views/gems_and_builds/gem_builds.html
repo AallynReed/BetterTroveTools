@@ -35,10 +35,11 @@
                     <div class="input-group">
                         <label class="label-inline-controls">
                             {{ t('gems.gem_builds.build_goal') }}
-                            <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.choose_what_you_want_to_optimize_for_lig_b193c0')">
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.choose_what_you_want_to_optimize_for_lig_b193c0')" :aria-expanded="helpOpen === 'build_goal' ? 'true' : 'false'" @click="toggleHelp('build_goal')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
                         </label>
+                        <p v-if="helpOpen === 'build_goal'" class="help-tip-note" role="note">{{ t('gems.gem_builds.choose_what_you_want_to_optimize_for_lig_b193c0') }}</p>
                         <select v-model="config.build_type">
                             <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('common.light') }}</option>
                             <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('gems.gem_builds.farm') }}</option>
@@ -67,29 +68,37 @@
                     <div class="input-group" v-if="config.build_type === 'Farm'">
                         <label class="label-inline-controls">
                             {{ t('gems.gem_builds.current_base_light') }}
-                            <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.only_used_for_farm_builds_enter_your_cur_990e1f')">
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.only_used_for_farm_builds_enter_your_cur_990e1f')" :aria-expanded="helpOpen === 'farm_light' ? 'true' : 'false'" @click="toggleHelp('farm_light')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
                         </label>
+                        <p v-if="helpOpen === 'farm_light'" class="help-tip-note" role="note">{{ t('gems.gem_builds.only_used_for_farm_builds_enter_your_cur_990e1f') }}</p>
                         <input type="number" v-model.number="config.light">
                     </div>
                     <div class="input-group" v-if="config.build_type !== 'Health'">
                         <label class="label-inline-controls slider-label-tight">
                             <span class="label-inline-start">{{ t('gems.gem_builds.gear_crit_damage_rolls') }}</span>
-                            <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.how_many_of_your_gear_rolls_are_crit_dam_f442e1')">
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.how_many_of_your_gear_rolls_are_crit_dam_f442e1')" :aria-expanded="helpOpen === 'crit_rolls' ? 'true' : 'false'" @click="toggleHelp('crit_rolls')">
                                 <i class="fa-solid fa-circle-info"></i>
                             </button>
                             <span class="label-inline-value" style="color: var(--accent-blue); font-weight: bold;">{{ config.critical_damage_count }}</span>
                         </label>
+                        <p v-if="helpOpen === 'crit_rolls'" class="help-tip-note" role="note">{{ t('gems.gem_builds.how_many_of_your_gear_rolls_are_crit_dam_f442e1') }}</p>
                         <input type="range" v-model.number="config.critical_damage_count" min="0" max="3" step="1" style="width: 100%; cursor: pointer; accent-color: var(--accent-blue);">
                     </div>
                 </div>
 
-                <label class="toggle-container toggle-inline" :title="t('gems.gem_builds.simulates_a_face_slot_without_damage_sta_9b332f')">
-                    <input type="checkbox" v-model="config.no_face">
-                    <span class="checkmark"></span>
-                    <span>{{ t('gems.gem_builds.face_slot_has_no_damage_stat') }}</span>
-                </label>
+                <div class="toggle-row">
+                    <label class="toggle-container toggle-inline">
+                        <input type="checkbox" v-model="config.no_face">
+                        <span class="checkmark"></span>
+                        <span>{{ t('gems.gem_builds.face_slot_has_no_damage_stat') }}</span>
+                        <button type="button" class="info-icon-btn help-tip-btn toggle-help-btn" :title="t('gems.gem_builds.simulates_a_face_slot_without_damage_sta_9b332f')" :aria-expanded="helpOpen === 'no_face' ? 'true' : 'false'" @click.prevent="toggleHelp('no_face')">
+                            <i class="fa-solid fa-circle-info"></i>
+                        </button>
+                    </label>
+                    <p v-if="helpOpen === 'no_face'" class="help-tip-note" role="note">{{ t('gems.gem_builds.simulates_a_face_slot_without_damage_sta_9b332f') }}</p>
+                </div>
             </div>
 
             <div class="config-section">
@@ -97,10 +106,11 @@
                 <div class="input-group star-chart-controls">
                     <label class="label-inline-controls">
                         {{ t('gems.gem_builds.star_chart_build_code') }}
-                        <button type="button" class="info-icon-btn" :title="t('gems.gem_builds.paste_your_saved_star_chart_code_here_th_ce37eb')">
+                        <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.paste_your_saved_star_chart_code_here_th_ce37eb')" :aria-expanded="helpOpen === 'star_chart' ? 'true' : 'false'" @click="toggleHelp('star_chart')">
                             <i class="fa-solid fa-circle-info"></i>
                         </button>
                     </label>
+                    <p v-if="helpOpen === 'star_chart'" class="help-tip-note" role="note">{{ t('gems.gem_builds.paste_your_saved_star_chart_code_here_th_ce37eb') }}</p>
                     <select v-model="config.scTemplate" @change="config.star_chart = config.scTemplate" style="width: 100%;">
                         <option value="">{{ t('common.load_saved_star_chart') }}</option>
                         <option v-for="(code, name) in starChartTemplates" :key="name" :value="code">{{ name }}</option>
@@ -135,29 +145,53 @@
             </div>
 
             <div class="config-section modifiers-section" :class="{ 'is-open': modifiersOpen }">
-                <button type="button" class="section-collapse-btn" @click="modifiersOpen = !modifiersOpen" :aria-expanded="modifiersOpen ? 'true' : 'false'" :title="t('gems.gem_builds.extra_toggles_for_temporary_buffs_and_ni_5f516b')">
-                    <h4><i class="fa-solid fa-sliders"></i> {{ t('gems.gem_builds.advanced_buffs_toggles') }}</h4>
-                    <i class="fa-solid fa-chevron-down collapse-caret" :class="{ 'is-open': modifiersOpen }"></i>
-                </button>
+                <div class="section-collapse-head">
+                    <button type="button" class="section-collapse-btn" @click="modifiersOpen = !modifiersOpen" :aria-expanded="modifiersOpen ? 'true' : 'false'">
+                        <h4><i class="fa-solid fa-sliders"></i> {{ t('gems.gem_builds.advanced_buffs_toggles') }}</h4>
+                        <i class="fa-solid fa-chevron-down collapse-caret" :class="{ 'is-open': modifiersOpen }"></i>
+                    </button>
+                    <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.extra_toggles_for_temporary_buffs_and_ni_5f516b')" :aria-expanded="helpOpen === 'advanced' ? 'true' : 'false'" @click="toggleHelp('advanced')">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </button>
+                </div>
+                <p v-if="helpOpen === 'advanced'" class="help-tip-note" role="note">{{ t('gems.gem_builds.extra_toggles_for_temporary_buffs_and_ni_5f516b') }}</p>
                 <p v-show="modifiersOpen" class="section-intro">{{ t('gems.gem_builds.only_turn_these_on_if_they_are_active_in_926b9b') }}</p>
                 <div v-show="modifiersOpen" class="toggles-grid">
-                    <label class="toggle-container" :title="t('gems.gem_builds.treats_berserker_battler_as_active_while_1a800b')">
-                        <input type="checkbox" v-model="config.berserker_battler">
-                        <span class="checkmark"></span>
-                        <span>{{ t('gems.gem_builds.berserker_battler') }}</span>
-                    </label>
-    
-                    <label class="toggle-container" :title="t('gems.gem_builds.adds_the_light_from_enlightened_also_cal_4082d5')">
-                        <input type="checkbox" v-model="config.litany">
-                        <span class="checkmark"></span>
-                        <span>{{ t('gems.gem_builds.enlightened_litany') }}</span>
-                    </label>
-    
-                    <label class="toggle-container" :title="t('gems.gem_builds.includes_the_passive_stats_from_your_cho_76a69d')">
-                        <input type="checkbox" v-model="config.subclass_active">
-                        <span class="checkmark"></span>
-                        <span>{{ t('gems.gem_builds.subclass_active') }}</span>
-                    </label>
+                    <div class="toggle-row">
+                        <label class="toggle-container">
+                            <input type="checkbox" v-model="config.berserker_battler">
+                            <span class="checkmark"></span>
+                            <span>{{ t('gems.gem_builds.berserker_battler') }}</span>
+                            <button type="button" class="info-icon-btn help-tip-btn toggle-help-btn" :title="t('gems.gem_builds.treats_berserker_battler_as_active_while_1a800b')" :aria-expanded="helpOpen === 'berserker' ? 'true' : 'false'" @click.prevent="toggleHelp('berserker')">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
+                        </label>
+                        <p v-if="helpOpen === 'berserker'" class="help-tip-note" role="note">{{ t('gems.gem_builds.treats_berserker_battler_as_active_while_1a800b') }}</p>
+                    </div>
+
+                    <div class="toggle-row">
+                        <label class="toggle-container">
+                            <input type="checkbox" v-model="config.litany">
+                            <span class="checkmark"></span>
+                            <span>{{ t('gems.gem_builds.enlightened_litany') }}</span>
+                            <button type="button" class="info-icon-btn help-tip-btn toggle-help-btn" :title="t('gems.gem_builds.adds_the_light_from_enlightened_also_cal_4082d5')" :aria-expanded="helpOpen === 'litany' ? 'true' : 'false'" @click.prevent="toggleHelp('litany')">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
+                        </label>
+                        <p v-if="helpOpen === 'litany'" class="help-tip-note" role="note">{{ t('gems.gem_builds.adds_the_light_from_enlightened_also_cal_4082d5') }}</p>
+                    </div>
+
+                    <div class="toggle-row">
+                        <label class="toggle-container">
+                            <input type="checkbox" v-model="config.subclass_active">
+                            <span class="checkmark"></span>
+                            <span>{{ t('gems.gem_builds.subclass_active') }}</span>
+                            <button type="button" class="info-icon-btn help-tip-btn toggle-help-btn" :title="t('gems.gem_builds.includes_the_passive_stats_from_your_cho_76a69d')" :aria-expanded="helpOpen === 'subclass' ? 'true' : 'false'" @click.prevent="toggleHelp('subclass')">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
+                        </label>
+                        <p v-if="helpOpen === 'subclass'" class="help-tip-note" role="note">{{ t('gems.gem_builds.includes_the_passive_stats_from_your_cho_76a69d') }}</p>
+                    </div>
                 </div>
             </div>
             </div>
@@ -167,7 +201,15 @@
             <div v-if="cachedBuilds.length > 0" class="recommended-build-card">
                 <div class="recommended-build-copy">
                     <div class="eyebrow">{{ t('gems.gem_builds.top_build') }}</div>
-                    <div class="recommended-build-layout" @click="copyLayout(cachedBuilds[0].layout, $event)">{{ cachedBuilds[0].layout }}</div>
+                    <div class="recommended-build-layout-row">
+                        <div class="recommended-build-layout" @click="copyLayout(fmtLayout(cachedBuilds[0].layout), $event)">{{ fmtLayout(cachedBuilds[0].layout) }}</div>
+                        <span class="help-tip">
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54')" :aria-expanded="helpOpen === 'top' ? 'true' : 'false'" @click="toggleHelp('top')">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </button>
+                            <span v-if="helpOpen === 'top'" class="help-tip-pop" role="note">{{ t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54') }}</span>
+                        </span>
+                    </div>
                     <p class="recommended-build-reason">{{ getBuildHeadline(cachedBuilds[0]) }}</p>
                 </div>
                 <div class="recommended-build-stats">
@@ -191,7 +233,7 @@
             </div>
 
             <div v-if="cachedBuilds.length > 0" class="mobile-build-summary">
-                <strong>{{ t('gems.gem_builds.best') }}: {{ cachedBuilds[0].layout }}</strong>
+                <strong>{{ t('gems.gem_builds.best') }}: {{ fmtLayout(cachedBuilds[0].layout) }}</strong>
                 <span>{{ t('gems.gem_builds.coeff') }} {{ cachedBuilds[0].coefficient.toLocaleString() }}</span>
             </div>
 
@@ -226,7 +268,7 @@
                     <thead>
                         <tr>
                             <th class="text-center">{{ t('#') }}</th>
-                            <th class="text-left">{{ t('gems.gem_builds.build') }}</th>
+                            <th class="text-left">{{ t('gems.gem_builds.build') }}<span class="help-tip"><button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54')" :aria-expanded="helpOpen === 'table' ? 'true' : 'false'" @click="toggleHelp('table')"><i class="fa-solid fa-circle-question"></i></button><span v-if="helpOpen === 'table'" class="help-tip-pop" role="note">{{ t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54') }}</span></span></th>
                             <th class="text-right">{{ t('common.light') }}</th>
                             <th class="text-right">{{ t('gems.gem_builds.base_dmg') }}</th>
                             <th class="text-right">{{ t('gems.gem_builds.bonus_dmg') }}</th>
@@ -248,8 +290,8 @@
                         </tr>
                         <tr v-else v-for="build in paginatedBuilds" :key="build.rank" :class="{ 'row-best': build.rank === 1 }" :data-tooltip="getTooltipHtml(build)" @contextmenu.prevent.stop="showContextMenu($event, build)">
                             <td class="text-center">{{ build.rank }}</td>
-                            <td class="build-layout-cell text-left" :title="t('gems.gem_builds.click_to_copy')" @click="copyLayout(build.layout, $event)">
-                                {{ build.layout }}
+                            <td class="build-layout-cell text-left" :title="t('gems.gem_builds.click_to_copy')" @click="copyLayout(fmtLayout(build.layout), $event)">
+                                {{ fmtLayout(build.layout) }}
                             </td>
                             <td class="text-right">{{ build.light.toLocaleString() }}</td>
                             <td class="text-right">{{ Math.round(build.base_dmg).toLocaleString() }}</td>

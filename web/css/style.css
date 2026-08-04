@@ -2928,6 +2928,109 @@ span.flatpickr-weekday {
 }
 
 /* =========================================================================
+   HINTS — an icon beside a label, and the text it reveals.
+
+   The global tooltip in main.js fires on `mouseover`, so on a touch screen a
+   `title` hint is simply unreachable. Every explanatory hint therefore pairs
+   its icon with text the view renders itself, toggled by window.createHelpTips:
+
+   - .help-tip-pop floats below the icon. Use where it can overflow freely.
+   - .help-tip-note opens in the flow. Use inside a scroll box (a config panel,
+     a column) — a popover there is clipped at the box edge.
+
+   Hover still shows the title tooltip, so nothing regresses for the mouse.
+   ========================================================================= */
+.info-icon-btn {
+    margin-left: var(--t-2);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: help;
+    /* An icon glyph optically trimmed beside its label. */
+    font-size: var(--icon-optical);
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+}
+
+.info-icon-btn:hover {
+    color: var(--accent-blue);
+}
+
+.info-icon-btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.help-tip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.help-tip-btn {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Grows the touch target to 32px without moving the glyph or its neighbours. */
+.help-tip-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    transform: translate(-50%, -50%);
+}
+
+.help-tip-btn[aria-expanded="true"] {
+    color: var(--accent-blue);
+}
+
+.help-tip-note {
+    margin: var(--t-1) 0 var(--t-2);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-dark);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    font-weight: 400;
+    line-height: 1.45;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: normal;
+}
+
+.help-tip-pop {
+    position: absolute;
+    top: calc(100% + var(--t-2));
+    left: 0;
+    /* Above its own panel's content, below app chrome and dropdown menus. */
+    z-index: 30;
+    width: max-content;
+    max-width: min(260px, 72vw);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    border: 1px solid var(--border-color);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-floating);
+    color: var(--text-main);
+    font-size: var(--t-fs-label);
+    font-weight: 400;
+    line-height: 1.45;
+    letter-spacing: 0;
+    text-align: left;
+    text-transform: none;
+    white-space: normal;
+}
+
+/* =========================================================================
    RANGE SLIDERS — one recipe, no handle.
 
    The value is read off the filled length of the track, not off a knob riding

@@ -601,8 +601,13 @@ document.addEventListener('gem_evaluator_loaded', async () => {
                 document.removeEventListener('keydown', onHotkey);
             });
 
+            // Hints on this page (see window.createHelpTips).
+            const { helpOpen, toggleHelp } = window.createHelpTips(Vue);
+
             return {
                 t,
+                helpOpen,
+                toggleHelp,
                 activeMode,
                 setActiveMode,
                 submitActiveEvaluator,

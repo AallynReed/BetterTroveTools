@@ -75,11 +75,17 @@
                         </div>
                     </label>
                     <label class="slider-field augment-field">
-                        <span>{{ t('gems.gem_simulator.augment') }}</span>
+                        <span>
+                            {{ t('gems.gem_simulator.augment') }}
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_simulator.how_far_the_generated_gem_s_stats_are_al_ed1cc0')" :aria-expanded="helpOpen === 'augment' ? 'true' : 'false'" @click.prevent="toggleHelp('augment')">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </button>
+                        </span>
                         <div class="slider-inline">
                             <input class="slider-input" type="range" v-model.number="creatorParams.augment" min="0" max="100">
                             <span class="slider-value">{{ creatorParams.augment }}</span>
                         </div>
+                        <p v-if="helpOpen === 'augment'" class="help-tip-note" role="note">{{ t('gems.gem_simulator.how_far_the_generated_gem_s_stats_are_al_ed1cc0') }}</p>
                     </label>
                 </div>
                 <div class="creator-generate-row">
@@ -181,7 +187,13 @@
                 <div class="trash-slot" :title="t('gems.gem_simulator.click_to_delete_selected_gem_or_drag_a_g_7dbcf1')" @click="trashSelected" @dragover.prevent @drop="onDropTrash">
                     <svg viewBox="0 0 24 24" class="trash-icon"><path fill="currentColor" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6Z"/></svg>
                 </div>
-                <div class="trash-label">{{ t('gems.gem_simulator.trash') }}</div>
+                <div class="trash-label">
+                    {{ t('gems.gem_simulator.trash') }}
+                    <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_simulator.click_to_delete_selected_gem_or_drag_a_g_7dbcf1')" :aria-expanded="helpOpen === 'trash' ? 'true' : 'false'" @click="toggleHelp('trash')">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </button>
+                </div>
+                <p v-if="helpOpen === 'trash'" class="help-tip-note" role="note">{{ t('gems.gem_simulator.click_to_delete_selected_gem_or_drag_a_g_7dbcf1') }}</p>
             </div>
         </div>
     </div>

@@ -533,6 +533,29 @@
     color: var(--danger-ink);
 }
 
+/* The flag is a warning first and a hint second: it keeps its own colour
+   through hover and while open, rather than taking the shared accent. */
+.result-stat-flag:hover,
+.result-stat-flag[aria-expanded="true"] {
+    color: var(--danger-ink);
+}
+
+/* Anchor the hint to the row, not to the glyph in the last column, so it opens
+   inside the card instead of past its right edge. */
+.result-stat-row {
+    position: relative;
+}
+
+.result-stat-row .help-tip {
+    position: static;
+}
+
+.proc-summary-label {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
 /* The header row is differentiated by type, not by fill — it sits flush with
    the card so the data rows below read as the recessed ones. */
 .result-stat-head {

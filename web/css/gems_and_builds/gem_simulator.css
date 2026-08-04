@@ -261,6 +261,25 @@
     flex: 1 1 0;
 }
 
+/* Both columns scroll, so hints open in the flow (see style.css). A two-up row
+   would leave one about half width, so while its hint is open the field takes
+   the whole row. */
+.creator-advanced-row {
+    flex-wrap: wrap;
+}
+
+.creator-advanced-row > .slider-field:has(.help-tip-note) {
+    flex-basis: 100%;
+}
+
+.trash-label .help-tip-btn {
+    color: inherit;
+}
+
+#trash-slot-container .help-tip-note {
+    margin-bottom: 0;
+}
+
 .slider-field {
     display: flex;
     flex-direction: column;

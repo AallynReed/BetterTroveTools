@@ -96,7 +96,15 @@
                 </div>
 
                 <div class="gem-evaluator-proc-summary">
-                    <span>{{ t('gems.gem_evaluator.guessed_proc_spread') }}: <b>{{ procSpreadSummary }}</b></span>
+                    <div class="proc-summary-label">
+                        <span>{{ t('gems.gem_evaluator.guessed_proc_spread') }}: <b>{{ procSpreadSummary }}</b></span>
+                        <span class="help-tip">
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_evaluator.extra_containers_behind_each_stat_in_the_baf599')" :aria-expanded="helpOpen === 'proc_spread' ? 'true' : 'false'" @click="toggleHelp('proc_spread')">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </button>
+                            <span v-if="helpOpen === 'proc_spread'" class="help-tip-pop" role="note">{{ t('gems.gem_evaluator.extra_containers_behind_each_stat_in_the_baf599') }}</span>
+                        </span>
+                    </div>
                     <button type="button" class="stepper-btn auto-proc-btn" @click="guessStats" :disabled="isGuessingStats || !canGuessStats" :title="t('gems.gem_evaluator.hotkey') + ': Ctrl+G'">
                         <template v-if="!isGuessingStats">{{ t('gems.gem_evaluator.guess_stats') }}</template>
                         <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
@@ -372,7 +380,13 @@
                     <div class="result-stat-row result-stat-head">
                         <span>{{ t('gems.gem_evaluator.stat') }}</span>
                         <span>{{ t('gems.gem_evaluator.value') }}</span>
-                        <span>{{ t('gems.gem_evaluator.containers') }}</span>
+                        <span class="help-tip stat-head-help">
+                            {{ t('gems.gem_evaluator.containers') }}
+                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_evaluator.each_stat_starts_with_one_container_and_562286')" :aria-expanded="helpOpen === 'containers' ? 'true' : 'false'" @click="toggleHelp('containers')">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </button>
+                            <span v-if="helpOpen === 'containers'" class="help-tip-pop" role="note">{{ t('gems.gem_evaluator.each_stat_starts_with_one_container_and_562286') }}</span>
+                        </span>
                         <span>{{ t('gems.gem_evaluator.quality') }}</span>
                     </div>
                     <div v-for="stat in result.stats" :key="stat.type" class="result-stat-row" :class="{ 'result-stat-row-invalid': !stat.is_within_range }">
@@ -381,7 +395,12 @@
                         <span>{{ stat.containers }}</span>
                         <span>
                             {{ stat.quality_percent.toFixed(2) }}%
-                            <i v-if="!stat.is_within_range" class="fa-solid fa-triangle-exclamation result-stat-flag" :title="t('gems.gem_evaluator.this_stat_is_outside_the_valid_range_for_82e87b')"></i>
+                            <span v-if="!stat.is_within_range" class="help-tip">
+                                <button type="button" class="info-icon-btn help-tip-btn result-stat-flag" :title="t('gems.gem_evaluator.this_stat_is_outside_the_valid_range_for_82e87b')" :aria-expanded="helpOpen === 'range-' + stat.type ? 'true' : 'false'" @click="toggleHelp('range-' + stat.type)">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </button>
+                                <span v-if="helpOpen === 'range-' + stat.type" class="help-tip-pop" role="note">{{ t('gems.gem_evaluator.this_stat_is_outside_the_valid_range_for_82e87b') }}</span>
+                            </span>
                         </span>
                     </div>
                 </div>

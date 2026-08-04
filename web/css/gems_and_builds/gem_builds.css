@@ -210,33 +210,26 @@
     line-height: 1.4;
 }
 
-.info-icon-btn {
-    margin-left: var(--t-2);
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: help;
-    /* An icon glyph optically trimmed beside its label. */
-    font-size: var(--icon-optical);
-    line-height: 1;
-    display: inline-flex;
+/* .info-icon-btn and the .help-tip system live in style.css; all three gem
+   views share them. A two-up row leaves a hint about 130px wide on a phone, so
+   while one is open give its field the whole row - the text then reads as a
+   paragraph rather than a ribbon. */
+.input-row {
+    flex-wrap: wrap;
+}
+
+.input-row .input-group:has(.help-tip-note) {
+    flex-basis: 100%;
+}
+
+.section-collapse-head {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    vertical-align: middle;
 }
 
-.label-inline-controls .info-icon-btn {
-    margin-left: var(--t-2);
-}
-
-.info-icon-btn:hover {
-    color: var(--accent-blue);
-}
-
-.info-icon-btn:focus-visible {
-    outline: 2px solid var(--accent-blue);
-    outline-offset: 2px;
+.section-collapse-head .section-collapse-btn {
+    flex: 1;
+    min-width: 0;
 }
 
 .section-collapse-btn {
@@ -292,6 +285,16 @@
 .toggle-inline {
     margin-top: var(--t-1);
 }
+
+/* The hint opens under its toggle, so the row owns a wrapper the note can sit
+   in. The icon rides the right edge inside the row rather than outside it. */
+.toggle-help-btn {
+    margin-left: auto;
+}
+
+.toggle-row .help-tip-note {
+    margin-bottom: 0;
+}
 .toggle-container input { display: none; }
 .checkmark {
     width: 20px; height: 20px; background: var(--bg-dark);
@@ -346,6 +349,19 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+.recommended-build-layout-row {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Anchor the legend to the row (and, in the table, to the column), not to the
+   glyph: on a phone a popover starting at the icon runs off the right edge. */
+.recommended-build-layout-row .help-tip,
+.btt-table th .help-tip {
+    position: static;
 }
 
 .recommended-build-layout {
@@ -607,6 +623,12 @@
 
     .recommended-build-layout {
         font-size: var(--t-fs-h2);
+    }
+
+    /* The layout is the loudest thing on the card here - keep its legend
+       legible rather than optically trimmed to a smaller neighbour. */
+    .recommended-build-layout-row .help-tip-btn {
+        font-size: var(--t-fs-body);
     }
 
     .recommended-build-stats {

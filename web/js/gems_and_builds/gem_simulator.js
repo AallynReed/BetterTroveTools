@@ -656,8 +656,12 @@ document.addEventListener('gem_simulator_loaded', async () => {
                 document.removeEventListener('drop', handleGlobalDragEnd);
             });
 
+            // Hints on this page (see window.createHelpTips).
+            const { helpOpen, toggleHelp } = window.createHelpTips(Vue);
+
             return {
-                t, lookups, formattedObj, formatGemName,
+                t, helpOpen, toggleHelp,
+                lookups, formattedObj, formatGemName,
                 inventory, equipped, equippedRows, elementsList, primordialToggles, statTotalsBuffed, sortedStatTotals, totalPRBuffed, formatStat,
                 selected, selectedSource, isSelectedInStorage, selectGem, getStatName, getStatValue, getBarColor, getTierDisplayName, getTypeDisplayName,
                 gemTierBgUrl, gemImageUrl, equippedPlaceholderUrl,

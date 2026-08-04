@@ -541,6 +541,7 @@
         "gems.gem_builds.best_coeff": "Best Coeff",
         "gems.gem_builds.best_overall_coefficient_for_this_setup": "Best overall coefficient for this setup.",
         "gems.gem_builds.bonus_dmg": "Bonus Dmg",
+        "gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54": "Boosts placed on each stat, by gem group. The first pair is Empowered (Damage / Crit Damage), the second is Lesser (Damage / Crit Damage). After the + are the Cosmic gems (Damage / Crit / Light).",
         "gems.gem_builds.build": "Build",
         "gems.gem_builds.build_gear": "Build & Gear",
         "gems.gem_builds.build_goal": "Build Goal",

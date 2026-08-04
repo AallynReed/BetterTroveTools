@@ -483,6 +483,31 @@ document.addEventListener('mouseout', (e) => {
 
 document.addEventListener('click', hideTooltip);
 
+/* The tooltip above is hover-only, so on a touch screen every `title` hint is
+   unreachable. A view can pair each hint icon with this: one open key at a time,
+   closed by an outside tap or Escape. The markup lives in the view - a floating
+   `.help-tip-pop` where it can overflow freely, a `.help-tip-note` in the flow
+   where a scroll box would clip it. Call inside setup(); wiring is automatic. */
+window.createHelpTips = function (Vue) {
+    const open = Vue.ref(null);
+    const toggle = (key) => { open.value = open.value === key ? null : key; };
+    const onPointerDown = (e) => {
+        if (!open.value) return;
+        if (e.target.closest && e.target.closest('.help-tip, .help-tip-btn, .help-tip-note')) return;
+        open.value = null;
+    };
+    const onKeyDown = (e) => { if (e.key === 'Escape') open.value = null; };
+    Vue.onMounted(() => {
+        document.addEventListener('pointerdown', onPointerDown, true);
+        document.addEventListener('keydown', onKeyDown);
+    });
+    Vue.onUnmounted(() => {
+        document.removeEventListener('pointerdown', onPointerDown, true);
+        document.removeEventListener('keydown', onKeyDown);
+    });
+    return { helpOpen: open, toggleHelp: toggle };
+};
+
 const networkState = Vue.reactive({
     activeRequests: [],
     fullLog: [],
