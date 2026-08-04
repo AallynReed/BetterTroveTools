@@ -460,6 +460,30 @@ function initAlliesView() {
                 }
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                const { joinList, statsText } = window.CodexExport;
+                window.CodexExport.run({
+                    rows: filteredAllies.value,
+                    basename: 'allies',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Category', value: (row) => t(row.category || 'Unknown') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Mastery', value: (row) => row.mastery || '0' },
+                        { label: 'Geode Mastery', value: (row) => row.mastery_geode || '0' },
+                        { label: 'Power Rank', value: (row) => row.powerrank || '' },
+                        { label: 'Stats', value: (row) => statsText(row.rawStats) },
+                        { label: 'Abilities', value: (row) => joinList((row.extractedAbilities || []).map(a => t(a))) },
+                        { label: 'Designer', value: (row) => row.designer || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -535,7 +559,7 @@ function initAlliesView() {
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
                 resetFilters, formatStat, formatAbility,
                 highlightSearch, nextSearchResult, prevSearchResult,
-                focusSearchInput, clearCacheAndReload, dataSourceText,
+                focusSearchInput, clearCacheAndReload, exportCsv, dataSourceText,
                 showSearchShortcutHint, dismissSearchShortcutHint,
                 showOnboardingTips, dismissOnboardingTips
             };

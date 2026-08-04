@@ -281,6 +281,30 @@ function initItemsView() {
                 }
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                const { joinList, yesNo } = window.CodexExport;
+                window.CodexExport.run({
+                    rows: filteredItems.value,
+                    basename: 'items',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Category', value: (row) => t(row.category || 'Item') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Tradability', value: (row) => t(row.tradability || '') },
+                        { label: 'Lootbox', value: (row) => yesNo(row.lootbox, t) },
+                        { label: 'Decay', value: (row) => yesNo(row.decay, t) },
+                        { label: 'Unlock Count', value: (row) => (row.unlocks || []).length },
+                        { label: 'Unlocks', value: (row) => joinList((row.unlocks || []).map(u => u.name || u.path)) },
+                        { label: 'Designer', value: (row) => row.designer || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -321,7 +345,7 @@ function initItemsView() {
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                resetFilters, highlightSearch, clearCacheAndReload, dataSourceText
+                resetFilters, highlightSearch, clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });

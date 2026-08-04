@@ -33,6 +33,10 @@
                         <i class="fa-solid fa-broom"></i>
                         <span>{{ t('common.rebuild_cache') }}</span>
                     </button>
+                    <button class="secondary-btn" @click="exportCsv" :disabled="isLoading || filteredBadges.length === 0" :title="t('codexes.export_the_filtered_rows_to_a_csv_file')">
+                        <i class="fa-solid fa-file-csv"></i>
+                        <span>{{ t('codexes.export_csv') }}</span>
+                    </button>
                 </div>
             </details>
             <div v-if="dataSourceText" class="search-stats cache-status">{{ dataSourceText }}</div>

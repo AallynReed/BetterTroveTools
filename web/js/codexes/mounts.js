@@ -462,6 +462,29 @@ function initMountsView() {
                 }
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                const { joinList, statsText } = window.CodexExport;
+                window.CodexExport.run({
+                    rows: filteredMounts.value,
+                    basename: 'mounts',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.name) },
+                        { label: 'Category', value: (row) => t(row.category || 'Unknown') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Mastery', value: (row) => row.mastery || '0' },
+                        { label: 'Stats', value: (row) => statsText(row.rawStats) },
+                        // movement_flags is {ground|wing|glide: 1.0 | null}; only the set ones are meaningful.
+                        { label: 'Movement', value: (row) => joinList(Object.keys(row.movement_flags || {}).filter(k => row.movement_flags[k])) },
+                        { label: 'Designer', value: (row) => row.designer || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -537,7 +560,7 @@ function initMountsView() {
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
                 resetFilters, formatStat, highlightSearch,
                 nextSearchResult, prevSearchResult,
-                clearCacheAndReload, dataSourceText
+                clearCacheAndReload, exportCsv, dataSourceText
             };
         }
     });

@@ -259,6 +259,28 @@ function initMementosView() {
                 }
             };
 
+            const exportCsv = () => {
+                if (!window.CodexExport) return;
+                window.CodexExport.run({
+                    rows: filteredMementos.value,
+                    basename: 'mementos',
+                    t,
+                    columns: [
+                        { label: 'Name', value: (row) => t(row.displayName || row.name || row.fallbackName) },
+                        { label: 'Category', value: (row) => t(row.category || '') },
+                        { label: 'Description', value: (row) => t(row.desc || '') },
+                        { label: 'Mastery', value: (row) => row.mastery || '0' },
+                        { label: 'Source Type', value: (row) => t(row.source_label || '') },
+                        { label: 'Source', value: (row) => t(row.source_name || '') },
+                        { label: 'Biome', value: (row) => t(row.biome_name || '') },
+                        { label: 'Designer', value: (row) => row.designer || '' },
+                        { label: 'Path', value: (row) => row.filename || '' },
+                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                        { label: 'ID', value: (row) => row.id || '' },
+                    ],
+                });
+            };
+
             const clearCacheAndReload = async () => {
                 try {
                     isLoading.value = true;
@@ -312,7 +334,7 @@ function initMementosView() {
                 currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
                 setPage, nextPage, prevPage,
                 selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                resetFilters, highlightSearch, clearCacheAndReload, dataSourceText, sourceRowClass
+                resetFilters, highlightSearch, clearCacheAndReload, exportCsv, dataSourceText, sourceRowClass
             };
         }
     });
