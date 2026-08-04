@@ -42,6 +42,7 @@ const I18nManager = {
     observer: null,
     translateTimeout: null,
     _normCache: new Map(),
+    _htmlCache: new Map(),
 
     // ---- init ----------------------------------------------------------
     async init() {
@@ -153,9 +154,10 @@ const I18nManager = {
         if (this._normCache.has(s)) return this._normCache.get(s);
         let out = s;
         if (out.indexOf('&') !== -1) {
-            const ta = document.createElement('textarea');
-            ta.innerHTML = out;
-            out = ta.value;
+            // Pure string decode (sanitize.js). The old textarea/innerHTML trick
+            // put untrusted source text through the HTML parser just to read an
+            // entity back out.
+            out = window.decodeHtmlEntities ? window.decodeHtmlEntities(out) : out;
         }
         out = out.trim();
         this._normCache.set(s, out);
@@ -255,6 +257,17 @@ const I18nManager = {
     },
 
     // ---- DOM passes ----------------------------------------------------
+    // Markup-bearing translation, allowlist-sanitized. translatePage() runs on
+    // every view switch over the same handful of strings, so results are cached
+    // by input string (locale-independent, and bounded by the string count).
+    _html(value) {
+        if (typeof value !== 'string' || value.indexOf('<') === -1) return value;
+        if (this._htmlCache.has(value)) return this._htmlCache.get(value);
+        const out = window.sanitizeHtml ? window.sanitizeHtml(value) : value;
+        this._htmlCache.set(value, out);
+        return out;
+    },
+
     async translatePage() {
         this.pauseObserver();
 
@@ -265,7 +278,11 @@ const I18nManager = {
                 el.setAttribute('data-i18n', key); // preserve the source key after we overwrite innerHTML
             }
             if (!key) return;
-            const value = this.t(key);
+            // Translations legitimately carry markup (<br>, <b>, icon <i>), so
+            // this stays innerHTML -- but a locale file is data, and community
+            // translations are contributed, so it goes through the allowlist
+            // sanitizer first.
+            const value = this._html(this.t(key));
             if (el.innerHTML !== value) el.innerHTML = value;
         });
 

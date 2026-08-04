@@ -100,13 +100,37 @@ def _save_prefs(**changes) -> dict:
 
 
 def _email_hash(email: str) -> str:
+    # Filename discriminator only — never an authentication or integrity check.
+    # SHA-256 regardless, so nothing in the tree hands a scanner (or a reader) a
+    # reason to think a broken digest is load-bearing somewhere.
+    return hashlib.sha256((email or "").strip().lower().encode("utf-8")).hexdigest()[:12]
+
+
+def _legacy_email_hash(email: str) -> str:
     return hashlib.sha1((email or "").strip().lower().encode("utf-8")).hexdigest()[:12]
+
+
+def _hashed_path(prefix: str, email: str) -> Path:
+    """Per-account file path, migrating the pre-SHA-256 name on first use.
+
+    Without the rename, bumping the digest would silently orphan every saved
+    ticket and remembered password — each account would look signed out.
+    """
+    path = _storage_dir() / f"{prefix}-{_email_hash(email)}.bin"
+    if not path.exists():
+        legacy = _storage_dir() / f"{prefix}-{_legacy_email_hash(email)}.bin"
+        if legacy.exists():
+            try:
+                legacy.rename(path)
+            except OSError:
+                return legacy  # keep working off the old file if the rename fails
+    return path
 
 
 def _auth_cache_path(email: str = "") -> Path:
     # Per-account ticket cache so several Glyph accounts can each stay signed in.
     if email:
-        return _storage_dir() / f"auth-{_email_hash(email)}.bin"
+        return _hashed_path("auth", email)
     return _storage_dir() / "auth_cache.bin"
 
 
@@ -177,7 +201,7 @@ _CRED_ENTROPY = b"BTT.trove.launcher.credentials.v1"
 
 def _cred_path(email: str = "") -> Path:
     if email:
-        return _storage_dir() / f"cred-{_email_hash(email)}.bin"
+        return _hashed_path("cred", email)
     return _storage_dir() / "credentials.bin"
 
 

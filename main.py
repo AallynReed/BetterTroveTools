@@ -8,6 +8,7 @@ import threading
 import time
 import webbrowser
 from pathlib import Path
+from urllib.parse import urlsplit
 
 if sys.platform == "win32":
     import winreg
@@ -649,23 +650,66 @@ def serve_cache(filename):
     response.set_header("Cache-Control", "no-cache, no-store, must-revalidate")
     return response
 
+# Bilibili blocks hotlinked images without a matching Referer, so thumbnails
+# have to be fetched server-side. That makes this endpoint a request forwarder,
+# and the caller controls the URL — so it is locked down on three axes: which
+# host it may reach, whether it may be redirected somewhere else, and what it is
+# allowed to hand back to the page.
+_BILIBILI_IMAGE_HOSTS = ("hdslb.com",)
+_BILIBILI_IMAGE_MAX_BYTES = 16 * 1024 * 1024
+
+
+def _is_allowed_image_host(url: str) -> bool:
+    # A substring test ("hdslb.com" in url) matches http://evil.example/?hdslb.com
+    # and http://hdslb.com.evil.example/ — parse and compare the host itself.
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    host = (parsed.hostname or "").lower().rstrip(".")
+    return any(host == h or host.endswith("." + h) for h in _BILIBILI_IMAGE_HOSTS)
+
+
 @bottle.route('/proxy/bilibili_image')
 def proxy_bilibili_image():
     url = bottle.request.query.get('url')
-    if not url or "hdslb.com" not in url:
+    if not url or not _is_allowed_image_host(url):
         return bottle.HTTPError(403, "Forbidden")
-        
+
     try:
         headers = {
             "Referer": "https://www.bilibili.com/",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         }
-        resp = requests.get(url, headers=headers, timeout=5)
+        # No redirect following: a 302 is otherwise a free hop off the allowlist
+        # and onto localhost or the LAN.
+        resp = requests.get(url, headers=headers, timeout=5, allow_redirects=False, stream=True)
+        try:
+            if resp.status_code != 200:
+                return bottle.HTTPError(502, "Upstream image unavailable")
+
+            # The body is served from our own origin, so an upstream text/html
+            # response would be same-origin script. Images only.
+            content_type = (resp.headers.get('content-type') or '').split(';')[0].strip().lower()
+            if not content_type.startswith('image/') or content_type == 'image/svg+xml':
+                return bottle.HTTPError(502, "Upstream response is not an image")
+
+            body = resp.raw.read(_BILIBILI_IMAGE_MAX_BYTES + 1, decode_content=True)
+            if len(body) > _BILIBILI_IMAGE_MAX_BYTES:
+                return bottle.HTTPError(502, "Upstream image too large")
+        finally:
+            resp.close()
+
         bottle.response.set_header("Cache-Control", "max-age=86400")
-        bottle.response.content_type = resp.headers.get('content-type', 'image/jpeg')
-        return resp.content
-    except Exception as e:
-        return bottle.HTTPError(500, str(e))
+        bottle.response.set_header("X-Content-Type-Options", "nosniff")
+        bottle.response.set_header("Content-Security-Policy", "default-src 'none'; sandbox")
+        bottle.response.content_type = content_type
+        return body
+    except Exception:
+        # The upstream error text is attacker-influenced; don't reflect it.
+        return bottle.HTTPError(502, "Image fetch failed")
 
 # pywebview renders the UI in the Microsoft Edge WebView2 runtime, so we don't
 # ship or depend on a full browser install. Eel runs as a server only.

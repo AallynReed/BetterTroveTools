@@ -4,10 +4,18 @@ on:
     types:
       - created
 
+# Least privilege by default: every job starts read-only and opts back in to
+# what it actually needs. Without this, GITHUB_TOKEN inherits whatever the
+# repository default is — which may be write-all.
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Compile Code
     runs-on: windows-latest
+    permissions:
+      contents: write  # uploads the MSI as a release asset
 
     steps:
       - uses: actions/checkout@v3
@@ -27,8 +35,13 @@ jobs:
             PYTHONUTF8: 1
 
       - name: Move and Rename Files
+        # The release name goes in through the environment, not through ${{ }}
+        # expansion: expansion pastes it into the script body, where a name
+        # containing quotes or a `;` becomes PowerShell that we run.
+        env:
+          RELEASE_NAME: ${{ github.event.release.name }}
         run: |
-          $env:NEW_FILE_NAME="BetterTroveTools-${{ github.event.release.name }}-win64.msi"
+          $env:NEW_FILE_NAME="BetterTroveTools-$env:RELEASE_NAME-win64.msi"
           $msiFile = Get-ChildItem -Path dist -Filter *.msi | Select-Object -First 1
           Write-Host "Found MSI: $($msiFile.FullName)"
           Move-Item -Path $msiFile.FullName -Destination ".\$env:NEW_FILE_NAME"
@@ -46,13 +59,17 @@ jobs:
   linux-package:
     name: Package Linux source
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # uploads the source tarball as a release asset
 
     steps:
       - uses: actions/checkout@v3
 
       - name: Build Linux source tarball
+        env:
+          RELEASE_NAME: ${{ github.event.release.name }}
         run: |
-          OUT="BetterTroveTools-${{ github.event.release.name }}-linux.tar.gz"
+          OUT="BetterTroveTools-$RELEASE_NAME-linux.tar.gz"
           # git archive emits only committed files (no venvs/build/dist/__pycache__)
           # and honours `export-ignore` attributes, so it's a clean run-from-source bundle.
           git archive --format=tar.gz --prefix=BetterTroveTools/ -o "$OUT" HEAD
