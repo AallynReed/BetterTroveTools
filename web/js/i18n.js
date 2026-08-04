@@ -192,7 +192,11 @@ const I18nManager = {
         // content / source text
         const bySource = this.content[token];
         if (this._present(bySource)) return { value: bySource, hit: true, kind: 'content', capToken: token };
-        return { value: token, hit: false, kind: 'content', capToken: token };
+        // Nothing known about this token, so `value` IS the caller's token
+        // echoed back. `raw` marks that: callers rendering into the DOM must
+        // treat it as text, never as markup -- for a data-i18n pass the token
+        // is an attribute read off the page.
+        return { value: token, hit: false, kind: 'content', capToken: token, raw: true };
     },
 
     _present(v) {
@@ -274,16 +278,27 @@ const I18nManager = {
         document.querySelectorAll('[data-i18n]').forEach(el => {
             let key = el.getAttribute('data-i18n');
             if (!key) {
-                key = el.innerHTML.trim();
-                el.setAttribute('data-i18n', key); // preserve the source key after we overwrite innerHTML
+                key = el.textContent.trim();
+                el.setAttribute('data-i18n', key); // preserve the source key after we overwrite the element
             }
             if (!key) return;
-            // Translations legitimately carry markup (<br>, <b>, icon <i>), so
-            // this stays innerHTML -- but a locale file is data, and community
-            // translations are contributed, so it goes through the allowlist
-            // sanitizer first.
-            const value = this._html(this.t(key));
-            if (el.innerHTML !== value) el.innerHTML = value;
+
+            const r = this._resolve(key);
+            if (!r.hit) this._maybeCapture(r);
+            const value = this.interpolate(this._flatten(r.value, r.capToken));
+
+            if (r.raw) {
+                // No entry anywhere, so `value` is the data-i18n attribute read
+                // back off the page. An attribute is not a template -- render it
+                // as text so a crafted one can never become markup.
+                if (el.textContent !== value) el.textContent = value;
+                return;
+            }
+            // Came from a locale file or the id/English table, which legitimately
+            // carry markup (<br>, <b>, icon <i>). Still sanitized: translations
+            // are contributed data.
+            const html = this._html(value);
+            if (el.innerHTML !== html) el.innerHTML = html;
         });
 
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
