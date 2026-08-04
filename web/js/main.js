@@ -458,7 +458,10 @@ document.addEventListener('mouseover', (e) => {
     const content = target.getAttribute('data-tooltip') || target.getAttribute('data-tooltip-text');
     if (!content) return;
 
-    globalTooltip.innerHTML = content;
+    // Tooltip text is mostly authored markup (<br>, <b>), but a view can point
+    // one at a remote value -- a mod title, an author name -- so it goes through
+    // the allowlist sanitizer rather than straight into innerHTML.
+    globalTooltip.innerHTML = window.sanitizeHtml ? window.sanitizeHtml(content) : content;
     globalTooltip.style.display = 'block';
     tooltipVisible = true;
     positionTooltip(e.clientX, e.clientY);
@@ -2387,10 +2390,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (activeCmdIndex >= displayCommands.length) activeCmdIndex = 0;
         
+        // Every interpolation below is escaped: the palette query reaches this
+        // template verbatim (titles like `Search Trovesaurus: "<query>"`, and
+        // data-query), so an unescaped `"` would break out of the attribute.
+        const esc = window.escapeHtml;
         cmdResults.innerHTML = displayCommands.map((c, i) => `
-            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${c.id}" data-url="${c.url || ''}" data-modder-tab="${c.modderTab || ''}" data-gx-tab="${c.gxTab || ''}" data-mm-section="${c.mmSection || ''}" data-gems-tab="${c.gemsTab || ''}" data-codex-tab="${c.codexTab || ''}" data-query="${c.query || ''}">
-                <div class="cmd-result-icon">${c.imgIcon ? `<img src="${c.imgIcon}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${c.icon}"></i>`}</div>
-                <div>${t(c.title)}</div>
+            <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${esc(c.id)}" data-url="${esc(c.url || '')}" data-modder-tab="${esc(c.modderTab || '')}" data-gx-tab="${esc(c.gxTab || '')}" data-mm-section="${esc(c.mmSection || '')}" data-gems-tab="${esc(c.gemsTab || '')}" data-codex-tab="${esc(c.codexTab || '')}" data-query="${esc(c.query || '')}">
+                <div class="cmd-result-icon">${c.imgIcon ? `<img src="${esc(c.imgIcon)}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${esc(c.icon)}"></i>`}</div>
+                <div>${esc(t(c.title))}</div>
             </div>
         `).join('');
 

@@ -26,6 +26,8 @@ os.environ.setdefault("GOOGLE_DEFAULT_CLIENT_ID", "no")
 os.environ.setdefault("GOOGLE_DEFAULT_CLIENT_SECRET", "no")
 
 
+from utils import image_proxy  # noqa: E402
+
 import backend.about  # noqa: E402,F401
 import backend.calculators  # noqa: E402,F401
 import backend.gems_and_builds.gem_builds  # noqa: E402,F401
@@ -263,20 +265,11 @@ def resolve_cache_file(filename):
 
 
 def proxy_bilibili_image(query_string):
+    # Same allowlist, redirect policy and Content-Type pinning as the desktop
+    # server — see utils/image_proxy.py. This copy previously did its own
+    # substring check and echoed the upstream Content-Type straight back.
     params = parse_qs(query_string)
-    url = (params.get("url") or [""])[0]
-    if not url or "hdslb.com" not in url:
-        return 403, b"Forbidden", "text/plain"
-
-    try:
-        headers = {
-            "Referer": "https://www.bilibili.com/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        }
-        proxied = requests.get(url, headers=headers, timeout=5)
-        return proxied.status_code, proxied.content, proxied.headers.get("content-type", "image/jpeg")
-    except Exception as exc:
-        return 500, str(exc).encode("utf-8"), "text/plain"
+    return image_proxy.fetch_image((params.get("url") or [""])[0])
 
 
 async def _receive_body(receive):
@@ -363,7 +356,8 @@ async def app(scope, receive, send):
 
     if method == "GET" and path == "/proxy/bilibili_image":
         status, body, content_type = proxy_bilibili_image(query_string)
-        await _send_response(send, status, body, content_type)
+        headers = image_proxy.RESPONSE_HEADERS if status == 200 else None
+        await _send_response(send, status, body, content_type, extra_headers=headers)
         return
 
     if method == "GET" and path == "/eel.js":

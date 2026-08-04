@@ -18,6 +18,7 @@ import requests
 import webview
 from gevent.exceptions import ConcurrentObjectUseError
 
+from utils import image_proxy
 from utils.path import get_app_data_dir, get_cache_root
 from utils.win_tray import create_tray_icon
 
@@ -651,21 +652,17 @@ def serve_cache(filename):
 
 @bottle.route('/proxy/bilibili_image')
 def proxy_bilibili_image():
-    url = bottle.request.query.get('url')
-    if not url or "hdslb.com" not in url:
-        return bottle.HTTPError(403, "Forbidden")
-        
-    try:
-        headers = {
-            "Referer": "https://www.bilibili.com/",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-        }
-        resp = requests.get(url, headers=headers, timeout=5)
-        bottle.response.set_header("Cache-Control", "max-age=86400")
-        bottle.response.content_type = resp.headers.get('content-type', 'image/jpeg')
-        return resp.content
-    except Exception as e:
-        return bottle.HTTPError(500, str(e))
+    # All the validation lives in utils.image_proxy so this server and
+    # web_server.py can't drift apart. The URL is rebuilt from constants there;
+    # nothing the caller sent is forwarded verbatim.
+    status, body, content_type = image_proxy.fetch_image(bottle.request.query.get('url'))
+    if status != 200:
+        return bottle.HTTPError(status, body.decode("utf-8", "replace"))
+
+    for header, value in image_proxy.RESPONSE_HEADERS.items():
+        bottle.response.set_header(header, value)
+    bottle.response.content_type = content_type
+    return body
 
 # pywebview renders the UI in the Microsoft Edge WebView2 runtime, so we don't
 # ship or depend on a full browser install. Eel runs as a server only.

@@ -32,6 +32,9 @@
     <script defer src="js/notifications.js"></script>
     <!-- Vue vendored locally (web/lib) so the app renders fully offline (Android/desktop). -->
     <script defer src="lib/vue.global.prod.js"></script>
+    <!-- escapeHtml/sanitizeHtml helpers. Must load before anything that builds
+         markup from data we don't control. -->
+    <script defer src="js/sanitize.js"></script>
     <script defer src="js/i18n.js"></script>
     <script defer src="js/main.js"></script>
 
