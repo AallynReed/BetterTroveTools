@@ -3,12 +3,25 @@ on:
   release:
     types:
       - created
+  # Manual re-run for an existing release: GitHub sometimes never delivers the
+  # release event to Actions (platform incidents), leaving a published release
+  # with no assets. Point this at the tag to build and attach them after the fact.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build and attach assets to (e.g. 2026.08.05)
+        required: true
+        type: string
 
 # Least privilege by default: every job starts read-only and opts back in to
 # what it actually needs. Without this, GITHUB_TOKEN inherits whatever the
 # repository default is — which may be write-all.
 permissions:
   contents: read
+
+env:
+  # Release runs take the tag from the event; manual runs from the input.
+  RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
 
 jobs:
   build:
@@ -19,6 +32,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -39,22 +54,20 @@ jobs:
         # expansion: expansion pastes it into the script body, where a name
         # containing quotes or a `;` becomes PowerShell that we run.
         env:
-          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_NAME: ${{ env.RELEASE_TAG }}
         run: |
           $env:NEW_FILE_NAME="BetterTroveTools-$env:RELEASE_NAME-win64.msi"
           $msiFile = Get-ChildItem -Path dist -Filter *.msi | Select-Object -First 1
           Write-Host "Found MSI: $($msiFile.FullName)"
           Move-Item -Path $msiFile.FullName -Destination ".\$env:NEW_FILE_NAME"
 
+      # Uploaded by tag rather than the event's upload_url, so a manual run can
+      # attach to a release that was published earlier. --clobber replaces an
+      # asset left behind by a half-finished run.
       - name: Upload file to release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: "BetterTroveTools-${{ github.event.release.name }}-win64.msi"
-          asset_name: "BetterTroveTools-${{ github.event.release.name }}-win64.msi"
-          asset_content_type: application/x-msi
         env:
-          GITHUB_TOKEN: ${{ secrets.COMPILER }}
+          GH_TOKEN: ${{ secrets.COMPILER || github.token }}
+        run: gh release upload "$env:RELEASE_TAG" "BetterTroveTools-$env:RELEASE_TAG-win64.msi" --clobber
 
   linux-package:
     name: Package Linux source
@@ -64,10 +77,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_TAG }}
 
       - name: Build Linux source tarball
         env:
-          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_NAME: ${{ env.RELEASE_TAG }}
         run: |
           OUT="BetterTroveTools-$RELEASE_NAME-linux.tar.gz"
           # git archive emits only committed files (no venvs/build/dist/__pycache__)
@@ -76,11 +91,6 @@ jobs:
           echo "OUT=$OUT" >> "$GITHUB_ENV"
 
       - name: Upload tarball to release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ env.OUT }}
-          asset_name: ${{ env.OUT }}
-          asset_content_type: application/gzip
         env:
-          GITHUB_TOKEN: ${{ secrets.COMPILER }}
+          GH_TOKEN: ${{ secrets.COMPILER || github.token }}
+        run: gh release upload "$RELEASE_TAG" "$OUT" --clobber
