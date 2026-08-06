@@ -485,6 +485,66 @@ def start_self_update(download_url, version_tag="", asset_name=""):
                 pass
 
 
+# Everything the self-update flow drops in the cache: the installer, the msiexec
+# log, and the VBS helper (which deletes itself, but only if it runs to the end).
+_UPDATE_ARTIFACT_SUFFIXES = (".msi", ".log", ".vbs")
+
+
+def _clear_update_cache(min_age_seconds=300):
+    """Delete leftover update artifacts. Returns (files_removed, bytes_freed)."""
+    update_dir = get_cache_root() / "updates"
+    if not update_dir.is_dir():
+        return 0, 0
+
+    cutoff = time.time() - max(0, float(min_age_seconds))
+    removed = 0
+    freed = 0
+
+    for entry in update_dir.iterdir():
+        if entry.suffix.lower() not in _UPDATE_ARTIFACT_SUFFIXES:
+            continue
+        try:
+            info = entry.stat()
+            # Anything recent may belong to an install that is still running.
+            if not entry.is_file() or info.st_mtime > cutoff:
+                continue
+            entry.unlink()
+        except OSError:
+            # Locked by msiexec, or already gone — leave it for the next sweep.
+            continue
+        removed += 1
+        freed += info.st_size
+
+    try:
+        update_dir.rmdir()  # only succeeds once the folder is empty
+    except OSError:
+        pass
+
+    return removed, freed
+
+
+@eel.expose
+def clear_update_cache(min_age_seconds=300):
+    """Called by the frontend once it knows the app is already up to date."""
+    try:
+        removed, freed = _clear_update_cache(min_age_seconds)
+        return {"success": True, "data": {"removed": removed, "freed_bytes": freed}}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def _sweep_stale_update_cache():
+    """Startup safety net for installs that never reach an update check
+    (offline app, abandoned download): drop artifacts older than a day."""
+    try:
+        _clear_update_cache(24 * 60 * 60)
+    except Exception:
+        pass
+
+
+threading.Thread(target=_sweep_stale_update_cache, daemon=True).start()
+
+
 def _read_settings_dict():
     """Best-effort read of the raw settings file. Returns {} on any problem."""
     try:

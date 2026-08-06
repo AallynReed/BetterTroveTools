@@ -1015,6 +1015,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     sidebar.appendChild(updateContainer);
                 }
             }
+        } else if (currentParsed) {
+            // Already on the latest build: drop the installer (and its log/helper)
+            // a previous update left in the cache instead of hoarding it forever.
+            try { await eel.clear_update_cache()(); } catch {}
         }
     } catch (err) {
         console.error("Failed to check for app updates:", err);
