@@ -1,207 +1,28 @@
 function initFishView() {
-    const root = document.getElementById('fish-vue-app');
-    if (!root || root.dataset.fishInitializing === '1') return;
-    root.dataset.fishInitializing = '1';
+    window.CodexView.boot('fish', 'Fish', function setup() {
+        const { ref, computed } = Vue;
 
-    if (typeof Vue === 'undefined') {
-        root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Vue failed to load for Fish Codex.</div>`;
-        return;
-    }
+        const fishData = ref([]);
+        const sourceOptions = ref([['All Sources', 'All']]);
+        const rarityOptions = ref([['All Rarities', 'All']]);
 
-    const { createApp, ref, computed, onMounted, onBeforeUnmount, nextTick, watch } = Vue;
+        const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Relic'];
+        const RARITY_COLORS = {
+            Common: '#b0bec5', Uncommon: '#7ed957', Rare: '#5ec6ff',
+            Epic: '#b066ff', Legendary: '#ffd54f', Relic: '#ff8a65'
+        };
 
-    const app = createApp({
-        setup() {
-            const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
-            const PREF_STATE_KEY = 'state_fish';
-            let hydratingState = false;
-
-            const isLoading = ref(true);
-            const loadError = ref('');
-            const fishData = ref([]);
-            const dataSourceText = ref('');
-            const sourceOptions = ref([['All Sources', 'All']]);
-            const rarityOptions = ref([['All Rarities', 'All']]);
-            const searchQuery = ref('');
-            const selectedSource = ref('All');
-            const selectedRarity = ref('All');
-            const currentPage = ref(1);
-            const pageSize = ref(8);   // groups per page in grouped view (5 sources fit on page 1)
-
-            const RARITY_ORDER = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Relic'];
-            const RARITY_COLORS = {
-                Common: '#b0bec5', Uncommon: '#7ed957', Rare: '#5ec6ff',
-                Epic: '#b066ff', Legendary: '#ffd54f', Relic: '#ff8a65'
-            };
-
-            const applyStateSnapshot = (saved) => {
-                if (!saved || typeof saved !== 'object') return;
-                if (typeof saved.searchQuery === 'string') searchQuery.value = saved.searchQuery;
-                if (typeof saved.selectedSource === 'string') selectedSource.value = saved.selectedSource;
-                if (typeof saved.selectedRarity === 'string') selectedRarity.value = saved.selectedRarity;
-                if (saved.currentPage !== undefined) {
-                    const p = parseInt(saved.currentPage, 10);
-                    currentPage.value = Number.isFinite(p) && p > 0 ? p : 1;
-                }
-            };
-            const persistState = () => {
-                if (hydratingState || !window.AppSettings) return;
-                window.AppSettings.setPrefSync(PREF_STATE_KEY, {
-                    searchQuery: searchQuery.value,
-                    selectedSource: selectedSource.value,
-                    selectedRarity: selectedRarity.value,
-                    currentPage: currentPage.value
-                });
-            };
-
-            const getSelectedGamePath = () => window.getSelectedCodexGamePath ? window.getSelectedCodexGamePath() : '';
-            const installOptions = ref([]);
-            const selectedGamePath = ref('');
-            let syncingGamePath = false;
-
-            const applyGamePathState = (state) => {
-                syncingGamePath = true;
-                installOptions.value = Array.isArray(state && state.installOptions) ? state.installOptions : [];
-                selectedGamePath.value = String((state && state.selectedGamePath) || getSelectedGamePath() || '');
-                syncingGamePath = false;
-            };
-            const syncGamePathPicker = async () => {
-                if (!window.CodexGamePathApi || !window.CodexGamePathApi.getState) {
-                    applyGamePathState({ installOptions: [], selectedGamePath: getSelectedGamePath() });
-                    return;
-                }
-                applyGamePathState((await window.CodexGamePathApi.getState()) || {});
-            };
-            const refreshGamePaths = async () => {
-                if (!window.CodexGamePathApi || !window.CodexGamePathApi.refresh) return;
-                applyGamePathState((await window.CodexGamePathApi.refresh()) || {});
-            };
-            const openSelectedGamePath = async () => {
-                if (!window.CodexGamePathApi || !window.CodexGamePathApi.openSelectedPath) return;
-                await window.CodexGamePathApi.openSelectedPath(selectedGamePath.value);
-            };
-            const handleCodexGamePathChanged = async () => {
-                try {
-                    isLoading.value = true;
-                    await syncGamePathPicker();
-                    await loadFish(false);
-                } catch (err) {
-                    loadError.value = String((err && err.message) || err || 'Failed to load data from game files.');
-                } finally {
-                    isLoading.value = false;
-                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
-                }
-            };
-
-            const escapeHtml = (txt) => String(txt || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-            const normalizeCatalogImageId = (value) => String(value || '')
-                .replace(/\.blueprint$/i, '').replace(/\\/g, '/').replace(/^\$+/, '')
-                .replace(/^\/+/, '').replace(/^[^a-z0-9_/]+/i, '').trim().toLowerCase();
-            const highlightSearch = (text) => {
-                const q = searchQuery.value.trim();
-                const safe = escapeHtml(text || '');
-                if (!q) return safe;
-                const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                return safe.replace(new RegExp(`(${escaped})`, 'ig'), '<mark>$1</mark>');
-            };
-            const rarityColor = (r) => RARITY_COLORS[r] || 'var(--text-muted)';
-            const trophyCount = (fish) => fish.trophies ? Object.keys(fish.trophies).length : 0;
-            const weightText = (fish) => (fish.weight_min != null && fish.weight_max != null)
-                ? `${fish.weight_min} - ${fish.weight_max}` : '';
-
-            const filteredFish = computed(() => {
-                let result = fishData.value.slice();
-                const sq = searchQuery.value.toLowerCase().trim();
-                if (sq.length >= 3) {
-                    let general = sq;
-                    const filters = { name: null, source: null, rarity: null, path: null };
-                    const regex = /(name|source|rarity|path):("([^"]+)"|([^\s]+))/g;
-                    let m;
-                    while ((m = regex.exec(sq)) !== null) {
-                        filters[m[1]] = (m[3] || m[4] || '').toLowerCase();
-                        general = general.replace(m[0], '');
-                    }
-                    general = general.trim();
-                    result = result.filter(f => {
-                        const name = String(f.name || '').toLowerCase();
-                        const source = String(f.source || '').toLowerCase();
-                        const rarity = String(f.rarity || '').toLowerCase();
-                        const path = String(f.filename || '').toLowerCase();
-                        const desc = String(f.desc || '').toLowerCase();
-                        if (filters.name && !name.includes(filters.name)) return false;
-                        if (filters.source && !source.includes(filters.source)) return false;
-                        if (filters.rarity && !rarity.includes(filters.rarity)) return false;
-                        if (filters.path && !path.includes(filters.path)) return false;
-                        if (general.length > 0 && !`${name} ${source} ${rarity} ${path} ${desc}`.includes(general)) return false;
-                        return true;
-                    });
-                }
-                if (selectedSource.value !== 'All') result = result.filter(f => f.source === selectedSource.value);
-                if (selectedRarity.value !== 'All') result = result.filter(f => f.rarity === selectedRarity.value);
-                return [...result].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-            });
-
-            // Group the filtered fish by liquid (source). Inside each group, sort by
-            // rarity Common -> Rare so the section reads naturally.
-            const groupedFish = computed(() => {
-                const groups = new Map();
-                for (const f of filteredFish.value) {
-                    const label = f.source || 'Other';
-                    if (!groups.has(label)) groups.set(label, []);
-                    groups.get(label).push(f);
-                }
-                const arr = Array.from(groups.entries()).map(([label, list]) => {
-                    list.sort((a, b) => {
-                        const ra = (RARITY_ORDER.indexOf(String(a.rarity || '').toLowerCase()) + 1) || 99;
-                        const rb = (RARITY_ORDER.indexOf(String(b.rarity || '').toLowerCase()) + 1) || 99;
-                        if (ra !== rb) return ra - rb;
-                        return String(a.name || '').localeCompare(String(b.name || ''));
-                    });
-                    return { label, fish: list, count: list.length };
-                });
-                arr.sort((a, b) => a.label.localeCompare(b.label));
-                return arr;
-            });
-
-            const totalPages = computed(() => Math.max(1, Math.ceil(groupedFish.value.length / pageSize.value)));
-            const paginatedGroups = computed(() => groupedFish.value.slice((currentPage.value - 1) * pageSize.value, currentPage.value * pageSize.value));
-            const visibleStart = computed(() => groupedFish.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1);
-            const visibleEnd = computed(() => groupedFish.value.length === 0 ? 0 : Math.min(currentPage.value * pageSize.value, groupedFish.value.length));
-            const pageNumbers = computed(() => {
-                const total = totalPages.value, current = currentPage.value;
-                const pages = new Set([1, total, current - 1, current, current + 1]);
-                return Array.from(pages).filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
-            });
-            const setPage = (p) => { currentPage.value = Math.min(totalPages.value, Math.max(1, p)); };
-            const nextPage = () => setPage(currentPage.value + 1);
-            const prevPage = () => setPage(currentPage.value - 1);
-
-            watch([searchQuery, selectedSource, selectedRarity], () => { currentPage.value = 1; });
-            watch(totalPages, (n) => { if (currentPage.value > n) currentPage.value = n; });
-            watch([searchQuery, selectedSource, selectedRarity, currentPage], persistState, { deep: true });
-            watch(selectedGamePath, async (newVal, oldVal) => {
-                if (syncingGamePath || !window.CodexGamePathApi || !window.CodexGamePathApi.setSelectedPath || newVal === oldVal) return;
-                applyGamePathState((await window.CodexGamePathApi.setSelectedPath(newVal)) || {});
-            });
-
-            const loadFish = async (forceRefresh = false) => {
-                loadError.value = '';
-                if (!(window.eel && eel.get_fish_data)) throw new Error('Backend fish endpoint is unavailable');
-                const response = await eel.get_fish_data(forceRefresh, getSelectedGamePath())();
-                if (!response || response.success === false) {
-                    throw new Error((response && response.error) || 'Failed to retrieve fish data from backend');
-                }
-                const cacheUrl = String((response && response.cache_file) || (response && response.meta && response.meta.cache && response.meta.cache.cache_url) || '').trim();
-                let data;
-                if (cacheUrl) {
-                    const cacheResp = await fetch(cacheUrl, { cache: 'no-store' });
-                    if (!cacheResp.ok) throw new Error(`Failed to load fish cache file (${cacheResp.status})`);
-                    data = await cacheResp.json();
-                } else {
-                    data = (response && response.data && typeof response.data === 'object') ? response.data : response;
-                }
-
+        const kit = window.CodexView.create({
+            key: 'fish',
+            singular: 'fish',
+            plural: 'fish',
+            filters: { selectedSource: 'All', selectedRarity: 'All' },
+            sourceText: {
+                'game-cache': 'fish.loaded_fish_data_from_cached_game_file_s_1562da',
+                'game-cache-stale': 'fish.loaded_fish_data_from_cache_refreshing_i_e9df1d',
+                'game-live': 'fish.loaded_fish_data_from_live_game_files',
+            },
+            ingest: (data) => {
                 const sources = new Set(), rarities = new Set();
                 fishData.value = Object.keys(data).map(key => {
                     const row = data[key];
@@ -209,99 +30,111 @@ function initFishView() {
                     if (row.rarity) rarities.add(row.rarity);
                     return {
                         id: key, ...row,
-                        imagePath: `https://trovesaurus.com/data/catalog/${normalizeCatalogImageId(row.blueprint || row.filename || key)}.png`,
+                        imagePath: kit.catalogImage(row.blueprint || row.filename || key),
                     };
                 });
                 sourceOptions.value = [['All Sources', 'All'], ...Array.from(sources).sort().map(s => [s, s])];
                 rarityOptions.value = [['All Rarities', 'All'], ...Array.from(rarities)
                     .sort((a, b) => (RARITY_ORDER.indexOf(a) + 1 || 99) - (RARITY_ORDER.indexOf(b) + 1 || 99))
                     .map(r => [r, r])];
+            },
+        });
+        const { searchQuery, t } = kit;
+        const { selectedSource, selectedRarity } = kit.filters;
 
-                const source = (response && response.source) || '';
-                if (source === 'game-cache') dataSourceText.value = t('fish.loaded_fish_data_from_cached_game_file_s_1562da');
-                else if (source === 'game-cache-stale') dataSourceText.value = t('fish.loaded_fish_data_from_cache_refreshing_i_e9df1d');
-                else if (source === 'game-live') dataSourceText.value = t('fish.loaded_fish_data_from_live_game_files');
-                else dataSourceText.value = '';
-            };
+        const rarityColor = (r) => RARITY_COLORS[r] || 'var(--text-muted)';
+        const trophyCount = (fish) => fish.trophies ? Object.keys(fish.trophies).length : 0;
+        const weightText = (fish) => (fish.weight_min != null && fish.weight_max != null)
+            ? `${fish.weight_min} - ${fish.weight_max}` : '';
 
-            const exportCsv = () => {
-                if (!window.CodexExport) return;
-                const { joinList } = window.CodexExport;
-                window.CodexExport.run({
-                    rows: filteredFish.value,
-                    basename: 'fish',
-                    t,
-                    columns: [
-                        { label: 'Name', value: (row) => t(row.name) },
-                        { label: 'Source', value: (row) => t(row.source || '') },
-                        { label: 'Rarity', value: (row) => t(row.rarity || '') },
-                        { label: 'Description', value: (row) => t(row.desc || '') },
-                        { label: 'Weight Min', value: (row) => (row.weight_min === null || row.weight_min === undefined ? '' : row.weight_min) },
-                        { label: 'Weight Max', value: (row) => (row.weight_max === null || row.weight_max === undefined ? '' : row.weight_max) },
-                        { label: 'Trophy Count', value: (row) => trophyCount(row) },
-                        // trophies is {basic|silver|gold: deco path}; the slots are what the card shows.
-                        { label: 'Trophy Variants', value: (row) => joinList(Object.keys(row.trophies || {})) },
-                        { label: 'Tradable', value: (row) => (row.tradable === null || row.tradable === undefined ? '' : t(row.tradable ? 'Tradable' : 'Untradable')) },
-                        { label: 'Path', value: (row) => row.filename || '' },
-                        { label: 'Blueprint', value: (row) => row.blueprint || '' },
-                        { label: 'ID', value: (row) => row.id || '' },
-                    ],
+        const filteredFish = computed(() => {
+            let result = fishData.value.slice();
+            const sq = searchQuery.value.toLowerCase().trim();
+            if (sq.length >= 3) {
+                let general = sq;
+                const filters = { name: null, source: null, rarity: null, path: null };
+                const regex = /(name|source|rarity|path):("([^"]+)"|([^\s]+))/g;
+                let m;
+                while ((m = regex.exec(sq)) !== null) {
+                    filters[m[1]] = (m[3] || m[4] || '').toLowerCase();
+                    general = general.replace(m[0], '');
+                }
+                general = general.trim();
+                result = result.filter(f => {
+                    const name = String(f.name || '').toLowerCase();
+                    const source = String(f.source || '').toLowerCase();
+                    const rarity = String(f.rarity || '').toLowerCase();
+                    const path = String(f.filename || '').toLowerCase();
+                    const desc = String(f.desc || '').toLowerCase();
+                    if (filters.name && !name.includes(filters.name)) return false;
+                    if (filters.source && !source.includes(filters.source)) return false;
+                    if (filters.rarity && !rarity.includes(filters.rarity)) return false;
+                    if (filters.path && !path.includes(filters.path)) return false;
+                    if (general.length > 0 && !`${name} ${source} ${rarity} ${path} ${desc}`.includes(general)) return false;
+                    return true;
                 });
-            };
+            }
+            if (selectedSource.value !== 'All') result = result.filter(f => f.source === selectedSource.value);
+            if (selectedRarity.value !== 'All') result = result.filter(f => f.rarity === selectedRarity.value);
+            return [...result].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+        });
 
-            const clearCacheAndReload = async () => {
-                try {
-                    isLoading.value = true;
-                    if (window.eel && eel.clear_fish_cache) await eel.clear_fish_cache()();
-                    await loadFish(true);
-                } finally {
-                    isLoading.value = false;
-                    nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
-                }
-            };
-
-            onMounted(async () => {
-                hydratingState = true;
-                if (window.AppSettings) {
-                    await window.AppSettings.load();
-                    applyStateSnapshot(window.AppSettings.getPref(PREF_STATE_KEY, null));
-                }
-                await syncGamePathPicker();
-                try { await loadFish(false); }
-                catch (err) { loadError.value = String((err && err.message) || err || 'Failed to load fish from game files.'); }
-                isLoading.value = false;
-                nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
-                hydratingState = false;
-                document.addEventListener('codex_game_path_changed', handleCodexGamePathChanged);
+        // Group the filtered fish by liquid (source). Inside each group, sort by
+        // rarity Common -> Rare so the section reads naturally.
+        const groupedFish = computed(() => {
+            const groups = new Map();
+            for (const f of filteredFish.value) {
+                const label = f.source || 'Other';
+                if (!groups.has(label)) groups.set(label, []);
+                groups.get(label).push(f);
+            }
+            const arr = Array.from(groups.entries()).map(([label, list]) => {
+                list.sort((a, b) => {
+                    const ra = (RARITY_ORDER.indexOf(String(a.rarity || '').toLowerCase()) + 1) || 99;
+                    const rb = (RARITY_ORDER.indexOf(String(b.rarity || '').toLowerCase()) + 1) || 99;
+                    if (ra !== rb) return ra - rb;
+                    return String(a.name || '').localeCompare(String(b.name || ''));
+                });
+                return { label, fish: list, count: list.length };
             });
-            onBeforeUnmount(() => {
-                document.removeEventListener('codex_game_path_changed', handleCodexGamePathChanged);
-            });
+            arr.sort((a, b) => a.label.localeCompare(b.label));
+            return arr;
+        });
+        kit.paginate(groupedFish);
 
-            return {
-                t, isLoading, loadError, fishData, filteredFish,
-                groupedFish, paginatedGroups,
-                searchQuery, selectedSource, selectedRarity, sourceOptions, rarityOptions,
-                currentPage, totalPages, pageNumbers, visibleStart, visibleEnd,
-                setPage, nextPage, prevPage, rarityColor, trophyCount, weightText,
-                selectedGamePath, installOptions, openSelectedGamePath, refreshGamePaths,
-                highlightSearch, clearCacheAndReload, exportCsv, dataSourceText
-            };
-        }
+        const exportCsv = () => {
+            if (!window.CodexExport) return;
+            const { joinList } = window.CodexExport;
+            window.CodexExport.run({
+                rows: filteredFish.value,
+                basename: 'fish',
+                t,
+                columns: [
+                    { label: 'Name', value: (row) => t(row.name) },
+                    { label: 'Source', value: (row) => t(row.source || '') },
+                    { label: 'Rarity', value: (row) => t(row.rarity || '') },
+                    { label: 'Description', value: (row) => t(row.desc || '') },
+                    { label: 'Weight Min', value: (row) => (row.weight_min === null || row.weight_min === undefined ? '' : row.weight_min) },
+                    { label: 'Weight Max', value: (row) => (row.weight_max === null || row.weight_max === undefined ? '' : row.weight_max) },
+                    { label: 'Trophy Count', value: (row) => trophyCount(row) },
+                    // trophies is {basic|silver|gold: deco path}; the slots are what the card shows.
+                    { label: 'Trophy Variants', value: (row) => joinList(Object.keys(row.trophies || {})) },
+                    { label: 'Tradable', value: (row) => (row.tradable === null || row.tradable === undefined ? '' : t(row.tradable ? 'Tradable' : 'Untradable')) },
+                    { label: 'Path', value: (row) => row.filename || '' },
+                    { label: 'Blueprint', value: (row) => row.blueprint || '' },
+                    { label: 'ID', value: (row) => row.id || '' },
+                ],
+            });
+        };
+
+        return {
+            ...kit.expose(),
+            fishData, filteredFish, groupedFish,
+            paginatedGroups: kit.paginatedItems,
+            sourceOptions, rarityOptions,
+            rarityColor, trophyCount, weightText, exportCsv,
+        };
     });
-
-    try {
-        if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
-        if (window._fishApp) window._fishApp.unmount();
-        window._fishApp = app;
-        app.mount('#fish-vue-app');
-    } catch (err) {
-        console.error("Failed to initialize Fish Codex app:", err);
-        root.removeAttribute('v-cloak');
-        root.innerHTML = `<div class="search-stats" style="color: var(--danger-ink); padding: var(--t-5);">Failed to initialize Fish Codex: ${String((err && err.message) || err)}</div>`;
-    } finally {
-        delete root.dataset.fishInitializing;
-    }
 }
 
 // Init is driven solely by the `fish_loaded` event, which codexes.js dispatches

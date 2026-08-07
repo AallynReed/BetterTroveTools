@@ -205,7 +205,7 @@ window.BTT_VIEW_SCRIPTS = {
         'js/gems_and_builds/gem_simulator.js',
     ],
     calculators: ['js/calculators.js'],
-    codexes: ['js/codexes/codex_export.js', 'js/codexes/index.js'],
+    codexes: ['js/codexes/codex_export.js', 'js/codexes/codex_view.js', 'js/codexes/index.js'],
     settings: ['js/settings.js'],
     about: ['js/about.js'],
     account: ['js/account.js'],
