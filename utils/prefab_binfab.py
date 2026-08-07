@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import html
-import json
 import math
 import re
 import struct
@@ -10,8 +9,6 @@ from pathlib import Path
 
 ASCII_STRING_RE = re.compile(rb"[ -~]{4,}")
 ALLOWED_STRING_RE = re.compile(r"^[A-Za-z0-9_/\.\$\-]+$")
-TOOLTIP_LI_RE = re.compile(r"<li>(.*?)</li>", re.IGNORECASE | re.DOTALL)
-TOOLTIP_P_RE = re.compile(r"<p>(.*?)</p>", re.IGNORECASE | re.DOTALL)
 
 STAT_GUESSES = {
     0x00: "PhysicalDamage",
@@ -170,19 +167,6 @@ def _clean_ascii_string(raw: bytes) -> str:
     return text.strip()
 
 
-def _clean_html_text(text: str) -> str:
-    text = re.sub(r"<[^>]+>", "", text)
-    return html.unescape(" ".join(text.split())).strip()
-
-
-def parse_tooltip(tooltip_html: str) -> dict:
-    tooltip_html = tooltip_html or ""
-    stats = [_clean_html_text(match) for match in TOOLTIP_LI_RE.findall(tooltip_html) if _clean_html_text(match)]
-    paragraphs = [_clean_html_text(match) for match in TOOLTIP_P_RE.findall(tooltip_html) if _clean_html_text(match)]
-    abilities = [p for p in paragraphs if p.lower() != "ally"]
-    return {"stats": stats, "abilities": abilities}
-
-
 def extract_strings(data: bytes) -> list[dict]:
     entries = []
     for match in ASCII_STRING_RE.finditer(data):
@@ -276,6 +260,55 @@ def format_stat_display(value: float, stat_name: str, *, is_percent: bool = Fals
             return f"{int(round(display_value))}%"
         return f"{display_value:.1f}".rstrip("0").rstrip(".") + "%"
     return format_float_value(value)
+
+
+def collection_h2d(first: int, second: int) -> float:
+    denom = 67 - second
+    if first > 128:
+        return 2 * (128 / math.pow(4, denom)) + 2 * (first - 128) / math.pow(4, denom)
+    return 128 / math.pow(4, denom) + first / math.pow(4, denom)
+
+
+# Movement stats a mount/wings collection component stores inline, as a marker
+# preceded by the two value bytes. Recovered only when the prefab's stat records
+# don't already carry the stat -- see parse_binfab_content(collection_fallbacks=).
+COLLECTION_VALUE_MARKERS = (
+    (b"\x38\x10ground_movespeedF", "ground_movespeed", "MovementSpeed", "Movement Speed", "Mount"),
+    (b"\x38\x0Ewing_movespeedF", "wing_movespeed", "MovementSpeed", "Movement Speed", "Wings"),
+    (b"\x38\x1Cyellow_dragon_wing_movespeedF", "wing_movespeed", "MovementSpeed", "Movement Speed", "Wings"),
+    (b"\x38\x0Fglide_movespeedF", "glide_movespeed", "Glide", "Glide", "Wings"),
+)
+
+
+def extract_collection_value_stats(data: bytes) -> list[dict]:
+    extracted = []
+    seen = set()
+    for marker, source, stat_name, label, component_type in COLLECTION_VALUE_MARKERS:
+        start = 0
+        while True:
+            index = data.find(marker, start)
+            if index < 2:
+                break
+            value = collection_h2d(data[index - 2], data[index - 1])
+            key = (source, round(value, 6))
+            if key not in seen:
+                seen.add(key)
+                extracted.append(
+                    {
+                        "source": source,
+                        "stat": stat_name,
+                        "label": label,
+                        "value": value,
+                        "display_value": value,
+                        "is_percent": False,
+                        "value_display": format_float_value(value),
+                        "display": format_float_value(value),
+                        "group": "",
+                        "component_type": component_type,
+                    }
+                )
+            start = index + 1
+    return extracted
 
 
 def zig_zag_decode(value: int) -> int:
@@ -582,11 +615,6 @@ def inspect_pet_prefab_stats_content(contents: bytes, source_name: str = "") -> 
     return analysis
 
 
-def inspect_pet_prefab_stats(path: str | Path) -> dict:
-    path = Path(path)
-    return inspect_pet_prefab_stats_content(path.read_bytes(), str(path))
-
-
 def build_stat_lines(records: list[dict]) -> list[str]:
     lines = []
     seen = set()
@@ -618,7 +646,33 @@ def build_tooltip_html(stat_lines: list[str], abilities: list[str]) -> str:
     return "\r\n".join(parts)
 
 
-def parse_ally_binfab_content(data: bytes, source_name: str = "") -> dict:
+def _extracted_stat_row(record: dict) -> dict:
+    stat_name = record["decoded_stat_name"]
+    display_value, is_percent = get_stat_display_value(record)
+    display = format_stat_display(display_value, stat_name, is_percent=is_percent)
+    return {
+        "source": record["label"],
+        "stat": stat_name,
+        "label": STAT_LABELS.get(stat_name, stat_name),
+        "value": record["value"],
+        "display_value": display_value,
+        "is_percent": is_percent,
+        "value_display": display,
+        "display": display,
+        "group": record.get("group_display", ""),
+        "component_type": record.get("component_type", ""),
+    }
+
+
+def parse_binfab_content(data: bytes, source_name: str = "", *, collection_fallbacks: bool = False) -> dict:
+    """Parse one prefab .binfab into stat records, abilities and display strings.
+
+    ``collection_fallbacks`` is the mount/dragon variant: movement stats the
+    stat records don't carry are recovered from the collection component markers
+    instead, and the display lines are derived from that merged stat list rather
+    than from the records alone. Allies leave it off -- their prefabs have no
+    collection movement component, and their lines come straight from the records.
+    """
     analysis = inspect_pet_prefab_stats_content(data, source_name)
     strings = extract_strings(data)
 
@@ -637,7 +691,24 @@ def parse_ally_binfab_content(data: bytes, source_name: str = "") -> dict:
         elif "abilities/" in lowered:
             abilities.append(text)
 
-    stat_lines = build_stat_lines(analysis["records"])
+    extracted_stats = [
+        _extracted_stat_row(record)
+        for record in analysis["records"]
+        if record["decoded_stat_name"]
+    ]
+
+    if collection_fallbacks:
+        existing_sources = {row["source"] for row in extracted_stats}
+        extracted_stats.extend(
+            row for row in extract_collection_value_stats(data)
+            if row["source"] not in existing_sources
+        )
+        stat_lines = list(dict.fromkeys(
+            f"{row['display']} {row['label']}".strip() for row in extracted_stats
+        ))
+    else:
+        stat_lines = build_stat_lines(analysis["records"])
+
     ability_ids = list(dict.fromkeys(abilities))
 
     return {
@@ -646,65 +717,9 @@ def parse_ally_binfab_content(data: bytes, source_name: str = "") -> dict:
         "records": analysis["records"],
         "stat_lines": stat_lines,
         "tooltip": build_tooltip_html(stat_lines, []),
-        "extracted_stats": [
-            {
-                "source": record["label"],
-                "stat": record["decoded_stat_name"],
-                "label": STAT_LABELS.get(record["decoded_stat_name"], record["decoded_stat_name"]),
-                "value": record["value"],
-                "display_value": get_stat_display_value(record)[0],
-                "is_percent": get_stat_display_value(record)[1],
-                "value_display": format_stat_display(
-                    get_stat_display_value(record)[0],
-                    record["decoded_stat_name"],
-                    is_percent=get_stat_display_value(record)[1],
-                ),
-                "display": format_stat_display(
-                    get_stat_display_value(record)[0],
-                    record["decoded_stat_name"],
-                    is_percent=get_stat_display_value(record)[1],
-                ),
-                "group": record.get("group_display", ""),
-                "component_type": record.get("component_type", ""),
-            }
-            for record in analysis["records"]
-            if record["decoded_stat_name"]
-        ],
+        "extracted_stats": extracted_stats,
         "extracted_abilities": ability_ids,
         "blueprint": blueprint,
         "npc_path": npc_path,
         "strings": strings,
     }
-
-
-def parse_ally_binfab(path: str | Path) -> dict:
-    path = Path(path)
-    return parse_ally_binfab_content(path.read_bytes(), str(path))
-
-
-def resolve_ally_binfab(path: str | Path, allies_data: dict, ally_key: str) -> dict:
-    parsed = parse_ally_binfab(path)
-    ally = allies_data.get(ally_key, {})
-    tooltip = parse_tooltip(ally.get("tooltip", ""))
-    return {
-        "ally_key": ally_key,
-        "ally_name": ally.get("name", ally_key),
-        "path": parsed["path"],
-        "records": parsed["records"],
-        "stat_lines": parsed["stat_lines"],
-        "tooltip": parsed["tooltip"],
-        "extracted_stats": parsed["extracted_stats"],
-        "extracted_abilities": parsed["extracted_abilities"],
-        "blueprint": parsed["blueprint"],
-        "npc_path": parsed["npc_path"],
-        "expected_result": {
-            "source": "allies.json tooltip",
-            "stats": tooltip["stats"],
-            "abilities": tooltip["abilities"],
-        },
-        "analysis": parsed["analysis"],
-    }
-
-
-def load_allies_json(path: str | Path) -> dict:
-    return json.loads(Path(path).read_text(encoding="utf-8"))

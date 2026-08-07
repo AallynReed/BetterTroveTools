@@ -20,7 +20,7 @@ from models.trove.prefab_ally import (
     resolve_blueprint_catalog_path,
     resolve_localized_value,
 )
-from utils.mount_binfab import extract_strings, parse_ally_binfab_content
+from utils.prefab_binfab import extract_strings, parse_binfab_content
 
 
 MOUNT_PREFIX = "collections/mount/"
@@ -191,7 +191,7 @@ async def load_mount_prefabs(game_path: Path, matches: list[dict]) -> list[dict]
                 {
                     **match,
                     "content": content,
-                    "parsed": parse_ally_binfab_content(content, match["prefab_path"]),
+                    "parsed": parse_binfab_content(content, match["prefab_path"], collection_fallbacks=True),
                 }
             )
     return loaded

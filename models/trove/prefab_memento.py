@@ -19,7 +19,7 @@ from models.trove.prefab_ally import (
     resolve_blueprint_catalog_path,
     resolve_localized_value,
 )
-from utils.mount_binfab import extract_strings
+from utils.prefab_binfab import extract_strings
 
 
 ITEM_UNLOCKER_PREFIX = "item/unlocker/"

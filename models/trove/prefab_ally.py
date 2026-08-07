@@ -9,7 +9,7 @@ from pathlib import Path
 
 from binary_reader import BinaryReader
 
-from utils.ally_binfab import extract_strings, parse_ally_binfab_content
+from utils.prefab_binfab import extract_strings, parse_binfab_content
 from utils.registry import get_trove_locations
 from utils.executable import find_trove_executable
 from utils.binfab_reader import parse_collection_table, read_uleb
@@ -661,7 +661,7 @@ async def load_pet_prefabs(game_path: Path, matches: list[dict]) -> list[dict]:
                     **match,
                     "content": content,
                     "source_name": match["prefab_path"],
-                    "parsed": parse_ally_binfab_content(content, match["prefab_path"]),
+                    "parsed": parse_binfab_content(content, match["prefab_path"]),
                 }
             )
     return loaded
