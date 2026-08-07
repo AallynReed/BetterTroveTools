@@ -4,56 +4,12 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 150.0,
+                "value": 187.5,
                 "percentage": false
             },
             {
                 "name": "Critical Damage",
-                "value": 30.0,
-                "percentage": true
-            }
-        ],
-        "abilities": [
-        ]
-    },
-    "trex_manabeast_fire": {
-        "qualified_name": "[PD|CD|LT] Mini Fire Manabeast",
-        "stats": [
-            {
-                "name": "Light",
-                "value": 200.0,
-                "percentage": false
-            },
-            {
-                "name": "Physical Damage",
-                "value": 25.0,
-                "percentage": true
-            },
-            {
-                "name": "Critical Damage",
-                "value": 15.0,
-                "percentage": true
-            }
-        ],
-        "abilities": [
-        ]
-    },
-    "trex_manabeast_water": {
-        "qualified_name": "[MD|CD|LT] Mini Water Manabeast",
-        "stats": [
-            {
-                "name": "Light",
-                "value": 200.0,
-                "percentage": false
-            },
-            {
-                "name": "Magic Damage",
-                "value": 25.0,
-                "percentage": true
-            },
-            {
-                "name": "Critical Damage",
-                "value": 15.0,
+                "value": 34.5,
                 "percentage": true
             }
         ],
@@ -65,17 +21,17 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 450.0,
+                "value": 562.5,
                 "percentage": false
             },
             {
                 "name": "Physical Damage",
-                "value": 10.0,
+                "value": 11.5,
                 "percentage": true
             },
             {
                 "name": "Magic Damage",
-                "value": 10.0,
+                "value": 11.5,
                 "percentage": true
             }
         ],
@@ -87,13 +43,18 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 450.0,
+                "value": 562.5,
                 "percentage": false
             },
             {
                 "name": "Physical Damage",
-                "value": 10.0,
+                "value": 11.5,
                 "percentage": true
+            },
+            {
+                "name": "Stability",
+                "value": 22.5,
+                "percentage": false
             }
         ],
         "abilities": [
@@ -104,12 +65,12 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 400.0,
+                "value": 500.0,
                 "percentage": false
             },
             {
                 "name": "Magic Damage",
-                "value": 25.0,
+                "value": 28.75,
                 "percentage": true
             }
         ],
@@ -122,12 +83,12 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 400.0,
+                "value": 500.0,
                 "percentage": false
             },
             {
                 "name": "Physical Damage",
-                "value": 25.0,
+                "value": 28.75,
                 "percentage": true
             }
         ],
@@ -141,12 +102,12 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 400.0,
+                "value": 500.0,
                 "percentage": false
             },
             {
                 "name": "Movement Speed",
-                "value": 8.0,
+                "value": 12.0,
                 "percentage": false
             }
         ],

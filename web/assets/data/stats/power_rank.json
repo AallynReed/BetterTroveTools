@@ -45,7 +45,7 @@
         "name": "Ally",
         "type": "switch",
         "percentage": false,
-        "value": 75
+        "value": 112.5
     },
     {
         "name": "Flask",
