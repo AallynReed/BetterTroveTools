@@ -31,6 +31,7 @@ except ImportError:  # headless / no Tk (e.g. some Linux/web hosts)
     tk = None
     filedialog = None
 
+from backend.response import resp
 from backend.home import KIWI_API_BASE
 from models.trove.mod import TMod, TroveModFile, TroveModList
 from utils.functions import chunks, read_leb128, write_leb128
@@ -42,16 +43,6 @@ VALID_SORTS = {"recent", "downloads", "new", "title"}
 MODPACK_PAGE_BASE = "https://trove.aallyn.net/modpacks"
 
 
-def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
-    payload = {
-        "success": success,
-        "code": code or ("OK" if success else "ERROR"),
-        "data": data if data is not None else {},
-        "error": error,
-        "meta": meta or {},
-    }
-    payload.update(legacy)
-    return payload
 
 
 def _headers():
@@ -351,7 +342,7 @@ def get_modpack_variants(handle, slug):
     A single-variant pack returns one entry."""
     detail = _fetch_modpack_detail(handle, slug)
     if detail is None:
-        return _resp(False, error="Couldn't reach the Modpacks hub to load this pack's variants.", code="MODPACK_VARIANTS_FAILED")
+        return resp(False, error="Couldn't reach the Modpacks hub to load this pack's variants.", code="MODPACK_VARIANTS_FAILED")
 
     variants = []
     for v in (detail.get("variants") or []):
@@ -369,7 +360,7 @@ def get_modpack_variants(handle, slug):
         })
 
     title = detail.get("title") or _ref(handle, slug)
-    return _resp(True, data={"title": title, "default_variant": detail.get("default_variant"), "variants": variants},
+    return resp(True, data={"title": title, "default_variant": detail.get("default_variant"), "variants": variants},
                  title=title, default_variant=detail.get("default_variant"), variants=variants)
 
 
@@ -439,18 +430,18 @@ def install_modpack(game_path_str, handle, slug, variant=None):
     a count of installed mods + the names quarantined."""
     try:
         if not game_path_str:
-            return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
+            return resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
 
         data, error = _download_tpack(handle, slug, variant)
         if error:
-            return _resp(False, error=error, code="MODPACK_DOWNLOAD_FAILED")
+            return resp(False, error=error, code="MODPACK_DOWNLOAD_FAILED")
 
         ok, error, result = _install_tpack_bytes(game_path_str, data)
         if not ok:
-            return _resp(False, error=error, code="MODPACK_INSTALL_FAILED")
-        return _resp(True, data=result, **result)
+            return resp(False, error=error, code="MODPACK_INSTALL_FAILED")
+        return resp(True, data=result, **result)
     except Exception as e:
-        return _resp(False, error=str(e), code="MODPACK_INSTALL_FAILED")
+        return resp(False, error=str(e), code="MODPACK_INSTALL_FAILED")
 
 
 @eel.expose
@@ -460,9 +451,9 @@ def import_tpack_file(game_path_str):
     Returns the install result, or `cancelled` if the user closed the dialog."""
     try:
         if not game_path_str:
-            return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
+            return resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
         if filedialog is None:
-            return _resp(False, error="A file dialog isn't available on this platform.", code="NO_FILE_DIALOG")
+            return resp(False, error="A file dialog isn't available on this platform.", code="NO_FILE_DIALOG")
 
         root = tk.Tk()
         root.attributes("-topmost", True)
@@ -475,16 +466,16 @@ def import_tpack_file(game_path_str):
         root.destroy()
 
         if not file_path:
-            return _resp(True, data={"cancelled": True}, cancelled=True)
+            return resp(True, data={"cancelled": True}, cancelled=True)
 
         data = Path(file_path).read_bytes()
         ok, error, result = _install_tpack_bytes(game_path_str, data)
         if not ok:
-            return _resp(False, error=error, code="TPACK_IMPORT_FAILED")
+            return resp(False, error=error, code="TPACK_IMPORT_FAILED")
 
         payload = dict(result)
         payload["cancelled"] = False
         payload["source"] = Path(file_path).name
-        return _resp(True, data=payload, **payload)
+        return resp(True, data=payload, **payload)
     except Exception as e:
-        return _resp(False, error=str(e), code="TPACK_IMPORT_FAILED")
+        return resp(False, error=str(e), code="TPACK_IMPORT_FAILED")

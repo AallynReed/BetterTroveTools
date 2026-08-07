@@ -32,7 +32,8 @@ from backend.mod_manager.modpacks import (USER_AGENT, _decompile_tpack,
                                           _decompile_tpack_meta,
                                           _download_tpack, _install_tpack_bytes,
                                           _name_from_filename, _rebuild_tpack,
-                                          _resp, _unique_path)
+                                          _unique_path)
+from backend.response import resp
 from utils.path import get_app_data_dir
 from utils.registry import TroveGamePath
 
@@ -206,9 +207,9 @@ def list_profiles():
         manifest = _load_manifest()
         profiles = list(manifest.get("profiles", []))
         profiles.sort(key=lambda p: (p.get("created_at") or 0), reverse=True)
-        return _resp(True, data={"profiles": profiles}, profiles=profiles)
+        return resp(True, data={"profiles": profiles}, profiles=profiles)
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILES_LIST_FAILED")
+        return resp(False, error=str(e), code="PROFILES_LIST_FAILED")
 
 
 @eel.expose
@@ -217,14 +218,14 @@ def save_modpack_as_profile(handle, slug, variant=None, display_name="", created
     try:
         data, error = _download_tpack(handle, slug, variant)
         if error:
-            return _resp(False, error=error, code="MODPACK_DOWNLOAD_FAILED")
+            return resp(False, error=error, code="MODPACK_DOWNLOAD_FAILED")
 
         try:
             entries = _decompile_tpack(data)
         except Exception as e:
-            return _resp(False, error=f"Couldn't read the modpack file: {e}", code="TPACK_READ_FAILED")
+            return resp(False, error=f"Couldn't read the modpack file: {e}", code="TPACK_READ_FAILED")
         if not entries:
-            return _resp(False, error="The modpack contained no mods.", code="EMPTY_MODPACK")
+            return resp(False, error="The modpack contained no mods.", code="EMPTY_MODPACK")
 
         manifest = _load_manifest()
         profile_id = uuid.uuid4().hex
@@ -244,9 +245,9 @@ def save_modpack_as_profile(handle, slug, variant=None, display_name="", created
         }
         manifest.setdefault("profiles", []).append(entry)
         _save_manifest(manifest)
-        return _resp(True, data={"profile": entry}, profile=entry)
+        return resp(True, data={"profile": entry}, profile=entry)
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILE_SAVE_FAILED")
+        return resp(False, error=str(e), code="PROFILE_SAVE_FAILED")
 
 
 @eel.expose
@@ -254,18 +255,18 @@ def rename_profile(profile_id, new_name, updated_at=None):
     try:
         name = (new_name or "").strip()
         if not name:
-            return _resp(False, error="A profile name is required.", code="EMPTY_NAME")
+            return resp(False, error="A profile name is required.", code="EMPTY_NAME")
         manifest = _load_manifest()
         entry = _find(manifest, profile_id)
         if not entry:
-            return _resp(False, error="Profile not found.", code="PROFILE_NOT_FOUND")
+            return resp(False, error="Profile not found.", code="PROFILE_NOT_FOUND")
         entry["display_name"] = name
         if updated_at is not None:
             entry["updated_at"] = updated_at
         _save_manifest(manifest)
-        return _resp(True, data={"profile": entry}, profile=entry)
+        return resp(True, data={"profile": entry}, profile=entry)
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILE_RENAME_FAILED")
+        return resp(False, error=str(e), code="PROFILE_RENAME_FAILED")
 
 
 @eel.expose
@@ -279,9 +280,9 @@ def delete_profile(profile_id):
             _profile_file(profile_id).unlink(missing_ok=True)
         except OSError as e:
             print(f"Failed to remove profile file {profile_id}: {e}")
-        return _resp(True, data={"deleted": bool(entry)}, deleted=bool(entry))
+        return resp(True, data={"deleted": bool(entry)}, deleted=bool(entry))
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILE_DELETE_FAILED")
+        return resp(False, error=str(e), code="PROFILE_DELETE_FAILED")
 
 
 @eel.expose
@@ -292,13 +293,13 @@ def check_profile_updates(profile_id):
     try:
         path = _profile_file(profile_id)
         if not path.exists():
-            return _resp(False, error="Profile file not found.", code="PROFILE_FILE_NOT_FOUND")
+            return resp(False, error="Profile file not found.", code="PROFILE_FILE_NOT_FOUND")
         entries = _decompile_tpack(path.read_bytes())
         updates, checked = _resolve_updates(entries)
         public = [{"name": u["name"], "ref": u["ref"], "branch": u["branch"]} for u in updates]
-        return _resp(True, data={"checked": checked, "updates": public}, checked=checked, updates=public)
+        return resp(True, data={"checked": checked, "updates": public}, checked=checked, updates=public)
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILE_UPDATE_CHECK_FAILED")
+        return resp(False, error=str(e), code="PROFILE_UPDATE_CHECK_FAILED")
 
 
 @eel.expose
@@ -309,12 +310,12 @@ def update_profile_file(profile_id, updated_at=None):
     try:
         path = _profile_file(profile_id)
         if not path.exists():
-            return _resp(False, error="Profile file not found.", code="PROFILE_FILE_NOT_FOUND")
+            return resp(False, error="Profile file not found.", code="PROFILE_FILE_NOT_FOUND")
 
         version, props, entries = _decompile_tpack_meta(path.read_bytes())
         updates, _ = _resolve_updates(entries)
         if not updates:
-            return _resp(True, data={"updated": 0}, updated=0)
+            return resp(True, data={"updated": 0}, updated=0)
 
         by_filename = {u["filename"]: u for u in updates}
         new_entries = []
@@ -330,7 +331,7 @@ def update_profile_file(profile_id, updated_at=None):
             new_entries.append((filename, content))
 
         if not updated:
-            return _resp(False, error="Couldn't download any updated mods.", code="PROFILE_UPDATE_DOWNLOAD_FAILED")
+            return resp(False, error="Couldn't download any updated mods.", code="PROFILE_UPDATE_DOWNLOAD_FAILED")
 
         rebuilt = _rebuild_tpack(version, props, new_entries)
 
@@ -340,7 +341,7 @@ def update_profile_file(profile_id, updated_at=None):
         expected = [(n, bytes(c)) for n, c in new_entries]
         actual = [(n, bytes(c)) for n, c in round_trip]
         if actual != expected:
-            return _resp(False, error="Rebuilt modpack failed verification; the saved file was left unchanged.", code="PROFILE_REBUILD_VERIFY_FAILED")
+            return resp(False, error="Rebuilt modpack failed verification; the saved file was left unchanged.", code="PROFILE_REBUILD_VERIFY_FAILED")
 
         path.write_bytes(rebuilt)
 
@@ -352,9 +353,9 @@ def update_profile_file(profile_id, updated_at=None):
                 entry["updated_at"] = updated_at
             _save_manifest(manifest)
 
-        return _resp(True, data={"updated": updated}, updated=updated)
+        return resp(True, data={"updated": updated}, updated=updated)
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILE_UPDATE_FAILED")
+        return resp(False, error=str(e), code="PROFILE_UPDATE_FAILED")
 
 
 def _disable_current_loadout(game_path_str):
@@ -389,20 +390,20 @@ def apply_profile(game_path_str, profile_id):
     profile's mods. Returns counts of installed + disabled mods."""
     try:
         if not game_path_str:
-            return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
+            return resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
         path = _profile_file(profile_id)
         if not path.exists():
-            return _resp(False, error="Profile file not found.", code="PROFILE_FILE_NOT_FOUND")
+            return resp(False, error="Profile file not found.", code="PROFILE_FILE_NOT_FOUND")
 
         data = path.read_bytes()
         disabled = _disable_current_loadout(game_path_str)
 
         ok, error, result = _install_tpack_bytes(game_path_str, data)
         if not ok:
-            return _resp(False, error=error, code="PROFILE_APPLY_FAILED")
+            return resp(False, error=error, code="PROFILE_APPLY_FAILED")
 
         payload = dict(result)
         payload["disabled"] = disabled
-        return _resp(True, data=payload, **payload)
+        return resp(True, data=payload, **payload)
     except Exception as e:
-        return _resp(False, error=str(e), code="PROFILE_APPLY_FAILED")
+        return resp(False, error=str(e), code="PROFILE_APPLY_FAILED")

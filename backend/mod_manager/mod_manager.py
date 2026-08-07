@@ -8,21 +8,12 @@ from pathlib import Path
 import eel
 import requests
 
+from backend.response import resp
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
 from utils.path import get_cache_root
 
 
-def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
-    payload = {
-        "success": success,
-        "code": code or ("OK" if success else "ERROR"),
-        "data": data if data is not None else {},
-        "error": error,
-        "meta": meta or {},
-    }
-    payload.update(legacy)
-    return payload
 
 
 def _cache_root():
@@ -85,7 +76,7 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
         with open(cache_file, "w", encoding="utf-8") as f:
             json.dump({"mods": result_mods}, f)
 
-        return _resp(
+        return resp(
             True,
             data={
                 "cached_file": "/api/cache/installed_mods.json",
@@ -99,7 +90,7 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="INSTALLED_MODS_FAILED")
+        return resp(False, error=str(e), code="INSTALLED_MODS_FAILED")
 
 
 @eel.expose
@@ -111,19 +102,19 @@ def toggle_mod(game_path_str, mod_path_str):
         for mod in mod_list:
             if str(mod.mod_path) == mod_path_str:
                 mod.toggle()
-                return _resp(
+                return resp(
                     True, data={"new_path": str(mod.mod_path)}, new_path=str(mod.mod_path)
                 )
 
-        return _resp(False, error="Could not locate the mod in the parsed list.", code="MOD_NOT_FOUND")
+        return resp(False, error="Could not locate the mod in the parsed list.", code="MOD_NOT_FOUND")
 
     except FileExistsError:
-        return _resp(False, error="A file with the toggled name already exists.", code="TOGGLE_COLLISION")
+        return resp(False, error="A file with the toggled name already exists.", code="TOGGLE_COLLISION")
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="TOGGLE_FAILED")
+        return resp(False, error=str(e), code="TOGGLE_FAILED")
 
 
 @eel.expose
@@ -134,13 +125,13 @@ def delete_mod(game_path_str, mod_path_str):
         mod_path = Path(mod_path_str).resolve()
 
         if not str(mod_path).lower().startswith(str(mods_dir).lower()):
-            return _resp(False, error="Refusing to delete file outside mods directory.", code="INVALID_PATH")
+            return resp(False, error="Refusing to delete file outside mods directory.", code="INVALID_PATH")
 
         if not mod_path.exists():
-            return _resp(False, error="Mod file does not exist.", code="MISSING_FILE")
+            return resp(False, error="Mod file does not exist.", code="MISSING_FILE")
 
         if not mod_path.is_file():
-            return _resp(False, error="Target path is not a file.", code="NOT_A_FILE")
+            return resp(False, error="Target path is not a file.", code="NOT_A_FILE")
 
         trash_dir = _cache_root() / "trash"
         trash_dir.mkdir(parents=True, exist_ok=True)
@@ -157,7 +148,7 @@ def delete_mod(game_path_str, mod_path_str):
         }
         _write_trash_manifest(manifest)
 
-        return _resp(
+        return resp(
             True,
             data={
                 "undo_token": deletion_token,
@@ -173,7 +164,7 @@ def delete_mod(game_path_str, mod_path_str):
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="DELETE_FAILED")
+        return resp(False, error=str(e), code="DELETE_FAILED")
 
 
 @eel.expose
@@ -182,7 +173,7 @@ def undo_delete_mod(undo_token):
         manifest = _read_trash_manifest()
         info = manifest.get(str(undo_token))
         if not info:
-            return _resp(False, error="Undo token not found or expired.", code="UNDO_TOKEN_NOT_FOUND")
+            return resp(False, error="Undo token not found or expired.", code="UNDO_TOKEN_NOT_FOUND")
 
         original_path = Path(info["original_path"])
         trash_path = Path(info["trash_path"])
@@ -190,22 +181,22 @@ def undo_delete_mod(undo_token):
         if not trash_path.exists():
             manifest.pop(str(undo_token), None)
             _write_trash_manifest(manifest)
-            return _resp(False, error="Deleted file can no longer be restored.", code="UNDO_SOURCE_MISSING")
+            return resp(False, error="Deleted file can no longer be restored.", code="UNDO_SOURCE_MISSING")
 
         original_path.parent.mkdir(parents=True, exist_ok=True)
         if original_path.exists():
-            return _resp(False, error="Cannot restore because a file already exists at the original path.", code="UNDO_CONFLICT")
+            return resp(False, error="Cannot restore because a file already exists at the original path.", code="UNDO_CONFLICT")
 
         shutil.move(str(trash_path), str(original_path))
         manifest.pop(str(undo_token), None)
         _write_trash_manifest(manifest)
 
-        return _resp(True, data={"restored_path": str(original_path)}, restored_path=str(original_path))
+        return resp(True, data={"restored_path": str(original_path)}, restored_path=str(original_path))
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="UNDO_FAILED")
+        return resp(False, error=str(e), code="UNDO_FAILED")
 
 
 @eel.expose
@@ -220,12 +211,12 @@ def clear_mod_manager_cache():
                 path.unlink()
                 removed.append(filename)
 
-        return _resp(True, data={"removed": removed}, removed=removed)
+        return resp(True, data={"removed": removed}, removed=removed)
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="CACHE_CLEAR_FAILED")
+        return resp(False, error=str(e), code="CACHE_CLEAR_FAILED")
 
 
 @eel.expose
@@ -241,13 +232,13 @@ def fix_mod_names(game_path_str):
                 mod.fix_name()
                 fixed_count += 1
 
-        return _resp(True, data={"fixed_count": fixed_count}, fixed_count=fixed_count)
+        return resp(True, data={"fixed_count": fixed_count}, fixed_count=fixed_count)
 
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="FIX_NAMES_FAILED")
+        return resp(False, error=str(e), code="FIX_NAMES_FAILED")
 
 
 @eel.expose
@@ -262,7 +253,7 @@ def get_mod_urls(game_path_str):
             if getattr(mod, "hash", None)
         }
         if not hash_to_path:
-            return _resp(True, data={"urls": {}}, urls={})
+            return resp(True, data={"urls": {}}, urls={})
 
         urls = {}
         hashes_list = list(hash_to_path.keys())
@@ -296,13 +287,13 @@ def get_mod_urls(game_path_str):
                     req_id = None
                 print(f"Failed hash batch: {e}")
 
-        return _resp(True, data={"urls": urls}, urls=urls)
+        return resp(True, data={"urls": urls}, urls=urls)
 
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="MOD_URLS_FAILED")
+        return resp(False, error=str(e), code="MOD_URLS_FAILED")
 
 
 @eel.expose
@@ -317,13 +308,13 @@ def check_mod_updates(game_path_str):
             if mod.has_update:
                 updates_available[str(mod.mod_path)] = True
 
-        return _resp(True, data={"updates": updates_available}, updates=updates_available)
+        return resp(True, data={"updates": updates_available}, updates=updates_available)
 
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="CHECK_UPDATES_FAILED")
+        return resp(False, error=str(e), code="CHECK_UPDATES_FAILED")
 
 
 @eel.expose
@@ -336,17 +327,17 @@ def perform_mod_update(game_path_str, mod_path_str):
         for mod in mod_list:
             if str(mod.mod_path) == mod_path_str:
                 success = mod.update()
-                return _resp(
+                return resp(
                     bool(success),
                     data={"updated": bool(success)},
                     updated=bool(success),
                     code="OK" if success else "UPDATE_REJECTED",
                 )
 
-        return _resp(False, error="Mod not found in the list.", code="MOD_NOT_FOUND")
+        return resp(False, error="Mod not found in the list.", code="MOD_NOT_FOUND")
 
     except Exception as e:
         import traceback
 
         traceback.print_exc()
-        return _resp(False, error=str(e), code="UPDATE_FAILED")
+        return resp(False, error=str(e), code="UPDATE_FAILED")

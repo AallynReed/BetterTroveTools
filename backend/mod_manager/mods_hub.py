@@ -20,6 +20,7 @@ import eel
 import gevent
 import requests
 
+from backend.response import resp
 from backend.home import KIWI_API_BASE
 from backend.mod_manager.mod_manager import delete_mod
 from utils.path import get_cache_root
@@ -40,16 +41,6 @@ _install_state_cache = {}
 _detail_cache = {}
 
 
-def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
-    payload = {
-        "success": success,
-        "code": code or ("OK" if success else "ERROR"),
-        "data": data if data is not None else {},
-        "error": error,
-        "meta": meta or {},
-    }
-    payload.update(legacy)
-    return payload
 
 
 def _headers():
@@ -500,10 +491,10 @@ def install_mods_hub_mod_sync(game_path_str, ref, branch=None):
     Used by the Mod Manager tab, which has no Mods-Hub callback wired up."""
     try:
         ok, error, installed_branch = _do_install(game_path_str, ref, branch)
-        return _resp(ok, data={"branch": installed_branch}, branch=installed_branch,
+        return resp(ok, data={"branch": installed_branch}, branch=installed_branch,
                      error=error, code="OK" if ok else "INSTALL_FAILED")
     except Exception as e:
-        return _resp(False, error=str(e), code="INSTALL_FAILED")
+        return resp(False, error=str(e), code="INSTALL_FAILED")
 
 
 @eel.expose
@@ -513,7 +504,7 @@ def get_mods_hub_variants(ref):
     single-variant mod returns one entry."""
     detail = _fetch_mod_detail(ref, use_cache=False)
     if detail is None:
-        return _resp(False, error="Couldn't reach the Mods Hub to load this mod's variants.", code="MODS_HUB_VARIANTS_FAILED")
+        return resp(False, error="Couldn't reach the Mods Hub to load this mod's variants.", code="MODS_HUB_VARIANTS_FAILED")
 
     variants = []
     for r in _branch_variants(detail.get("releases") or []):
@@ -529,7 +520,7 @@ def get_mods_hub_variants(ref):
         })
 
     title = detail.get("title") or ref
-    return _resp(True, data={"ref": ref, "title": title, "variants": variants},
+    return resp(True, data={"ref": ref, "title": title, "variants": variants},
                  ref=ref, title=title, variants=variants)
 
 
@@ -555,16 +546,16 @@ def get_mods_hub_install_states(game_path_str):
                 "page_url": st.get("page_url"),
                 "has_update": bool(st.get("needs_update")),
             }
-        return _resp(True, data={"states": by_path}, states=by_path)
+        return resp(True, data={"states": by_path}, states=by_path)
     except Exception as e:
-        return _resp(False, error=str(e), code="MODS_HUB_STATES_FAILED")
+        return resp(False, error=str(e), code="MODS_HUB_STATES_FAILED")
 
 
 @eel.expose
 def delete_mods_hub_installed_mod(game_path_str, ref):
     try:
         if not game_path_str:
-            return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
+            return resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
 
         _, paths = _compute_install_states(game_path_str)
         path = paths.get(ref)
@@ -574,13 +565,13 @@ def delete_mods_hub_installed_mod(game_path_str, ref):
             _, paths = _compute_install_states(game_path_str)
             path = paths.get(ref)
         if not path:
-            return _resp(False, error="Could not find an installed file for this mod.", code="INSTALLED_FILE_NOT_FOUND")
+            return resp(False, error="Could not find an installed file for this mod.", code="INSTALLED_FILE_NOT_FOUND")
 
         result = delete_mod(game_path_str, path)
         _install_state_cache.pop(game_path_str, None)
         return result
     except Exception as e:
-        return _resp(False, error=str(e), code="DELETE_MODS_HUB_MOD_FAILED")
+        return resp(False, error=str(e), code="DELETE_MODS_HUB_MOD_FAILED")
 
 
 @eel.expose
@@ -588,7 +579,7 @@ def get_mods_hub_categories():
     data = _get_cached_api(f"{KIWI_API_BASE}/mods/categories", "mods_hub_categories.json", expiry=3600)
     categories = data.get("categories") if isinstance(data, dict) else []
     categories = categories or []
-    return _resp(True, data={"categories": categories}, categories=categories)
+    return resp(True, data={"categories": categories}, categories=categories)
 
 
 @eel.expose
@@ -602,6 +593,6 @@ def clear_mods_hub_cache():
             removed.append(cache_file.name)
         _install_state_cache.clear()
         _detail_cache.clear()
-        return _resp(True, data={"removed": removed}, removed=removed)
+        return resp(True, data={"removed": removed}, removed=removed)
     except Exception as e:
-        return _resp(False, error=str(e), code="CACHE_CLEAR_FAILED")
+        return resp(False, error=str(e), code="CACHE_CLEAR_FAILED")

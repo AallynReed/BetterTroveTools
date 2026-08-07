@@ -9,6 +9,7 @@ import gevent
 import eel
 import requests
 
+from backend.response import resp
 from backend.mod_manager.mod_manager import delete_mod
 from models.trove.mod import TroveModList
 from utils.path import get_cache_root
@@ -17,16 +18,6 @@ from utils.registry import TroveGamePath
 _local_hash_cache = {}
 
 
-def _resp(success, data=None, error=None, code=None, meta=None, **legacy):
-    payload = {
-        "success": success,
-        "code": code or ("OK" if success else "ERROR"),
-        "data": data if data is not None else {},
-        "error": error,
-        "meta": meta or {}
-    }
-    payload.update(legacy)
-    return payload
 
 def _get_cached_api(endpoint, cache_filename, expiry=900):
     cache_dir = get_cache_root()
@@ -346,7 +337,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
 def delete_trovesaurus_installed_mod(game_path_str, mod_id):
     try:
         if not game_path_str:
-            return _resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
+            return resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
 
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
@@ -357,7 +348,7 @@ def delete_trovesaurus_installed_mod(game_path_str, mod_id):
             if getattr(mod, "hash", None)
         }
         if not hash_to_path:
-            return _resp(False, error="No installed mods were found.", code="NO_INSTALLED_MODS")
+            return resp(False, error="No installed mods were found.", code="NO_INSTALLED_MODS")
 
         target_mod_id = str(mod_id)
         matched_path = None
@@ -401,11 +392,11 @@ def delete_trovesaurus_installed_mod(game_path_str, mod_id):
                     req_id = None
 
         if not matched_path:
-            return _resp(False, error="Could not find an installed file for this mod.", code="INSTALLED_FILE_NOT_FOUND")
+            return resp(False, error="Could not find an installed file for this mod.", code="INSTALLED_FILE_NOT_FOUND")
 
         return delete_mod(game_path_str, matched_path)
     except Exception as e:
-        return _resp(False, error=str(e), code="DELETE_TROVESAURUS_MOD_FAILED")
+        return resp(False, error=str(e), code="DELETE_TROVESAURUS_MOD_FAILED")
 
 @eel.expose
 def open_url_in_browser(url):
@@ -424,6 +415,6 @@ def clear_trovesaurus_cache():
                 removed.append(filename)
 
         _local_hash_cache.clear()
-        return _resp(True, data={"removed": removed}, removed=removed)
+        return resp(True, data={"removed": removed}, removed=removed)
     except Exception as e:
-        return _resp(False, error=str(e), code="CACHE_CLEAR_FAILED")
+        return resp(False, error=str(e), code="CACHE_CLEAR_FAILED")
