@@ -299,25 +299,27 @@ def _truncate_text(value, limit=220):
     return f"{truncated}..."
 
 
-@eel.expose
-@standardize_response
-def get_twitch_streams():
+def _spawn_kiwi_fetch(label, path, receive_name, error_code, load):
+    """Fetch one Kiwi endpoint off the hub and push the result to the frontend.
+
+    ``load`` does the actual request and returns the payload. Everything around
+    it is the same for every Home feed: register the external-request chip, drop
+    the result if a newer Home load has superseded this one (generation guard),
+    and report failures through the same receive callback.
+    """
     def fetch_task(generation):
         req_id = None
         try:
-            req_id = eel.add_external_request("Fetching Twitch Streams", KIWI_API_BASE + "/feeds/twitch")()
+            req_id = eel.add_external_request(label, KIWI_API_BASE + path)()
         except Exception:
             pass
         try:
-            headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/twitch", headers=headers, timeout=10)
-            response.raise_for_status()
+            data = load()
             if not _home_fetch_is_active(generation):
                 _finish_external_request(req_id, False)
                 return
             _finish_external_request(req_id, True)
-            data = _map_kiwi_twitch(_kiwi_items(response))
-            eel.receive_twitch_streams(resp(True, data=data))
+            getattr(eel, receive_name)(resp(True, data=data))
         except gevent.GreenletExit:
             _finish_external_request(req_id, False)
             raise
@@ -325,133 +327,58 @@ def get_twitch_streams():
             _finish_external_request(req_id, False)
             traceback.print_exc()
             if _home_fetch_is_active(generation):
-                eel.receive_twitch_streams(resp(False, error=str(e), code="TWITCH_FETCH_FAILED"))
-            
+                getattr(eel, receive_name)(resp(False, error=str(e), code=error_code))
+
     _spawn_home_fetch(fetch_task)
+
+
+def _kiwi_feed_items(path, timeout, transform=None):
+    headers = {"User-Agent": "BetterTroveTools/1.0"}
+    response = _blocking_io(requests.get, KIWI_API_BASE + path, headers=headers, timeout=timeout)
+    response.raise_for_status()
+    items = _kiwi_items(response)
+    return transform(items) if transform else items
+
+
+def _spawn_feed_fetch(label, path, receive_name, error_code, *, timeout=10, transform=None):
+    _spawn_kiwi_fetch(label, path, receive_name, error_code,
+                      lambda: _kiwi_feed_items(path, timeout, transform))
+
+
+@eel.expose
+@standardize_response
+def get_twitch_streams():
+    _spawn_feed_fetch("Fetching Twitch Streams", "/feeds/twitch", "receive_twitch_streams",
+                      "TWITCH_FETCH_FAILED", transform=_map_kiwi_twitch)
+
 
 @eel.expose
 @standardize_response
 def get_youtube_videos():
-    def fetch_task(generation):
-        req_id = None
-        try:
-            req_id = eel.add_external_request("Fetching YouTube Videos", KIWI_API_BASE + "/feeds/youtube")()
-        except Exception:
-            pass
-        try:
-            headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/youtube", headers=headers, timeout=10)
-            response.raise_for_status()
-            if not _home_fetch_is_active(generation):
-                _finish_external_request(req_id, False)
-                return
-            _finish_external_request(req_id, True)
-            data = _kiwi_items(response)
-            eel.receive_youtube_videos(resp(True, data=data))
-        except gevent.GreenletExit:
-            _finish_external_request(req_id, False)
-            raise
-        except Exception as e:
-            _finish_external_request(req_id, False)
-            traceback.print_exc()
-            if _home_fetch_is_active(generation):
-                eel.receive_youtube_videos(resp(False, error=str(e), code="YOUTUBE_FETCH_FAILED"))
-            
-    _spawn_home_fetch(fetch_task)
+    _spawn_feed_fetch("Fetching YouTube Videos", "/feeds/youtube", "receive_youtube_videos",
+                      "YOUTUBE_FETCH_FAILED")
+
 
 @eel.expose
 @standardize_response
 def get_bilibili_videos():
-    def fetch_task(generation):
-        req_id = None
-        try:
-            req_id = eel.add_external_request("Fetching BiliBili Videos", KIWI_API_BASE + "/feeds/bilibili")()
-        except Exception:
-            pass
-        try:
-            headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/bilibili", headers=headers, timeout=10)
-            response.raise_for_status()
-            if not _home_fetch_is_active(generation):
-                _finish_external_request(req_id, False)
-                return
-            _finish_external_request(req_id, True)
-            data = _kiwi_items(response)
-            eel.receive_bilibili_videos(resp(True, data=data))
-        except gevent.GreenletExit:
-            _finish_external_request(req_id, False)
-            raise
-        except Exception as e:
-            _finish_external_request(req_id, False)
-            traceback.print_exc()
-            if _home_fetch_is_active(generation):
-                eel.receive_bilibili_videos(resp(False, error=str(e), code="BILIBILI_FETCH_FAILED"))
-            
-    _spawn_home_fetch(fetch_task)
+    _spawn_feed_fetch("Fetching BiliBili Videos", "/feeds/bilibili", "receive_bilibili_videos",
+                      "BILIBILI_FETCH_FAILED")
+
 
 @eel.expose
 @standardize_response
 def get_trovesaurus_events():
-    def fetch_task(generation):
-        req_id = None
-        try:
-            req_id = eel.add_external_request("Fetching Trovesaurus Events", KIWI_API_BASE + "/feeds/events")()
-        except Exception:
-            pass
-        try:
-            headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/events", headers=headers, timeout=3)
-            response.raise_for_status()
-            if not _home_fetch_is_active(generation):
-                _finish_external_request(req_id, False)
-                return
-            _finish_external_request(req_id, True)
-            events = _map_kiwi_events(_kiwi_items(response))
-            eel.receive_events_data(resp(True, data=events))
-        except gevent.GreenletExit:
-            _finish_external_request(req_id, False)
-            raise
-        except Exception as e:
-            _finish_external_request(req_id, False)
-            traceback.print_exc()
-            if _home_fetch_is_active(generation):
-                eel.receive_events_data(resp(False, error=str(e), code="EVENTS_FETCH_FAILED"))
-            
-    _spawn_home_fetch(fetch_task)
+    _spawn_feed_fetch("Fetching Trovesaurus Events", "/feeds/events", "receive_events_data",
+                      "EVENTS_FETCH_FAILED", timeout=3, transform=_map_kiwi_events)
 
 
 @eel.expose
 @standardize_response
 def get_trove_news():
-    def fetch_task(generation):
-        req_id = None
-        try:
-            req_id = eel.add_external_request("Fetching Trove News", KIWI_API_BASE + "/feeds/news")()
-        except Exception:
-            pass
-        try:
-            headers = {"User-Agent": "BetterTroveTools/1.0"}
-            response = _blocking_io(requests.get, KIWI_API_BASE + "/feeds/news", headers=headers, timeout=8)
-            response.raise_for_status()
-            if not _home_fetch_is_active(generation):
-                _finish_external_request(req_id, False)
-                return
-            _finish_external_request(req_id, True)
-
-            # Kiwi already returns parsed news items in the shape the home page wants.
-            items = _kiwi_items(response)
-
-            eel.receive_trove_news(resp(True, data=items))
-        except gevent.GreenletExit:
-            _finish_external_request(req_id, False)
-            raise
-        except Exception as e:
-            _finish_external_request(req_id, False)
-            traceback.print_exc()
-            if _home_fetch_is_active(generation):
-                eel.receive_trove_news(resp(False, error=str(e), code="NEWS_FETCH_FAILED"))
-
-    _spawn_home_fetch(fetch_task)
+    # No transform: Kiwi already returns news items in the shape the home page wants.
+    _spawn_feed_fetch("Fetching Trove News", "/feeds/news", "receive_trove_news",
+                      "NEWS_FETCH_FAILED", timeout=8)
 
 
 def _kiwi_giveaway_list(path):
@@ -465,29 +392,7 @@ def _kiwi_giveaway_list(path):
 
 
 def _spawn_giveaway_fetch(label, path, receive_name, error_code):
-    def fetch_task(generation):
-        req_id = None
-        try:
-            req_id = eel.add_external_request(label, KIWI_API_BASE + path)()
-        except Exception:
-            pass
-        try:
-            items = _kiwi_giveaway_list(path)
-            if not _home_fetch_is_active(generation):
-                _finish_external_request(req_id, False)
-                return
-            _finish_external_request(req_id, True)
-            getattr(eel, receive_name)(resp(True, data=items))
-        except gevent.GreenletExit:
-            _finish_external_request(req_id, False)
-            raise
-        except Exception as e:
-            _finish_external_request(req_id, False)
-            traceback.print_exc()
-            if _home_fetch_is_active(generation):
-                getattr(eel, receive_name)(resp(False, error=str(e), code=error_code))
-
-    _spawn_home_fetch(fetch_task)
+    _spawn_kiwi_fetch(label, path, receive_name, error_code, lambda: _kiwi_giveaway_list(path))
 
 
 @eel.expose
