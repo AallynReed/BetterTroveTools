@@ -1,5 +1,4 @@
 aiofiles
-aiohttp
 binary-reader
 bottle
 eel

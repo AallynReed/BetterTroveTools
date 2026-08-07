@@ -27,7 +27,6 @@
 # --system-site-packages so it can see `gi`, and run with BTT_NO_AUTO_QT=1.
 
 aiofiles
-aiohttp
 binary-reader
 bottle
 eel

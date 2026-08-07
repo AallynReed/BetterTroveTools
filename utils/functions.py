@@ -9,7 +9,6 @@ from random import sample
 from string import ascii_letters, digits
 from typing import Callable, Generic, Literal, TypeVar, Union, overload
 
-from aiohttp import ClientSession
 from binary_reader import BinaryReader
 
 from .path import BasePath  # noqa: F401  (re-exported as utils.functions.BasePath)

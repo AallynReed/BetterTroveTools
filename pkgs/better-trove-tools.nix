@@ -41,7 +41,6 @@ let
       eel
 
       aiofiles
-      aiohttp
       bottle
       gevent
       pydantic

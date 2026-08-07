@@ -328,7 +328,7 @@ Translations are loaded from `web/assets/locale/` and the active language can be
 | **Python ↔ JS bridge** | [Eel](https://github.com/python-eel/Eel) |
 | **Web server** | Bottle + gevent (desktop) · uvicorn (hosted web mode) |
 | **Frontend** | Vue 3, vanilla JS, modular CSS |
-| **Async I/O** | aiofiles, aiohttp |
+| **Async I/O** | aiofiles |
 | **Game data** | Custom `.tfi` / `.tfa` archive parser, `binary-reader`, `vdf` (Steam library detection) |
 | **Packaging** | cx‑Freeze |
 
