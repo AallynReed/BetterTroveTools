@@ -210,22 +210,64 @@ document.addEventListener("gem_builds_loaded", () => {
                 }
             };
 
-            const exportCsv = () => {
+            const CSV_FILE_NAME = "gem_builds_export.csv";
+
+            const buildCsv = () => {
+                let csv = "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
+                cachedBuilds.value.forEach(b => {
+                    csv += `${b.rank},${b.layout},${b.light},${Math.round(b.base_dmg)},${b.bonus_dmg.toFixed(2)},${Math.round(b.total_dmg)},${b.crit_dmg.toFixed(1)},${b.coefficient}\n`;
+                });
+                return csv;
+            };
+
+            // Browser download \u2014 no location prompt, lands in the download folder.
+            // Used on web/Android, and as a fallback when the native dialog fails.
+            const downloadCsv = (csv) => {
+                const link = document.createElement("a");
+                link.setAttribute("href", encodeURI("data:text/csv;charset=utf-8,\uFEFF" + csv));
+                link.setAttribute("download", CSV_FILE_NAME);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const exportCsv = async () => {
                 if (!cachedBuilds.value || cachedBuilds.value.length === 0) {
                     if(window.showToast) window.showToast(t("gems.gem_builds.no_builds_available_to_export"), true);
                     return;
                 }
-                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-                csvContent += "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
-                cachedBuilds.value.forEach(b => {
-                    csvContent += `${b.rank},${b.layout},${b.light},${Math.round(b.base_dmg)},${b.bonus_dmg.toFixed(2)},${Math.round(b.total_dmg)},${b.crit_dmg.toFixed(1)},${b.coefficient}\n`;
-                });
-                const link = document.createElement("a");
-                link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", "gem_builds_export.csv");
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                const csv = buildCsv();
+
+                if (window.BTT_WEB_MODE) {
+                    downloadCsv(csv);
+                    return;
+                }
+
+                // Desktop: let the user pick where the file goes.
+                const res = await window.callBackend(
+                    eel.save_gem_builds_csv(csv, CSV_FILE_NAME)(),
+                    t("gems.gem_builds.export_csv_failed")
+                );
+                if (res.success) {
+                    if (window.showToast) {
+                        window.showToast(
+                            t("gems.gem_builds.builds_exported_saved_to_path").replace("{path}", res.data.path || ""),
+                            false,
+                            { actionLabel: t("common.open_folder"), onAction: () => eel.open_path_in_explorer(res.data.path, true)() }
+                        );
+                    }
+                    return;
+                }
+                if (res.data && res.data.canceled) return;
+
+                console.error("Gem builds CSV export failed:", res.error);
+                if (res.code === "FILE_DIALOG_UNAVAILABLE" || res.code === "EXCEPTION") {
+                    // No native dialog on this system \u2014 don't lose the export.
+                    downloadCsv(csv);
+                    if (window.showToast) window.showToast(t("gems.gem_builds.save_dialog_unavailable_downloaded"), true);
+                    return;
+                }
+                if (window.showToast) window.showToast(res.error || t("gems.gem_builds.export_csv_failed"), true);
             };
 
             const showContextMenu = (e, build) => {
@@ -386,6 +428,7 @@ document.addEventListener("gem_builds_loaded", () => {
                     if (classes) classesData.value = classes;
                     if (foods) foodsData.value = foods;
                     if (allies) alliesData.value = allies;
+                    if (allies && !(config.ally in allies)) config.ally = "boot_clown";
                     if (templates) starChartTemplates.value = templates;
                     
                     triggerCalculation();
