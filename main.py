@@ -27,6 +27,7 @@ os.environ["GOOGLE_DEFAULT_CLIENT_ID"] = "no"
 os.environ["GOOGLE_DEFAULT_CLIENT_SECRET"] = "no"
 
 from backend.feature_flags import MODS_HUB_ENABLED
+from backend import locales
 
 import backend.about
 import backend.auth
@@ -578,53 +579,9 @@ def notifications_enabled():
 LOCALE_DIR = Path("web/assets/locale")
 
 
-def _is_locale_file(file_path):
-    # Only treat <lang>_<REGION>.json as a language file; skips engine aux files
-    # like _ui_ids.json and locale.schema.json that also live in the locale dir.
-    parts = file_path.stem.split("_")
-    return (
-        len(parts) == 2
-        and 2 <= len(parts[0]) <= 3 and parts[0].islower()
-        and 2 <= len(parts[1]) <= 4 and parts[1].isalpha()
-    )
-
-
-def _completion(data):
-    # User-facing coverage over everything visible: UI strings + content. (The
-    # contributor-facing validator reports UI-only separately.)
-    strings = data.get("strings")
-    if strings is None:
-        values = list(data.get("keys", {}).values())  # legacy { language_name, keys }
-    else:
-        values = list(strings.values()) + list(data.get("content", {}).values())
-    total = len(values)
-    if total == 0:
-        return 0
-    empty = sum(1 for v in values if v == "" or v is None)
-    return int(((total - empty) / total) * 100)
-
-
 @eel.expose
 def get_available_languages():
-    LOCALE_DIR.mkdir(parents=True, exist_ok=True)
-    languages = []
-
-    for file_path in LOCALE_DIR.glob("*.json"):
-        if not _is_locale_file(file_path):
-            continue
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            meta = data.get("meta") or {}
-            name = meta.get("name") or data.get("language_name") or file_path.stem
-            percent = 100 if file_path.stem == "en_US" else _completion(data)
-            languages.append({"code": file_path.stem, "name": name, "percent": percent})
-        except Exception as e:
-            print(f"⚠️ Error reading locale file {file_path}: {e}")
-
-    languages.sort(key=lambda x: (x["code"] != "en_US", x["name"]))
-
-    return languages
+    return locales.available_languages(LOCALE_DIR)
 
 
 @eel.expose
