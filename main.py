@@ -669,9 +669,8 @@ def serve_cache(filename):
 
 @bottle.route('/proxy/bilibili_image')
 def proxy_bilibili_image():
-    # All the validation lives in utils.image_proxy so this server and
-    # web_server.py can't drift apart. The URL is rebuilt from constants there;
-    # nothing the caller sent is forwarded verbatim.
+    # All the validation lives in utils.image_proxy. The URL is rebuilt from
+    # constants there; nothing the caller sent is forwarded verbatim.
     status, body, content_type = image_proxy.fetch_image(bottle.request.query.get('url'))
     if status != 200:
         return bottle.HTTPError(status, body.decode("utf-8", "replace"))

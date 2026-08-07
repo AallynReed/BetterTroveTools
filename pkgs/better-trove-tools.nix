@@ -88,7 +88,7 @@ stdenv.mkDerivation (finalAttrs: {
     cp -r . "$appdir/"
     # Drop build/CI/dev-only bits the Linux app never touches.
     rm -rf "$appdir"/{.git,.github,android,compile.py,capacitor.config.json} \
-           "$appdir"/{package.json,package-lock.json,requirements*.txt,web-requirements.txt} \
+           "$appdir"/{package.json,package-lock.json,requirements*.txt} \
            "$appdir"/{install-linux.sh,run.sh} \
            "$appdir"/{flake.nix,flake.lock,pkgs}
 

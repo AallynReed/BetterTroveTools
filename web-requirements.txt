@@ -1,9 +1,0 @@
-aiofiles
-aiohttp
-binary-reader
-eel
-pydantic
-requests
-uvicorn
-vdf
-toml

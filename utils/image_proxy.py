@@ -4,8 +4,8 @@ Bilibili blocks hotlinked images without a matching Referer, so the home feed's
 thumbnails have to be fetched server-side. That makes this a request forwarder
 with a caller-supplied URL — the shape that turns into SSRF the moment the
 validation is sloppy, and into stored XSS the moment the response is echoed back
-verbatim. Both the desktop server (main.py) and the standalone web server
-(web_server.py) route through here so the rules live in exactly one place.
+verbatim. The desktop server (main.py) routes through here so the rules live
+in exactly one place.
 
 The defence is *reconstruction*, not inspection: nothing the caller sends is
 forwarded as-is. The scheme and host of the outbound request come from the

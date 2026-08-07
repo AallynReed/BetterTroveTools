@@ -572,7 +572,7 @@
         }, { localOnly: true }),
         get_available_languages: makeEelFn('get_available_languages', () => languages),
         get_app_metadata: makeEelFn('get_app_metadata', async () => {
-            // Mirror web_server.py / desktop: read the bundled metadata.json so the
+            // Mirror the desktop app: read the bundled metadata.json so the
             // sidebar shows the real app version offline (Android) too, instead of
             // a "Web" placeholder. web/metadata.json is a copy of the root file.
             const meta = await fetchJson('metadata.json', null);

@@ -296,19 +296,6 @@ The Windows job needs a `COMPILER` repository secret (a token with `contents: wr
 
 ---
 
-## Hosted web mode
-
-A browser‑hosted compatibility server is included for the tools that don't require local file‑system access:
-
-```bash
-pip install -r web-requirements.txt
-uvicorn web_server:app --host 127.0.0.1 --port 8087
-```
-
-For local development, `python web_server.py` also starts uvicorn using the `BTT_WEB_HOST` and `BTT_WEB_PORT` environment variables. The server hosts `web/` and exposes the non‑file‑system backend functions through `/api/eel/<function_name>`. User settings and saved web‑mode state live in browser storage; desktop‑only tools such as Mod Manager, Modder Tools, and Codexes are hidden in this mode.
-
----
-
 ## Localization
 
 The interface is available in **9 languages**:
@@ -326,7 +313,7 @@ Translations are loaded from `web/assets/locale/` and the active language can be
 | **Language** | Python |
 | **Desktop shell** | [pywebview](https://pywebview.flowrl.com/) on the Microsoft Edge **WebView2** runtime |
 | **Python ↔ JS bridge** | [Eel](https://github.com/python-eel/Eel) |
-| **Web server** | Bottle + gevent (desktop) · uvicorn (hosted web mode) |
+| **Web server** | Bottle + gevent |
 | **Frontend** | Vue 3, vanilla JS, modular CSS |
 | **Async I/O** | aiofiles |
 | **Game data** | Custom `.tfi` / `.tfa` archive parser, `binary-reader`, `vdf` (Steam library detection) |
