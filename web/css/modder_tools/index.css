@@ -102,7 +102,7 @@ select:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2p
 /* Invalid state is carried by the border alone. The old zero-offset red halo
    was a second 1px ring doing the same job at half the contrast. */
 .field-invalid,
-.field-invalid input:not(.select2-search__field),
+.field-invalid input:not(.multi-select-search),
 .field-invalid textarea,
 input.field-invalid,
 textarea.field-invalid {
@@ -114,10 +114,6 @@ textarea.field-invalid {
     border-color: var(--danger) !important;
 }
 
-.field-invalid .select2-container--btt-dark .select2-selection,
-.field-invalid .select2-container .select2-selection {
-    border-color: var(--danger) !important;
-}
 .input-row { display: flex; }
 textarea, select { width: 100%; padding: 10px var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none; transition: border-color var(--dur) var(--t-ease); font-family: inherit; resize: vertical; }
 textarea:focus, select:focus { border-color: var(--accent-blue); }

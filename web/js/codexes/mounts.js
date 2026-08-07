@@ -567,7 +567,7 @@ function initMountsView() {
 
     try {
         if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
-        if (window.Select2Component) app.component('select2-component', window.Select2Component);
+        if (window.MultiSelect) app.component('multi-select', window.MultiSelect);
 
         if (window._mountsApp) window._mountsApp.unmount();
         window._mountsApp = app;

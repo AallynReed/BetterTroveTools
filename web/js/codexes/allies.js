@@ -568,7 +568,7 @@ function initAlliesView() {
 
     try {
         if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
-        if (window.Select2Component) app.component('select2-component', window.Select2Component);
+        if (window.MultiSelect) app.component('multi-select', window.MultiSelect);
 
         if (window._alliesApp) window._alliesApp.unmount();
         window._alliesApp = app;

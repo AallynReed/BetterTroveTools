@@ -8,9 +8,6 @@
     <!-- Warm up CDN connections early so blocking stylesheet/script downloads land faster. -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-    <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
     <!-- Google Fonts are lazy-loaded by main.js's ensureGoogleFont(), keyed on the
          saved font preference. Default 'system' loads no Google Fonts at all. -->
@@ -37,11 +34,6 @@
     <script defer src="js/sanitize.js"></script>
     <script defer src="js/i18n.js"></script>
     <script defer src="js/main.js"></script>
-
-    <!-- jQuery + Select2 are lazy-loaded by window.ensureSelect2Loaded() the first
-         time the Select2Component mounts (Trovesaurus filter dropdowns). -->
-    <!-- Flatpickr is lazy-loaded by window.ensureFlatpickrLoaded() the first
-         time the server-time converter modal opens. -->
 </head>
 <body>
     <!-- Mobile-only top bar + drawer backdrop. Direct children of <body> so the

@@ -587,7 +587,7 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
     });
 
     app.component('custom-vue-select', window.CustomVueSelect);
-    app.component('select2', window.Select2Component);
+    app.component('multi-select', window.MultiSelect);
 
     if (window._modderEditTmodApp) window._modderEditTmodApp.unmount();
     window._modderEditTmodApp = app;

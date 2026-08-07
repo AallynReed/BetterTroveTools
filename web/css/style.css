@@ -1731,45 +1731,6 @@ html.btt-native .command-palette-footer { display: none !important; }
     background: transparent;
 }
 
-.flatpickr-calendar {
-    /* Surface (background/border/shadow) is set once, in the floating-chrome
-       block further down — declaring it here too only made these lines dead. */
-    z-index: var(--z-dropdown) !important;
-}
-.flatpickr-calendar.arrowTop:after { border-bottom-color: var(--bg-panel) !important; }
-.flatpickr-calendar.arrowTop:before { border-bottom-color: var(--border-color) !important; }
-.flatpickr-calendar.arrowBottom:after { border-top-color: var(--bg-panel) !important; }
-.flatpickr-calendar.arrowBottom:before { border-top-color: var(--border-color) !important; }
-
-.flatpickr-months .flatpickr-month,
-.flatpickr-weekdays,
-span.flatpickr-weekday {
-    background: transparent !important;
-    color: var(--text-muted) !important;
-}
-
-.flatpickr-day { color: var(--text-main) !important; }
-
-.flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, .flatpickr-day.startRange:focus, .flatpickr-day.endRange:focus, .flatpickr-day.selected:hover, .flatpickr-day.startRange:hover, .flatpickr-day.endRange:hover, .flatpickr-day.selected.prevMonthDay, .flatpickr-day.startRange.prevMonthDay, .flatpickr-day.endRange.prevMonthDay, .flatpickr-day.selected.nextMonthDay, .flatpickr-day.startRange.nextMonthDay, .flatpickr-day.endRange.nextMonthDay {
-    background: var(--accent-blue) !important;
-    border-color: var(--accent-blue) !important;
-    color: var(--accent-ink) !important;
-}
-
-.flatpickr-day.today {
-    border-color: var(--accent-blue) !important;
-}
-
-.flatpickr-day:hover, .flatpickr-day.prevMonthDay:hover, .flatpickr-day.nextMonthDay:hover, .flatpickr-day:focus, .flatpickr-day.prevMonthDay:focus, .flatpickr-day.nextMonthDay:focus {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: transparent !important;
-}
-
-.flatpickr-time { border-top: 1px solid var(--border-color) !important; }
-.flatpickr-time input:hover, .flatpickr-time .flatpickr-am-pm:hover, .flatpickr-time input:focus, .flatpickr-time .flatpickr-am-pm:focus {
-    background: rgba(255, 255, 255, 0.05) !important;
-}
-
 /* The keyboard-selected row used a 3px accent rail on its left edge. The fill
    now carries selection instead, at two strengths so "hovered" and "selected
    by the keyboard" stay tellable apart — which the shared rail never did. */
@@ -2291,136 +2252,86 @@ span.flatpickr-weekday {
     border-radius: var(--radius-control);
 }
 
-.select2-container--btt-dark {
-    width: 100% !important;
-}
-
-.select2-container--btt-dark .select2-selection {
-    background: var(--bg-dark) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-control);
-    min-height: 36px;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.select2-container--btt-dark.select2-container--focus .select2-selection {
-    border-color: rgba(var(--accent-rgb), 0.45) !important;
-}
-
-.select2-container--btt-dark .select2-selection--multiple {
-    padding: 4px 8px;
-}
-
-.select2-container--btt-dark .select2-selection--multiple .select2-selection__rendered {
+/* Multi-select (window.MultiSelect) — chips + inline filter. Replaces the
+   Select2 skin that used to live here; the dropdown itself reuses
+   .custom-select-options so both selects stay one visual system. */
+.multi-select-wrapper .multi-select-trigger {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    align-content: flex-start;
     gap: 6px;
-    padding: 0 !important;
+    min-height: 36px;
+    padding: 4px 8px;
+    background: var(--bg-dark);
 }
 
-.select2-container--btt-dark .select2-selection--multiple .select2-selection__rendered > li {
-    width: auto !important;
+.multi-select-wrapper.open .multi-select-trigger {
+    border-color: rgba(var(--accent-rgb), 0.45);
+}
+
+.multi-select-placeholder {
+    color: var(--text-placeholder);
     flex: 0 0 auto;
 }
 
-.select2-container--btt-dark .select2-selection--multiple .select2-selection__choice {
+.multi-select-chip {
     background: rgba(var(--accent-rgb), 0.14);
     border: 1px solid rgba(var(--accent-rgb), 0.5);
     color: var(--text-main);
     border-radius: var(--radius-control);
-    margin: 0;
     padding: 2px 8px;
     display: inline-flex;
     align-items: center;
-    width: auto !important;
+    gap: 6px;
     max-width: 100%;
     flex: 0 0 auto;
-    list-style: none;
 }
 
-.select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove {
+.multi-select-chip-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.multi-select-chip-remove,
+.multi-select-clear {
     color: var(--danger-ink);
-    margin-right: 6px;
-    border: none;
-    padding-right: 6px;
     background: transparent;
+    border: none;
+    padding: 0;
+    font-size: 1.05em;
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--t-ease);
 }
 
-.select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove:hover {
+.multi-select-chip-remove:hover,
+.multi-select-clear:hover {
     color: var(--danger);
 }
 
-.select2-container--btt-dark .select2-search--inline .select2-search__field {
-    color: var(--text-main);
-    margin: 0 !important;
+.multi-select-clear {
+    margin-left: auto;
+}
+
+/* The inline filter field is the control's own surface, not a nested well. */
+.multi-select-wrapper .multi-select-search {
+    flex: 1 1 60px;
+    min-width: 60px;
     min-height: 22px;
+    padding: 0 2px;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    color: var(--text-main);
     font-family: inherit;
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-    padding: 0 2px !important;
+    font-size: var(--t-fs-body);
 }
 
-.select2-container--btt-dark .select2-selection--multiple .select2-search--inline {
-    margin: 0;
-    display: inline-flex;
-    align-items: center;
-}
-
-.select2-container--btt-dark .select2-selection__placeholder {
-    color: var(--text-muted) !important;
-}
-
-.select2-container--btt-dark .select2-dropdown {
-    background: var(--bg-panel);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-control);
-    box-shadow: var(--shadow-floating);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    overflow: hidden;
-}
-
-.select2-container--btt-dark .select2-search--dropdown {
-    padding: 10px;
-    background: var(--bg-panel);
-}
-
-.select2-container--btt-dark .select2-search--dropdown .select2-search__field {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    border-radius: var(--radius-control);
-    padding: 6px;
-    outline: none;
-}
-
-.select2-container--btt-dark .select2-search--dropdown .select2-search__field:focus {
-    border-color: var(--accent-blue);
-}
-
-.select2-container--btt-dark .select2-results__option {
-    background: var(--bg-panel);
-    color: var(--text-main);
-    padding: 8px 12px;
-}
-
-.select2-container--btt-dark .select2-results > .select2-results__options {
-    max-height: 280px;
-    overflow-y: auto;
-}
-
-.select2-container--btt-dark .select2-results__option--highlighted[aria-selected] {
-    background: rgba(var(--accent-rgb), 0.18);
-    color: var(--text-main);
-}
-
-.select2-container--btt-dark .select2-results__option[aria-selected="true"] {
-    background: rgba(var(--accent-rgb), 0.12);
-    color: var(--text-main);
+.multi-select-empty {
+    padding: 10px var(--t-3);
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
 }
 
 /* =========================================================================
@@ -2857,7 +2768,7 @@ span.flatpickr-weekday {
    an invisible field. The UA border came through as 2px #767676 for the same
    reason. Both are now stated once, here. */
 #view-container :is(
-    input:not(.select2-search__field):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
+    input:not(.multi-select-search):not([type="range"]):not([type="checkbox"]):not([type="radio"]):not([type="color"]),
     select,
     textarea,
     .custom-select-trigger,
@@ -2882,7 +2793,7 @@ span.flatpickr-weekday {
     .ghost-btn:hover,
     .icon-btn:hover,
     .custom-select-trigger:hover,
-    input:not(.select2-search__field):hover,
+    input:not(.multi-select-search):hover,
     select:hover,
     textarea:hover
 ) {
@@ -2893,8 +2804,7 @@ span.flatpickr-weekday {
 .context-menu,
 .job-queue-panel,
 .network-status-indicator,
-.job-queue-toggle,
-.flatpickr-calendar {
+.job-queue-toggle {
     background: linear-gradient(160deg, var(--glass-top), var(--glass-bottom)) !important;
     border: 1px solid var(--glass-border) !important;
     box-shadow: var(--shadow-floating) !important;
@@ -2902,29 +2812,12 @@ span.flatpickr-weekday {
     -webkit-backdrop-filter: blur(12px) saturate(125%);
 }
 
-.custom-select-options,
-.select2-container--btt-dark .select2-dropdown {
+.custom-select-options {
     background: var(--bg-panel) !important;
     border: 1px solid var(--border-color) !important;
     box-shadow: var(--shadow-floating) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-}
-
-#view-container .select2-container--btt-dark .select2-selection--multiple .select2-search--inline .select2-search__field {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    outline: none !important;
-    border-radius: 0 !important;
-}
-
-.select2-container--open {
-    z-index: var(--z-dropdown) !important;
-}
-
-.select2-container--open .select2-dropdown {
-    z-index: var(--z-dropdown-menu) !important;
 }
 
 /* =========================================================================
@@ -3508,14 +3401,8 @@ summary:focus-visible,
     outline-offset: 2px;
 }
 
-/* The select2 skin's own `outline: none` sits at 3-selector (and one #id)
-   specificity, so it outranks the bare `input:focus-visible` above. These two
-   restate the ring at matching weight — without them the search field inside
-   every multi-select is a keyboard dead end. */
-#view-container .select2-container--btt-dark .select2-search__field:focus-visible,
-.select2-container--btt-dark .select2-search--inline .select2-search__field:focus-visible,
-.select2-container--btt-dark .select2-search--dropdown .select2-search__field:focus-visible {
-    outline: 2px solid var(--accent-blue) !important;
+.multi-select-search:focus-visible {
+    outline: 2px solid var(--accent-blue);
     outline-offset: 2px;
 }
 
@@ -3523,7 +3410,7 @@ summary:focus-visible,
    ~85% drops under 4.5:1 there, so they get their own measured token. */
 input::placeholder,
 textarea::placeholder,
-.select2-container--btt-dark .select2-selection__placeholder {
+.multi-select-placeholder {
     color: var(--text-placeholder);
     opacity: 1; /* Firefox dims placeholders by default; the token is already measured. */
 }

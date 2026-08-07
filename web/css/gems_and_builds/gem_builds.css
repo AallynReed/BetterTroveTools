@@ -175,8 +175,7 @@
     z-index: 0;
 }
 
-.config-panel .config-section:has(.custom-select-wrapper.open),
-.config-panel .config-section:has(.select2-container--open) {
+.config-panel .config-section:has(.custom-select-wrapper.open) {
     z-index: 3;
 }
 /* The signature eyebrow. Muted, not accent: the accent marks the primary

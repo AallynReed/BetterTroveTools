@@ -312,7 +312,7 @@ document.addEventListener('modder_build_loaded', () => {
     });
 
     app.component('custom-vue-select', window.CustomVueSelect);
-    app.component('select2', window.Select2Component);
+    app.component('multi-select', window.MultiSelect);
 
     if (window._modderBuildApp) window._modderBuildApp.unmount();
     window._modderBuildApp = app;

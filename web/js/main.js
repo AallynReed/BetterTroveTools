@@ -1784,7 +1784,7 @@ window.applyCustomDropdowns = function() {
         return Math.max(100, Math.min(availableSpace - 20, desiredHeight));
     };
 
-    document.querySelectorAll('select:not([multiple]):not(.select2-hidden-accessible):not(.flatpickr-monthDropdown-months):not([data-native-select="true"])').forEach(select => {
+    document.querySelectorAll('select:not([multiple]):not([data-native-select="true"])').forEach(select => {
         if (select.closest('[v-cloak]')) return;
         if (select.parentElement.classList.contains('custom-select-wrapper')) return;
 
@@ -2031,88 +2031,134 @@ window.CustomVueSelect = {
     `
 };
 
-// jQuery + Select2 are loaded lazily the first time a Select2Component mounts.
-// They were the heaviest non-Vue dependencies in the eager bundle and the
-// multi-select wrapper below is their only consumer.
-window.ensureSelect2Loaded = function () {
-    if (window.BTT_SELECT2_READY) return Promise.resolve();
-    if (!window.BTT_SELECT2_PROMISE) {
-        window.BTT_SELECT2_PROMISE = (async () => {
-            await window.loadScript('https://code.jquery.com/jquery-3.7.0.min.js');
-            await Promise.all([
-                window.loadScript('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js'),
-                window.loadStyle('https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css'),
-            ]);
-            window.BTT_SELECT2_READY = true;
-        })();
-    }
-    return window.BTT_SELECT2_PROMISE;
-};
+// Multi-select with removable chips and type-to-filter. Replaces jQuery +
+// Select2, which were loaded from a CDN purely for this one control -- ~160KB
+// and two off-machine fetches that a packaged desktop app should not need.
+// Shares the open/close plumbing and CSS surface with CustomVueSelect above, so
+// only one dropdown is ever open and both close on the same global event.
+window.MultiSelect = {
+    props: ['options', 'modelValue', 'placeholder', 'maxSelectionLength', 'limitReachedMessage', 'disabled'],
+    setup(props, { emit }) {
+        const isOpen = Vue.ref(false);
+        const isDropUp = Vue.ref(false);
+        const maxH = Vue.ref(250);
+        const query = Vue.ref('');
+        const wrapperRef = Vue.ref(null);
+        const optionsRef = Vue.ref(null);
+        const searchRef = Vue.ref(null);
+        const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
 
-window.Select2Component = {
-    props: ['options', 'modelValue', 'placeholder', 'maxSelectionLength', 'limitReachedMessage'],
-    template: '<select multiple style="width: 100%;"></select>',
-    methods: {
-        getMaxSelectionLength() {
-            const parsed = Number(this.maxSelectionLength);
+        const values = Vue.computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []).map(String));
+        const allOptions = Vue.computed(() => (Array.isArray(props.options) ? props.options : []));
+        const isSelected = (id) => values.value.includes(String(id));
+        const limit = Vue.computed(() => {
+            const parsed = Number(props.maxSelectionLength);
             return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-        },
-        async setupSelect2() {
-            await window.ensureSelect2Loaded();
-            if (this._isUnmounted || !this.$el) return;
-            const vm = this;
-            const maxSelectionLength = this.getMaxSelectionLength();
-            const $el = $(this.$el);
-            if ($el.hasClass('select2-hidden-accessible')) {
-                $el.off('.bttSelect2');
-                $el.select2('destroy');
-            }
-            $el.select2({
-                data: this.options,
-                placeholder: this.placeholder,
-                allowClear: true,
-                theme: "btt-dark",
-                maxSelectionLength
-            })
-            .val(this.modelValue).trigger('change')
-            .on('change.bttSelect2', function() {
-                vm.$emit('update:modelValue', $(this).val() || []);
-            })
-            .on('select2:selecting.bttSelect2', function(e) {
-                if (!maxSelectionLength) return;
-                const selectedCount = ($(this).val() || []).length;
-                if (selectedCount >= maxSelectionLength) {
-                    if (vm.limitReachedMessage && window.showToast) {
-                        window.showToast(vm.limitReachedMessage, true);
-                    }
-                    e.preventDefault();
+        });
+
+        // Chips follow selection order, not option order, so removing and
+        // re-adding a value puts it back at the end -- same as Select2.
+        const selectedOptions = Vue.computed(() => values.value.map(v =>
+            allOptions.value.find(o => String(o.id) === v) || { id: v, text: v }));
+        const visibleOptions = Vue.computed(() => {
+            const q = query.value.trim().toLowerCase();
+            return allOptions.value.filter(o => !q || String(o.text || '').toLowerCase().includes(q));
+        });
+
+        const emitValues = (next) => emit('update:modelValue', next);
+        const remove = (id) => emitValues(values.value.filter(v => v !== String(id)));
+        const clearAll = () => emitValues([]);
+        const pick = (id) => {
+            const key = String(id);
+            if (isSelected(key)) { remove(key); return; }
+            if (limit.value && values.value.length >= limit.value) {
+                if (props.limitReachedMessage && window.showToast) {
+                    window.showToast(props.limitReachedMessage, true);
                 }
-            });
-        }
+                return;
+            }
+            emitValues([...values.value, key]);
+            query.value = '';
+        };
+
+        const place = () => {
+            if (!wrapperRef.value) return;
+            const rect = wrapperRef.value.getBoundingClientRect();
+            const below = window.innerHeight - rect.bottom;
+            const above = rect.top;
+            const desired = Math.max(100, Math.min(7, Math.max(1, visibleOptions.value.length)) * 40);
+            isDropUp.value = below < 250 && above > below;
+            maxH.value = Math.max(100, Math.min((isDropUp.value ? above : below) - 20, desired));
+        };
+        const open = () => {
+            if (props.disabled || isOpen.value) return;
+            if (window.closeAllDropdowns) window.closeAllDropdowns(wrapperRef.value);
+            isOpen.value = true;
+            place();
+            Vue.nextTick(() => searchRef.value && searchRef.value.focus());
+        };
+        const toggle = () => { if (isOpen.value) { isOpen.value = false; } else { open(); } };
+
+        const handleKey = (e) => {
+            if (props.disabled) return;
+            if (e.key === 'Escape') { isOpen.value = false; return; }
+            if (e.key === 'Backspace' && !query.value && values.value.length) {
+                remove(values.value[values.value.length - 1]);
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!isOpen.value) { open(); return; }
+                const first = visibleOptions.value.find(o => !isSelected(o.id));
+                if (first) pick(first.id);
+                return;
+            }
+            if (e.key === 'ArrowDown') { e.preventDefault(); open(); }
+        };
+
+        const onGlobalClose = (evt) => {
+            const exceptEl = evt && evt.detail ? evt.detail.exceptEl : null;
+            if (!wrapperRef.value || exceptEl === wrapperRef.value) return;
+            isOpen.value = false;
+        };
+        const onDocClick = (e) => {
+            if (wrapperRef.value && !wrapperRef.value.contains(e.target)) isOpen.value = false;
+        };
+        Vue.onMounted(() => {
+            document.addEventListener('click', onDocClick);
+            document.addEventListener('btt-close-vue-selects', onGlobalClose);
+        });
+        Vue.onUnmounted(() => {
+            document.removeEventListener('click', onDocClick);
+            document.removeEventListener('btt-close-vue-selects', onGlobalClose);
+        });
+
+        return {
+            isOpen, isDropUp, maxH, query, wrapperRef, optionsRef, searchRef,
+            selectedOptions, visibleOptions, isSelected, remove, clearAll, pick,
+            toggle, open, handleKey, t,
+        };
     },
-    mounted() {
-        this._isUnmounted = false;
-        this.setupSelect2();
-    },
-    watch: {
-        modelValue(value) {
-            if (!window.BTT_SELECT2_READY || !this.$el) return;
-            if ([...$(this.$el).val() || []].join(',') !== [...value || []].join(',')) $(this.$el).val(value).trigger('change');
-        },
-        options() { this.setupSelect2(); },
-        maxSelectionLength() { this.setupSelect2(); },
-        placeholder() { this.setupSelect2(); },
-        limitReachedMessage() { this.setupSelect2(); }
-    },
-    unmounted() {
-        this._isUnmounted = true;
-        if (!window.BTT_SELECT2_READY || !this.$el) return;
-        const $el = $(this.$el);
-        if ($el.hasClass('select2-hidden-accessible')) {
-            $el.off('.bttSelect2');
-            $el.select2('destroy');
-        }
-    }
+    template: `
+        <div ref="wrapperRef" class="custom-select-wrapper multi-select-wrapper" :class="{ disabled: disabled, open: isOpen, 'drop-up': isDropUp }" @keydown="handleKey">
+            <div class="custom-select-trigger multi-select-trigger" @click.stop="open">
+                <span v-if="!selectedOptions.length && !query" class="multi-select-placeholder">{{ placeholder }}</span>
+                <span v-for="opt in selectedOptions" :key="opt.id" class="multi-select-chip">
+                    <button type="button" class="multi-select-chip-remove" @click.stop="remove(opt.id)">&times;</button>
+                    <span class="multi-select-chip-label">{{ opt.text }}</span>
+                </span>
+                <input ref="searchRef" v-model="query" type="text" class="multi-select-search" :disabled="disabled" @click.stop="open" @focus="open">
+                <button v-if="selectedOptions.length" type="button" class="multi-select-clear" @click.stop="clearAll">&times;</button>
+                <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div ref="optionsRef" class="custom-select-options" :style="{ maxHeight: maxH + 'px' }" @click.stop>
+                <div v-for="opt in visibleOptions" :key="opt.id" class="custom-select-option" :class="{ selected: isSelected(opt.id) }" @click.stop="pick(opt.id)">
+                    {{ opt.text }}
+                </div>
+                <div v-if="!visibleOptions.length" class="multi-select-empty">{{ t('app.no_results_found') }}</div>
+            </div>
+        </div>
+    `
 };
 
 window.ContextMenu = {
@@ -3585,32 +3631,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         convInput.value = nowLocal.toISOString().slice(0, 16);
     }
 
-    // Flatpickr is only used by the server-time converter input. Load it
-    // lazily the first time the user opens the modal — saves ~50KB JS + CSS
-    // for everyone who never opens it.
-    window.ensureFlatpickrLoaded = function () {
-        if (window.BTT_FLATPICKR_READY) return Promise.resolve();
-        if (!window.BTT_FLATPICKR_PROMISE) {
-            window.BTT_FLATPICKR_PROMISE = (async () => {
-                await Promise.all([
-                    window.loadScript('https://cdn.jsdelivr.net/npm/flatpickr'),
-                    window.loadStyle('https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css'),
-                    window.loadStyle('https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css'),
-                ]);
-                window.BTT_FLATPICKR_READY = true;
-                if (convInput && window.flatpickr) {
-                    flatpickr(convInput, {
-                        enableTime: true,
-                        dateFormat: "Y-m-d\\TH:i",
-                        time_24hr: true,
-                        onChange: doTimeConversion
-                    });
-                }
-            })();
-        }
-        return window.BTT_FLATPICKR_PROMISE;
-    };
-
     function doTimeConversion() {
         if (!convInput || !convInput.value) return;
         const d = new Date(convInput.value);
@@ -3707,9 +3727,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const openServerTimeModal = () => {
             timeModal.style.display = 'flex';
             updateServerTime();
-            if (window.ensureFlatpickrLoaded) {
-                window.ensureFlatpickrLoaded().catch((e) => console.error('Failed to lazy-load flatpickr:', e));
-            }
         };
 
         const closeServerTimeModal = () => {

@@ -53,7 +53,7 @@
         <div class="filters-row">
             <div class="filter-group">
                 <label>{{ t('common.required_stats') }}</label>
-                <select2-component v-model="selectedStat" :options="statsOptions" :placeholder="t('common.all_stats')" :max-selection-length="3" :limit-reached-message="t('common.you_can_select_up_to_3_stats')"></select2-component>
+                <multi-select v-model="selectedStat" :options="statsOptions" :placeholder="t('common.all_stats')" :max-selection-length="3" :limit-reached-message="t('common.you_can_select_up_to_3_stats')"></multi-select>
             </div>
         </div>
 

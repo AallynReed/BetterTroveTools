@@ -332,7 +332,7 @@ document.addEventListener('modder_projects_loaded', () => {
     });
 
     app.component('custom-vue-select', window.CustomVueSelect);
-    app.component('select2', window.Select2Component);
+    app.component('multi-select', window.MultiSelect);
 
     if (window._modderProjectsApp) window._modderProjectsApp.unmount();
     window._modderProjectsApp = app;

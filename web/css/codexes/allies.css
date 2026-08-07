@@ -260,35 +260,26 @@
     border-radius: var(--radius-control);
 }
 
-#allies-vue-app .select2-container--btt-dark .select2-selection--multiple {
+#allies-vue-app .multi-select-trigger {
     height: var(--control-height);
     min-height: var(--control-height);
     padding: var(--t-1) 10px;
     border-radius: var(--radius-control);
-    display: flex;
-    align-items: center;
-    overflow-y: auto;
-}
-
-#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__rendered {
-    min-height: 0;
-    height: 100%;
-    display: flex;
     align-items: center;
     align-content: center;
     row-gap: var(--t-1);
+    overflow-y: auto;
 }
 
 /* Chip geometry is fitted, not spaced: 24px + 4px padding + 2px border is
    exactly the 34px control height, so these stay off the 4pt scale. */
-#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice {
+#allies-vue-app .multi-select-chip {
     min-height: 24px;
     height: 24px;
     padding: 2px 9px;
 }
 
-#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove {
-    color: var(--danger-ink);
+#allies-vue-app .multi-select-chip-remove {
     font-size: var(--t-fs-body);
     font-weight: 800;
     width: 14px;
@@ -297,20 +288,16 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-right: var(--t-2);
     padding: 0;
-    position: relative;
-    top: 0;
 }
 
-#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__choice__remove:hover,
-#allies-vue-app .select2-container--btt-dark .select2-selection__clear:hover {
+#allies-vue-app .multi-select-chip-remove:hover,
+#allies-vue-app .multi-select-clear:hover {
     color: var(--text-main);
     background: rgba(var(--danger-rgb), 0.22);
 }
 
-#allies-vue-app .select2-container--btt-dark .select2-selection__clear {
-    color: var(--danger-ink);
+#allies-vue-app .multi-select-clear {
     font-size: var(--t-fs-body);
     font-weight: 800;
     line-height: 1;
@@ -321,15 +308,13 @@
     justify-content: center;
     align-self: center;
     height: 20px;
-    margin-top: 0 !important;
 }
 
-#allies-vue-app .select2-container--btt-dark .select2-selection--multiple .select2-selection__placeholder {
+#allies-vue-app .multi-select-placeholder {
     display: inline-flex;
     align-items: center;
     min-height: 24px;
     line-height: 24px;
-    margin-top: 0 !important;
 }
 
 .search-stats {

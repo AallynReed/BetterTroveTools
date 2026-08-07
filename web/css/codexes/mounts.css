@@ -40,12 +40,13 @@
     border-radius: var(--radius-control);
 }
 
-#mounts-vue-app .select2-container--btt-dark .select2-selection--multiple {
+#mounts-vue-app .multi-select-trigger {
     height: var(--control-height);
     min-height: var(--control-height);
     padding: var(--t-1) 10px;
     border-radius: var(--radius-control);
-    display: flex;
     align-items: center;
+    align-content: center;
+    row-gap: var(--t-1);
     overflow-y: auto;
 }
