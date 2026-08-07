@@ -835,28 +835,17 @@ def warm_codex_caches():
         return  # no valid Trove install detected -> nothing to warm
 
     try:
-        from backend.codexes.allies import _build_allies_from_game_files
-        from backend.codexes.mounts import _build_mounts_from_game_files
-        from backend.codexes.mementos import _build_mementos_from_game_files
-        from backend.codexes.recipes import _build_recipes_from_game_files
-        from backend.codexes.styles import _build_styles_from_game_files
-        from backend.codexes.items import _build_items_from_game_files
-        from backend.codexes.fish import _build_fish_from_game_files
+        from backend.codexes.codex_cache import REGISTRY
     except Exception:
         return
 
-    builders = (
-        _build_allies_from_game_files,
-        _build_mounts_from_game_files,
-        _build_mementos_from_game_files,
-        _build_recipes_from_game_files,
-        _build_styles_from_game_files,
-        _build_items_from_game_files,
-        _build_fish_from_game_files,
-    )
-    for build in builders:
+    # Badges is deliberately not warmed -- it is not part of the startup set.
+    for key in ("allies", "mounts", "mementos", "recipes", "styles", "items", "fish"):
+        codex = REGISTRY.get(key)
+        if codex is None:
+            continue
         try:
-            build(force_refresh=False)
+            codex.build(force_refresh=False)
         except Exception:
             pass
 

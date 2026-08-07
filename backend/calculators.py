@@ -3,4 +3,4 @@
 Ally-related endpoints were moved to backend.codexes.allies.
 """
 
-from backend.codexes.allies import get_allies_data, sync_allies_data
+import backend.codexes.allies  # noqa: F401  (registers the eel endpoints)
