@@ -1396,7 +1396,7 @@
         "settings.notifications_test": "テスト通知を送信",
         "settings.notifications_test_sent": "テスト通知は {seconds}秒後に届きます。",
         "settings.ui_size": "UI サイズ",
-        "settings.ui_size_desc": "インターフェース要素を小さくして、画面により多くのコンテンツを収めます。",
+        "settings.ui_size_desc": "",
         "nav.feedback": "フィードバック",
         "feedback.title": "フィードバックを送信",
         "feedback.button_title": "開発者にフィードバックを送信",

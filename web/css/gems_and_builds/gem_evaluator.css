@@ -577,7 +577,7 @@
     align-self: start;
     position: sticky;
     top: var(--t-4);
-    max-height: calc(100vh - var(--t-6));
+    max-height: calc(calc(100 * var(--vh)) - var(--t-6));
 }
 
 /* The app's signature eyebrow: micro type, 800, 1px tracking, muted ink. */

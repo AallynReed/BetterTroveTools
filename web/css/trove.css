@@ -313,7 +313,7 @@
     border: 1px solid var(--border-color);
     border-radius: var(--radius-surface);
     padding: var(--modal-padding);
-    width: min(420px, 92vw);
+    width: min(420px, calc(92 * var(--vw)));
     box-shadow: var(--shadow-modal);
 }
 .trove-modal h3 { margin: 0 0 var(--t-2); font-size: var(--t-fs-h2); display: flex; align-items: center; gap: var(--t-2); }

@@ -182,7 +182,7 @@ select:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2p
 }
 
 .file-tree-shell { position: relative; }
-.file-tree { text-align: left; font-size: var(--t-fs-body); background: var(--bg-panel); padding: var(--t-2); border-radius: 0 0 var(--radius-surface) var(--radius-surface); border: 1px solid var(--border-color); max-height: 70vh; overflow-y: auto; contain: content; }
+.file-tree { text-align: left; font-size: var(--t-fs-body); background: var(--bg-panel); padding: var(--t-2); border-radius: 0 0 var(--radius-surface) var(--radius-surface); border: 1px solid var(--border-color); max-height: calc(70 * var(--vh)); overflow-y: auto; contain: content; }
 /* A scrim over the tree, not a surface — plain black alpha so it dims whatever
    is underneath instead of introducing a navy that isn't in the palette. */
 .file-tree-busy-overlay {
@@ -265,7 +265,7 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 #extraction-bar { display: none; position: fixed; bottom: var(--t-6); left: 50%; transform: translateX(-50%); background: var(--bg-hover); border: 1px solid var(--border-color); padding: var(--t-3) var(--t-5); border-radius: var(--radius-surface); box-shadow: var(--shadow-floating); z-index: var(--z-dropdown); align-items: center; gap: var(--t-5); backdrop-filter: var(--modal-blur); -webkit-backdrop-filter: var(--modal-blur); }
 /* Overshoot easing removed: one ease across the app, no bounce. */
 #extraction-bar.active { display: flex; animation: slideUp var(--dur) var(--t-ease); }
-.progress-container { display: flex; flex-direction: column; align-items: center; gap: var(--t-2); width: 550px; max-width: 80vw; }
+.progress-container { display: flex; flex-direction: column; align-items: center; gap: var(--t-2); width: 550px; max-width: calc(80 * var(--vw)); }
 /* Taller than the 6px system bar because the percentage readout is centred
    inside the track — the height is load-bearing here, not decoration. */
 .progress-track { width: 100%; height: 18px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-pill); overflow: hidden; position: relative; }
@@ -382,5 +382,5 @@ input[type="checkbox"] { margin: 0; padding: 0; width: 16px; height: 16px; flex-
 }
 
 .file-tree {
-    max-height: 64vh;
+    max-height: calc(64 * var(--vh));
 }

@@ -14,7 +14,7 @@
 }
 
 .gems-and-builds-container {
-    --gems-builds-min-height: clamp(420px, calc(100dvh - 220px), 860px);
+    --gems-builds-min-height: clamp(420px, calc(calc(100 * var(--dvh)) - 220px), 860px);
     /* Every other view root runs at --view-padding; this one was the outlier at
        32px, which double-padded the child views nested inside it. */
     padding: var(--view-padding);
@@ -125,7 +125,7 @@
 /* Responsive design */
 @media (max-width: 900px) {
     .gems-and-builds-container {
-        --gems-builds-min-height: clamp(360px, calc(100dvh - 180px), 720px);
+        --gems-builds-min-height: clamp(360px, calc(calc(100 * var(--dvh)) - 180px), 720px);
         padding: var(--view-padding);
     }
 

@@ -46,7 +46,7 @@
 
 .config-panel {
     position: relative;
-    max-height: calc(100vh - 200px);
+    max-height: calc(calc(100 * var(--vh)) - 200px);
     overflow-y: auto;
 }
 

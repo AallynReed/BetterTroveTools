@@ -69,7 +69,6 @@ document.addEventListener('settings_loaded', async () => {
             const gameInstalls = ref([]);
             // Custom directory management requires local file access -> hide in hosted web mode.
             const isWebMode = window.BTT_WEB_MODE === true;
-            // UI size scaling is only offered on the packaged Android build.
             const isNative = window.BTT_NATIVE === true;
             // Desktop (Windows) rotation reminders: only offered when the backend
             // can actually deliver them (a tray sink exists). Resolved async in
@@ -96,7 +95,7 @@ document.addEventListener('settings_loaded', async () => {
                     settings.app_font = data.app_font || 'system';
                     let scale = Number(data.ui_scale);
                     if (!isFinite(scale) || scale <= 0) scale = 1;
-                    settings.ui_scale = Math.min(1, Math.max(0.7, scale)); // smaller-or-default only
+                    settings.ui_scale = Math.min(1.5, Math.max(0.7, scale));
                     settings.show_community_content = data.show_community_content !== false;
                     settings.show_official_news = data.show_official_news !== false;
                     settings.show_player_activity = data.show_player_activity !== false;
@@ -472,6 +471,18 @@ document.addEventListener('settings_loaded', async () => {
                     activeTab.value = tab;
                 };
                 applyPendingSettingsTab();
+
+                // Ctrl +/-/0 changes the UI scale behind this view's back; keep
+                // the dropdown showing what is actually applied.
+                if (window._settingsUiScaleHandler) {
+                    document.removeEventListener('ui_scale_changed', window._settingsUiScaleHandler);
+                }
+                window._settingsUiScaleHandler = (e) => {
+                    const scale = Number(e && e.detail ? e.detail.ui_scale : NaN);
+                    if (isFinite(scale)) settings.ui_scale = scale;
+                };
+                document.addEventListener('ui_scale_changed', window._settingsUiScaleHandler);
+
                 if (window._settingsShownHandler) {
                     document.removeEventListener('settings_shown', window._settingsShownHandler);
                 }

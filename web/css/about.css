@@ -276,7 +276,7 @@
     border-radius: var(--radius-surface);
     width: 80%;
     max-width: 800px;
-    max-height: 80vh;
+    max-height: calc(80 * var(--vh));
     display: flex;
     flex-direction: column;
     overflow: hidden;

@@ -1396,7 +1396,7 @@
         "settings.notifications_test": "Test-Benachrichtigung senden",
         "settings.notifications_test_sent": "Die Test-Benachrichtigung kommt in {seconds} s.",
         "settings.ui_size": "UI-Größe",
-        "settings.ui_size_desc": "Verkleinere Oberflächenelemente, damit mehr Inhalt auf den Bildschirm passt.",
+        "settings.ui_size_desc": "",
         "nav.feedback": "Feedback",
         "feedback.title": "Feedback senden",
         "feedback.button_title": "Feedback an den Entwickler senden",

@@ -550,7 +550,7 @@
     border-radius: var(--radius-surface);
     padding: var(--modal-padding);
     /* 92vw cap so the dialog never runs off a narrow window. */
-    width: min(320px, 92vw);
+    width: min(320px, calc(92 * var(--vw)));
     box-shadow: var(--shadow-modal);
     text-align: center;
 }

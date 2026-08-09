@@ -1396,7 +1396,7 @@
         "settings.notifications_test": "테스트 알림 보내기",
         "settings.notifications_test_sent": "테스트 알림이 {seconds}초 후 도착합니다.",
         "settings.ui_size": "UI 크기",
-        "settings.ui_size_desc": "인터페이스 요소를 더 작게 만들어 화면에 더 많은 콘텐츠가 들어가도록 합니다.",
+        "settings.ui_size_desc": "",
         "nav.feedback": "피드백",
         "feedback.title": "피드백 보내기",
         "feedback.button_title": "개발자에게 피드백 보내기",

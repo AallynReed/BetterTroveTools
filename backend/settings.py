@@ -16,6 +16,7 @@ def _normalize_settings_payload(payload):
             "custom_directories": [],
             "ui_preferences": {},
             "app_font": "system",
+            "ui_scale": 1,
         }
 
     # Accept wrapped responses and extract raw settings payload.
@@ -29,6 +30,14 @@ def _normalize_settings_payload(payload):
 
     app_font = payload.get("app_font")
     normalized["app_font"] = app_font if app_font in ("system", "product-sans", "noto-sans", "inter", "roboto", "segoe-ui", "arial") else "system"
+
+    # Accessibility UI scale. Clamped to the same 0.7-1.5 range the frontend
+    # offers so a hand-edited settings.json can't zoom the app into unusability.
+    try:
+        ui_scale = float(payload.get("ui_scale", 1))
+    except (TypeError, ValueError):
+        ui_scale = 1.0
+    normalized["ui_scale"] = min(1.5, max(0.7, ui_scale))
 
     allowed_keys = [
         "accent_color", "show_community_content", "show_official_news",

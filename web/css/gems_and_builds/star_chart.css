@@ -18,7 +18,7 @@
 
 .star-chart-container {
     --star-chart-panel-height: auto;
-    --star-chart-panel-max-height: calc(100vh - 120px);
+    --star-chart-panel-max-height: calc(calc(100 * var(--vh)) - 120px);
     /* Enrolled in the shared density layer (style.css > CROSS-APP DENSITY
        LAYER), which forces this with !important. Stated with the token so the
        file doesn't teach a different number than the one that renders. */
@@ -54,7 +54,7 @@
     min-height: 600px;
     position: relative;
     overflow: visible;
-    max-height: calc(100vh - 200px);
+    max-height: calc(calc(100 * var(--vh)) - 200px);
     /* Optical, not spacing: the toolbar is absolutely positioned inside this
        card, so the top pad is the card pad plus the room that row needs. */
     padding-top: 38px;

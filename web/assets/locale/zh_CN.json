@@ -1396,7 +1396,7 @@
         "settings.notifications_test": "发送测试通知",
         "settings.notifications_test_sent": "测试通知将在 {seconds} 秒后到达。",
         "settings.ui_size": "UI 大小",
-        "settings.ui_size_desc": "使界面元素更小，以便屏幕上容纳更多内容。",
+        "settings.ui_size_desc": "",
         "nav.feedback": "反馈",
         "feedback.title": "发送反馈",
         "feedback.button_title": "向开发者发送反馈",

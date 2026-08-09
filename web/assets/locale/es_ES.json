@@ -1396,7 +1396,7 @@
         "settings.notifications_test": "Enviar notificación de prueba",
         "settings.notifications_test_sent": "La notificación de prueba llegará en {seconds} s.",
         "settings.ui_size": "Tamaño de la interfaz",
-        "settings.ui_size_desc": "Reduce el tamaño de los elementos de la interfaz para que quepa más contenido en pantalla.",
+        "settings.ui_size_desc": "",
         "nav.feedback": "Comentarios",
         "feedback.title": "Enviar comentarios",
         "feedback.button_title": "Enviar comentarios al desarrollador",

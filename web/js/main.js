@@ -1038,7 +1038,7 @@ window.showToast = function(message, isError = false, options = {}) {
         toastHost.style.flexDirection = 'column-reverse';
         toastHost.style.alignItems = 'center';
         toastHost.style.gap = '10px';
-        toastHost.style.maxWidth = 'min(92vw, 640px)';
+        toastHost.style.maxWidth = 'min(calc(92 * var(--vw)), 640px)';
         toastHost.style.width = 'max-content';
         const toastZ = getComputedStyle(document.documentElement).getPropertyValue('--z-toast').trim();
         toastHost.style.zIndex = toastZ || '210000';
@@ -2311,17 +2311,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const accentColor = window.AppSettings.get('accent_color');
     if (accentColor) window.applyAccentColor(accentColor);
 
-    // Android-only UI scale: shrink the whole interface (via root zoom) so more
-    // content fits on small screens. Capped at 1.0 — only goes smaller, never larger.
-    // `zoom` scales block layout against the zoomed viewport for width, but leaves
-    // vh/100vh on the unzoomed viewport, so the full-height shell (#view-container,
-    // body, drawer) would render short and leave a dead zone. We expose the scale as
-    // --ui-scale so those few vh heights can divide by it and still fill the screen.
+    // UI size (accessibility): scale the whole interface — text, controls, icons
+    // and spacing — via root `zoom`, on every platform. `zoom` scales lengths but
+    // leaves viewport units on the unzoomed viewport, so 100vh at 1.5 would run
+    // half a screen past the bottom and at 0.7 would leave a dead zone. Every
+    // vh/vw length in the app reads --vh/--vw instead, which divide by the scale
+    // published here (see the token block at the top of style.css).
     const applyUiScale = () => {
-        if (window.BTT_NATIVE !== true) return;
         let scale = Number(window.AppSettings ? window.AppSettings.get('ui_scale', 1) : 1);
         if (!isFinite(scale) || scale <= 0) scale = 1;
-        scale = Math.min(1, Math.max(0.7, scale));
+        scale = Math.min(1.5, Math.max(0.7, scale));
         const de = document.documentElement;
         if (scale === 1) {
             de.style.zoom = '';
@@ -2332,6 +2331,48 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
     applyUiScale();
+
+    // Ctrl/Cmd with + / - / 0 steps that same setting from the keyboard, through
+    // the stops the Settings dropdown offers. Desktop app only: the packaged
+    // pywebview window runs with AreBrowserAcceleratorKeysEnabled off, so these
+    // keys reach the page. A browser owns them and a page cannot intercept them,
+    // so binding there would zoom twice; Android has no keyboard to bind.
+    if (window.BTT_WEB_MODE !== true && window.BTT_NATIVE !== true) {
+        const UI_SCALE_STOPS = [0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5];
+        // direction: 1 = one stop up, -1 = one stop down, 0 = back to 100%.
+        const stepUiScale = async (direction) => {
+            const current = Number(window.AppSettings.get('ui_scale', 1)) || 1;
+            let next = 1;
+            if (direction !== 0) {
+                // Snap to the nearest stop first, so a hand-edited settings.json
+                // value between stops still steps somewhere sensible.
+                const nearest = UI_SCALE_STOPS.reduce((best, stop, i) =>
+                    Math.abs(stop - current) < Math.abs(UI_SCALE_STOPS[best] - current) ? i : best, 0);
+                next = UI_SCALE_STOPS[Math.min(UI_SCALE_STOPS.length - 1, Math.max(0, nearest + direction))];
+            }
+            if (next === current) return;
+            await window.AppSettings.set('ui_scale', next);
+            applyUiScale();
+            // Narrower than app_settings_updated on purpose: that one also
+            // re-syncs the reminder scheduler, which a zoom keypress shouldn't.
+            document.dispatchEvent(new CustomEvent('ui_scale_changed', { detail: { ui_scale: next } }));
+            const percent = Math.round(next * 100);
+            window.showToast((window.I18nManager && window.I18nManager.t)
+                ? window.I18nManager.t('settings.ui_size_toast', { percent })
+                : `UI size: ${percent}%`);
+        };
+        document.addEventListener('keydown', (e) => {
+            if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+            let direction;
+            if (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd') direction = 1;
+            else if (e.key === '-' || e.key === '_' || e.code === 'NumpadSubtract') direction = -1;
+            else if (e.key === '0' || e.code === 'Numpad0') direction = 0;
+            else return;
+            e.preventDefault();
+            void stepUiScale(direction);
+        });
+    }
+
     // Re-sync rotation notifications on startup so pending reminders roll
     // forward and pick up any settings changes since the app was last open.
     // Android schedules native alarms; the desktop app arms a backend scheduler

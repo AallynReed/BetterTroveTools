@@ -160,7 +160,7 @@
 .mh-variant-dialog {
     width: 100%;
     max-width: 560px;
-    max-height: 80vh;
+    max-height: calc(80 * var(--vh));
     display: flex;
     flex-direction: column;
     background: var(--bg-panel);

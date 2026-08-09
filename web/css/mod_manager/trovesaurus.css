@@ -240,7 +240,7 @@
    (200000), which a literal 9999 did not. */
 .image-modal { display: none; position: fixed; z-index: var(--z-modal); left: 0; top: 0; width: 100%; height: 100%; background-color: var(--modal-backdrop); backdrop-filter: var(--modal-blur); -webkit-backdrop-filter: var(--modal-blur); align-items: center; justify-content: center; flex-direction: column; }
 .image-modal.active { display: flex; animation: fadeIn var(--dur) var(--t-ease); }
-.modal-content { max-width: 90%; max-height: 80vh; border-radius: var(--radius-surface); box-shadow: var(--shadow-modal); object-fit: contain; }
+.modal-content { max-width: 90%; max-height: calc(80 * var(--vh)); border-radius: var(--radius-surface); box-shadow: var(--shadow-modal); object-fit: contain; }
 .close-modal { position: absolute; top: var(--t-5); right: var(--t-6); color: var(--text-main); font-size: var(--t-fs-title); font-weight: 700; cursor: pointer; transition: color var(--dur-fast) var(--t-ease); }
 .close-modal:hover { color: var(--accent-blue); }
 #modal-caption { margin-top: var(--t-4); color: var(--text-main); font-size: var(--t-fs-h2); font-weight: 600; text-align: center; }

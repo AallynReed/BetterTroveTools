@@ -916,7 +916,7 @@
     border-radius: var(--radius-surface);
     width: 90%;
     max-width: 600px;
-    max-height: 80vh;
+    max-height: calc(80 * var(--vh));
     display: flex;
     flex-direction: column;
     box-shadow: var(--shadow-modal);
@@ -927,8 +927,8 @@
    declaring `width: 1200px; max-width: 95%` — it never rendered, because this
    rule outranks it on both properties. One definition now. */
 .modal-content.modal-content-wide {
-    width: min(96vw, 1400px);
-    max-width: 96vw;
+    width: min(calc(96 * var(--vw)), 1400px);
+    max-width: calc(96 * var(--vw));
 }
 
 .modal-header {

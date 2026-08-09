@@ -159,12 +159,12 @@
 }
 .manage-modal-overlay.active { display: flex; }
 .manage-modal {
-    width: min(480px, 92vw);
+    width: min(480px, calc(92 * var(--vw)));
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-surface);
     padding: var(--modal-padding);
-    max-height: 88vh;
+    max-height: calc(88 * var(--vh));
     overflow: auto;
     /* It floats, so it gets the modal shadow — the one place elevation is real. */
     box-shadow: var(--shadow-modal);

@@ -1396,7 +1396,7 @@
         "settings.notifications_test": "Отправить тестовое уведомление",
         "settings.notifications_test_sent": "Тестовое уведомление прибудет через {seconds}с.",
         "settings.ui_size": "Размер UI",
-        "settings.ui_size_desc": "Сделать элементы интерфейса меньше, чтобы больше контента помещалось на экране.",
+        "settings.ui_size_desc": "",
         "nav.feedback": "Отзыв",
         "feedback.title": "Отправить отзыв",
         "feedback.button_title": "Отправить отзыв разработчику",
