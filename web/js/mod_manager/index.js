@@ -67,6 +67,7 @@ document.addEventListener('mod_manager_loaded', async () => {
     });
 
     window.setModManagerSection = setModManagerSection;
+    window.getModManagerSection = () => activeSection;
     const requestedSection = window.pendingModManagerSection || 'mod_manager';
     window.pendingModManagerSection = null;
     setModManagerSection(requestedSection);

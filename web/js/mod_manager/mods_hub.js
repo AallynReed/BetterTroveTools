@@ -458,6 +458,29 @@ document.addEventListener('mods_hub_loaded', () => {
 
             watch([searchQuery, selectedTag, selectedSort, currentPage, selectedGame], persistUiState);
 
+            // A `btt://mods` deep link (a mod page on the site handing off to the
+            // app) parks the mod's title in window.pendingSearch and switches to
+            // this tab. main.js can't fill the box for us — this tab is lazy, so on
+            // a cold link the app isn't mounted yet — so we claim it ourselves.
+            const applyPendingSearch = () => {
+                if (!window.pendingSearch) return false;
+                searchQuery.value = window.pendingSearch;
+                window.pendingSearch = null;
+                currentPage.value = 1;
+                return true;
+            };
+
+            // Re-entry: a second link while the tab is already built. `_shown` covers
+            // arriving from another view, `section_changed` a switch in place.
+            const onReentry = () => {
+                if (window.getModManagerSection && window.getModManagerSection() !== 'mods_hub') return;
+                if (applyPendingSearch()) fetchMods(1, true);
+            };
+            document.addEventListener('mod_manager_shown', onReentry);
+            document.addEventListener('mod_manager_section_changed', (e) => {
+                if (e.detail?.currentSection === 'mods_hub') onReentry();
+            });
+
             const loadCategories = async () => {
                 try {
                     const resp = await window.callBackend(eel.get_mods_hub_categories()(), 'Failed to load categories');
@@ -469,6 +492,9 @@ document.addEventListener('mods_hub_loaded', () => {
             };
 
             onMounted(async () => {
+                // Before the first fetch below, so a deep-linked search rides along
+                // with it instead of costing a second round trip.
+                applyPendingSearch();
                 loadCategories();
                 const response = await window.callBackend(eel.get_detected_game_paths()(), 'Failed to detect game paths');
                 const settingsResp = await window.callBackend(eel.get_settings()(), 'Failed to load settings');

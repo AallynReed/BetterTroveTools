@@ -1749,6 +1749,25 @@ function handle_deep_link(url) {
         } catch (e) {
             console.error("Failed to parse deep link:", e);
         }
+        return;
+    }
+    // btt://mods?handle=<handle>&slug=<slug>&q=<title> — a mod page on the site
+    // handing off to our own Mods Hub (btt://trovesaurus above is the older
+    // link, for Trovesaurus mods). The hub searches titles, not slugs, so the
+    // page sends its title as `q`; the slug is the fallback.
+    if (url.startsWith('btt://mods')) {
+        try {
+            const params = new URLSearchParams(url.split('?')[1] || '');
+            const query = params.get('q') || params.get('slug') || '';
+            window.pendingModManagerSection = 'mods_hub';
+            if (query) window.pendingSearch = query;
+            // Covers all three states: view not built (fires mod_manager_loaded),
+            // cached and hidden, and already on screen (both fire _shown), each of
+            // which applies the pending section and search.
+            window.loadView('mod_manager');
+        } catch (e) {
+            console.error("Failed to parse deep link:", e);
+        }
     }
 }
 
@@ -2222,19 +2241,29 @@ window.executePendingSearch = function() {
 
     let handled = false;
 
-    const tsInput = document.getElementById('ts-search-input');
-    if (tsInput) {
-        tsInput.value = window.pendingSearch;
-        tsInput.dispatchEvent(new Event('input', { bubbles: true }));
-        document.getElementById('btn-ts-search')?.click();
-        handled = true;
-    }
+    // The Mod Manager's browse tabs share one pending search, so fill only the
+    // one the deep link asked for — a Mods Hub link must not also fire a
+    // Trovesaurus search.
+    const mmSection = typeof window.getModManagerSection === 'function' ? window.getModManagerSection() : null;
 
-    const modInput = document.getElementById('mod-search-input');
-    if (modInput) {
-        modInput.value = window.pendingSearch;
-        modInput.dispatchEvent(new Event('input', { bubbles: true }));
-        handled = true;
+    if (mmSection === 'mods_hub') {
+        // The Mods Hub is lazy-loaded, so its search box isn't live yet on a cold
+        // deep-link — mods_hub.js takes the pending search itself once mounted.
+    } else {
+        const tsInput = document.getElementById('ts-search-input');
+        if (tsInput) {
+            tsInput.value = window.pendingSearch;
+            tsInput.dispatchEvent(new Event('input', { bubbles: true }));
+            document.getElementById('btn-ts-search')?.click();
+            handled = true;
+        }
+
+        const modInput = document.getElementById('mod-search-input');
+        if (modInput) {
+            modInput.value = window.pendingSearch;
+            modInput.dispatchEvent(new Event('input', { bubbles: true }));
+            handled = true;
+        }
     }
 
     const codexSearchInputIds = [
