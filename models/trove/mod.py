@@ -407,7 +407,10 @@ class TroveMod:
 
     @preview_path.setter
     def preview_path(self, value: Path):
-        self.add_property("previewPath", value.as_posix())
+        # Stored lowercased because TroveModFile lowercases every embedded path:
+        # a mixed-case property pointed at a path that isn't in the archive, and
+        # strict readers (Trovesaurus) then report the preview as missing.
+        self.add_property("previewPath", _normalize_internal_path(value) or "")
 
     @property
     def config_path(self):
@@ -415,7 +418,8 @@ class TroveMod:
 
     @config_path.setter
     def config_path(self, value: Path):
-        self.add_property("configPath", value.as_posix())
+        # Lowercased for the same reason as previewPath above.
+        self.add_property("configPath", _normalize_internal_path(value) or "")
 
     @property
     def image(self):

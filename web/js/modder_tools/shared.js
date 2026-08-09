@@ -59,7 +59,14 @@
     // mods. Mirrors _config_internal_path() in backend/modder_tools.
     const configInternalPath = (title) => `ui/${String(title || '').replace(/[\\/*?:"<>|]/g, '').trim()}.cfg`;
     const configDisplayName = (title) => `${String(title || '').replace(/[\\/*?:"<>|]/g, '').trim() || 'config'}.cfg`;
-    const previewInternalPath = (name) => `ui/${String(name || '').replace(/[\\/*?:"<>|]/g, '').trim()}`;
+    // Preview lives at ui/<title>.<ext> for the same reason the config does —
+    // the picked file's own name collided when two mods both shipped
+    // ui/preview.png. Mirrors _preview_internal_path() in backend/modder_tools.
+    const previewInternalPath = (title, sourceName) => {
+        const cleanTitle = String(title || '').replace(/[\\/*?:"<>|]/g, '').trim();
+        const extension = /\.(png|jpe?g)$/i.exec(String(sourceName || ''));
+        return `ui/${cleanTitle}${extension ? extension[0].toLowerCase() : '.png'}`;
+    };
 
     // Returns an i18n id (callers pass it through t() before showing it) or null.
     const validateSpecialFileSelections = ({ files, previewName, hasPreview, hasConfig, title }) => {
@@ -78,7 +85,7 @@
         }
 
         if (hasPreview) {
-            const previewPath = normalizeInternalPath(previewInternalPath(previewName || 'preview.png'));
+            const previewPath = normalizeInternalPath(previewInternalPath(title, previewName));
             if (seen.has(previewPath)) return 'modder_tools.preview_image_path_cannot_also_be_includ_01ba5d';
         }
 

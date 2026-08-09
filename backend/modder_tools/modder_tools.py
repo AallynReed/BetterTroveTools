@@ -103,6 +103,24 @@ def _config_internal_path(title) -> Path:
     return Path(f"ui/{clean_title}.cfg")
 
 
+PREVIEW_EXTENSIONS = (".png", ".jpg", ".jpeg")
+
+
+def _preview_internal_path(title, source_name=None) -> Path:
+    """Where a mod's preview image lives inside the .tmod: `ui/<title>.<ext>`.
+
+    Same reasoning as _config_internal_path: previews land in the game's single
+    `ui/` directory, so keeping the picked file's own name meant two mods could
+    both ship `ui/preview.png` and clobber each other. Only the extension comes
+    from the picked file, which also discards Windows' doubled `.png.png` names.
+    """
+    clean_title = re.sub(r'[\\/*?:"<>|]', "", str(title or "")).strip()
+    extension = Path(str(source_name or "")).suffix.lower()
+    if extension not in PREVIEW_EXTENSIONS:
+        extension = ".png"
+    return Path(f"ui/{clean_title}{extension}")
+
+
 def _validate_special_paths(file_paths, preview_path=None, include_config=False, title=None):
     normalized_files = []
     seen_files = set()
@@ -894,8 +912,7 @@ def build_tmod(payload):
         config_path = _config_internal_path(title) if config_data is not None else None
 
         preview_name = payload.get("previewName", "preview.png")
-        clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
-        preview_path = Path(f"ui/{clean_preview_name}") if payload.get("previewBase64") else None
+        preview_path = _preview_internal_path(title, preview_name) if payload.get("previewBase64") else None
 
         path_error = _validate_special_paths(
             [f.get("internal_path", f.get("name", "unknown_file")) for f in files],
@@ -1033,8 +1050,7 @@ def save_tmod_in_place(payload):
             }
 
         preview_name = payload.get("previewName", "preview.png")
-        clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
-        preview_path = Path(f"ui/{clean_preview_name}") if payload.get("previewBase64") else None
+        preview_path = _preview_internal_path(title, preview_name) if payload.get("previewBase64") else None
 
         config_data = _decode_data_url(payload.get("configBase64"))
         config_path = _config_internal_path(title) if config_data is not None else None
@@ -1460,8 +1476,7 @@ def compile_project(project_path_str, version, game_path_str):
 
         preview_b64 = meta.get("previewBase64")
         preview_name = meta.get("previewName", "preview.png")
-        clean_preview_name = re.sub(r'[\\/*?:"<>|]', "", preview_name)
-        preview_path = Path(f"ui/{clean_preview_name}") if preview_b64 else None
+        preview_path = _preview_internal_path(title, preview_name) if preview_b64 else None
         config_data = _decode_data_url(meta.get("configBase64"))
         config_path = _config_internal_path(title) if config_data is not None else None
         path_error = _validate_special_paths(

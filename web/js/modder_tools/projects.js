@@ -68,7 +68,7 @@ document.addEventListener('modder_projects_loaded', () => {
                 const file = result?.file;
                 if (file) {
                     const nextPreviewName = file.name;
-                    const previewPath = window.ModderTools.normalizeInternalPath(window.ModderTools.previewInternalPath(nextPreviewName));
+                    const previewPath = window.ModderTools.normalizeInternalPath(window.ModderTools.previewInternalPath(project.title, nextPreviewName));
                     if (project.files.some(existing => window.ModderTools.normalizeInternalPath(existing.rel_path) === previewPath)) {
                         window.showToast(t("modder_tools.preview_image_path_cannot_also_be_includ_01ba5d"), true);
                         return;
