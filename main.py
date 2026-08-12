@@ -947,72 +947,17 @@ if _use_webview:
     )
 
     # --- In-game overlay -----------------------------------------------------
-    # A second frameless/transparent/topmost WebView2 window that only ever
-    # appears over a running Trove. pywebview owns window creation, so the host
-    # object lives here and backend/overlay.py's tracker drives it; the tracker
-    # runs on its own thread, which is also what lets create_window() build the
-    # child window immediately instead of queueing it for the next start().
-    # Windows-only: see backend.overlay.SUPPORTED for why.
-    overlay_url = f'http://localhost:{eel_port}/overlay.html'
-
-    class _OverlayWindowHost(backend.overlay.OverlayHost):
-        def __init__(self):
-            self._lock = threading.Lock()
-            self._window = None
-            self._hwnd = None
-
-        def ensure_window(self):
-            with self._lock:
-                if self._hwnd:
-                    return self._hwnd
-                if self._window is None:
-                    self._window = webview.create_window(
-                        f'{WINDOW_TITLE} Overlay',
-                        overlay_url,
-                        # Sized/placed by the tracker the moment it's shown; these
-                        # are only the values it holds while still hidden.
-                        width=800, height=600, min_size=(100, 100),
-                        resizable=False, frameless=True, easy_drag=False,
-                        shadow=False, on_top=True, transparent=True,
-                        # focus=False adds WS_EX_NOACTIVATE, so showing the
-                        # overlay never pulls keyboard focus out of the game.
-                        focus=False, hidden=True, confirm_close=False,
-                        background_color='#000000',
-                    )
-                if self._window is None:
-                    return None
-                # The hidden-window path still fires Shown (pywebview shows and
-                # immediately re-hides it), which is when `native` gets set.
-                self._window.events.shown.wait(15)
-                native = getattr(self._window, 'native', None)
-                if native is None:
-                    return None
-                try:
-                    self._hwnd = int(native.Handle.ToInt64())
-                except Exception:
-                    return None
-                return self._hwnd
-
-        def show(self):
-            if self._window:
-                self._window.show()
-
-        def hide(self):
-            if self._window:
-                self._window.hide()
-
-        def destroy(self):
-            window = None
-            with self._lock:
-                window, self._window, self._hwnd = self._window, None, None
-            if window:
-                try:
-                    window.destroy()
-                except Exception:
-                    pass
-
+    # A frameless, per-pixel-transparent, topmost native window that only ever
+    # appears over a running Trove. It owns its own window and thread (see
+    # utils/overlay_window.py), so nothing about it lives here beyond arming it
+    # at launch and routing notifications into it below.
+    #
+    # It was a second pywebview window until that proved impossible to make
+    # see-through -- WebView2 renders through DirectComposition and never
+    # reaches the layered window's redirection surface, so every transparency
+    # route left an opaque slab over the game. The measurements are recorded in
+    # utils/overlay_draw.py's docstring.
     if backend.overlay.SUPPORTED:
-        backend.overlay.tracker.set_host(_OverlayWindowHost())
         # Re-arm on launch if the user left the overlay enabled last session.
         threading.Thread(
             target=backend.overlay.start_from_settings, daemon=True, name='overlay-init'

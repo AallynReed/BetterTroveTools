@@ -2,9 +2,8 @@
  * Write the user's chosen accent into the CSS token layer.
  *
  * Three tokens move together and must never drift apart, which is why this is
- * one function called from startup (main.js), the Settings picker (settings.js)
- * and the in-game overlay (js/overlay/runtime.js) rather than duplicated parsing
- * in each:
+ * one function called from both startup (main.js) and the Settings picker
+ * (settings.js) rather than duplicated parsing in each:
  *   --accent-blue  the colour itself
  *   --accent-rgb   the same colour as an "r, g, b" triple, for rgba(..., alpha)
  *   --accent-ink   the text/icon colour that sits ON the accent
@@ -14,11 +13,6 @@
  * a real WCAG failure that flips to fine only if the user happens to pick a
  * dark accent. We measure both candidates and take the higher contrast, so a
  * pale accent gets near-black ink and a deep one gets white.
- *
- * It lives in its own file because the overlay renders in a second window that
- * does NOT boot main.js (it has no shell, no sidebar, no view router), and a
- * second copy of this maths is exactly how the overlay's accent would end up
- * one refactor behind the app's.
  */
 window.applyAccentColor = function (accentColor) {
     const hex = String(accentColor || '').replace('#', '').trim();

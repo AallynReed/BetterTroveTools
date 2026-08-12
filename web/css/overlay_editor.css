@@ -115,12 +115,71 @@
 
 .ov-ed-widgets {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: var(--t-2);
     margin: var(--t-3) 0 0;
     padding: 0;
     list-style: none;
 }
+
+.ov-ed-widget-row {
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    min-width: 0;
+}
+
+.ov-ed-widget-row .trove-check {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Per-widget hotkey. Deliberately quiet at rest — most widgets never get one,
+   and ten loud buttons would drown the list they belong to. */
+.ov-ed-widget-key {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--t-1);
+    flex: 0 0 auto;
+    max-width: 45%;
+    padding: 2px var(--t-2);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    color: var(--text-muted);
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-micro);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+
+.ov-ed-widget-key:hover { border-color: var(--accent-blue); color: var(--text-main); }
+.ov-ed-widget-key:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.ov-ed-widget-key.unbound { color: var(--text-placeholder); }
+
+.ov-ed-widget-key.capturing {
+    border-color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.12);
+    color: var(--accent-blue);
+}
+
+.ov-ed-widget-key.failed { border-color: rgba(var(--danger-rgb), 0.55); color: var(--danger-ink); }
+
+.ov-ed-widget-clear {
+    flex: 0 0 auto;
+    padding: 2px var(--t-1);
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-control);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    cursor: pointer;
+}
+
+.ov-ed-widget-clear:hover { color: var(--danger-ink); }
+.ov-ed-widget-clear:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 
 /* --- layout canvas ------------------------------------------------------ */
 

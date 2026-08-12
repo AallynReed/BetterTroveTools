@@ -26,7 +26,7 @@ window.BTTOverlayEditor = function (Vue) {
     const saving = ref(false);
     const status = reactive({
         running: false, visible: false, muted: false, interactive: false,
-        fullscreen_risk: false, hotkeys: {},
+        fullscreen_risk: false, in_menu: false, hotkeys: {},
     });
     const config = reactive({
         enabled: false,
@@ -133,6 +133,19 @@ window.BTTOverlayEditor = function (Vue) {
 
     const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift', 'Meta']);
 
+    // Every binding currently in use, so a capture can reject a duplicate
+    // before it reaches the backend (which would silently drop it).
+    function boundSpecs(exceptField) {
+        const out = [];
+        if (exceptField !== 'hotkey' && config.hotkey) out.push(config.hotkey);
+        if (exceptField !== 'mute_hotkey' && config.mute_hotkey) out.push(config.mute_hotkey);
+        for (const [id, widget] of Object.entries(config.widgets || {})) {
+            if (exceptField === `widget:${id}`) continue;
+            if (widget && widget.hotkey) out.push(widget.hotkey);
+        }
+        return out.map(s => String(s).toLowerCase().replace(/\s+/g, ''));
+    }
+
     function onCaptureKey(event) {
         if (!capturing.value) return;
         event.preventDefault();
@@ -153,18 +166,32 @@ window.BTTOverlayEditor = function (Vue) {
             return;
         }
 
-        const key = event.key.length === 1 ? event.key.toLowerCase() : event.key.toLowerCase();
-        parts.push(key);
+        parts.push(event.key.toLowerCase());
         const spec = parts.join('+');
 
         const field = capturing.value;
-        const other = field === 'hotkey' ? config.mute_hotkey : config.hotkey;
-        if (spec === other) {
+        if (boundSpecs(field).includes(spec.toLowerCase())) {
             if (window.showToast) window.showToast(t('overlay.hotkey_in_use'), true);
             return;
         }
-        config[field] = spec;
+
+        if (field.startsWith('widget:')) {
+            const widget = config.widgets[field.slice(7)];
+            if (widget) widget.hotkey = spec;
+        } else {
+            config[field] = spec;
+        }
         capturing.value = '';
+        saveNow();
+    }
+
+    const widgetHotkey = (id) => (config.widgets[id] || {}).hotkey || '';
+
+    function clearWidgetHotkey(id) {
+        const widget = config.widgets[id];
+        if (!widget || !widget.hotkey) return;
+        widget.hotkey = '';
+        if (capturing.value === `widget:${id}`) capturing.value = '';
         saveNow();
     }
 
@@ -290,6 +317,9 @@ window.BTTOverlayEditor = function (Vue) {
         if (status.muted) return t('overlay.status_muted');
         if (!status.running) return t('overlay.status_waiting');
         if (status.visible) return t('overlay.status_visible');
+        // Distinguish the two reasons it can be hidden while the game runs,
+        // otherwise "hidden" looks like a bug rather than the setting working.
+        if (status.in_menu) return t('overlay.status_in_menu');
         return t('overlay.status_hidden');
     });
 
@@ -307,6 +337,8 @@ window.BTTOverlayEditor = function (Vue) {
         overlayStatusLine: statusLine,
         overlayHotkeyFailed: hotkeyFailed,
         overlayPretty: prettyHotkey,
+        widgetHotkey,
+        clearOverlayWidgetHotkey: clearWidgetHotkey,
         loadOverlay: load,
         saveOverlay: save,
         saveOverlayNow: saveNow,

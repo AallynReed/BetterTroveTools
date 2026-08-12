@@ -243,7 +243,8 @@
 
                 <div class="trove-field">
                     <label>{{ t('overlay.opacity') }} — {{ Math.round(overlayConfig.opacity * 100) }}%</label>
-                    <input type="range" min="0.2" max="1" step="0.02" v-model.number="overlayConfig.opacity" @input="saveOverlay">
+                    <input type="range" min="0" max="1" step="0.02" v-model.number="overlayConfig.opacity" @input="saveOverlay">
+                    <span class="ov-ed-hint">{{ t('overlay.opacity_hint') }}</span>
                 </div>
 
                 <div class="trove-field">
@@ -255,6 +256,11 @@
                     <label class="trove-check">
                         <input type="checkbox" v-model="overlayConfig.hide_when_unfocused" @change="saveOverlayNow">
                         {{ t('overlay.hide_when_unfocused') }}
+                    </label>
+                    <label class="trove-check">
+                        <input type="checkbox" v-model="overlayConfig.hide_in_menus" @change="saveOverlayNow">
+                        {{ t('overlay.hide_in_menus') }}
+                        <i class="fa-solid fa-arrow-pointer trove-lock" :title="t('overlay.hide_in_menus_hint')"></i>
                     </label>
                     <label class="trove-check">
                         <input type="checkbox" v-model="overlayConfig.notifications_in_overlay" @change="saveOverlayNow">
@@ -279,14 +285,31 @@
                 </div>
                 <p class="trove-card-hint">{{ t('overlay.widgets_hint') }}</p>
                 <ul class="ov-ed-widgets">
-                    <li v-for="entry in overlayCatalog" :key="entry.id">
+                    <li v-for="entry in overlayCatalog" :key="entry.id" class="ov-ed-widget-row">
                         <label class="trove-check">
                             <input type="checkbox" :checked="overlayConfig.widgets[entry.id] && overlayConfig.widgets[entry.id].enabled"
                                    @change="toggleOverlayWidget(entry.id)">
                             {{ t('overlay.w_' + entry.id) }}
                         </label>
+                        <button class="ov-ed-widget-key"
+                                :class="{ capturing: overlayCapturing === 'widget:' + entry.id,
+                                          failed: overlayHotkeyFailed('widget:' + entry.id),
+                                          unbound: !widgetHotkey(entry.id) }"
+                                :title="t('overlay.widget_hotkey_hint')"
+                                @click="startOverlayCapture('widget:' + entry.id)">
+                            <i class="fa-solid fa-keyboard"></i>
+                            <span>{{ overlayCapturing === 'widget:' + entry.id
+                                     ? t('overlay.press_keys')
+                                     : (widgetHotkey(entry.id) ? overlayPretty(widgetHotkey(entry.id)) : t('overlay.no_hotkey')) }}</span>
+                        </button>
+                        <button v-if="widgetHotkey(entry.id)" class="ov-ed-widget-clear"
+                                :aria-label="t('overlay.clear_hotkey')" :title="t('overlay.clear_hotkey')"
+                                @click="clearOverlayWidgetHotkey(entry.id)">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
                     </li>
                 </ul>
+                <p class="trove-card-note"><i class="fa-solid fa-circle-info"></i> {{ t('overlay.widget_hotkey_note') }}</p>
             </section>
         </div>
 

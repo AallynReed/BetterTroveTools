@@ -73,6 +73,9 @@ if _IS_WINDOWS:
     user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MONITORINFO)]
     user32.GetMonitorInfoW.restype = wintypes.BOOL
 
+    user32.GetClipCursor.argtypes = [ctypes.POINTER(wintypes.RECT)]
+    user32.GetClipCursor.restype = wintypes.BOOL
+
 
 def _trove_pids():
     """PIDs of every running Trove process, newest-enumerated last.
@@ -232,6 +235,49 @@ def covers_monitor(hwnd) -> bool:
             and rect.right >= m.right and rect.bottom >= m.bottom)
 
 
+def mouse_captured(rect=None):
+    """Whether the game currently owns the mouse (i.e. the player is playing).
+
+    This is how the overlay tells "playing" from "reading a menu" without
+    touching the game. Trove *confines* the cursor while it controls the
+    camera -- measured on a live client, ``GetClipCursor`` returns a literal
+    1x1 rectangle at the centre of the screen -- and releases the clip to the
+    whole desktop the moment a UI panel opens (inventory, store, map, chat).
+
+    Note the cursor is NOT hidden during play, which is why the obvious check
+    (``GetCursorInfo``'s CURSOR_SHOWING) is useless here: it reads "showing"
+    either way. Confinement is the signal that actually changes.
+
+    Returns None when the clip can't be read, so callers can tell "no" from
+    "don't know" and leave the overlay alone.
+    """
+    if not _IS_WINDOWS:
+        return None
+    clip = wintypes.RECT()
+    if not user32.GetClipCursor(ctypes.byref(clip)):
+        return None
+    clip_w = max(0, clip.right - clip.left)
+    clip_h = max(0, clip.bottom - clip.top)
+    if clip_w <= 0 or clip_h <= 0:
+        return None
+
+    # Compare against the game's own client area rather than a fixed pixel
+    # threshold: "confined" means confined relative to where the game is, and a
+    # clip that merely matches the window is the game keeping the pointer inside
+    # a windowed session, not taking the camera.
+    if rect:
+        _, _, win_w, win_h = rect
+        if win_w > 0 and win_h > 0:
+            return clip_w < win_w / 2 or clip_h < win_h / 2
+
+    # No window rect to compare with: fall back to the virtual desktop.
+    screen_w = user32.GetSystemMetrics(78)   # SM_CXVIRTUALSCREEN
+    screen_h = user32.GetSystemMetrics(79)   # SM_CYVIRTUALSCREEN
+    if screen_w <= 0 or screen_h <= 0:
+        return None
+    return clip_w < screen_w / 2 or clip_h < screen_h / 2
+
+
 def describe(hwnd=None):
     """Snapshot of what the overlay tracker needs, in one call.
 
@@ -251,11 +297,13 @@ def describe(hwnd=None):
         return {"running": False, "hwnd": None, "rect": None,
                 "foreground": False, "minimized": False, "fullscreen_risk": False}
 
+    rect = client_rect_on_screen(hwnd)
     return {
         "running": True,
         "hwnd": hwnd,
-        "rect": client_rect_on_screen(hwnd),
+        "rect": rect,
         "foreground": is_foreground(hwnd),
         "minimized": is_minimized(hwnd),
         "fullscreen_risk": looks_borderless(hwnd) and covers_monitor(hwnd),
+        "mouse_captured": mouse_captured(rect),
     }

@@ -1,28 +1,18 @@
-"""Win32 plumbing for the in-game overlay window (Windows only).
+"""Global hotkeys and foreground lookup for the in-game overlay (Windows only).
 
-Two jobs, both operating exclusively on windows this process owns:
+The overlay's window, transparency and click-through all live in
+``utils/overlay_window.py`` -- a layered window with per-pixel alpha handles all
+three natively. What is left here is the input side:
 
-  * **Window behaviour** -- make our own pywebview child window act like an
-    overlay: never take focus, stay out of the taskbar and Alt-Tab, sit above the
-    game, and (by default) let every mouse click fall straight through to Trove.
-  * **A global hotkey** -- one ``RegisterHotKey`` on a dedicated message-loop
-    thread, so the player can flip the overlay into interactive mode without
-    alt-tabbing out of the game.
+  * **A set of global hotkeys** -- one ``RegisterHotKey`` per binding on a
+    dedicated message-loop thread, so the player can unlock or hide the overlay
+    without alt-tabbing out of the game.
+  * **Reading the foreground window** -- the tracker needs to know whether the
+    user is actually looking at Trove, and whether a click landed on the overlay
+    itself.
 
-Nothing here reads or writes another process. Positioning uses the geometry
-``utils.trove_window`` already read; the hotkey is registered against our own
-thread and only ever calls back into our own code.
-
-**Why WS_EX_TRANSPARENT and not WS_EX_LAYERED.** The usual click-through recipe
-pairs the two, but that pairing is for windows that paint their own per-pixel
-alpha through ``UpdateLayeredWindow``. Ours doesn't -- WebView2 composites the
-page's alpha for us once pywebview sets a transparent background. Setting
-WS_EX_LAYERED without a matching ``SetLayeredWindowAttributes`` /
-``UpdateLayeredWindow`` call makes a window *invisible*, and calling
-``SetLayeredWindowAttributes`` would replace the page's per-pixel alpha with one
-uniform value -- which is the whole overlay effect gone. WS_EX_TRANSPARENT alone
-gives the hit-testing half (the window answers HTTRANSPARENT and mouse messages
-land on whatever is underneath), which is the only half we need.
+Nothing here reads or writes another process. The hotkeys are registered against
+our own thread and only ever call back into our own code.
 """
 from __future__ import annotations
 
@@ -62,48 +52,21 @@ if _IS_WINDOWS:
 
     user32 = ctypes.WinDLL("user32", use_last_error=True)
 
-    GWL_EXSTYLE = -20
-    WS_EX_TRANSPARENT = 0x00000020
-    WS_EX_TOOLWINDOW = 0x00000080
-    WS_EX_NOACTIVATE = 0x08000000
-
-    HWND_TOPMOST = wintypes.HWND(-1)
-    SWP_NOSIZE = 0x0001
-    SWP_NOMOVE = 0x0002
-    SWP_NOACTIVATE = 0x0010
-    SWP_SHOWWINDOW = 0x0040
-    SWP_NOOWNERZORDER = 0x0200
-
     WM_HOTKEY = 0x0312
-    WM_QUIT = 0x0012
     # Our private "stop pumping" message, posted to the hotkey thread on teardown.
     WM_APP_STOP = 0x8000 + 1
 
-    # SetWindowLongPtrW only exists in the 64-bit user32; the 32-bit build has
-    # SetWindowLongW and nothing else. Bind whichever is present so the same code
-    # runs on both without truncating a 64-bit style word.
-    _set_long = getattr(user32, "SetWindowLongPtrW", None) or user32.SetWindowLongW
-    _get_long = getattr(user32, "GetWindowLongPtrW", None) or user32.GetWindowLongW
-    _set_long.argtypes = [wintypes.HWND, ctypes.c_int, ctypes.c_ssize_t]
-    _set_long.restype = ctypes.c_ssize_t
-    _get_long.argtypes = [wintypes.HWND, ctypes.c_int]
-    _get_long.restype = ctypes.c_ssize_t
-
-    user32.SetWindowPos.argtypes = [
-        wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
-        ctypes.c_int, ctypes.c_int, wintypes.UINT,
-    ]
-    user32.SetWindowPos.restype = wintypes.BOOL
-    user32.IsWindow.argtypes = [wintypes.HWND]
-    user32.IsWindow.restype = wintypes.BOOL
     user32.RegisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int, wintypes.UINT, wintypes.UINT]
     user32.RegisterHotKey.restype = wintypes.BOOL
     user32.UnregisterHotKey.argtypes = [wintypes.HWND, ctypes.c_int]
     user32.UnregisterHotKey.restype = wintypes.BOOL
-    user32.GetMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND, wintypes.UINT, wintypes.UINT]
+    user32.GetMessageW.argtypes = [ctypes.POINTER(wintypes.MSG), wintypes.HWND,
+                                   wintypes.UINT, wintypes.UINT]
     user32.GetMessageW.restype = ctypes.c_int
-    user32.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    user32.PostThreadMessageW.argtypes = [wintypes.DWORD, wintypes.UINT,
+                                          wintypes.WPARAM, wintypes.LPARAM]
     user32.PostThreadMessageW.restype = wintypes.BOOL
+    user32.GetForegroundWindow.restype = wintypes.HWND
 
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     kernel32.GetCurrentThreadId.restype = wintypes.DWORD
@@ -153,69 +116,23 @@ def format_hotkey(spec):
         return ""
     order = ["ctrl", "alt", "shift", "win"]
     parts = [p.strip().lower() for p in str(spec).replace(" ", "").split("+") if p.strip()]
-    mods = [p for p in order if any(_MOD_NAMES.get(x) == _MOD_NAMES.get(p) for x in parts if x in _MOD_NAMES)]
+    mods = [p for p in order if any(_MOD_NAMES.get(x) == _MOD_NAMES.get(p)
+                                    for x in parts if x in _MOD_NAMES)]
     key = next((p for p in parts if p not in _MOD_NAMES), "")
     return "+".join([m.capitalize() for m in mods] + [key.upper() if len(key) == 1 else key.capitalize()])
 
 
-# --- our window's behaviour -------------------------------------------------
+# --- foreground -------------------------------------------------------------
 
 
-def apply_overlay_style(hwnd, click_through=True):
-    """Make ``hwnd`` behave as an overlay. Returns True if the styles were set.
-
-    Always applied: NOACTIVATE (clicking it never pulls focus off the game) and
-    TOOLWINDOW (keeps it out of the taskbar and the Alt-Tab list, so the overlay
-    can't be tabbed to by accident). TRANSPARENT is the click-through half and is
-    the only bit that changes at runtime.
-    """
-    if not (_IS_WINDOWS and hwnd) or not user32.IsWindow(hwnd):
-        return False
-    style = _get_long(hwnd, GWL_EXSTYLE)
-    style |= WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW
-    if click_through:
-        style |= WS_EX_TRANSPARENT
-    else:
-        style &= ~WS_EX_TRANSPARENT
-    _set_long(hwnd, GWL_EXSTYLE, style)
-    return True
+def foreground_hwnd():
+    """The window the user is currently interacting with, or None."""
+    if not _IS_WINDOWS:
+        return None
+    return user32.GetForegroundWindow() or None
 
 
-def set_click_through(hwnd, click_through):
-    """Toggle just the pass-through bit, leaving the rest of the style alone."""
-    if not (_IS_WINDOWS and hwnd) or not user32.IsWindow(hwnd):
-        return False
-    style = _get_long(hwnd, GWL_EXSTYLE)
-    updated = (style | WS_EX_TRANSPARENT) if click_through else (style & ~WS_EX_TRANSPARENT)
-    if updated != style:
-        _set_long(hwnd, GWL_EXSTYLE, updated)
-    return True
-
-
-def place(hwnd, x, y, width, height, topmost=True):
-    """Move/resize ``hwnd`` to a screen rect without ever activating it.
-
-    Re-asserting HWND_TOPMOST on every placement is deliberate: launching another
-    topmost window (or the game going through a mode switch) can quietly demote
-    us, and a demoted overlay renders behind the game where nobody can see it.
-    """
-    if not (_IS_WINDOWS and hwnd) or not user32.IsWindow(hwnd):
-        return False
-    flags = SWP_NOACTIVATE | SWP_NOOWNERZORDER
-    insert_after = HWND_TOPMOST if topmost else wintypes.HWND(0)
-    return bool(user32.SetWindowPos(hwnd, insert_after, int(x), int(y),
-                                    int(width), int(height), flags))
-
-
-def raise_topmost(hwnd):
-    """Re-assert topmost z-order without moving or resizing."""
-    if not (_IS_WINDOWS and hwnd) or not user32.IsWindow(hwnd):
-        return False
-    return bool(user32.SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-                                    SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_NOOWNERZORDER))
-
-
-# --- global hotkey ----------------------------------------------------------
+# --- global hotkeys ---------------------------------------------------------
 
 
 class HotkeyListener:

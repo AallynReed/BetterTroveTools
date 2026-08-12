@@ -1,6 +1,6 @@
 """In-game overlay: config, live data snapshot, and the window tracker.
 
-The overlay is a second, frameless, transparent, always-on-top pywebview window
+The overlay is a frameless, per-pixel-transparent, always-on-top native window
 that draws Trove reference data (server clock, daily/weekly bonuses, merchant
 timers, rotations, ongoing events) directly over the running game. It is
 strictly read-only with respect to Trove: it follows the game window's public
@@ -11,20 +11,24 @@ Trove process owns a visible foreground window and hides it the instant that
 stops being true -- game closed, minimized, or alt-tabbed away from. There is no
 mode in which the overlay floats over the desktop or another application.
 
-Three pieces live here:
+Four pieces:
 
-  * **Config** (``overlay.json`` in the cache root) -- master switch, hotkey,
+  * **Config** (``overlay.json`` in the cache root) -- master switch, hotkeys,
     opacity/scale, and per-widget enabled/anchor/position. Kept out of
     ``settings.json`` because the widget map is bulky and changes on every drag
     in the editor, and settings.json is rewritten wholesale on every save.
-  * **Snapshot** -- everything the widgets render, as absolute unix timestamps so
-    the page can tick countdowns locally instead of polling. Built offline from
-    ``ServerTime`` plus the bundled buff/biome JSON; the two network-backed bits
-    (chaos chest item, Trovesaurus events) are fetched on a slow background
-    refresh and degrade to nothing when offline.
+  * **Snapshot** -- the values the widgets render, as absolute unix timestamps.
+    Built offline from ``ServerTime`` plus the bundled buff/biome JSON; the two
+    network-backed bits (chaos chest item, Trovesaurus events) are fetched on a
+    slow background refresh and degrade to nothing when offline. Re-read only
+    every few minutes -- countdowns are recomputed from the timestamps, so the
+    display stays second-accurate without touching the data.
   * **Tracker** -- a daemon thread polling the game window and driving
-    show/hide/place through a host object ``main.py`` registers (the pywebview
-    window lives there; importing webview here would be a circular mess).
+    show/hide/place/repaint.
+  * **Rendering** -- ``backend/overlay_view`` turns the snapshot into localized
+    widget lines and ``utils/overlay_draw`` paints them. This was a WebView2
+    window until it proved impossible to make transparent; the reasoning and the
+    measurements are recorded in ``utils/overlay_draw``'s docstring.
 """
 from __future__ import annotations
 
@@ -36,19 +40,20 @@ from datetime import UTC, datetime, timedelta
 
 import eel
 
+from backend import overlay_view
 from backend.response import resp, standardize_response
 from utils.path import get_cache_root
 from utils.trove.server_time import ServerTime
-from utils import trove_window, win_overlay
+from utils import overlay_draw, overlay_window, trove_window, win_overlay
 
 # Windows-only, and desktop-only. Every mechanism the overlay is built on is a
-# Win32 one: enumerating the game's top-level window, WS_EX_TRANSPARENT
-# click-through, RegisterHotKey, and a topmost frameless WebView2 child window.
-# There is no equivalent path that works across X11, Wayland and the compositors
-# in between, so rather than ship something half-working on Linux the whole
-# feature reports unsupported there and the UI hides it. Android never sees it
-# either -- there is no eel bridge in web mode, so the tab simply isn't offered.
-SUPPORTED = trove_window._IS_WINDOWS
+# Win32 one: enumerating the game's top-level window, a layered window with
+# per-pixel alpha, RegisterHotKey, and GDI+ drawing. There is no equivalent path
+# that works across X11, Wayland and the compositors in between, so rather than
+# ship something half-working on Linux the whole feature reports unsupported
+# there and the UI hides it. Android never sees it either -- there is no eel
+# bridge in web mode, so the tab simply isn't offered.
+SUPPORTED = trove_window._IS_WINDOWS and overlay_draw.available()
 
 # --- widget catalog ---------------------------------------------------------
 
@@ -62,20 +67,26 @@ VALID_ANCHORS = ("top-left", "top-right", "bottom-left", "bottom-right")
 # notification stack, which has nowhere else to render once the user routes
 # notifications into the overlay.
 #
-# Offsets are fractions but widget heights are in CSS pixels, so the default
-# layout is spaced for the smallest window anyone plays in (1280x720). At
-# larger resolutions the gaps simply widen -- which is the right way round.
+# Offsets are fractions but widget heights are in pixels, so the default layout
+# is spaced for the smallest window anyone plays in (1280x720). At larger
+# resolutions the gaps simply widen -- which is the right way round.
+#
+# The defaults also dodge Trove's own HUD, which is what makes an overlay look
+# broken out of the box: the player frame sits top-left, currencies/buffs and
+# the challenge tracker top-right, the hotbar bottom-centre and chat
+# bottom-left. That leaves the mid-left column and the bottom-right corner, and
+# that is where the shipped widgets go.
 WIDGET_DEFAULTS = {
-    "clock":         {"on": True,  "anchor": "top-right",    "x": 0.012, "y": 0.020},
-    "daily_buff":    {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.020},
-    "weekly_buff":   {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.260},
-    "notifications": {"on": True,  "anchor": "bottom-right", "x": 0.012, "y": 0.020},
-    "merchants":     {"on": False, "anchor": "bottom-left",  "x": 0.012, "y": 0.020},
-    "chaos_chest":   {"on": False, "anchor": "top-right",    "x": 0.012, "y": 0.180},
-    "gardening":     {"on": False, "anchor": "bottom-left",  "x": 0.012, "y": 0.190},
-    "rotations":     {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.230},
-    "delve":         {"on": False, "anchor": "top-right",    "x": 0.012, "y": 0.320},
-    "events":        {"on": False, "anchor": "bottom-left",  "x": 0.012, "y": 0.350},
+    "clock":         {"on": True,  "anchor": "bottom-right", "x": 0.012, "y": 0.050},
+    "daily_buff":    {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.130},
+    "weekly_buff":   {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.350},
+    "notifications": {"on": True,  "anchor": "bottom-right", "x": 0.012, "y": 0.220},
+    "merchants":     {"on": False, "anchor": "top-left",     "x": 0.012, "y": 0.500},
+    "chaos_chest":   {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.400},
+    "gardening":     {"on": False, "anchor": "top-left",     "x": 0.012, "y": 0.650},
+    "rotations":     {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.520},
+    "delve":         {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.700},
+    "events":        {"on": False, "anchor": "top-right",    "x": 0.012, "y": 0.400},
 }
 
 # Two hotkeys, because they answer two different questions mid-fight:
@@ -89,12 +100,20 @@ CONFIG_DEFAULTS = {
     "enabled": False,
     "hotkey": DEFAULT_HOTKEY,
     "mute_hotkey": DEFAULT_MUTE_HOTKEY,
-    "opacity": 0.92,
+    # Panel fill only -- text stays fully opaque, so this is genuinely "how much
+    # of the game shows through the boxes". Defaults deliberately light: an
+    # overlay you have to look past is worse than one you have to look at.
+    "opacity": 0.55,
     "scale": 1.0,
     # Hide while the player is in another window. Off means the overlay stays up
     # over a non-foreground Trove -- still only over Trove, never over anything
     # else, because a non-running game hides it regardless.
     "hide_when_unfocused": True,
+    # Hide while a game UI panel is open. Detected from cursor confinement:
+    # Trove clips the cursor to a 1x1 box while it owns the camera and releases
+    # it for inventory, the store, the map and chat -- so a free cursor means
+    # the player is reading something the overlay would be sitting on top of.
+    "hide_in_menus": True,
     # Route desktop notifications into the overlay instead of tray balloons
     # while the overlay is actually on screen.
     "notifications_in_overlay": True,
@@ -108,6 +127,20 @@ _CONFIG_FILENAME = "overlay.json"
 # drag feeling attached without spending real CPU: the poll is three cheap
 # user32 calls, and the process scan only reruns once the cached handle dies.
 _POLL_SECONDS = 0.4
+# Consecutive unfocused polls before the overlay hides. Foreground ownership
+# blips for a frame during alt-tab and when the game spawns a child window; at
+# 400ms a tick, three ticks is ~1.2s of genuinely being elsewhere.
+_HIDE_GRACE_TICKS = 3
+# Consecutive cursor-visible polls before the overlay treats it as "a menu is
+# open". Panels animate open, briefly flashing the cursor; two ticks (~0.8s)
+# is past that without feeling sluggish.
+_MENU_GRACE_TICKS = 2
+# Repaint cadence. The only thing that changes every second is a countdown, so
+# 1Hz is the ceiling on what is worth drawing over a game.
+_RENDER_SECONDS = 1.0
+# How often the underlying data is rebuilt. Rotations roll over on the scale of
+# hours; the countdowns come from absolute timestamps in between.
+_SNAPSHOT_SECONDS = 120.0
 # Network-backed snapshot bits refresh far slower than the local math.
 _NETWORK_TTL_SECONDS = 15 * 60
 
@@ -132,8 +165,14 @@ def _normalize_widget(widget_id, raw):
     base = WIDGET_DEFAULTS[widget_id]
     raw = raw if isinstance(raw, dict) else {}
     anchor = raw.get("anchor")
+    # Optional per-widget hotkey. "" means unbound, which is the default -- a
+    # shipped binding for ten widgets would carpet the keyboard.
+    hotkey = raw.get("hotkey") or ""
+    if hotkey and not win_overlay.parse_hotkey(hotkey):
+        hotkey = ""
     return {
         "enabled": bool(raw.get("enabled", base["on"])),
+        "hotkey": hotkey,
         "anchor": anchor if anchor in VALID_ANCHORS else base["anchor"],
         # Clamped to [0, 0.95] so a widget can never be dragged (or hand-edited)
         # entirely off the game window with no way to get it back.
@@ -161,9 +200,12 @@ def normalize_config(raw):
         "enabled": raw.get("enabled") is True,
         "hotkey": hotkey,
         "mute_hotkey": mute_hotkey,
-        "opacity": _clamp(raw.get("opacity", CONFIG_DEFAULTS["opacity"]), 0.2, 1.0, CONFIG_DEFAULTS["opacity"]),
+        # 0 is allowed and useful: the panel disappears entirely and the text
+        # floats on the game, which some players prefer. Text never fades.
+        "opacity": _clamp(raw.get("opacity", CONFIG_DEFAULTS["opacity"]), 0.0, 1.0, CONFIG_DEFAULTS["opacity"]),
         "scale": _clamp(raw.get("scale", CONFIG_DEFAULTS["scale"]), 0.6, 2.0, CONFIG_DEFAULTS["scale"]),
         "hide_when_unfocused": raw.get("hide_when_unfocused", True) is not False,
+        "hide_in_menus": raw.get("hide_in_menus", True) is not False,
         "notifications_in_overlay": raw.get("notifications_in_overlay", True) is not False,
         "notification_seconds": int(_clamp(raw.get("notification_seconds", 12), 3, 60, 12)),
         # Unknown ids in the file are dropped; widgets added by a later version
@@ -461,30 +503,35 @@ def build_snapshot():
 # --- window tracker ---------------------------------------------------------
 
 
-class OverlayHost:
-    """What ``main.py`` must provide for the tracker to drive a real window.
+def _hotkey_map(config):
+    """``{action: spec}`` for every binding, with duplicates dropped.
 
-    Kept as a duck-typed contract instead of an import so this module stays
-    importable (and unit-testable) with no GUI toolkit present -- the Linux build
-    imports it and simply never registers a host.
+    Two actions on one combination means the second ``RegisterHotKey`` silently
+    loses, and the user gets a key that looks bound in the editor and does
+    nothing. Dropping the later one instead makes the clash visible: the editor
+    reads the per-action result and can say which binding didn't take.
     """
+    mapping = {}
+    seen = set()
 
-    def ensure_window(self):
-        """Create the overlay window if needed; return its HWND or None."""
-        raise NotImplementedError
+    def add(action, spec):
+        if not spec:
+            return
+        key = str(spec).lower().replace(" ", "")
+        if key in seen:
+            return
+        seen.add(key)
+        mapping[action] = spec
 
-    def show(self):
-        raise NotImplementedError
-
-    def hide(self):
-        raise NotImplementedError
-
-    def destroy(self):
-        raise NotImplementedError
+    add("interact", config.get("hotkey"))
+    add("mute", config.get("mute_hotkey"))
+    for widget_id, widget in (config.get("widgets") or {}).items():
+        add(f"widget:{widget_id}", (widget or {}).get("hotkey"))
+    return mapping
 
 
 class OverlayTracker:
-    """Follows Trove's window and keeps the overlay glued to it.
+    """Follows Trove's window and keeps the native overlay glued to it.
 
     The state machine is deliberately small: every tick asks "should the overlay
     be visible right now?", and visibility is a pure function of the game's
@@ -494,32 +541,32 @@ class OverlayTracker:
 
     def __init__(self):
         self._lock = threading.RLock()
-        self._host = None
         self._thread = None
         self._stop = threading.Event()
         self._config = load_config()
         self._hwnd = None            # cached Trove handle
-        self._overlay_hwnd = None
+        self._window = None          # utils.overlay_window.OverlayWindow
         self._visible = False
-        self._interactive = False    # hotkey-toggled click-through off
+        self._interactive = False    # hotkey-toggled: overlay accepts clicks
         # Session mute: the "get it off my screen" hotkey. Deliberately NOT
         # persisted -- a muted overlay that survives a restart just looks broken.
         # It does survive Trove restarting within one app run, because "it's in
         # my way" usually means for the rest of the play session.
         self._muted = False
-        self._page_ready = False
-        self._notification_seq = 0
+        self._unfocused_ticks = 0
+        self._menu_ticks = 0
         self._last_rect = None
+        self._last_render = 0.0
+        self._snapshot = {}
+        self._snapshot_at = 0.0
+        self._notifications = []     # [{title, message, expires}]
         self._status = {"running": False, "visible": False, "fullscreen_risk": False,
                         "interactive": False, "muted": False, "hotkeys": {},
+                        "in_menu": False,
                         "supported": SUPPORTED}
         self._hotkey = win_overlay.HotkeyListener(self._on_hotkey)
 
     # -- wiring ----------------------------------------------------------
-    def set_host(self, host):
-        with self._lock:
-            self._host = host
-
     @property
     def config(self):
         with self._lock:
@@ -539,7 +586,7 @@ class OverlayTracker:
         with self._lock:
             self._config = normalize_config(config)
             enabled = self._config["enabled"] and SUPPORTED
-            hotkeys = {"interact": self._config["hotkey"], "mute": self._config["mute_hotkey"]}
+            hotkeys = _hotkey_map(self._config)
 
         if enabled:
             results = self._hotkey.bind_all(hotkeys)
@@ -555,7 +602,7 @@ class OverlayTracker:
                 self._status["hotkeys"] = {}
             self._stop_tracking()
 
-        self.push_config()
+        self._request_render()
         return self.config
 
     def adopt_config(self, config):
@@ -567,7 +614,7 @@ class OverlayTracker:
         """
         with self._lock:
             self._config = normalize_config(config)
-        self.push_config()
+        self._request_render()
         return self.config
 
     def _start(self):
@@ -585,29 +632,70 @@ class OverlayTracker:
     def shutdown(self):
         self._hotkey.stop()
         self._stop.set()
-        host = None
         with self._lock:
-            host = self._host
+            window = self._window
+            self._window = None
             self._visible = False
-        if host:
+        if window:
             try:
-                host.destroy()
+                window.stop()
             except Exception:
                 pass
 
+    def _ensure_window(self):
+        with self._lock:
+            window = self._window
+        if window is not None:
+            return window
+        if not (SUPPORTED and overlay_draw.available()):
+            return None
+        window = overlay_window.OverlayWindow(on_move=self._on_widget_moved)
+        if not window.start():
+            return None
+        with self._lock:
+            self._window = window
+        return window
+
     # -- hotkeys ---------------------------------------------------------
     def _on_hotkey(self, action):
+        if action.startswith("widget:"):
+            self.toggle_widget(action.split(":", 1)[1])
+            return
         if action == "mute":
             # Works whether or not the overlay is currently drawn: the whole
             # point is a panic key, and pre-muting before a raid is legitimate.
             self.set_muted(not self._muted)
             return
         if action == "interact":
-            # Only meaningful while the overlay is actually up. Otherwise it
-            # would silently arm interactive mode for the next time Trove
-            # launches, which is a surprise nobody asked for.
-            if self.is_showing():
+            # Deliberately NOT gated on the overlay being visible. Unlocking is
+            # also the "force it on" key: it overrides the menu auto-hide, so a
+            # player who wants to actually *use* an overlay widget while a game
+            # panel is open can summon it. Gating on visibility would make the
+            # key do nothing in exactly that case. It still requires Trove to be
+            # running, so it can never arm itself against an empty desktop.
+            with self._lock:
+                running = self._status["running"]
+            if running:
                 self.set_interactive(not self._interactive)
+
+    def toggle_widget(self, widget_id):
+        """Flip one widget on or off from its own hotkey.
+
+        This writes the persisted `enabled` flag rather than a session override,
+        so the key does the same thing as the checkbox in the editor and the two
+        never disagree about what is on.
+        """
+        if widget_id not in WIDGET_DEFAULTS:
+            return None
+        config = self.config
+        widget = dict(config["widgets"].get(widget_id, {}))
+        widget["enabled"] = not widget.get("enabled")
+        config["widgets"][widget_id] = widget
+        # adopt_config, not apply_config: flipping a widget must not tear down
+        # and re-register every global hotkey (including the one just pressed).
+        self.adopt_config(save_config(config))
+        self._render(force=True)
+        return widget["enabled"]
 
     def set_muted(self, muted):
         """Hide/show the overlay without touching the persisted config."""
@@ -616,7 +704,6 @@ class OverlayTracker:
             self._status["muted"] = self._muted
         if self._muted:
             self._set_visible(False)
-        _push_js("overlay_set_muted", bool(muted))
         return bool(muted)
 
     def is_muted(self):
@@ -627,11 +714,21 @@ class OverlayTracker:
         with self._lock:
             self._interactive = bool(interactive)
             self._status["interactive"] = self._interactive
-            overlay_hwnd = self._overlay_hwnd
-        if overlay_hwnd:
-            win_overlay.set_click_through(overlay_hwnd, not interactive)
-        _push_js("overlay_set_interactive", bool(interactive))
+            window = self._window
+        if window:
+            window.set_interactive(bool(interactive))
+        self._request_render()
         return bool(interactive)
+
+    def _on_widget_moved(self, widget_id, anchor, x, y):
+        """A widget was dragged in game -- persist it like the editor would."""
+        if widget_id not in WIDGET_DEFAULTS:
+            return
+        config = self.config
+        widget = dict(config["widgets"].get(widget_id, {}))
+        widget.update({"anchor": anchor, "x": x, "y": y})
+        config["widgets"][widget_id] = widget
+        self.adopt_config(save_config(config))
 
     # -- the loop --------------------------------------------------------
     def _run(self):
@@ -659,29 +756,77 @@ class OverlayTracker:
             self._status["running"] = info["running"]
             self._status["fullscreen_risk"] = info["fullscreen_risk"]
 
+        focused = info["foreground"] or self._overlay_has_focus()
+
+        # "A game UI is open" == the game let go of the cursor. Debounced by a
+        # tick so a single frame of release (which happens as panels animate)
+        # doesn't blink the overlay; coming back is immediate, because the
+        # player closing a menu wants the data back at once.
+        #
+        # Never applies while the overlay is unlocked. That is what makes the
+        # interact hotkey a "force on" key: the player has said they want to use
+        # the overlay, and the cursor being free is the precondition for that,
+        # not a reason to take it away.
+        with self._lock:
+            interactive = self._interactive
+        # mouse_captured is None when the state can't be read; only a definite
+        # False (the game released the cursor) counts as "a menu is open".
+        in_menu = False
+        if config["hide_in_menus"] and not interactive and info.get("mouse_captured") is False:
+            self._menu_ticks += 1
+            in_menu = self._menu_ticks >= _MENU_GRACE_TICKS
+        else:
+            self._menu_ticks = 0
+
+        with self._lock:
+            self._status["in_menu"] = in_menu
+
         should_show = bool(
             not muted
+            and not in_menu
             and info["running"]
             and info["rect"]
             and not info["minimized"]
-            and (info["foreground"] or not config["hide_when_unfocused"])
+            and (focused or not config["hide_when_unfocused"])
         )
 
         if not should_show:
+            # Don't hide on the first unfocused tick. Foreground ownership blips
+            # for a frame during alt-tab, when Trove opens its own child window,
+            # and when a tooltip or IME appears -- hiding on each of those makes
+            # the overlay strobe. Only a sustained loss of focus hides it.
+            if self._visible and not focused and info["running"] and not info["minimized"]:
+                self._unfocused_ticks += 1
+                if self._unfocused_ticks < _HIDE_GRACE_TICKS:
+                    return
             self._set_visible(False)
             return
 
+        self._unfocused_ticks = 0
         self._set_visible(True, rect=info["rect"])
+
+    def _overlay_has_focus(self):
+        """True when the foreground window IS our overlay.
+
+        Without this the overlay hides itself the instant you click it in
+        interactive mode: the click moves foreground off Trove, the next tick
+        reads "game not focused", and the thing you were dragging vanishes.
+        """
+        with self._lock:
+            window = self._window
+        if not window or not window.hwnd:
+            return False
+        return win_overlay.foreground_hwnd() == window.hwnd
 
     def _set_visible(self, visible, rect=None):
         with self._lock:
-            host = self._host
             was_visible = self._visible
+            window = self._window
 
         if not visible:
-            if was_visible and host:
+            if was_visible and window:
                 try:
-                    host.hide()
+                    window.hide()
                 except Exception:
                     pass
             with self._lock:
@@ -696,97 +841,124 @@ class OverlayTracker:
                     self._status["interactive"] = False
             return
 
-        if not host:
-            return
-
-        overlay_hwnd = None
-        try:
-            overlay_hwnd = host.ensure_window()
-        except Exception:
-            return
-        if not overlay_hwnd:
+        window = self._ensure_window()
+        if not window:
             return
 
         first_show = not was_visible
         with self._lock:
-            new_hwnd = overlay_hwnd != self._overlay_hwnd
-            self._overlay_hwnd = overlay_hwnd
-            interactive = self._interactive
             last_rect = self._last_rect
-
-        if first_show or new_hwnd:
-            win_overlay.apply_overlay_style(overlay_hwnd, click_through=not interactive)
+            interactive = self._interactive
 
         if rect and rect != last_rect:
-            win_overlay.place(overlay_hwnd, *rect)
+            window.place(*rect)
             with self._lock:
                 self._last_rect = rect
-            _push_js("overlay_set_viewport", {"width": rect[2], "height": rect[3]})
+            self._render(force=True)
         else:
             # Cheap re-assert: another topmost window (Discord, a Steam popup)
             # can push us down the z-order without changing our geometry.
-            win_overlay.raise_topmost(overlay_hwnd)
+            window.raise_topmost()
+            self._render()
 
         if first_show:
-            try:
-                host.show()
-            except Exception:
-                return
+            window.set_interactive(interactive)
+            window.show()
             with self._lock:
                 self._visible = True
                 self._status["visible"] = True
-            self.push_config()
 
-    # -- pushes to the overlay page --------------------------------------
-    def page_ready(self):
-        """The overlay page has mounted and can receive pushes."""
+    # -- rendering -------------------------------------------------------
+    def _request_render(self):
+        """Force the next tick to repaint (config or mode changed)."""
         with self._lock:
-            self._page_ready = True
-        warm_network_cache()
-        self.push_config()
+            self._last_render = 0.0
 
-    def push_config(self):
-        _push_js("overlay_apply_config", {"config": self.config, "status": self.status()})
+    def _render(self, force=False):
+        now = time.time()
+        with self._lock:
+            window = self._window
+            config = dict(self._config)
+            if not force and (now - self._last_render) < _RENDER_SECONDS:
+                return
+            self._last_render = now
+        if not window:
+            return
+
+        # Snapshot data changes on rotation boundaries, not every second; the
+        # countdowns are recomputed locally from its absolute timestamps.
+        with self._lock:
+            stale = (now - self._snapshot_at) > _SNAPSHOT_SECONDS
+        if stale:
+            try:
+                snapshot = build_snapshot()
+            except Exception:
+                snapshot = {}
+            with self._lock:
+                if snapshot:
+                    self._snapshot = snapshot
+                self._snapshot_at = now
+
+        with self._lock:
+            snapshot = dict(self._snapshot)
+            self._notifications = [n for n in self._notifications if n["expires"] > now]
+            notifications = list(self._notifications)
+
+        try:
+            widgets = overlay_view.build_widgets(
+                config, snapshot, notifications, catalog_order=list(WIDGET_DEFAULTS))
+        except Exception:
+            return
+
+        with self._lock:
+            interactive = self._interactive
+        if interactive:
+            # Unlocked mode has no other affordance -- the HUD bar went away with
+            # the web renderer -- so the accent border on every panel is the only
+            # signal that clicks are now being caught instead of passed through.
+            for widget in widgets:
+                widget["highlight"] = True
+
+        window.update(widgets,
+                      scale=config["scale"],
+                      opacity=config["opacity"],
+                      accent=_accent_rgb())
 
     def notify(self, title, message):
-        """Deliver a notification into the overlay. True if it was routed there.
+        """Show a notification on the overlay. True if it was routed there.
 
         False means "not handled" and the caller (the shared DesktopNotifier)
-        falls back to the tray balloon, so a disabled, muted, or not-yet-mounted
-        overlay never silently eats a notification -- it goes to the tray as it
-        always did.
+        falls back to the tray balloon, so a disabled or muted overlay never
+        silently eats a notification.
         """
         with self._lock:
-            routed = (
-                self._visible
-                and self._page_ready
-                and not self._muted
-                and self._config["notifications_in_overlay"]
-            )
+            routed = (self._visible and not self._muted
+                      and self._config["notifications_in_overlay"]
+                      and self._config["widgets"].get("notifications", {}).get("enabled"))
             seconds = self._config["notification_seconds"]
-        if not routed:
-            return False
-        self._notification_seq += 1
-        return _push_js("overlay_notification", {
-            "title": str(title or ""),
-            "message": str(message or ""),
-            "seconds": seconds,
-            "id": f"n{self._notification_seq}",
-        })
+            if routed:
+                self._notifications.append({
+                    "title": str(title or ""),
+                    "message": str(message or ""),
+                    "expires": time.time() + seconds,
+                })
+                # Keep the stack short; a burst of events must not cover the game.
+                self._notifications = self._notifications[-3:]
+        if routed:
+            self._render(force=True)
+        return bool(routed)
 
 
-def _push_js(name, payload):
-    """Call an eel-exposed JS function, swallowing the "no page yet" case.
-
-    eel broadcasts to every connected page and the client ignores names it
-    hasn't exposed, so only the overlay page reacts to these -- the main window
-    never sees them.
-    """
+def _accent_rgb():
+    """The user's accent, for the one place the overlay uses it."""
     try:
-        getattr(eel, name)(payload)
-        return True
+        settings = json.loads((get_cache_root() / "settings.json").read_text(encoding="utf-8"))
+        parsed = overlay_draw.parse_hex(settings.get("accent_color"))
+        if parsed:
+            return parsed
     except Exception:
-        return False
+        pass
+    return (94, 198, 255)
 
 
 tracker = OverlayTracker()
@@ -868,16 +1040,8 @@ def overlay_get_snapshot():
 
 @eel.expose
 @standardize_response
-def overlay_page_ready():
-    """The overlay page announces itself once mounted."""
-    tracker.page_ready()
-    return resp(True, data=_state_payload(), **_state_payload())
-
-
-@eel.expose
-@standardize_response
 def overlay_set_interactive(interactive):
-    """Called by the overlay page's own lock affordance and by the editor."""
+    """Toggle click-through from the editor (the hotkey does the same thing)."""
     value = tracker.set_interactive(bool(interactive))
     return resp(True, data={"interactive": value}, interactive=value)
 

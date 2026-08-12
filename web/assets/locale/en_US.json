@@ -1887,8 +1887,8 @@
         "overlay.hide_when_unfocused": "Hide while another window is in front",
         "overlay.hotkey_clash": "Another application already owns this combination. Pick a different one.",
         "overlay.hotkey_in_use": "That combination is already used by the other overlay hotkey.",
-        "overlay.hotkey_interact": "Interact hotkey",
-        "overlay.hotkey_interact_hint": "Makes the overlay clickable so you can drag widgets and dismiss notifications. Press it again to go back to click-through.",
+        "overlay.hotkey_interact": "Unlock / force-show hotkey",
+        "overlay.hotkey_interact_hint": "Makes the overlay clickable so you can drag widgets, and forces it to stay on screen even while a game menu is open. Press it again to go back to click-through.",
         "overlay.hotkey_mute": "Hide hotkey",
         "overlay.hotkey_mute_hint": "Hides the overlay instantly without turning the feature off. Press it again to bring it back.",
         "overlay.hotkey_needs_modifier": "Add Ctrl, Alt or Shift - a plain key would be captured everywhere in Windows.",
@@ -1936,7 +1936,15 @@
         "overlay.widgets_hint": "Choose what the overlay shows. Everything comes from the same data as the Home page.",
         "overlay.wild_mana": "Wild Mana",
         "trove.tab_launcher": "Launcher",
-        "trove.tab_overlay": "Overlay"
+        "trove.tab_overlay": "Overlay",
+        "overlay.opacity_hint": "Fades the panel background only — the text stays fully readable at any setting.",
+        "overlay.hide_in_menus": "Hide while a game menu is open",
+        "overlay.hide_in_menus_hint": "Detected from the mouse cursor: Trove shows it for inventory, the store, the map and chat, and hides it while you are controlling the camera.",
+        "overlay.status_in_menu": "Hidden - a game menu is open",
+        "overlay.no_hotkey": "No hotkey",
+        "overlay.clear_hotkey": "Clear hotkey",
+        "overlay.widget_hotkey_hint": "Bind a key to show and hide just this widget.",
+        "overlay.widget_hotkey_note": "A widget hotkey toggles that widget on its own. Every binding must be unique, and each needs at least one of Ctrl, Alt or Shift."
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",
