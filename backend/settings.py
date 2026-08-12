@@ -43,7 +43,7 @@ def _normalize_settings_payload(payload):
         "accent_color", "show_community_content", "show_official_news",
         "show_player_activity",
         "auto_fix_names", "show_mod_preview_on_info_side", "hide_beta_features",
-        "enable_legacy_projects", "close_to_tray",
+        "enable_legacy_projects", "close_to_tray", "beta_builds",
         "last_game_path", "locale"
     ]
     for key in allowed_keys:

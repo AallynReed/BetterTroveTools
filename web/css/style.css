@@ -315,6 +315,41 @@ body.app-update-active #network-tracker-vue-app {
     overflow: hidden;
 }
 
+.app-version-row {
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    min-width: 0;
+}
+
+.app-update-check-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    font-size: var(--t-fs-label);
+    cursor: pointer;
+    transition: color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease);
+}
+
+.app-update-check-btn:hover {
+    color: var(--text-main);
+    border-color: rgba(var(--accent-rgb), 0.55);
+    background: rgba(var(--accent-rgb), 0.14);
+}
+
+.app-update-check-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .app-version-text {
     font-size: var(--t-fs-label);
     font-weight: 700;

@@ -747,7 +747,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const metaResponse = await eel.get_app_metadata()();
     let currentVersion = metaResponse?.APP_VERSION || "Unknown";
-    
+
     if (metaResponse && metaResponse.APP_VERSION) {
         const appName = metaResponse.APP_NAME || "Better Trove Tools";
         document.title = `${appName} v${currentVersion}`;
@@ -755,9 +755,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (titleEl) {
             const isBetaVersion = /b$/i.test(currentVersion);
             const cleanVersion = isBetaVersion ? currentVersion.replace(/b$/i, '') : currentVersion;
+            // The version sits in its own row so the manual "check for updates"
+            // button can live beside it (appended later, only on builds that can
+            // actually self-update).
             titleEl.innerHTML = `
                 <div class="app-name-text">${appName}</div>
-                <div class="app-version-text">v${cleanVersion}${isBetaVersion ? ' <span class="app-beta-pill">BETA</span>' : ''}</div>
+                <div class="app-version-row">
+                    <span class="app-version-text">v${cleanVersion}${isBetaVersion ? ' <span class="app-beta-pill">BETA</span>' : ''}</span>
+                </div>
             `;
         }
     }
@@ -789,7 +794,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return a.isBeta ? -1 : 1;
     };
 
+    // Update checks run at launch, every 5 minutes after that, and on demand from
+    // the refresh button next to the version in the sidebar.
+    const UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000;
     let isAppUpdateStarting = false;
+    let updateCheckBtn = null;
+    let updateCacheCleared = false;
     const updateOverlayEl = document.getElementById('app-update-overlay');
     const updateOverlayTitleEl = document.getElementById('app-update-overlay-title');
     const updateOverlayMessageEl = document.getElementById('app-update-overlay-message');
@@ -866,163 +876,245 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch { return null; }
     };
 
-    // Pick the best target across channels. Beta users check BOTH channels and
-    // take whichever ships a newer version (matches the old walk-back behavior).
-    const kiwiBestUpdate = async (installed, platform, currentIsBeta) => {
-        const channels = currentIsBeta ? ['release', 'beta'] : ['release'];
+    // Pick the best target across the channels this install tracks. Opting in to
+    // betas means "always be on the newest build", not "always be on a beta": we
+    // query BOTH channels and take whichever ships the higher version, so a
+    // stable release that has overtaken the last beta still wins.
+    const kiwiBestUpdate = async (installed, platform, includeBeta) => {
+        const channels = includeBeta ? ['release', 'beta'] : ['release'];
         const results = await Promise.all(channels.map((c) => kiwiCheckUpdate(installed, platform, c)));
         let best = null;
         for (const r of results) {
             if (!r) continue;
+            // Second line of defence behind the API's own comparison: never offer
+            // a build that isn't actually newer than the installed one, so the
+            // beta channel can't walk a release install backwards.
+            if (parseVersion(r.tag_name) && compareVersionTags(r.tag_name, installed) <= 0) continue;
             if (!best || compareVersionTags(r.tag_name, best.tag_name) > 0) best = r;
         }
         return best;
+    };
+
+    const betaOptIn = () => !!(window.AppSettings && window.AppSettings.get('beta_builds', false) === true);
+
+    const removeUpdateButton = () => {
+        const sidebar = document.getElementById('sidebar');
+        const existing = sidebar && sidebar.querySelector('.app-update-container');
+        if (existing) existing.remove();
+    };
+
+    // Shared by the Android and desktop paths -- same sidebar call-to-action, they
+    // just do different things when it's clicked.
+    const mountUpdateButton = (latestVersion, onClick) => {
+        const sidebar = document.getElementById('sidebar');
+        if (!sidebar) return null;
+        const existing = sidebar.querySelector('.app-update-container');
+        // Re-checks land here every 5 minutes; rebuilding an identical button
+        // would restart its pulse and drop hover/focus for nothing.
+        if (existing && existing.dataset.version === latestVersion) {
+            return existing.querySelector('button');
+        }
+        if (existing) existing.remove();
+        const container = document.createElement('div');
+        container.className = 'app-update-container';
+        container.dataset.version = latestVersion;
+        const button = document.createElement('button');
+        button.className = 'nav-btn update-app-btn';
+        button.title = t('app.a_new_version_is_available_click_to_upda_1d6574');
+        button.innerHTML = `
+            <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
+            <span class="nav-text">${t('app.update_v_version').replace('{version}', latestVersion)}</span>
+        `;
+        button.addEventListener('click', () => onClick(button));
+        container.appendChild(button);
+        sidebar.appendChild(container);
+        return button;
     };
 
     // Android update notice: the packaged app can't self-install like the desktop
     // MSI flow, so it asks the API for the latest .apk on its channel and links
     // straight to that asset (system browser handles download/install).
     const checkAndroidUpdate = async () => {
-        try {
-            const currentParsed = parseVersion(currentVersion);
-            if (!currentParsed) return;
-            const target = await kiwiBestUpdate(currentVersion, 'android', currentParsed.isBeta);
-            if (!target) return;
-            const latestVersion = normalizeVersionTag(target.tag_name);
-            const sidebar = document.getElementById('sidebar');
-            if (!sidebar) return;
-            const existing = sidebar.querySelector('.app-update-container');
-            if (existing) existing.remove();
-            const container = document.createElement('div');
-            container.className = 'app-update-container';
-            const button = document.createElement('button');
-            button.className = 'nav-btn update-app-btn';
-            button.title = t('app.a_new_version_is_available_click_to_upda_1d6574');
-            button.innerHTML = `
-                <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
-                <span class="nav-text">${t('app.update_v_version').replace('{version}', latestVersion)}</span>
-            `;
-            button.addEventListener('click', () => {
-                window.open(target.asset.browser_download_url, '_blank', 'noopener,noreferrer');
-            });
-            container.appendChild(button);
-            sidebar.appendChild(container);
-        } catch (e) { /* offline / API error -> no update notice */ }
+        const currentParsed = parseVersion(currentVersion);
+        if (!currentParsed) return false;
+        const target = await kiwiBestUpdate(currentVersion, 'android', betaOptIn());
+        if (!target) {
+            removeUpdateButton();
+            return false;
+        }
+        mountUpdateButton(normalizeVersionTag(target.tag_name), () => {
+            window.open(target.asset.browser_download_url, '_blank', 'noopener,noreferrer');
+        });
+        return true;
     };
 
-    if (window.BTT_WEB_MODE === true) {
-        if (window.BTT_NATIVE === true) {
-            // The packaged Android app checks GitHub for a newer release APK.
-            void checkAndroidUpdate();
-        } else {
-            // The hosted web build shows a desktop-download CTA instead.
-            addWebDownloadButton();
+    const checkDesktopUpdate = async () => {
+        const currentParsed = parseVersion(currentVersion);
+        const updateTarget = currentParsed
+            ? await kiwiBestUpdate(currentVersion, 'windows', betaOptIn())
+            : null;
+        // kiwiBestUpdate already filtered to the priority-matched .msi asset and
+        // aliased its url onto browser_download_url, so the self-update click
+        // handler below works without further changes.
+        const updateAsset = updateTarget ? (updateTarget.asset || null) : null;
+
+        if (!updateTarget || !updateAsset) {
+            removeUpdateButton();
+            // Already on the latest build: drop the installer (and its log/helper)
+            // a previous update left in the cache instead of hoarding it forever.
+            // Once per session -- the 5-minute re-check has nothing left to clear.
+            if (currentParsed && !updateCacheCleared) {
+                updateCacheCleared = true;
+                try { await eel.clear_update_cache()(); } catch {}
+            }
+            return false;
         }
+
+        const latestVersion = normalizeVersionTag(updateTarget.tag_name);
+        mountUpdateButton(latestVersion, async (updateButton) => {
+            if (isAppUpdateStarting) return;
+
+            let confirmed = true;
+            if (typeof window.showConfirmModal === 'function') {
+                confirmed = await window.showConfirmModal({
+                    title: t('app.install_update'),
+                    message: t('app.download_and_install_v_version_now_the_a_2231eb').replace('{version}', latestVersion),
+                    confirmLabel: t('app.update_now'),
+                    cancelLabel: t('common.cancel'),
+                    danger: false
+                });
+            }
+            if (!confirmed) return;
+
+            isAppUpdateStarting = true;
+            updateButton.disabled = true;
+            setAppUpdateOverlay(
+                true,
+                t('app.downloading_the_installer_and_preparing_6c20a2'),
+                t('app.updating_better_trove_tools')
+            );
+
+            try {
+                const response = await window.callBackend(
+                    eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
+                    t('app.failed_to_start_self_update')
+                );
+
+                if (!response.success) {
+                    throw new Error(response.error || t('app.failed_to_start_self_update'));
+                }
+
+                setAppUpdateOverlay(
+                    true,
+                    t('app.closing_the_app_window_and_starting_the_e43133'),
+                    t('app.installing_update')
+                );
+
+                try {
+                    await window.callBackend(
+                        eel.finalize_self_update_exit(2.2)(),
+                        t('app.failed_to_close_app_for_update')
+                    );
+                } catch {}
+
+                setTimeout(() => {
+                    try { window.close(); } catch {}
+                }, 100);
+                setTimeout(() => {
+                    try {
+                        window.location.replace('about:blank');
+                    } catch {}
+                }, 350);
+            } catch (err) {
+                isAppUpdateStarting = false;
+                updateButton.disabled = false;
+                setAppUpdateOverlay(false);
+                window.showToast(String(err?.message || err || t('app.failed_to_start_self_update')), true, {
+                    actionLabel: t('app.open_release'),
+                    onAction: async () => eel.open_url_in_browser(updateTarget.html_url)()
+                });
+            }
+        });
+        return true;
+    };
+
+    // The hosted web build has nothing to update -- it's always serving latest.
+    const canCheckForUpdates = () => window.BTT_WEB_MODE !== true || window.BTT_NATIVE === true;
+    let isCheckingForUpdate = false;
+
+    const setUpdateCheckBusy = (busy) => {
+        if (!updateCheckBtn) return;
+        updateCheckBtn.disabled = busy;
+        const icon = updateCheckBtn.querySelector('i');
+        if (icon) icon.classList.toggle('fa-spin', busy);
+    };
+
+    // Launch, the 5-minute timer and the manual button all funnel through here, so
+    // two checks can never race into two sidebar buttons. Only a manual check
+    // reports "nothing new" -- the background ones stay silent.
+    const runUpdateCheck = async (manual = false) => {
+        if (!canCheckForUpdates() || isCheckingForUpdate || isAppUpdateStarting) return;
+        isCheckingForUpdate = true;
+        setUpdateCheckBusy(true);
+        try {
+            const found = window.BTT_NATIVE === true
+                ? await checkAndroidUpdate()
+                : await checkDesktopUpdate();
+            if (manual && !found) window.showToast(t('app.you_re_on_the_latest_version'));
+        } catch (err) {
+            console.error('Failed to check for app updates:', err);
+            if (manual) window.showToast(t('app.failed_to_check_for_updates'), true);
+        } finally {
+            isCheckingForUpdate = false;
+            setUpdateCheckBusy(false);
+        }
+    };
+
+    const mountUpdateCheckButton = () => {
+        const row = document.querySelector('#app-title .app-version-row');
+        if (!row || row.querySelector('.app-update-check-btn')) return;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'app-update-check-btn';
+        button.setAttribute('data-i18n-title', 'app.check_for_updates');
+        button.setAttribute('data-i18n-aria-label', 'app.check_for_updates');
+        button.title = t('app.check_for_updates');
+        button.setAttribute('aria-label', t('app.check_for_updates'));
+        button.innerHTML = '<i class="fa-solid fa-rotate"></i>';
+        button.addEventListener('click', () => { void runUpdateCheck(true); });
+        row.appendChild(button);
+        updateCheckBtn = button;
+    };
+
+    if (!canCheckForUpdates()) {
+        // The hosted web build shows a desktop-download CTA instead.
+        addWebDownloadButton();
         return;
     }
 
-    try {
+    // Testers already running a beta pre-date the opt-in switch, so seed it from
+    // the build they're on -- otherwise upgrading would quietly drop them back to
+    // the release channel.
+    if (window.AppSettings && window.AppSettings.get('beta_builds', null) === null) {
         const currentParsed = parseVersion(currentVersion);
-        const currentIsBeta = !!(currentParsed && currentParsed.isBeta);
-        const updateTarget = currentParsed
-            ? await kiwiBestUpdate(currentVersion, 'windows', currentIsBeta)
-            : null;
-        if (updateTarget) {
-            {
-                const latestVersion = normalizeVersionTag(updateTarget.tag_name);
-                // kiwiBestUpdate already filtered to the priority-matched .msi
-                // asset and aliased its url onto browser_download_url, so the
-                // existing self-update click handler works unchanged.
-                const updateAsset = updateTarget.asset || null;
-                const sidebar = document.getElementById('sidebar');
-                if (sidebar && updateAsset) {
-                    const existingUpdate = sidebar.querySelector('.app-update-container');
-                    if (existingUpdate) existingUpdate.remove();
-                    const updateContainer = document.createElement('div');
-                    updateContainer.className = 'app-update-container';
-                    const updateButton = document.createElement('button');
-                    updateButton.className = 'nav-btn update-app-btn';
-                    updateButton.title = t("app.a_new_version_is_available_click_to_upda_1d6574");
-                    updateButton.innerHTML = `
-                        <i class="fa-solid fa-cloud-arrow-down nav-icon"></i>
-                        <span class="nav-text">${t("app.update_v_version").replace("{version}", latestVersion)}</span>
-                    `;
-                    updateButton.addEventListener('click', async () => {
-                        if (isAppUpdateStarting) return;
-
-                        let confirmed = true;
-                        if (typeof window.showConfirmModal === 'function') {
-                            confirmed = await window.showConfirmModal({
-                                title: t('app.install_update'),
-                                message: t('app.download_and_install_v_version_now_the_a_2231eb').replace('{version}', latestVersion),
-                                confirmLabel: t('app.update_now'),
-                                cancelLabel: t('common.cancel'),
-                                danger: false
-                            });
-                        }
-                        if (!confirmed) return;
-
-                        isAppUpdateStarting = true;
-                        updateButton.disabled = true;
-                        setAppUpdateOverlay(
-                            true,
-                            t('app.downloading_the_installer_and_preparing_6c20a2'),
-                            t('app.updating_better_trove_tools')
-                        );
-
-                        try {
-                            const response = await window.callBackend(
-                                eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
-                                t('app.failed_to_start_self_update')
-                            );
-
-                            if (!response.success) {
-                                throw new Error(response.error || t('app.failed_to_start_self_update'));
-                            }
-
-                            setAppUpdateOverlay(
-                                true,
-                                t('app.closing_the_app_window_and_starting_the_e43133'),
-                                t('app.installing_update')
-                            );
-
-                            try {
-                                await window.callBackend(
-                                    eel.finalize_self_update_exit(2.2)(),
-                                    t('app.failed_to_close_app_for_update')
-                                );
-                            } catch {}
-
-                            setTimeout(() => {
-                                try { window.close(); } catch {}
-                            }, 100);
-                            setTimeout(() => {
-                                try {
-                                    window.location.replace('about:blank');
-                                } catch {}
-                            }, 350);
-                        } catch (err) {
-                            isAppUpdateStarting = false;
-                            updateButton.disabled = false;
-                            setAppUpdateOverlay(false);
-                            window.showToast(String(err?.message || err || t('app.failed_to_start_self_update')), true, {
-                                actionLabel: t('app.open_release'),
-                                onAction: async () => eel.open_url_in_browser(updateTarget.html_url)()
-                            });
-                        }
-                    });
-                    updateContainer.appendChild(updateButton);
-                    sidebar.appendChild(updateContainer);
-                }
-            }
-        } else if (currentParsed) {
-            // Already on the latest build: drop the installer (and its log/helper)
-            // a previous update left in the cache instead of hoarding it forever.
-            try { await eel.clear_update_cache()(); } catch {}
+        if (currentParsed && currentParsed.isBeta) {
+            try { await window.AppSettings.set('beta_builds', true); } catch {}
         }
-    } catch (err) {
-        console.error("Failed to check for app updates:", err);
     }
+
+    mountUpdateCheckButton();
+    let lastBetaOptIn = betaOptIn();
+    await runUpdateCheck();
+    setInterval(() => { void runUpdateCheck(); }, UPDATE_CHECK_INTERVAL_MS);
+
+    // Toggling the opt-in re-checks straight away: opting in should surface a
+    // pending beta immediately, opting out should drop a beta-only button.
+    document.addEventListener('app_settings_updated', () => {
+        const next = betaOptIn();
+        if (next === lastBetaOptIn) return;
+        lastBetaOptIn = next;
+        void runUpdateCheck();
+    });
 });
 
 window.showToast = function(message, isError = false, options = {}) {

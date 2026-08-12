@@ -340,6 +340,7 @@
         show_community_content: true,
         show_official_news: true,
         hide_beta_features: false,
+        beta_builds: false,
         ui_scale: 1,
         custom_directories: [],
         // Android-only rotation reminders (see js/notifications.js). Each rotation

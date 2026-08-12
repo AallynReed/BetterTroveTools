@@ -71,6 +71,20 @@
                 </div>
             </div>
 
+            <div v-if="!isWebMode || isNative" class="settings-section">
+                <h3>{{ t('settings.updates') }}</h3>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
+                    <div>
+                        <div style="color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body);">{{ t('settings.beta_builds') }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1);">{{ t('settings.beta_builds_desc') }}</div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" v-model="settings.beta_builds" @change="saveGeneralSettings">
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <h3>{{ t('settings.home_page_preferences') }}</h3>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-top: var(--t-4);">
