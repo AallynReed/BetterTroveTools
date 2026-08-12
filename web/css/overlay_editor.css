@@ -1,0 +1,184 @@
+/* =========================================================================
+   Overlay editor — the "Overlay" tab inside the Trove view.
+   Loaded alongside trove.css, so it inherits .trove-card / .trove-btn /
+   .trove-field and only adds what the editor itself needs.
+   ========================================================================= */
+
+/* Tabs. `.tab-btn` is unscoped here and in every other view that defines it, so
+   any divergence silently re-skins the other views' tabs depending on which
+   stylesheet loaded last. This block is kept byte-identical to the one in
+   settings.css, modder_tools/index.css and modder_tools/file_manager.css — do
+   not fork it. `transition: all` is gone: it animates layout properties by
+   accident and costs frames on the low-end hardware this ships to. */
+.tabs-container { display: flex; flex-direction: column; gap: var(--t-4); }
+.tab-buttons { display: flex; gap: var(--control-gap); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+.tab-btn { background: transparent; color: var(--text-muted); border: 1px solid transparent; padding: 10px 20px; font-size: var(--t-fs-body); font-weight: 600; cursor: pointer; border-radius: var(--radius-control); transition: background-color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease); display: flex; align-items: center; gap: var(--t-2); }
+.tab-btn:hover { background: var(--bg-hover); color: var(--text-main); }
+/* Selection used to be a 2px accent underline. Borders in this system are
+   always 1px, so "current" is carried the way the sidebar carries it: an accent
+   tint plus an accent border on all four sides. */
+.tab-btn.active { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-blue); border-color: rgba(var(--accent-rgb), 0.45); }
+.tab-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.tab-content { display: none; animation: fadeIn var(--dur) var(--t-ease); }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Wrapping the launcher in a tab panel moved its sections one level down, so
+   the panel has to restate the view's own 24px section rhythm — otherwise the
+   launcher silently re-spaces itself the day tabs were added. */
+.tab-content.active {
+    display: flex;
+    flex-direction: column;
+    gap: var(--t-5);
+}
+
+/* --- enable hero -------------------------------------------------------- */
+
+.ov-ed-hero {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--t-4);
+    flex-wrap: wrap;
+}
+
+.ov-ed-hero-text { flex: 1 1 320px; min-width: 0; }
+
+.ov-ed-status {
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    margin-top: var(--t-3);
+    flex-wrap: wrap;
+}
+
+.ov-ed-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--t-2);
+    font-size: var(--t-fs-body);
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+}
+
+.ov-ed-note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--t-2);
+    color: var(--warning-ink);
+}
+
+/* --- hotkey capture ----------------------------------------------------- */
+
+.ov-ed-hotkey {
+    width: 100%;
+    min-height: var(--control-height);
+    padding: 9px 10px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    color: var(--text-main);
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-body);
+    text-align: left;
+    cursor: pointer;
+}
+
+.ov-ed-hotkey:hover { border-color: var(--accent-blue); }
+.ov-ed-hotkey:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+.ov-ed-hotkey.capturing {
+    border-color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.12);
+    color: var(--accent-blue);
+}
+
+/* A binding the OS refused. Danger *ink*, never a red fill behind text. */
+.ov-ed-hotkey.failed { border-color: rgba(var(--danger-rgb), 0.55); }
+
+.ov-ed-hint {
+    display: block;
+    margin-top: var(--t-1);
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
+}
+
+.ov-ed-error {
+    display: block;
+    margin-top: var(--t-1);
+    font-size: var(--t-fs-label);
+    color: var(--danger-ink);
+}
+
+/* --- widget list -------------------------------------------------------- */
+
+.ov-ed-widgets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--t-2);
+    margin: var(--t-3) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* --- layout canvas ------------------------------------------------------ */
+
+/* A 16:9 stand-in for the game window. Chips sit at the same fractional
+   offsets the overlay uses, so what is arranged here is what appears in game. */
+.ov-ed-canvas {
+    position: relative;
+    margin-top: var(--t-3);
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    background: var(--bg-dark);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-surface);
+    overflow: hidden;
+    touch-action: none;
+}
+
+.ov-ed-canvas-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-placeholder);
+    pointer-events: none;
+}
+
+.ov-ed-chip {
+    position: absolute;
+    max-width: 42%;
+    padding: var(--t-1) var(--t-2);
+    background: rgba(var(--accent-rgb), 0.14);
+    border: 1px solid rgba(var(--accent-rgb), 0.45);
+    border-radius: var(--radius-control);
+    color: var(--text-main);
+    font-size: var(--t-fs-label);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: grab;
+    user-select: none;
+}
+
+.ov-ed-chip:hover { border-color: var(--accent-blue); }
+
+.ov-ed-chip.dragging {
+    cursor: grabbing;
+    border-color: var(--accent-blue);
+    background: rgba(var(--accent-rgb), 0.24);
+}
+
+/* Below the per-view content-box breakpoint the two-column grid the Trove view
+   uses collapses; the canvas keeps its ratio and simply gets narrower. */
+@container (max-width: 700px) {
+    .ov-ed-hero { flex-direction: column; }
+}

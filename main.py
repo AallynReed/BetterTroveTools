@@ -47,6 +47,7 @@ import backend.codexes.mementos
 import backend.codexes.mounts
 import backend.mod_manager.mod_manager
 import backend.modder_tools.modder_tools
+import backend.overlay
 import backend.codexes.recipes
 import backend.codexes.styles
 import backend.settings
@@ -890,6 +891,12 @@ if _use_webview:
 
     def _quit_from_tray():
         _tray_state["quitting"] = True
+        # Tear the overlay down first: it's a topmost window over the game, and
+        # leaving it behind after the app quits would strand it there.
+        try:
+            backend.overlay.shutdown()
+        except Exception:
+            pass
         if tray_icon:
             try:
                 tray_icon.destroy()
@@ -938,11 +945,101 @@ if _use_webview:
         on_quit=_quit_from_tray,
         tooltip=WINDOW_TITLE,
     )
-    # Route desktop notifications through the tray balloon, and let the reminder
-    # scheduler keep the icon present, once the tray exists.
-    if tray_icon:
-        notifier.set_sink(tray_icon.notify)
+
+    # --- In-game overlay -----------------------------------------------------
+    # A second frameless/transparent/topmost WebView2 window that only ever
+    # appears over a running Trove. pywebview owns window creation, so the host
+    # object lives here and backend/overlay.py's tracker drives it; the tracker
+    # runs on its own thread, which is also what lets create_window() build the
+    # child window immediately instead of queueing it for the next start().
+    # Windows-only: see backend.overlay.SUPPORTED for why.
+    overlay_url = f'http://localhost:{eel_port}/overlay.html'
+
+    class _OverlayWindowHost(backend.overlay.OverlayHost):
+        def __init__(self):
+            self._lock = threading.Lock()
+            self._window = None
+            self._hwnd = None
+
+        def ensure_window(self):
+            with self._lock:
+                if self._hwnd:
+                    return self._hwnd
+                if self._window is None:
+                    self._window = webview.create_window(
+                        f'{WINDOW_TITLE} Overlay',
+                        overlay_url,
+                        # Sized/placed by the tracker the moment it's shown; these
+                        # are only the values it holds while still hidden.
+                        width=800, height=600, min_size=(100, 100),
+                        resizable=False, frameless=True, easy_drag=False,
+                        shadow=False, on_top=True, transparent=True,
+                        # focus=False adds WS_EX_NOACTIVATE, so showing the
+                        # overlay never pulls keyboard focus out of the game.
+                        focus=False, hidden=True, confirm_close=False,
+                        background_color='#000000',
+                    )
+                if self._window is None:
+                    return None
+                # The hidden-window path still fires Shown (pywebview shows and
+                # immediately re-hides it), which is when `native` gets set.
+                self._window.events.shown.wait(15)
+                native = getattr(self._window, 'native', None)
+                if native is None:
+                    return None
+                try:
+                    self._hwnd = int(native.Handle.ToInt64())
+                except Exception:
+                    return None
+                return self._hwnd
+
+        def show(self):
+            if self._window:
+                self._window.show()
+
+        def hide(self):
+            if self._window:
+                self._window.hide()
+
+        def destroy(self):
+            window = None
+            with self._lock:
+                window, self._window, self._hwnd = self._window, None, None
+            if window:
+                try:
+                    window.destroy()
+                except Exception:
+                    pass
+
+    if backend.overlay.SUPPORTED:
+        backend.overlay.tracker.set_host(_OverlayWindowHost())
+        # Re-arm on launch if the user left the overlay enabled last session.
+        threading.Thread(
+            target=backend.overlay.start_from_settings, daemon=True, name='overlay-init'
+        ).start()
+
+    def _notification_sink(title, message):
+        """Prefer the overlay, fall back to the tray balloon.
+
+        While the overlay is actually on screen and the user has opted in, a
+        notification renders as a dismissable card over the game -- a Windows
+        toast during combat is worse than useless. `tracker.notify` returns False
+        for every other case (overlay off, muted, page not mounted, opted out),
+        and delivery falls straight back to the balloon it always used.
+        """
+        if backend.overlay.tracker.notify(title, message):
+            return True
+        if tray_icon:
+            return tray_icon.notify(title, message)
+        return False
+
+    # Route desktop notifications, and let the reminder scheduler keep the tray
+    # icon present. The sink is registered when *either* delivery path can work,
+    # so `desktop_notifications_available()` stays an honest answer.
+    if tray_icon or backend.overlay.SUPPORTED:
+        notifier.set_sink(_notification_sink)
         notifier.set_active_handler(_set_reminders_active)
+    if tray_icon:
         _apply_tray_visibility()  # show now if reminders were already enabled
     # Second launches restore the window from the tray instead of just poking
     # the Win32 handle (keeps pywebview's own shown/hidden state in sync).
@@ -966,6 +1063,10 @@ if _use_webview:
         debug=_webview_debug,
     )
     # webview.start() returns once the user closes the window (real quit).
+    try:
+        backend.overlay.shutdown()
+    except Exception:
+        pass
     if tray_icon:
         try:
             tray_icon.destroy()

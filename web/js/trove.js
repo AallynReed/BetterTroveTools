@@ -40,6 +40,15 @@
 
         const app = createApp({
             setup() {
+                // Launcher | Overlay. The overlay half lives in its own module
+                // (js/overlay/editor.js) and is spread into this setup's return;
+                // it reports `overlaySupported: false` off Windows desktop, and
+                // the tab bar isn't rendered at all in that case.
+                const tab = ref('launcher');
+                const overlay = window.BTTOverlayEditor
+                    ? window.BTTOverlayEditor(Vue)
+                    : { overlaySupported: ref(false) };
+
                 const installs = ref([]);
                 const servers = ref([
                     { key: 'live-na', label: 'Live (NA)' },
@@ -370,7 +379,29 @@
                     }
                 }
 
+                // Status polling only runs while the Overlay tab is on screen —
+                // there is nothing to watch from the Launcher tab, and the view
+                // stays alive in the keep-alive cache after the user navigates
+                // away, so an always-on timer would never stop.
+                function openOverlayTab() {
+                    tab.value = 'overlay';
+                    if (overlay.startOverlayPolling) overlay.startOverlayPolling();
+                }
+
                 onMounted(async () => {
+                    if (overlay.loadOverlay) await overlay.loadOverlay();
+                    document.addEventListener('trove_hidden', () => {
+                        if (overlay.stopOverlayPolling) overlay.stopOverlayPolling();
+                        // The hotkey capture listens on window at capture phase.
+                        // Views are keep-alive cached, so leaving the tab mid-
+                        // capture would otherwise keep swallowing keystrokes in
+                        // whatever view the user went to next.
+                        if (overlay.overlayCapturing) overlay.overlayCapturing.value = '';
+                    });
+                    document.addEventListener('trove_shown', () => {
+                        if (tab.value === 'overlay' && overlay.startOverlayPolling) overlay.startOverlayPolling();
+                    });
+
                     if (!hasEel()) { setNotice(t('trove.desktop_only'), 'info'); return; }
                     const st = await window.callBackend(window.eel.trove_get_state()(), 'state');
                     let preferred = null;
@@ -389,7 +420,8 @@
                     document.addEventListener('trove_shown', refreshState);
                 });
 
-                return {
+                return Object.assign({}, overlay, {
+                    tab, openOverlayTab,
                     t, installs, installList, noInstallLabel, servers, serverList, versions, gamePath,
                     server, email, password,
                     rememberEmail, rememberPassword, hasSavedPassword, updateFirst,
@@ -399,7 +431,7 @@
                     progressPct, localVersion, busyLabel, labelFor, shownEmail, optLabel,
                     check, update, repair, play, submit2fa, cancel2fa, logout, syncRemember,
                     onSelectAccount, removeAccount, renameAccount, toggleRelog,
-                };
+                });
             }
         });
 

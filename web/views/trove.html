@@ -1,5 +1,6 @@
 <head>
     <link rel="stylesheet" href="css/trove.css">
+    <link rel="stylesheet" href="css/overlay_editor.css">
 </head>
 <div id="trove-vue-app" class="trove-container">
     <header class="trove-header">
@@ -14,6 +15,20 @@
             </span>
         </div>
     </header>
+
+    <!-- The Overlay tab is only offered where the overlay can actually run
+         (Windows desktop). On Linux and in the Android/web build the backend
+         reports unsupported and the button never renders. -->
+    <div class="tab-buttons" v-if="overlaySupported">
+        <button class="tab-btn" :class="{ active: tab === 'launcher' }" @click="tab = 'launcher'">
+            <i class="fa-solid fa-play"></i> <span>{{ t('trove.tab_launcher') }}</span>
+        </button>
+        <button class="tab-btn" :class="{ active: tab === 'overlay' }" @click="openOverlayTab">
+            <i class="fa-solid fa-layer-group"></i> <span>{{ t('trove.tab_overlay') }}</span>
+        </button>
+    </div>
+
+    <div class="tab-content" :class="{ active: tab === 'launcher' }">
 
     <div v-if="notice.text" class="trove-notice" :class="notice.kind">
         <i :class="notice.kind === 'error' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-info'"></i>
@@ -169,6 +184,128 @@
         </div>
         <pre class="trove-log" ref="logEl"><div v-for="(line, i) in logLines" :key="i">{{ line }}</div></pre>
     </section>
+
+    </div><!-- /launcher tab -->
+
+    <!-- ===================== Overlay tab ===================== -->
+    <div class="tab-content" :class="{ active: tab === 'overlay' }" v-if="overlaySupported">
+
+        <section class="trove-card ov-ed-hero">
+            <div class="ov-ed-hero-text">
+                <h2 class="trove-card-title"><i class="fa-solid fa-layer-group"></i> {{ t('overlay.title') }}</h2>
+                <p class="trove-card-hint">{{ t('overlay.subtitle') }}</p>
+                <div class="ov-ed-status">
+                    <span class="trove-pill" :class="overlayStatus.visible ? 'ok' : 'muted'">
+                        <i class="fa-solid" :class="overlayStatus.visible ? 'fa-circle-check' : 'fa-circle-half-stroke'"></i>
+                        {{ overlayStatusLine }}
+                    </span>
+                    <button class="trove-btn ghost" v-if="overlayConfig.enabled && overlayStatus.muted" @click="setOverlayMuted(false)">
+                        <i class="fa-solid fa-eye"></i> {{ t('overlay.unhide') }}
+                    </button>
+                </div>
+            </div>
+            <label class="ov-ed-switch">
+                <input type="checkbox" :checked="overlayConfig.enabled" @change="setOverlayEnabled($event.target.checked)">
+                <span>{{ t('overlay.enable') }}</span>
+            </label>
+        </section>
+
+        <p class="trove-card-note ov-ed-note" v-if="overlayConfig.enabled && overlayStatus.fullscreen_risk">
+            <i class="fa-solid fa-triangle-exclamation"></i> {{ t('overlay.fullscreen_hint') }}
+        </p>
+
+        <div class="trove-grid" v-if="overlayConfig.enabled">
+            <!-- Behaviour -->
+            <section class="trove-card">
+                <div class="trove-card-head">
+                    <h2 class="trove-card-title"><i class="fa-solid fa-sliders"></i> {{ t('overlay.behaviour') }}</h2>
+                </div>
+
+                <div class="trove-field">
+                    <label>{{ t('overlay.hotkey_interact') }}</label>
+                    <button class="ov-ed-hotkey" :class="{ capturing: overlayCapturing === 'hotkey', failed: overlayHotkeyFailed('interact') }"
+                            @click="startOverlayCapture('hotkey')">
+                        {{ overlayCapturing === 'hotkey' ? t('overlay.press_keys') : overlayPretty(overlayConfig.hotkey) }}
+                    </button>
+                    <span class="ov-ed-hint">{{ t('overlay.hotkey_interact_hint') }}</span>
+                    <span class="ov-ed-error" v-if="overlayHotkeyFailed('interact')">{{ t('overlay.hotkey_clash') }}</span>
+                </div>
+
+                <div class="trove-field">
+                    <label>{{ t('overlay.hotkey_mute') }}</label>
+                    <button class="ov-ed-hotkey" :class="{ capturing: overlayCapturing === 'mute_hotkey', failed: overlayHotkeyFailed('mute') }"
+                            @click="startOverlayCapture('mute_hotkey')">
+                        {{ overlayCapturing === 'mute_hotkey' ? t('overlay.press_keys') : overlayPretty(overlayConfig.mute_hotkey) }}
+                    </button>
+                    <span class="ov-ed-hint">{{ t('overlay.hotkey_mute_hint') }}</span>
+                    <span class="ov-ed-error" v-if="overlayHotkeyFailed('mute')">{{ t('overlay.hotkey_clash') }}</span>
+                </div>
+
+                <div class="trove-field">
+                    <label>{{ t('overlay.opacity') }} — {{ Math.round(overlayConfig.opacity * 100) }}%</label>
+                    <input type="range" min="0.2" max="1" step="0.02" v-model.number="overlayConfig.opacity" @input="saveOverlay">
+                </div>
+
+                <div class="trove-field">
+                    <label>{{ t('overlay.size') }} — {{ Math.round(overlayConfig.scale * 100) }}%</label>
+                    <input type="range" min="0.6" max="2" step="0.05" v-model.number="overlayConfig.scale" @input="saveOverlay">
+                </div>
+
+                <div class="trove-checks">
+                    <label class="trove-check">
+                        <input type="checkbox" v-model="overlayConfig.hide_when_unfocused" @change="saveOverlayNow">
+                        {{ t('overlay.hide_when_unfocused') }}
+                    </label>
+                    <label class="trove-check">
+                        <input type="checkbox" v-model="overlayConfig.notifications_in_overlay" @change="saveOverlayNow">
+                        {{ t('overlay.notifications_in_overlay') }}
+                        <i class="fa-solid fa-bell trove-lock" :title="t('overlay.notifications_hint')"></i>
+                    </label>
+                </div>
+
+                <div class="trove-field" v-if="overlayConfig.notifications_in_overlay">
+                    <label>{{ t('overlay.notification_seconds') }} — {{ overlayConfig.notification_seconds }}s</label>
+                    <input type="range" min="3" max="60" step="1" v-model.number="overlayConfig.notification_seconds" @input="saveOverlay">
+                </div>
+            </section>
+
+            <!-- Widgets -->
+            <section class="trove-card">
+                <div class="trove-card-head">
+                    <h2 class="trove-card-title"><i class="fa-solid fa-table-cells"></i> {{ t('overlay.widgets') }}</h2>
+                    <button class="trove-btn ghost" @click="resetOverlayLayout">
+                        <i class="fa-solid fa-rotate-left"></i> {{ t('overlay.reset_layout') }}
+                    </button>
+                </div>
+                <p class="trove-card-hint">{{ t('overlay.widgets_hint') }}</p>
+                <ul class="ov-ed-widgets">
+                    <li v-for="entry in overlayCatalog" :key="entry.id">
+                        <label class="trove-check">
+                            <input type="checkbox" :checked="overlayConfig.widgets[entry.id] && overlayConfig.widgets[entry.id].enabled"
+                                   @change="toggleOverlayWidget(entry.id)">
+                            {{ t('overlay.w_' + entry.id) }}
+                        </label>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- Layout canvas -->
+        <section class="trove-card" v-if="overlayConfig.enabled">
+            <div class="trove-card-head">
+                <h2 class="trove-card-title"><i class="fa-solid fa-arrows-up-down-left-right"></i> {{ t('overlay.layout') }}</h2>
+            </div>
+            <p class="trove-card-hint">{{ t('overlay.layout_hint') }}</p>
+            <div class="ov-ed-canvas" ref="overlayCanvas">
+                <span class="ov-ed-canvas-label">{{ t('overlay.canvas_label') }}</span>
+                <div v-for="chip in overlayChips" :key="chip.id"
+                     class="ov-ed-chip" :class="{ dragging: overlayDragId === chip.id }"
+                     :style="chip.style" @pointerdown="startOverlayChipDrag($event, chip)">
+                    {{ t('overlay.w_' + chip.id) }}
+                </div>
+            </div>
+        </section>
+    </div>
 
     <!-- 2FA overlay -->
     <div class="trove-modal-overlay" v-if="twofaNeeded" @click.self="cancel2fa">

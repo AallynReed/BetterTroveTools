@@ -32,6 +32,9 @@
     <!-- escapeHtml/sanitizeHtml helpers. Must load before anything that builds
          markup from data we don't control. -->
     <script defer src="js/sanitize.js"></script>
+    <!-- Accent token writer. Shared with the in-game overlay window, which has
+         no shell and never loads main.js — hence its own file. -->
+    <script defer src="js/accent.js"></script>
     <script defer src="js/i18n.js"></script>
     <script defer src="js/main.js"></script>
 </head>

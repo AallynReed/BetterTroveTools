@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Better Trove Tools Overlay</title>
+
+    <!-- Shares the app's token layer rather than redeclaring the palette; see
+         the header note in overlay.css. -->
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="lib/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/overlay.css">
+
+    <script defer src="/eel.js"></script>
+    <script defer src="js/sanitize.js"></script>
+    <script defer src="js/accent.js"></script>
+    <script defer src="js/i18n.js"></script>
+    <script defer src="lib/vue.global.prod.js"></script>
+    <script defer src="js/overlay/runtime.js"></script>
+</head>
+<body>
+    <!-- There is no shell here: no sidebar, no view router, no modals. This
+         window exists only while Trove is on screen and is torn down with it.
+         The template lives in the document (not a JS string) to match every
+         other view in the app.
+
+         .ov-root exists because Vue treats the mount element's *contents* as
+         the template — bindings written on the mount element itself are never
+         compiled, so the interactive class and the opacity style have to live
+         one level in. -->
+    <div id="overlay-app" v-cloak>
+    <div class="ov-root" :class="{ 'is-interactive': interactive }" :style="rootStyle">
+
+        <div v-for="w in placedWidgets" :key="w.id"
+             class="ov-w" :class="['at-' + w.anchor, { 'is-dragging': dragId === w.id }]"
+             :style="w.style" @pointerdown="startDrag($event, w)">
+
+            <!-- Server clock ---------------------------------------------- -->
+            <template v-if="w.id === 'clock'">
+                <div class="ov-w-head"><i class="fa-regular fa-clock"></i><span>{{ t('overlay.w_clock') }}</span></div>
+                <div class="ov-clock-time">{{ clock.time }}</div>
+                <div class="ov-clock-date">{{ clock.date }}</div>
+            </template>
+
+            <!-- Daily bonus ------------------------------------------------ -->
+            <template v-else-if="w.id === 'daily_buff'">
+                <div class="ov-w-head"><i class="fa-solid fa-sun"></i><span>{{ t('overlay.w_daily_buff') }}</span></div>
+                <div v-if="snap.daily && snap.daily.name" class="ov-buff" :style="{ '--ov-buff-color': hexColor(snap.daily.color) }">
+                    <span class="ov-buff-bar"></span>
+                    <div>
+                        <div class="ov-title">{{ snap.daily.emoji }} {{ t(snap.daily.name) }}</div>
+                        <ul class="ov-list">
+                            <li v-for="(line, i) in (snap.daily.normal_buffs || [])" :key="i">{{ t(line) }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div v-else class="ov-muted">{{ t('overlay.no_data') }}</div>
+                <div class="ov-row" v-if="snap.daily && snap.daily.reset_at">
+                    <span class="ov-name ov-muted">{{ t('overlay.resets_in') }}</span>
+                    <span class="ov-time" :class="urgency(snap.daily.reset_at)">{{ until(snap.daily.reset_at) }}</span>
+                </div>
+            </template>
+
+            <!-- Weekly bonus ----------------------------------------------- -->
+            <template v-else-if="w.id === 'weekly_buff'">
+                <div class="ov-w-head"><i class="fa-solid fa-calendar-week"></i><span>{{ t('overlay.w_weekly_buff') }}</span></div>
+                <div v-if="snap.weekly && snap.weekly.name" class="ov-buff" :style="{ '--ov-buff-color': hexColor(snap.weekly.color) }">
+                    <span class="ov-buff-bar"></span>
+                    <div>
+                        <div class="ov-title">{{ snap.weekly.emoji }} {{ t(snap.weekly.name) }}</div>
+                        <ul class="ov-list">
+                            <li v-for="(line, i) in (snap.weekly.buffs || [])" :key="i">{{ t(line) }}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div v-else class="ov-muted">{{ t('overlay.no_data') }}</div>
+                <div class="ov-row" v-if="snap.weekly && snap.weekly.reset_at">
+                    <span class="ov-name ov-muted">{{ t('overlay.resets_in') }}</span>
+                    <span class="ov-time" :class="urgency(snap.weekly.reset_at)">{{ until(snap.weekly.reset_at) }}</span>
+                </div>
+            </template>
+
+            <!-- Merchants -------------------------------------------------- -->
+            <template v-else-if="w.id === 'merchants'">
+                <div class="ov-w-head"><i class="fa-solid fa-coins"></i><span>{{ t('overlay.w_merchants') }}</span></div>
+                <div class="ov-row" v-for="m in merchantRows" :key="m.key">
+                    <span class="ov-row-dot">
+                        <span class="ov-dot" :class="m.active ? 'is-live' : 'is-next'"></span>
+                        <span class="ov-name">{{ m.label }}</span>
+                    </span>
+                    <span class="ov-time" :class="urgency(m.until)">{{ until(m.until) }}</span>
+                </div>
+            </template>
+
+            <!-- Chaos Chest ------------------------------------------------ -->
+            <template v-else-if="w.id === 'chaos_chest'">
+                <div class="ov-w-head"><i class="fa-solid fa-box-open"></i><span>{{ t('overlay.w_chaos_chest') }}</span></div>
+                <template v-if="snap.chaos && snap.chaos.name">
+                    <div class="ov-title">{{ t(snap.chaos.name) }}</div>
+                    <div class="ov-row">
+                        <span class="ov-name ov-muted">{{ t('overlay.ends_in') }}</span>
+                        <span class="ov-time" :class="urgency(snap.chaos.end)">{{ until(snap.chaos.end) }}</span>
+                    </div>
+                </template>
+                <div v-else class="ov-muted">{{ t('overlay.needs_network') }}</div>
+            </template>
+
+            <!-- Gardening -------------------------------------------------- -->
+            <template v-else-if="w.id === 'gardening'">
+                <div class="ov-w-head"><i class="fa-solid fa-seedling"></i><span>{{ t('overlay.w_gardening') }}</span></div>
+                <div class="ov-row" v-for="g in gardenRows" :key="g.key">
+                    <span class="ov-row-dot">
+                        <span class="ov-dot" :class="g.active ? 'is-live' : 'is-next'"></span>
+                        <span class="ov-name">{{ g.label }}</span>
+                    </span>
+                    <span class="ov-time" :class="urgency(g.until)">{{ until(g.until) }}</span>
+                </div>
+            </template>
+
+            <!-- Biome rotations -------------------------------------------- -->
+            <template v-else-if="w.id === 'rotations'">
+                <div class="ov-w-head"><i class="fa-solid fa-mountain-sun"></i><span>{{ t('overlay.w_rotations') }}</span></div>
+                <div class="ov-muted">{{ t('overlay.wild_mana') }}</div>
+                <ul class="ov-list">
+                    <li v-for="(b, i) in ((snap.rotations && snap.rotations.wild_mana && snap.rotations.wild_mana.biomes) || [])" :key="i">{{ t(b) }}</li>
+                </ul>
+                <div class="ov-row" v-if="snap.rotations && snap.rotations.stampy">
+                    <span class="ov-row-dot">
+                        <span class="ov-dot" :class="snap.rotations.stampy.active ? 'is-live' : 'is-next'"></span>
+                        <span class="ov-name">{{ t('overlay.stampy') }} · {{ t(snap.rotations.stampy.biome) }}</span>
+                    </span>
+                    <span class="ov-time" :class="urgency(stampyUntil)">{{ until(stampyUntil) }}</span>
+                </div>
+            </template>
+
+            <!-- Delve week -------------------------------------------------- -->
+            <template v-else-if="w.id === 'delve'">
+                <div class="ov-w-head"><i class="fa-solid fa-gem"></i><span>{{ t('overlay.w_delve') }}</span></div>
+                <div class="ov-title" v-if="snap.delve">{{ t('overlay.delve_week') }} {{ snap.delve.week_id }}</div>
+                <div class="ov-row" v-if="snap.delve">
+                    <span class="ov-name ov-muted">{{ t('overlay.resets_in') }}</span>
+                    <span class="ov-time" :class="urgency(snap.delve.end)">{{ until(snap.delve.end) }}</span>
+                </div>
+            </template>
+
+            <!-- Ongoing events ---------------------------------------------- -->
+            <template v-else-if="w.id === 'events'">
+                <div class="ov-w-head"><i class="fa-solid fa-calendar-days"></i><span>{{ t('overlay.w_events') }}</span></div>
+                <template v-if="(snap.events || []).length">
+                    <div class="ov-row" v-for="ev in snap.events" :key="ev.name + ev.start">
+                        <span class="ov-row-dot">
+                            <span class="ov-dot" :class="ev.ongoing ? 'is-live' : 'is-next'"></span>
+                            <span class="ov-name">{{ t(ev.name) }}</span>
+                        </span>
+                        <span class="ov-time" :class="urgency(ev.ongoing ? ev.end : ev.start)">{{ until(ev.ongoing ? ev.end : ev.start) }}</span>
+                    </div>
+                </template>
+                <div v-else class="ov-muted">{{ t('overlay.no_events') }}</div>
+            </template>
+        </div>
+
+        <!-- Notification stack. Placed like a widget (own anchor + offsets) but
+             it is a stack of transient cards, not a panel, so it renders here
+             rather than inside the widget loop. -->
+        <div class="ov-notes" :style="notesPlacement.style" v-if="notesEnabled">
+            <transition-group name="ov-note">
+                <div class="ov-note" v-for="n in notes" :key="n.id">
+                    <i class="fa-solid fa-bell ov-note-icon"></i>
+                    <div class="ov-note-body">
+                        <div class="ov-note-title">{{ n.title }}</div>
+                        <div class="ov-note-text">{{ n.message }}</div>
+                    </div>
+                    <button class="ov-note-close" type="button" :hidden="!interactive"
+                            :aria-label="t('common.close')" @click="dismiss(n.id)">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <span class="ov-note-life" :style="{ '--ov-life': n.life }"></span>
+                </div>
+            </transition-group>
+        </div>
+
+        <!-- Interactive-mode HUD. Only drawn while clicks land on the overlay,
+             so every control in it is actually pressable. -->
+        <div class="ov-hud" v-if="interactive">
+            <span class="ov-hud-label">{{ t('overlay.interactive_mode') }}</span>
+            <span class="ov-hud-kbd">{{ hotkeyLabel }}</span>
+            <button class="ov-hud-btn" type="button" @click="lock">
+                <i class="fa-solid fa-lock"></i> {{ t('overlay.lock') }}
+            </button>
+            <button class="ov-hud-btn" type="button" @click="mute">
+                <i class="fa-solid fa-eye-slash"></i> {{ t('overlay.hide') }}
+            </button>
+        </div>
+    </div>
+    </div>
+</body>
+</html>
