@@ -959,6 +959,8 @@ if _use_webview:
     # packaged build when launched with BTT_DEBUG=1 — lets us read the JS console
     # to diagnose frontend issues in the shipped app.
     _webview_debug = bool(globals().get('DEV_MODE', False)) or os.getenv('BTT_DEBUG') == '1'
+    # ...but keep the inspector closed until it's actually asked for.
+    webview.settings['OPEN_DEVTOOLS_IN_DEBUG'] = False
     webview.start(
         private_mode=False,
         storage_path=webview_storage_path,
