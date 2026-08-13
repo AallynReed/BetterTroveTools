@@ -63,7 +63,19 @@
                         <option v-for="(data, key) in alliesData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
                     </select>
                 </div>
-    
+
+                <div class="toggle-row">
+                    <label class="toggle-container toggle-inline">
+                        <input type="checkbox" v-model="config.ally_buff">
+                        <span class="checkmark"></span>
+                        <span>{{ t('gems.gem_builds.blessing_of_the_lilypad') }}</span>
+                        <button type="button" class="info-icon-btn help-tip-btn toggle-help-btn" :title="t('gems.gem_builds.the_ally_buff_applied_on_top_of_your_lev_f9ce2a')" :aria-expanded="helpOpen === 'lilypad' ? 'true' : 'false'" @click.prevent="toggleHelp('lilypad')">
+                            <i class="fa-solid fa-circle-info"></i>
+                        </button>
+                    </label>
+                    <p v-if="helpOpen === 'lilypad'" class="help-tip-note" role="note">{{ t('gems.gem_builds.the_ally_buff_applied_on_top_of_your_lev_f9ce2a') }}</p>
+                </div>
+
                 <div class="input-row">
                     <div class="input-group" v-if="config.build_type === 'Farm'">
                         <label class="label-inline-controls">
@@ -215,26 +227,26 @@
                 <div class="recommended-build-stats">
                     <div class="recommended-stat">
                         <span>{{ t('gems.gem_builds.coefficient') }}</span>
-                        <strong>{{ cachedBuilds[0].coefficient.toLocaleString() }}</strong>
+                        <strong>{{ fmtNum(cachedBuilds[0].coefficient) }}</strong>
                     </div>
                     <div class="recommended-stat">
                         <span>{{ t('common.light') }}</span>
-                        <strong>{{ cachedBuilds[0].light.toLocaleString() }}</strong>
+                        <strong>{{ fmtNum(cachedBuilds[0].light) }}</strong>
                     </div>
                     <div class="recommended-stat">
                         <span>{{ t('gems.gem_builds.crit_dmg') }}</span>
-                        <strong>{{ cachedBuilds[0].crit_dmg.toFixed(1) }}%</strong>
+                        <strong>{{ fmtDec(cachedBuilds[0].crit_dmg, 1) }}%</strong>
                     </div>
                     <div class="recommended-stat" v-if="cachedBuilds[1]">
                         <span>{{ t('gems.gem_builds.lead_vs_2') }}</span>
-                        <strong>+{{ (((cachedBuilds[0].coefficient - cachedBuilds[1].coefficient) / cachedBuilds[1].coefficient) * 100).toFixed(3) }}%</strong>
+                        <strong>+{{ fmtDec((((cachedBuilds[0].coefficient - cachedBuilds[1].coefficient) / cachedBuilds[1].coefficient) * 100), 3) }}%</strong>
                     </div>
                 </div>
             </div>
 
             <div v-if="cachedBuilds.length > 0" class="mobile-build-summary">
                 <strong>{{ t('gems.gem_builds.best') }}: {{ fmtLayout(cachedBuilds[0].layout) }}</strong>
-                <span>{{ t('gems.gem_builds.coeff') }} {{ cachedBuilds[0].coefficient.toLocaleString() }}</span>
+                <span>{{ t('gems.gem_builds.coeff') }} {{ fmtNum(cachedBuilds[0].coefficient) }}</span>
             </div>
 
             <div v-if="!tipsDismissed" class="tips-card">
@@ -257,9 +269,16 @@
                     <span class="metric-chip" v-if="cachedBuilds.length > 0"><i class="fa-solid fa-trophy"></i> {{ t('gems.gem_builds.best_coeff') }}: {{ bestCoeff.toLocaleString() }}</span>
                     <span class="metric-chip"><i class="fa-solid fa-gem"></i> {{ t(config.build_type) }}</span>
                 </div>
-                <div class="results-state" :class="{ busy: isCalculating }">
-                    <i class="fa-solid" :class="isCalculating ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
-                    <span>{{ isCalculating ? t('gems.gem_builds.calculating') : t('common.ready') }}</span>
+                <div class="results-state-group">
+                    <label class="toggle-container toggle-inline results-precision-toggle" :title="t('gems.gem_builds.shows_up_to_8_decimals_on_every_number_i_75304e')">
+                        <input type="checkbox" v-model="config.high_precision">
+                        <span class="checkmark"></span>
+                        <span>{{ t('gems.gem_builds.high_precision_decimals') }}</span>
+                    </label>
+                    <div class="results-state" :class="{ busy: isCalculating }">
+                        <i class="fa-solid" :class="isCalculating ? 'fa-spinner fa-spin' : 'fa-check-circle'"></i>
+                        <span>{{ isCalculating ? t('gems.gem_builds.calculating') : t('common.ready') }}</span>
+                    </div>
                 </div>
             </div>
 
@@ -293,17 +312,17 @@
                             <td class="build-layout-cell text-left" :title="t('gems.gem_builds.click_to_copy')" @click="copyLayout(fmtLayout(build.layout), $event)">
                                 {{ fmtLayout(build.layout) }}
                             </td>
-                            <td class="text-right">{{ build.light.toLocaleString() }}</td>
-                            <td class="text-right">{{ Math.round(build.base_dmg).toLocaleString() }}</td>
+                            <td class="text-right">{{ fmtNum(build.light) }}</td>
+                            <td class="text-right">{{ fmtInt(build.base_dmg) }}</td>
                             <td class="text-right">
-                                {{ build.bonus_dmg.toFixed(2) }}%<span v-if="build.class_bonus" style="color: var(--accent-blue);"> + {{ build.class_bonus }}%</span>
+                                {{ fmtDec(build.bonus_dmg, 2) }}%<span v-if="build.class_bonus" style="color: var(--accent-blue);"> + {{ build.class_bonus }}%</span>
                             </td>
-                            <td class="text-right">{{ Math.round(build.total_dmg).toLocaleString() }}</td>
-                            <td class="text-right">{{ build.crit_dmg.toFixed(1) }}%</td>
-                            <td class="text-right sort-col" style="font-weight: bold; color: var(--text-main);">{{ build.coefficient.toLocaleString() }}</td>
+                            <td class="text-right">{{ fmtInt(build.total_dmg) }}</td>
+                            <td class="text-right">{{ fmtDec(build.crit_dmg, 1) }}%</td>
+                            <td class="text-right sort-col" style="font-weight: bold; color: var(--text-main);">{{ fmtNum(build.coefficient) }}</td>
                             <td class="text-right">
                                 <span v-if="build.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('gems.gem_builds.best') }}</span>
-                                <span v-else style="color: var(--danger-ink);">-{{ (((bestCoeff - build.coefficient) / bestCoeff) * 100).toFixed(3) }}%</span>
+                                <span v-else style="color: var(--danger-ink);">-{{ fmtDec((((bestCoeff - build.coefficient) / bestCoeff) * 100), 3) }}%</span>
                             </td>
                         </tr>
                     </tbody>

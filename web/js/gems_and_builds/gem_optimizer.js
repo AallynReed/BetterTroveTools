@@ -43,10 +43,23 @@
 
     const BUILD_DEFAULTS = {
         build_type: 'Light', character: 'Bard', subclass: 'Boomeranger',
-        food: 'zephyr_rune', ally: 'boot_clown', berserker_battler: false,
+        food: 'zephyr_rune', ally: 'boot_clown', ally_buff: true, berserker_battler: false,
         critical_damage_count: 3, no_face: false, light: 0,
-        subclass_active: false, litany: false, star_chart: null,
+        subclass_active: false, litany: false, star_chart: null, high_precision: false,
     };
+
+    // Blessing of the Lilypad - the ally buff, on top of the level-30 ally stats
+    // the data files already hold. Per stat class, not per ally: damage, crit
+    // damage and power rank share one 15.5% class, light is its own 7.75%.
+    // Stability and Movement Speed have no measured multiplier yet.
+    const LILYPAD_MULTIPLIERS = {
+        [SN.LIGHT]: 1.0775,
+        [SN.PHYSICAL]: 1.155,
+        [SN.MAGIC]: 1.155,
+        [SN.CRIT]: 1.155,
+    };
+    const applyLilypad = (name, value, active) =>
+        (active ? value * (LILYPAD_MULTIPLIERS[name] || 1) : value);
 
     // ---- Star Chart parser (port of StarChartParser) --------------------------
     function b64urlToBytes(payload) {
@@ -317,9 +330,10 @@
             if (config.ally && data.allies && data.allies[config.ally]) {
                 const allyData = data.allies[config.ally];
                 (allyData.stats || []).forEach((stat) => {
-                    if (stat.name === damageType) { if (stat.percentage) fourth += stat.value; else first += stat.value; }
-                    if (stat.name === SN.CRIT) { if (stat.percentage) fifth += stat.value; else second += stat.value; }
-                    if (stat.name === SN.LIGHT) third += stat.value;
+                    const value = applyLilypad(stat.name, stat.value, config.ally_buff);
+                    if (stat.name === damageType) { if (stat.percentage) fourth += value; else first += value; }
+                    if (stat.name === SN.CRIT) { if (stat.percentage) fifth += value; else second += value; }
+                    if (stat.name === SN.LIGHT) third += value;
                 });
             }
 
@@ -358,6 +372,11 @@
         const classBonusStat = (selectedClass.bonuses || []).find((b) => b.name === damageType);
         const classBonus = classBonusStat ? classBonusStat.value : null;
 
+        // Rankings are decided several decimals below the display rounding, so
+        // high precision widens every result field to 8 places instead of 1-2.
+        const precise = !!config.high_precision;
+        const rd = (value, digits) => pyRound(value, precise ? 8 : digits);
+
         const rawBuilds = [];
         const builder = generateCombinations(config.build_type === 'Farm');
 
@@ -371,10 +390,11 @@
             let final = cfirst * (1 + fourth / 100);
             if (classBonus !== null) final *= 1 + (classBonus / 100);
 
-            const coefficient = pyRound(final * (1 + (csecond * (fifth / 100)) / 100), 2);
+            const coefficient = rd(final * (1 + (csecond * (fifth / 100)) / 100), 2);
+            const lightValue = precise ? pyRound(cthird * (sixth / 100), 8) : Math.trunc(cthird * (sixth / 100));
 
             rawBuilds.push([
-                build, cfirst, csecond, Math.trunc(cthird * (sixth / 100)), fourth, fifth, final, classBonus, coefficient,
+                build, cfirst, csecond, lightValue, fourth, fifth, final, classBonus, coefficient,
             ]);
         }
 
@@ -412,11 +432,11 @@
             formattedResults.push({
                 rank: i + 1,
                 layout: buildText,
-                base_dmg: pyRound(buildData[1], 2),
-                crit_dmg: pyRound(buildData[2], 1),
+                base_dmg: rd(buildData[1], 2),
+                crit_dmg: rd(buildData[2], 1),
                 light: buildData[3],
-                bonus_dmg: buildData[4],
-                total_dmg: buildData[6],
+                bonus_dmg: rd(buildData[4], 8),
+                total_dmg: rd(buildData[6], 2),
                 class_bonus: buildData[7],
                 coefficient: buildData[8],
             });

@@ -92,14 +92,14 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 
 ## Gems & builds
 
-- **Gem Builds planner** for class‑focused optimization.
+- **Gem Builds planner** for class‑focused optimization, with a **Blessing of the Lilypad** toggle (the ally buff, on top of your level‑30 ally) and a **high precision** mode that shows every number to 8 decimals instead of rounding.
 - **Star Chart builder** with a pan/zoom node map, saved templates, and shareable build codes.
 - **Gem Evaluator** for reviewing gem quality and upgrade decisions.
 - **Gem Simulator** for leveling, augmenting, sparking, and flaring experiments.
 
 ## Calculators
 
-- **Power Rank** calculator.
+- **Power Rank** calculator, with the ally at level 30 and its Blessing of the Lilypad buff.
 - **Mastery** calculator (Trove and Geode).
 - **Magic Find** calculator with Star Chart integration.
 - **Light** calculator.

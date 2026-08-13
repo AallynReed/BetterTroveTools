@@ -147,6 +147,21 @@ document.addEventListener('calculators_loaded', () => {
                 } catch(e) { console.warn("Skipping Magic Find setup (data missing):", e); }
             };
 
+            // Blessing of the Lilypad - the ally buff. The stat tables already hold
+            // the level-30 ally values (112.5 PR, 562.5 light), so the buff multiplies
+            // those. Magic Find has no confirmed buff component, so its Ally row is
+            // left alone. Damage/crit/power rank share one 15.5% class; light is 7.75%.
+            const LILYPAD = { 'Power Rank': 1.155, Light: 1.0775 };
+            const lilypad = ref(true);
+            const isAllyItem = (item) => String(item && item.name).trim() === 'Ally';
+            // An ally row's value with the buff folded in; every other row is returned
+            // untouched - the buff only ever scales the ally's own stats.
+            const withLilypad = (item, value, statClass) =>
+                (lilypad.value && isAllyItem(item) ? value * LILYPAD[statClass] : value);
+            // 4 decimals, not the locale default of 3: the buffed ally lands on
+            // 130.9375 PR, and cutting that to 130.938 loses a real quarter-point.
+            const fmtCalc = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
+
             const isPercentBonusValue = (value) => {
                 const numeric = Number(value);
                 return Number.isFinite(numeric) && !Number.isInteger(numeric) && Math.abs(numeric) < 1;
@@ -184,7 +199,7 @@ document.addEventListener('calculators_loaded', () => {
                 }
                 return numeric.toLocaleString(undefined, {
                     minimumFractionDigits: 0,
-                    maximumFractionDigits: 2
+                    maximumFractionDigits: 4
                 });
             };
 
@@ -209,9 +224,9 @@ document.addEventListener('calculators_loaded', () => {
 
                 lightData.value.forEach((item) => {
                     const rawValue = Number(item.value || 0);
-                    const appliedValue = item.type === 'switch'
+                    const appliedValue = withLilypad(item, item.type === 'switch'
                         ? (item.currentValue ? rawValue : 0)
-                        : getLightAppliedValue(item);
+                        : getLightAppliedValue(item), 'Light');
 
                     if (isPercentBonusValue(rawValue)) {
                         bonusMultiplier += appliedValue;
@@ -249,9 +264,9 @@ document.addEventListener('calculators_loaded', () => {
 
             const getLightBadgeText = (item) => {
                 const rawValue = Number(item.value || 0);
-                const displayValue = item.type === 'switch'
+                const displayValue = withLilypad(item, item.type === 'switch'
                     ? rawValue
-                    : (isLightGeodeMastery(item) ? getLightAppliedValue(item) : Number(item.currentValue || 0));
+                    : (isLightGeodeMastery(item) ? getLightAppliedValue(item) : Number(item.currentValue || 0)), 'Light');
 
                 if (isPercentBonusValue(rawValue)) {
                     return t("calculators.val_light_6dd238").replace("{val}", formatLightBonusPercent(displayValue));
@@ -335,7 +350,7 @@ document.addEventListener('calculators_loaded', () => {
                 let total = 0;
                 prData.value.forEach(item => {
                     if (item.type === 'switch') {
-                        total += item.currentValue ? item.value : 0;
+                        total += item.currentValue ? withLilypad(item, item.value, 'Power Rank') : 0;
                     } else if (item.type === 'pr_mastery') {
                         const capped = Math.min(item.currentValue || 0, 1000);
                         total += (Math.min(capped, 500) * 4) + (Math.max(0, capped - 500) * 1);
@@ -380,6 +395,7 @@ document.addEventListener('calculators_loaded', () => {
 
                 return {
                     activeTab: activeTab.value,
+                    lilypad: lilypad.value,
                     troveMastery: troveMastery.value,
                     geodeMastery: geodeMastery.value,
                     starChartCode: starChartCode.value,
@@ -401,6 +417,9 @@ document.addEventListener('calculators_loaded', () => {
                 }
                 if (saved.geodeMastery !== undefined) {
                     geodeMastery.value = parseInt(saved.geodeMastery, 10) || 0;
+                }
+                if (typeof saved.lilypad === 'boolean') {
+                    lilypad.value = saved.lilypad;
                 }
                 if (typeof saved.starChartCode === 'string') {
                     starChartCode.value = saved.starChartCode;
@@ -462,11 +481,11 @@ document.addEventListener('calculators_loaded', () => {
                 } else if (item.type === 'pr_geode_mastery') {
                     v = Math.min(item.currentValue || 0, 100) * 5;
                 } else if (item.type === 'switch') {
-                    v = item.currentValue ? item.value : 0;
+                    v = item.currentValue ? withLilypad(item, item.value, 'Power Rank') : 0;
                 } else {
                     v = item.currentValue || 0;
                 }
-                return t("calculators.val_pr").replace("{val}", v);
+                return t("calculators.val_pr").replace("{val}", fmtCalc(v));
             };
 
             const sliderFillPct = (value, min, max) => {
@@ -514,7 +533,7 @@ document.addEventListener('calculators_loaded', () => {
                 }
             });
 
-            watch([activeTab, troveMastery, geodeMastery, starChartCode, starChartTemplate, mfData, prData, lightData], persistState, { deep: true });
+            watch([activeTab, lilypad, troveMastery, geodeMastery, starChartCode, starChartTemplate, mfData, prData, lightData], persistState, { deep: true });
 
             onMounted(async () => {
                 hydratingState = true;
@@ -536,6 +555,7 @@ document.addEventListener('calculators_loaded', () => {
                 mfData, mfStats, resetMf, getMfBadgeText, clampMfValue,
                 starChartCode, starChartTemplate, starChartTemplates, starChartTemplateOptions, starChartMf,
                 prData, totalPR, resetPr, getPrBadgeText, clampPrValue, prBreakdown,
+                lilypad, isAllyItem, fmtCalc,
                 lightData, lightStats, resetLight, getLightBadgeText, clampLightValue, isLightGeodeMastery, getLightSliderMax, getLightNumberMax, getLightStep,
                 sliderFillPct
             };
