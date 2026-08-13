@@ -9,6 +9,23 @@ from models.trove.builds import (BuildConfig, BuildType, Class, DamageType,
                                  StatName, TroveClass)
 from utils.functions import get_attr
 
+# Blessing of the Lilypad - the ally buff. Ally stat values in builds/ally.json
+# are already the level-30 numbers, so the buff multiplies those directly.
+# Measured per stat class, not per ally: damage, crit damage and power rank all
+# ride one 15.5% class, light is its own 7.75%. Stability and Movement Speed
+# have no measured multiplier yet, so they stay unbuffed rather than guessed.
+LILYPAD_MULTIPLIERS = {
+    "Light": 1.0775,
+    "Physical Damage": 1.155,
+    "Magic Damage": 1.155,
+    "Critical Damage": 1.155,
+}
+
+
+def apply_lilypad(name: str, value: float, active: bool) -> float:
+    """An ally's L30 stat value, with the Lilypad buff applied when active."""
+    return value * LILYPAD_MULTIPLIERS.get(name, 1.0) if active else value
+
 
 class StarChartParser:
     COMPACT_CODE_PREFIX = "SC:"
@@ -321,13 +338,14 @@ class GemOptimizerEngine:
             if config.ally and config.ally in self.allies:
                 ally_data = self.allies[config.ally]
                 for stat in ally_data.get("stats", []):
+                    value = apply_lilypad(stat["name"], stat["value"], config.ally_buff)
                     if stat["name"] == damage_type.value:
-                        if stat["percentage"]: fourth += stat["value"]
-                        else: first += stat["value"]
+                        if stat["percentage"]: fourth += value
+                        else: first += value
                     if stat["name"] == StatName.critical_damage.value:
-                        if stat["percentage"]: fifth += stat["value"]
-                        else: second += stat["value"]
-                    if stat["name"] == StatName.light.value: third += stat["value"]
+                        if stat["percentage"]: fifth += value
+                        else: second += value
+                    if stat["name"] == StatName.light.value: third += value
 
             second -= 48.1 * (3 - config.critical_damage_count)
             
@@ -364,9 +382,16 @@ class GemOptimizerEngine:
                 fifth += crit_stat.get("pct", 0)
                 sixth += light_stat.get("pct", 0)
 
+        # Rankings are decided several decimals below the display rounding, so
+        # high precision widens every result field to 8 places instead of 1-2.
+        precise = bool(config.high_precision)
+
+        def rd(value, digits):
+            return round(value, 8 if precise else digits)
+
         raw_builds = []
         builder = self.generate_combinations(farm=config.build_type in [BuildType.farm])
-        
+
         for build_tuple in builder:
             build = list(build_tuple)
             gem_first, gem_second, gem_third = self.calculate_gem_stats(config, build)
@@ -381,10 +406,11 @@ class GemOptimizerEngine:
             if class_bonus is not None:
                 final *= 1 + (class_bonus / 100)
                 
-            coefficient = round(final * (1 + (csecond * (fifth / 100)) / 100), 2)
-            
+            coefficient = rd(final * (1 + (csecond * (fifth / 100)) / 100), 2)
+            light_value = rd(cthird * (sixth / 100), 8) if precise else int(cthird * (sixth / 100))
+
             raw_builds.append([
-                build, cfirst, csecond, int(cthird * (sixth / 100)), fourth, fifth, final, class_bonus, coefficient
+                build, cfirst, csecond, light_value, fourth, fifth, final, class_bonus, coefficient
             ])
 
         raw_builds.sort(
@@ -412,11 +438,11 @@ class GemOptimizerEngine:
             formatted_results.append({
                 "rank": i + 1,
                 "layout": build_text,
-                "base_dmg": round(build_data[1], 2),
-                "crit_dmg": round(build_data[2], 1),
+                "base_dmg": rd(build_data[1], 2),
+                "crit_dmg": rd(build_data[2], 1),
                 "light": build_data[3],
-                "bonus_dmg": build_data[4],
-                "total_dmg": build_data[6],
+                "bonus_dmg": rd(build_data[4], 8),
+                "total_dmg": rd(build_data[6], 2),
                 "class_bonus": build_data[7],
                 "coefficient": build_data[8]
             })

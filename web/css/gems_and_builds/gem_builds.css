@@ -494,6 +494,20 @@
     color: var(--accent-blue);
 }
 
+/* The precision switch sits beside the live state, at the results end of the
+   toolbar - it changes what the table below reads, not what is computed. */
+.results-state-group {
+    display: flex;
+    align-items: center;
+    gap: var(--t-4);
+    flex-wrap: wrap;
+}
+
+.results-precision-toggle {
+    margin-top: 0;
+    font-size: var(--t-fs-label);
+}
+
 .pagination-container { display: flex; justify-content: flex-end; margin-top: var(--t-4); padding-top: var(--t-4); border-top: 1px solid var(--border-color); }
 .pagination { display: flex; align-items: center; gap: var(--control-gap); color: var(--text-muted); font-size: var(--t-fs-body); }
 .btn-icon { background: none; border: none; color: var(--text-main); cursor: pointer; padding: var(--t-1); transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease); }

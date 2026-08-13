@@ -121,6 +121,8 @@ class BuildConfig(BaseModel):
     subclass: Class = Class.boomeranger
     food: str = "zephyr_rune"
     ally: str = "boot_clown"
+    ally_buff: bool = True
+    high_precision: bool = False
     berserker_battler: bool = False
     critical_damage_count: int = 3
     no_face: bool = False

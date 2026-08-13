@@ -25,6 +25,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 subclass: "Knight",
                 build_type: "Light",
                 ally: "boot_clown",
+                ally_buff: true,
                 food: "",
                 light: 0,
                 critical_damage_count: 3,
@@ -33,8 +34,20 @@ document.addEventListener("gem_builds_loaded", () => {
                 subclass_active: false,
                 no_face: false,
                 star_chart: "",
-                scTemplate: ""
+                scTemplate: "",
+                high_precision: false
             });
+
+            // High precision widens every number to at most 8 decimals and trims
+            // the trailing zeros, so 78.93800000 still reads as 78.938. Off, the
+            // columns keep their fixed widths - a table of ragged decimals is
+            // unreadable at a glance.
+            const HP_DIGITS = 8;
+            const fmtNum = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: config.high_precision ? HP_DIGITS : 3 });
+            const fmtInt = (v) => (config.high_precision ? fmtNum(v) : Math.round(Number(v) || 0).toLocaleString());
+            const fmtDec = (v, digits) => Number(v || 0).toLocaleString(undefined, config.high_precision
+                ? { maximumFractionDigits: HP_DIGITS, useGrouping: false }
+                : { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false });
             const modifiersOpen = ref(false);
             const tipsDismissed = ref(false);
 
@@ -120,17 +133,17 @@ document.addEventListener("gem_builds_loaded", () => {
                     return t('gems.gem_builds.best_overall_coefficient_for_this_setup');
                 }
 
-                const coeffGap = (((best.coefficient - build.coefficient) / best.coefficient) * 100).toFixed(3);
+                const coeffGap = fmtDec((((best.coefficient - build.coefficient) / best.coefficient) * 100), 3);
                 const lightDelta = build.light - best.light;
                 const critDelta = build.crit_dmg - best.crit_dmg;
-                const damageDelta = Math.round(build.total_dmg - best.total_dmg);
+                const damageDelta = config.high_precision ? (build.total_dmg - best.total_dmg) : Math.round(build.total_dmg - best.total_dmg);
                 const tradeoffs = [];
 
-                if (lightDelta > 0) tradeoffs.push(t('gems.gem_builds.gains_value_light').replace('{value}', lightDelta.toLocaleString()));
-                if (critDelta > 0) tradeoffs.push(t('gems.gem_builds.gains_value_crit_damage').replace('{value}', critDelta.toFixed(1)));
-                if (damageDelta > 0) tradeoffs.push(t('gems.gem_builds.gains_value_total_damage').replace('{value}', damageDelta.toLocaleString()));
-                if (lightDelta < 0) tradeoffs.push(t('gems.gem_builds.gives_up_value_light').replace('{value}', Math.abs(lightDelta).toLocaleString()));
-                if (critDelta < 0) tradeoffs.push(t('gems.gem_builds.gives_up_value_crit_damage').replace('{value}', Math.abs(critDelta).toFixed(1)));
+                if (lightDelta > 0) tradeoffs.push(t('gems.gem_builds.gains_value_light').replace('{value}', fmtNum(lightDelta)));
+                if (critDelta > 0) tradeoffs.push(t('gems.gem_builds.gains_value_crit_damage').replace('{value}', fmtDec(critDelta, 1)));
+                if (damageDelta > 0) tradeoffs.push(t('gems.gem_builds.gains_value_total_damage').replace('{value}', fmtNum(damageDelta)));
+                if (lightDelta < 0) tradeoffs.push(t('gems.gem_builds.gives_up_value_light').replace('{value}', fmtNum(Math.abs(lightDelta))));
+                if (critDelta < 0) tradeoffs.push(t('gems.gem_builds.gives_up_value_crit_damage').replace('{value}', fmtDec(Math.abs(critDelta), 1)));
 
                 const tradeoffText = tradeoffs.length > 0
                     ? tradeoffs.slice(0, 2).join(', ')
@@ -146,7 +159,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 if (build.rank === 1) {
                     if (cachedBuilds.value.length > 1) {
                         const runnerUp = cachedBuilds.value[1];
-                        const edge = (((build.coefficient - runnerUp.coefficient) / runnerUp.coefficient) * 100).toFixed(3);
+                        const edge = fmtDec((((build.coefficient - runnerUp.coefficient) / runnerUp.coefficient) * 100), 3);
                         return t('gems.gem_builds.highest_coefficient_for_your_current_set_ea1fda').replace('{value}', edge);
                     }
                     return t('gems.gem_builds.highest_coefficient_for_your_current_set_d2b906');
@@ -179,13 +192,13 @@ document.addEventListener("gem_builds_loaded", () => {
                         <h3>${t("gems.gem_builds.build_rank_details").replace("{rank}", build.rank)}</h3>
                         <p style="margin: 0 0 var(--t-3) 0; color: var(--text-muted); line-height: 1.5;">${tradeoffText}</p>
                         <ul style="list-style: none; padding: 0; margin: 0;">
-                            <li style="margin-bottom: var(--t-1);"><strong>${t("common.light")}:</strong> <span style="float: right; color: var(--text-main);">${build.light.toLocaleString()}</span></li>
-                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.base_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${Math.round(build.base_dmg).toLocaleString()}</span></li>
-                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.bonus_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${build.bonus_dmg.toFixed(2)}%${classBonusText}</span></li>
-                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.crit_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${build.crit_dmg.toFixed(1)}%</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("common.light")}:</strong> <span style="float: right; color: var(--text-main);">${fmtNum(build.light)}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.base_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${fmtInt(build.base_dmg)}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.bonus_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${fmtDec(build.bonus_dmg, 2)}%${classBonusText}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.crit_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${fmtDec(build.crit_dmg, 1)}%</span></li>
                             <hr style="border: 0; border-top: 1px dashed var(--border-color); margin: var(--t-2) 0;">
-                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.total_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${Math.round(build.total_dmg).toLocaleString()}</span></li>
-                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.coefficient")}:</strong> <span style="float: right; color: var(--accent-blue); font-weight: 700;">${build.coefficient.toLocaleString()}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.total_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${fmtInt(build.total_dmg)}</span></li>
+                            <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.coefficient")}:</strong> <span style="float: right; color: var(--accent-blue); font-weight: 700;">${fmtNum(build.coefficient)}</span></li>
                         </ul>
                     </div>
                 `.replace(/"/g, '&quot;');
@@ -215,7 +228,8 @@ document.addEventListener("gem_builds_loaded", () => {
             const buildCsv = () => {
                 let csv = "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
                 cachedBuilds.value.forEach(b => {
-                    csv += `${b.rank},${b.layout},${b.light},${Math.round(b.base_dmg)},${b.bonus_dmg.toFixed(2)},${Math.round(b.total_dmg)},${b.crit_dmg.toFixed(1)},${b.coefficient}\n`;
+                    const cell = (v) => (config.high_precision ? v : Math.round(v));
+                    csv += `${b.rank},${b.layout},${b.light},${cell(b.base_dmg)},${fmtDec(b.bonus_dmg, 2)},${cell(b.total_dmg)},${fmtDec(b.crit_dmg, 1)},${b.coefficient}\n`;
                 });
                 return csv;
             };
@@ -291,12 +305,12 @@ document.addEventListener("gem_builds_loaded", () => {
                             const statsText = [
                                 `${t("gems.gem_builds.build_rank")}: #${build.rank}`,
                                 `${t("gems.gem_builds.build")}: ${fmtLayout(build.layout)}`,
-                                `${t("common.light")}: ${build.light.toLocaleString()}`,
-                                `${t("gems.gem_builds.base_dmg")}: ${Math.round(build.base_dmg).toLocaleString()}`,
-                                `${t("gems.gem_builds.bonus_dmg")}: ${build.bonus_dmg.toFixed(2)}%${classBonusText}`,
-                                `${t("gems.gem_builds.crit_dmg")}: ${build.crit_dmg.toFixed(1)}%`,
-                                `${t("gems.gem_builds.total_dmg")}: ${Math.round(build.total_dmg).toLocaleString()}`,
-                                `${t("gems.gem_builds.coefficient")}: ${build.coefficient.toLocaleString()}`
+                                `${t("common.light")}: ${fmtNum(build.light)}`,
+                                `${t("gems.gem_builds.base_dmg")}: ${fmtInt(build.base_dmg)}`,
+                                `${t("gems.gem_builds.bonus_dmg")}: ${fmtDec(build.bonus_dmg, 2)}%${classBonusText}`,
+                                `${t("gems.gem_builds.crit_dmg")}: ${fmtDec(build.crit_dmg, 1)}%`,
+                                `${t("gems.gem_builds.total_dmg")}: ${fmtInt(build.total_dmg)}`,
+                                `${t("gems.gem_builds.coefficient")}: ${fmtNum(build.coefficient)}`
                             ].join('\n');
                             navigator.clipboard.writeText(statsText).then(() => { if(window.showToast) window.showToast(t("gems.gem_builds.copied_all_stats_to_clipboard")); });
                         }
@@ -318,6 +332,8 @@ document.addEventListener("gem_builds_loaded", () => {
                             subclass: config.subclass,
                             build_type: config.build_type,
                             ally: config.ally,
+                            ally_buff: config.ally_buff,
+                            high_precision: config.high_precision,
                             food: config.food,
                             light: config.light,
                             critical_damage_count: config.critical_damage_count,
@@ -458,7 +474,8 @@ document.addEventListener("gem_builds_loaded", () => {
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff, buildsUnavailable,
                 nextPage, prevPage, getTooltipHtml, copyLayout, fmtLayout, exportCsv, showContextMenu,
                 helpOpen, toggleHelp,
-                getBuildHeadline, dismissTips
+                getBuildHeadline, dismissTips,
+                fmtNum, fmtInt, fmtDec
             };
         }
     });

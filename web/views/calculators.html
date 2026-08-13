@@ -27,10 +27,10 @@
             <div class="mf-header compact-header pr-header" style="border-color: var(--calc-accent);">
                 <div class="mf-total-box">
                     <span class="mf-total-label">{{ t('calculators.total_power_rank') }}</span>
-                    <span class="mf-total-value">{{ totalPR.toLocaleString() }}</span>
+                    <span class="mf-total-value">{{ fmtCalc(totalPR) }}</span>
                 </div>
                 <div class="pr-summary-strip">
-                    <span class="summary-chip"><strong>{{ t('calculators.mastery_pr') }}</strong> {{ prBreakdown.masteryPR.toLocaleString() }}</span>
+                    <span class="summary-chip"><strong>{{ t('calculators.mastery_pr') }}</strong> {{ fmtCalc(prBreakdown.masteryPR) }}</span>
                     <span v-if="prBreakdown.patronActive" class="summary-chip"><i class="fa-solid fa-crown" style="color: var(--warning);"></i> {{ t('common.patron') }}</span>
                 </div>
                 <div class="mf-header-actions">
@@ -39,7 +39,8 @@
             </div>
             
             <div class="mf-calculator-grid">
-                <div class="calc-item" v-for="(item, index) in prData" :key="'pr-'+index">
+                <template v-for="(item, index) in prData" :key="'pr-'+index">
+                <div class="calc-item">
                     <div class="calc-item-header">
                         <span>{{ t(item.name) }}</span>
                         <span class="calc-item-badge patron">{{ getPrBadgeText(item) }}</span>
@@ -55,6 +56,19 @@
                         </div>
                     </div>
                 </div>
+                <div class="calc-item" v-if="isAllyItem(item)">
+                    <div class="calc-item-header">
+                        <span>{{ t('calculators.blessing_of_the_lilypad') }}</span>
+                        <span class="calc-item-badge patron">+15.5% PR</span>
+                    </div>
+                    <div>
+                        <label class="calc-switch">
+                            <input type="checkbox" v-model="lilypad">
+                            <span class="slider-toggle pr-slider-toggle"></span>
+                        </label>
+                    </div>
+                </div>
+                </template>
             </div>
         </div>
 
@@ -191,7 +205,7 @@
                     <span class="mf-total-value">{{ lightStats.total.toLocaleString() }}</span>
                 </div>
                 <div class="mf-summary-strip">
-                    <span class="summary-chip"><strong>{{ t('calculators.base_light') }}</strong> {{ lightStats.flat.toLocaleString() }}</span>
+                    <span class="summary-chip"><strong>{{ t('calculators.base_light') }}</strong> {{ fmtCalc(lightStats.flat) }}</span>
                     <span v-if="lightStats.bonusPct > 0" class="summary-chip"><strong>{{ t('calculators.bonus') }}</strong> +{{ lightStats.bonusPct.toFixed(0) }}%</span>
                 </div>
                 <div class="mf-header-actions">
@@ -200,7 +214,8 @@
             </div>
 
             <div class="mf-calculator-grid">
-                <div class="calc-item" v-for="(item, index) in lightData" :key="'light-'+index">
+                <template v-for="(item, index) in lightData" :key="'light-'+index">
+                <div class="calc-item">
                     <div class="calc-item-header">
                         <span>{{ t(item.name) }}</span>
                         <span :class="['calc-item-badge', { bonus: Math.abs(Number(item.value || 0)) < 1 && !Number.isInteger(Number(item.value || 0)) }]">
@@ -218,6 +233,19 @@
                         </div>
                     </div>
                 </div>
+                <div class="calc-item" v-if="isAllyItem(item)">
+                    <div class="calc-item-header">
+                        <span>{{ t('calculators.blessing_of_the_lilypad') }}</span>
+                        <span class="calc-item-badge bonus">+7.75% {{ t('common.light') }}</span>
+                    </div>
+                    <div>
+                        <label class="calc-switch">
+                            <input type="checkbox" v-model="lilypad">
+                            <span class="slider-toggle light-slider-toggle"></span>
+                        </label>
+                    </div>
+                </div>
+                </template>
             </div>
         </div>
     </div>
