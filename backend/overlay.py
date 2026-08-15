@@ -131,10 +131,16 @@ _POLL_SECONDS = 0.4
 # blips for a frame during alt-tab and when the game spawns a child window; at
 # 400ms a tick, three ticks is ~1.2s of genuinely being elsewhere.
 _HIDE_GRACE_TICKS = 3
-# Consecutive cursor-visible polls before the overlay treats it as "a menu is
-# open". Panels animate open, briefly flashing the cursor; two ticks (~0.8s)
-# is past that without feeling sluggish.
-_MENU_GRACE_TICKS = 2
+# The menu check rides its own, much faster poll. Reading the cursor clip is
+# ~3us (one GetClipCursor), where a full window poll costs a process scan
+# whenever the game handle is stale -- so the cheap signal has no reason to
+# wait for the expensive one. Opening a panel now hides the overlay in about a
+# tenth of a second instead of on the next 400ms tick.
+_MENU_POLL_SECONDS = 0.05
+# How long the cursor must stay free before it counts as "a menu is open".
+# Panels animate open, briefly flashing the cursor; this rides out that flash
+# while staying below what reads as a delay.
+_MENU_GRACE_SECONDS = 0.1
 # Repaint cadence. The only thing that changes every second is a countdown, so
 # 1Hz is the ceiling on what is worth drawing over a game.
 _RENDER_SECONDS = 1.0
@@ -145,6 +151,10 @@ _SNAPSHOT_SECONDS = 120.0
 _NETWORK_TTL_SECONDS = 15 * 60
 
 _TROVE_OFFSET = timedelta(hours=11)
+
+# "no cursor reading passed in" -- distinct from None, which is a real reading
+# meaning "the clip couldn't be read".
+_UNSET = object()
 
 
 # --- config -----------------------------------------------------------------
@@ -554,7 +564,8 @@ class OverlayTracker:
         # my way" usually means for the rest of the play session.
         self._muted = False
         self._unfocused_ticks = 0
-        self._menu_ticks = 0
+        self._menu_since = None      # monotonic ts the cursor came free, or None
+        self._in_menu = False
         self._last_rect = None
         self._last_render = 0.0
         self._snapshot = {}
@@ -739,7 +750,46 @@ class OverlayTracker:
                 # A tracker that dies leaves an orphaned overlay pinned over the
                 # game with no way to dismiss it, so every tick is contained.
                 pass
-            self._stop.wait(_POLL_SECONDS)
+            self._wait_poll()
+
+    def _wait_poll(self):
+        """Sleep out the poll interval, watching the cursor at a finer grain.
+
+        Returns early the moment the menu verdict flips, so the next full tick
+        acts on it right away. Without this the overlay only learns a panel
+        opened on the next 400ms window poll -- and because coming back is
+        immediate, that asymmetry is exactly what reads as "slow to hide, quick
+        to show".
+        """
+        deadline = time.monotonic() + _POLL_SECONDS
+        while not self._stop.is_set():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return
+            if self._stop.wait(min(_MENU_POLL_SECONDS, remaining)):
+                return
+            try:
+                if self._menu_changed():
+                    return
+            except Exception:
+                # Keep waiting out the interval rather than returning: a
+                # persistent failure here would otherwise spin the loop.
+                continue
+
+    def _menu_changed(self):
+        """True when the debounced menu verdict differs from the last tick's.
+
+        Only touches the cheap signals: the config flags and the cursor clip.
+        Anything that needs the window (geometry, focus) is left to _tick.
+        """
+        with self._lock:
+            config = dict(self._config)
+            visible = self._visible
+            rect = self._last_rect
+        if not config["enabled"] or not (visible or self._in_menu):
+            return False
+        before = self._in_menu   # _menu_open rewrites it, so snapshot first
+        return self._menu_open(config, rect) != before
 
     def _tick(self):
         with self._lock:
@@ -758,25 +808,7 @@ class OverlayTracker:
 
         focused = info["foreground"] or self._overlay_has_focus()
 
-        # "A game UI is open" == the game let go of the cursor. Debounced by a
-        # tick so a single frame of release (which happens as panels animate)
-        # doesn't blink the overlay; coming back is immediate, because the
-        # player closing a menu wants the data back at once.
-        #
-        # Never applies while the overlay is unlocked. That is what makes the
-        # interact hotkey a "force on" key: the player has said they want to use
-        # the overlay, and the cursor being free is the precondition for that,
-        # not a reason to take it away.
-        with self._lock:
-            interactive = self._interactive
-        # mouse_captured is None when the state can't be read; only a definite
-        # False (the game released the cursor) counts as "a menu is open".
-        in_menu = False
-        if config["hide_in_menus"] and not interactive and info.get("mouse_captured") is False:
-            self._menu_ticks += 1
-            in_menu = self._menu_ticks >= _MENU_GRACE_TICKS
-        else:
-            self._menu_ticks = 0
+        in_menu = self._menu_open(config, info["rect"], info.get("mouse_captured"))
 
         with self._lock:
             self._status["in_menu"] = in_menu
@@ -804,6 +836,40 @@ class OverlayTracker:
 
         self._unfocused_ticks = 0
         self._set_visible(True, rect=info["rect"])
+
+    def _menu_open(self, config, rect, captured=_UNSET):
+        """Debounced "a game UI panel is open", read from cursor confinement.
+
+        Hiding waits out _MENU_GRACE_SECONDS of continuously-free cursor so a
+        single frame of release (which happens as panels animate) doesn't blink
+        the overlay. Coming back is immediate, because the player closing a menu
+        wants the data back at once.
+
+        Never applies while the overlay is unlocked. That is what makes the
+        interact hotkey a "force on" key: the player has said they want to use
+        the overlay, and the cursor being free is the precondition for that, not
+        a reason to take it away.
+
+        Caches its verdict in ``_in_menu`` so the fast cursor poll between ticks
+        can tell a genuine change from a repeat reading.
+        """
+        with self._lock:
+            interactive = self._interactive
+        if captured is _UNSET:
+            captured = trove_window.mouse_captured(rect)
+
+        # mouse_captured is None when the state can't be read; only a definite
+        # False (the game released the cursor) counts as "a menu is open".
+        if not config["hide_in_menus"] or interactive or captured is not False:
+            self._menu_since = None
+            self._in_menu = False
+            return False
+
+        now = time.monotonic()
+        if self._menu_since is None:
+            self._menu_since = now
+        self._in_menu = (now - self._menu_since) >= _MENU_GRACE_SECONDS
+        return self._in_menu
 
     def _overlay_has_focus(self):
         """True when the foreground window IS our overlay.
