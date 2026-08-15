@@ -12,6 +12,7 @@ Trove view drives:
   * ``trove_submit_2fa``  - hand a 2-step email code to a waiting ``trove_play``.
   * ``trove_cancel_2fa``  - abort a launch that's waiting on a 2-step code.
   * ``trove_logout``      - drop the cached ticket.
+  * ``trove_open_folder`` - reveal the install / ModCfgs folder in the file manager.
 
 Long operations run on a daemon worker thread (only one at a time, guarded by
 ``_BUSY``) so the eel handler returns immediately; progress + terminal status are
@@ -35,6 +36,7 @@ from backend.response import resp, standardize_response
 from backend.trove_launcher import trionauth, updater as _updater
 from utils.executable import find_trove_executable
 from utils.path import get_app_data_dir
+from utils.platform_open import open_in_file_manager
 
 # --- constants --------------------------------------------------------------
 
@@ -795,6 +797,19 @@ def trove_rename_account(email, name=""):
     itself is unchanged — only what the dropdown shows."""
     _set_alias(email, name)
     return resp(True, data={"email": (email or "").strip(), "name": (name or "").strip()})
+
+
+@eel.expose
+@standardize_response
+def trove_open_folder(kind="game", game_path=""):
+    """Reveal the selected install, or the shared ModCfgs folder, in the file manager."""
+    if kind == "modcfg":
+        target = get_app_data_dir() / "ModCfgs"
+        target.mkdir(parents=True, exist_ok=True)
+    else:
+        target = _resolve_game_dir(game_path)
+    open_in_file_manager(target)
+    return resp(True, data={"path": str(target)})
 
 
 @eel.expose
