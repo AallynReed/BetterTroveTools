@@ -1798,7 +1798,11 @@
     "Open menu": "app.open_menu",
     "Command palette": "app.command_palette",
     "Commands": "app.commands",
-    "Search commands or jump to a tool...": "app.search_commands_or_jump_to_a_tool"
+    "Search commands or jump to a tool...": "app.search_commands_or_jump_to_a_tool",
+    "Folders": "trove.folders",
+    "Jump straight to the files — the selected install, or the mod config folder Trove reads .cfg files from.": "trove.folders_hint",
+    "Trove folder": "trove.open_game_folder",
+    "Mod configs": "trove.open_modcfg_folder"
   },
   "en": {
     "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3424,6 +3428,10 @@
     "trove.repair": "Repair",
     "trove.repair_note": "Repair forgets local tracking and re-downloads every game file from the manifest. It never touches your mods or configs.",
     "trove.repair_confirm": "Repair will re-download every game file for this install. This can take a while. Continue?",
+    "trove.folders": "Folders",
+    "trove.folders_hint": "Jump straight to the files — the selected install, or the mod config folder Trove reads .cfg files from.",
+    "trove.open_game_folder": "Trove folder",
+    "trove.open_modcfg_folder": "Mod configs",
     "trove.idle": "Idle",
     "trove.downloaded": "downloaded",
     "trove.working": "Working…",

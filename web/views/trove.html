@@ -138,6 +138,21 @@
                 <p class="trove-card-note"><i class="fa-solid fa-circle-info"></i> {{ t('trove.repair_note') }}</p>
             </section>
 
+            <section class="trove-card">
+                <div class="trove-card-head">
+                    <h2 class="trove-card-title"><i class="fa-solid fa-folder-open"></i> {{ t('trove.folders') }}</h2>
+                </div>
+                <p class="trove-card-hint">{{ t('trove.folders_hint') }}</p>
+                <div class="trove-btn-row">
+                    <button class="trove-btn" :disabled="!gamePath" @click="openFolder('game')">
+                        <i class="fa-solid fa-folder"></i> {{ t('trove.open_game_folder') }}
+                    </button>
+                    <button class="trove-btn" @click="openFolder('modcfg')">
+                        <i class="fa-solid fa-sliders"></i> {{ t('trove.open_modcfg_folder') }}
+                    </button>
+                </div>
+            </section>
+
             <section class="trove-card trove-running-card" v-if="running.length">
                 <div class="trove-card-head">
                     <h2 class="trove-card-title"><i class="fa-solid fa-gamepad"></i> {{ t('trove.running') }}</h2>

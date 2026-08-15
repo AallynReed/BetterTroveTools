@@ -339,6 +339,13 @@
                         await onSelectAccount();
                     }
                 }
+                async function openFolder(kind) {
+                    if (!hasEel()) return;
+                    if (kind === 'game' && !gamePath.value) return;
+                    const res = await window.callBackend(
+                        window.eel.trove_open_folder(kind, gamePath.value)(), 'open_folder');
+                    if (!res.success) setNotice(res.error || t('trove.error'), 'error');
+                }
                 async function toggleRelog(inst) {
                     if (!hasEel() || !inst) return;
                     await window.callBackend(window.eel.trove_set_auto_relog(inst.pid, !inst.auto_relog)(), 'relog');
@@ -398,7 +405,7 @@
                     logLines, notice, twofaNeeded, twofaCode, logEl, twofaInput,
                     progressPct, localVersion, busyLabel, labelFor, shownEmail, optLabel,
                     check, update, repair, play, submit2fa, cancel2fa, logout, syncRemember,
-                    onSelectAccount, removeAccount, renameAccount, toggleRelog,
+                    onSelectAccount, removeAccount, renameAccount, toggleRelog, openFolder,
                 };
             }
         });
