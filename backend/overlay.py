@@ -78,13 +78,23 @@ VALID_ANCHORS = ("top-left", "top-right", "bottom-left", "bottom-right")
 # that is where the shipped widgets go.
 WIDGET_DEFAULTS = {
     "clock":         {"on": True,  "anchor": "bottom-right", "x": 0.012, "y": 0.050},
-    "daily_buff":    {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.130},
-    "weekly_buff":   {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.350},
+    # Both bonuses in one panel, and collapsed out of the box: expanded they are
+    # two headings plus up to eight effect lines, which is more standing text
+    # than anything else the overlay draws. Collapsed it is a line each -- which
+    # bonus is up and how long it lasts -- and the effects are one toggle away.
+    "buffs":         {"on": True,  "anchor": "top-left",     "x": 0.012, "y": 0.130,
+                      "collapsed": True},
     "notifications": {"on": True,  "anchor": "bottom-right", "x": 0.012, "y": 0.220},
+    "challenge":     {"on": False, "anchor": "top-left",     "x": 0.012, "y": 0.300},
     "merchants":     {"on": False, "anchor": "top-left",     "x": 0.012, "y": 0.500},
     "chaos_chest":   {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.400},
     "gardening":     {"on": False, "anchor": "top-left",     "x": 0.012, "y": 0.650},
-    "rotations":     {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.520},
+    # One biome panel with three independently-switchable sections: they are
+    # the same kind of answer ("what biome, and for how long") and three
+    # separate boxes for it was three headings' worth of chrome. Ordered
+    # fastest-first -- d15 turns over every 3 hours, the other two weekly.
+    "rotations":     {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.520,
+                      "sections": {"d15": True, "wild_mana": True, "stampy": True}},
     "delve":         {"on": False, "anchor": "bottom-right", "x": 0.012, "y": 0.700},
     "events":        {"on": False, "anchor": "top-right",    "x": 0.012, "y": 0.400},
 }
@@ -114,6 +124,23 @@ CONFIG_DEFAULTS = {
     # it for inventory, the store, the map and chat -- so a free cursor means
     # the player is reading something the overlay would be sitting on top of.
     "hide_in_menus": True,
+    # Drop anything that isn't running right now -- away merchants, rotations
+    # that have already been and gone, events that haven't started. The counter
+    # to a widget list that grows: what's live is usually all you want mid-game,
+    # and a row that only says "in 3 days" is the first thing to go.
+    "hide_inactive": False,
+    # Nudge widgets down when a neighbour grows into them. On by default: panels
+    # change height as their data does, so a layout arranged when everything was
+    # short would otherwise start overlapping on its own.
+    "prevent_overlap": True,
+    # "" means "use the app's own colours". Text and panel only -- the accent is
+    # already the app's themed accent, and the state colours carry meaning.
+    "text_color": "",
+    "panel_color": "",
+    # Take the overlay out of screen shares and recordings while leaving it on
+    # screen. Off by default -- it records like any other window, and the people
+    # who want it gone from a stream know who they are.
+    "hide_from_capture": False,
     # Route desktop notifications into the overlay instead of tray balloons
     # while the overlay is actually on screen.
     "notifications_in_overlay": True,
@@ -141,6 +168,19 @@ _MENU_POLL_SECONDS = 0.05
 # Panels animate open, briefly flashing the cursor; this rides out that flash
 # while staying below what reads as a delay.
 _MENU_GRACE_SECONDS = 0.1
+# How long the editing view survives after the last drag (or after locking).
+# Long enough to see where the widget landed, short enough that the placeholder
+# panels are gone before you are back to playing.
+_EDIT_TAIL_SECONDS = 2.0
+
+# Arrow-key nudging of the selected widget. The overlay window is
+# WS_EX_NOACTIVATE -- it never takes keyboard focus, so it never receives a key
+# message; the tracker reads the key state instead, and only while the overlay
+# is unlocked, so the arrows are never touched during play.
+_VK_ARROWS = {"left": 0x25, "up": 0x26, "right": 0x27, "down": 0x28}
+_VK_SHIFT = 0x10
+_NUDGE_PX = 1
+_NUDGE_FAST_PX = 10
 # Repaint cadence. The only thing that changes every second is a countdown, so
 # 1Hz is the ceiling on what is worth drawing over a game.
 _RENDER_SECONDS = 1.0
@@ -171,6 +211,14 @@ def _clamp(value, low, high, fallback):
         return fallback
 
 
+def _hex_or_blank(value):
+    """'#RRGGBB' -> '#rrggbb', anything else -> '' (meaning "app default")."""
+    text = str(value or "").strip().lstrip("#").lower()
+    if len(text) != 6 or any(c not in "0123456789abcdef" for c in text):
+        return ""
+    return f"#{text}"
+
+
 def _normalize_widget(widget_id, raw):
     base = WIDGET_DEFAULTS[widget_id]
     raw = raw if isinstance(raw, dict) else {}
@@ -189,6 +237,16 @@ def _normalize_widget(widget_id, raw):
         "x": _clamp(raw.get("x", base["x"]), 0.0, 0.95, base["x"]),
         "y": _clamp(raw.get("y", base["y"]), 0.0, 0.95, base["y"]),
         "scale": _clamp(raw.get("scale", 1.0), 0.6, 2.0, 1.0),
+        # Only widgets whose default says so offer a short form; for the rest
+        # this rides along as False and the builder never reads it.
+        "collapsed": bool(raw.get("collapsed", base.get("collapsed", False))),
+        # Same idea for sections: the shipped default decides which exist, the
+        # saved config only decides which are on. An unknown section in the file
+        # is dropped, and one added by a later version arrives switched on.
+        "sections": {
+            name: bool((raw.get("sections") or {}).get(name, default))
+            for name, default in (base.get("sections") or {}).items()
+        },
     }
 
 
@@ -206,6 +264,12 @@ def normalize_config(raw):
         mute_hotkey = DEFAULT_MUTE_HOTKEY if hotkey != DEFAULT_MUTE_HOTKEY else DEFAULT_HOTKEY
 
     widgets_raw = raw.get("widgets") if isinstance(raw.get("widgets"), dict) else {}
+    # The daily and weekly panels merged into one `buffs` widget. Inherit the
+    # old daily panel's placement rather than letting a tuned layout snap back
+    # to the shipped default on upgrade.
+    if "buffs" not in widgets_raw and isinstance(widgets_raw.get("daily_buff"), dict):
+        widgets_raw = dict(widgets_raw, buffs=widgets_raw["daily_buff"])
+
     return {
         "enabled": raw.get("enabled") is True,
         "hotkey": hotkey,
@@ -216,6 +280,11 @@ def normalize_config(raw):
         "scale": _clamp(raw.get("scale", CONFIG_DEFAULTS["scale"]), 0.6, 2.0, CONFIG_DEFAULTS["scale"]),
         "hide_when_unfocused": raw.get("hide_when_unfocused", True) is not False,
         "hide_in_menus": raw.get("hide_in_menus", True) is not False,
+        "hide_inactive": raw.get("hide_inactive") is True,
+        "prevent_overlap": raw.get("prevent_overlap", True) is not False,
+        "text_color": _hex_or_blank(raw.get("text_color")),
+        "panel_color": _hex_or_blank(raw.get("panel_color")),
+        "hide_from_capture": raw.get("hide_from_capture") is True,
         "notifications_in_overlay": raw.get("notifications_in_overlay", True) is not False,
         "notification_seconds": int(_clamp(raw.get("notification_seconds", 12), 3, 60, 12)),
         # Unknown ids in the file are dropped; widgets added by a later version
@@ -294,11 +363,17 @@ def _buff_payload(buff, extra_keys):
     return payload
 
 
-def _merchants(st):
+def _merchants(st, luxion=None):
+    """Merchant states. Corruxion and Fluxion are deterministic cycles and stay
+    local maths; Luxion is not.
+
+    Luxion's run is set by the developers and captured from the game, so there
+    is no cycle to extrapolate -- the old local ``is_invasion()`` guess produced
+    a confident countdown to a visit that was never scheduled. With no capture
+    to go on the honest answer is "not running", not a number.
+    """
     corr_active = st.is_dragon(st.first_corruxion)
     flux_active = st.is_fluxion()
-    inv_active = st.is_invasion()
-    now = st.now
 
     def until(delta):
         return _ts(datetime.now(UTC) + delta)
@@ -314,9 +389,10 @@ def _merchants(st):
             "state": "voting" if st.is_fluxion_voting() else ("selling" if st.is_fluxion_selling() else "away"),
             "until": until(st.until_end_fluxion() if flux_active else st.until_next_fluxion()),
         },
-        "invasion": {
-            "active": inv_active,
-            "until": until(st.until_end_invasion() if inv_active else st.until_next_invasion()),
+        "luxion": {
+            "active": bool(luxion and luxion.get("open")),
+            "run": bool(luxion and luxion.get("run")),
+            "until": (luxion or {}).get("until"),
         },
     }
 
@@ -352,7 +428,12 @@ _STAMPY_BIOMES = [
     "Sundered Uplands",
 ]
 _MANA_EPOCH = datetime(2023, 11, 20, 11, 0, 0, tzinfo=UTC)
-_STAMPY_EPOCH = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC)
+# Stampy runs fortnightly from a Monday, for 48 hours -- so in server time it is
+# always Monday and Tuesday, and never a weekend. The biome list and its order
+# are unchanged; only the anchor and the cadence were wrong.
+_STAMPY_EPOCH = datetime(2023, 9, 25, 11, 0, 0, tzinfo=UTC)
+_STAMPY_PERIOD = timedelta(days=14)
+_STAMPY_DURATION = timedelta(hours=48)
 _WEEK = timedelta(weeks=1)
 
 
@@ -365,20 +446,68 @@ def _rotations(now_utc):
         "end": _ts(mana_start + _WEEK),
     }
 
-    stampy_week = int((now_utc - _STAMPY_EPOCH).total_seconds() // _WEEK.total_seconds())
-    stampy_start = _STAMPY_EPOCH + stampy_week * _WEEK
-    stampy_end = stampy_start + timedelta(hours=48)
-    if stampy_end <= now_utc:  # this week's visit is over; point at the next one
-        stampy_week += 1
-        stampy_start = _STAMPY_EPOCH + stampy_week * _WEEK
-        stampy_end = stampy_start + timedelta(hours=48)
+    period = _STAMPY_PERIOD.total_seconds()
+    stampy_index = int((now_utc - _STAMPY_EPOCH).total_seconds() // period)
+    stampy_start = _STAMPY_EPOCH + stampy_index * _STAMPY_PERIOD
+    stampy_end = stampy_start + _STAMPY_DURATION
+    if stampy_end <= now_utc:  # this visit is over; point at the next one
+        stampy_index += 1
+        stampy_start = _STAMPY_EPOCH + stampy_index * _STAMPY_PERIOD
+        stampy_end = stampy_start + _STAMPY_DURATION
     stampy = {
-        "biome": _STAMPY_BIOMES[stampy_week % len(_STAMPY_BIOMES)],
+        "biome": _STAMPY_BIOMES[stampy_index % len(_STAMPY_BIOMES)],
         "active": stampy_start <= now_utc < stampy_end,
         "start": _ts(stampy_start),
         "end": _ts(stampy_end),
     }
     return {"wild_mana": wild_mana, "stampy": stampy}
+
+
+# The d15 adventure-world rotation: three sub-biome slots advancing together
+# every three hours off a fixed epoch. Tables mirror the API's rotations module;
+# computed here rather than fetched because it is pure arithmetic -- which means
+# it keeps working offline and never waits on a request.
+_D15_EPOCH = datetime(2024, 6, 18, 11, 0, 0, tzinfo=UTC)
+_D15_INTERVAL = timedelta(hours=3)
+_D15_TABLES = (
+    [
+        "Sundered Uplands", "Cerise Sandsea", "Deep Forest", "Alkali Flats",
+        "Dead of Winter", "Sundered Uplands", "Firefly Party", "Desert of Secrets",
+        "Weathered Wastelands", "Frozen Wastes", "Frigga's Fjord", "Abandoned Boneyard",
+    ],
+    [
+        "Cursed Vale", "Hollow Dunes", "Bewitching Wood", "Primal Preserve",
+        "Hollow Dunes", "Ancient Heights", "Viking Burial Grounds", "Spellbound Thicket",
+        "Saurian Swamp", "Restless Range", "Uncanny Valley",
+    ],
+    [
+        "Sugar Steppes", "Volcanic Fields", "The Lost Isles", "Luminopolis",
+        "The Lost Isles", "Blazing Emberlands", "Cocoa Craters", "Data Spires",
+        "The Lost Isles", "Cupcake Canyon", "Dragon's Teeth", "Luminopolis",
+        "The Lost Isles", "Data Spires",
+    ],
+)
+
+
+def _d15(now_utc):
+    """The three biomes live in adventure worlds right now, plus the rollover.
+
+    The tables hold sub-biome keys; players see the parent's ``final_name``
+    (Deep Forest is Medieval Highlands on the map), so the key would read as a
+    mistake in-game.
+    """
+    biomes_data = _load_data_file("biomes.json")
+    interval = _D15_INTERVAL.total_seconds()
+    elapsed = (now_utc - _D15_EPOCH).total_seconds()
+    index = int(elapsed // interval)
+    start = now_utc - timedelta(seconds=elapsed % interval)
+
+    biomes = []
+    for table in _D15_TABLES:
+        key = table[index % len(table)]
+        entry = biomes_data.get(key) or {}
+        biomes.append(entry.get("final_name") or key)
+    return {"biomes": biomes, "start": _ts(start), "end": _ts(start + _D15_INTERVAL)}
 
 
 def _delve(now_utc):
@@ -392,9 +521,29 @@ def _delve(now_utc):
 
 # Network-backed extras. Cached with a TTL and refreshed off the request path so
 # a slow or absent network never delays a snapshot -- offline just means these
-# two keys stay None/empty, and their widgets say so.
-_network_cache = {"fetched_at": 0.0, "chaos": None, "events": []}
+# keys stay None/empty, and their widgets say so.
+#
+# Some of this genuinely cannot be computed locally. Luxion's run is dev-set and
+# is captured from the game rather than derived from a cycle, and the hourly
+# challenge is likewise a capture -- which is why both live here and not in the
+# local maths above.
+_network_cache = {"fetched_at": 0.0, "chaos": None, "events": [],
+                  "challenge": None, "luxion": None}
 _network_lock = threading.Lock()
+
+
+def _get_json(url, headers):
+    """GET a JSON body, or None on any failure. Every caller is best-effort."""
+    import requests
+
+    try:
+        response = requests.get(url, headers=headers, timeout=6)
+        if response.ok:
+            payload = response.json()
+            return payload if isinstance(payload, dict) else None
+    except Exception:
+        pass
+    return None
 
 
 def _refresh_network_cache():
@@ -405,19 +554,42 @@ def _refresh_network_cache():
     headers = {"User-Agent": "BetterTroveTools/1.0"}
     chaos = None
     events = []
-    try:
-        response = requests.get(f"{KIWI_API_BASE}/rotations/chaos-chest", headers=headers, timeout=6)
-        if response.ok:
-            payload = response.json()
-            item = payload.get("item") if isinstance(payload, dict) else None
-            if isinstance(item, dict) and item.get("name"):
-                chaos = {
-                    "name": item.get("name"),
-                    "start": payload.get("starts_at"),
-                    "end": payload.get("ends_at"),
-                }
-    except Exception:
-        pass
+
+    payload = _get_json(f"{KIWI_API_BASE}/rotations/chaos-chest", headers)
+    item = (payload or {}).get("item")
+    if isinstance(item, dict) and item.get("name"):
+        chaos = {
+            "name": item.get("name"),
+            "start": payload.get("starts_at"),
+            "end": payload.get("ends_at"),
+        }
+
+    # The challenge window is short (20 minutes) and its name is captured from
+    # the game, so there is nothing to derive -- take the API's answer whole.
+    challenge = None
+    payload = _get_json(f"{KIWI_API_BASE}/rotations/challenge/current", headers)
+    if payload and payload.get("name"):
+        challenge = {
+            "name": payload.get("name"),
+            "type": payload.get("type"),
+            "active": payload.get("active") is True,
+            "start": payload.get("starts_at"),
+            "end": payload.get("ends_at"),
+        }
+
+    luxion = None
+    payload = _get_json(f"{KIWI_API_BASE}/rotations/luxion", headers)
+    if payload:
+        window = payload.get("current_window") or payload.get("next_window") or {}
+        luxion = {
+            # `active` is "a run is on"; `merchant_open` is "he is standing in
+            # the hub right now". Both matter: mid-run but between windows is a
+            # real state with a real countdown.
+            "run": payload.get("active") is True,
+            "open": payload.get("merchant_open") is True,
+            "until": (window.get("ends_at") if payload.get("merchant_open")
+                      else window.get("starts_at")),
+        }
 
     try:
         response = requests.get(f"{KIWI_API_BASE}/feeds/events", headers=headers, timeout=6)
@@ -448,7 +620,8 @@ def _refresh_network_cache():
         pass
 
     with _network_lock:
-        _network_cache.update({"fetched_at": time.time(), "chaos": chaos, "events": events})
+        _network_cache.update({"fetched_at": time.time(), "chaos": chaos, "events": events,
+                               "challenge": challenge, "luxion": luxion})
 
 
 _network_refreshing = threading.Event()
@@ -477,9 +650,23 @@ def warm_network_cache():
 
 
 def _network_section():
+    now_ts = time.time()
     with _network_lock:
-        stale = (time.time() - _network_cache["fetched_at"]) > _NETWORK_TTL_SECONDS
-        snapshot = {"chaos": _network_cache["chaos"], "events": list(_network_cache["events"])}
+        snapshot = {
+            "chaos": _network_cache["chaos"],
+            "events": list(_network_cache["events"]),
+            "challenge": _network_cache["challenge"],
+            "luxion": _network_cache["luxion"],
+        }
+        stale = (now_ts - _network_cache["fetched_at"]) > _NETWORK_TTL_SECONDS
+
+    # A cached challenge that has already run out is stale no matter how
+    # recently it was fetched: the window turns over every hour, and waiting out
+    # the TTL would leave a finished one on screen counting down from "Now".
+    end = (snapshot["challenge"] or {}).get("end")
+    if end and now_ts >= end:
+        stale = True
+
     if stale:
         warm_network_cache()
     return snapshot
@@ -501,11 +688,13 @@ def build_snapshot():
         "server_offset_seconds": int(-_TROVE_OFFSET.total_seconds()),
         "daily": dict(daily or {}, reset_at=_ts(_next_daily_reset(now_utc))),
         "weekly": dict(weekly or {}, reset_at=_ts(_next_weekly_reset(now_utc))),
-        "merchants": _merchants(st),
+        "merchants": _merchants(st, network["luxion"]),
         "gardening": _gardening(st, now_utc),
         "rotations": _rotations(now_utc),
+        "d15": _d15(now_utc),
         "delve": _delve(now_utc),
         "chaos": network["chaos"],
+        "challenge": network["challenge"],
         "events": network["events"],
     }
 
@@ -565,6 +754,10 @@ class OverlayTracker:
         self._muted = False
         self._unfocused_ticks = 0
         self._menu_since = None      # monotonic ts the cursor came free, or None
+        # Monotonic deadline for "still arranging". Set when a drag lands and
+        # when the overlay locks, so the editing view outlives the gesture that
+        # was using it instead of blinking away the instant you let go.
+        self._edit_until = 0.0
         self._in_menu = False
         self._last_rect = None
         self._last_render = 0.0
@@ -612,6 +805,12 @@ class OverlayTracker:
             with self._lock:
                 self._status["hotkeys"] = {}
             self._stop_tracking()
+
+        with self._lock:
+            window = self._window
+            hidden = self._config["hide_from_capture"]
+        if window:
+            window.set_capture_hidden(hidden)
 
         self._request_render()
         return self.config
@@ -665,6 +864,8 @@ class OverlayTracker:
             return None
         with self._lock:
             self._window = window
+            hidden = self._config["hide_from_capture"]
+        window.set_capture_hidden(hidden)
         return window
 
     # -- hotkeys ---------------------------------------------------------
@@ -725,16 +926,45 @@ class OverlayTracker:
         with self._lock:
             self._interactive = bool(interactive)
             self._status["interactive"] = self._interactive
+            if not interactive:
+                self._edit_until = time.monotonic() + _EDIT_TAIL_SECONDS
             window = self._window
         if window:
             window.set_interactive(bool(interactive))
+            if not interactive:
+                # Locking ends the editing session; a selection left behind
+                # would be an invisible target for the next unlock.
+                window.clear_selection()
         self._request_render()
         return bool(interactive)
+
+    def mark_editing(self):
+        """The layout is being changed right now -- from anywhere.
+
+        The in-game drag is not the only way to move a widget: the Overlay tab
+        moves them too, and from there the game is not even the focused window,
+        so without this the overlay stays hidden and you are arranging a layout
+        you cannot see.
+        """
+        with self._lock:
+            self._edit_until = time.monotonic() + _EDIT_TAIL_SECONDS
+        self._request_render()
+
+    def _editing(self):
+        """Arranging widgets: unlocked, or just finished a drag.
+
+        Drives both "keep the overlay on screen" and "draw every enabled widget
+        even if it has nothing to say" -- you cannot lay out a panel you cannot
+        see, and half of them are conditional on live data.
+        """
+        with self._lock:
+            return self._interactive or time.monotonic() < self._edit_until
 
     def _on_widget_moved(self, widget_id, anchor, x, y):
         """A widget was dragged in game -- persist it like the editor would."""
         if widget_id not in WIDGET_DEFAULTS:
             return
+        self.mark_editing()
         config = self.config
         widget = dict(config["widgets"].get(widget_id, {}))
         widget.update({"anchor": anchor, "x": x, "y": y})
@@ -769,12 +999,34 @@ class OverlayTracker:
             if self._stop.wait(min(_MENU_POLL_SECONDS, remaining)):
                 return
             try:
+                self._poll_arrows()
                 if self._menu_changed():
                     return
             except Exception:
                 # Keep waiting out the interval rather than returning: a
                 # persistent failure here would otherwise spin the loop.
                 continue
+
+    def _poll_arrows(self):
+        """Nudge the selected widget while the overlay is unlocked.
+
+        Held keys repeat at the poll rate, so an arrow moves a pixel at a time
+        and Shift+arrow ten -- fine placement and coarse placement without a
+        modifier dance. Does nothing at all unless the overlay is unlocked and
+        something is selected.
+        """
+        with self._lock:
+            window = self._window
+            interactive = self._interactive
+        if not (interactive and window and window.has_selection()):
+            return
+        step = _NUDGE_FAST_PX if trove_window.key_held(_VK_SHIFT) else _NUDGE_PX
+        dx = (trove_window.key_held(_VK_ARROWS["right"])
+              - trove_window.key_held(_VK_ARROWS["left"])) * step
+        dy = (trove_window.key_held(_VK_ARROWS["down"])
+              - trove_window.key_held(_VK_ARROWS["up"])) * step
+        if (dx or dy) and window.nudge_selected(dx, dy):
+            self.mark_editing()
 
     def _menu_changed(self):
         """True when the debounced menu verdict differs from the last tick's.
@@ -813,13 +1065,17 @@ class OverlayTracker:
         with self._lock:
             self._status["in_menu"] = in_menu
 
+        editing = self._editing()
         should_show = bool(
             not muted
             and not in_menu
             and info["running"]
             and info["rect"]
             and not info["minimized"]
-            and (focused or not config["hide_when_unfocused"])
+            # Arranging widgets forces it on screen: you have deliberately asked
+            # for the overlay, so losing it to a blur or an open bag mid-drag is
+            # never what you meant.
+            and (focused or editing or not config["hide_when_unfocused"])
         )
 
         if not should_show:
@@ -850,17 +1106,22 @@ class OverlayTracker:
         the overlay, and the cursor being free is the precondition for that, not
         a reason to take it away.
 
+        Holding Alt gets the same treatment. Trove frees the cursor for as long
+        as Alt is down, which by confinement alone looks exactly like a panel
+        opening -- but the player is still in the world looking at the overlay,
+        so hiding it there is the one moment it is most wrong to.
+
         Caches its verdict in ``_in_menu`` so the fast cursor poll between ticks
         can tell a genuine change from a repeat reading.
         """
-        with self._lock:
-            interactive = self._interactive
+        editing = self._editing()
         if captured is _UNSET:
             captured = trove_window.mouse_captured(rect)
 
         # mouse_captured is None when the state can't be read; only a definite
         # False (the game released the cursor) counts as "a menu is open".
-        if not config["hide_in_menus"] or interactive or captured is not False:
+        if (not config["hide_in_menus"] or editing or captured is not False
+                or trove_window.alt_held()):
             self._menu_since = None
             self._in_menu = False
             return False
@@ -970,9 +1231,11 @@ class OverlayTracker:
             self._notifications = [n for n in self._notifications if n["expires"] > now]
             notifications = list(self._notifications)
 
+        editing = self._editing()
         try:
             widgets = overlay_view.build_widgets(
-                config, snapshot, notifications, catalog_order=list(WIDGET_DEFAULTS))
+                config, snapshot, notifications, catalog_order=list(WIDGET_DEFAULTS),
+                editing=editing)
         except Exception:
             return
 
@@ -988,7 +1251,12 @@ class OverlayTracker:
         window.update(widgets,
                       scale=config["scale"],
                       opacity=config["opacity"],
-                      accent=_accent_rgb())
+                      accent=_accent_rgb(),
+                      ink=config["text_color"] or None,
+                      panel=config["panel_color"] or None,
+                      # Never nudge while arranging: a widget that slides away
+                      # from where it was dropped makes the layout unarrangeable.
+                      prevent_overlap=config["prevent_overlap"] and not editing)
 
     def notify(self, title, message):
         """Show a notification on the overlay. True if it was routed there.
@@ -1063,7 +1331,9 @@ def _state_payload():
 def overlay_get_config():
     """Config + catalog + live status, in one call for the editor's first paint."""
     data = dict(_state_payload(), catalog=[
-        {"id": wid, "default_enabled": meta["on"]} for wid, meta in WIDGET_DEFAULTS.items()
+        {"id": wid, "default_enabled": meta["on"], "collapsible": "collapsed" in meta,
+         "sections": list((meta.get("sections") or {}))}
+        for wid, meta in WIDGET_DEFAULTS.items()
     ], anchors=list(VALID_ANCHORS), defaults={
         "hotkey": DEFAULT_HOTKEY, "mute_hotkey": DEFAULT_MUTE_HOTKEY,
     })
@@ -1078,6 +1348,9 @@ def overlay_save_config(config):
         return resp(False, error="The overlay is Windows-only.", code="OVERLAY_UNSUPPORTED")
     save_config(config)
     tracker.apply_config(load_config())
+    # Changing a setting from the Overlay tab counts as editing: the point of
+    # tweaking opacity or turning a widget on is seeing what it did.
+    tracker.mark_editing()
     data = _state_payload()
     return resp(True, data=data, **data)
 
@@ -1136,4 +1409,5 @@ def overlay_move_widget(widget_id, anchor, x, y):
     widget.update({"anchor": anchor, "x": x, "y": y})
     config["widgets"][widget_id] = widget
     saved = tracker.adopt_config(save_config(config))
+    tracker.mark_editing()
     return resp(True, data={"config": saved}, config=saved)

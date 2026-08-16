@@ -127,6 +127,56 @@
     align-items: center;
     gap: var(--t-2);
     min-width: 0;
+    flex-wrap: wrap;
+}
+
+/* Alignment guides while a chip is being dragged. Span the whole canvas, same
+   as the in-game ones, so the line is findable while the cursor is elsewhere. */
+.ov-ed-guide {
+    position: absolute;
+    background: var(--accent-blue);
+    opacity: 0.85;
+    pointer-events: none;
+    z-index: var(--z-raised, 2);
+}
+
+.ov-ed-guide.vertical { top: 0; bottom: 0; width: 1px; }
+.ov-ed-guide.horizontal { left: 0; right: 0; height: 1px; }
+
+.ov-ed-colors {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--t-3);
+}
+
+.ov-ed-color {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--t-2);
+    color: var(--text-muted);
+    font-size: var(--t-fs-small);
+    cursor: pointer;
+}
+
+.ov-ed-color input[type="color"] {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+}
+
+/* Section switches drop to their own line: they belong to the widget above
+   them, and inline they would push the hotkey button off the row. */
+.ov-ed-sections {
+    display: flex;
+    flex: 1 0 100%;
+    flex-wrap: wrap;
+    gap: var(--t-1);
+    padding-left: var(--t-5);
 }
 
 .ov-ed-widget-row .trove-check {
@@ -211,9 +261,15 @@
     pointer-events: none;
 }
 
+/* One width for every chip, not one per label length. The chip stands in for a
+   widget whose real width it does not share, so a chip sized by its own text
+   makes snapping read wrong: aligning two left edges and aligning two right
+   edges would land the same pair of widgets in visibly different places. Equal
+   boxes mean either edge gives the same answer. */
 .ov-ed-chip {
     position: absolute;
-    max-width: 42%;
+    box-sizing: border-box;
+    width: 132px;
     padding: var(--t-1) var(--t-2);
     background: rgba(var(--accent-rgb), 0.14);
     border: 1px solid rgba(var(--accent-rgb), 0.45);

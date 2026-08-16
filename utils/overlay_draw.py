@@ -257,7 +257,32 @@ def measure_widget(gfx, widget, scale):
     return int(round(width)), int(round(height))
 
 
-def draw_widget(gfx, widget, x, y, w, h, scale, opacity, accent):
+def _mix(a, b, weight):
+    """Blend two RGB triples; weight 0 is all ``a``, 1 is all ``b``."""
+    return tuple(int(round(a[i] + (b[i] - a[i]) * weight)) for i in range(3))
+
+
+def build_palette(ink=None, panel=None):
+    """Resolve the drawing palette from optional user overrides.
+
+    The muted tone is derived rather than configured: it exists to sit one step
+    back from the main text, and a second colour picker for it would just be a
+    way to break that relationship. State colours (live/soon) stay fixed --
+    they carry meaning, not taste.
+    """
+    ink_rgb = parse_hex(ink, INK) if ink else INK
+    panel_rgb = parse_hex(panel, PANEL) if panel else PANEL
+    return {
+        "ink": ink_rgb,
+        "panel": panel_rgb,
+        "muted": _mix(ink_rgb, panel_rgb, 0.35),
+    }
+
+
+_DEFAULT_PALETTE = {"ink": INK, "panel": PANEL, "muted": INK_MUTED}
+
+
+def draw_widget(gfx, widget, x, y, w, h, scale, opacity, accent, palette=None):
     """Paint one widget panel at (x, y).
 
     ``opacity`` fades the PANEL only. Text, the border and the buff bar stay
@@ -265,14 +290,20 @@ def draw_widget(gfx, widget, x, y, w, h, scale, opacity, accent):
     game through it, not to make the numbers harder to read. Fading everything
     together made 50% unusable and left no useful range on the slider.
     """
+    palette = palette or _DEFAULT_PALETTE
     fill_alpha = int(round(max(0.0, min(1.0, opacity)) * 255))
 
     path = _rounded_path(x, y, w, h, int(RADIUS * scale))
     if fill_alpha > 0:
-        gfx.FillPath(SolidBrush(_color(PANEL, fill_alpha)), path)
+        gfx.FillPath(SolidBrush(_color(palette["panel"], fill_alpha)), path)
 
     from System.Drawing import Pen
-    if widget.get("highlight"):
+    if widget.get("selected"):
+        # Thicker than the interactive highlight so the widget the arrow keys
+        # will move is distinguishable from the rest, which are all outlined
+        # while the overlay is unlocked.
+        pen = Pen(_color(accent, 255), 2.0)
+    elif widget.get("highlight"):
         pen = Pen(_color(accent, 235), 1.0)
     else:
         # The hairline tracks the fill a little so a nearly-invisible panel
@@ -296,6 +327,13 @@ def draw_widget(gfx, widget, x, y, w, h, scale, opacity, accent):
         font = _fonts.get(role, scale)
         text = line.get("text", "")
         _, line_h = _measure(gfx, text or "M", font)
+        if line.get("right"):
+            # Match _measure_widget: the countdown is body-sized mono, so on a
+            # smaller role (an eyebrow carrying a rotation timer) it is the
+            # taller of the two and sets the row height. Advancing by the left
+            # text alone would let the next row climb into it.
+            _, right_h = _measure(gfx, line["right"], _fonts.get("mono", scale))
+            line_h = max(line_h, right_h)
 
         if not first:
             cursor_y += GAP * scale * (1.5 if role == "eyebrow" else 1.0)
@@ -311,16 +349,16 @@ def draw_widget(gfx, widget, x, y, w, h, scale, opacity, accent):
                                     float(2 * scale), float(line_h - 4)))
             text_x = inner_x + GAP * 2 * scale
 
-        rgb = parse_hex(line.get("color")) or _STATE_COLORS.get(line.get("state"), INK)
+        rgb = parse_hex(line.get("color")) or _STATE_COLORS.get(line.get("state"), palette["ink"])
         if role in ("label", "eyebrow") and not line.get("color") and not line.get("state"):
-            rgb = INK_MUTED
+            rgb = palette["muted"]
         _draw_text(gfx, text, font, rgb, text_x, cursor_y, fmt, alpha)
 
         right = line.get("right")
         if right:
             right_font = _fonts.get("mono", scale)
             right_w, _ = _measure(gfx, right, right_font)
-            right_rgb = _STATE_COLORS.get(line.get("right_state"), INK_MUTED)
+            right_rgb = _STATE_COLORS.get(line.get("right_state"), palette["muted"])
             _draw_text(gfx, right, right_font, right_rgb,
                        inner_right - right_w, cursor_y, fmt, alpha)
 
@@ -338,11 +376,57 @@ def place_widget(anchor, fx, fy, w, h, canvas_w, canvas_h):
     return int(round(x)), int(round(y))
 
 
-def render(width, height, widgets, *, scale=1.0, opacity=0.92, accent=(94, 198, 255)):
+def _avoid_overlap(x, y, w, h, placed, canvas_h):
+    """Push a widget down until it clears the ones already placed.
+
+    Vertical only, and it never moves the widget that was there first: panels
+    grow and shrink as their data changes (a challenge starting, a fourth event
+    appearing), and a layout that was clear when it was arranged should not
+    start stacking boxes on top of each other because one of them got taller.
+
+    Returns the original y when nothing fits below -- overlapping is bad, but
+    shoving a widget off the bottom of the screen is worse.
+    """
+    OVERLAP_GAP = 6
+    moved = y
+    for _ in range(len(placed) + 1):
+        clash = next((r for r in placed
+                      if x < r[0] + r[2] and x + w > r[0]
+                      and moved < r[1] + r[3] and moved + h > r[1]), None)
+        if not clash:
+            return moved
+        moved = clash[1] + clash[3] + OVERLAP_GAP
+        if moved + h > canvas_h:
+            return y
+    return y
+
+
+def _draw_guides(gfx, guides, width, height, accent):
+    """Alignment guides for a live drag, drawn across the whole canvas.
+
+    Full-width/height rather than clipped to the two widgets involved: the line
+    has to be findable at a glance while the cursor is somewhere else entirely,
+    and a short segment between two panels is not.
+    """
+    from System.Drawing import Pen
+
+    pen = Pen(_color(accent, 220), 1.0)
+    try:
+        for x in (guides or {}).get("x") or []:
+            gfx.DrawLine(pen, float(x), 0.0, float(x), float(height))
+        for y in (guides or {}).get("y") or []:
+            gfx.DrawLine(pen, 0.0, float(y), float(width), float(y))
+    finally:
+        pen.Dispose()
+
+
+def render(width, height, widgets, *, scale=1.0, opacity=0.92, accent=(94, 198, 255),
+           ink=None, panel=None, prevent_overlap=True, guides=None):
     """Draw the whole overlay. Returns ``(bitmap, hit_rects)``.
 
     ``hit_rects`` is ``[(widget_id, x, y, w, h)]`` in canvas pixels, used for
-    drag hit-testing while the overlay is interactive.
+    drag hit-testing while the overlay is interactive -- so it reports where a
+    widget was actually drawn, nudges included.
     """
     if not _gdi_ready:
         return None, []
@@ -356,22 +440,33 @@ def render(width, height, widgets, *, scale=1.0, opacity=0.92, accent=(94, 198, 
     gfx.TextRenderingHint = TextRenderingHint.AntiAliasGridFit
     gfx.Clear(Color.FromArgb(0, 0, 0, 0))
 
+    palette = build_palette(ink, panel)
     hit_rects = []
+    placed = []
     for widget in widgets:
         w_scale = scale * float(widget.get("scale", 1.0) or 1.0)
         w, h = measure_widget(gfx, widget, w_scale)
         pin = widget.get("_pin")
         if pin:
             # Live drag feedback: follow the cursor rather than the stored
-            # anchor, which only updates once the drag is released.
+            # anchor, which only updates once the drag is released. A dragged
+            # widget is never nudged -- it goes exactly where it is held.
             x = max(0, min(int(width) - w, int(pin[0])))
             y = max(0, min(int(height) - h, int(pin[1])))
         else:
             x, y = place_widget(widget.get("anchor", "top-left"),
                                 float(widget.get("x", 0.0)), float(widget.get("y", 0.0)),
                                 w, h, width, height)
-        draw_widget(gfx, widget, x, y, w, h, w_scale, opacity, accent)
+            if prevent_overlap:
+                y = _avoid_overlap(x, y, w, h, placed, height)
+        draw_widget(gfx, widget, x, y, w, h, w_scale, opacity, accent, palette)
+        placed.append((x, y, w, h))
         hit_rects.append((widget.get("id"), x, y, w, h))
+
+    # After the widgets: a guide hidden behind the panel it is aligning to
+    # would defeat the point of drawing it.
+    if guides:
+        _draw_guides(gfx, guides, width, height, accent)
 
     gfx.Dispose()
     return bitmap, hit_rects

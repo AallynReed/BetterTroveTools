@@ -35,6 +35,11 @@ window.BTTOverlayEditor = function (Vue) {
         opacity: 0.92,
         scale: 1,
         hide_when_unfocused: true,
+        hide_inactive: false,
+        prevent_overlap: true,
+        hide_from_capture: false,
+        text_color: '',
+        panel_color: '',
         notifications_in_overlay: true,
         notification_seconds: 12,
         widgets: {},
@@ -119,6 +124,46 @@ window.BTTOverlayEditor = function (Vue) {
         if (!widget) return;
         widget.enabled = !widget.enabled;
         save();
+    }
+
+    // Short form for widgets that offer one (only the bonuses panel today).
+    const widgetCollapsed = (id) => !!(config.widgets[id] || {}).collapsed;
+
+    function toggleWidgetCollapsed(id) {
+        const widget = config.widgets[id];
+        if (!widget) return;
+        widget.collapsed = !widget.collapsed;
+        saveNow();
+    }
+
+    // Colours. "" in the config means "use the app's own", but <input
+    // type=color> has no empty state, so the picker shows the default it would
+    // otherwise draw with while the config stays blank until you pick one.
+    const COLOR_FALLBACK = { text_color: '#e0e0e0', panel_color: '#1e1e1e' };
+    const overlayColor = (key) => config[key] || COLOR_FALLBACK[key];
+
+    function setOverlayColor(key, value) {
+        config[key] = value;
+        save();
+    }
+
+    function resetOverlayColors() {
+        config.text_color = '';
+        config.panel_color = '';
+        saveNow();
+    }
+
+    // Sections inside one widget (the biome panel's three rotations).
+    const widgetSection = (id, name) => {
+        const sections = (config.widgets[id] || {}).sections || {};
+        return sections[name] !== false;
+    };
+
+    function toggleSection(id, name) {
+        const widget = config.widgets[id];
+        if (!widget || !widget.sections) return;
+        widget.sections[name] = !widgetSection(id, name);
+        saveNow();
     }
 
     async function setMuted(value) {
@@ -227,6 +272,68 @@ window.BTTOverlayEditor = function (Vue) {
 
     let drag = null;
 
+    // --- snapping on the layout canvas -------------------------------------
+    //
+    // Mirrors the in-game drag (utils/overlay_window.py): same candidates, same
+    // ranking, same Ctrl escape hatch, so a layout arranged here behaves like
+    // one arranged over the game.
+    const SNAP_PX = 6;
+    const snapGuides = ref({ x: [], y: [] });
+
+    // Returns [position, guideCoordinate|null]. Each candidate carries the
+    // offset from the leading edge to whichever edge did the aligning, so the
+    // guide is drawn on the edge that actually matched.
+    function snapAxis(value, size, others, extent) {
+        const candidates = [
+            [0, 0, 0],
+            [0, extent - size, size],
+            [1, (extent - size) / 2, size / 2],
+        ];
+        for (const [pos, otherSize] of others) {
+            candidates.push([0, pos, 0]);                               // leading edges
+            candidates.push([0, pos + otherSize - size, size]);         // trailing edges
+            candidates.push([0, pos + otherSize, 0]);                   // sits after
+            candidates.push([0, pos - size, size]);                     // sits before
+            candidates.push([1, pos + (otherSize - size) / 2, size / 2]); // centres
+        }
+        let best = null;
+        for (const [rank, pos, offset] of candidates) {
+            const gap = Math.abs(pos - value);
+            if (gap > SNAP_PX) continue;
+            if (!best || rank < best[0] || (rank === best[0] && gap < best[1])) {
+                best = [rank, gap, pos, offset];
+            }
+        }
+        return best ? [best[2], best[2] + best[3]] : [value, null];
+    }
+
+    // The canvas measured as chips actually see it. getBoundingClientRect gives
+    // the BORDER box, but absolutely-positioned children resolve against the
+    // PADDING box, so mixing the two drifts a widget by the border width and
+    // leaves a guide sitting next to the chip instead of on it.
+    function canvasFrame() {
+        const el = canvas.value;
+        const box = el.getBoundingClientRect();
+        return {
+            left: box.left + el.clientLeft,
+            top: box.top + el.clientTop,
+            width: el.clientWidth,
+            height: el.clientHeight,
+        };
+    }
+
+    // Every other chip's box, in canvas-relative pixels.
+    function neighbourRects(frame, exceptId) {
+        if (!canvas.value) return [];
+        return [...canvas.value.querySelectorAll('.ov-ed-chip')]
+            .filter(el => el.dataset.id !== exceptId)
+            .map(el => {
+                const b = el.getBoundingClientRect();
+                return { x: b.left - frame.left, y: b.top - frame.top,
+                         w: b.width, h: b.height };
+            });
+    }
+
     function startChipDrag(event, chip) {
         if (event.button !== 0) return;
         const box = event.currentTarget.getBoundingClientRect();
@@ -244,9 +351,24 @@ window.BTTOverlayEditor = function (Vue) {
 
     function onChipMove(event) {
         if (!drag || !canvas.value) return;
-        const frame = canvas.value.getBoundingClientRect();
-        const left = event.clientX - frame.left - drag.grabX;
-        const top = event.clientY - frame.top - drag.grabY;
+        const frame = canvasFrame();
+        let left = event.clientX - frame.left - drag.grabX;
+        let top = event.clientY - frame.top - drag.grabY;
+
+        // Snap live against the other chips and the canvas edges, showing the
+        // line it locked onto. Ctrl drops it exactly where the cursor is.
+        if (event.ctrlKey) {
+            snapGuides.value = { x: [], y: [] };
+        } else {
+            const others = neighbourRects(frame, drag.id);
+            const [sx, gx] = snapAxis(left, drag.width,
+                others.map(r => [r.x, r.w]), frame.width);
+            const [sy, gy] = snapAxis(top, drag.height,
+                others.map(r => [r.y, r.h]), frame.height);
+            left = sx;
+            top = sy;
+            snapGuides.value = { x: gx === null ? [] : [gx], y: gy === null ? [] : [gy] };
+        }
 
         // Same anchor rule as the in-game drag: whichever quadrant the chip's
         // centre lands in decides which two edges it measures from, so a widget
@@ -270,6 +392,7 @@ window.BTTOverlayEditor = function (Vue) {
         const id = drag.id;
         drag = null;
         dragId.value = null;
+        snapGuides.value = { x: [], y: [] };
         if (widget && hasEel()) {
             window.eel.overlay_move_widget(id, widget.anchor, widget.x, widget.y)();
         }
@@ -334,10 +457,18 @@ window.BTTOverlayEditor = function (Vue) {
         overlayDragId: dragId,
         overlayCanvas: canvas,
         overlayChips: placedChips,
+        overlaySnapGuides: snapGuides,
         overlayStatusLine: statusLine,
         overlayHotkeyFailed: hotkeyFailed,
         overlayPretty: prettyHotkey,
         widgetHotkey,
+        widgetCollapsed,
+        overlayColor,
+        setOverlayColor,
+        resetOverlayColors,
+        widgetSection,
+        toggleOverlaySection: toggleSection,
+        toggleOverlayWidgetCollapsed: toggleWidgetCollapsed,
         clearOverlayWidgetHotkey: clearWidgetHotkey,
         loadOverlay: load,
         saveOverlay: save,

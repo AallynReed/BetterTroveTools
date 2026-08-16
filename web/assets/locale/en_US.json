@@ -1953,7 +1953,35 @@
         "overlay.no_hotkey": "No hotkey",
         "overlay.clear_hotkey": "Clear hotkey",
         "overlay.widget_hotkey_hint": "Bind a key to show and hide just this widget.",
-        "overlay.widget_hotkey_note": "A widget hotkey toggles that widget on its own. Every binding must be unique, and each needs at least one of Ctrl, Alt or Shift."
+        "overlay.widget_hotkey_note": "A widget hotkey toggles that widget on its own. Every binding must be unique, and each needs at least one of Ctrl, Alt or Shift.",
+        "overlay.w_buffs": "Bonuses",
+        "overlay.daily": "Daily",
+        "overlay.weekly": "Weekly",
+        "overlay.collapsed": "Collapsed",
+        "overlay.expanded": "Expanded",
+        "overlay.collapsed_hint": "Collapsed shows just which bonus is active and its countdown. Expanded lists what each bonus actually does.",
+        "overlay.w_challenge": "Challenge",
+        "overlay.no_challenge": "No challenge right now",
+        "overlay.not_scheduled": "Not scheduled",
+        "overlay.ch_dungeon": "Dungeon",
+        "overlay.ch_rampage": "Rampage",
+        "overlay.ch_racing": "Racing",
+        "overlay.ch_target": "Target",
+        "overlay.ch_collection": "Collection",
+        "overlay.hide_inactive": "Hide anything that isn't running right now",
+        "overlay.hide_inactive_hint": "Drops away merchants, finished rotations and events that haven't started, so the overlay only shows what you can act on. A widget left with nothing to show hides itself.",
+        "overlay.d15": "D15",
+        "overlay.section_hint": "Show or hide this rotation inside the widget.",
+        "overlay.prevent_overlap": "Keep widgets from overlapping",
+        "overlay.prevent_overlap_hint": "When a widget grows or appears, the ones below it are nudged down instead of being covered. Dragging is never nudged — a widget stays exactly where you drop it.",
+        "overlay.nothing_now": "Nothing to show right now",
+        "overlay.colors": "Colours",
+        "overlay.text_color": "Text",
+        "overlay.panel_color": "Panel",
+        "overlay.reset_colors": "Reset colours",
+        "overlay.colors_hint": "Live and soon countdowns keep their own colours, and the panel border follows the app accent.",
+        "overlay.hide_from_capture": "Hide the overlay from screen captures",
+        "overlay.hide_from_capture_hint": "Keeps the overlay off recordings and screen shares while you can still see it — useful if your notifications shouldn't go out on stream. Needs Windows 10 2004 or newer."
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",
@@ -4265,6 +4293,8 @@
         "Fervent Support": "",
         "The Bard's strongest ally.": "",
         "Dreadnought Clusterbomb Prototype": "",
-        "Dr. Darknik abandoned this particular piece of research in favor of higher-yield single warhead weapons.": ""
+        "Dr. Darknik abandoned this particular piece of research in favor of higher-yield single warhead weapons.": "",
+        "Jadebound Blast-beast": "",
+        "Electric Boogaloo": ""
     }
 }

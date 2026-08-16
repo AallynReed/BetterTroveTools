@@ -20,6 +20,7 @@ from __future__ import annotations
 import ctypes
 import sys
 import threading
+import time
 from ctypes import wintypes
 
 from utils import overlay_draw
@@ -39,6 +40,12 @@ if _IS_WINDOWS:
     WS_EX_TOPMOST = 0x00000008
 
     GWL_EXSTYLE = -20
+    # SetWindowDisplayAffinity: NONE is the default (the window records like any
+    # other), EXCLUDEFROMCAPTURE takes it out of screen captures and shares
+    # while leaving it on screen. The latter needs Windows 10 2004 or newer and
+    # simply fails on anything older.
+    WDA_NONE = 0x00000000
+    WDA_EXCLUDEFROMCAPTURE = 0x00000011
     HWND_TOPMOST = wintypes.HWND(-1)
     SWP_NOSIZE, SWP_NOMOVE = 0x0001, 0x0002
     SWP_NOACTIVATE, SWP_NOOWNERZORDER = 0x0010, 0x0200
@@ -49,6 +56,7 @@ if _IS_WINDOWS:
 
     WM_DESTROY = 0x0002
     WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MOUSEMOVE = 0x0201, 0x0202, 0x0200
+    VK_CONTROL = 0x11
     WM_APP_REDRAW = 0x8000 + 11
     WM_APP_QUIT = 0x8000 + 12
 
@@ -134,9 +142,19 @@ class OverlayWindow:
 
         self._rect = (0, 0, 0, 0)      # x, y, w, h on screen
         self._frame = None             # pending render payload
+        # The last payload actually drawn. A drag has to repaint between the
+        # tracker's once-a-second updates, and it can only do that if the frame
+        # survives being flushed -- otherwise the widget under the cursor moves
+        # in one-second lurches, which is exactly what a drag must not do.
+        self._last_frame = None
         self._hit_rects = []
         self._interactive = False
         self._drag = None
+        self._drag_painted = 0.0
+        self._pin_hold = None          # (id, x, y) held until the tracker catches up
+        self._selected = None          # last widget clicked; what the arrows move
+        self._nudge = None             # (id, x, y, ts) so held arrows accumulate
+        self._capture_hidden = False   # kept off screen shares when True
         self._visible = False
 
     # --- lifecycle -------------------------------------------------------
@@ -223,6 +241,10 @@ class OverlayWindow:
             ex_style, CLASS_NAME, "Better Trove Tools Overlay", WS_POPUP,
             0, 0, 16, 16, None, None, hinst, None,
         )
+        # The window is rebuilt every time the overlay comes back, so the
+        # capture setting has to be re-applied rather than assumed.
+        if self._capture_hidden:
+            self.set_capture_hidden(True)
 
     # --- window proc -----------------------------------------------------
     def _wndproc(self, hwnd, msg, wparam, lparam):
@@ -236,6 +258,61 @@ class OverlayWindow:
             return 0
         return user32.DefWindowProcW(hwnd, msg, wparam, lparam)
 
+    # How close an edge has to come before it is pulled into line. A hand-eye
+    # tolerance, not a layout measurement, so it does not scale with the widget.
+    SNAP_PX = 8
+
+    def _snap_axis(self, value, size, others, extent):
+        """Pull one axis into line, and say where the guide belongs.
+
+        Returns ``(position, guide)``, guide being the canvas coordinate of the
+        edge that lined up (or None). Each candidate carries the offset from the
+        widget's leading edge to whichever of its edges did the aligning, so a
+        right-edge match draws its line down the right-hand side rather than the
+        left.
+        """
+        # (priority, position, guide offset). Ranked, not merely nearest: on
+        # similarly-sized widgets an edge and a centre candidate land within a
+        # few pixels of each other, and a centre that happens to be marginally
+        # closer should not win a drag the user aimed at an edge.
+        candidates = [
+            (0, 0.0, 0.0),                              # canvas leading edge
+            (0, extent - size, size),                   # canvas trailing edge
+            (1, (extent - size) / 2.0, size / 2.0),     # canvas centre
+        ]
+        for pos, other_size in others:
+            candidates += [
+                (0, pos, 0.0),                                       # leading edges flush
+                (0, pos + other_size - size, size),                  # trailing edges flush
+                (0, pos + other_size, 0.0),                          # leading meets trailing
+                (0, pos - size, size),                               # trailing meets leading
+                (1, pos + (other_size - size) / 2.0, size / 2.0),    # centres in line
+            ]
+        in_range = [(rank, abs(pos - value), pos, offset)
+                    for rank, pos, offset in candidates
+                    if abs(pos - value) <= self.SNAP_PX]
+        if not in_range:
+            return value, None
+        _, _, pos, offset = min(in_range)
+        return pos, pos + offset
+
+    def _snap(self, drag, left, top):
+        """Align a widget against the others and the game window, live.
+
+        Applied on every mouse-move rather than at the drop, so the widget
+        visibly sticks to the line it is aligning with -- a snap you only learn
+        about after letting go reads as the overlay moving things on its own.
+        Returns the position plus the guide lines to draw for it.
+        """
+        _, _, cw, ch = self._rect
+        others = [(wx, wy, ww, wh) for wid, wx, wy, ww, wh in self._hit_rects
+                  if wid != drag["id"]]
+        x, guide_x = self._snap_axis(left, drag["w"], [(x, w) for x, _, w, _ in others], cw)
+        y, guide_y = self._snap_axis(top, drag["h"], [(y, h) for _, y, _, h in others], ch)
+        guides = {"x": [guide_x] if guide_x is not None else [],
+                  "y": [guide_y] if guide_y is not None else []}
+        return x, y, guides
+
     def _on_mouse(self, msg, lparam):
         # Client coordinates; the window's client area is the whole game rect.
         x = ctypes.c_short(lparam & 0xFFFF).value
@@ -246,27 +323,107 @@ class OverlayWindow:
                 if wx <= x <= wx + ww and wy <= y <= wy + wh:
                     self._drag = {"id": widget_id, "dx": x - wx, "dy": y - wy,
                                   "w": ww, "h": wh}
+                    # Clicking also selects, so the arrow keys have something to
+                    # nudge once the mouse has been let go.
+                    self._selected = widget_id
                     user32.SetCapture(self._hwnd)
+                    self._flush_frame()
                     break
         elif msg == WM_MOUSEMOVE and self._drag:
-            self._drag["x"] = x - self._drag["dx"]
-            self._drag["y"] = y - self._drag["dy"]
+            left = x - self._drag["dx"]
+            top = y - self._drag["dy"]
+            # Snap live, not on release: the widget has to visibly stick to the
+            # line it is aligning with, or the correction only shows up after
+            # the drag is over and reads as the overlay moving things itself.
+            # Ctrl is the escape hatch, and it is read every move so it can be
+            # pressed or released mid-drag.
+            guides = {"x": [], "y": []}
+            if not (user32.GetAsyncKeyState(VK_CONTROL) & 0x8000):
+                left, top, guides = self._snap(self._drag, left, top)
+            self._drag["x"], self._drag["y"] = left, top
+            self._drag["guides"] = guides
+            # Repaint straight away -- _wndproc is already on the window thread,
+            # so this is the blit, not a request for one. Capped at ~60fps
+            # because each frame is a full-window layered blit and mouse moves
+            # arrive far faster than that.
+            now = time.monotonic()
+            if now - self._drag_painted >= 0.016:
+                self._drag_painted = now
+                self._flush_frame()
         elif msg == WM_LBUTTONUP and self._drag:
             user32.ReleaseCapture()
             drag = self._drag
             self._drag = None
-            if "x" in drag and self._on_move:
-                _, _, cw, ch = self._rect
-                left, top = drag["x"], drag["y"]
-                anchor = ("top" if top + drag["h"] / 2 < ch / 2 else "bottom") + \
-                         "-" + ("left" if left + drag["w"] / 2 < cw / 2 else "right")
-                fx = left / cw if anchor.endswith("left") else (cw - left - drag["w"]) / cw
-                fy = top / ch if anchor.startswith("top") else (ch - top - drag["h"]) / ch
-                clamp = lambda v: max(0.0, min(0.95, v))  # noqa: E731
-                try:
-                    self._on_move(drag["id"], anchor, clamp(fx), clamp(fy))
-                except Exception:
-                    pass
+            if "x" in drag:
+                # Already snapped on the way here, so the widget lands exactly
+                # where it was last drawn.
+                self._commit(drag["id"], drag["x"], drag["y"], drag["w"], drag["h"])
+            else:
+                self._post_redraw()   # repaint without the drag highlight
+
+    def _post_redraw(self):
+        """Ask the window thread to repaint. Safe to call from any thread --
+        which matters because arrow-key nudges arrive on the tracker's."""
+        thread_id = self._thread_id
+        if thread_id:
+            user32.PostThreadMessageW(thread_id, WM_APP_REDRAW, 0, 0)
+
+    def _commit(self, widget_id, left, top, w, h):
+        """Hand a pixel position back to the tracker as anchor + fractions."""
+        _, _, cw, ch = self._rect
+        if not (cw and ch and self._on_move):
+            return
+        self._pin_hold = (widget_id, left, top)
+        self._post_redraw()
+        anchor = ("top" if top + h / 2 < ch / 2 else "bottom") + \
+                 "-" + ("left" if left + w / 2 < cw / 2 else "right")
+        fx = left / cw if anchor.endswith("left") else (cw - left - w) / cw
+        fy = top / ch if anchor.startswith("top") else (ch - top - h) / ch
+        clamp = lambda v: max(0.0, min(0.95, v))  # noqa: E731
+        try:
+            self._on_move(widget_id, anchor, clamp(fx), clamp(fy))
+        except Exception:
+            pass
+
+    def nudge_selected(self, dx, dy):
+        """Move the selected widget by a pixel offset (the arrow keys).
+
+        Reads the position from where the widget was last drawn rather than
+        from its stored fractions, so a nudge lands relative to what is on
+        screen -- including any anti-overlap shift it was given.
+        """
+        widget_id = self._selected
+        if not widget_id or self._drag:
+            return False
+        rect = next((r for r in self._hit_rects if r[0] == widget_id), None)
+        if not rect:
+            return False
+        _, wx, wy, ww, wh = rect
+
+        # Chain off the previous nudge rather than off the last drawn frame.
+        # The arrows repeat about twenty times a second and the tracker repaints
+        # roughly once a second, so reading the drawn position every time would
+        # keep recomputing the same single pixel of movement and throw the rest
+        # away -- which looks exactly like the arrow keys doing nothing.
+        now = time.monotonic()
+        if (self._nudge and self._nudge[0] == widget_id
+                and now - self._nudge[3] < 0.5):
+            wx, wy = self._nudge[1], self._nudge[2]
+
+        _, _, cw, ch = self._rect
+        left = max(0, min(cw - ww, wx + dx))
+        top = max(0, min(ch - wh, wy + dy))
+        if (left, top) == (wx, wy):
+            return False
+        self._nudge = (widget_id, left, top, now)
+        self._commit(widget_id, left, top, ww, wh)
+        return True
+
+    def has_selection(self):
+        return bool(self._selected)
+
+    def clear_selection(self):
+        self._selected = None
 
     # --- public API (any thread) ------------------------------------------
     def set_interactive(self, interactive):
@@ -283,6 +440,24 @@ class OverlayWindow:
         style = _get_long(hwnd, GWL_EXSTYLE)
         style = (style & ~WS_EX_TRANSPARENT) if interactive else (style | WS_EX_TRANSPARENT)
         _set_long(hwnd, GWL_EXSTYLE, style)
+
+    def set_capture_hidden(self, hidden):
+        """Keep the overlay off screen shares and recordings, or put it back.
+
+        Applies to the live window and is remembered for the next one, since the
+        window is destroyed and rebuilt whenever the overlay hides. Returns
+        whether Windows accepted it -- pre-2004 builds have no such flag, and
+        the caller would otherwise report a privacy setting that isn't in force.
+        """
+        self._capture_hidden = bool(hidden)
+        hwnd = self._hwnd
+        if not (hwnd and user32.IsWindow(hwnd)):
+            return False
+        affinity = WDA_EXCLUDEFROMCAPTURE if hidden else WDA_NONE
+        try:
+            return bool(user32.SetWindowDisplayAffinity(wintypes.HWND(hwnd), affinity))
+        except Exception:
+            return False
 
     def place(self, x, y, width, height):
         self._rect = (int(x), int(y), int(width), int(height))
@@ -312,14 +487,20 @@ class OverlayWindow:
     def is_visible(self):
         return self._visible
 
-    def update(self, widgets, *, scale=1.0, opacity=0.92, accent=(94, 198, 255)):
+    def update(self, widgets, *, scale=1.0, opacity=0.92, accent=(94, 198, 255),
+               ink=None, panel=None, prevent_overlap=True):
         """Queue a repaint. Safe from any thread; the blit runs on the window thread."""
         _, _, w, h = self._rect
         if w <= 0 or h <= 0:
             return
         with self._lock:
             self._frame = {"widgets": widgets, "scale": scale,
-                           "opacity": opacity, "accent": accent}
+                           "opacity": opacity, "accent": accent,
+                           "ink": ink, "panel": panel,
+                           "prevent_overlap": prevent_overlap}
+            # A fresh frame already carries the dropped position, so the hold
+            # has done its job.
+            self._pin_hold = None
         thread_id = self._thread_id
         if thread_id:
             user32.PostThreadMessageW(thread_id, WM_APP_REDRAW, 0, 0)
@@ -328,6 +509,10 @@ class OverlayWindow:
     def _flush_frame(self):
         with self._lock:
             frame = self._frame
+            if frame:
+                self._last_frame = frame
+            else:
+                frame = self._last_frame
             self._frame = None
         if not frame:
             return
@@ -337,17 +522,34 @@ class OverlayWindow:
 
         widgets = frame["widgets"]
         # While dragging, draw the grabbed widget under the cursor instead of at
-        # its stored position, so the drag has live feedback.
+        # its stored position, so the drag has live feedback. The same pin holds
+        # the widget at its landing spot after the button comes up: the config
+        # write is a round trip through the tracker, and without this the widget
+        # would snap back to where it started for a moment first.
+        pin = None
+        guides = None
         if self._drag and "x" in self._drag:
+            pin = (self._drag["id"], self._drag["x"], self._drag["y"])
+            guides = self._drag.get("guides")
+        elif self._pin_hold:
+            pin = self._pin_hold
+        selected = self._selected if self._interactive else None
+        if pin or selected:
             widgets = [dict(w) for w in widgets]
             for widget in widgets:
-                if widget.get("id") == self._drag["id"]:
-                    widget["_pin"] = (self._drag["x"], self._drag["y"])
-                    widget["highlight"] = True
+                if pin and widget.get("id") == pin[0]:
+                    widget["_pin"] = (pin[1], pin[2])
+                    if self._drag:
+                        widget["highlight"] = True
+                if selected and widget.get("id") == selected:
+                    widget["selected"] = True
 
         bitmap, hit_rects = overlay_draw.render(
             width, height, widgets,
-            scale=frame["scale"], opacity=frame["opacity"], accent=frame["accent"])
+            scale=frame["scale"], opacity=frame["opacity"], accent=frame["accent"],
+            ink=frame.get("ink"), panel=frame.get("panel"),
+            prevent_overlap=frame.get("prevent_overlap", True),
+            guides=guides)
         if bitmap is None:
             return
         self._hit_rects = hit_rects

@@ -482,6 +482,7 @@
     const STAMPY_BIOMES = ['Desert Frontier', 'The Lost Isles', 'Geode Topside', 'Neon City', 'Dragonfire Peaks', 'Permafrost', 'Candoria', 'Cursed Vale', 'Forbidden Spires', 'Fae Forest', 'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands'];
     const MANA_ICON_FALLBACK = { 'Neon City': 'neon', 'Jurassic Jungle': 'dinosaur', 'Dragonfire Peaks': 'dragon', 'Forbidden Spires': 'spires', 'Sundered Uplands': 'giantland', 'Medieval Highlands': 'forest', 'Permafrost': 'tundra', 'Cursed Vale': 'undead', 'Desert Frontier': 'frontier', 'Fae Forest': 'fae', 'Candoria': 'candy' };
     const STAMPY_ICON_FALLBACK = { ...MANA_ICON_FALLBACK, 'Geode Topside': 'dunes', 'The Lost Isles': 'pirate' };
+    const STAMPY_PERIOD_SEC = 14 * 24 * 3600;   // fortnightly, not weekly
     const buildBiomeIconMap = (subbiomes) => { const m = {}; for (const k in subbiomes) { const p = subbiomes[k] && subbiomes[k].biome; if (p && !(p in m)) m[p] = subbiomes[k].icon || 'unknown'; } return m; };
     const biomeIcon = (name, iconMap, fallback) => iconMap[name] || fallback[name] || 'unknown';
 
@@ -523,10 +524,10 @@
                 if (ew > startSec && sw < endSec) { const b = weeklyBuffs[wkeys[_mod(curIdx + wo, wkeys.length)]] || {}; events.push({ type: 'weekly_buff', start: sw, end: ew, name: b.name || 'Weekly Buff', color: b.color || 'fbc02d' }); }
             }
         }
-        // stampy (weekly 48h, 1 biome)
-        const baseStampy = Date.UTC(2023, 8, 30, 11, 0, 0) / 1000;
-        let wS = Math.floor((startSec - baseStampy) / WEEK_SEC), s = baseStampy + wS * WEEK_SEC;
-        while (s < endSec) { const e = s + 48 * HOUR_SEC; if (e > startSec) { const b = STAMPY_BIOMES[_mod(wS, 13)]; events.push({ type: 'stampy', start: s, end: e, name: 'Stampy', icons: [biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK)], biome_names: [b] }); } s += WEEK_SEC; wS++; }
+        // stampy (fortnightly 48h from a Monday, 1 biome) — server-time Mon+Tue, never a weekend
+        const baseStampy = Date.UTC(2023, 8, 25, 11, 0, 0) / 1000;
+        let wS = Math.floor((startSec - baseStampy) / STAMPY_PERIOD_SEC), s = baseStampy + wS * STAMPY_PERIOD_SEC;
+        while (s < endSec) { const e = s + 48 * HOUR_SEC; if (e > startSec) { const b = STAMPY_BIOMES[_mod(wS, 13)]; events.push({ type: 'stampy', start: s, end: e, name: 'Stampy', icons: [biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK)], biome_names: [b] }); } s += STAMPY_PERIOD_SEC; wS++; }
         // wild mana (weekly, 3 biomes)
         const baseMana = Date.UTC(2023, 10, 20, 11, 0, 0) / 1000;
         let wM = Math.floor((startSec - baseMana) / WEEK_SEC); s = baseMana + wM * WEEK_SEC;
@@ -835,14 +836,14 @@
         }, { localOnly: true }),
         get_stampy_rotation: makeEelFn('get_stampy_rotation', async () => {
             try {
-                // Deterministic weekly 48h rotation (1 biome) from 2023-09-30 11:00 UTC.
+                // Deterministic fortnightly 48h rotation (1 biome) from Monday 2023-09-25 11:00 UTC.
                 const iconMap = buildBiomeIconMap(await fetchJson('assets/data/biomes.json', {}));
-                const BASE = Date.UTC(2023, 8, 30, 11, 0, 0) / 1000;
+                const BASE = Date.UTC(2023, 8, 25, 11, 0, 0) / 1000;
                 const nowTs = Date.now() / 1000;
-                const wo = Math.floor((nowTs - BASE) / WEEK_SEC);
+                const wo = Math.floor((nowTs - BASE) / STAMPY_PERIOD_SEC);
                 const events = [];
                 for (let w = wo - 1; w < wo + 10; w++) {
-                    const s = BASE + w * WEEK_SEC, e = s + 48 * HOUR_SEC;
+                    const s = BASE + w * STAMPY_PERIOD_SEC, e = s + 48 * HOUR_SEC;
                     if (e > nowTs) { const b = STAMPY_BIOMES[_mod(w, 13)]; events.push({ start: s, end: e, biomes: [{ name: b, final_name: b, icon: biomeIcon(b, iconMap, STAMPY_ICON_FALLBACK) }] }); if (events.length === 8) break; }
                 }
                 if (!events.length) return { success: false, error: 'No valid Stampy events found', code: 'STAMPY_EVENTS_NOT_FOUND' };

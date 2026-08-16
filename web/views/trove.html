@@ -278,10 +278,46 @@
                         <i class="fa-solid fa-arrow-pointer trove-lock" :title="t('overlay.hide_in_menus_hint')"></i>
                     </label>
                     <label class="trove-check">
+                        <input type="checkbox" v-model="overlayConfig.hide_inactive" @change="saveOverlayNow">
+                        {{ t('overlay.hide_inactive') }}
+                        <i class="fa-solid fa-broom trove-lock" :title="t('overlay.hide_inactive_hint')"></i>
+                    </label>
+                    <label class="trove-check">
+                        <input type="checkbox" v-model="overlayConfig.prevent_overlap" @change="saveOverlayNow">
+                        {{ t('overlay.prevent_overlap') }}
+                        <i class="fa-solid fa-layer-group trove-lock" :title="t('overlay.prevent_overlap_hint')"></i>
+                    </label>
+                    <label class="trove-check">
+                        <input type="checkbox" v-model="overlayConfig.hide_from_capture" @change="saveOverlayNow">
+                        {{ t('overlay.hide_from_capture') }}
+                        <i class="fa-solid fa-video-slash trove-lock" :title="t('overlay.hide_from_capture_hint')"></i>
+                    </label>
+                    <label class="trove-check">
                         <input type="checkbox" v-model="overlayConfig.notifications_in_overlay" @change="saveOverlayNow">
                         {{ t('overlay.notifications_in_overlay') }}
                         <i class="fa-solid fa-bell trove-lock" :title="t('overlay.notifications_hint')"></i>
                     </label>
+                </div>
+
+                <div class="trove-field">
+                    <label>{{ t('overlay.colors') }}</label>
+                    <div class="ov-ed-colors">
+                        <label class="ov-ed-color">
+                            <input type="color" :value="overlayColor('text_color')"
+                                   @input="setOverlayColor('text_color', $event.target.value)">
+                            <span>{{ t('overlay.text_color') }}</span>
+                        </label>
+                        <label class="ov-ed-color">
+                            <input type="color" :value="overlayColor('panel_color')"
+                                   @input="setOverlayColor('panel_color', $event.target.value)">
+                            <span>{{ t('overlay.panel_color') }}</span>
+                        </label>
+                        <button class="trove-btn ghost" v-if="overlayConfig.text_color || overlayConfig.panel_color"
+                                @click="resetOverlayColors">
+                            <i class="fa-solid fa-rotate-left"></i> {{ t('overlay.reset_colors') }}
+                        </button>
+                    </div>
+                    <span class="ov-ed-hint">{{ t('overlay.colors_hint') }}</span>
                 </div>
 
                 <div class="trove-field" v-if="overlayConfig.notifications_in_overlay">
@@ -322,6 +358,23 @@
                                 @click="clearOverlayWidgetHotkey(entry.id)">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
+                        <div class="ov-ed-sections" v-if="entry.sections && entry.sections.length">
+                            <button v-for="name in entry.sections" :key="name"
+                                    class="ov-ed-widget-key"
+                                    :class="{ unbound: !widgetSection(entry.id, name) }"
+                                    :title="t('overlay.section_hint')"
+                                    @click="toggleOverlaySection(entry.id, name)">
+                                <i class="fa-solid" :class="widgetSection(entry.id, name) ? 'fa-check' : 'fa-xmark'"></i>
+                                <span>{{ t('overlay.' + name) }}</span>
+                            </button>
+                        </div>
+                        <button v-if="entry.collapsible" class="ov-ed-widget-key"
+                                :class="{ unbound: !widgetCollapsed(entry.id) }"
+                                :title="t('overlay.collapsed_hint')"
+                                @click="toggleOverlayWidgetCollapsed(entry.id)">
+                            <i class="fa-solid" :class="widgetCollapsed(entry.id) ? 'fa-chevron-right' : 'fa-chevron-down'"></i>
+                            <span>{{ widgetCollapsed(entry.id) ? t('overlay.collapsed') : t('overlay.expanded') }}</span>
+                        </button>
                     </li>
                 </ul>
                 <p class="trove-card-note"><i class="fa-solid fa-circle-info"></i> {{ t('overlay.widget_hotkey_note') }}</p>
@@ -336,7 +389,11 @@
             <p class="trove-card-hint">{{ t('overlay.layout_hint') }}</p>
             <div class="ov-ed-canvas" ref="overlayCanvas">
                 <span class="ov-ed-canvas-label">{{ t('overlay.canvas_label') }}</span>
-                <div v-for="chip in overlayChips" :key="chip.id"
+                <div v-for="gx in overlaySnapGuides.x" :key="'gx' + gx"
+                     class="ov-ed-guide vertical" :style="{ left: gx + 'px' }"></div>
+                <div v-for="gy in overlaySnapGuides.y" :key="'gy' + gy"
+                     class="ov-ed-guide horizontal" :style="{ top: gy + 'px' }"></div>
+                <div v-for="chip in overlayChips" :key="chip.id" :data-id="chip.id"
                      class="ov-ed-chip" :class="{ dragging: overlayDragId === chip.id }"
                      :style="chip.style" @pointerdown="startOverlayChipDrag($event, chip)">
                     {{ t('overlay.w_' + chip.id) }}

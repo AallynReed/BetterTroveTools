@@ -76,6 +76,11 @@ if _IS_WINDOWS:
     user32.GetClipCursor.argtypes = [ctypes.POINTER(wintypes.RECT)]
     user32.GetClipCursor.restype = wintypes.BOOL
 
+    user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
+    user32.GetAsyncKeyState.restype = ctypes.c_short
+
+    VK_MENU = 0x12
+
 
 def _trove_pids():
     """PIDs of every running Trove process, newest-enumerated last.
@@ -276,6 +281,31 @@ def mouse_captured(rect=None):
     if screen_w <= 0 or screen_h <= 0:
         return None
     return clip_w < screen_w / 2 or clip_h < screen_h / 2
+
+
+def key_held(vk) -> bool:
+    """Whether a virtual key is physically down right now.
+
+    GetAsyncKeyState is a global keyboard-state read, not a hook: it answers
+    "is this key down", takes no input, and sees nothing about what is being
+    typed anywhere else.
+    """
+    if not _IS_WINDOWS:
+        return False
+    try:
+        return bool(user32.GetAsyncKeyState(int(vk)) & 0x8000)
+    except Exception:
+        return False
+
+
+def alt_held() -> bool:
+    """Whether either Alt key is physically down right now.
+
+    Trove releases the cursor clip while Alt is held (it is the free-cursor
+    key), which is indistinguishable from a UI panel opening by confinement
+    alone. Reading the key directly is what lets the overlay tell the two apart.
+    """
+    return key_held(VK_MENU)
 
 
 def describe(hwnd=None):
