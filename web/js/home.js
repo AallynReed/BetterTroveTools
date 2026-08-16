@@ -983,12 +983,18 @@ document.addEventListener('home_loaded', () => {
                             .replace("{end}", new Date((c.fallback_times?.end || 0) * 1000).toLocaleDateString())
                     };
                 }
-                // Otherwise, show the real item
+                // Otherwise, show the real item. The API's own render URL wins when
+                // present: `blueprint` is a full game path now, not the short catalog
+                // slug the Trovesaurus URL below was built for, so that fallback only
+                // still resolves for the older short-form responses.
+                const legacyIcon = c.data?.blueprint
+                    ? `https://trovesaurus.com/data/catalog/${c.data.blueprint.toLowerCase()}.png`
+                    : "https://trovesaurus.com/data/catalog/item_chaos_box.png";
                 return {
                     name: c.data?.name || "Chaos Chest",
                     identifier: c.data?.identifier,
-                    unknown: !c.data?.blueprint,
-                    iconUrl: c.data?.blueprint ? `https://trovesaurus.com/data/catalog/${c.data.blueprint.toLowerCase()}.png` : "https://trovesaurus.com/data/catalog/item_chaos_box.png",
+                    unknown: !c.data?.blueprint && !c.data?.image_url,
+                    iconUrl: c.data?.image_url || legacyIcon,
                     timeHtml: t("home.changes_in_time").replace("{time}", `<b>${getCountdown(end, false)}</b>`)
                 };
             });

@@ -562,9 +562,15 @@ def get_chaos_chest_data():
                     "end": int(end) if end is not None else None,
                     "identifier": identifier,
                     "blueprint": blueprint,
+                    "image_url": item.get("image_url"),
                 }
 
-                required = ("name", "start", "end", "identifier", "blueprint")
+                # `identifier` is the Trovesaurus item slug and is only ever used
+                # for the card's optional click-through, which the template already
+                # guards on. The API now returns it as null, so requiring it here
+                # threw away a perfectly good item and left the card on its
+                # "we don't know the item yet" fallback.
+                required = ("name", "start", "end")
                 if all(normalized.get(k) is not None for k in required):
                     return resp(True, data=normalized, fallback_times=fallback_times)
 
