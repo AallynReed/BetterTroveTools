@@ -12,6 +12,7 @@ from backend.response import resp
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
 from utils.path import get_cache_root
+from utils.trove_cfg import ensure_mods_enabled
 
 
 
@@ -46,6 +47,9 @@ def _write_trash_manifest(manifest):
 @eel.expose
 def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
     try:
+        # The game can flip [Mods] DisableAllMods on; undo it before listing.
+        ensure_mods_enabled()
+
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(
             path=trove_path,
