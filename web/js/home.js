@@ -1622,11 +1622,14 @@ document.addEventListener('home_loaded', () => {
 
             function getNextServerResetSec() {
                 // Server day rolls over at 00:00 server time (UTC-11), i.e. 11:00 UTC.
+                // Stay in true epoch terms throughout: the result is compared against
+                // Date.now(), so shifting by getTimezoneOffset() (as the elsewhere-in-
+                // this-file "render server time via local getters" idiom does) would
+                // put the two on different clocks and yield a reset in the past.
                 const now = new Date();
-                const utcNow = new Date(now.getTime() + now.getTimezoneOffset() * 60000);
-                const nextReset = new Date(utcNow);
+                const nextReset = new Date(now);
                 nextReset.setUTCHours(11, 0, 0, 0);
-                if (utcNow >= nextReset) nextReset.setUTCDate(nextReset.getUTCDate() + 1);
+                if (nextReset <= now) nextReset.setUTCDate(nextReset.getUTCDate() + 1);
                 return Math.floor(nextReset.getTime() / 1000);
             }
 
@@ -1634,7 +1637,11 @@ document.addEventListener('home_loaded', () => {
                 if (resetTimer) clearTimeout(resetTimer);
                 const now = Math.floor(Date.now() / 1000);
                 const nextReset = getNextServerResetSec();
-                const msUntil = Math.max(1000, ((nextReset - now) * 1000) + 2000);
+                // Floor at the regular poll interval, not 1s: this callback forces a
+                // full 8-endpoint refetch, so a date bug that puts the reset in the
+                // past must never be able to out-pace the ordinary 30s cycle and
+                // burn the API's per-minute rate limit.
+                const msUntil = Math.max(30000, ((nextReset - now) * 1000) + 2000);
 
                 resetTimer = setTimeout(async () => {
                     // Server reset: the rotations genuinely changed, always refetch.
