@@ -1106,10 +1106,12 @@ class OverlayTracker:
         the overlay, and the cursor being free is the precondition for that, not
         a reason to take it away.
 
-        Holding Alt gets the same treatment. Trove frees the cursor for as long
-        as Alt is down, which by confinement alone looks exactly like a panel
-        opening -- but the player is still in the world looking at the overlay,
-        so hiding it there is the one moment it is most wrong to.
+        Holding the game's free-the-cursor key gets the same treatment. Trove
+        frees the cursor for as long as it is down, which by confinement alone
+        looks exactly like a panel opening -- but the player is still in the
+        world looking at the overlay, so hiding it there is the one moment it is
+        most wrong to. The key is read from the player's own bindings, since it
+        is rebindable and only defaults to Alt.
 
         Caches its verdict in ``_in_menu`` so the fast cursor poll between ticks
         can tell a genuine change from a repeat reading.
@@ -1121,7 +1123,7 @@ class OverlayTracker:
         # mouse_captured is None when the state can't be read; only a definite
         # False (the game released the cursor) counts as "a menu is open".
         if (not config["hide_in_menus"] or editing or captured is not False
-                or trove_window.alt_held()):
+                or trove_window.release_mouse_held()):
             self._menu_since = None
             self._in_menu = False
             return False

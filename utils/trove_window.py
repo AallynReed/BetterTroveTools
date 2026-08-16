@@ -18,7 +18,9 @@ the overlay feature inert on Linux instead of crashing the app.
 """
 from __future__ import annotations
 
+import os
 import sys
+import time
 
 # The exe names Trove actually ships. Both are checked because a 32-bit install
 # (Trove.exe) is still out there, and utils/executable.py already treats the pair
@@ -78,6 +80,9 @@ if _IS_WINDOWS:
 
     user32.GetAsyncKeyState.argtypes = [ctypes.c_int]
     user32.GetAsyncKeyState.restype = ctypes.c_short
+
+    user32.VkKeyScanW.argtypes = [wintypes.WCHAR]
+    user32.VkKeyScanW.restype = ctypes.c_short
 
     VK_MENU = 0x12
 
@@ -298,14 +303,135 @@ def key_held(vk) -> bool:
         return False
 
 
-def alt_held() -> bool:
-    """Whether either Alt key is physically down right now.
+# --- the "release mouse" binding --------------------------------------------
+#
+# Holding this key frees the cursor in Trove, which by cursor-confinement alone
+# is indistinguishable from opening a bag -- so the overlay has to know the key
+# to tell "the player wants the cursor" from "a panel opened". It is rebindable,
+# so it is read from the game's own config rather than assumed to be Alt.
 
-    Trove releases the cursor clip while Alt is held (it is the free-cursor
-    key), which is indistinguishable from a UI panel opening by confinement
-    alone. Reading the key directly is what lets the overlay tell the two apart.
+_RELEASE_MOUSE_KEY = "ReleaseMouse"
+# Alt is the shipped binding, and an empty value in the config means exactly
+# that: nothing overrode the default.
+_RELEASE_MOUSE_DEFAULT = (VK_MENU,) if _IS_WINDOWS else ()
+# Re-stat the config at most this often. The menu check runs every 50ms and the
+# binding changes when a player edits their controls, not mid-fight.
+_BINDING_TTL_SECONDS = 5.0
+
+# Trove is an SDL app, so non-printable keys arrive under SDL's names. Printable
+# ones come through as the character itself and are mapped with VkKeyScanW.
+_NAMED_KEYS = {
+    "left alt": 0xA4, "right alt": 0xA5, "alt": VK_MENU if _IS_WINDOWS else 0x12,
+    "left shift": 0xA0, "right shift": 0xA1, "shift": 0x10,
+    "left ctrl": 0xA2, "right ctrl": 0xA3, "ctrl": 0x11,
+    "left control": 0xA2, "right control": 0xA3, "control": 0x11,
+    "space": 0x20, "tab": 0x09, "return": 0x0D, "enter": 0x0D, "escape": 0x1B,
+    "backspace": 0x08, "capslock": 0x14, "caps lock": 0x14, "insert": 0x2D,
+    "delete": 0x2E, "home": 0x24, "end": 0x23, "pageup": 0x21, "pagedown": 0x22,
+    "left": 0x25, "up": 0x26, "right": 0x27, "down": 0x28,
+    **{f"f{n}": 0x6F + n for n in range(1, 25)},
+}
+
+_binding_cache = {"checked_at": 0.0, "stamp": None, "vks": _RELEASE_MOUSE_DEFAULT}
+
+
+def _trove_cfg_path():
+    appdata = os.environ.get("APPDATA")
+    return os.path.join(appdata, "Trove", "Trove.cfg") if appdata else None
+
+
+def split_binding(value):
+    """``'.,\\'`` -> ``['.', '\\']``. Two keys joined by one comma.
+
+    A bound key can itself BE a comma, so the separator cannot just be split on:
+    two comma-bound keys are written ``,,,``. The separator is the comma that
+    leaves a usable key on each side -- empty (only one key bound), a single
+    comma, or anything with no comma in it.
     """
-    return key_held(VK_MENU)
+    value = (value or "").strip()
+    if not value:
+        return []
+    if "," not in value:
+        return [value]
+
+    def usable(part):
+        return part == "" or part == "," or "," not in part
+
+    for index, char in enumerate(value):
+        if char != ",":
+            continue
+        left, right = value[:index], value[index + 1:]
+        if usable(left) and usable(right):
+            return [p for p in (left, right) if p]
+    return []
+
+
+def _vk_for_token(token):
+    """One key name from the config -> a virtual-key code, or None."""
+    named = _NAMED_KEYS.get(token.strip().lower())
+    if named:
+        return named
+    if len(token) == 1 and _IS_WINDOWS:
+        scan = user32.VkKeyScanW(token)
+        if scan != -1:
+            return scan & 0xFF
+    return None
+
+
+def _read_release_mouse_vks():
+    """Parse the binding out of Trove.cfg, or fall back to the default."""
+    path = _trove_cfg_path()
+    if not path or not os.path.exists(path):
+        return _RELEASE_MOUSE_DEFAULT
+
+    value = None
+    with open(path, "r", encoding="utf-8", errors="replace") as handle:
+        section = None
+        for line in handle:
+            line = line.strip()
+            if line.startswith("[") and line.endswith("]"):
+                section = line[1:-1]
+            elif section == "InputBindings" and line.startswith(_RELEASE_MOUSE_KEY):
+                key, _, raw = line.partition("=")
+                if key.strip() == _RELEASE_MOUSE_KEY:
+                    value = raw.strip()
+                    break
+
+    # Missing or blank both mean "the player never rebound it", which is Alt.
+    if not value:
+        return _RELEASE_MOUSE_DEFAULT
+    vks = tuple(dict.fromkeys(
+        vk for vk in (_vk_for_token(t) for t in split_binding(value)) if vk
+    ))
+    return vks or _RELEASE_MOUSE_DEFAULT
+
+
+def release_mouse_vks():
+    """The virtual keys currently bound to "release mouse", cached."""
+    now = time.monotonic()
+    if now - _binding_cache["checked_at"] < _BINDING_TTL_SECONDS:
+        return _binding_cache["vks"]
+    _binding_cache["checked_at"] = now
+
+    path = _trove_cfg_path()
+    try:
+        stamp = os.path.getmtime(path) if path and os.path.exists(path) else None
+    except OSError:
+        stamp = None
+    if stamp == _binding_cache["stamp"] and _binding_cache["vks"]:
+        return _binding_cache["vks"]
+
+    try:
+        vks = _read_release_mouse_vks()
+    except Exception:
+        vks = _RELEASE_MOUSE_DEFAULT
+    _binding_cache.update({"stamp": stamp, "vks": vks})
+    return vks
+
+
+def release_mouse_held() -> bool:
+    """Whether the player is holding their free-the-cursor key right now."""
+    return any(key_held(vk) for vk in release_mouse_vks())
 
 
 def describe(hwnd=None):
