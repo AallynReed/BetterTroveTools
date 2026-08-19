@@ -15,27 +15,6 @@
         ],
         "abilities": []
     },
-    "venturous_vivian": {
-        "qualified_name": "[MD|PD|LT] Venturous Vivian",
-        "stats": [
-            {
-                "name": "Light",
-                "value": 787.5,
-                "percentage": false
-            },
-            {
-                "name": "Physical Damage",
-                "value": 14.5,
-                "percentage": true
-            },
-            {
-                "name": "Magic Damage",
-                "value": 14.5,
-                "percentage": true
-            }
-        ],
-        "abilities": []
-    },
     "goat_pinata_moontouched": {
         "qualified_name": "[PD|LT] The Moontouched of All Time",
         "stats": [
