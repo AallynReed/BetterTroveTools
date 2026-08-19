@@ -113,6 +113,27 @@
             "Gain a movement speed boost when a nearby enemy dies."
         ]
     },
+    "tiny_trudgina": {
+        "qualified_name": "[MD|PD|LT] Tiny Trudgina",
+        "stats": [
+            {
+                "name": "Light",
+                "value": 787.5,
+                "percentage": false
+            },
+            {
+                "name": "Physical Damage",
+                "value": 15.95,
+                "percentage": true
+            },
+            {
+                "name": "Magic Damage",
+                "value": 15.95,
+                "percentage": true
+            }
+        ],
+        "abilities": []
+    },
     "boot_clown": {
         "qualified_name": "[MS|JP] Clownish Kicker",
         "stats": [
