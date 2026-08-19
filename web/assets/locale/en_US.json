@@ -616,7 +616,7 @@
         "gems.gem_builds.star_chart_loaded": "Star Chart Loaded",
         "gems.gem_builds.subclass": "Subclass",
         "gems.gem_builds.subclass_active": "Subclass Active",
-        "gems.gem_builds.the_ally_buff_applied_on_top_of_your_lev_f9ce2a": "The ally buff, applied on top of your level-30 ally. Adds 7.75% to the ally's light and 15.5% to its damage and crit damage. Nothing else in the build is affected.",
+        "gems.gem_builds.the_ally_buff_applied_on_top_of_your_lev_73283d": "The ally buff, applied on top of your level-30 ally. Adds 15.5% to the ally's light and 31% to its damage and crit damage. Nothing else in the build is affected.",
         "gems.gem_builds.this_build_is_value_behind_the_best_but_00d201": "This build is {value}% behind the best, but {tradeoff}.",
         "gems.gem_builds.top_build": "Top Build",
         "gems.gem_builds.total_dmg": "Total Dmg",

@@ -148,18 +148,18 @@ document.addEventListener('calculators_loaded', () => {
             };
 
             // Blessing of the Lilypad - the ally buff. The stat tables already hold
-            // the level-30 ally values (112.5 PR, 562.5 light), so the buff multiplies
+            // the level-30 ally values (75 PR, 787.5 light), so the buff multiplies
             // those. Magic Find has no confirmed buff component, so its Ally row is
-            // left alone. Damage/crit/power rank share one 15.5% class; light is 7.75%.
-            const LILYPAD = { 'Power Rank': 1.155, Light: 1.0775 };
+            // left alone. Damage/crit/power rank share one 31% class; light is 15.5%.
+            const LILYPAD = { 'Power Rank': 1.31, Light: 1.155 };
             const lilypad = ref(true);
             const isAllyItem = (item) => String(item && item.name).trim() === 'Ally';
             // An ally row's value with the buff folded in; every other row is returned
             // untouched - the buff only ever scales the ally's own stats.
             const withLilypad = (item, value, statClass) =>
                 (lilypad.value && isAllyItem(item) ? value * LILYPAD[statClass] : value);
-            // 4 decimals, not the locale default of 3: the buffed ally lands on
-            // 130.9375 PR, and cutting that to 130.938 loses a real quarter-point.
+            // 4 decimals, not the locale default of 3: the buffed ally lands on a
+            // fraction (98.25 PR, 909.5625 light) the default would clip.
             const fmtCalc = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
 
             const isPercentBonusValue = (value) => {

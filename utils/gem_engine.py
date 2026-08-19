@@ -12,13 +12,13 @@ from utils.functions import get_attr
 # Blessing of the Lilypad - the ally buff. Ally stat values in builds/ally.json
 # are already the level-30 numbers, so the buff multiplies those directly.
 # Measured per stat class, not per ally: damage, crit damage and power rank all
-# ride one 15.5% class, light is its own 7.75%. Stability and Movement Speed
-# have no measured multiplier yet, so they stay unbuffed rather than guessed.
+# ride one 31% class, light is its own 15.5%. Stability and Movement Speed have
+# no measured multiplier yet, so they stay unbuffed rather than guessed.
 LILYPAD_MULTIPLIERS = {
-    "Light": 1.0775,
-    "Physical Damage": 1.155,
-    "Magic Damage": 1.155,
-    "Critical Damage": 1.155,
+    "Light": 1.155,
+    "Physical Damage": 1.31,
+    "Magic Damage": 1.31,
+    "Critical Damage": 1.31,
 }
 
 

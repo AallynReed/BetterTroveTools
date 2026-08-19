@@ -4,51 +4,49 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 187.5,
+                "value": 262.5,
                 "percentage": false
             },
             {
                 "name": "Critical Damage",
-                "value": 34.5,
+                "value": 43.5,
                 "percentage": true
             }
         ],
-        "abilities": [
-        ]
+        "abilities": []
     },
     "venturous_vivian": {
         "qualified_name": "[MD|PD|LT] Venturous Vivian",
         "stats": [
             {
                 "name": "Light",
-                "value": 562.5,
+                "value": 787.5,
                 "percentage": false
             },
             {
                 "name": "Physical Damage",
-                "value": 11.5,
+                "value": 14.5,
                 "percentage": true
             },
             {
                 "name": "Magic Damage",
-                "value": 11.5,
+                "value": 14.5,
                 "percentage": true
             }
         ],
-        "abilities": [
-        ]
+        "abilities": []
     },
     "goat_pinata_moontouched": {
         "qualified_name": "[PD|LT] The Moontouched of All Time",
         "stats": [
             {
                 "name": "Light",
-                "value": 562.5,
+                "value": 787.5,
                 "percentage": false
             },
             {
                 "name": "Physical Damage",
-                "value": 11.5,
+                "value": 14.5,
                 "percentage": true
             },
             {
@@ -57,20 +55,19 @@
                 "percentage": false
             }
         ],
-        "abilities": [
-        ]
+        "abilities": []
     },
     "phoenix_stars": {
         "qualified_name": "[MD|LT] Starry Skyfire",
         "stats": [
             {
                 "name": "Light",
-                "value": 500.0,
+                "value": 700.0,
                 "percentage": false
             },
             {
                 "name": "Magic Damage",
-                "value": 28.75,
+                "value": 36.25,
                 "percentage": true
             }
         ],
@@ -83,12 +80,12 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 500.0,
+                "value": 700.0,
                 "percentage": false
             },
             {
                 "name": "Physical Damage",
-                "value": 28.75,
+                "value": 36.25,
                 "percentage": true
             }
         ],
@@ -102,7 +99,7 @@
         "stats": [
             {
                 "name": "Light",
-                "value": 500.0,
+                "value": 700.0,
                 "percentage": false
             },
             {
