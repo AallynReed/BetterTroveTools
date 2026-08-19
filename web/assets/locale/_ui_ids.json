@@ -1889,7 +1889,9 @@
     "Reset colours": "overlay.reset_colors",
     "Live and soon countdowns keep their own colours, and the panel border follows the app accent.": "overlay.colors_hint",
     "Hide the overlay from screen captures": "overlay.hide_from_capture",
-    "Keeps the overlay off recordings and screen shares while you can still see it — useful if your notifications shouldn't go out on stream. Needs Windows 10 2004 or newer.": "overlay.hide_from_capture_hint"
+    "Keeps the overlay off recordings and screen shares while you can still see it — useful if your notifications shouldn't go out on stream. Needs Windows 10 2004 or newer.": "overlay.hide_from_capture_hint",
+    "Clear Fields": "modder_tools.clear_fields",
+    "Build fields cleared.": "modder_tools.build_fields_cleared"
   },
   "en": {
     "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -3072,11 +3074,13 @@
     "modder_tools.blueprint_assets": "Blueprint Assets",
     "modder_tools.blueprint_editor": "Blueprint Editor",
     "modder_tools.build_cancelled": "Build cancelled.",
+    "modder_tools.build_fields_cleared": "Build fields cleared.",
     "modder_tools.build_tmod": "Build TMod",
     "modder_tools.build_tmod_name": "Build TMod '{name}'",
     "modder_tools.building_full_render_this_can_take_a_mom_0b9474": "Building full render (this can take a moment)...",
     "modder_tools.cell_size": "Cell Size",
     "modder_tools.change_image": "Change Image",
+    "modder_tools.clear_fields": "Clear Fields",
     "modder_tools.clear_slice": "Clear Slice",
     "modder_tools.cleared_count_voxel_s_from_the_current_s_15dae2": "Cleared {count} voxel(s) from the current slice.",
     "modder_tools.click_to_open_containing_folder": "Click to open containing folder",

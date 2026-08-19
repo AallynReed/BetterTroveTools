@@ -193,6 +193,33 @@ document.addEventListener('modder_build_loaded', () => {
                 );
             };
 
+            const clearBuildFields = () => {
+                const snapshot = {
+                    title: build.title, author: build.author, version: build.version,
+                    notes: build.notes, tags: [...build.tags], files: [...build.files],
+                    preview: build.preview, previewName: build.previewName,
+                    config: build.config, configName: build.configName, subtype: build.subtype
+                };
+                const hadContent = Boolean(
+                    snapshot.title || snapshot.author || snapshot.notes || snapshot.subtype ||
+                    snapshot.preview || snapshot.config || snapshot.tags.length || snapshot.files.length
+                );
+
+                Object.assign(build, {
+                    title: '', author: '', version: '1.0', notes: '', tags: [], files: [],
+                    preview: '', previewName: '', config: '', configName: '', subtype: ''
+                });
+                validationState.build = false;
+                lastBuildOutputPath.value = '';
+
+                if (!hadContent) return;
+                window.showUndoToast(
+                    t('modder_tools.build_fields_cleared'),
+                    6,
+                    () => Object.assign(build, { ...snapshot, tags: [...snapshot.tags], files: [...snapshot.files] })
+                );
+            };
+
             const autoStructureBuild = async () => {
                 if (!store.selectedGamePath) return window.showToast(t("modder_tools.please_select_a_target_game_installation_780071"), true);
                 store.isWorking.autoStructuringBuild = true;
@@ -306,7 +333,7 @@ document.addEventListener('modder_build_loaded', () => {
                 configDisplayName: window.ModderTools.configDisplayName,
                 isBuildFieldInvalid,
                 openSelectedGamePath, openBuildOutputFolder, openBuildFileLocation,
-                chooseBuildPreview, chooseBuildConfig, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, buildTMod
+                chooseBuildPreview, chooseBuildConfig, detectBuildOverrides, addBuildFiles, removeBuildFile, autoStructureBuild, clearBuildFields, buildTMod
             };
         }
     });

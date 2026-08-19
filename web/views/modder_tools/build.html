@@ -115,5 +115,8 @@
                     <button class="primary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('modder_tools.open_built_tmod_folder')" style="min-width: 44px; padding: 0 12px;">
                         <i class="fa-solid fa-folder-open"></i>
                     </button>
+                    <button class="secondary-btn" @click="clearBuildFields">
+                        <i class="fa-solid fa-eraser"></i> <span>{{ t('modder_tools.clear_fields') }}</span>
+                    </button>
                 </div>
             </div>
