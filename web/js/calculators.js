@@ -148,10 +148,10 @@ document.addEventListener('calculators_loaded', () => {
             };
 
             // Blessing of the Lilypad - the ally buff. The stat tables already hold
-            // the level-30 ally values (75 PR, 787.5 light), so the buff multiplies
-            // those. Magic Find has no confirmed buff component, so its Ally row is
-            // left alone. Damage/crit/power rank share one 31% class; light is 15.5%.
-            const LILYPAD = { 'Power Rank': 1.31, Light: 1.155 };
+            // the level-30 ally values (787.5 light), so the buff multiplies those.
+            // Light is the only tab it touches: power rank and magic find take
+            // nothing from it. Damage/crit ride a 31% class; light is 15.5%.
+            const LILYPAD = { Light: 1.155 };
             const lilypad = ref(true);
             const isAllyItem = (item) => String(item && item.name).trim() === 'Ally';
             // An ally row's value with the buff folded in; every other row is returned
@@ -159,7 +159,7 @@ document.addEventListener('calculators_loaded', () => {
             const withLilypad = (item, value, statClass) =>
                 (lilypad.value && isAllyItem(item) ? value * LILYPAD[statClass] : value);
             // 4 decimals, not the locale default of 3: the buffed ally lands on a
-            // fraction (98.25 PR, 909.5625 light) the default would clip.
+            // fraction (909.5625 light) the default would clip.
             const fmtCalc = (v) => Number(v || 0).toLocaleString(undefined, { maximumFractionDigits: 4 });
 
             const isPercentBonusValue = (value) => {
@@ -350,7 +350,7 @@ document.addEventListener('calculators_loaded', () => {
                 let total = 0;
                 prData.value.forEach(item => {
                     if (item.type === 'switch') {
-                        total += item.currentValue ? withLilypad(item, item.value, 'Power Rank') : 0;
+                        total += item.currentValue ? item.value : 0;
                     } else if (item.type === 'pr_mastery') {
                         const capped = Math.min(item.currentValue || 0, 1000);
                         total += (Math.min(capped, 500) * 4) + (Math.max(0, capped - 500) * 1);
@@ -481,7 +481,7 @@ document.addEventListener('calculators_loaded', () => {
                 } else if (item.type === 'pr_geode_mastery') {
                     v = Math.min(item.currentValue || 0, 100) * 5;
                 } else if (item.type === 'switch') {
-                    v = item.currentValue ? withLilypad(item, item.value, 'Power Rank') : 0;
+                    v = item.currentValue ? item.value : 0;
                 } else {
                     v = item.currentValue || 0;
                 }

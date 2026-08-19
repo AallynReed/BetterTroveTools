@@ -39,8 +39,7 @@
             </div>
             
             <div class="mf-calculator-grid">
-                <template v-for="(item, index) in prData" :key="'pr-'+index">
-                <div class="calc-item">
+                <div class="calc-item" v-for="(item, index) in prData" :key="'pr-'+index">
                     <div class="calc-item-header">
                         <span>{{ t(item.name) }}</span>
                         <span class="calc-item-badge patron">{{ getPrBadgeText(item) }}</span>
@@ -56,19 +55,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="calc-item" v-if="isAllyItem(item)">
-                    <div class="calc-item-header">
-                        <span>{{ t('calculators.blessing_of_the_lilypad') }}</span>
-                        <span class="calc-item-badge patron">+31% PR</span>
-                    </div>
-                    <div>
-                        <label class="calc-switch">
-                            <input type="checkbox" v-model="lilypad">
-                            <span class="slider-toggle pr-slider-toggle"></span>
-                        </label>
-                    </div>
-                </div>
-                </template>
             </div>
         </div>
 

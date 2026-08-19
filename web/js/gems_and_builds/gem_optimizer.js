@@ -50,8 +50,8 @@
 
     // Blessing of the Lilypad - the ally buff, on top of the level-30 ally stats
     // the data files already hold. Per stat class, not per ally: damage, crit
-    // damage and power rank share one 31% class, light is its own 15.5%.
-    // Stability and Movement Speed have no measured multiplier yet.
+    // damage share one 31% class, light is its own 15.5%, power rank takes
+    // nothing. Stability and Movement Speed have no measured multiplier yet.
     const LILYPAD_MULTIPLIERS = {
         [SN.LIGHT]: 1.155,
         [SN.PHYSICAL]: 1.31,
