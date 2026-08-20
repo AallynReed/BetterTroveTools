@@ -22,7 +22,7 @@ import requests
 
 from backend.response import resp
 from backend.home import KIWI_API_BASE
-from backend.mod_manager.mod_manager import delete_mod
+from backend.mod_manager.mod_manager import delete_mod, mods_signature
 from utils.path import get_cache_root
 from utils.registry import TroveGamePath
 
@@ -32,7 +32,7 @@ VALID_SORTS = {"popular", "downloads", "stars", "recent", "new", "title"}
 MOD_PAGE_BASE = "https://trove.aallyn.net/mods"
 DETAIL_TTL = 300  # seconds — short-cache /mods/<handle>/<slug> detail (carries releases[])
 
-# game_path -> {"mtime": float, "states": {ref: {...}}, "paths": {ref: str}}  (ref = "<handle>/<slug>")
+# game_path -> {"signature": ..., "states": {ref: {...}}, "paths": {ref: str}}  (ref = "<handle>/<slug>")
 _install_state_cache = {}
 # ref -> (fetched_at, detail). The /mods/<handle>/<slug> detail is the only endpoint
 # that carries releases[] (the list cards and /lookup omit them), so update-checking
@@ -173,7 +173,10 @@ def _safe_filename(name):
 
 
 def _lookup_hashes(hashes):
-    """POST a batch of <=200 sha256s to /v1/mods/lookup -> {hash: {mod, release}}."""
+    """POST a batch of <=200 sha256s to /v1/mods/lookup -> {hash: {mod, release}}.
+
+    Returns None if the request itself failed, so callers can tell "the hub says
+    none of these are its mods" apart from "the hub didn't answer"."""
     if not hashes:
         return {}
     req_id = None
@@ -197,25 +200,22 @@ def _lookup_hashes(hashes):
         if req_id:
             eel.remove_external_request(req_id, False)()
         print(f"Mods Hub lookup failed: {e}")
-    return {}
+    return None
 
 
-def _compute_install_states(game_path_str):
+def _compute_install_states(game_path_str, force=False):
     """Resolve which of the locally installed mods come from the hub (and whether
     each is outdated). Returns (states_by_ref, path_by_ref), keyed by the mod's
-    `<handle>/<slug>` ref. Cached per mods dir by mtime so repeated page loads
-    don't re-hash every file."""
+    `<handle>/<slug>` ref. Cached against the mods folder's content signature so
+    repeated page loads don't re-hash every file; `force` re-checks anyway, which
+    is what Refresh needs when a new release lands while the app is open."""
     if not game_path_str:
         return {}, {}
 
-    mods_dir = Path(game_path_str) / "mods"
-    try:
-        mtime = mods_dir.stat().st_mtime if mods_dir.exists() else 0
-    except OSError:
-        mtime = 0
+    signature = mods_signature(game_path_str)
 
     cached = _install_state_cache.get(game_path_str)
-    if cached and cached.get("mtime") == mtime:
+    if not force and cached and cached.get("signature") == signature:
         return cached["states"], cached["paths"]
 
     try:
@@ -246,7 +246,13 @@ def _compute_install_states(game_path_str):
         all_hashes = list(hash_to_path.keys())
         for i in range(0, len(all_hashes), 200):
             batch = all_hashes[i:i + 200]
-            for h, entry in _lookup_hashes(batch).items():
+            results = _lookup_hashes(batch)
+            if results is None:
+                # The hub didn't answer. Report nothing this round rather than
+                # caching "no hub mods installed" against a signature that only
+                # changes when the user touches the mods folder.
+                return {}, {}
+            for h, entry in results.items():
                 mod = (entry or {}).get("mod") or {}
                 matched = (entry or {}).get("release") or {}
                 slug = mod.get("slug")
@@ -269,7 +275,7 @@ def _compute_install_states(game_path_str):
     paths = {}
     for ref, info in ref_match.items():
         matched = info["matched"]
-        detail = _fetch_mod_detail(ref)
+        detail = _fetch_mod_detail(ref, use_cache=not force)
         releases = (detail or {}).get("releases") or []
         states[ref] = {
             "is_installed": True,
@@ -283,7 +289,7 @@ def _compute_install_states(game_path_str):
         }
         paths[ref] = info["path"]
 
-    _install_state_cache[game_path_str] = {"mtime": mtime, "states": states, "paths": paths}
+    _install_state_cache[game_path_str] = {"signature": signature, "states": states, "paths": paths}
     return states, paths
 
 
@@ -316,7 +322,7 @@ def _fetch_mod_detail(ref, use_cache=True):
 
 
 @eel.expose
-def get_mods_hub_mods(page=1, query="", tag="", sort="popular", game_path_str="", request_token=None):
+def get_mods_hub_mods(page=1, query="", tag="", sort="popular", game_path_str="", request_token=None, force_refresh=False):
     def task():
         try:
             page_num = max(1, int(page or 1))
@@ -364,7 +370,7 @@ def get_mods_hub_mods(page=1, query="", tag="", sort="popular", game_path_str=""
             total = int(payload.get("total") or len(items))
             max_pages = max(1, math.ceil(total / ITEMS_PER_PAGE))
 
-            states, _ = _compute_install_states(game_path_str)
+            states, _ = _compute_install_states(game_path_str, force=force_refresh)
 
             result = []
             for m in items:
@@ -525,13 +531,13 @@ def get_mods_hub_variants(ref):
 
 
 @eel.expose
-def get_mods_hub_install_states(game_path_str):
+def get_mods_hub_install_states(game_path_str, force=False):
     """For the Mod Manager (My Mods) tab: which installed mods come from the Mods
     Hub, keyed by file path -> {ref, slug, handle, branch, name, page_url,
     has_update}. Lets the Mod Manager treat hub mods authoritatively (variant-
     scoped updates, variant switching) and skip the Trovesaurus lookup for them."""
     try:
-        states, paths = _compute_install_states(game_path_str)
+        states, paths = _compute_install_states(game_path_str, force=force)
         by_path = {}
         for ref, st in states.items():
             path = paths.get(ref)

@@ -23,6 +23,25 @@ def _cache_root():
     return root
 
 
+def mods_signature(game_path_str):
+    """Cheap fingerprint of a mods folder: name, size and mtime of every file in
+    it. Callers cache installed/outdated state against this.
+
+    The folder's own mtime is deliberately NOT used: updating a mod overwrites
+    its file in place, which leaves the directory timestamp untouched on
+    Windows, so an mtime-keyed cache would keep serving "update available" for a
+    mod that was just updated."""
+    mods_dir = Path(game_path_str) / "mods"
+    try:
+        return tuple(
+            (entry.name, entry.stat().st_size, entry.stat().st_mtime_ns)
+            for entry in sorted(mods_dir.iterdir(), key=lambda p: p.name)
+            if entry.is_file()
+        )
+    except OSError:
+        return ()
+
+
 def _trash_manifest_path():
     trash_dir = _cache_root() / "trash"
     trash_dir.mkdir(parents=True, exist_ok=True)
@@ -209,7 +228,7 @@ def clear_mod_manager_cache():
         cache_dir = _cache_root()
         removed = []
 
-        for filename in ["installed_mods.json"]:
+        for filename in ["installed_mods.json", "trovesaurus_mods_all.json"]:
             path = cache_dir / filename
             if path.exists():
                 path.unlink()
@@ -273,14 +292,14 @@ def get_mod_urls(game_path_str):
             except Exception:
                 pass
             try:
-                resp = requests.post(
+                response = requests.post(
                     "https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10
                 )
                 if req_id:
-                    eel.remove_external_request(req_id, resp.status_code == 200)()
+                    eel.remove_external_request(req_id, response.status_code == 200)()
                     req_id = None
-                if resp.status_code == 200:
-                    batch_results = resp.json()
+                if response.status_code == 200:
+                    batch_results = response.json()
                     for h, mod_id in batch_results.items():
                         path = hash_to_path.get(h.lower())
                         if path:
@@ -301,11 +320,13 @@ def get_mod_urls(game_path_str):
 
 
 @eel.expose
-def check_mod_updates(game_path_str):
+def check_mod_updates(game_path_str, force=False):
+    """`force` skips the 15-minute master-list cache, so the Refresh button
+    actually sees releases published since the last check."""
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
-        mod_list.update_trovesaurus_data()
+        mod_list.update_trovesaurus_data(force)
 
         updates_available = {}
         for mod in mod_list:

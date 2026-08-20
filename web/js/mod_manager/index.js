@@ -236,10 +236,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             // branch + variant-scoped update flag) and is excluded from the
             // Trovesaurus enrichment below. With the hub off nothing resolves here,
             // so every mod falls through to Trovesaurus.
-            const applyHubStates = async (token) => {
+            const applyHubStates = async (token, force = false) => {
                 if (!modsHubEnabled) return;
                 if (!selectedInstall.value) return;
-                const response = await window.callBackend(eel.get_mods_hub_install_states(selectedInstall.value)(), 'Failed to load Mods Hub state');
+                const response = await window.callBackend(eel.get_mods_hub_install_states(selectedInstall.value, force)(), 'Failed to load Mods Hub state');
                 if (!loadGuard.isCurrent(token)) return;
                 if (!response.success) return;
                 const states = response.data.states || response.raw?.states || {};
@@ -269,9 +269,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 });
             };
 
-            const applyUpdateFlags = async (token, notify) => {
+            const applyUpdateFlags = async (token, notify, force = false) => {
                 if (!selectedInstall.value) return;
-                const response = await window.callBackend(eel.check_mod_updates(selectedInstall.value)(), 'Failed to check updates');
+                const response = await window.callBackend(eel.check_mod_updates(selectedInstall.value, force)(), 'Failed to check updates');
                 if (!loadGuard.isCurrent(token)) return;
                 if (!response.success) {
                     if (notify) window.showToast(t('mod_manager.failed_to_refresh_updates_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
@@ -288,11 +288,14 @@ document.addEventListener('mod_manager_loaded', async () => {
             // Resolve hub mods first, then run the Trovesaurus check only for the
             // remaining (non-hub) mods. If everything is from the hub we skip
             // Trovesaurus entirely.
-            const applyEnrichment = async (token, notify = false) => {
-                await applyHubStates(token);
+            // `force` is set when the user asked for a refresh: it skips both the
+            // cached hub state and the 15-minute Trovesaurus master list, so a
+            // release published while the app was open actually shows up.
+            const applyEnrichment = async (token, notify = false, force = false) => {
+                await applyHubStates(token, force);
                 if (!loadGuard.isCurrent(token)) return;
                 if (mods.value.some(m => !m.fromHub)) {
-                    await Promise.all([applyModUrls(token), applyUpdateFlags(token, notify)]);
+                    await Promise.all([applyModUrls(token), applyUpdateFlags(token, notify, force)]);
                 } else if (notify) {
                     window.showToast(t('mod_manager.update_state_refreshed'));
                 }
@@ -385,11 +388,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                 await window.JobQueue.run({
                     label: t('mod_manager.refresh_mod_updates'),
                     task: async () => {
-                        await applyEnrichment(token, true);
+                        await applyEnrichment(token, true, true);
                     },
                     retryTask: async () => {
                         const retryToken = loadGuard.next();
-                        await applyEnrichment(retryToken, true);
+                        await applyEnrichment(retryToken, true, true);
                     }
                 });
                 isRefreshingUpdates.value = false;

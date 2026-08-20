@@ -861,12 +861,12 @@ class TroveModList:
     def __len__(self):
         return self.count
     
-    def _get_cached_mods_all(self) -> dict:
+    def _get_cached_mods_all(self, force=False) -> dict:
         cache_dir = get_cache_root()
         cache_dir.mkdir(parents=True, exist_ok=True)
         cache_file = cache_dir.joinpath("trovesaurus_mods_all.json")
 
-        if cache_file.exists():
+        if cache_file.exists() and not force:
             try:
                 cached_wrapper = json.loads(cache_file.read_text(encoding="utf-8"))
                 if time.time() - cached_wrapper.get("timestamp", 0) < 900:
@@ -906,12 +906,12 @@ class TroveModList:
                 pass
         return {}
 
-    def update_trovesaurus_data(self):
+    def update_trovesaurus_data(self, force=False):
         all_hashes = self.all_hashes
         if not all_hashes:
             return
 
-        mods_all_data = self._get_cached_mods_all()
+        mods_all_data = self._get_cached_mods_all(force)
         if not mods_all_data:
             print("Could not retrieve master mod list.")
             return

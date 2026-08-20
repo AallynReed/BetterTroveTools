@@ -117,7 +117,8 @@ document.addEventListener('mods_hub_loaded', () => {
                     selectedTag.value,
                     selectedSort.value,
                     selectedGame.value,
-                    token
+                    token,
+                    !!options.forceRefresh
                 )();
 
                 if (options.awaitResult) {
@@ -351,10 +352,10 @@ document.addEventListener('mods_hub_loaded', () => {
                     await window.JobQueue.run({
                         label: t('mods_hub.refresh_results'),
                         task: async () => {
-                            await fetchMods(currentPage.value, true, { awaitResult: true });
+                            await fetchMods(currentPage.value, true, { awaitResult: true, forceRefresh: true });
                         },
                         retryTask: async () => {
-                            await fetchMods(currentPage.value, true, { awaitResult: true });
+                            await fetchMods(currentPage.value, true, { awaitResult: true, forceRefresh: true });
                         }
                     });
                     window.showToast(t('mods_hub.refreshed_results'));

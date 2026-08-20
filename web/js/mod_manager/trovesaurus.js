@@ -121,7 +121,8 @@ document.addEventListener('trovesaurus_loaded', () => {
                     selectedCategory.value,
                     selectedSort.value,
                     selectedGame.value,
-                    token
+                    token,
+                    !!options.forceRefresh
                 )();
 
                 if (options.awaitResult) {
@@ -299,10 +300,10 @@ document.addEventListener('trovesaurus_loaded', () => {
                     await window.JobQueue.run({
                         label: t('trovesaurus.refresh_trovesaurus_results'),
                         task: async () => {
-                            await fetchMods(currentPage.value, true, { awaitResult: true });
+                            await fetchMods(currentPage.value, true, { awaitResult: true, forceRefresh: true });
                         },
                         retryTask: async () => {
-                            await fetchMods(currentPage.value, true, { awaitResult: true });
+                            await fetchMods(currentPage.value, true, { awaitResult: true, forceRefresh: true });
                         }
                     });
                     window.showToast(t('trovesaurus.refreshed_trovesaurus_results'));
