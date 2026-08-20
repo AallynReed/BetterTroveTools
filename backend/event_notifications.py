@@ -1,19 +1,21 @@
 """Live Trove event notifications for the desktop app (SSE-driven).
 
-Subscribes to the TroveAPI Server-Sent Events stream
-(``{KIWI_API_BASE}/events/stream``) and raises a native desktop notification for
-each in-game event the user has opted into -- at a fine grain (e.g. "Rampage
-challenge" specifically, not just "challenges").
+Consumes the shared TroveAPI event stream (``backend.live_feed``) and raises a
+native desktop notification for each in-game event the user has opted into -- at
+a fine grain (e.g. "Rampage challenge" specifically, not just "challenges").
 
 Design:
-  * A single background thread holds one long-lived streaming GET and parses the
-    ``event:``/``data:`` SSE frames. Running in Python (not a WebView timer)
-    keeps it alive while the window is hidden in the tray.
+  * The socket itself lives in ``backend.live_feed``: one connection serves both
+    notifications and the live UI data. This module is just a subscriber, so it
+    keeps working while the window is hidden in the tray and costs nothing extra
+    when notifications are off.
   * The stream sends an on-connect SNAPSHOT of the current challenge/chaos state,
     then live pushes. We announce that snapshot (so enabling an event tells you
-    what's live right now) and dedupe by a per-event signature that persists for
-    the life of the process -- so a reconnect's repeated snapshot stays silent
-    while a genuinely new occurrence still fires.
+    what's live right now) and dedupe by a per-event signature that persists
+    across restarts -- so a repeated snapshot stays silent while a genuinely new
+    occurrence still fires. Turning an event on replays the feed's last payload
+    for it, which is what makes "tell me what's live now" work without waiting
+    for the next reconnect.
   * Delivery reuses the shared DesktopNotifier (tray balloon). Turning
     notifications on also marks the notifier "active" so the tray icon stays
     visible for balloon delivery.
@@ -27,25 +29,16 @@ import json
 import threading
 
 import eel
-import requests
 
-from backend.home import KIWI_API_BASE
+from backend.live_feed import feed
 from backend.response import resp, standardize_response
 from backend.desktop_notifications import notifier as _desktop_notifier
 from utils.path import get_cache_root
-
-STREAM_URL = f"{KIWI_API_BASE}/events/stream"
 
 # Persisted per-event last-seen signatures live here (one small {key: sig} map,
 # bounded to the number of event types). Persisting across restarts is what stops
 # the current-state snapshot from being re-announced on every app launch.
 _STATE_FILENAME = "event_notifications_state.json"
-
-# Reconnect backoff after the stream drops.
-_RECONNECT_SECONDS = 5.0
-# Read timeout: the server sends a ``: ping`` keep-alive ~every 20s, so a longer
-# gap means the socket is dead and we should reconnect.
-_READ_TIMEOUT = 45.0
 
 _CHALLENGE_LABEL = {
     "rampage": "Rampage",
@@ -189,16 +182,16 @@ _HANDLERS = {
 
 
 class EventNotifier:
-    def __init__(self, notifier):
+    def __init__(self, notifier, live_feed):
         self._notifier = notifier            # shared DesktopNotifier (delivery + tray presence)
+        self._feed = live_feed               # shared SSE connection
         self._lock = threading.Lock()
         self._enabled = False
         self._events = {}                    # toggle_key -> bool
         # toggle_key -> last-seen signature; loaded from disk so already-announced
         # occurrences survive a restart and aren't re-fired from the snapshot.
         self._last_sig = self._load_state()
-        self._thread = None
-        self._stop = threading.Event()
+        self._feed.subscribe(self._on_event)
 
     # --- persisted seen-signature state ---------------------------------
     def _state_path(self):
@@ -230,13 +223,12 @@ class EventNotifier:
     # --- public control -------------------------------------------------
     def apply(self, notifications):
         """Reconcile to the user's notification settings. ``notifications`` is
-        the ``settings.notifications`` dict: ``{enabled, events:{key: bool}}``.
-        Opens or closes the stream and updates the live per-event toggles."""
+        the ``settings.notifications`` dict: ``{enabled, events:{key: bool}}``."""
         notifications = notifications if isinstance(notifications, dict) else {}
         events = notifications.get("events") if isinstance(notifications.get("events"), dict) else {}
         master = notifications.get("enabled") is True
-        # Only actually open the stream when the master switch is on AND at least
-        # one event is selected -- no point subscribing to notify nothing.
+        # Announce only when the master switch is on AND at least one event is
+        # selected -- the stream itself runs regardless, for the live UI data.
         stream_on = master and any(bool(v) for v in events.values())
         with self._lock:
             self._enabled = stream_on
@@ -250,10 +242,13 @@ class EventNotifier:
         except Exception:
             pass
 
+        # Newly ticked events should announce what is live RIGHT NOW rather than
+        # wait for the next push, so replay the feed's last payload for each type
+        # through the same path. The signature dedupe keeps already-announced
+        # occurrences silent.
         if stream_on:
-            self._ensure_running()
-        else:
-            self._stop.set()
+            for event_type, data in self._feed.snapshot().items():
+                self._on_event(event_type, data)
 
     def is_enabled(self):
         with self._lock:
@@ -263,63 +258,19 @@ class EventNotifier:
         with self._lock:
             return self._events.get(key, False)
 
-    # --- stream thread --------------------------------------------------
-    def _ensure_running(self):
-        if self._thread and self._thread.is_alive():
-            self._stop.clear()
+    # --- stream consumption ---------------------------------------------
+    def _on_event(self, event_type, data):
+        """Feed subscriber. Runs on the stream thread."""
+        if event_type == "_status":
             return
-        self._stop.clear()
-        self._thread = threading.Thread(target=self._run, name="event-sse", daemon=True)
-        self._thread.start()
+        with self._lock:
+            if not self._enabled:
+                return
+        self._dispatch(event_type, data)
 
-    def _run(self):
-        while not self._stop.is_set():
-            try:
-                self._connect_once()
-            except Exception:
-                pass
-            if self._stop.is_set():
-                break
-            self._stop.wait(_RECONNECT_SECONDS)
-
-    def _connect_once(self):
-        # NB: _last_sig is intentionally NOT cleared here -- it persists across
-        # reconnects so the on-connect snapshot (identical signatures) is deduped
-        # instead of re-announced every time the socket drops.
-        headers = {"Accept": "text/event-stream", "User-Agent": "BetterTroveTools"}
-        with requests.get(STREAM_URL, stream=True, timeout=(10, _READ_TIMEOUT), headers=headers) as resp:
-            resp.raise_for_status()
-            event_type = None
-            data_lines = []
-            for raw in resp.iter_lines(decode_unicode=True):
-                if self._stop.is_set():
-                    break
-                if raw is None:
-                    continue
-                line = raw.rstrip("\r")
-                if line == "":
-                    if event_type and data_lines:
-                        self._dispatch(event_type, "\n".join(data_lines))
-                    event_type, data_lines = None, []
-                    continue
-                if line.startswith(":"):
-                    continue  # keep-alive comment
-                if line.startswith("event:"):
-                    event_type = line[6:].strip()
-                elif line.startswith("data:"):
-                    data_lines.append(line[5:].lstrip())
-                # ignore other fields (retry:, id:)
-
-    def _dispatch(self, event_type, data_str):
+    def _dispatch(self, event_type, data):
         handler = _HANDLERS.get(event_type)
         if not handler:
-            return
-        try:
-            payload = json.loads(data_str)
-        except (ValueError, TypeError):
-            return
-        data = payload.get("data") if isinstance(payload, dict) else None
-        if not isinstance(data, dict):
             return
         try:
             result = handler(data)
@@ -350,7 +301,7 @@ class EventNotifier:
 
 
 # App-wide singleton, wired to the shared tray-balloon notifier.
-event_notifier = EventNotifier(_desktop_notifier)
+event_notifier = EventNotifier(_desktop_notifier, feed)
 
 
 @eel.expose

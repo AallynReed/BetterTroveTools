@@ -562,6 +562,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.initJobQueueUi) window.initJobQueueUi();
 });
 
+// The backend watches the selected install's mods folder (backend/mod_manager/
+// mod_watcher.py) and pushes here when it settles on a change — a mod dropped in
+// by hand, or installed by Trovesaurus' own client. Exposed from main.js rather
+// than the Mod Manager so the push has somewhere to land even when that view has
+// never been opened.
+eel.expose(receive_mods_changed, 'receive_mods_changed');
+function receive_mods_changed(gamePath) {
+    document.dispatchEvent(new CustomEvent('mods_folder_changed', { detail: { path: gamePath } }));
+}
+
 eel.expose(add_external_request, 'add_external_request');
 function add_external_request(label = "Python Backend Request", url = "") {
     const id = Math.random().toString(36).substring(2, 11);

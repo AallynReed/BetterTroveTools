@@ -36,6 +36,9 @@
          no shell and never loads main.js — hence its own file. -->
     <script defer src="js/accent.js"></script>
     <script defer src="js/i18n.js"></script>
+    <!-- Live API event stream (backend push on desktop, EventSource on web).
+         Loads before the views so a view can subscribe the moment it mounts. -->
+    <script defer src="js/live_feed.js"></script>
     <script defer src="js/main.js"></script>
 </head>
 <body>

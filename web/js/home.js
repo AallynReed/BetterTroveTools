@@ -8,6 +8,12 @@ document.addEventListener('home_loaded', () => {
     const { createApp, ref, reactive, computed, watch, onMounted, onUnmounted } = Vue;
     const NEWS_COLLAPSED_PREF_KEY = 'home_official_news_collapsed_v1';
     const NEWS_REFRESH_MS = 30 * 60 * 1000;
+    // Feeds with no live event of their own. Ten minutes rather than the old 30s
+    // because nothing here changes on a shorter scale than a video upload.
+    const COMMUNITY_REFRESH_MS = 10 * 60 * 1000;
+    // Safety net for a dropped live feed: with the stream up, streamed data
+    // refreshes on push and this tick does nothing.
+    const STREAM_FALLBACK_MS = 2 * 60 * 1000;
     const SECTION_ORDER_PREF_KEY = 'home_section_order_v1';
     const SECTION_COLLAPSED_PREF_KEY = 'home_section_collapsed_v1';
     const DENSITY_PREF_KEY = 'home_density_v1';
@@ -106,6 +112,9 @@ document.addEventListener('home_loaded', () => {
             let timeInterval;
             let refreshInterval;
             let newsRefreshInterval;
+            let communityInterval;
+            let streamFallbackInterval;
+            let liveUnsubscribes = [];
             let resetTimer = null;
 
             const serverData = reactive({ loading: true, daily: null, weekly: null });
@@ -1157,14 +1166,103 @@ document.addEventListener('home_loaded', () => {
             // here is enough. Stamped at the START of a refresh so two refreshes
             // can't overlap either.
             const HOME_REFRESH_TTL_MS = 30000;
+            // With the live feed up, streamed data refreshes itself on push, so a
+            // re-entry doesn't have to refetch anything like that often.
+            const HOME_REFRESH_TTL_STREAMING_MS = 5 * 60 * 1000;
             // Kept on `window`, not in this closure: setup() can run more than once
             // over a session (rebuild after eviction, language change), and each
             // extra scope keeps its own `home_shown` listener. A per-closure
             // timestamp starts at 0 in every new scope, so each one would fire its
             // own full refresh and the throttle would leak. One shared stamp makes
             // the window authoritative no matter how many scopes are listening.
-            const homeDataIsFresh = () => (Date.now() - (window.__homeLastRefreshAt || 0)) < HOME_REFRESH_TTL_MS;
+            const homeDataIsFresh = () => (Date.now() - (window.__homeLastRefreshAt || 0))
+                < ((window.LiveFeed && window.LiveFeed.connected) ? HOME_REFRESH_TTL_STREAMING_MS : HOME_REFRESH_TTL_MS);
             const stampHomeRefresh = () => { window.__homeLastRefreshAt = Date.now(); };
+
+            // Home's data splits three ways and each part refreshes on its own terms:
+            //   * schedules (buffs, merchants, biome rotations, gardening) are
+            //     computed from the server clock with no network at all, so they
+            //     can tick on a timer as cheaply as before;
+            //   * feeds the API doesn't stream (YouTube/Twitch/Bilibili,
+            //     Trovesaurus events) still poll, but slowly;
+            //   * everything the API DOES stream (chaos chest, player activity,
+            //     news, giveaways) is fetched once here and then refreshed when
+            //     the live feed says it changed -- see js/live_feed.js.
+            const refreshCommunityFeeds = () => {
+                if (!settings.show_community_content) return;
+                if (isChinese.value && mediaTab.value !== 'bilibili') mediaTab.value = 'bilibili';
+                else if (!isChinese.value && mediaTab.value === 'bilibili') mediaTab.value = 'youtube';
+
+                eel.get_youtube_videos()();
+                eel.get_twitch_streams()();
+                if (isChinese.value) eel.get_bilibili_videos()();
+                eel.get_trovesaurus_events()();
+            };
+
+            const refreshGiveaways = () => {
+                for (const bucket of [giveaways, upcomingGiveaways, endedGiveaways]) {
+                    bucket.loading = true;
+                    bucket.error = false;
+                }
+                eel.get_giveaways()();
+                eel.get_upcoming_giveaways()();
+                eel.get_ended_giveaways()();
+            };
+
+            const refreshActivity = () => {
+                if (settings.show_player_activity) {
+                    activity.loading = true;
+                    activity.error = false;
+                    eel.get_player_activity()();
+                } else {
+                    activity.loading = false;
+                    activity.error = false;
+                    activity.data = null;
+                }
+            };
+
+            const refreshChaosChest = async () => {
+                try {
+                    const chaosd = await eel.get_chaos_chest_data()();
+                    if (isDisposed) return;
+                    if (chaosd?.success) chaosChest.value = chaosd;
+                } catch (e) {}
+            };
+
+            const refreshDelve = async () => {
+                try {
+                    const delvestatus = await eel.get_delve_status()();
+                    if (isDisposed) return;
+                    if (delvestatus?.success) delve.value = delvestatus;
+                } catch (e) {}
+            };
+
+            const refreshSchedules = async () => {
+                try {
+                    const [sd, d15d, manad, schedulesd, stampyd, gardend] = await Promise.all([
+                        eel.get_current_server_data()(),
+                        eel.get_d15_rotation()(),
+                        eel.get_wild_mana_rotation()(),
+                        eel.get_merchant_schedules()(),
+                        eel.get_stampy_rotation()(),
+                        eel.get_gardening_rotation()()
+                    ]);
+                    if (isDisposed) return;
+
+                    if (sd && sd.success) {
+                        serverData.daily = sd.daily;
+                        serverData.weekly = sd.weekly;
+                        merchants.value = sd.merchants;
+                    }
+                    if (d15d?.success) d15.value = d15d;
+                    if (manad?.success) mana.value = manad;
+                    if (schedulesd?.success) schedulesCache.value = schedulesd;
+                    if (stampyd?.success) stampy.value = stampyd;
+                    if (gardend?.success) gardening.value = gardend;
+                } catch(e) {}
+                if (isDisposed) return;
+                serverData.loading = false;
+            };
 
             const refreshAllData = async ({ refreshOfficialNews = false, force = false } = {}) => {
                 if (isDisposed) return;
@@ -1185,14 +1283,7 @@ document.addEventListener('home_loaded', () => {
                 showShopOffers.value = sets.show_news_shop_offers === true;
                 hydratingNewsPrefs = false;
 
-                if (settings.show_community_content) {
-                    if (isChinese.value && mediaTab.value !== 'bilibili') mediaTab.value = 'bilibili';
-                    else if (!isChinese.value && mediaTab.value === 'bilibili') mediaTab.value = 'youtube';
-
-                    eel.get_youtube_videos()();
-                    eel.get_twitch_streams()();
-                    if (isChinese.value) eel.get_bilibili_videos()();
-                }
+                refreshCommunityFeeds();
 
                 if (refreshOfficialNews) {
                     refreshNews();
@@ -1201,51 +1292,10 @@ document.addEventListener('home_loaded', () => {
                     news.error = false;
                     news.data = [];
                 }
-                eel.get_trovesaurus_events()();
-                for (const bucket of [giveaways, upcomingGiveaways, endedGiveaways]) {
-                    bucket.loading = true;
-                    bucket.error = false;
-                }
-                eel.get_giveaways()();
-                eel.get_upcoming_giveaways()();
-                eel.get_ended_giveaways()();
-                if (settings.show_player_activity) {
-                    activity.loading = true;
-                    activity.error = false;
-                    eel.get_player_activity()();
-                } else {
-                    activity.loading = false;
-                    activity.error = false;
-                    activity.data = null;
-                }
-                
-                try {
-                    const [sd, d15d, manad, schedulesd, stampyd, chaosd, gardend, delvestatus] = await Promise.all([
-                        eel.get_current_server_data()(),
-                        eel.get_d15_rotation()(),
-                        eel.get_wild_mana_rotation()(),
-                        eel.get_merchant_schedules()(),
-                        eel.get_stampy_rotation()(),
-                        eel.get_chaos_chest_data()(),
-                        eel.get_gardening_rotation()(),
-                        eel.get_delve_status()()
-                    ]);
 
-                    if (sd && sd.success) {
-                        serverData.daily = sd.daily;
-                        serverData.weekly = sd.weekly;
-                        merchants.value = sd.merchants;
-                    }
-                    if (d15d?.success) d15.value = d15d;
-                    if (manad?.success) mana.value = manad;
-                    if (schedulesd?.success) schedulesCache.value = schedulesd;
-                    if (stampyd?.success) stampy.value = stampyd;
-                    if (chaosd?.success) chaosChest.value = chaosd;
-                    if (gardend?.success) gardening.value = gardend;
-                    if (delvestatus?.success) delve.value = delvestatus;
-                } catch(e) {}
-                if (isDisposed) return;
-                serverData.loading = false;
+                refreshGiveaways();
+                refreshActivity();
+                await Promise.all([refreshSchedules(), refreshChaosChest(), refreshDelve()]);
             };
 
             const openBuffSchedule = async (type) => {
@@ -1703,6 +1753,41 @@ document.addEventListener('home_loaded', () => {
                 || (typeof window !== 'undefined' && !!window.BTT_CURRENT_VIEW && window.BTT_CURRENT_VIEW !== 'home');
             let pendingRefreshOnVisible = false;
 
+            // Live feed wiring. Each push means "this actually changed" -- we
+            // refetch just that slice instead of the whole home payload. Pushes
+            // that land while Home is hidden or backgrounded set the same pending
+            // flag the timers use, so the snap-back on focus covers them.
+            const onLive = (refresh) => () => {
+                if (isDisposed) return;
+                if (isHidden()) { pendingRefreshOnVisible = true; return; }
+                refresh();
+            };
+
+            // A reconnect replays the server's whole snapshot, and six of these
+            // types map to the same local recompute -- coalesce so that arrives as
+            // one refresh, not six.
+            let schedulesLiveTimer = null;
+            const refreshSchedulesSoon = () => {
+                clearTimeout(schedulesLiveTimer);
+                schedulesLiveTimer = setTimeout(() => refreshSchedules(), 400);
+            };
+
+            const subscribeToLiveFeed = () => {
+                if (!window.LiveFeed) return;
+                liveUnsubscribes = [
+                    window.LiveFeed.on('chaos', onLive(refreshChaosChest)),
+                    window.LiveFeed.on('activity', onLive(refreshActivity)),
+                    window.LiveFeed.on('trove_news', onLive(refreshNews)),
+                    window.LiveFeed.on('giveaways', onLive(refreshGiveaways)),
+                    window.LiveFeed.on('daily_bonuses', onLive(() => {
+                        refreshSchedulesSoon();
+                        refreshDelve();          // delve rotates weekly; a reset is when it can move
+                    })),
+                    ...['challenge', 'fluxion', 'corruxion', 'stampy', 'longshade', 'wild_mana']
+                        .map(type => window.LiveFeed.on(type, onLive(refreshSchedulesSoon)))
+                ];
+            };
+
             const onVisibilityChange = () => {
                 if (isDisposed) return;
                 if (!document.hidden && pendingRefreshOnVisible) {
@@ -1715,14 +1800,26 @@ document.addEventListener('home_loaded', () => {
                 isDisposed = false;
                 resetHomeAbortController();
                 refreshAllData({ refreshOfficialNews: true, force: true });
+                // Schedules are pure local computation, so keeping them on a 30s
+                // tick costs nothing upstream and keeps the countdown strings the
+                // backend formats from drifting.
                 refreshInterval = setInterval(() => {
                     if (isHidden()) { pendingRefreshOnVisible = true; return; }
-                    refreshAllData();
+                    refreshSchedules();
                 }, 30000);
+                communityInterval = setInterval(() => {
+                    if (isHidden()) return;
+                    refreshCommunityFeeds();
+                }, COMMUNITY_REFRESH_MS);
+                streamFallbackInterval = setInterval(() => {
+                    if (isHidden() || (window.LiveFeed && window.LiveFeed.connected)) return;
+                    refreshAllData({ force: true });
+                }, STREAM_FALLBACK_MS);
                 newsRefreshInterval = setInterval(() => {
                     if (isHidden()) return;
                     refreshNews();
                 }, NEWS_REFRESH_MS);
+                subscribeToLiveFeed();
                 timeInterval = setInterval(() => {
                     if (isHidden()) return;
                     nowSec.value = Math.floor(Date.now() / 1000);
@@ -1758,7 +1855,11 @@ document.addEventListener('home_loaded', () => {
             onUnmounted(() => {
                 clearInterval(refreshInterval);
                 clearInterval(newsRefreshInterval);
+                clearInterval(communityInterval);
+                clearInterval(streamFallbackInterval);
                 clearInterval(timeInterval);
+                liveUnsubscribes.forEach(unsubscribe => unsubscribe());
+                liveUnsubscribes = [];
                 document.removeEventListener('visibilitychange', onVisibilityChange);
                 if (resetTimer) clearTimeout(resetTimer);
                 document.removeEventListener('change', window._homeLangListener);

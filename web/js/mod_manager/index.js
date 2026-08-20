@@ -301,11 +301,17 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
-            const loadMods = async () => {
+            // `quiet` is for reloads the user didn't ask for (the mods folder
+            // changed underneath us): keep the current list on screen and skip the
+            // spinner, then swap in the new one when it's ready.
+            const loadMods = async ({ quiet = false } = {}) => {
                 if (!selectedInstall.value) return;
                 const token = loadGuard.next();
-                isLoading.value = true;
-                mods.value = [];
+                if (!quiet) {
+                    isLoading.value = true;
+                    mods.value = [];
+                }
+                if (eel.set_watched_install) eel.set_watched_install(selectedInstall.value)();
 
                 const settingsResp = await window.callBackend(eel.get_settings()(), 'Failed to load settings');
                 const settings = settingsResp.data || settingsResp.raw || {};
@@ -318,7 +324,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 let stText = autoFixNames
                     ? t('mod_manager.scanning_mods_and_auto_fixing_names')
                     : t('mod_manager.scanning_mods_and_verifying_configs');
-                statusText.value = stText;
+                if (!quiet) statusText.value = stText;
 
                 const response = await window.callBackend(
                     eel.get_installed_mods(selectedInstall.value, autoFixNames, true)(),
@@ -952,6 +958,47 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            // --- live mods folder ------------------------------------------
+            // The backend polls the selected install's mods folder and pushes
+            // `mods_folder_changed`. We reload quietly, but never on top of our
+            // own writes: a toggle/update/delete/import already reloads when it
+            // finishes, and reloading mid-operation would fight it. When the view
+            // isn't on screen the reload waits for mod_manager_shown -- no point
+            // rescanning a list nobody is looking at.
+            let modsChangedTimer = null;
+            let modsRefreshPending = false;
+
+            const isMutating = () => isLoading.value
+                || isFixingNames.value
+                || isImportingTpack.value
+                || isApplyingProfile.value
+                || isClearingCache.value
+                || mods.value.some(m => m.isToggling || m.isUpdating || m.isDeleting);
+
+            const isViewingModManager = () => window.BTT_CURRENT_VIEW === 'mod_manager'
+                && (typeof window.getModManagerSection !== 'function' || window.getModManagerSection() === 'mod_manager');
+
+            const onModsFolderChanged = (e) => {
+                const path = e && e.detail ? e.detail.path : null;
+                if (!selectedInstall.value) return;
+                if (path && path !== selectedInstall.value) return;
+                clearTimeout(modsChangedTimer);
+                modsChangedTimer = setTimeout(() => {
+                    if (isMutating() || !isViewingModManager()) {
+                        modsRefreshPending = true;
+                        return;
+                    }
+                    modsRefreshPending = false;
+                    loadMods({ quiet: true });
+                }, 1000);
+            };
+
+            const onModManagerShown = () => {
+                if (!modsRefreshPending) return;
+                modsRefreshPending = false;
+                if (selectedInstall.value) loadMods({ quiet: true });
+            };
+
             const closeImageModal = () => {
                 modal.show = false;
                 setTimeout(() => {
@@ -982,6 +1029,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                 await loadProfiles();
                 document.addEventListener('keydown', onKeyDown);
                 document.addEventListener('mod_manager_section_changed', onSectionChanged);
+                document.addEventListener('mods_folder_changed', onModsFolderChanged);
+                document.addEventListener('mod_manager_shown', onModManagerShown);
                 nextTick(() => {
                     if (window.applyCustomDropdowns) window.applyCustomDropdowns();
                 });
@@ -990,6 +1039,9 @@ document.addEventListener('mod_manager_loaded', async () => {
             onBeforeUnmount(() => {
                 document.removeEventListener('keydown', onKeyDown);
                 document.removeEventListener('mod_manager_section_changed', onSectionChanged);
+                document.removeEventListener('mods_folder_changed', onModsFolderChanged);
+                document.removeEventListener('mod_manager_shown', onModManagerShown);
+                clearTimeout(modsChangedTimer);
             });
 
             return {

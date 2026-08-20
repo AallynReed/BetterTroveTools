@@ -171,5 +171,17 @@ def save_settings(settings):
 
     settings_file = get_settings_file()
     settings_file.write_text(json.dumps(normalized), encoding="utf-8")
+
+    # Follow the selected install with the mods-folder watch, so picking a
+    # different game here also moves what the app is watching -- the Mod Manager
+    # doesn't have to be open for that.
+    last_path = normalized.get("last_game_path")
+    if isinstance(last_path, str) and last_path.strip():
+        try:
+            from backend.mod_manager.mod_watcher import watcher
+            watcher.set_target(last_path.strip())
+        except Exception:
+            pass
+
     normalized["game_installs"] = [{"name": game.name, "path": str(game.path)} for game in games]
     return resp(True, data=normalized, **normalized)

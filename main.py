@@ -42,10 +42,12 @@ import backend.gems_and_builds.gem_builds
 import backend.gems_and_builds.gem_evaluator
 import backend.gems_and_builds.gem_simulator
 import backend.home
+import backend.live_feed
 import backend.codexes.items
 import backend.codexes.mementos
 import backend.codexes.mounts
 import backend.mod_manager.mod_manager
+import backend.mod_manager.mod_watcher
 import backend.modder_tools.modder_tools
 import backend.overlay
 import backend.codexes.recipes
@@ -807,6 +809,45 @@ def warm_codex_caches():
             pass
 
 
+def active_game_install():
+    """The install the app should act on before the UI has picked one: the
+    remembered path when it still holds a Trove executable, otherwise the first
+    valid detected install. None when there is no game to work with."""
+    from utils.executable import find_trove_executable
+
+    saved = _read_settings_dict().get("last_game_path")
+    if isinstance(saved, str) and saved.strip():
+        candidate = Path(saved.strip())
+        if find_trove_executable(candidate):
+            return str(candidate)
+    try:
+        from utils.registry import get_trove_locations
+
+        for game in get_trove_locations():
+            if game.is_valid:
+                return str(game.path)
+    except Exception:
+        pass
+    return None
+
+
+def probe_mods_on_launch():
+    """Reconcile mod .cfg files for the active install at startup, then keep
+    watching its mods folder. Mods added, removed or updated while the app was
+    closed -- or while it runs, by Trovesaurus' own installer or a hand copy --
+    are picked up without the user opening the Mod Manager."""
+    from backend.mod_manager.mod_watcher import probe_configs, watcher
+
+    try:
+        install = active_game_install()
+        if not install:
+            return
+        probe_configs(install)
+        watcher.set_target(install)
+    except Exception:
+        pass  # launch work is best effort; the Mod Manager still does this on open
+
+
 def wait_for_server(port, timeout=15.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -837,6 +878,15 @@ if not wait_for_server(eel_port):
 # Warm codex caches in the background once the UI server is up, so opening a
 # codex tab for the first time doesn't pay the full game-file scan inline.
 threading.Thread(target=warm_codex_caches, daemon=True, name="codex-warmup").start()
+
+# Fix up mod configs for the remembered install and start watching its mods
+# folder, so the Mod Manager opens on current data instead of discovering the
+# changes itself.
+threading.Thread(target=probe_mods_on_launch, daemon=True, name="mods-probe").start()
+
+# One SSE connection to the TroveAPI, opened at launch and shared by desktop
+# notifications and the live UI data.
+backend.live_feed.feed.start()
 
 app_url = f'http://localhost:{eel_port}/index.html'
 
