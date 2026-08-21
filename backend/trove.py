@@ -412,35 +412,102 @@ def _make_token_provider(op: str):
 # ABNORMALLY (non-zero exit code), we sign back in and relaunch. A clean exit
 # (code 0 — Alt+F4 / quitting the game) is treated as an intentional close and
 # is NOT relogged. A too-short lifetime is ignored to avoid crash-loop relogs.
+#
+# Trove starts one CrashHandler.exe per instance at launch and it sits silent
+# until the game crashes or stops responding, at which point it puts up a dialog
+# that keeps the instance alive. Unattended that dialog stalls auto-relog
+# forever, so while auto-relog is on for a pid we watch for the handler's window
+# and dismiss it ourselves.
 
 _LAUNCH_LOCK = threading.Lock()
 _LAUNCHES: dict = {}  # pid -> {pid, email, server, game_path, region, branch, auto_relog, started_at, relogs}
 _MIN_UPTIME_FOR_RELOG = 25.0  # seconds; a process that dies faster isn't relogged
 
+CRASH_HANDLER_PROCESS = "CrashHandler.exe"
+_EXIT_POLL_MS = 5000           # how often the monitor looks up from the wait
+_CRASH_DIALOG_CONFIRM = 8.0    # a handler window must persist this long to count
+_CRASH_EXIT_GRACE = 15.0       # how long the game gets to die once the dialog is gone
 
-def _wait_for_exit(pid: int):
-    """Block until process `pid` exits; return its exit code (None on error).
+
+def _crash_dialog_pids(game_pid: int) -> list:
+    """CrashHandler.exe children of `game_pid` that are actually showing a window."""
+    from backend.trove_launcher import inject, launch as launch_mod
+    return [p for p in inject.find_pids_under(CRASH_HANDLER_PROCESS, game_pid)
+            if launch_mod.visible_windows_for_pid(p)]
+
+
+def _close_crash_handlers(game_pid: int) -> int:
+    """Close every CrashHandler.exe belonging to `game_pid`; return how many went."""
+    from backend.trove_launcher import inject, launch as launch_mod
+    gone = 0
+    for p in inject.find_pids_under(CRASH_HANDLER_PROCESS, game_pid):
+        try:
+            gone += bool(launch_mod.close_process(p))
+        except Exception:  # noqa: BLE001 - a handler we can't touch isn't fatal
+            pass
+    return gone
+
+
+def _dismiss_crash_dialog(pid: int, who: str) -> None:
+    from backend.trove_launcher import launch as launch_mod
+    _emit("running", "crash_dialog", pid=pid,
+          message=f"{who} crashed — closing Trove's crash handler.")
+    _close_crash_handlers(pid)
+    try:
+        launch_mod.close_process(pid, grace=_CRASH_EXIT_GRACE)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _wait_for_exit(pid: int, policing=None):
+    """Block until process `pid` exits; return ``(exit_code, crashed)``, with a
+    None code on error. ``policing`` is called on each poll: while it returns
+    True a lingering crash-handler dialog is dismissed and the instance closed.
     Windows only — reached only from a launch path, which is Windows-only."""
     import ctypes
     from ctypes import wintypes
     k = ctypes.WinDLL("kernel32", use_last_error=True)
     SYNCHRONIZE = 0x00100000
     PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
-    INFINITE = 0xFFFFFFFF
+    WAIT_TIMEOUT = 0x102
     k.OpenProcess.restype = wintypes.HANDLE
     k.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
     k.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+    k.WaitForSingleObject.restype = wintypes.DWORD
     k.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
     h = k.OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
     if not h:
-        return None
+        return None, False
+    crashed = False
+    seen_at = None
     try:
-        k.WaitForSingleObject(h, INFINITE)
+        while k.WaitForSingleObject(h, _EXIT_POLL_MS) == WAIT_TIMEOUT:
+            if not (policing and policing()) or not _crash_dialog_pids(pid):
+                seen_at = None
+            elif seen_at is None:
+                seen_at = time.monotonic()
+            elif time.monotonic() - seen_at >= _CRASH_DIALOG_CONFIRM:
+                seen_at = None
+                crashed = True
+                _dismiss_crash_dialog(pid, _display_for(pid))
         code = wintypes.DWORD()
         k.GetExitCodeProcess(h, ctypes.byref(code))
-        return int(code.value)
+        return int(code.value), crashed
     finally:
         k.CloseHandle(h)
+
+
+def _display_for(pid: int) -> str:
+    with _LAUNCH_LOCK:
+        info = _LAUNCHES.get(pid)
+    return _display(info["email"]) if info else f"pid {pid}"
+
+
+def _relog_wanted(pid: int) -> bool:
+    """Live read of the per-pid auto-relog flag (the UI can toggle it mid-session)."""
+    with _LAUNCH_LOCK:
+        info = _LAUNCHES.get(pid)
+    return bool(info and info.get("auto_relog"))
 
 
 def _running_list() -> list:
@@ -469,13 +536,15 @@ def _track_launch(pid: int, info: dict) -> None:
 
 
 def _monitor_launch(pid: int) -> None:
-    code = _wait_for_exit(pid)
+    code, crashed = _wait_for_exit(pid, policing=lambda: _relog_wanted(pid))
     with _LAUNCH_LOCK:
         info = _LAUNCHES.pop(pid, None)
     if not info:
         return
+    if info.get("auto_relog"):
+        _close_crash_handlers(pid)  # a handler that outlived the game has nothing to report
     uptime = time.time() - info["started_at"]
-    clean_close = code == 0
+    clean_close = code == 0 and not crashed
     should_relog = (info.get("auto_relog") and not clean_close and code is not None
                     and uptime >= _MIN_UPTIME_FOR_RELOG)
     who = _display(info["email"])

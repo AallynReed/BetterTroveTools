@@ -1621,7 +1621,7 @@
         "trove.remove_account": "Remove account",
         "trove.remove_confirm": "Remove this account? Its saved password and login session on this PC will be forgotten.",
         "trove.auto_relog": "Auto-relog",
-        "trove.auto_relog_tip": "If the game exits unexpectedly (crash/disconnect), sign back in and relaunch this account automatically. A normal quit (Alt+F4) is left alone.",
+        "trove.auto_relog_tip": "If the game exits unexpectedly (crash/disconnect), sign back in and relaunch this account automatically. Trove's crash handler is closed for you so it can't stall the relaunch. A normal quit (Alt+F4) is left alone.",
         "trove.running": "Running now",
         "trove.remember_email": "Remember email",
         "trove.remember_password": "Remember password",

@@ -181,6 +181,44 @@ def find_pid_by_name(name: str) -> int | None:
         kernel32.CloseHandle(snap)
 
 
+_MAX_ANCESTOR_HOPS = 6
+
+
+def find_pids_under(name: str, ancestor_pid: int) -> list[int]:
+    """PIDs whose exe basename matches ``name`` and that descend from
+    ``ancestor_pid``, directly or through an intermediate process.
+
+    Used to find the CrashHandler.exe belonging to one game instance. The walk
+    up is depth-limited because a dead parent leaves a stale ppid behind."""
+    snap = kernel32.CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
+    if not snap or snap == INVALID_HANDLE_VALUE.value:
+        return []
+    try:
+        entry = PROCESSENTRY32W()
+        entry.dwSize = sizeof(PROCESSENTRY32W)
+        parents, matches = {}, []
+        ok = kernel32.Process32FirstW(snap, byref(entry))
+        while ok:
+            parents[entry.th32ProcessID] = entry.th32ParentProcessID
+            if entry.szExeFile.lower() == name.lower():
+                matches.append(entry.th32ProcessID)
+            ok = kernel32.Process32NextW(snap, byref(entry))
+    finally:
+        kernel32.CloseHandle(snap)
+
+    found = []
+    for pid in matches:
+        cur = pid
+        for _ in range(_MAX_ANCESTOR_HOPS):
+            cur = parents.get(cur, 0)
+            if not cur:
+                break
+            if cur == ancestor_pid:
+                found.append(pid)
+                break
+    return found
+
+
 # --- payload ----------------------------------------------------------------
 
 
