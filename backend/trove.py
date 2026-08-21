@@ -35,7 +35,7 @@ import eel
 from backend.response import resp, standardize_response
 from backend.trove_launcher import trionauth, updater as _updater
 from utils.executable import find_trove_executable
-from utils.path import get_app_data_dir
+from utils.path import get_app_data_dir, get_mod_cfgs_dir
 from utils.platform_open import open_in_file_manager
 
 # --- constants --------------------------------------------------------------
@@ -804,7 +804,7 @@ def trove_rename_account(email, name=""):
 def trove_open_folder(kind="game", game_path=""):
     """Reveal the selected install, or the shared ModCfgs folder, in the file manager."""
     if kind == "modcfg":
-        target = get_app_data_dir() / "ModCfgs"
+        target = get_mod_cfgs_dir()
         target.mkdir(parents=True, exist_ok=True)
     else:
         target = _resolve_game_dir(game_path)

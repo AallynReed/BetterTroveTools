@@ -87,16 +87,20 @@ document.addEventListener('settings_loaded', async () => {
             const isBrowsing = ref(false);
             const isSaving = ref(false);
 
-            // Data folder. Not part of `settings` — it lives outside settings.json
-            // (which is stored inside the folder itself), so it has its own
-            // backend calls and only shows up where the platform supports it.
-            const dataDir = reactive({
-                supported: false, current: '', default: '', override: '',
-                from_env: false, env_var: 'BTT_DATA_DIR', config_file: ''
+            // Movable folders. Neither is part of `settings`: the data folder lives
+            // outside settings.json (which is stored inside it) and the mod-config
+            // folder is validated before it's written, so both go through their
+            // own backend calls.
+            const folders = reactive({
+                data_dir: {
+                    supported: false, current: '', default: '', override: '',
+                    from_env: false, env_var: 'BTT_DATA_DIR', config_file: ''
+                },
+                mod_cfgs: { supported: false, current: '', default: '', override: '' }
             });
             const dataDirPath = ref('');
-            const isBrowsingDataDir = ref(false);
-            const isSavingDataDir = ref(false);
+            const modCfgsPath = ref('');
+            const folderBusy = reactive({ browseData: false, saveData: false, browseCfgs: false, saveCfgs: false });
 
             const loadSettings = async () => {
                 const data = window.AppSettings
@@ -278,45 +282,56 @@ document.addEventListener('settings_loaded', async () => {
                 isSaving.value = false;
             };
 
-            const applyDataDir = (data) => {
+            const applyFolders = (data) => {
                 if (!data) return;
-                Object.assign(dataDir, data);
-                dataDirPath.value = data.override || '';
+                if (data.data_dir) Object.assign(folders.data_dir, data.data_dir);
+                if (data.mod_cfgs) Object.assign(folders.mod_cfgs, data.mod_cfgs);
+                dataDirPath.value = folders.data_dir.override || '';
+                modCfgsPath.value = folders.mod_cfgs.override || '';
             };
 
-            const loadDataDir = async () => {
-                if (isWebMode || typeof eel === 'undefined' || !eel.get_data_dir_settings) return;
-                applyDataDir(unwrap(await eel.get_data_dir_settings()()));
+            const loadFolders = async () => {
+                if (isWebMode || typeof eel === 'undefined' || !eel.get_folder_settings) return;
+                applyFolders(unwrap(await eel.get_folder_settings()()));
             };
 
-            const browseDataDir = async () => {
-                isBrowsingDataDir.value = true;
+            const browseInto = async (target, flag, title) => {
+                folderBusy[flag] = true;
                 try {
-                    const response = await eel.browse_for_folder(t('settings.data_folder'))();
-                    if (response.success) dataDirPath.value = response.path;
+                    const response = await eel.browse_for_folder(title)();
+                    if (response.success) target.value = response.path;
                     else if (response.error) window.showToast(response.error, true);
                 } finally {
-                    isBrowsingDataDir.value = false;
+                    folderBusy[flag] = false;
                 }
             };
 
-            const persistDataDir = async (path) => {
-                isSavingDataDir.value = true;
+            const persistFolder = async (call, path, flag, savedKey, failedKey) => {
+                folderBusy[flag] = true;
                 try {
-                    const response = await eel.set_data_dir(path)();
+                    const response = await call(path)();
                     if (!response.success) {
-                        window.showToast(response.error || t('settings.data_folder_save_failed'), true);
+                        window.showToast(response.error || t(failedKey), true);
                         return;
                     }
-                    applyDataDir(unwrap(response));
-                    window.showToast(t('settings.data_folder_saved'));
+                    applyFolders(unwrap(response));
+                    window.showToast(t(savedKey));
                 } finally {
-                    isSavingDataDir.value = false;
+                    folderBusy[flag] = false;
                 }
             };
 
-            const saveDataDir = () => persistDataDir(dataDirPath.value.trim());
-            const resetDataDir = () => persistDataDir('');
+            const browseDataDir = () => browseInto(dataDirPath, 'browseData', t('settings.data_folder'));
+            const saveDataDir = () => persistFolder(eel.set_data_dir, dataDirPath.value.trim(), 'saveData',
+                'settings.data_folder_saved', 'settings.data_folder_save_failed');
+            const resetDataDir = () => persistFolder(eel.set_data_dir, '', 'saveData',
+                'settings.data_folder_saved', 'settings.data_folder_save_failed');
+
+            const browseModCfgs = () => browseInto(modCfgsPath, 'browseCfgs', t('settings.mod_cfgs_folder'));
+            const saveModCfgs = () => persistFolder(eel.set_mod_cfgs_path, modCfgsPath.value.trim(), 'saveCfgs',
+                'settings.mod_cfgs_folder_saved', 'settings.mod_cfgs_folder_save_failed');
+            const resetModCfgs = () => persistFolder(eel.set_mod_cfgs_path, '', 'saveCfgs',
+                'settings.mod_cfgs_folder_saved', 'settings.mod_cfgs_folder_save_failed');
 
             const resetOnboardingTips = async () => {
                 let confirmed = true;
@@ -512,7 +527,7 @@ document.addEventListener('settings_loaded', async () => {
                 await restoreState();
                 await loadSettings();
                 await refreshBgStatus();
-                await loadDataDir();
+                await loadFolders();
 
                 // Deep-link: the sidebar bell (and other shortcuts) set
                 // window.pendingSettingsTab to jump straight to a sub-tab. Honor
@@ -549,8 +564,9 @@ document.addEventListener('settings_loaded', async () => {
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
                 resetOnboardingTips, gameInstalls, isWebMode, isNative, isDesktopNotify,
-                dataDir, dataDirPath, isBrowsingDataDir, isSavingDataDir,
+                folders, dataDirPath, modCfgsPath, folderBusy,
                 browseDataDir, saveDataDir, resetDataDir,
+                browseModCfgs, saveModCfgs, resetModCfgs,
                 notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
                 desktopEventCatalog,
                 bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications

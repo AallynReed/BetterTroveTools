@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from pathlib import Path
@@ -113,3 +114,30 @@ def get_cache_root() -> Path:
     Linux. Pure path computation -- callers create the directory when needed.
     """
     return get_app_data_dir() / "ModManagerCache"
+
+
+def get_default_mod_cfgs_dir() -> Path:
+    """Where Trove itself reads per-mod `.cfg` files: %APPDATA%/Trove/ModCfgs."""
+    return get_app_data_dir() / "ModCfgs"
+
+
+def get_mod_cfgs_override() -> Path | None:
+    """The user's replacement for the mod-config folder, or None.
+
+    Unlike the data directory this is an ordinary setting -- settings.json does
+    not live inside it -- so it's read straight from the settings file rather
+    than through backend.settings (which imports this module).
+
+    Steam Play / Proton is the reason it exists: the game's AppData sits inside
+    the Wine prefix, so the folder Trove reads is somewhere under
+    `.../pfx/drive_c/users/steamuser/AppData/Roaming/Trove/ModCfgs`.
+    """
+    try:
+        settings = json.loads((get_cache_root() / "settings.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return _clean(settings.get("mod_cfgs_path")) if isinstance(settings, dict) else None
+
+
+def get_mod_cfgs_dir() -> Path:
+    return get_mod_cfgs_override() or get_default_mod_cfgs_dir()

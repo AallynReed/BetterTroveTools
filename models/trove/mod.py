@@ -21,7 +21,7 @@ from toml import dumps
 
 from utils.functions import (calculate_hash, chunks, get_attr, read_leb128,
                              write_leb128)
-from utils.path import get_app_data_dir, get_cache_root
+from utils.path import get_cache_root, get_mod_cfgs_dir, get_mod_cfgs_override
 from utils.registry import TroveGamePath
 
 from ..trovesaurus.mods import Mod
@@ -768,9 +768,12 @@ class TMod(TroveMod):
                 return True
 
     def ensure_config(self):
-        if os.name != "nt":
+        # Off Windows the default folder is ours, not the game's -- writing there
+        # helps nobody. A configured path (a Proton prefix) is the exception:
+        # that one the game really does read.
+        if os.name != "nt" and get_mod_cfgs_override() is None:
             return
-        mods_cfgs_path = get_app_data_dir().joinpath("ModCfgs")
+        mods_cfgs_path = get_mod_cfgs_dir()
         mods_cfgs_path.mkdir(parents=True, exist_ok=True)
         config_file = mods_cfgs_path.joinpath(f"{self.name}.cfg")
         embedded_config = self.config

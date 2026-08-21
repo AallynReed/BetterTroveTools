@@ -13,6 +13,9 @@ from utils.path import (
     get_data_dir_override,
     get_data_dir_override_file,
     get_default_app_data_dir,
+    get_default_mod_cfgs_dir,
+    get_mod_cfgs_dir,
+    get_mod_cfgs_override,
     set_data_dir_override,
     supports_data_dir_override,
 )
@@ -53,7 +56,7 @@ def _normalize_settings_payload(payload):
         "show_player_activity",
         "auto_fix_names", "show_mod_preview_on_info_side", "hide_beta_features",
         "enable_legacy_projects", "close_to_tray", "beta_builds",
-        "last_game_path", "locale"
+        "last_game_path", "locale", "mod_cfgs_path"
     ]
     for key in allowed_keys:
         if key in payload:
@@ -196,29 +199,56 @@ def save_settings(settings):
     return resp(True, data=normalized, **normalized)
 
 
-# --- Data directory ------------------------------------------------------
-# Where every cache, setting and mod cfg lives. Its own location can't be a
-# normal setting (settings.json sits inside it), so it's kept in a pointer file
-# outside the directory -- see utils.path.
+# --- Folders -------------------------------------------------------------
+# Two paths the user can move. The data directory can't be a normal setting
+# (settings.json sits inside it) so it lives in a pointer file; the mod-config
+# folder is an ordinary key in settings.json.
 
 
-def _data_dir_payload():
-    override = get_data_dir_override()
+def _validate_folder(raw):
+    """Resolve a user-entered folder, creating and write-testing it. Returns
+    (path, None) or (None, error_response)."""
+    target = Path(os.path.expandvars(raw)).expanduser()
+    if not target.is_absolute():
+        return None, resp(False, error="Enter an absolute path.", code="INVALID_PATH")
+    if target.exists() and not target.is_dir():
+        return None, resp(False, error="That path is a file, not a folder.", code="INVALID_PATH")
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        probe = target / ".btt-write-test"
+        probe.write_text("", encoding="utf-8")
+        probe.unlink()
+    except OSError as exc:
+        return None, resp(False, error=f"That folder isn't writable: {exc}", code="NOT_WRITABLE")
+    return target, None
+
+
+def _folders_payload():
+    data_override = get_data_dir_override()
+    cfgs_override = get_mod_cfgs_override()
     return {
-        "supported": supports_data_dir_override(),
-        "current": str(get_app_data_dir()),
-        "default": str(get_default_app_data_dir()),
-        "override": str(override) if override else "",
-        "from_env": bool(os.getenv(DATA_DIR_ENV_VAR, "").strip()),
-        "env_var": DATA_DIR_ENV_VAR,
-        "config_file": str(get_data_dir_override_file()),
+        "data_dir": {
+            "supported": supports_data_dir_override(),
+            "current": str(get_app_data_dir()),
+            "default": str(get_default_app_data_dir()),
+            "override": str(data_override) if data_override else "",
+            "from_env": bool(os.getenv(DATA_DIR_ENV_VAR, "").strip()),
+            "env_var": DATA_DIR_ENV_VAR,
+            "config_file": str(get_data_dir_override_file()),
+        },
+        "mod_cfgs": {
+            "supported": True,
+            "current": str(get_mod_cfgs_dir()),
+            "default": str(get_default_mod_cfgs_dir()),
+            "override": str(cfgs_override) if cfgs_override else "",
+        },
     }
 
 
 @eel.expose
 @standardize_response
-def get_data_dir_settings():
-    return resp(True, data=_data_dir_payload())
+def get_folder_settings():
+    return resp(True, data=_folders_payload())
 
 
 @eel.expose
@@ -233,20 +263,39 @@ def set_data_dir(path=None):
 
     raw = str(path or "").strip()
     if raw:
-        target = Path(os.path.expandvars(raw)).expanduser()
-        if not target.is_absolute():
-            return resp(False, error="Enter an absolute path.", code="INVALID_PATH")
-        if target.exists() and not target.is_dir():
-            return resp(False, error="That path is a file, not a folder.", code="INVALID_PATH")
-        try:
-            target.mkdir(parents=True, exist_ok=True)
-            probe = target / ".btt-write-test"
-            probe.write_text("", encoding="utf-8")
-            probe.unlink()
-        except OSError as exc:
-            return resp(False, error=f"That folder isn't writable: {exc}", code="NOT_WRITABLE")
+        _, error = _validate_folder(raw)
+        if error:
+            return error
 
     set_data_dir_override(raw)
-    payload = _data_dir_payload()
+    payload = _folders_payload()
     payload["restart_required"] = True
     return resp(True, data=payload)
+
+
+@eel.expose
+@standardize_response
+def set_mod_cfgs_path(path=None):
+    """Point mod configs at the folder the game actually reads (or, with an
+    empty path, back at %APPDATA%/Trove/ModCfgs). Applies immediately: the
+    installed mods are re-probed so their .cfg files land in the new folder."""
+    raw = str(path or "").strip()
+    if raw:
+        target, error = _validate_folder(raw)
+        if error:
+            return error
+        raw = str(target)
+
+    stored = _read_settings_from_disk()
+    stored["mod_cfgs_path"] = raw
+    save_settings(stored)
+
+    last_path = stored.get("last_game_path")
+    if isinstance(last_path, str) and last_path.strip():
+        try:
+            from backend.mod_manager.mod_watcher import probe_configs
+            probe_configs(last_path.strip())
+        except Exception:
+            pass
+
+    return resp(True, data=_folders_payload())

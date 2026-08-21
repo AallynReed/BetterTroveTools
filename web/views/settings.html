@@ -194,38 +194,74 @@
                 <!-- Data folder. Stored outside settings.json (that file lives inside
                      the folder being pointed at) and only offered where the platform
                      allows it -- Windows shares %APPDATA%/Trove with the game. -->
-                <div v-if="dataDir.supported" class="settings-section">
+                <div v-if="folders.data_dir.supported" class="settings-section">
                     <h3>{{ t('settings.data_folder') }}</h3>
                     <p class="settings-help-text">{{ t('settings.data_folder_help') }}</p>
 
                     <div style="margin-top: var(--t-4);">
-                        <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.data_folder_current') }}</div>
-                        <div :title="dataDir.current" style="margin-top: var(--t-1); color: var(--text-main); font-size: var(--t-fs-body); word-break: break-all;">{{ dataDir.current }}</div>
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.folder_currently_using') }}</div>
+                        <div :title="folders.data_dir.current" style="margin-top: var(--t-1); color: var(--text-main); font-size: var(--t-fs-body); word-break: break-all;">{{ folders.data_dir.current }}</div>
                     </div>
 
                     <div style="margin-top: var(--t-4);">
-                        <label style="display: block; margin-bottom: var(--t-1); color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.data_folder_custom_location') }}</label>
+                        <label style="display: block; margin-bottom: var(--t-1); color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.folder_custom_location') }}</label>
                         <div style="display: flex; gap: var(--control-gap);">
-                            <input type="text" v-model="dataDirPath" :disabled="dataDir.from_env" style="flex-grow: 1; padding: var(--t-2) var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none;" :placeholder="dataDir.default">
-                            <button class="secondary-btn" @click="browseDataDir" :disabled="dataDir.from_env || isBrowsingDataDir">
-                                <template v-if="!isBrowsingDataDir"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></template>
+                            <input type="text" v-model="dataDirPath" :disabled="folders.data_dir.from_env" style="flex-grow: 1; padding: var(--t-2) var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none;" :placeholder="folders.data_dir.default">
+                            <button class="secondary-btn" @click="browseDataDir" :disabled="folders.data_dir.from_env || folderBusy.browseData">
+                                <template v-if="!folderBusy.browseData"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></template>
                                 <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
                             </button>
                         </div>
                     </div>
 
                     <div style="display: flex; gap: var(--control-gap); margin-top: var(--t-3); flex-wrap: wrap;">
-                        <button class="primary-btn" @click="saveDataDir" :disabled="dataDir.from_env || isSavingDataDir">
-                            <template v-if="!isSavingDataDir">{{ t('common.save') }}</template>
+                        <button class="primary-btn" @click="saveDataDir" :disabled="folders.data_dir.from_env || folderBusy.saveData">
+                            <template v-if="!folderBusy.saveData">{{ t('common.save') }}</template>
                             <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
                         </button>
-                        <button class="ghost-btn" @click="resetDataDir" :disabled="dataDir.from_env || isSavingDataDir || !dataDir.override">
-                            <i class="fa-solid fa-rotate-left"></i> <span>{{ t('settings.data_folder_use_default') }}</span>
+                        <button class="ghost-btn" @click="resetDataDir" :disabled="folders.data_dir.from_env || folderBusy.saveData || !folders.data_dir.override">
+                            <i class="fa-solid fa-rotate-left"></i> <span>{{ t('settings.folder_use_default') }}</span>
                         </button>
                     </div>
 
                     <p class="settings-help-text" style="margin-top: var(--t-3);">{{ t('settings.data_folder_restart_note') }}</p>
-                    <p v-if="dataDir.from_env" class="settings-help-text">{{ t('settings.data_folder_env_note', { name: dataDir.env_var }) }}</p>
+                    <p v-if="folders.data_dir.from_env" class="settings-help-text">{{ t('settings.data_folder_env_note', { name: folders.data_dir.env_var }) }}</p>
+                </div>
+
+                <!-- Mod config folder. An ordinary settings.json key, unlike the data
+                     folder -- the game reads .cfg files from its own AppData, which
+                     under Proton sits inside the Wine prefix. -->
+                <div class="settings-section">
+                    <h3>{{ t('settings.mod_cfgs_folder') }}</h3>
+                    <p class="settings-help-text">{{ t('settings.mod_cfgs_folder_help') }}</p>
+
+                    <div style="margin-top: var(--t-4);">
+                        <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.folder_currently_using') }}</div>
+                        <div :title="folders.mod_cfgs.current" style="margin-top: var(--t-1); color: var(--text-main); font-size: var(--t-fs-body); word-break: break-all;">{{ folders.mod_cfgs.current }}</div>
+                    </div>
+
+                    <div style="margin-top: var(--t-4);">
+                        <label style="display: block; margin-bottom: var(--t-1); color: var(--text-muted); font-size: var(--t-fs-label);">{{ t('settings.folder_custom_location') }}</label>
+                        <div style="display: flex; gap: var(--control-gap);">
+                            <input type="text" v-model="modCfgsPath" style="flex-grow: 1; padding: var(--t-2) var(--t-3); background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-main); border-radius: var(--radius-control); outline: none;" :placeholder="folders.mod_cfgs.default">
+                            <button class="secondary-btn" @click="browseModCfgs" :disabled="folderBusy.browseCfgs">
+                                <template v-if="!folderBusy.browseCfgs"><i class="fa-solid fa-folder-open"></i> <span>{{ t('common.browse') }}</span></template>
+                                <template v-else><i class="fa-solid fa-spinner fa-spin"></i></template>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: var(--control-gap); margin-top: var(--t-3); flex-wrap: wrap;">
+                        <button class="primary-btn" @click="saveModCfgs" :disabled="folderBusy.saveCfgs">
+                            <template v-if="!folderBusy.saveCfgs">{{ t('common.save') }}</template>
+                            <template v-else><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
+                        </button>
+                        <button class="ghost-btn" @click="resetModCfgs" :disabled="folderBusy.saveCfgs || !folders.mod_cfgs.override">
+                            <i class="fa-solid fa-rotate-left"></i> <span>{{ t('settings.folder_use_default') }}</span>
+                        </button>
+                    </div>
+
+                    <p class="settings-help-text" style="margin-top: var(--t-3);">{{ t('settings.mod_cfgs_folder_note') }}</p>
                 </div>
         </div>
 

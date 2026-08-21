@@ -250,6 +250,8 @@ The app auto‑detects a backend and uses an app window when one is present. For
 
 **Where your data lives:** settings, caches and downloads go to `$XDG_DATA_HOME/BetterTroveTools` (`~/.local/share/BetterTroveTools` by default). Change it in **Settings → Directories → Data Folder**, or set `BTT_DATA_DIR` before launching — useful for a second drive or a sandboxed install. The setting is remembered in `$XDG_CONFIG_HOME/BetterTroveTools/data_dir`; the environment variable wins over it, existing files aren't moved, and the new location applies on the next launch. (Windows keeps `%APPDATA%/Trove`, which it shares with the game's own mod configs.)
 
+**Mod configs under Proton:** mods that ship a config get a `.cfg` written to Trove's own AppData folder, which under Steam Play lives inside the Wine prefix. Set **Settings → Directories → Mod Config Folder** to `…/steamapps/compatdata/<id>/pfx/drive_c/users/steamuser/AppData/Roaming/Trove/ModCfgs` and mod settings reach the game; leave it empty and the app skips writing configs on Linux, since the default folder isn't one Trove reads. The change applies immediately — installed mods are re-checked on save.
+
 #### NixOS (flake)
 
 A flake lives **in this repo** — so the package definition comes from the same place as the app, with no third‑party repository to trust. Add it as an input and pull the package into your system config:
