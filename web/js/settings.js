@@ -87,6 +87,17 @@ document.addEventListener('settings_loaded', async () => {
             const isBrowsing = ref(false);
             const isSaving = ref(false);
 
+            // Data folder. Not part of `settings` — it lives outside settings.json
+            // (which is stored inside the folder itself), so it has its own
+            // backend calls and only shows up where the platform supports it.
+            const dataDir = reactive({
+                supported: false, current: '', default: '', override: '',
+                from_env: false, env_var: 'BTT_DATA_DIR', config_file: ''
+            });
+            const dataDirPath = ref('');
+            const isBrowsingDataDir = ref(false);
+            const isSavingDataDir = ref(false);
+
             const loadSettings = async () => {
                 const data = window.AppSettings
                     ? await window.AppSettings.load(true)
@@ -266,6 +277,46 @@ document.addEventListener('settings_loaded', async () => {
                 modals.edit = false;
                 isSaving.value = false;
             };
+
+            const applyDataDir = (data) => {
+                if (!data) return;
+                Object.assign(dataDir, data);
+                dataDirPath.value = data.override || '';
+            };
+
+            const loadDataDir = async () => {
+                if (isWebMode || typeof eel === 'undefined' || !eel.get_data_dir_settings) return;
+                applyDataDir(unwrap(await eel.get_data_dir_settings()()));
+            };
+
+            const browseDataDir = async () => {
+                isBrowsingDataDir.value = true;
+                try {
+                    const response = await eel.browse_for_folder(t('settings.data_folder'))();
+                    if (response.success) dataDirPath.value = response.path;
+                    else if (response.error) window.showToast(response.error, true);
+                } finally {
+                    isBrowsingDataDir.value = false;
+                }
+            };
+
+            const persistDataDir = async (path) => {
+                isSavingDataDir.value = true;
+                try {
+                    const response = await eel.set_data_dir(path)();
+                    if (!response.success) {
+                        window.showToast(response.error || t('settings.data_folder_save_failed'), true);
+                        return;
+                    }
+                    applyDataDir(unwrap(response));
+                    window.showToast(t('settings.data_folder_saved'));
+                } finally {
+                    isSavingDataDir.value = false;
+                }
+            };
+
+            const saveDataDir = () => persistDataDir(dataDirPath.value.trim());
+            const resetDataDir = () => persistDataDir('');
 
             const resetOnboardingTips = async () => {
                 let confirmed = true;
@@ -461,6 +512,7 @@ document.addEventListener('settings_loaded', async () => {
                 await restoreState();
                 await loadSettings();
                 await refreshBgStatus();
+                await loadDataDir();
 
                 // Deep-link: the sidebar bell (and other shortcuts) set
                 // window.pendingSettingsTab to jump straight to a sub-tab. Honor
@@ -497,6 +549,8 @@ document.addEventListener('settings_loaded', async () => {
                 isBrowsing, isSaving, previewAccentColor, saveGeneralSettings,
                 openAddModal, browseDir, saveNewDir, removeDir, openEditModal, saveEditDir,
                 resetOnboardingTips, gameInstalls, isWebMode, isNative, isDesktopNotify,
+                dataDir, dataDirPath, isBrowsingDataDir, isSavingDataDir,
+                browseDataDir, saveDataDir, resetDataDir,
                 notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
                 desktopEventCatalog,
                 bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications

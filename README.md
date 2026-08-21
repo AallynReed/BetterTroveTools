@@ -248,6 +248,8 @@ The app auto‑detects a backend and uses an app window when one is present. For
 
 **What's Windows‑only:** the in‑app self‑updater and "Test in Game" (which runs the Windows game `.exe`). If no Trove installation is detected, install‑dependent tools are skipped gracefully and the app prompts you to add a directory in **Settings → Directories** (point it at any valid Trove folder manually).
 
+**Where your data lives:** settings, caches and downloads go to `$XDG_DATA_HOME/BetterTroveTools` (`~/.local/share/BetterTroveTools` by default). Change it in **Settings → Directories → Data Folder**, or set `BTT_DATA_DIR` before launching — useful for a second drive or a sandboxed install. The setting is remembered in `$XDG_CONFIG_HOME/BetterTroveTools/data_dir`; the environment variable wins over it, existing files aren't moved, and the new location applies on the next launch. (Windows keeps `%APPDATA%/Trove`, which it shares with the game's own mod configs.)
+
 #### NixOS (flake)
 
 A flake lives **in this repo** — so the package definition comes from the same place as the app, with no third‑party repository to trust. Add it as an input and pull the package into your system config:

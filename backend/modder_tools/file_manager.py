@@ -318,6 +318,25 @@ def browse_for_game_dir():
 
 @eel.expose
 @standardize_response
+def browse_for_folder(title="Select Folder"):
+    """Plain folder picker (no Trove-install check) for settings that just need
+    a directory."""
+    if filedialog is None:
+        return {"success": False, "error": "No folder picker is available (python3-tk isn't installed). Type the path instead."}
+
+    root = tk.Tk()
+    root.attributes('-topmost', True)
+    root.withdraw()
+    folder_path = filedialog.askdirectory(title=title or "Select Folder")
+    root.destroy()
+
+    if not folder_path:
+        return {"success": False, "canceled": True}
+    return {"success": True, "path": str(Path(folder_path))}
+
+
+@eel.expose
+@standardize_response
 def open_path_in_explorer(path_str, select_file=False):
     try:
         raw = str(path_str or "").strip()

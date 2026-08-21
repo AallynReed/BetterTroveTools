@@ -6,7 +6,16 @@ import eel
 
 from backend.response import resp, standardize_response
 from utils.executable import find_trove_executable
-from utils.path import get_cache_root
+from utils.path import (
+    DATA_DIR_ENV_VAR,
+    get_app_data_dir,
+    get_cache_root,
+    get_data_dir_override,
+    get_data_dir_override_file,
+    get_default_app_data_dir,
+    set_data_dir_override,
+    supports_data_dir_override,
+)
 from utils.registry import get_trove_locations, TroveGamePath, invalidate_trove_locations_cache
 
 
@@ -185,3 +194,59 @@ def save_settings(settings):
 
     normalized["game_installs"] = [{"name": game.name, "path": str(game.path)} for game in games]
     return resp(True, data=normalized, **normalized)
+
+
+# --- Data directory ------------------------------------------------------
+# Where every cache, setting and mod cfg lives. Its own location can't be a
+# normal setting (settings.json sits inside it), so it's kept in a pointer file
+# outside the directory -- see utils.path.
+
+
+def _data_dir_payload():
+    override = get_data_dir_override()
+    return {
+        "supported": supports_data_dir_override(),
+        "current": str(get_app_data_dir()),
+        "default": str(get_default_app_data_dir()),
+        "override": str(override) if override else "",
+        "from_env": bool(os.getenv(DATA_DIR_ENV_VAR, "").strip()),
+        "env_var": DATA_DIR_ENV_VAR,
+        "config_file": str(get_data_dir_override_file()),
+    }
+
+
+@eel.expose
+@standardize_response
+def get_data_dir_settings():
+    return resp(True, data=_data_dir_payload())
+
+
+@eel.expose
+@standardize_response
+def set_data_dir(path=None):
+    """Point the app at a different data directory (or, with an empty path,
+    back at the default). Existing files are not moved, and the change only
+    applies after a restart."""
+    if not supports_data_dir_override():
+        return resp(False, error="The data folder can only be changed on Linux and macOS.",
+                    code="UNSUPPORTED_PLATFORM")
+
+    raw = str(path or "").strip()
+    if raw:
+        target = Path(os.path.expandvars(raw)).expanduser()
+        if not target.is_absolute():
+            return resp(False, error="Enter an absolute path.", code="INVALID_PATH")
+        if target.exists() and not target.is_dir():
+            return resp(False, error="That path is a file, not a folder.", code="INVALID_PATH")
+        try:
+            target.mkdir(parents=True, exist_ok=True)
+            probe = target / ".btt-write-test"
+            probe.write_text("", encoding="utf-8")
+            probe.unlink()
+        except OSError as exc:
+            return resp(False, error=f"That folder isn't writable: {exc}", code="NOT_WRITABLE")
+
+    set_data_dir_override(raw)
+    payload = _data_dir_payload()
+    payload["restart_required"] = True
+    return resp(True, data=payload)

@@ -29,6 +29,7 @@ eel.remove_external_request = lambda *a, **k: (lambda: None)
 
 from models.trove.mod import TMod, TroveModFile, TroveModList  # noqa: E402
 from utils.registry import TroveGamePath  # noqa: E402
+from utils.path import refresh_data_dir_override  # noqa: E402
 
 
 def build_tmod(name, author="tester", payload=b"payload", internal="ui/test.swf"):
@@ -63,10 +64,15 @@ class Sandbox:
         self._saved_env = {}
 
     def __enter__(self):
+        # XDG_CONFIG_HOME too: that's where the data-dir override pointer file
+        # lives, and a real one on the dev machine would drag tests out of here.
         for key, value in (("APPDATA", str(self._appdata)),
-                           ("XDG_DATA_HOME", str(self._appdata))):
+                           ("XDG_DATA_HOME", str(self._appdata)),
+                           ("XDG_CONFIG_HOME", str(self._appdata))):
             self._saved_env[key] = os.environ.get(key)
             os.environ[key] = value
+        self._saved_env["BTT_DATA_DIR"] = os.environ.pop("BTT_DATA_DIR", None)
+        refresh_data_dir_override()
         return self
 
     def __exit__(self, *exc):
@@ -75,6 +81,7 @@ class Sandbox:
                 os.environ.pop(key, None)
             else:
                 os.environ[key] = value
+        refresh_data_dir_override()
         shutil.rmtree(self.root, ignore_errors=True)
         return False
 
