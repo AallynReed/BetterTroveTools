@@ -2,6 +2,7 @@
     <link rel="stylesheet" href="css/modder_tools/index.css">
     <link rel="stylesheet" href="css/modder_tools/file_manager.css">
     <link rel="stylesheet" href="css/modder_tools/manage.css">
+    <link rel="stylesheet" href="css/modder_tools/steam.css">
 </head>
 <div id="modder-tools-vue-app" class="modder-tools-container" v-cloak>
     <div class="tabs-container">
@@ -26,6 +27,9 @@
             </button>
             <button v-if="!isWebMode && !loggedIn" class="tab-btn tab-btn-signin" @click="promptManageLogin" :title="t('manage.signin_tab_hint')">
                 <i class="fa-solid fa-cloud-arrow-up"></i> <span>{{ t('manage.signin_tab') }}</span>
+            </button>
+            <button v-if="!isWebMode && steamSupported" class="tab-btn" :class="{ active: activeTab === 'steam' }" @click="setActiveTab('steam')">
+                <i class="fa-brands fa-steam"></i> <span>{{ t('steam.tab') }}</span>
             </button>
             <button v-if="!isWebMode && legacyProjectsEnabled" class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="setActiveTab('projects')">
                 <i class="fa-solid fa-diagram-project"></i> <span>{{ t('modder_tools.projects') }}</span>
@@ -58,6 +62,10 @@
 
         <div class="tab-content" :class="{ active: activeTab === 'manage_modpacks' }">
             <div id="modder-manage-modpacks-vue-app-inner" v-cloak></div>
+        </div>
+
+        <div class="tab-content" :class="{ active: activeTab === 'steam' }">
+            <div id="modder-steam-vue-app-inner" v-cloak></div>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'projects' }">

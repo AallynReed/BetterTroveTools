@@ -192,6 +192,7 @@ window.BTT_VIEW_SCRIPTS = {
         'js/modder_tools/build.js',
         'js/modder_tools/extract.js',
         'js/modder_tools/edit_tmod.js',
+        'js/modder_tools/steam.js',
         'js/modder_tools/projects.js',
         'js/modder_tools/qb_editor.js',
         'js/modder_tools/software.js',
@@ -2462,6 +2463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Build TMod', icon: 'fa-hammer', modderTab: 'build' },
         { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
         { id: 'modder_tools', title: 'Edit TMod', icon: 'fa-pen-to-square', modderTab: 'edit_tmod' },
+        { id: 'modder_tools', title: 'Steam Workshop', icon: 'fa-steam', iconClass: 'fa-brands', modderTab: 'steam' },
         { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects', legacyProjects: true },
         { id: 'modder_tools', title: 'Blueprint Editor', icon: 'fa-code', modderTab: 'qb_editor' },
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
@@ -2578,7 +2580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const esc = window.escapeHtml;
         cmdResults.innerHTML = displayCommands.map((c, i) => `
             <div class="cmd-result-item ${i === activeCmdIndex ? 'active' : ''}" data-target="${esc(c.id)}" data-url="${esc(c.url || '')}" data-modder-tab="${esc(c.modderTab || '')}" data-gx-tab="${esc(c.gxTab || '')}" data-mm-section="${esc(c.mmSection || '')}" data-gems-tab="${esc(c.gemsTab || '')}" data-codex-tab="${esc(c.codexTab || '')}" data-query="${esc(c.query || '')}">
-                <div class="cmd-result-icon">${c.imgIcon ? `<img src="${esc(c.imgIcon)}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="fa-solid ${esc(c.icon)}"></i>`}</div>
+                <div class="cmd-result-icon">${c.imgIcon ? `<img src="${esc(c.imgIcon)}" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle;">` : `<i class="${esc(c.iconClass || 'fa-solid')} ${esc(c.icon)}"></i>`}</div>
                 <div>${esc(t(c.title))}</div>
             </div>
         `).join('');

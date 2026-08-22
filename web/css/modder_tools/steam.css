@@ -1,0 +1,313 @@
+/* Steam tab — publish a .tmod to the Trove Steam Workshop. Values come from the
+   token layer in style.css `:root`: the 4pt scale (--t-1..--t-6), the six type
+   roles, the three radii and the four semantics. Nothing is redefined locally.
+   Badge and empty-state classes are reused from manage.css, which the Modder
+   Tools view already loads. */
+
+.steam-panel { padding: var(--t-1) 2px; }
+
+/* --- account card: who the upload is going out as ------------------------ */
+/* Deliberately the loudest thing on the tab. Publishing under the wrong Steam
+   account is the one mistake here that cannot be undone from the app — this
+   SDK has no DeleteItem. */
+.steam-account {
+    display: flex;
+    align-items: center;
+    gap: var(--t-4);
+    padding: var(--t-4);
+    margin-bottom: var(--t-3);
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    transition: border-color var(--dur) var(--t-ease);
+}
+.steam-account.connected { border-color: rgba(var(--accent-rgb), 0.45); }
+
+.steam-account-icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-circle);
+    background: var(--bg-dark);
+    color: var(--text-muted);
+    /* Brand glyph size, not a type role. */
+    font-size: 24px;
+}
+.steam-account.connected .steam-account-icon {
+    background: rgba(var(--accent-rgb), 0.16);
+    color: var(--accent-blue);
+}
+
+.steam-account-body { flex: 1; min-width: 0; }
+.steam-account-label {
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.steam-account-name {
+    font-size: var(--t-fs-h2);
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+    margin-top: var(--t-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.steam-account-id {
+    display: flex;
+    align-items: center;
+    gap: var(--t-1);
+    margin-top: var(--t-1);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    font-family: 'Courier New', Courier, monospace;
+}
+.steam-account-actions { display: flex; gap: var(--control-gap); flex-shrink: 0; }
+
+/* --- inline notices ------------------------------------------------------ */
+.steam-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--t-2);
+    margin: 0 0 var(--t-3);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    line-height: 1.5;
+}
+.steam-notice i { margin-top: 2px; }
+/* --warning (#fbbf24) fails AA as text on panel, so warning copy uses the ink
+   variant — same call manage.css makes for --danger. */
+.steam-notice.warn { color: var(--warning-ink); }
+.steam-notice.subtle { opacity: 0.8; margin-top: var(--t-2); }
+
+/* --- two-column layout --------------------------------------------------- */
+.steam-layout { display: flex; gap: var(--surface-gap); align-items: flex-start; }
+.steam-form { flex: 1; min-width: 0; }
+.steam-items { flex: 0 0 340px; }
+/* Stacked, `align-items: flex-start` would shrink each panel to its content
+   width, so both are pinned to the full width explicitly. */
+@media (max-width: 1100px) {
+    .steam-layout { flex-direction: column; }
+    .steam-form,
+    .steam-items { flex: 1 1 auto; width: 100%; }
+}
+
+.steam-form textarea,
+.steam-form select,
+.steam-form input[type="text"] { width: 100%; }
+.steam-form textarea {
+    padding: 10px var(--t-3);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: var(--radius-control);
+    outline: none;
+    font-family: inherit;
+    font-size: var(--t-fs-body);
+    resize: vertical;
+    transition: border-color var(--dur) var(--t-ease);
+}
+.steam-form textarea:focus { border-color: var(--accent-blue); }
+
+.form-row-2 { display: flex; gap: var(--control-gap); }
+.form-row-2 > .form-group { flex: 1; min-width: 0; }
+
+.steam-hint {
+    margin: var(--t-1) 0 0;
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    line-height: 1.4;
+}
+
+/* --- what we read out of the archive ------------------------------------- */
+.steam-meta {
+    display: flex;
+    gap: var(--t-4);
+    padding: var(--t-3);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    margin-bottom: var(--t-2);
+}
+.steam-meta-preview {
+    width: 160px;
+    flex-shrink: 0;
+    aspect-ratio: 400 / 230;
+    border-radius: var(--radius-control);
+    overflow: hidden;
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+}
+.steam-meta-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.steam-meta-noimg {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--t-1);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+}
+.steam-meta-noimg i { font-size: 20px; opacity: 0.6; }
+
+.steam-meta-facts { flex: 1; min-width: 0; margin: 0; display: grid; gap: var(--t-2); align-content: start; }
+.steam-meta-facts > div { display: flex; gap: var(--t-2); align-items: baseline; }
+.steam-meta-facts dt {
+    flex: 0 0 96px;
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+}
+.steam-meta-facts dd {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+    color: var(--text-main);
+    font-size: var(--t-fs-label);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- upload progress ----------------------------------------------------- */
+.steam-progress {
+    margin-top: var(--t-3);
+    padding: var(--t-3);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+}
+.steam-progress.error { border-color: rgba(var(--danger-rgb), 0.5); }
+.steam-progress-line {
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
+}
+.steam-progress-bar {
+    margin-top: var(--t-2);
+    height: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--bg-panel);
+    overflow: hidden;
+}
+.steam-progress-fill {
+    height: 100%;
+    background: var(--accent-blue);
+    border-radius: var(--radius-pill);
+    transition: width var(--dur) var(--t-ease);
+}
+.steam-progress-bytes {
+    margin-top: var(--t-1);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+}
+
+/* --- result -------------------------------------------------------------- */
+.steam-result {
+    margin-top: var(--t-3);
+    padding: var(--t-4);
+    background: var(--bg-dark);
+    border: 1px solid rgba(var(--success-rgb), 0.4);
+    border-radius: var(--radius-surface);
+}
+.steam-result.bad { border-color: rgba(var(--danger-rgb), 0.5); }
+.steam-result h4 {
+    margin: 0 0 var(--t-2);
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    color: var(--success-ink);
+    font-size: var(--t-fs-h2);
+}
+.steam-result.bad h4 { color: var(--danger-ink); }
+.steam-result-line {
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    margin: 0 0 var(--t-1);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    line-height: 1.5;
+}
+.steam-result-line.ok { color: var(--success-ink); }
+.steam-result-line.warn { color: var(--warning-ink); }
+.steam-result-line code {
+    color: var(--text-main);
+    font-family: 'Courier New', Courier, monospace;
+}
+.steam-result-actions { margin-top: var(--t-3); display: flex; gap: var(--control-gap); }
+
+.link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--accent-blue);
+    font: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.link-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+/* --- the account's published items --------------------------------------- */
+.steam-items-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--t-3);
+}
+.steam-items-head h3 { margin: 0 0 var(--t-1); }
+
+.steam-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--t-2);
+    max-height: 560px;
+    overflow-y: auto;
+}
+.steam-item {
+    padding: var(--t-3);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-surface);
+    transition: border-color var(--dur) var(--t-ease);
+}
+.steam-item:hover { border-color: rgba(var(--accent-rgb), 0.4); }
+.steam-item.selected { border-color: var(--accent-blue); }
+.steam-item-top { display: flex; align-items: center; gap: var(--t-2); flex-wrap: wrap; }
+.steam-item-title {
+    flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.steam-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--t-3);
+    margin-top: var(--t-2);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+}
+.steam-item-meta i { margin-right: var(--t-1); opacity: 0.8; }
+.steam-item-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--control-gap);
+    margin-top: var(--t-3);
+}
+.steam-item-actions select { flex: 1; min-width: 0; }
+
+/* Banned is a state, and the only one of the four semantics that fits. */
+.manage-badge.banned { background: rgba(var(--danger-rgb), 0.16); color: var(--danger-ink); }

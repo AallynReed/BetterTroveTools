@@ -49,6 +49,7 @@ import backend.codexes.mounts
 import backend.mod_manager.mod_manager
 import backend.mod_manager.mod_watcher
 import backend.modder_tools.modder_tools
+import backend.modder_tools.steam_workshop
 import backend.overlay
 import backend.codexes.recipes
 import backend.codexes.styles

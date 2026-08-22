@@ -22,6 +22,10 @@ document.addEventListener('modder_tools_loaded', () => {
             // Settings -> Legacy Features (enable_legacy_projects). Read in
             // onMounted from the persisted settings.
             const legacyProjectsEnabled = ref(false);
+            // The Steam Workshop tab needs steam_api64.dll from a Steam install
+            // of Trove, so it's Windows-only. The backend is the source of
+            // truth; the tab body explains itself when no Steam copy is found.
+            const steamSupported = ref(false);
 
             // Online management tabs (Mods / Modpacks) only exist while the user is
             // signed in (window.BTTAccount is the source of truth). Kept reactive so
@@ -37,6 +41,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (isWebMode) return tabName === 'extract';
                 if (tabName === 'projects') return legacyProjectsEnabled.value;
                 if (tabName === 'manage_mods' || tabName === 'manage_modpacks') return loggedIn.value;
+                if (tabName === 'steam') return steamSupported.value;
                 return ['build', 'extract', 'edit_tmod', 'qb_editor', 'software'].includes(tabName);
             };
 
@@ -120,6 +125,7 @@ document.addEventListener('modder_tools_loaded', () => {
                         { url: 'views/modder_tools/build.html', host: 'modder-build-vue-app-inner' },
                         { url: 'views/modder_tools/extract.html', host: 'modder-extract-vue-app-inner' },
                         { url: 'views/modder_tools/edit_tmod.html', host: 'modder-edit-tmod-vue-app-inner' },
+                        ...(steamSupported.value ? [{ url: 'views/modder_tools/steam.html', host: 'modder-steam-vue-app-inner' }] : []),
                         // Projects only fetched when the legacy toggle is on.
                         ...(legacyProjectsEnabled.value ? [{ url: 'views/modder_tools/projects.html', host: 'modder-projects-vue-app-inner' }] : []),
                         { url: 'views/modder_tools/qb_editor.html', host: 'modder-qb-editor-vue-app-inner' },
@@ -179,6 +185,8 @@ document.addEventListener('modder_tools_loaded', () => {
                     document.dispatchEvent(new CustomEvent('modder_extract_shown'));
                 } else if (newTab === 'edit_tmod') {
                     document.dispatchEvent(new CustomEvent('modder_edit_tmod_shown'));
+                } else if (newTab === 'steam') {
+                    document.dispatchEvent(new CustomEvent('modder_steam_shown'));
                 } else if (newTab === 'projects') {
                     document.dispatchEvent(new CustomEvent('modder_projects_shown'));
                 } else if (newTab === 'qb_editor') {
@@ -206,6 +214,13 @@ document.addEventListener('modder_tools_loaded', () => {
                         }
                     });
                     window.BTTAccount.refresh().then((s) => { loggedIn.value = !!s.authenticated; }).catch(() => {});
+                }
+                try {
+                    const steamStatus = await eel.steam_workshop_status()();
+                    const payload = window.ModderTools.unwrapResponse(steamStatus, null, {}) || {};
+                    steamSupported.value = payload.supported === true;
+                } catch (e) {
+                    steamSupported.value = false;
                 }
                 if (window.AppSettings) {
                     try {
@@ -242,7 +257,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 await loadSubviewContent();
                 const tabsToMount = isWebMode
                     ? ['extract']
-                    : ['build', 'extract', 'edit_tmod', ...(legacyProjectsEnabled.value ? ['projects'] : []), 'qb_editor', 'software'];
+                    : ['build', 'extract', 'edit_tmod', ...(steamSupported.value ? ['steam'] : []),
+                       ...(legacyProjectsEnabled.value ? ['projects'] : []), 'qb_editor', 'software'];
                 tabsToMount.forEach((tab) => {
                     document.dispatchEvent(new CustomEvent(`modder_${tab}_loaded`));
                 });
@@ -255,7 +271,7 @@ document.addEventListener('modder_tools_loaded', () => {
             onUnmounted(() => { if (unsubAccount) unsubAccount(); });
 
             return {
-                t, activeTab, setActiveTab, isWebMode, legacyProjectsEnabled,
+                t, activeTab, setActiveTab, isWebMode, legacyProjectsEnabled, steamSupported,
                 loggedIn, promptManageLogin
             };
         }

@@ -1,0 +1,217 @@
+<div id="modder-steam-app" class="steam-panel" v-cloak>
+
+    <!-- ============ unsupported / no steam copy ============ -->
+    <div v-if="!status.supported" class="tool-panel">
+        <h3>{{ t('steam.title') }}</h3>
+        <p class="help-text">{{ t('steam.windows_only') }}</p>
+    </div>
+
+    <template v-else>
+        <!-- ============ account card: who is publishing ============ -->
+        <div class="steam-account" :class="{ connected: status.connected }">
+            <div class="steam-account-icon"><i class="fa-brands fa-steam"></i></div>
+
+            <div class="steam-account-body" v-if="status.connected && status.account">
+                <div class="steam-account-label">{{ t('steam.publishing_as') }}</div>
+                <div class="steam-account-name">{{ status.account.persona }}</div>
+                <div class="steam-account-id">
+                    <span>{{ status.account.steam_id }}</span>
+                    <button class="icon-btn-small" @click="copyText(status.account.steam_id)" :title="t('common.copy')"><i class="fa-solid fa-copy"></i></button>
+                </div>
+            </div>
+
+            <div class="steam-account-body" v-else>
+                <div class="steam-account-label">{{ t('steam.not_connected') }}</div>
+                <div class="steam-account-name">{{ t('steam.connect_prompt') }}</div>
+                <div class="steam-account-id">{{ status.steamRunning ? t('steam.steam_running') : t('steam.steam_not_running') }}</div>
+            </div>
+
+            <div class="steam-account-actions">
+                <button v-if="!status.connected" class="primary-btn" @click="connect" :disabled="busy.connect || !status.dllPath">
+                    <i class="fa-brands fa-steam" :class="{ 'fa-fade': busy.connect }"></i> <span>{{ t('steam.connect') }}</span>
+                </button>
+                <template v-else>
+                    <button class="secondary-btn" @click="openProfile"><i class="fa-solid fa-up-right-from-square"></i> <span>{{ t('steam.open_profile') }}</span></button>
+                    <button class="secondary-btn" @click="disconnect" :disabled="busy.publish"><i class="fa-solid fa-plug-circle-xmark"></i> <span>{{ t('steam.disconnect') }}</span></button>
+                </template>
+            </div>
+        </div>
+
+        <p v-if="!status.dllPath" class="steam-notice warn">
+            <i class="fa-solid fa-triangle-exclamation"></i> {{ t('steam.no_steam_install') }}
+        </p>
+        <p v-else-if="status.connected" class="steam-notice">
+            <i class="fa-solid fa-circle-info"></i> {{ t('steam.presence_notice') }}
+        </p>
+
+        <div class="steam-layout">
+            <!-- ============ left: the upload form ============ -->
+            <div class="tool-panel steam-form">
+                <h3>{{ t('steam.upload_title') }}</h3>
+                <p class="help-text">{{ t('steam.upload_help') }}</p>
+
+                <div class="form-group">
+                    <label>{{ t('steam.source_tmod') }}</label>
+                    <div class="input-row">
+                        <input type="text" :value="meta ? meta.fileName : ''" :placeholder="t('modder_tools.select_a_tmod_file')" readonly>
+                        <button class="primary-btn" @click="browseTmod" :disabled="busy.reading"><i class="fa-solid fa-file-archive"></i> <span>{{ t('common.browse') }}</span></button>
+                    </div>
+                </div>
+
+                <template v-if="meta">
+                    <!-- what we read straight out of the archive -->
+                    <div class="steam-meta">
+                        <div class="steam-meta-preview">
+                            <img v-if="previewSrc" :src="previewSrc" alt="">
+                            <div v-else class="steam-meta-noimg"><i class="fa-solid fa-image"></i><span>{{ t('steam.no_preview') }}</span></div>
+                        </div>
+                        <dl class="steam-meta-facts">
+                            <div><dt>{{ t('steam.field_author') }}</dt><dd>{{ meta.author || '—' }}</dd></div>
+                            <div><dt>{{ t('steam.field_files') }}</dt><dd>{{ meta.fileCount }}</dd></div>
+                            <div><dt>{{ t('steam.field_size') }}</dt><dd>{{ formatSize(meta.fileSize) }}</dd></div>
+                            <div v-if="meta.gameVersion"><dt>{{ t('steam.field_game_version') }}</dt><dd>{{ meta.gameVersion }}</dd></div>
+                            <div><dt>{{ t('steam.field_preview') }}</dt><dd>{{ previewLabel }}</dd></div>
+                        </dl>
+                    </div>
+                    <p class="steam-notice subtle"><i class="fa-solid fa-wand-magic-sparkles"></i> {{ t('steam.read_from_tmod') }}</p>
+
+                    <div v-if="previewProblem" class="steam-notice warn">
+                        <i class="fa-solid fa-triangle-exclamation"></i> {{ previewProblem }}
+                    </div>
+                    <div class="form-group">
+                        <label>{{ t('steam.preview_override') }}</label>
+                        <div class="input-row">
+                            <input type="text" :value="previewOverrideName" :placeholder="t('steam.preview_override_placeholder')" readonly>
+                            <button class="secondary-btn" @click="browsePreview"><i class="fa-solid fa-image"></i> <span>{{ t('common.browse') }}</span></button>
+                            <button v-if="form.previewPath" class="icon-btn danger" @click="clearPreviewOverride" :title="t('common.clear')"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ t('steam.field_target') }}</label>
+                        <select v-model="form.itemId" data-native-select="true" @change="targetMatch = 'manual'">
+                            <option value="">{{ t('steam.target_new') }}</option>
+                            <option v-for="item in items" :key="item.id" :value="item.id">{{ item.title }} — {{ item.id }}</option>
+                        </select>
+                        <p class="steam-hint" v-if="targetHint">{{ targetHint }}</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ t('steam.field_title') }}</label>
+                        <input type="text" v-model="form.title" maxlength="128">
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ t('steam.field_description') }}</label>
+                        <textarea v-model="form.description" rows="5" maxlength="8000"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>{{ t('steam.field_tags') }}</label>
+                        <input type="text" v-model="form.tags" :placeholder="t('steam.tags_placeholder')">
+                        <p class="steam-hint">{{ t('steam.tags_hint') }}</p>
+                    </div>
+
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label>{{ t('steam.field_visibility') }}</label>
+                            <select v-model.number="form.visibility" data-native-select="true">
+                                <option :value="2">{{ t('steam.vis_private') }}</option>
+                                <option :value="1">{{ t('steam.vis_friends') }}</option>
+                                <option :value="0">{{ t('steam.vis_public') }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>{{ t('steam.field_change_note') }}</label>
+                            <input type="text" v-model="form.changeNote" :placeholder="t('steam.change_note_placeholder')" maxlength="500">
+                        </div>
+                    </div>
+
+                    <button class="primary-btn execute-btn" @click="publish" :disabled="!canPublish">
+                        <template v-if="busy.publish"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('steam.publishing') }}</template>
+                        <template v-else><i class="fa-brands fa-steam"></i> <span>{{ form.itemId ? t('steam.update_item') : t('steam.publish_new') }}</span></template>
+                    </button>
+                </template>
+
+                <!-- ============ live progress ============ -->
+                <div v-if="progress.stage" class="steam-progress" :class="{ error: progress.stage === 'error' }">
+                    <div class="steam-progress-line">
+                        <i class="fa-solid" :class="progressIcon"></i>
+                        <span>{{ progressLabel }}</span>
+                    </div>
+                    <div v-if="progress.total" class="steam-progress-bar">
+                        <div class="steam-progress-fill" :style="{ width: progressPercent + '%' }"></div>
+                    </div>
+                    <div v-if="progress.total" class="steam-progress-bytes">{{ formatSize(progress.done) }} / {{ formatSize(progress.total) }}</div>
+                </div>
+
+                <!-- ============ result ============ -->
+                <div v-if="result" class="steam-result" :class="{ bad: !result.ok }">
+                    <template v-if="result.ok">
+                        <h4><i class="fa-solid fa-circle-check"></i> {{ result.created ? t('steam.result_created') : t('steam.result_updated') }}</h4>
+                        <p class="steam-result-line">{{ t('steam.result_id') }} <code>{{ result.itemId }}</code>
+                            <button class="icon-btn-small" @click="copyText(result.itemId)" :title="t('common.copy')"><i class="fa-solid fa-copy"></i></button>
+                        </p>
+                        <p class="steam-result-line" :class="result.verified ? 'ok' : 'warn'">
+                            <i class="fa-solid" :class="result.verified ? 'fa-shield-halved' : 'fa-triangle-exclamation'"></i>
+                            {{ result.verified ? t('steam.verified') : t('steam.not_verified') }}
+                        </p>
+                        <p v-if="result.needsLegalAgreement" class="steam-result-line warn">
+                            <i class="fa-solid fa-file-signature"></i> {{ t('steam.legal_agreement') }}
+                            <button class="link-btn" @click="openUrl(result.legalAgreementUrl)">{{ t('steam.legal_agreement_open') }}</button>
+                        </p>
+                        <div class="steam-result-actions">
+                            <button class="primary-btn" @click="openUrl(result.url)"><i class="fa-solid fa-up-right-from-square"></i> <span>{{ t('steam.open_item') }}</span></button>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <h4><i class="fa-solid fa-circle-exclamation"></i> {{ t('steam.result_failed') }}</h4>
+                        <p class="steam-result-line">{{ result.error }}</p>
+                    </template>
+                </div>
+            </div>
+
+            <!-- ============ right: this account's items ============ -->
+            <div class="tool-panel steam-items">
+                <div class="steam-items-head">
+                    <h3>{{ t('steam.your_items') }}</h3>
+                    <button class="secondary-btn" @click="loadItems" :disabled="busy.items || !status.connected">
+                        <i class="fa-solid fa-rotate-right" :class="{ 'fa-spin': busy.items }"></i>
+                    </button>
+                </div>
+                <p class="help-text">{{ t('steam.your_items_help') }}</p>
+
+                <div v-if="!status.connected" class="manage-state">{{ t('steam.connect_to_list') }}</div>
+                <div v-else-if="busy.items" class="manage-state"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('manage.loading') }}</div>
+                <div v-else-if="itemsError" class="manage-state manage-error"><i class="fa-solid fa-triangle-exclamation"></i> {{ itemsError }}</div>
+                <div v-else-if="!items.length" class="manage-state">{{ t('steam.no_items') }}</div>
+
+                <div v-else class="steam-item-list">
+                    <div v-for="item in items" :key="item.id" class="steam-item" :class="{ selected: item.id === form.itemId }">
+                        <div class="steam-item-top">
+                            <span class="steam-item-title">{{ item.title }}</span>
+                            <span class="manage-badge" :class="'vis-' + visKey(item.visibility)">{{ t('steam.vis_' + visKey(item.visibility)) }}</span>
+                            <span v-if="item.banned" class="manage-badge banned">{{ t('steam.banned') }}</span>
+                        </div>
+                        <div class="steam-item-meta">
+                            <span><i class="fa-solid fa-box"></i> {{ formatSize(item.file_size) }}</span>
+                            <span><i class="fa-solid fa-image"></i> {{ formatSize(item.preview_file_size) }}</span>
+                            <span><i class="fa-solid fa-clock-rotate-left"></i> {{ formatDate(item.time_updated || item.time_created) }}</span>
+                        </div>
+                        <div class="steam-item-actions">
+                            <button class="secondary-btn" @click="selectItem(item)"><i class="fa-solid fa-arrow-up-from-bracket"></i> <span>{{ t('steam.update_this') }}</span></button>
+                            <select :value="item.visibility" data-native-select="true" @change="changeVisibility(item, $event)" :disabled="busy.publish">
+                                <option :value="2">{{ t('steam.vis_private') }}</option>
+                                <option :value="1">{{ t('steam.vis_friends') }}</option>
+                                <option :value="0">{{ t('steam.vis_public') }}</option>
+                            </select>
+                            <button class="icon-btn" @click="openUrl(item.url)" :title="t('steam.open_item')"><i class="fa-solid fa-up-right-from-square"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="steam-notice subtle"><i class="fa-solid fa-circle-info"></i> {{ t('steam.no_delete') }}</p>
+            </div>
+        </div>
+    </template>
+</div>
