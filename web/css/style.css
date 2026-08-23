@@ -1972,6 +1972,33 @@ html.btt-native .command-palette-footer { display: none !important; }
     white-space: pre-wrap;
 }
 
+/* Optional itemised body: what exactly the confirmed action will touch. Inset
+   well (page graphite under the panel) and capped so a long list scrolls
+   instead of pushing the buttons off-screen. */
+.global-modal-list {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 8px;
+    max-height: calc(32 * var(--vh));
+    overflow-y: auto;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+}
+
+.global-modal-list li {
+    padding: 4px 8px;
+    font-size: var(--t-fs-body);
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.global-modal-list li + li {
+    border-top: 1px solid var(--border-color);
+}
+
 .global-modal-actions {
     display: flex;
     justify-content: space-between;

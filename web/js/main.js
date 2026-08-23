@@ -1195,12 +1195,13 @@ window.showUndoToast = function(message, seconds, onUndo) {
     });
 };
 
-window.showConfirmModal = function({ title, message, confirmLabel, cancelLabel, extraActionLabel = '', danger = true }) {
+window.showConfirmModal = function({ title, message, items = null, confirmLabel, cancelLabel, extraActionLabel = '', danger = true }) {
     const t = (str, p) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str, p) : str;
     return new Promise((resolve) => {
         const overlay = document.getElementById('global-confirm-overlay');
         const titleEl = document.getElementById('global-confirm-title');
         const messageEl = document.getElementById('global-confirm-message');
+        const listEl = document.getElementById('global-confirm-list');
         const cancelBtn = document.getElementById('global-confirm-cancel');
         const extraBtn = document.getElementById('global-confirm-extra');
         const okBtn = document.getElementById('global-confirm-ok');
@@ -1208,6 +1209,19 @@ window.showConfirmModal = function({ title, message, confirmLabel, cancelLabel, 
 
         titleEl.textContent = title || t('common.confirm');
         messageEl.textContent = message || '';
+        // `items` spells out exactly what the action will touch. Built with
+        // textContent, never innerHTML -- the entries are mod names off disk.
+        if (listEl) {
+            listEl.textContent = '';
+            const entries = Array.isArray(items) ? items.filter(Boolean) : [];
+            entries.forEach(entry => {
+                const li = document.createElement('li');
+                li.textContent = String(entry);
+                li.title = String(entry);
+                listEl.appendChild(li);
+            });
+            listEl.style.display = entries.length ? '' : 'none';
+        }
         cancelBtn.textContent = cancelLabel || t('common.cancel');
         if (extraBtn) {
             extraBtn.textContent = extraActionLabel || '';
@@ -1236,6 +1250,10 @@ window.showConfirmModal = function({ title, message, confirmLabel, cancelLabel, 
 
         const cleanup = () => {
             overlay.style.display = 'none';
+            if (listEl) {
+                listEl.textContent = '';
+                listEl.style.display = 'none';
+            }
             cancelBtn.onclick = null;
             if (extraBtn) {
                 extraBtn.onclick = null;

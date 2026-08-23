@@ -115,6 +115,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const isFixingNames = ref(false);
             const isRefreshingUpdates = ref(false);
+            const isUpdatingAll = ref(false);
             const isClearingCache = ref(false);
             const isImportingTpack = ref(false);
 
@@ -152,8 +153,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                 [t('mod_manager.disabled_only'), 'disabled'],
                 [t('mod_manager.has_conflicts'), 'conflicts'],
                 [t('mod_manager.has_updates'), 'has_updates'],
+                [t('mod_manager.locked_only'), 'locked'],
                 [t('mod_manager.from_trovesaurus_only'), 'trovesaurus_only']
             ]);
+
+            // A locked mod is pinned by the user: it keeps its real `hasUpdate`
+            // flag (so unlocking reveals the pending update straight away) but is
+            // never offered or installed while the lock is on.
+            const canUpdate = (mod) => !!mod.hasUpdate && !mod.locked;
 
             const hasActiveConflict = (mod) => mod.status === 'enabled' && mod.conflicts_with && mod.conflicts_with.some(c => c.enabled);
 
@@ -171,11 +178,15 @@ document.addEventListener('mod_manager_loaded', async () => {
                     if (stat === 'enabled') return mod.status === 'enabled';
                     if (stat === 'disabled') return mod.status === 'disabled';
                     if (stat === 'conflicts') return hasActiveConflict(mod);
-                    if (stat === 'has_updates') return !!mod.hasUpdate;
+                    if (stat === 'has_updates') return canUpdate(mod);
+                    if (stat === 'locked') return !!mod.locked;
                     if (stat === 'trovesaurus_only') return !!mod.tsUrl;
                     return true;
                 });
             });
+
+            const updatableMods = computed(() => mods.value.filter(canUpdate));
+            const updatableCount = computed(() => updatableMods.value.length);
 
             const totalCount = computed(() => mods.value.length);
             const filteredCount = computed(() => filteredMods.value.length);
@@ -346,6 +357,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                         mods.value = (data.mods || []).map(m => ({
                             ...m,
                             hasUpdate: false,
+                            locked: !!m.locked,
                             tsUrl: null,
                             fromHub: false,
                             hubRef: null,
@@ -355,6 +367,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                             hubPageUrl: null,
                             isToggling: false,
                             isUpdating: false,
+                            isLocking: false,
                             isDeleting: false
                         }));
                         // Render the list immediately from local data. Enrichment
@@ -430,18 +443,20 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            // Hub mods update at the VARIANT level: reinstall the latest release of
+            // the branch the user is on (never silently jump to another variant).
+            // Others use the Trovesaurus updater.
+            const requestModUpdate = async (mod) => mod.fromHub
+                ? window.callBackend(eel.install_mods_hub_mod_sync(selectedInstall.value, mod.hubRef, mod.hubBranch || null)(), 'Failed to update mod')
+                : window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod');
+
             const updateMod = async (mod) => {
-                if (mod.isUpdating) return;
+                if (mod.isUpdating || mod.locked) return;
                 mod.isUpdating = true;
                 try {
-                    // Hub mods update at the VARIANT level: reinstall the latest
-                    // release of the branch the user is on (never silently jump to
-                    // another variant). Others use the Trovesaurus updater.
                     const response = await runManagedJob({
                         label: t("common.update_mod_name").replace('{name}', mod.name),
-                        task: async () => mod.fromHub
-                            ? window.callBackend(eel.install_mods_hub_mod_sync(selectedInstall.value, mod.hubRef, mod.hubBranch || null)(), 'Failed to update mod')
-                            : window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod')
+                        task: async () => requestModUpdate(mod)
                     });
                     if (!response.success) {
                         window.showToast(t('mod_manager.failed_to_update_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
@@ -453,6 +468,106 @@ document.addEventListener('mod_manager_loaded', async () => {
                 } finally {
                     mod.isUpdating = false;
                 }
+            };
+
+            const toggleModLock = async (mod) => {
+                if (mod.isLocking) return;
+                const next = !mod.locked;
+                mod.isLocking = true;
+                try {
+                    const response = await window.callBackend(
+                        eel.set_mod_update_lock(selectedInstall.value, mod.path, next)(),
+                        'Failed to change the update lock'
+                    );
+                    if (!response.success) {
+                        window.showToast(response.error || t('common.unknown_error_occurred'), true);
+                        return;
+                    }
+                    mod.locked = next;
+                    window.showToast(next
+                        ? t('mod_manager.updates_locked_name').replace('{name}', mod.name)
+                        : t('mod_manager.updates_unlocked_name').replace('{name}', mod.name));
+                } finally {
+                    mod.isLocking = false;
+                }
+            };
+
+            // Sequential on purpose: the updates write into the same mods folder,
+            // and the watcher/JobQueue progress both read better one at a time.
+            const updateAllMods = async () => {
+                if (isUpdatingAll.value) return;
+                const pending = updatableMods.value.slice();
+                if (pending.length === 0) return;
+
+                const confirmed = await window.showConfirmModal({
+                    title: t('mod_manager.update_all'),
+                    message: t('mod_manager.update_all_confirm') + '\n'
+                        + t('mod_manager.update_all_confirm_list').replace('{count}', pending.length),
+                    items: pending.map(m => m.name),
+                    confirmLabel: t('common.update'),
+                    cancelLabel: t('common.cancel'),
+                    danger: false
+                });
+                if (!confirmed) return;
+
+                isUpdatingAll.value = true;
+                const failed = [];
+                let jobId = null;
+                let done = 0;
+
+                const setProgress = (current) => {
+                    if (!jobId || !window.JobQueue.patch) return;
+                    window.JobQueue.patch(jobId, {
+                        meta: {
+                            progressPercent: Math.round((done / pending.length) * 100),
+                            current: current || '',
+                            status: t('mod_manager.update_all_progress')
+                                .replace('{done}', done)
+                                .replace('{total}', pending.length)
+                        }
+                    });
+                };
+
+                try {
+                    await window.JobQueue.run({
+                        label: t('mod_manager.update_all_mods'),
+                        onStart: (id) => { jobId = id; },
+                        task: async () => {
+                            for (const mod of pending) {
+                                setProgress(mod.name);
+                                mod.isUpdating = true;
+                                try {
+                                    const response = await requestModUpdate(mod);
+                                    if (response.success) mod.hasUpdate = false;
+                                    else failed.push(mod.name);
+                                } catch (e) {
+                                    failed.push(mod.name);
+                                } finally {
+                                    mod.isUpdating = false;
+                                    done++;
+                                }
+                            }
+                            setProgress('');
+                            if (failed.length) throw new Error(failed.join(', '));
+                        }
+                    });
+                } catch (e) {
+                    // The job entry already carries the failure; the toast below
+                    // reports it, so nothing escapes to the console.
+                } finally {
+                    isUpdatingAll.value = false;
+                }
+
+                const updated = pending.length - failed.length;
+                if (failed.length) {
+                    window.showToast(t('mod_manager.update_all_partial')
+                        .replace('{done}', updated)
+                        .replace('{total}', pending.length)
+                        .replace('{names}', failed.join(', ')), true);
+                } else {
+                    window.showToast(t('mod_manager.update_all_done').replace('{count}', updated));
+                }
+                await loadMods();
             };
 
             // --- Mods Hub variant switching (for installed hub mods) ------------
@@ -839,13 +954,19 @@ document.addEventListener('mod_manager_loaded', async () => {
                     }
                 ];
 
-                if (mod.hasUpdate) {
+                if (canUpdate(mod)) {
                     menuItems.push({
                         label: 'Install Update',
                         icon: 'fa-cloud-arrow-down',
                         action: () => updateMod(mod)
                     });
                 }
+
+                menuItems.push({
+                    label: mod.locked ? 'Unlock Updates' : 'Lock Updates',
+                    icon: mod.locked ? 'fa-lock-open' : 'fa-lock',
+                    action: () => toggleModLock(mod)
+                });
 
                 if (mod.fromHub) {
                     menuItems.push({
@@ -973,6 +1094,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 || isImportingTpack.value
                 || isApplyingProfile.value
                 || isClearingCache.value
+                || isUpdatingAll.value
                 || mods.value.some(m => m.isToggling || m.isUpdating || m.isDeleting);
 
             const isViewingModManager = () => window.BTT_CURRENT_VIEW === 'mod_manager'
@@ -1063,6 +1185,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                 shownCount,
                 isFixingNames,
                 isRefreshingUpdates,
+                isUpdatingAll,
+                updatableCount,
                 isClearingCache,
                 isImportingTpack,
                 importTpack,
@@ -1084,6 +1208,9 @@ document.addEventListener('mod_manager_loaded', async () => {
                 clearCache,
                 toggleMod,
                 updateMod,
+                updateAllMods,
+                toggleModLock,
+                canUpdate,
                 deleteMod,
                 fixNames,
                 variantPicker,

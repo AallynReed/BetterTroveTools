@@ -105,31 +105,61 @@
 .file-controls { flex-wrap: wrap; align-items: center; margin-bottom: var(--t-4); }
 .file-controls .custom-select-wrapper { flex: 1 1 360px; min-width: 260px; }
 
+/* One resting surface, two rows: context (which install / which profile) over
+   actions. It replaced a 3-column grid of five bordered clusters that wrapped
+   into a ragged second row and gave every action a solid accent fill. */
 .mod-toolbar {
-    display: grid;
-    grid-template-columns: minmax(320px, 1.4fr) repeat(2, minmax(230px, 1fr));
-    gap: var(--control-gap);
-    margin: var(--t-3) 0 var(--t-4);
-}
-
-.toolbar-cluster {
-    padding: var(--t-3);
+    background: var(--bg-panel);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-surface);
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.14));
+    padding: var(--surface-padding);
+    margin: var(--t-3) 0 var(--t-4);
     display: flex;
     flex-direction: column;
-    gap: var(--t-2);
+    gap: var(--t-3);
 }
 
-.toolbar-cluster-primary {
-    min-height: 100%;
+.toolbar-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--control-gap);
+    align-items: flex-end;
+}
+
+/* The actions sit below a hairline so "what am I working on" and "what can I do
+   to it" read as two things without a second panel. */
+.toolbar-row-actions {
+    align-items: center;
+    padding-top: var(--t-3);
+    border-top: 1px solid var(--border-color);
+}
+
+.toolbar-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--t-1);
+    min-width: 0;
+}
+
+.toolbar-field-install {
+    flex: 2 1 340px;
+}
+
+.toolbar-field-profile {
+    flex: 1 1 300px;
+}
+
+.toolbar-field-controls {
+    display: flex;
+    gap: var(--t-2);
+    align-items: center;
+    min-width: 0;
 }
 
 /* The signature micro eyebrow. It labels a group rather than marking a primary
    action or a selection, so it stays muted — accent is meaning, not decoration
    (DESIGN.md > The Meaning-Only Rule). */
-.toolbar-cluster-label {
+.toolbar-field-label {
     font-size: var(--t-fs-micro);
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -138,73 +168,109 @@
 }
 
 .toolbar-select-grow {
-    flex-grow: 1;
-}
-
-.toolbar-cluster-advanced {
-    align-self: start;
-}
-
-.toolbar-cluster-summary {
-    list-style: none;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: var(--t-1);
-}
-
-.toolbar-cluster-summary::-webkit-details-marker {
-    display: none;
-}
-
-.toolbar-cluster-summary:focus-visible {
-    outline: 2px solid var(--accent-blue);
-    outline-offset: 2px;
-}
-
-.toolbar-cluster-summary-copy {
-    color: var(--text-muted);
-    font-size: var(--t-fs-label);
-}
-
-.toolbar-cluster-actions-advanced {
-    margin-top: var(--t-2);
-    padding-top: var(--t-2);
-    border-top: 1px solid var(--border-color);
-}
-
-.toolbar-cluster-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--t-2);
-    align-items: center;
-}
-
-.toolbar-cluster-install .toolbar-cluster-actions .custom-select-wrapper {
-    flex: 1 1 280px;
-    min-width: 220px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .mod-toolbar .primary-btn,
-.mod-toolbar .secondary-btn {
+.mod-toolbar .secondary-btn,
+.mod-toolbar .ghost-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--t-2);
-    padding: var(--t-2) 10px;
     font-size: var(--t-fs-body);
     min-height: var(--control-height);
 }
 
 .mod-toolbar .primary-btn span,
-.mod-toolbar .secondary-btn span {
+.mod-toolbar .secondary-btn span,
+.mod-toolbar .ghost-btn span {
     white-space: nowrap;
 }
 
 .mod-toolbar .primary-btn i,
-.mod-toolbar .secondary-btn i {
+.mod-toolbar .secondary-btn i,
+.mod-toolbar .ghost-btn i {
     flex: 0 0 auto;
-    margin-right: 1px;
+}
+
+/* Square: an icon-only control has no label to pad around. */
+.mod-toolbar .toolbar-icon-btn {
+    flex: 0 0 auto;
+    width: var(--control-height);
+    padding: 0;
+}
+
+/* The pending-update count rides inside the primary button on a translucent
+   wash of its own ink, so it works whatever accent the user picked. */
+.toolbar-btn-count {
+    font-size: var(--t-fs-micro);
+    font-weight: 800;
+    letter-spacing: 1px;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: var(--radius-pill);
+    background: rgba(0, 0, 0, 0.22);
+}
+
+/* Maintenance is rare, so it collapses to a single ghost control at the end of
+   the action row and expands in place — no floating layer, no empty card. */
+.toolbar-maintenance {
+    margin-left: auto;
+}
+
+.toolbar-maintenance-summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--t-2);
+    min-height: var(--control-height);
+    padding: var(--t-2) var(--t-3);
+    border-radius: var(--radius-control);
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
+    white-space: nowrap;
+}
+
+.toolbar-maintenance-summary::-webkit-details-marker {
+    display: none;
+}
+
+.toolbar-maintenance-summary:hover {
+    color: var(--text-main);
+    background: var(--bg-hover);
+}
+
+.toolbar-maintenance-summary:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.toolbar-maintenance-chevron {
+    font-size: var(--icon-optical);
+    transition: transform var(--dur) var(--t-ease);
+}
+
+.toolbar-maintenance[open] .toolbar-maintenance-summary {
+    color: var(--text-main);
+}
+
+.toolbar-maintenance[open] .toolbar-maintenance-chevron {
+    transform: rotate(180deg);
+}
+
+.toolbar-maintenance-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--t-2);
+    margin-top: var(--t-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .toolbar-maintenance-chevron { transition: none; }
 }
 
 .search-filter-bar { display: flex; gap: var(--control-gap); align-items: center; background: var(--bg-panel); padding: var(--surface-padding); border-radius: var(--radius-surface); border: 1px solid var(--border-color); margin-bottom: var(--t-2); }
@@ -231,7 +297,6 @@
 
 @media (max-width: 900px) {
     .file-manager-container { padding: var(--view-padding); }
-    .mod-toolbar { grid-template-columns: 1fr; }
     .search-filter-bar { flex-wrap: wrap; }
     .mod-count-display { width: 100%; text-align: left; }
     .search-result-nav {
@@ -243,8 +308,13 @@
     .mod-filter-select {
         width: 100%;
     }
-    .toolbar-cluster-actions > * {
-        width: 100%;
+    /* The action row wraps on its own; the buttons keep their content width
+       rather than one lonely survivor stretching across the whole line. */
+    .toolbar-maintenance {
+        margin-left: 0;
+    }
+    .toolbar-maintenance-actions {
+        justify-content: flex-start;
     }
 }
 
@@ -323,6 +393,63 @@
     pointer-events: auto;
     outline: 2px solid var(--accent-blue);
     outline-offset: 2px;
+}
+
+/* Same borderless icon-button box as the delete control next to it. It differs
+   in one way: an engaged lock is state the user must be able to see without
+   hovering, so `.is-locked` opts out of the hover reveal. */
+.mod-card-lock-hover {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    margin-left: auto;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur) var(--t-ease), color var(--dur-fast) var(--t-ease), transform var(--dur) var(--t-ease);
+    z-index: 4;
+}
+
+/* With the lock visible the delete button no longer needs the auto margin --
+   the lock has already pushed the pair to the right. */
+.mod-front-top .mod-card-lock-hover + .mod-card-delete-hover {
+    margin-left: 0;
+}
+
+.mod-card:hover .mod-card-lock-hover,
+.mod-card-lock-hover.is-locked {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.mod-card-lock-hover.is-locked {
+    color: var(--text-main);
+}
+
+.mod-card-lock-hover:hover {
+    transform: scale(1.05);
+    color: var(--text-main);
+}
+
+.mod-card-lock-hover:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+
+.mod-card-lock-hover:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.mod-front-top .mod-card-lock-hover {
+    margin-top: 1px;
 }
 
 .mod-card.kbd-active-result {
@@ -528,6 +655,14 @@
     align-items: center;
     gap: var(--t-1);
     background: transparent;
+}
+
+/* "Locked" is a user pin, not a status — it stays in the neutral ramp rather
+   than inventing a fifth semantic colour (DESIGN.md > The Four Semantics Rule). */
+.mod-flag-locked {
+    color: var(--text-main);
+    border-color: var(--border-color);
+    background: var(--bg-hover);
 }
 
 .mod-flag-update {

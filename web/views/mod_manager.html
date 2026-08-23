@@ -28,82 +28,85 @@
 
     <section class="mm-tab-content active" data-mm-panel="mod_manager">
         <div id="mod-manager-vue-app" class="file-manager-container" style="padding: 0;" v-cloak>
+            <!-- One control surface instead of five boxed clusters: a context row
+                 (which install, which profile) over an action row that carries the
+                 view's single primary action. -->
             <div class="mod-toolbar">
-                <div class="toolbar-cluster toolbar-cluster-install toolbar-cluster-primary">
-                    <div class="toolbar-cluster-label">{{ t('mod_manager.current_trove_path') }}</div>
-                    <div class="toolbar-cluster-actions">
-                        <custom-vue-select v-model="selectedInstall" :options="installOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>
-                        <button @click="openSelectedInstallFolder" class="primary-btn" :title="t('common.open_selected_game_folder')" :disabled="!selectedInstall || isLoading">
-                            <i class="fa-solid fa-folder-open"></i>
-                            <span>{{ t('common.open_folder') }}</span>
-                        </button>
+                <div class="toolbar-row toolbar-row-context">
+                    <div class="toolbar-field toolbar-field-install">
+                        <span class="toolbar-field-label">{{ t('mod_manager.current_trove_path') }}</span>
+                        <div class="toolbar-field-controls">
+                            <custom-vue-select v-model="selectedInstall" :options="installOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>
+                            <button @click="openSelectedInstallFolder" class="secondary-btn toolbar-icon-btn" :title="t('common.open_selected_game_folder')" :aria-label="t('common.open_folder')" :disabled="!selectedInstall || isLoading">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="modsHubEnabled" class="toolbar-field toolbar-field-profile">
+                        <span class="toolbar-field-label">{{ t('profiles.profiles') }}</span>
+                        <div class="toolbar-field-controls">
+                            <custom-vue-select v-model="selectedProfileId" :options="profileOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>
+                            <button @click="applyProfile" class="secondary-btn" :disabled="!selectedProfile || !selectedInstall || isApplyingProfile" :title="t('profiles.apply_title')">
+                                <template v-if="isApplyingProfile"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('profiles.applying_short') }}</span></template>
+                                <template v-else><i class="fa-solid fa-circle-check"></i> <span>{{ t('profiles.apply') }}</span></template>
+                            </button>
+                            <button @click="openRenameProfile" class="ghost-btn toolbar-icon-btn" :disabled="!selectedProfile" :title="t('profiles.rename')" :aria-label="t('profiles.rename')">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button @click="removeProfile" class="ghost-btn toolbar-icon-btn" :disabled="!selectedProfile" :title="t('profiles.remove')" :aria-label="t('profiles.remove')">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <div class="toolbar-cluster toolbar-cluster-primary">
-                    <div class="toolbar-cluster-label">{{ t('mod_manager.refresh') }}</div>
-                    <div class="toolbar-cluster-actions">
-                        <button @click="scanForGames" class="primary-btn" :title="t('common.refresh_detected_games')">
-                            <i class="fa-solid fa-rotate-right"></i>
-                            <span>{{ t('mod_manager.find_installs') }}</span>
-                        </button>
+                <div class="toolbar-row toolbar-row-actions">
+                    <!-- The one primary action on this surface (DESIGN.md > Buttons). -->
+                    <button @click="updateAllMods" class="primary-btn" :disabled="!selectedInstall || isUpdatingAll || updatableCount === 0" :title="t('mod_manager.update_all_title')">
+                        <template v-if="isUpdatingAll"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('mod_manager.updating') }}</span></template>
+                        <template v-else><i class="fa-solid fa-cloud-arrow-down"></i> <span>{{ t('mod_manager.update_all') }}</span><span v-if="updatableCount" class="toolbar-btn-count">{{ updatableCount }}</span></template>
+                    </button>
 
-                        <button @click="refreshInstallState" class="primary-btn" :disabled="!selectedInstall || isLoading" :title="t('common.refresh_install_state')">
-                            <i class="fa-solid fa-arrows-rotate"></i>
-                            <span>{{ t('mod_manager.reload_mods') }}</span>
-                        </button>
+                    <button @click="refreshUpdates" class="secondary-btn" :disabled="!selectedInstall || isRefreshingUpdates" :title="t('mod_manager.refresh_update_availability')">
+                        <template v-if="isRefreshingUpdates"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('mod_manager.checking') }}</span></template>
+                        <template v-else><i class="fa-solid fa-magnifying-glass-chart"></i> <span>{{ t('mod_manager.check_updates') }}</span></template>
+                    </button>
 
-                        <button @click="refreshUpdates" class="primary-btn" :disabled="!selectedInstall || isRefreshingUpdates" :title="t('mod_manager.refresh_update_availability')">
-                            <template v-if="isRefreshingUpdates"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.checking') }}</template>
-                            <template v-else><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('mod_manager.check_updates') }}</template>
-                        </button>
-                    </div>
+                    <button @click="refreshInstallState" class="secondary-btn" :disabled="!selectedInstall || isLoading" :title="t('common.refresh_install_state')">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        <span>{{ t('mod_manager.reload_mods') }}</span>
+                    </button>
+
+                    <button @click="scanForGames" class="secondary-btn" :title="t('common.refresh_detected_games')">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>{{ t('mod_manager.find_installs') }}</span>
+                    </button>
+
+                    <button v-if="modsHubEnabled" @click="importTpack" class="secondary-btn" :disabled="!selectedInstall || isImportingTpack" :title="t('mod_manager.import_tpack_title')">
+                        <template v-if="isImportingTpack"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('mod_manager.importing') }}</span></template>
+                        <template v-else><i class="fa-solid fa-file-import"></i> <span>{{ t('mod_manager.import_tpack') }}</span></template>
+                    </button>
+
+                    <details class="toolbar-maintenance">
+                        <summary class="toolbar-maintenance-summary" :title="t('mod_manager.advanced_actions')">
+                            <i class="fa-solid fa-screwdriver-wrench"></i>
+                            <span>{{ t('mod_manager.maintenance') }}</span>
+                            <i class="fa-solid fa-chevron-down toolbar-maintenance-chevron"></i>
+                        </summary>
+                        <div class="toolbar-maintenance-actions">
+                            <button @click="fixNames" class="secondary-btn" :title="t('mod_manager.rename_files_to_match_mod_internal_names')" :disabled="isFixingNames || !selectedInstall">
+                                <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('mod_manager.processing') }}</span></template>
+                                <template v-else><i class="fa-solid fa-tag"></i> <span>{{ t('mod_manager.fix_names') }}</span></template>
+                            </button>
+
+                            <button @click="clearCache" class="secondary-btn" :disabled="isClearingCache" :title="t('mod_manager.clear_mod_manager_cache')">
+                                <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i> <span>{{ t('mod_manager.clearing') }}</span></template>
+                                <template v-else><i class="fa-solid fa-broom"></i> <span>{{ t('common.clear_cache') }}</span></template>
+                            </button>
+                        </div>
+                    </details>
                 </div>
-
-                <div v-if="modsHubEnabled" class="toolbar-cluster toolbar-cluster-primary">
-                    <div class="toolbar-cluster-label">{{ t('mod_manager.modpack') }}</div>
-                    <div class="toolbar-cluster-actions">
-                        <button @click="importTpack" class="primary-btn" :disabled="!selectedInstall || isImportingTpack" :title="t('mod_manager.import_tpack_title')">
-                            <template v-if="isImportingTpack"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.importing') }}</template>
-                            <template v-else><i class="fa-solid fa-file-import"></i> {{ t('mod_manager.import_tpack') }}</template>
-                        </button>
-                    </div>
-                </div>
-
-                <div v-if="modsHubEnabled" class="toolbar-cluster toolbar-cluster-primary">
-                    <div class="toolbar-cluster-label">{{ t('profiles.profiles') }}</div>
-                    <div class="toolbar-cluster-actions">
-                        <custom-vue-select v-model="selectedProfileId" :options="profileOptions" :translate-options="false" class="toolbar-select-grow"></custom-vue-select>
-                        <button @click="applyProfile" class="primary-btn" style="background: var(--accent-blue);" :disabled="!selectedProfile || !selectedInstall || isApplyingProfile" :title="t('profiles.apply_title')">
-                            <template v-if="isApplyingProfile"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('profiles.applying_short') }}</template>
-                            <template v-else><i class="fa-solid fa-circle-check"></i> {{ t('profiles.apply') }}</template>
-                        </button>
-                        <button @click="openRenameProfile" class="secondary-btn" :disabled="!selectedProfile" :title="t('profiles.rename')">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <button @click="removeProfile" class="secondary-btn" :disabled="!selectedProfile" :title="t('profiles.remove')">
-                            <i class="fa-solid fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <details class="toolbar-cluster toolbar-cluster-advanced">
-                    <summary class="toolbar-cluster-summary">
-                        <span class="toolbar-cluster-label">{{ t('mod_manager.maintenance') }}</span>
-                        <span class="toolbar-cluster-summary-copy">{{ t('mod_manager.advanced_actions') }}</span>
-                    </summary>
-                    <div class="toolbar-cluster-actions toolbar-cluster-actions-advanced">
-                        <button @click="fixNames" class="primary-btn" :title="t('mod_manager.rename_files_to_match_mod_internal_names')" style="background: var(--accent-blue);" :disabled="isFixingNames || !selectedInstall">
-                            <template v-if="isFixingNames"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.processing') }}</template>
-                            <template v-else><i class="fa-solid fa-tag"></i> {{ t('mod_manager.fix_names') }}</template>
-                        </button>
-
-                        <button @click="clearCache" class="secondary-btn" :disabled="isClearingCache" :title="t('mod_manager.clear_mod_manager_cache')">
-                            <template v-if="isClearingCache"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.clearing') }}</template>
-                            <template v-else><i class="fa-solid fa-broom"></i> {{ t('common.clear_cache') }}</template>
-                        </button>
-                    </div>
-                </details>
             </div>
 
             <div class="search-filter-bar">
@@ -161,6 +164,9 @@
                                 </span>
                                 <a v-if="mod.tsUrl" class="mod-title mod-link ts-mod-title" :href="modNameUrl(mod) || '#'" :title="mod.fromHub ? t('mods_hub.open_in_hub') : t('mod_manager.title_click_to_view_on_trovesaurus').replace('{title}', mod.name)" @click.prevent="openUrl(mod.tsUrl)" v-html="highlightSearch(mod.name)"></a>
                                 <span v-else class="mod-title" v-html="highlightSearch(mod.name)"></span>
+                                <button class="mod-card-lock-hover" :class="{ 'is-locked': mod.locked }" :title="mod.locked ? t('mod_manager.unlock_updates') : t('mod_manager.lock_updates')" :aria-pressed="mod.locked ? 'true' : 'false'" @click.stop.prevent="toggleModLock(mod)" :disabled="mod.isLocking">
+                                    <i class="fa-solid" :class="mod.isLocking ? 'fa-spinner fa-spin' : (mod.locked ? 'fa-lock' : 'fa-lock-open')"></i>
+                                </button>
                                 <button class="mod-card-delete-hover" :title="t('common.delete_mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
                                     <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
                                 </button>
@@ -175,12 +181,13 @@
                             </button>
 
                             <div class="mod-front-tags">
-                                <span v-if="mod.hasUpdate" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('common.update') }}</span>
+                                <span v-if="canUpdate(mod)" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('common.update') }}</span>
+                                <span v-if="mod.locked" class="mod-flag mod-flag-locked" :title="t('mod_manager.updates_locked_tip')"><i class="fa-solid fa-lock"></i> {{ t('mod_manager.locked') }}</span>
                                 <span v-if="mod.fromHub" class="mod-flag mod-flag-hub" :title="t('mods_hub.switch_variant')" @click.stop="openVariantPicker(mod)"><i class="fa-solid fa-code-branch"></i> {{ mod.hubBranch || t('mod_manager.mods_hub') }}</span>
                             </div>
 
                             <div class="mod-inline-actions">
-                                <button v-if="mod.hasUpdate" class="update-mod-btn" :title="t('mod_manager.update_available')" @click="updateMod(mod)" :disabled="mod.isUpdating">
+                                <button v-if="canUpdate(mod)" class="update-mod-btn" :title="t('mod_manager.update_available')" @click="updateMod(mod)" :disabled="mod.isUpdating">
                                     <i class="fa-solid" :class="mod.isUpdating ? 'fa-spinner fa-spin' : 'fa-download'"></i>
                                     <span>{{ t('common.update') }}</span>
                                 </button>

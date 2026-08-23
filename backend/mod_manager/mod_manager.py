@@ -11,7 +11,7 @@ import requests
 from backend.response import resp
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
-from utils.path import get_cache_root
+from utils.path import get_app_data_dir, get_cache_root
 from utils.trove_cfg import ensure_mods_enabled
 
 
@@ -63,6 +63,74 @@ def _write_trash_manifest(manifest):
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
 
+# --- Update locks ----------------------------------------------------------
+# A locked mod is pinned: nothing offers or installs an update for it until the
+# user unlocks it. Kept in app data, not the cache, so "Clear Cache" never drops
+# the user's pins.
+
+
+def _locks_path():
+    return get_app_data_dir() / "mod_locks.json"
+
+
+def _lock_key(mod_path):
+    """Stable per-mod key. Toggling a mod renames it in place (`.tmod` <->
+    `.tmod.disabled`), so the key is the file name with that suffix stripped
+    rather than the full path."""
+    name = Path(mod_path).name
+    if name.lower().endswith(".disabled"):
+        name = name[: -len(".disabled")]
+    return name.lower()
+
+
+def _install_key(game_path_str):
+    return str(Path(game_path_str)).lower()
+
+
+def _read_locks():
+    try:
+        data = json.loads(_locks_path().read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_locks(data):
+    path = _locks_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def _locked_keys(game_path_str):
+    entry = _read_locks().get(_install_key(game_path_str))
+    return {str(k).lower() for k in entry} if isinstance(entry, list) else set()
+
+
+@eel.expose
+def set_mod_update_lock(game_path_str, mod_path_str, locked):
+    try:
+        data = _read_locks()
+        install = _install_key(game_path_str)
+        keys = _locked_keys(game_path_str)
+        if locked:
+            keys.add(_lock_key(mod_path_str))
+        else:
+            keys.discard(_lock_key(mod_path_str))
+
+        if keys:
+            data[install] = sorted(keys)
+        else:
+            data.pop(install, None)
+        _write_locks(data)
+
+        return resp(True, data={"locked": bool(locked)}, locked=bool(locked))
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return resp(False, error=str(e), code="LOCK_FAILED")
+
+
 @eel.expose
 def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
     try:
@@ -77,6 +145,8 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
             fix_configs=fix_configs,
         )
 
+        locked_keys = _locked_keys(game_path_str)
+
         result_mods = []
         for mod in mod_list:
             result_mods.append(
@@ -85,6 +155,7 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                     "author": mod.author or "Unknown Author",
                     "status": "enabled" if mod.enabled else "disabled",
                     "path": str(mod.mod_path),
+                    "locked": _lock_key(mod.mod_path) in locked_keys,
                     "image": mod.image,
                     "has_conflicts": mod.has_conflicts,
                     "conflicts_with": [
@@ -345,6 +416,11 @@ def check_mod_updates(game_path_str, force=False):
 @eel.expose
 def perform_mod_update(game_path_str, mod_path_str):
     try:
+        # The lock is a user pin, so it is enforced here too and not only in the
+        # UI -- a stale card must not be able to push an update through.
+        if _lock_key(mod_path_str) in _locked_keys(game_path_str):
+            return resp(False, error="Updates are locked for this mod.", code="MOD_LOCKED")
+
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
         mod_list.update_trovesaurus_data()
