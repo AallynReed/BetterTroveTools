@@ -142,14 +142,15 @@
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "Jubilant Song: movement speed and max energy 2%. Peaceful Song: 1% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 2%. Duration 3s. Cooldown 15s.",
+                "5000": "Jubilant Song: movement speed and max energy 4%. Peaceful Song: 1% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 4%. Duration 3s. Cooldown 15s.",
+                "10000": "Jubilant Song: movement speed and max energy 6%. Peaceful Song: 2% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 6%. Duration 3s. Cooldown 15s.",
+                "15000": "Jubilant Song: movement speed and max energy 8%. Peaceful Song: 2% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 8%. Duration 3s. Cooldown 15s.",
+                "20000": "Jubilant Song: movement speed and max energy 10%. Peaceful Song: 3% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 10%. Duration 3s. Cooldown 15s.",
+                "25000": "Jubilant Song: movement speed and max energy 12%. Peaceful Song: 4% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 12%. Duration 3s. Cooldown 15s.",
+                "30000": "Jubilant Song: movement speed and max energy 15%. Peaceful Song: 5% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 15%. Duration 3s. Cooldown 15s.",
+                "35000": "Jubilant Song: movement speed and max energy 17.5%. Peaceful Song: 6.5% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 17.5%. Duration 3s. Cooldown 15s.",
+                "40000": "Jubilant Song: movement speed and max energy 20%. Peaceful Song: 7.5% life gain when dealing damage. Battle Song: Attack Speed and Critical Damage 20%. Duration 3s. Cooldown 15s."
             }
         }
     },
@@ -252,7 +253,7 @@
         ],
         "subclass": {
             "name": "Fae Companion",
-            "description": "A fae companion that provides healing when you are low on life.",
+            "description": "A fae companion that provides healing when you are at 20% health. 30s cooldown.",
             "level": {
                 "1": [
                     {
@@ -298,14 +299,15 @@
                 ]
             },
             "power": {
-                "1": "30% Heal",
-                "5000": "32% Heal",
-                "10000": "34% Heal",
-                "15000": "36% Heal",
-                "20000": "38% Heal",
-                "25000": "40% Heal",
-                "30000": "45% Heal",
-                "35000": "50% Heal"
+                "1": "30% heal.",
+                "5000": "32% heal.",
+                "10000": "34% heal.",
+                "15000": "36% heal.",
+                "20000": "38% heal.",
+                "25000": "40% heal.",
+                "30000": "42% heal.",
+                "35000": "45% heal.",
+                "40000": "50% heal."
             }
         },
         "abilities": [
@@ -494,7 +496,7 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Sugar Rush",
             "description": "Damaging an enemy has a chance to drop candy that doubles attack speed and movement speed by 20 or heals you by 10% max health. 15s cooldown.",
             "level": {
                 "1": [
@@ -541,14 +543,15 @@
                 ]
             },
             "power": {
-                "1": "22.5% chance to activate on damage dealt.",
-                "5000": "25% chance to activate on damage dealt.",
-                "10000": "27.5% chance to activate on damage dealt.",
-                "15000": "30% chance to activate on damage dealt.",
-                "20000": "32.5% chance to activate on damage dealt.",
-                "25000": "35% chance to activate on damage dealt.",
-                "30000": "40% chance to activate on damage dealt.",
-                "35000": "50% chance to activate on damage dealt."
+                "1": "22.5% Active chance on damage dealt.",
+                "5000": "25% Active chance on damage dealt.",
+                "10000": "27.5% Active chance on damage dealt.",
+                "15000": "30% Active chance on damage dealt.",
+                "20000": "32.5% Active chance on damage dealt.",
+                "25000": "35% Active chance on damage dealt.",
+                "30000": "37.5% Active chance on damage dealt.",
+                "35000": "40% Active chance on damage dealt.",
+                "40000": "50% Active chance on damage dealt."
             }
         },
         "abilities": [
@@ -717,60 +720,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Prickly Persona",
+            "description": "Enemy attacks have a chance to cover you in thistles, returning damage to attackers.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Maximum Health",
+                        "value": 1,
                         "percentage": true
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Maximum Health",
+                        "value": 2,
                         "percentage": true
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Maximum Health",
+                        "value": 4,
                         "percentage": true
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Maximum Health",
+                        "value": 7,
                         "percentage": true
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Maximum Health",
+                        "value": 10,
                         "percentage": true
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Maximum Health",
+                        "value": 15,
                         "percentage": true
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% chance on NPC damage received. 3s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "5000": "20% chance on NPC damage received. 4s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "10000": "20% chance on NPC damage received. 5s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "15000": "20% chance on NPC damage received. 6s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "20000": "20% chance on NPC damage received. 7s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "25000": "20% chance on NPC damage received. 8s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "30000": "20% chance on NPC damage received. 9s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "35000": "65% chance on NPC damage received. 10s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown.",
+                "40000": "75% chance on NPC damage received. 12s duration. 5000% reflect (NPC only - no Shadow Titans). 30s cooldown."
             }
         }
     },
@@ -871,60 +876,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Research Net",
+            "description": "Critical hits have a chance to root targets in place for a short duration.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Attack Speed",
+                        "value": 0.5,
                         "percentage": true
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Attack Speed",
+                        "value": 1,
                         "percentage": true
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Attack Speed",
+                        "value": 2,
                         "percentage": true
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Attack Speed",
+                        "value": 3,
                         "percentage": true
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Attack Speed",
+                        "value": 4,
                         "percentage": true
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Attack Speed",
+                        "value": 5,
                         "percentage": true
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% chance on critical hit. 8s cooldown. 2s root.",
+                "5000": "22% chance on critical hit. 8s cooldown. 2s root.",
+                "10000": "24% chance on critical hit. 8s cooldown. 2s root.",
+                "15000": "26% chance on critical hit. 8s cooldown. 2s root.",
+                "20000": "28% chance on critical hit. 8s cooldown. 2s root.",
+                "25000": "30% chance on critical hit. 8s cooldown. 2s root.",
+                "30000": "32% chance on critical hit. 8s cooldown. 2s root.",
+                "35000": "40% chance on critical hit. 8s cooldown. 3s root.",
+                "40000": "45% chance on critical hit. 8s cooldown. 4s root."
             }
         }
     },
@@ -1027,60 +1034,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Burning Zealot",
+            "description": "Physical damage to enemies has a chance to apply fire to them, dealing damage every 0.1s for 3s.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Reduced Cooldown",
+                        "value": 1,
                         "percentage": true
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Reduced Cooldown",
+                        "value": 2,
                         "percentage": true
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Reduced Cooldown",
+                        "value": 3,
                         "percentage": true
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Reduced Cooldown",
+                        "value": 4,
                         "percentage": true
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Reduced Cooldown",
+                        "value": 5,
                         "percentage": true
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Reduced Cooldown",
+                        "value": 7,
                         "percentage": true
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "15% Active chance on physical damage dealt. 5% Magic Damage.",
+                "5000": "16% Active chance on physical damage dealt. 8% Magic Damage.",
+                "10000": "17% Active chance on physical damage dealt. 12% Magic Damage.",
+                "15000": "18% Active chance on physical damage dealt. 16% Magic Damage.",
+                "20000": "19% Active chance on physical damage dealt. 20% Magic Damage.",
+                "25000": "20% Active chance on physical damage dealt. 25% Magic Damage.",
+                "30000": "21% Active chance on physical damage dealt. 28% Magic Damage.",
+                "35000": "25% Active chance on physical damage dealt. 30% Magic Damage.",
+                "40000": "30% Active chance on physical damage dealt. 40% Magic Damage."
             }
         }
     },
@@ -1181,60 +1190,68 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Sparkle Grenade",
+            "description": "Critical hits to enemies can spawn a shiny bomb that deals damage and stuns enemies for 1.5s.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flying Speed",
+                        "value": 101,
+                        "percentage": false,
+                        "absolute": true
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flying Speed",
+                        "value": 102,
+                        "percentage": false,
+                        "absolute": true
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flying Speed",
+                        "value": 103,
+                        "percentage": false,
+                        "absolute": true
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flying Speed",
+                        "value": 104,
+                        "percentage": false,
+                        "absolute": true
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flying Speed",
+                        "value": 105,
+                        "percentage": false,
+                        "absolute": true
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flying Speed",
+                        "value": 110,
+                        "percentage": false,
+                        "absolute": true
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% Active chance on critical hit. 150% Magic Damage.",
+                "5000": "21% Active chance on critical hit. 175% Magic Damage.",
+                "10000": "22% Active chance on critical hit. 200% Magic Damage.",
+                "15000": "23% Active chance on critical hit. 250% Magic Damage.",
+                "20000": "24% Active chance on critical hit. 275% Magic Damage.",
+                "25000": "25% Active chance on critical hit. 300% Magic Damage.",
+                "30000": "26% Active chance on critical hit. 350% Magic Damage.",
+                "35000": "30% Active chance on critical hit. 400% Magic Damage.",
+                "40000": "40% Active chance on critical hit. 450% Magic Damage."
             }
         }
     },
@@ -1334,60 +1351,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Rain Destruction",
+            "description": "Damage dealt to enemies while airborne is increased.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 1,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 2,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 3,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 4,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 6,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 10,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "2.5% outgoing damage when not standing on a block.",
+                "5000": "3% outgoing damage when not standing on a block.",
+                "10000": "3.5% outgoing damage when not standing on a block.",
+                "15000": "4% outgoing damage when not standing on a block.",
+                "20000": "4.5% outgoing damage when not standing on a block.",
+                "25000": "5% outgoing damage when not standing on a block.",
+                "30000": "5.5% outgoing damage when not standing on a block.",
+                "35000": "7.5% outgoing damage when not standing on a block.",
+                "40000": "10% outgoing damage when not standing on a block."
             }
         },
         "abilities": [
@@ -1574,60 +1593,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Glacial Ward",
+            "description": "Chance on damage received to activate a shield. Lasts 5s. While active, movement speed, magic damage, and attack speed are increased. Damage received greater than 50% of your HP is absorbed.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 10,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 60,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 160,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 300,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 500,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 750,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% chance on damage taken trigger absorb shield. Stats increased by 5%. 30s cooldown.",
+                "5000": "21% chance on damage taken trigger absorb shield. Stats increased by 8%. 30s cooldown.",
+                "10000": "22% chance on damage taken trigger absorb shield. Stats increased by 11%. 30s cooldown.",
+                "15000": "23% chance on damage taken trigger absorb shield. Stats increased by 14%. 30s cooldown.",
+                "20000": "24% chance on damage taken trigger absorb shield. Stats increased by 17%. 30s cooldown.",
+                "25000": "25% chance on damage taken trigger absorb shield. Stats increased by 20%. 30s cooldown.",
+                "30000": "26% chance on damage taken trigger absorb shield. Stats increased by 23%. 30s cooldown.",
+                "35000": "30% chance on damage taken trigger absorb shield. Stats increased by 25%. 30s cooldown.",
+                "40000": "35% chance on damage taken trigger absorb shield. Stats increased by 35%. 30s cooldown."
             }
         }
     },
@@ -1727,60 +1748,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Mounted Cavalry",
+            "description": "Increased movement speed while riding ground based mounts. Grants a shield that spawns at low health.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flask Capacity",
+                        "value": 1,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flask Capacity",
+                        "value": 2,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flask Capacity",
+                        "value": 3,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flask Capacity",
+                        "value": 4,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flask Capacity",
+                        "value": 5,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Flask Capacity",
+                        "value": 6,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "95 ground based mounted movement speed. At low health gain a 25% damage reduction shield for a short time.",
+                "5000": "97 ground based mounted movement speed. At low health gain a 30% damage reduction shield for a short time.",
+                "10000": "100 ground based mounted movement speed. At low health gain a 35% damage reduction shield for a short time.",
+                "15000": "105 ground based mounted movement speed. At low health gain a 45% damage reduction shield for a short time.",
+                "20000": "110 ground based mounted movement speed. At low health gain a 55% damage reduction shield for a short time.",
+                "25000": "120 ground based mounted movement speed. At low health gain a 65% damage reduction shield for a short time.",
+                "30000": "125 ground based mounted movement speed. At low health gain a 65% damage reduction shield for a short time.",
+                "35000": "125 ground based mounted movement speed. At low health gain a 75% damage reduction shield for a short time.",
+                "40000": "125 ground based mounted movement speed. At low health gain a 85% damage reduction shield for a short time."
             }
         }
     },
@@ -1881,60 +1904,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Sorta Crazy",
+            "description": "Chance during combat to transform and receive some of the power of the Lunar Lancer during 6s. Doubles your attack speed.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Physical Damage",
+                        "value": 10,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Physical Damage",
+                        "value": 60,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Physical Damage",
+                        "value": 160,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Physical Damage",
+                        "value": 300,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Physical Damage",
+                        "value": 500,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Physical Damage",
+                        "value": 750,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% chance on damage dealt. Increases damage done by 5%.",
+                "5000": "21% chance on damage dealt. Increases damage done by 6%.",
+                "10000": "22% chance on damage dealt. Increases damage done by 7%.",
+                "15000": "23% chance on damage dealt. Increases damage done by 8%.",
+                "20000": "24% chance on damage dealt. Increases damage done by 9%.",
+                "25000": "25% chance on damage dealt. Increases damage done by 10%.",
+                "30000": "26% chance on damage dealt. Increases damage done by 11%.",
+                "35000": "30% chance on damage dealt. Increases damage done by 15%.",
+                "40000": "35% chance on damage dealt. Increases damage done by 20%."
             }
         }
     },
@@ -2035,60 +2060,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Assassinate",
+            "description": "Chance to deal bonus damage to enemies with less than 20% health.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 1,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 2,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 3,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 4,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 6,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 10,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% chance when target health is below 20%. 50% Physical Damage.",
+                "5000": "22% chance when target health is below 20%. 100% Physical Damage.",
+                "10000": "24% chance when target health is below 20%. 150% Physical Damage.",
+                "15000": "26% chance when target health is below 20%. 200% Physical Damage.",
+                "20000": "28% chance when target health is below 20%. 250% Physical Damage.",
+                "25000": "30% chance when target health is below 20%. 300% Physical Damage.",
+                "30000": "32% chance when target health is below 20%. 350% Physical Damage.",
+                "35000": "34% chance when target health is below 20%. 400% Physical Damage.",
+                "40000": "36% chance when target health is below 20%. 550% Physical Damage."
             }
         }
     },
@@ -2189,60 +2216,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Naval Gunfire",
+            "description": "Damaging an enemy has a chance to call a cannon ball from the sky.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Find",
+                        "value": 10,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Find",
+                        "value": 20,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Find",
+                        "value": 30,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Find",
+                        "value": 40,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Find",
+                        "value": 50,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Find",
+                        "value": 70,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "20% chance on damage dealt. 30s cooldown.",
+                "5000": "21% chance on damage dealt. 30s cooldown.",
+                "10000": "22% chance on damage dealt. 30s cooldown.",
+                "15000": "23% chance on damage dealt. 30s cooldown.",
+                "20000": "24% chance on damage dealt. 30s cooldown.",
+                "25000": "25% chance on damage dealt. 30s cooldown.",
+                "30000": "26% chance on damage dealt. 30s cooldown.",
+                "35000": "30% chance on damage dealt. 30s cooldown.",
+                "40000": "35% chance on damage dealt. 30s cooldown."
             }
         }
     },
@@ -2343,60 +2372,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Hatred of the Oathbound",
+            "description": "Successful attacks return health.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Incoming Damage",
+                        "value": -1,
                         "percentage": true
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Incoming Damage",
+                        "value": -2,
                         "percentage": true
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Incoming Damage",
+                        "value": -3,
                         "percentage": true
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Incoming Damage",
+                        "value": -4,
                         "percentage": true
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Incoming Damage",
+                        "value": -5,
                         "percentage": true
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Incoming Damage",
+                        "value": -6,
                         "percentage": true
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "Returns 1%.",
+                "5000": "Returns 1.5%.",
+                "10000": "Returns 2%.",
+                "15000": "Returns 2.5%.",
+                "20000": "Returns 3%.",
+                "25000": "Returns 3.5%.",
+                "30000": "Returns 4%.",
+                "35000": "Returns 6%.",
+                "40000": "Returns 8%."
             }
         }
     },
@@ -2498,60 +2529,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Searing Light",
+            "description": "Magic attacks to enemies can activate Searing Light, a damage over time effect, dealing damage every 0.1s for 3s. 10s cooldown.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 10,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 60,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 160,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 300,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 500,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Magic Damage",
+                        "value": 750,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "15% Active chance on magic damage dealt. 5% Physical Damage.",
+                "5000": "16% Active chance on magic damage dealt. 8% Physical Damage.",
+                "10000": "17% Active chance on magic damage dealt. 11% Physical Damage.",
+                "15000": "18% Active chance on magic damage dealt. 14% Physical Damage.",
+                "20000": "19% Active chance on magic damage dealt. 17% Physical Damage.",
+                "25000": "20% Active chance on magic damage dealt. 20% Physical Damage.",
+                "30000": "21% Active chance on magic damage dealt. 25% Physical Damage.",
+                "35000": "25% Active chance on magic damage dealt. 30% Physical Damage.",
+                "40000": "30% Active chance on magic damage dealt. 40% Physical Damage."
             }
         }
     },
@@ -2652,60 +2685,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Phoenix Fire",
+            "description": "Basic Attacks have a chance to explode dealing damage to enemies and applying a damage over time effect that restores energy.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Light",
+                        "value": 5,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Light",
+                        "value": 15,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Light",
+                        "value": 30,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Light",
+                        "value": 55,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Light",
+                        "value": 90,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Light",
+                        "value": 140,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "25% Active chance on damage dealt. 100% Physical Damage. 50% Damage over time every 0.5s for 2.5s.",
+                "5000": "25% Active chance on damage dealt. 125% Physical Damage. 50% Damage over time every 0.5s for 2.5s.",
+                "10000": "25% Active chance on damage dealt. 150% Physical Damage. 50% Damage over time every 0.5s for 2.5s.",
+                "15000": "25% Active chance on damage dealt. 200% Physical Damage. 50% Damage over time every 0.5s for 2.5s.",
+                "20000": "25% Active chance on damage dealt. 225% Physical Damage. 75% Damage over time every 0.5s for 2.5s.",
+                "25000": "33% Active chance on damage dealt. 250% Physical Damage. 75% Damage over time every 0.5s for 2.5s.",
+                "30000": "33% Active chance on damage dealt. 275% Physical Damage. 75% Damage over time every 0.5s for 2.5s.",
+                "35000": "33% Active chance on damage dealt. 300% Physical Damage. 85% Damage over time every 0.5s for 2.5s.",
+                "40000": "40% Active chance on damage dealt. 350% Physical Damage. 100% Damage over time every 0.5s for 2.5s."
             }
         }
     },
@@ -2807,60 +2842,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Corpse Run",
+            "description": "Fallen enemies have a chance to spawn a random minion. Only one minion can be active. 30s cooldown.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Critical Hit",
+                        "value": 0.5,
                         "percentage": true
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Critical Hit",
+                        "value": 1,
                         "percentage": true
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Critical Hit",
+                        "value": 1.5,
                         "percentage": true
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Critical Hit",
+                        "value": 2.5,
                         "percentage": true
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Critical Hit",
+                        "value": 3.5,
                         "percentage": true
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
+                        "name": "Critical Hit",
+                        "value": 5.5,
                         "percentage": true
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "5000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "10000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "15000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "20000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "25000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "30000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "35000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown.",
+                "40000": "Fallen enemies have a chance to spawn a random minion. Increased chance to spawn Grave Goliaths. Reduced cooldown."
             }
         }
     },
@@ -2961,60 +2998,62 @@
             }
         ],
         "subclass": {
-            "name": "",
+            "name": "Up and Away",
+            "description": "Gain the Vanguardian's Touchdown passive. While gliding become supercharged and create a shockwave in front of your landing destination.",
             "level": {
                 "1": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 1,
+                        "percentage": false
                     }
                 ],
                 "10": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 2,
+                        "percentage": false
                     }
                 ],
                 "15": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 3,
+                        "percentage": false
                     }
                 ],
                 "20": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 4,
+                        "percentage": false
                     }
                 ],
                 "25": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 6,
+                        "percentage": false
                     }
                 ],
                 "30": [
                     {
-                        "name": "",
-                        "value": 0,
-                        "percentage": true
+                        "name": "Jump",
+                        "value": 10,
+                        "percentage": false
                     }
                 ]
             },
             "power": {
-                "1": "",
-                "5000": "",
-                "10000": "",
-                "15000": "",
-                "20000": "",
-                "25000": "",
-                "30000": "",
-                "35000": ""
+                "1": "Shockwave deals 100% physical/magic damage.",
+                "5000": "Shockwave deals 150% physical/magic damage.",
+                "10000": "Shockwave deals 200% physical/magic damage.",
+                "15000": "Shockwave deals 250% physical/magic damage.",
+                "20000": "Shockwave deals 300% physical/magic damage.",
+                "25000": "Shockwave deals 350% physical/magic damage.",
+                "30000": "Shockwave deals 400% physical/magic damage.",
+                "35000": "Shockwave deals 600% physical/magic damage.",
+                "40000": "Shockwave deals 800% physical/magic damage."
             }
         }
     }
