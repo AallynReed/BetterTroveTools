@@ -106,38 +106,48 @@ STAT_LABELS = {
     "MaxArmor": "Maximum Armor",
 }
 
-PERCENT_STATS = {
-    "CriticalHitChance",
-    "AttackSpeed",
-    "IncomingDamageMod",
-    "OutgoingDamageMod",
-    "CriticalHitDamage",
-    "ExperienceBoost",
-    "JackpotExperience",
-    "GemEfficiency",
-    "AdventurineGainBoost",
-    "ClubExperienceBoost",
-    "JumpSpeedMultiplier",
-    "ShootProjectileSpeedMultiplier",
-    "DoubleHitChance",
-    "CooldownSpeed",
+# Operation byte -> what a stat record does to the stat. The game's own `KModType`
+# reflection table (listed right after `KStatType`) names all seven in order, and the
+# wire byte is the zig-zag of the index, so each is 2x its position. The operation --
+# not the stat id -- decides what a record means: `MultiplySum` SCALES the stat where
+# `Add` adds a flat amount to it.
+OPERATIONS = {
+    0: "MultiplySum",     # scales the stat by the amount (0.30 = +30% of it)
+    2: "Add",             # flat amount on the stat, whether or not it displays as a percent
+    4: "Set",             # replaces the stat (a mount's 90 Movement Speed)
+    6: "Nullify",         # zeroes it
+    8: "Multiply",        # multiplies the output (a -10% Incoming Damage buff)
+    10: "Minimum",        # floors it
+    12: "Maximum",        # caps it
 }
 
-PERCENT_CAPABLE_STATS = PERCENT_STATS | {
-    "HealthRegen",
-    "EnergyRegen",
-    "MagicFind",
-    "Mining",
-    "PhysicalDamage",
-    "SpellDamage",
-    "MaxHealth",
-    "MaxEnergy",
-    "RedGemStatBoost",
-    "BlueGemStatBoost",
-    "YellowGemStatBoost",
-    "GreenGemStatBoost",
-    "OpalGemStatBoost",
-}
+
+def bonus_stat_name(stat_name: str) -> str:
+    """The `…Bonus` twin of a stat key, for a `MultiplySum` record.
+
+    Scaling a stat and adding to it are different things on the same stat id, and the
+    gap is invisible wherever both render as a percentage: +30% Critical Damage is 30
+    points as an Add and 900 as a bonus on a 3,000% sheet. So they get separate keys.
+    """
+    return f"{stat_name}Bonus"
+
+
+def record_stat_name(record: dict) -> str:
+    """The stat key a record grants -- the `…Bonus` twin when it is a MultiplySum."""
+    stat_name = record.get("decoded_stat_name") or ""
+    if stat_name and record.get("operation") == 0:
+        return bonus_stat_name(stat_name)
+    return stat_name
+
+
+def stat_label(stat_name: str) -> str:
+    """Display label for a stat key. A `…Bonus` twin is named off the stat it scales,
+    which the game names nowhere."""
+    if stat_name.endswith("Bonus"):
+        base = stat_name[: -len("Bonus")]
+        if base in STAT_LABELS:
+            return f"{STAT_LABELS[base]} Bonus"
+    return STAT_LABELS.get(stat_name, stat_name)
 
 
 def _clean_ascii_string(raw: bytes) -> str:
@@ -193,72 +203,36 @@ def format_float_value(value: float | None) -> str:
     return f"{value:.6f}".rstrip("0").rstrip(".")
 
 
-def is_percent_encoded(record: dict) -> bool:
-    header = record.get("header_bytes_array") or []
-    label = str(record.get("label") or "")
-    value = abs(record.get("value", 0))
-    stat_name = record.get("decoded_stat_name") or ""
-    
-    if label.endswith("mods"):
-        if len(header) > 2 and header[2] == 0 and value <= 1.0:
-            return True
-        return False
-    
-    # For non-mods labels, check header[4] for percent encoding
-    if len(header) > 4 and header[4] == 0 and value <= 1.0:
-        return True
-    
-    # For bonus stats with small values that belong in percent-capable stats
-    # This catches cases where a 0.02-0.5 value is a percentage bonus (e.g., 2-50%)
-    # But exclude pure additive stats like MovementSpeed, Jump, Glide which are small but absolute
-    if stat_name in PERCENT_CAPABLE_STATS and 0 < value <= 1.0:
-        # These stats are typically additive/absolute, not percentages
-        additive_only = {"MovementSpeed", "Jump", "Glide", "Light", "Dark", "Acceleration", "TurningRate"}
-        if stat_name not in additive_only and value < 0.5:
-            return True
-    
-    return False
-
-
 def get_stat_display_value(record: dict) -> tuple[float, bool]:
+    """(display value, is percentage) for a stat record, decided by its operation byte.
+
+    Under `MultiplySum`/`Multiply` the raw float is a multiplier, so it always reads as
+    a percentage; under `Set` and the rest it states the stat itself. `Add` is a flat
+    amount, which only a few stats nonetheless display as a percent -- and Critical Hit
+    is stored in tenths of a point (the game's own dragon blurbs say +1% for a raw 10).
+    """
     stat_name = record.get("decoded_stat_name") or ""
     value = float(record.get("value", 0))
-    header = record.get("header_bytes_array") or []
-    label = str(record.get("label") or "")
-    component_type = record.get("component_type") or ""
+    operation = record.get("operation")
 
-    if stat_name == "IncomingDamageMod":
-        if len(header) > 4 and header[4] == 8:
-            return value - 1.0, True
-        if label.endswith("mods") and len(header) > 2 and header[2] == 8:
-            return value - 1.0, True
-
-    if label.endswith("mods") and len(header) > 2 and header[2] == 2 and value > 1:
-        if stat_name == "CriticalHitChance":
-            return value / 1000.0, True
-        if stat_name in PERCENT_STATS:
-            return value / 100.0, True
-
-    # Mount and dragon passive stat components often store these three stats as
-    # whole-number percentages directly (e.g. 3, 5, 10) rather than a fractional
-    # value or the older *_mods encoding.
-    if component_type == "Stat Stats" and value > 0:
-        if stat_name in {"CriticalHitChance", "AttackSpeed", "CriticalHitDamage"}:
-            return value / 100.0, True
-
-    if stat_name == "IncomingDamageMod" and len(header) > 4 and header[4] == 8:
-        return value - 1.0, True
-
-    percent_encoded = is_percent_encoded(record) and stat_name in PERCENT_CAPABLE_STATS
-    return value, percent_encoded
+    if operation == 0:                       # MultiplySum: scales the stat
+        return value * 100, True
+    if operation == 8:                       # Multiply: scales the output
+        return (value - 1) * 100, True
+    if operation != 2:                       # Set / Nullify / Minimum / Maximum
+        return value, False                  # all state the stat itself, never a delta
+    if stat_name == "CriticalHitChance":
+        return value / 10, True
+    if stat_name in ("CriticalHitDamage", "AttackSpeed"):
+        return value, True
+    return value, False
 
 
 def format_stat_display(value: float, stat_name: str, *, is_percent: bool = False) -> str:
     if is_percent:
-        display_value = value * 100
-        if abs(display_value - round(display_value)) < 1e-9:
-            return f"{int(round(display_value))}%"
-        return f"{display_value:.1f}".rstrip("0").rstrip(".") + "%"
+        if abs(value - round(value)) < 1e-9:
+            return f"{int(round(value))}%"
+        return f"{value:.1f}".rstrip("0").rstrip(".") + "%"
     return format_float_value(value)
 
 
@@ -503,6 +477,11 @@ def detect_stat_records(chunk: bytes, offset_base: int) -> list[dict]:
             decoded_stat_id_hex = f"0x{decoded_stat_id:02X}"
             decoded_stat_name = STAT_GUESSES.get(decoded_stat_id, "")
 
+        # The operation byte sits two bytes ahead of the float in every record shape,
+        # labelled or `…mods`; it decides whether the amount scales the stat, adds to
+        # it, or states it outright.
+        operation = chunk[i - 6] if i >= 6 else None
+
         is_unlabeled = label == ""
         records.append(
             {
@@ -521,6 +500,8 @@ def detect_stat_records(chunk: bytes, offset_base: int) -> list[dict]:
                 "decoded_stat_id": decoded_stat_id,
                 "decoded_stat_id_hex": decoded_stat_id_hex,
                 "decoded_stat_name": decoded_stat_name,
+                "operation": operation,
+                "operation_name": OPERATIONS.get(operation, ""),
                 "is_unlabeled": is_unlabeled,
                 "record_style": "unlabeled" if is_unlabeled else "labeled",
                 "header_guess": guess_stat_from_header(header_bytes),
@@ -619,10 +600,10 @@ def build_stat_lines(records: list[dict]) -> list[str]:
     lines = []
     seen = set()
     for record in records:
-        stat_name = record.get("decoded_stat_name") or ""
+        stat_name = record_stat_name(record)
         if not stat_name:
             continue
-        label = STAT_LABELS.get(stat_name, stat_name)
+        label = stat_label(stat_name)
         display_value, percent_encoded = get_stat_display_value(record)
         value_display = format_stat_display(display_value, stat_name, is_percent=percent_encoded)
         line = f"{value_display} {label}".strip()
@@ -647,13 +628,13 @@ def build_tooltip_html(stat_lines: list[str], abilities: list[str]) -> str:
 
 
 def _extracted_stat_row(record: dict) -> dict:
-    stat_name = record["decoded_stat_name"]
+    stat_name = record_stat_name(record)
     display_value, is_percent = get_stat_display_value(record)
     display = format_stat_display(display_value, stat_name, is_percent=is_percent)
     return {
         "source": record["label"],
         "stat": stat_name,
-        "label": STAT_LABELS.get(stat_name, stat_name),
+        "label": stat_label(stat_name),
         "value": record["value"],
         "display_value": display_value,
         "is_percent": is_percent,
