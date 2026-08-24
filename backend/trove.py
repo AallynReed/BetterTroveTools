@@ -9,6 +9,7 @@ Trove view drives:
   * ``trove_update``      - sync the chosen install to the current build.
   * ``trove_repair``      - forget local state and re-download the full manifest.
   * ``trove_play``        - (optionally update, then) authenticate + launch Trove.
+  * ``trove_sign_in``     - authenticate + save an account, without launching.
   * ``trove_submit_2fa``  - hand a 2-step email code to a waiting ``trove_play``.
   * ``trove_cancel_2fa``  - abort a launch that's waiting on a 2-step code.
   * ``trove_logout``      - drop the cached ticket.
@@ -417,7 +418,10 @@ def _make_token_provider(op: str):
 # until the game crashes or stops responding, at which point it puts up a dialog
 # that keeps the instance alive. Unattended that dialog stalls auto-relog
 # forever, so while auto-relog is on for a pid we watch for the handler's window
-# and dismiss it ourselves.
+# and close the instance ourselves -- but only AFTER the relog has gone through.
+# Closing the handler first tears the crashed instance down while the anti-cheat
+# is still attached to it, which leaves the process frozen and the relaunch
+# stuck behind it; leaving it up costs nothing and keeps the crash contained.
 
 _LAUNCH_LOCK = threading.Lock()
 _LAUNCHES: dict = {}  # pid -> {pid, email, server, game_path, region, branch, auto_relog, started_at, relogs}
@@ -448,10 +452,12 @@ def _close_crash_handlers(game_pid: int) -> int:
     return gone
 
 
-def _dismiss_crash_dialog(pid: int, who: str) -> None:
+def _close_crashed_instance(pid: int, who: str) -> None:
+    """Tear down a crashed instance and its handler. Called once the relog is
+    settled, never at the moment the crash is spotted."""
     from backend.trove_launcher import launch as launch_mod
     _emit("running", "crash_dialog", pid=pid,
-          message=f"{who} crashed — closing Trove's crash handler.")
+          message=f"Closing {who}'s crashed instance and its crash handler.")
     _close_crash_handlers(pid)
     try:
         launch_mod.close_process(pid, grace=_CRASH_EXIT_GRACE)
@@ -462,7 +468,8 @@ def _dismiss_crash_dialog(pid: int, who: str) -> None:
 def _wait_for_exit(pid: int, policing=None):
     """Block until process `pid` exits; return ``(exit_code, crashed)``, with a
     None code on error. ``policing`` is called on each poll: while it returns
-    True a lingering crash-handler dialog is dismissed and the instance closed.
+    True a lingering crash-handler dialog ends the wait early with ``crashed``
+    set and the instance still up, for the caller to close after it relogs.
     Windows only — reached only from a launch path, which is Windows-only."""
     import ctypes
     from ctypes import wintypes
@@ -478,7 +485,6 @@ def _wait_for_exit(pid: int, policing=None):
     h = k.OpenProcess(SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION, False, int(pid))
     if not h:
         return None, False
-    crashed = False
     seen_at = None
     try:
         while k.WaitForSingleObject(h, _EXIT_POLL_MS) == WAIT_TIMEOUT:
@@ -487,12 +493,13 @@ def _wait_for_exit(pid: int, policing=None):
             elif seen_at is None:
                 seen_at = time.monotonic()
             elif time.monotonic() - seen_at >= _CRASH_DIALOG_CONFIRM:
-                seen_at = None
-                crashed = True
-                _dismiss_crash_dialog(pid, _display_for(pid))
+                _emit("running", "crashed", pid=pid,
+                      message=f"{_display_for(pid)} crashed — its crash handler "
+                              f"stays up until the relog is done.")
+                return None, True
         code = wintypes.DWORD()
         k.GetExitCodeProcess(h, ctypes.byref(code))
-        return int(code.value), crashed
+        return int(code.value), False
     finally:
         k.CloseHandle(h)
 
@@ -540,12 +547,15 @@ def _monitor_launch(pid: int) -> None:
     with _LAUNCH_LOCK:
         info = _LAUNCHES.pop(pid, None)
     if not info:
+        if crashed:
+            _close_crashed_instance(pid, f"pid {pid}")
         return
-    if info.get("auto_relog"):
+    if info.get("auto_relog") and not crashed:
         _close_crash_handlers(pid)  # a handler that outlived the game has nothing to report
     uptime = time.time() - info["started_at"]
     clean_close = code == 0 and not crashed
-    should_relog = (info.get("auto_relog") and not clean_close and code is not None
+    should_relog = (info.get("auto_relog") and not clean_close
+                    and (crashed or code is not None)
                     and uptime >= _MIN_UPTIME_FOR_RELOG)
     who = _display(info["email"])
     if not should_relog:
@@ -555,10 +565,13 @@ def _monitor_launch(pid: int) -> None:
         elif info.get("auto_relog") and uptime < _MIN_UPTIME_FOR_RELOG:
             _emit("running", "closed", pid=pid,
                   message=f"{who} exited after {int(uptime)}s — not relogging (too soon).")
+        if crashed:
+            _close_crashed_instance(pid, who)
         _emit_running()
         return
     _emit("running", "relog", pid=pid,
-          message=f"{who} exited (code {code}) — relogging...")
+          message=(f"{who} crashed — relogging..." if crashed
+                   else f"{who} exited (code {code}) — relogging..."))
     _emit_running()
     try:
         _relaunch(info)
@@ -566,6 +579,10 @@ def _monitor_launch(pid: int) -> None:
         _emit("running", "relog_failed", error=str(e),
               message=f"Auto-relog for {who} failed: {e}")
         _emit_running()
+    finally:
+        # Only now is the crashed instance safe to tear down.
+        if crashed:
+            _close_crashed_instance(pid, who)
 
 
 def _relaunch(info: dict) -> None:
@@ -769,6 +786,56 @@ def trove_play(game_path, server=DEFAULT_SERVER, email="", password="",
               message=f"Launched {_display(use_email)} (pid {pid}).")
 
     return resp(True, data=_spawn("play", _work))
+
+
+@eel.expose
+@standardize_response
+def trove_sign_in(email, password="", name="", remember_password=False):
+    """Validate an account's credentials (2-step exchange included) and save it,
+    without launching the game.
+
+    Adding an account used to mean pressing Play, which is the wrong shape when
+    you only want the account on file. On success the account joins the dropdown
+    exactly as a launch would: its ticket is cached, ``name`` (optional) becomes
+    its display label, and the password is stored via DPAPI when asked for.
+
+    A typed password re-authenticates from scratch — otherwise a still-valid
+    cached ticket would short-circuit ``get_ticket`` and we would report success
+    (and possibly remember the password) without the server ever seeing it.
+    """
+    email = (email or "").strip()
+    if not email:
+        return resp(False, error="Enter your Glyph email.", code="NO_EMAIL")
+    password = password or ""
+    name = (name or "").strip()
+    remember_password = bool(remember_password)
+
+    def _work():
+        use_pw = password
+        if not use_pw:  # blank password -> fall back to this account's saved one
+            creds = _load_credentials(email)
+            if creds:
+                use_pw = creds.get("password", "")
+        if not use_pw:
+            raise ValueError("Enter your Glyph password.")
+
+        auth = _make_auth(email, use_pw)
+        if password:
+            auth.logout()  # force a real sign-in against the password just typed
+        _emit("signin", "authenticating",
+              message=f"Signing in as {_display(email)}...")
+        auth.get_ticket(token_provider=_make_token_provider("signin"))
+
+        _add_account(email)
+        if name:
+            _set_alias(email, name)
+        if remember_password:
+            _save_credentials(email, use_pw)
+
+        _emit("signin", "signed_in", done=True, ok=True, email=email,
+              message=f"Signed in as {_display(email)}. Account saved.")
+
+    return resp(True, data=_spawn("signin", _work))
 
 
 @eel.expose

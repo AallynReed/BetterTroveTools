@@ -76,6 +76,15 @@
                 const running = ref([]);             // [{pid, email, server, auto_relog, uptime, relogs}]
                 const isAdding = computed(() => selectedEmail.value === '__add__' || !accounts.value.length);
                 const acctEmail = computed(() => isAdding.value ? email.value.trim() : selectedEmail.value);
+                // Sign-in needs an address plus *some* secret: a typed password, or
+                // one already remembered on this PC for that account.
+                const canSignIn = computed(() => {
+                    const em = acctEmail.value;
+                    if (!em) return false;
+                    if (password.value) return true;
+                    const acct = accounts.value.find(a => a.email === em);
+                    return !!(acct && acct.has_saved_password);
+                });
 
                 const busy = ref(false);
                 const op = ref(null);
@@ -134,6 +143,7 @@
                     const map = {
                         play: t('trove.launching'), update: t('trove.updating'),
                         repair: t('trove.repairing'), check: t('trove.checking'),
+                        signin: t('trove.signing_in'),
                     };
                     return map[op.value] || t('trove.working');
                 });
@@ -182,6 +192,13 @@
                             setNotice(utd ? t('trove.up_to_date') + ' (' + (p.version || '?') + ')'
                                           : t('trove.update_available') + ' (' + (p.version || '?') + ')',
                                       utd ? 'ok' : 'info');
+                        } else if (p.stage === 'signed_in') {
+                            setNotice(p.message || t('trove.signed_in'), 'ok');
+                            loggedIn.value = true;
+                            password.value = '';
+                            // Selected only after refreshState lands, so the dropdown
+                            // already has the option this value points at.
+                            pendingSelect = p.email || null;
                         } else if (p.stage === 'launched') {
                             setNotice(p.message || t('trove.launched'), 'ok');
                             loggedIn.value = true;
@@ -199,7 +216,18 @@
                     }
                 };
 
-                function finishOp() { busy.value = false; op.value = null; refreshState(); }
+                // Account to switch the dropdown to once the post-op refresh has
+                // repopulated the list (set by the sign-in done frame).
+                let pendingSelect = null;
+                function finishOp() {
+                    busy.value = false; op.value = null;
+                    refreshState().then(() => {
+                        if (!pendingSelect) return;
+                        selectedEmail.value = pendingSelect;
+                        pendingSelect = null;
+                        onSelectAccount();
+                    });
+                }
 
                 // Sync account list / running instances / login flags from a state
                 // payload. `initial` also seeds the selected account + toggles.
@@ -307,6 +335,19 @@
                         password.value = '';
                         selectedEmail.value = em;  // switch dropdown to the launched account
                     }
+                }
+                async function signIn() {
+                    if (!hasEel() || busy.value) return;
+                    if (!canSignIn.value) { setNotice(t('trove.need_credentials'), 'error'); return; }
+                    beginLocal(t('trove.signing_in'));
+                    op.value = 'signin';
+                    const res = await window.callBackend(window.eel.trove_sign_in(
+                        acctEmail.value, password.value, accountLabel.value,
+                        rememberPassword.value)(), 'signin');
+                    // The password stays put until the *auth* succeeds (the
+                    // signed_in frame clears it) — a rejected sign-in should not
+                    // make the user retype it.
+                    ackFailed(res);
                 }
                 function maskEmail(em) {
                     em = (em || '').trim();
@@ -433,10 +474,10 @@
                     server, email, password,
                     rememberEmail, rememberPassword, hasSavedPassword, updateFirst,
                     loggedIn, busy, op, message, progress,
-                    accounts, selectedEmail, accountLabel, revealEmails, isAdding, autoRelog, running,
+                    accounts, selectedEmail, accountLabel, revealEmails, isAdding, canSignIn, autoRelog, running,
                     logLines, notice, twofaNeeded, twofaCode, logEl, twofaInput,
                     progressPct, localVersion, busyLabel, labelFor, shownEmail, optLabel,
-                    check, update, repair, play, submit2fa, cancel2fa, logout, syncRemember,
+                    check, update, repair, play, signIn, submit2fa, cancel2fa, logout, syncRemember,
                     onSelectAccount, removeAccount, renameAccount, toggleRelog, openFolder,
                 });
             }

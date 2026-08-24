@@ -100,12 +100,18 @@
             <div class="trove-field" v-if="isAdding">
                 <label>{{ t('trove.email') }}</label>
                 <input type="email" v-model="email" :disabled="busy" autocomplete="username"
-                       :placeholder="t('trove.email_placeholder')">
+                       :placeholder="t('trove.email_placeholder')" @keyup.enter="signIn">
+            </div>
+            <div class="trove-field" v-if="isAdding">
+                <label>{{ t('trove.display_name_optional') }}</label>
+                <input type="text" v-model="accountLabel" :disabled="busy"
+                       :placeholder="t('trove.display_name_placeholder')" @keyup.enter="signIn">
             </div>
             <div class="trove-field">
                 <label>{{ t('trove.password') }}</label>
                 <input type="password" v-model="password" :disabled="busy" autocomplete="current-password"
-                       :placeholder="hasSavedPassword ? t('trove.password_saved') : (loggedIn ? t('trove.password_optional') : t('trove.password_placeholder'))">
+                       :placeholder="hasSavedPassword ? t('trove.password_saved') : (loggedIn ? t('trove.password_optional') : t('trove.password_placeholder'))"
+                       @keyup.enter="signIn">
             </div>
             <div class="trove-checks">
                 <label class="trove-check">
@@ -118,6 +124,13 @@
                     <i class="fa-solid fa-lock trove-lock" :title="t('trove.remember_password_tip')"></i>
                 </label>
             </div>
+            <div class="trove-signin-row">
+                <button class="trove-btn primary" :disabled="busy || !canSignIn" @click="signIn">
+                    <i class="fa-solid" :class="busy && op === 'signin' ? 'fa-spinner fa-spin' : 'fa-right-to-bracket'"></i>
+                    {{ t('trove.sign_in') }}
+                </button>
+            </div>
+            <p class="trove-card-hint">{{ t('trove.sign_in_hint') }}</p>
             <div class="trove-account-row">
                 <button class="trove-btn ghost" v-if="!isAdding" :disabled="busy" @click="removeAccount">
                     <i class="fa-solid fa-trash"></i> {{ t('trove.remove_account') }}

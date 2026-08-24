@@ -45,6 +45,21 @@ class _DataBlob(ctypes.Structure):
     _fields_ = [("cbData", wintypes.DWORD), ("pbData", ctypes.POINTER(ctypes.c_char))]
 
 
+def _body_error(r) -> str:
+    """A one-line error from a rejected auth response.
+
+    The server answers some failures (a bad account, an outage) with an HTML
+    error page and no X-Trionworlds-Error header; pasting that markup into the
+    UI's error banner tells the user nothing.
+    """
+    body = (r.text or "").strip()
+    if body and not body.startswith("<"):
+        return body[:200]
+    if r.status_code >= 400:
+        return f"Sign-in rejected by Trion (HTTP {r.status_code})."
+    return "Sign-in rejected by Trion (no launch ticket returned)."
+
+
 def _blob(data: bytes) -> _DataBlob:
     buf = ctypes.create_string_buffer(data, len(data))
     return _DataBlob(len(data), ctypes.cast(buf, ctypes.POINTER(ctypes.c_char)))
@@ -205,7 +220,7 @@ class TrionAuth:
         err = r.headers.get("X-Trionworlds-Error")
         if is_valid_ticket(r.text, err):
             return r.text
-        raise AuthError(err or (r.text.strip()[:200] if r.text else f"HTTP {r.status_code}"))
+        raise AuthError(err or _body_error(r))
 
     def _multiauth(self, token_provider: Callable[[], str]) -> str:
         for _ in range(3):

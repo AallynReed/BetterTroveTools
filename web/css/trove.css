@@ -221,6 +221,9 @@
 .trove-btn.ghost { background: transparent; }
 .trove-btn-row { display: flex; gap: var(--control-gap); flex-wrap: wrap; }
 .trove-account-row { display: flex; gap: var(--t-2); flex-wrap: wrap; margin-top: var(--t-3); }
+.trove-signin-row { display: flex; margin-top: var(--t-3); }
+.trove-signin-row .trove-btn { flex: 1; justify-content: center; }
+.trove-signin-row + .trove-card-hint { margin: var(--t-2) 0 0; }
 
 .trove-reveal-btn {
     display: inline-flex;
