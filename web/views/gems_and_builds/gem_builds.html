@@ -152,6 +152,21 @@
                                 </li>
                             </ul>
                         </template>
+                        <!-- Bounty Hunt rides with the chart that unlocks it: only the
+                             star chart can grant the buff, so the toggle belongs here
+                             rather than in the buff list. -->
+                        <template v-if="bountyBuff()">
+                            <hr class="divider" style="margin: var(--t-2) 0; border: 0; border-top: 1px solid var(--border-color);">
+                            <label class="toggle-container toggle-inline">
+                                <input type="checkbox" v-model="config.bounty_hunt">
+                                <span class="checkmark"></span>
+                                <span>
+                                    <strong>{{ t('gems.gem_builds.bounty_hunt') }}</strong>
+                                    <span style="color: var(--accent-blue);">&nbsp;+{{ bountyPercent() }}% {{ t('gems.gem_builds.physical_and_magic_damage') }}</span>
+                                </span>
+                            </label>
+                            <p class="help-tip-note" role="note">{{ t('gems.gem_builds.the_4_hour_buff_from_a_sundered_uplands_21319a') }}</p>
+                        </template>
                     </template>
                 </div>
             </div>
@@ -318,7 +333,9 @@
                                 {{ fmtDec(build.bonus_dmg, 2) }}%<span v-if="build.class_bonus" style="color: var(--accent-blue);"> + {{ build.class_bonus }}%</span>
                             </td>
                             <td class="text-right">{{ fmtInt(build.total_dmg) }}</td>
-                            <td class="text-right">{{ fmtDec(build.crit_dmg, 1) }}%</td>
+                            <td class="text-right">
+                                {{ fmtDec(build.crit_dmg, 1) }}%<span v-if="build.crit_bonus" style="color: var(--accent-blue);"> + {{ fmtDec(build.crit_bonus, 1) }}%</span>
+                            </td>
                             <td class="text-right sort-col" style="font-weight: bold; color: var(--text-main);">{{ fmtNum(build.coefficient) }}</td>
                             <td class="text-right">
                                 <span v-if="build.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('gems.gem_builds.best') }}</span>

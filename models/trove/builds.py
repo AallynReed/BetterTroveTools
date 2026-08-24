@@ -129,6 +129,7 @@ class BuildConfig(BaseModel):
     light: int = 0
     subclass_active: bool = False
     litany: bool = False
+    bounty_hunt: bool = False        # ignored unless star_chart unlocks the node
     star_chart: Optional[str] = None
 
     def __eq__(self, other):

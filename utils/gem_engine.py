@@ -22,6 +22,24 @@ LILYPAD_MULTIPLIERS = {
 }
 
 
+# Bounty Hunt - the Sundered Uplands boss buff, unlocked by the star chart but
+# only live while the player is actually holding it, so it needs its own toggle
+# rather than being folded into the chart's passive stats. Two nodes grant it and
+# the Minor one overwrites the Major, so at most one is ever active.
+BOUNTY_HUNT_NODES = ("Bounty Hunt Boon", "Bounty Hunt")
+
+
+def _no_bounty_hunt() -> dict:
+    return {"available": False, "name": None, "physical": 0.0, "magic": 0.0}
+
+
+def _stat_value(stats: list, name: str) -> float:
+    for stat in stats or []:
+        if stat.get("name") == name:
+            return stat.get("value") or 0.0
+    return 0.0
+
+
 def apply_lilypad(name: str, value: float, active: bool) -> float:
     """An ally's L30 stat value, with the Lilypad buff applied when active."""
     return value * LILYPAD_MULTIPLIERS.get(name, 1.0) if active else value
@@ -50,6 +68,10 @@ class StarChartParser:
             path for path, node in self.node_map.items() if node.get("Type") != "Root"
         )
         self.path_to_id = {path: index for index, path in enumerate(self.selectable_paths)}
+        self.bounty_nodes = {
+            path: node for path, node in self.node_map.items()
+            if node.get("Name") in BOUNTY_HUNT_NODES and node.get("Ability_Values")
+        }
 
     def _flatten_tree(self, node: dict, parent_path: str = None):
         if "Path" in node:
@@ -127,10 +149,11 @@ class StarChartParser:
         only permanent passive stats.
         """
         result = {
-            "stats": {}, 
+            "stats": {},
             "abilities": set(),
             "ability_values": {}, # Kept separate for future buff-toggling UI
             "paths_count": 0,
+            "bounty_hunt": _no_bounty_hunt(),
         }
         
         if not build_code or not self.node_map:
@@ -153,6 +176,8 @@ class StarChartParser:
 
         # 2. Filter out the overwritten nodes
         active_paths = selected_paths - overwrites
+
+        result["bounty_hunt"] = self._bounty_hunt(active_paths)
 
         # 3. Aggregate everything else
         for path in active_paths:
@@ -190,6 +215,25 @@ class StarChartParser:
         # Convert set to list for JSON serialization later if needed
         result["abilities"] = list(result["abilities"])
         return result
+
+    def _bounty_hunt(self, active_paths: set) -> dict:
+        """Which Bounty Hunt tier this chart unlocks, with the buff's own values.
+
+        The Minor upgrade overwrites the Major boon, so ``active_paths`` already
+        leaves at most one of them standing - no tie to break here.
+        """
+        for path in sorted(active_paths):
+            node = self.bounty_nodes.get(path)
+            if not node:
+                continue
+            values = node["Ability_Values"]
+            return {
+                "available": True,
+                "name": node.get("Name"),
+                "physical": _stat_value(values, "Physical Damage"),
+                "magic": _stat_value(values, "Magic Damage"),
+            }
+        return _no_bounty_hunt()
 
 
 class GemOptimizerEngine:
@@ -366,7 +410,6 @@ class GemOptimizerEngine:
             if config.star_chart:
                 parsed_chart = self.star_parser.parse_build_code(config.star_chart)
                 chart_stats = parsed_chart["stats"]
-                print(f"Parsed Star Chart Stats: {chart_stats}")  # Debugging output
 
                 dmg_stat = chart_stats.get(damage_type.value, {})
                 crit_stat = chart_stats.get("Critical Damage", {})
@@ -381,6 +424,12 @@ class GemOptimizerEngine:
                 fourth += dmg_stat.get("pct", 0)
                 fifth += crit_stat.get("pct", 0)
                 sixth += light_stat.get("pct", 0)
+
+                # The chart only unlocks Bounty Hunt; the buff itself is a 4h drop
+                # from a boss, so it counts only when the player says it is up.
+                bounty = parsed_chart["bounty_hunt"]
+                if config.bounty_hunt and bounty["available"]:
+                    fourth += bounty["magic" if damage_type == StatName.magic_damage else "physical"]
 
         # Rankings are decided several decimals below the display rounding, so
         # high precision widens every result field to 8 places instead of 1-2.
@@ -442,6 +491,7 @@ class GemOptimizerEngine:
                 "crit_dmg": rd(build_data[2], 1),
                 "light": build_data[3],
                 "bonus_dmg": rd(build_data[4], 8),
+                "crit_bonus": rd(build_data[5] - 100, 8),
                 "total_dmg": rd(build_data[6], 2),
                 "class_bonus": build_data[7],
                 "coefficient": build_data[8]

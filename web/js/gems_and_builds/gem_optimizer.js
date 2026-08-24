@@ -45,7 +45,19 @@
         build_type: 'Light', character: 'Bard', subclass: 'Boomeranger',
         food: 'zephyr_rune', ally: 'boot_clown', ally_buff: true, berserker_battler: false,
         critical_damage_count: 3, no_face: false, light: 0,
-        subclass_active: false, litany: false, star_chart: null, high_precision: false,
+        subclass_active: false, litany: false, bounty_hunt: false, star_chart: null,
+        high_precision: false,
+    };
+
+    // Bounty Hunt - the Sundered Uplands boss buff, unlocked by the star chart but
+    // only live while the player is holding it, so it needs its own toggle rather
+    // than being folded into the chart's passive stats. Two nodes grant it and the
+    // Minor one overwrites the Major, so at most one is ever active.
+    const BOUNTY_HUNT_NODES = ['Bounty Hunt Boon', 'Bounty Hunt'];
+    const noBountyHunt = () => ({ available: false, name: null, physical: 0, magic: 0 });
+    const statValue = (stats, name) => {
+        const hit = (stats || []).find((s) => s && s.name === name);
+        return (hit && hit.value) || 0;
     };
 
     // Blessing of the Lilypad - the ally buff, on top of the level-30 ally stats
@@ -81,6 +93,13 @@
                 .sort();
             this.pathToId = {};
             this.selectablePaths.forEach((p, i) => { this.pathToId[p] = i; });
+            this.bountyNodes = {};
+            Object.keys(this.nodeMap).forEach((p) => {
+                const node = this.nodeMap[p];
+                if (BOUNTY_HUNT_NODES.indexOf(node.Name) !== -1 && node.Ability_Values) {
+                    this.bountyNodes[p] = node;
+                }
+            });
         }
 
         _flatten(node, parentPath) {
@@ -151,7 +170,10 @@
         }
 
         parseBuildCode(buildCode) {
-            const result = { stats: {}, abilities: new Set(), ability_values: {}, paths_count: 0 };
+            const result = {
+                stats: {}, abilities: new Set(), ability_values: {}, paths_count: 0,
+                bounty_hunt: noBountyHunt(),
+            };
             if (!buildCode || !Object.keys(this.nodeMap).length) {
                 result.abilities = [];
                 return result;
@@ -174,6 +196,7 @@
             });
 
             const activePaths = [...selectedPaths].filter((p) => !overwrites.has(p));
+            result.bounty_hunt = this._bountyHunt(activePaths);
             activePaths.forEach((path) => {
                 const node = this.nodeMap[path];
                 if (!node) return;
@@ -195,6 +218,21 @@
 
             result.abilities = [...result.abilities];
             return result;
+        }
+
+        // Which Bounty Hunt tier this chart unlocks, with the buff's own values. The
+        // Minor upgrade overwrites the Major boon, so `activePaths` already leaves at
+        // most one of them standing - no tie to break here.
+        _bountyHunt(activePaths) {
+            const found = [...activePaths].sort().find((p) => this.bountyNodes[p]);
+            if (!found) return noBountyHunt();
+            const node = this.bountyNodes[found];
+            return {
+                available: true,
+                name: node.Name,
+                physical: statValue(node.Ability_Values, 'Physical Damage'),
+                magic: statValue(node.Ability_Values, 'Magic Damage'),
+            };
         }
     }
 
@@ -366,6 +404,13 @@
                 fourth += dmgStat.pct || 0;
                 fifth += critStat.pct || 0;
                 sixth += lightStat.pct || 0;
+
+                // The chart only unlocks Bounty Hunt; the buff itself is a 4h drop
+                // from a boss, so it counts only when the player says it is up.
+                const bounty = parsed.bounty_hunt;
+                if (config.bounty_hunt && bounty && bounty.available) {
+                    fourth += (damageType === SN.MAGIC) ? bounty.magic : bounty.physical;
+                }
             }
         }
 
@@ -436,6 +481,7 @@
                 crit_dmg: rd(buildData[2], 1),
                 light: buildData[3],
                 bonus_dmg: rd(buildData[4], 8),
+                crit_bonus: rd(buildData[5] - 100, 8),
                 total_dmg: rd(buildData[6], 2),
                 class_bonus: buildData[7],
                 coefficient: buildData[8],

@@ -35,8 +35,27 @@ document.addEventListener("gem_builds_loaded", () => {
                 no_face: false,
                 star_chart: "",
                 scTemplate: "",
+                bounty_hunt: true,
                 high_precision: false
             });
+
+            // Bounty Hunt is a 4-hour buff from a Sundered Uplands 5-star boss, and
+            // only the star chart can unlock it - the Minor node upgrades the Major's
+            // +10% to +15% rather than stacking. `config.bounty_hunt` is the reader's
+            // preference (on by default, so a pasted chart brings the buff with it);
+            // it only counts once the chart actually contains the node, which is why
+            // the toggle lives in the chart summary and the preference is never
+            // cleared behind their back.
+            const bountyBuff = () => {
+                const summary = starChartSummary.value;
+                const bh = summary && !summary.error && summary.bountyHunt;
+                return bh && bh.available ? bh : null;
+            };
+            const bountyPercent = () => {
+                const bh = bountyBuff();
+                return bh ? Math.max(bh.physical, bh.magic) : 0;
+            };
+            const bountyActive = () => !!bountyBuff() && !!config.bounty_hunt;
 
             // High precision widens every number to at most 8 decimals and trims
             // the trailing zeros, so 78.93800000 still reads as 78.938. Off, the
@@ -102,19 +121,26 @@ document.addEventListener("gem_builds_loaded", () => {
             // e.g. hosted web mode or the Android build.
             const buildsUnavailable = ref(false);
 
-            const classIcon = computed(() => {
-                const cls = classesData.value.find(c => c.value === config.character);
-                return cls ? `assets/images/classes/${cls.name.toLowerCase().replace(/ /g, '_')}.png` : '';
-            });
-            const subclassIcon = computed(() => {
-                const cls = classesData.value.find(c => c.value === config.subclass);
-                return cls ? `assets/images/classes/${cls.name.toLowerCase().replace(/ /g, '_')}.png` : '';
-            });
+            // Until the class list arrives the icon has no class to point at, and an
+            // empty src makes the browser re-request the page as an image - which
+            // fires the error handler before the real art is ever asked for.
+            const NO_ICON = 'assets/images/no_preview.png';
+            const iconFor = (value) => {
+                const cls = classesData.value.find(c => c.value === value);
+                return cls ? `assets/images/classes/${cls.name.toLowerCase().replace(/ /g, '_')}.png`
+                           : NO_ICON;
+            };
+            const classIcon = computed(() => iconFor(config.character));
+            const subclassIcon = computed(() => iconFor(config.subclass));
+            // The art has a small-icon twin in classes/icons; step down to it once, then
+            // to the placeholder, then stop - `/classes/` matches the stepped-down path
+            // too, so without the guard each error would nest another icons/.
+            const CLASS_DIR = '/classes/', ICON_DIR = '/classes/icons/';
             const onImageError = (e) => {
-                if (!e.target.dataset.retried) {
-                    e.target.dataset.retried = "true";
-                    e.target.src = e.target.src.replace('/classes/', '/icons/');
-                }
+                const src = e.target.getAttribute('src') || '';
+                if (src === NO_ICON) return;
+                e.target.src = src.includes(ICON_DIR) || !src.includes(CLASS_DIR)
+                    ? NO_ICON : src.replace(CLASS_DIR, ICON_DIR);
             };
 
             const bestCoeff = computed(() => cachedBuilds.value.length > 0 ? cachedBuilds.value[0].coefficient : 1);
@@ -226,10 +252,10 @@ document.addEventListener("gem_builds_loaded", () => {
             const CSV_FILE_NAME = "gem_builds_export.csv";
 
             const buildCsv = () => {
-                let csv = "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Coefficient\n";
+                let csv = "Rank,Build Layout,Light,Base Dmg,Bonus Dmg (%),Total Dmg,Crit Dmg (%),Crit Dmg Bonus (%),Coefficient\n";
                 cachedBuilds.value.forEach(b => {
                     const cell = (v) => (config.high_precision ? v : Math.round(v));
-                    csv += `${b.rank},${b.layout},${b.light},${cell(b.base_dmg)},${fmtDec(b.bonus_dmg, 2)},${cell(b.total_dmg)},${fmtDec(b.crit_dmg, 1)},${b.coefficient}\n`;
+                    csv += `${b.rank},${b.layout},${b.light},${cell(b.base_dmg)},${fmtDec(b.bonus_dmg, 2)},${cell(b.total_dmg)},${fmtDec(b.crit_dmg, 1)},${fmtDec(b.crit_bonus || 0, 1)},${b.coefficient}\n`;
                 });
                 return csv;
             };
@@ -341,7 +367,10 @@ document.addEventListener("gem_builds_loaded", () => {
                             litany: config.litany,
                             subclass_active: config.subclass_active,
                             no_face: config.no_face,
-                            star_chart: config.star_chart
+                            star_chart: config.star_chart,
+                            // The stored flag is only a preference - a chart without the
+                            // node must not silently ship the buff to the optimizer.
+                            bounty_hunt: bountyActive()
                         };
                         const results = await eel.calculate_gem_builds(pyConfig)();
                         if (results && results.success === false) {
@@ -401,7 +430,12 @@ document.addEventListener("gem_builds_loaded", () => {
                     if (pathsCount <= 0) {
                         throw new Error('Invalid build code');
                     }
-                    starChartSummary.value = { pathsCount, stats: parsed?.stats || {}, error: false };
+                    starChartSummary.value = {
+                        pathsCount,
+                        stats: parsed?.stats || {},
+                        bountyHunt: parsed?.bounty_hunt || null,
+                        error: false
+                    };
                 } catch(e) {
                     starChartSummary.value = { error: true };
                 }
@@ -472,6 +506,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 classIcon, subclassIcon, onImageError,
                 modifiersOpen, tipsDismissed,
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff, buildsUnavailable,
+                bountyBuff, bountyPercent,
                 nextPage, prevPage, getTooltipHtml, copyLayout, fmtLayout, exportCsv, showContextMenu,
                 helpOpen, toggleHelp,
                 getBuildHeadline, dismissTips,
