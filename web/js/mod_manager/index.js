@@ -113,6 +113,9 @@ document.addEventListener('mod_manager_loaded', async () => {
             const showSearchShortcutHint = ref(window.AppSettings ? window.AppSettings.getPref(PREF_HINT_KEY, '') !== 'dismissed' : true);
             const showPreviewOnInfoSide = ref(true);
 
+            const autoUpdateOnLaunch = ref(false);
+            const isSavingAutoUpdate = ref(false);
+
             const isFixingNames = ref(false);
             const isRefreshingUpdates = ref(false);
             const isUpdatingAll = ref(false);
@@ -187,6 +190,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const updatableMods = computed(() => mods.value.filter(canUpdate));
             const updatableCount = computed(() => updatableMods.value.length);
+            const lockedMods = computed(() => mods.value.filter(m => m.locked));
 
             const totalCount = computed(() => mods.value.length);
             const filteredCount = computed(() => filteredMods.value.length);
@@ -568,6 +572,42 @@ document.addEventListener('mod_manager_loaded', async () => {
                     window.showToast(t('mod_manager.update_all_done').replace('{count}', updated));
                 }
                 await loadMods();
+            };
+
+            // Auto-update runs unattended in the BACKEND at app start (main.py >
+            // auto_update_mods_on_launch), so turning it on is a real handover:
+            // the prompt spells that out and lists the locked mods it will leave
+            // alone. Turning it off needs no confirmation.
+            const toggleAutoUpdate = async () => {
+                if (isSavingAutoUpdate.value) return;
+                const next = !autoUpdateOnLaunch.value;
+
+                if (next) {
+                    const locked = lockedMods.value.map(m => m.name);
+                    const confirmed = await window.showConfirmModal({
+                        title: t('mod_manager.auto_update_enable_title'),
+                        message: t('mod_manager.auto_update_enable_confirm') + '\n'
+                            + (locked.length
+                                ? t('mod_manager.auto_update_locked_list').replace('{count}', locked.length)
+                                : t('mod_manager.auto_update_no_locked')),
+                        items: locked,
+                        confirmLabel: t('mod_manager.enable'),
+                        cancelLabel: t('common.cancel'),
+                        danger: false
+                    });
+                    if (!confirmed) return;
+                }
+
+                isSavingAutoUpdate.value = true;
+                try {
+                    if (window.AppSettings) await window.AppSettings.set('auto_update_mods', next);
+                    autoUpdateOnLaunch.value = next;
+                    window.showToast(next
+                        ? t('mod_manager.auto_update_enabled')
+                        : t('mod_manager.auto_update_disabled'));
+                } finally {
+                    isSavingAutoUpdate.value = false;
+                }
             };
 
             // --- Mods Hub variant switching (for installed hub mods) ------------
@@ -1144,6 +1184,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             watch([searchQuery, filterStatus, selectedInstall], persistUiState);
 
             onMounted(async () => {
+                if (window.AppSettings) {
+                    await window.AppSettings.load();
+                    autoUpdateOnLaunch.value = window.AppSettings.get('auto_update_mods', false) === true;
+                }
                 await scanForGames();
                 if (selectedInstall.value) {
                     await loadMods();
@@ -1187,6 +1231,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                 isRefreshingUpdates,
                 isUpdatingAll,
                 updatableCount,
+                lockedMods,
+                autoUpdateOnLaunch,
+                isSavingAutoUpdate,
+                toggleAutoUpdate,
                 isClearingCache,
                 isImportingTpack,
                 importTpack,

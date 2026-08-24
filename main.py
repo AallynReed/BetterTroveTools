@@ -849,6 +849,37 @@ def probe_mods_on_launch():
         pass  # launch work is best effort; the Mod Manager still does this on open
 
 
+def auto_update_mods_on_launch():
+    """Update every unlocked mod for the active install once at startup, when
+    the user turned auto-update on in the Mod Manager. Off unless enabled, and
+    mods the user locked are never touched."""
+    from backend.mod_manager.mod_manager import auto_update_unlocked_mods
+
+    try:
+        if _read_settings_dict().get("auto_update_mods") is not True:
+            return
+        install = active_game_install()
+        if not install:
+            return
+        # Wait for the page to connect first: a call into JS with no client
+        # attached blocks for eel's full 10s result timeout, and the update work
+        # makes several of them (network-request tracking).
+        deadline = time.time() + 30
+        while not eel._websockets and time.time() < deadline:
+            time.sleep(0.25)
+        updated, failed = auto_update_unlocked_mods(install)
+        if not updated and not failed:
+            return
+        # The UI is usually up long before the downloads finish; if it isn't,
+        # the push is simply dropped -- the mods are still updated on disk.
+        try:
+            eel.receive_auto_mod_updates({"updated": updated, "failed": failed})()
+        except Exception:
+            pass
+    except Exception:
+        pass  # launch work is best effort; the Mod Manager still updates on demand
+
+
 def wait_for_server(port, timeout=15.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -884,6 +915,11 @@ threading.Thread(target=warm_codex_caches, daemon=True, name="codex-warmup").sta
 # folder, so the Mod Manager opens on current data instead of discovering the
 # changes itself.
 threading.Thread(target=probe_mods_on_launch, daemon=True, name="mods-probe").start()
+
+# Opt-in, off by default: pull pending mod updates for the remembered install
+# right after the probe, so the app opens on up-to-date mods. Locked mods are
+# skipped (backend/mod_manager/mod_manager.py > auto_update_unlocked_mods).
+threading.Thread(target=auto_update_mods_on_launch, daemon=True, name="mods-auto-update").start()
 
 # One SSE connection to the TroveAPI, opened at launch and shared by desktop
 # notifications and the live UI data.

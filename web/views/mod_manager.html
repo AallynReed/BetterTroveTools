@@ -88,6 +88,11 @@
                         <template v-else><i class="fa-solid fa-file-import"></i> <span>{{ t('mod_manager.import_tpack') }}</span></template>
                     </button>
 
+                    <button @click="toggleAutoUpdate" class="secondary-btn toolbar-toggle-btn" :class="{ 'is-on': autoUpdateOnLaunch }" :disabled="isSavingAutoUpdate" :aria-pressed="autoUpdateOnLaunch ? 'true' : 'false'" :title="t('mod_manager.auto_update_title')">
+                        <i class="fa-solid" :class="autoUpdateOnLaunch ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                        <span>{{ t('mod_manager.auto_update') }}</span>
+                    </button>
+
                     <details class="toolbar-maintenance">
                         <summary class="toolbar-maintenance-summary" :title="t('mod_manager.advanced_actions')">
                             <i class="fa-solid fa-screwdriver-wrench"></i>

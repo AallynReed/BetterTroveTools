@@ -214,6 +214,13 @@
     background: rgba(0, 0, 0, 0.22);
 }
 
+/* Auto-update is a persistent state, not an action, so the button carries its
+   own on/off marker rather than introducing a second control style in the row. */
+.toolbar-toggle-btn.is-on {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
 /* Maintenance is rare, so it collapses to a single ghost control at the end of
    the action row and expands in place — no floating layer, no empty card. */
 .toolbar-maintenance {

@@ -573,6 +573,25 @@ function receive_mods_changed(gamePath) {
     document.dispatchEvent(new CustomEvent('mods_folder_changed', { detail: { path: gamePath } }));
 }
 
+// Result of the launch-time auto-update (main.py > auto_update_mods_on_launch).
+// Lives here, not in the Mod Manager, because the update runs whether or not
+// that view was ever opened.
+eel.expose(receive_auto_mod_updates, 'receive_auto_mod_updates');
+function receive_auto_mod_updates(result) {
+    const t = (str) => window.I18nManager && window.I18nManager.t ? window.I18nManager.t(str) : str;
+    const updated = (result && result.updated) || [];
+    const failed = (result && result.failed) || [];
+    if (failed.length) {
+        window.showToast(t('mod_manager.auto_update_partial')
+            .replace('{done}', updated.length)
+            .replace('{total}', updated.length + failed.length)
+            .replace('{names}', failed.join(', ')), true);
+    } else if (updated.length) {
+        window.showToast(t('mod_manager.auto_update_done').replace('{count}', updated.length));
+    }
+    document.dispatchEvent(new CustomEvent('mods_folder_changed', { detail: { path: null } }));
+}
+
 eel.expose(add_external_request, 'add_external_request');
 function add_external_request(label = "Python Backend Request", url = "") {
     const id = Math.random().toString(36).substring(2, 11);

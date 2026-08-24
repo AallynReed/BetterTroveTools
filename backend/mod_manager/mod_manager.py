@@ -8,6 +8,7 @@ from pathlib import Path
 import eel
 import requests
 
+from backend.feature_flags import MODS_HUB_ENABLED
 from backend.response import resp
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
@@ -442,3 +443,54 @@ def perform_mod_update(game_path_str, mod_path_str):
 
         traceback.print_exc()
         return resp(False, error=str(e), code="UPDATE_FAILED")
+
+
+def auto_update_unlocked_mods(game_path_str):
+    """Update every mod that has a pending update, skipping the ones the user
+    locked. Used by the launch-time auto-update; returns (updated, failed) as
+    lists of mod names.
+
+    Mods Hub mods update at the variant level (same branch, latest release) and
+    are excluded from the Trovesaurus pass below, mirroring what the Mod Manager
+    does when the user clicks Update All."""
+    locked = _locked_keys(game_path_str)
+    updated, failed = [], []
+    hub_paths = set()
+
+    if MODS_HUB_ENABLED:
+        from backend.mod_manager import mods_hub
+
+        try:
+            states = mods_hub.get_mods_hub_install_states(game_path_str, True)
+            states = (states.get("data") or {}).get("states") or {}
+        except Exception:
+            states = {}
+        for path, state in states.items():
+            hub_paths.add(path)
+            if not state.get("has_update") or _lock_key(path) in locked:
+                continue
+            name = state.get("name") or Path(path).stem
+            try:
+                result = mods_hub.install_mods_hub_mod_sync(
+                    game_path_str, state.get("ref"), state.get("branch")
+                )
+                ok = bool(result and result.get("success"))
+            except Exception:
+                ok = False
+            (updated if ok else failed).append(name)
+
+    trove_path = TroveGamePath(Path(game_path_str))
+    mod_list = TroveModList(path=trove_path, partial=True)
+    mod_list.update_trovesaurus_data(True)
+    for mod in mod_list:
+        path = str(mod.mod_path)
+        if path in hub_paths or not mod.has_update or _lock_key(path) in locked:
+            continue
+        name = mod.name or Path(path).stem
+        try:
+            ok = bool(mod.update())
+        except Exception:
+            ok = False
+        (updated if ok else failed).append(name)
+
+    return updated, failed
