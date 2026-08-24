@@ -359,6 +359,10 @@ class PartialGem(BaseModel):
     type: GemType
     level: int
     power_rank: int
+    # The boost at levels 5/10/15 is the norm, not a guarantee - a gem can come out
+    # short one. Leave this None for the usual count, or pin it to read the bands of
+    # a gem that is short a boost.
+    containers: Optional[int] = None
 
     @computed_field
     @property
@@ -374,10 +378,14 @@ class PartialGem(BaseModel):
         else:
             return get_increment_power_rank_empowered(self.tier, level)
 
+    @property
+    def default_container_count(self) -> int:
+        return min(self.level, 15) // 5 + 3
+
     @computed_field
     @property
     def expected_power_rank_range(self) -> tuple:
-        container_count = min(self.level, 15) // 5 + 3
+        container_count = self.containers or self.default_container_count
         thresholds = self.power_rank_thresholds
         min_pr = thresholds[0] * container_count
         max_pr = thresholds[1] * container_count
