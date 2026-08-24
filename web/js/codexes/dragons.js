@@ -384,7 +384,10 @@ function initDragonsView() {
                 });
 
                 dragonsData.value = parsedDragons;
-                statsOptions.value = Array.from(uniqueStats).sort().map(s => ({ id: s, text: t(s) }));
+                // A-Z by the name the dropdown shows, not by the raw key: the two
+                // disagree once translated (SpellDamage reads "Magic Damage").
+                statsOptions.value = Array.from(uniqueStats).map(s => ({ id: s, text: t(s) }))
+                    .sort((a, b) => a.text.localeCompare(b.text));
 
                 const source = (response && response.source) || '';
                 const cacheMeta = (response && response.meta && response.meta.cache) || {};
