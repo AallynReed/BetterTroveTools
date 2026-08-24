@@ -339,19 +339,10 @@ class GemOptimizerEngine:
         self.selected_subclass = self.classes.get(config.subclass.value)
         
         damage_type = StatName.magic_damage if self.selected_class.damage_type == DamageType.magic else StatName.physical_damage
-        
-        # Auto-Ally Fallback
-        if config.ally == "boot_clown":
-            if damage_type == StatName.magic_damage:
-                config.ally = "phoenix_stars"
-            else:
-                config.ally = "spidermonkey_stars"
-        
+
         if config.build_type in [BuildType.health]:
             first = self.sum_file_values("health") + get_attr(self.selected_class.stats, name=StatName("Maximum Health")).value
             second = self.sum_file_values("health_per") + get_attr(self.selected_class.stats, name=StatName("Maximum Health %")).value
-            if self.selected_class.subclass in [Class.chloromancer]:
-                second += 60
             third, fourth, fifth, sixth = 0, 0, 100, 100
             damage_type = StatName.maximum_health
         else:
@@ -438,6 +429,8 @@ class GemOptimizerEngine:
         def rd(value, digits):
             return round(value, 8 if precise else digits)
 
+        class_bonus = next((b.value for b in self.selected_class.bonuses if b.name == damage_type), None)
+
         raw_builds = []
         builder = self.generate_combinations(farm=config.build_type in [BuildType.farm])
 
@@ -448,15 +441,13 @@ class GemOptimizerEngine:
             cfirst = first + gem_first
             csecond = second + gem_second
             cthird = third + gem_third
-            
-            class_bonus = next((b.value for b in self.selected_class.bonuses if b.name == damage_type), None)
-            
+
             final = cfirst * (1 + fourth / 100)
             if class_bonus is not None:
                 final *= 1 + (class_bonus / 100)
                 
             coefficient = rd(final * (1 + (csecond * (fifth / 100)) / 100), 2)
-            light_value = rd(cthird * (sixth / 100), 8) if precise else int(cthird * (sixth / 100))
+            light_value = rd(cthird * (sixth / 100), 2)
 
             raw_builds.append([
                 build, cfirst, csecond, light_value, fourth, fifth, final, class_bonus, coefficient

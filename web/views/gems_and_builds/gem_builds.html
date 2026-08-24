@@ -59,8 +59,8 @@
                 <div class="input-group">
                     <label>{{ t('gems.gem_builds.ally') }}</label>
                     <select v-model="config.ally">
-                        <option value="boot_clown">{{ t('gems.gem_builds.none_auto_optimal') }}</option>
-                        <option v-for="(data, key) in alliesData" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
+                        <option value="boot_clown">{{ t('common.none') }}</option>
+                        <option v-for="(data, key) in selectableAllies" :key="key" :value="key">{{ t(data.qualified_name || key) }}</option>
                     </select>
                 </div>
 

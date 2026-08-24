@@ -17,7 +17,7 @@
     };
     const CL = {
         BARD: 'Bard', BOOMERANGER: 'Boomeranger', CANDY_BARBARIAN: 'Candy Barbarian',
-        CHLOROMANCER: 'Chloromancer', GUNSLINGER: 'Gunslinger', ICE_SAGE: 'Ice Sage',
+        GUNSLINGER: 'Gunslinger', ICE_SAGE: 'Ice Sage',
         LUNAR_LANCER: 'Lunar Lancer', SHADOW_HUNTER: 'Shadow Hunter', SOLARION: 'Solarion',
     };
     const ROOT_TO_ABBREV = { combat: 'c', gathering: 'g', pve: 'p' };
@@ -326,19 +326,11 @@
         const damageTypeName = selectedClass.damage_type === 'Magic' ? 'magic_damage' : 'physical_damage';
         const sums = data.sums || {};
 
-        // Auto-Ally Fallback
-        if (config.ally === 'boot_clown') {
-            config.ally = damageType === SN.MAGIC ? 'phoenix_stars' : 'spidermonkey_stars';
-        }
-
         let first, second, third, fourth, fifth, sixth;
 
         if (config.build_type === 'Health') {
             first = (sums.health || 0) + findStatValue(selectedClass.stats, SN.MAXHP);
             second = (sums.health_per || 0) + findStatValue(selectedClass.stats, SN.MAXHP_PCT);
-            // NOTE: selected_class.subclass is a dict in the source model, so this
-            // comparison is always false there too — replicated faithfully.
-            if (selectedClass.subclass === CL.CHLOROMANCER) second += 60;
             third = 0; fourth = 0; fifth = 100; sixth = 100;
             damageType = SN.MAXHP;
         } else {
@@ -436,7 +428,7 @@
             if (classBonus !== null) final *= 1 + (classBonus / 100);
 
             const coefficient = rd(final * (1 + (csecond * (fifth / 100)) / 100), 2);
-            const lightValue = precise ? pyRound(cthird * (sixth / 100), 8) : Math.trunc(cthird * (sixth / 100));
+            const lightValue = rd(cthird * (sixth / 100), 2);
 
             rawBuilds.push([
                 build, cfirst, csecond, lightValue, fourth, fifth, final, classBonus, coefficient,

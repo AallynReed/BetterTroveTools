@@ -143,6 +143,16 @@ document.addEventListener("gem_builds_loaded", () => {
                     ? NO_ICON : src.replace(CLASS_DIR, ICON_DIR);
             };
 
+            // boot_clown is the "None" entry above - it carries only Jump and
+            // Movement Speed, so it is the no-ally baseline rather than a pick.
+            const selectableAllies = computed(() => {
+                const out = {};
+                for (const [key, data] of Object.entries(alliesData.value || {})) {
+                    if (key !== 'boot_clown') out[key] = data;
+                }
+                return out;
+            });
+
             const bestCoeff = computed(() => cachedBuilds.value.length > 0 ? cachedBuilds.value[0].coefficient : 1);
             const maxPages = computed(() => Math.ceil(cachedBuilds.value.length / itemsPerPage) || 1);
             const paginatedBuilds = computed(() => {
@@ -501,7 +511,7 @@ document.addEventListener("gem_builds_loaded", () => {
             });
 
             return {
-                t, config, classesData, foodsData, alliesData, starChartTemplates, starChartSummary,
+                t, config, classesData, foodsData, alliesData, selectableAllies, starChartTemplates, starChartSummary,
                 filteredStarChartStats,
                 classIcon, subclassIcon, onImageError,
                 modifiersOpen, tipsDismissed,
