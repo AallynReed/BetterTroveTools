@@ -55,16 +55,16 @@
         </div>
         <div class="trove-play-config">
             <div class="trove-field">
+                <label>{{ t('trove.server') }}</label>
+                <select v-model="server" :disabled="busy" data-native-select="true">
+                    <option v-for="s in serverList" :key="s.key" :value="s.key">{{ s.label }}</option>
+                </select>
+            </div>
+            <div class="trove-field">
                 <label>{{ t('trove.install') }}</label>
                 <select v-model="gamePath" :disabled="busy" data-native-select="true">
                     <option v-if="!installList.length" value="">{{ noInstallLabel }}</option>
                     <option v-for="g in installList" :key="g.path" :value="g.path">{{ g.name }}</option>
-                </select>
-            </div>
-            <div class="trove-field">
-                <label>{{ t('trove.server') }}</label>
-                <select v-model="server" :disabled="busy" data-native-select="true">
-                    <option v-for="s in serverList" :key="s.key" :value="s.key">{{ s.label }}</option>
                 </select>
             </div>
         </div>
