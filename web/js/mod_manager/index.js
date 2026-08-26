@@ -267,6 +267,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     mod.hubHandle = s.handle || null;
                     mod.hubBranch = s.branch || null;
                     mod.hubPageUrl = s.page_url || null;
+                    mod.isBeta = !!s.is_beta;
                     mod.hasUpdate = !!s.has_update;     // variant-scoped: only same-branch updates flag
                     mod.tsUrl = s.page_url || mod.tsUrl; // title links to the hub page
                 });
@@ -369,6 +370,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                             hubHandle: null,
                             hubBranch: null,
                             hubPageUrl: null,
+                            isBeta: false,
                             isToggling: false,
                             isUpdating: false,
                             isLocking: false,

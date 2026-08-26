@@ -120,6 +120,21 @@
 .mh-switch-variant-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 .mh-switch-variant-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Beta amber, the app's fifth reserved colour, used for nothing but BETA
+   labels (DESIGN.md > The Four Semantics Rule). Same chip on a hub card and on
+   a My Mods card, so the flag reads identically in both places. */
+.mh-mod-tag-beta,
+.mod-flag-beta {
+    color: var(--beta);
+    background: rgba(var(--beta-rgb), 0.18);
+    border-color: rgba(var(--beta-rgb), 0.4);
+}
+
+.mod-flag-beta {
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
 /* "Mods Hub" variant chip on a My Mods card — click to switch variant. It is a
    control rather than a label, which is why it keeps the accent while the plain
    .mod-flag chips stay neutral. */

@@ -269,6 +269,7 @@ def _compute_install_states(game_path_str, force=False):
                     "page_url": mod.get("page_url") or f"{MOD_PAGE_BASE}/{ref}",
                     "handle": handle,
                     "slug": slug,
+                    "is_beta": bool(mod.get("is_beta")),
                 }
 
     states = {}
@@ -286,6 +287,7 @@ def _compute_install_states(game_path_str, force=False):
             "page_url": info.get("page_url"),
             "handle": info.get("handle"),
             "slug": info.get("slug"),
+            "is_beta": bool(info.get("is_beta")),
         }
         paths[ref] = info["path"]
 
@@ -393,6 +395,7 @@ def get_mods_hub_mods(page=1, query="", tag="", sort="popular", game_path_str=""
                     "image": preview,
                     "page_url": m.get("page_url") or f"{MOD_PAGE_BASE}/{ref}",
                     "tags": m.get("categories") or m.get("tags") or [],
+                    "is_beta": bool(m.get("is_beta")),
                     "is_installed": bool(state.get("is_installed")),
                     "needs_update": bool(state.get("needs_update")),
                     "installed_branch": state.get("branch"),
@@ -534,7 +537,7 @@ def get_mods_hub_variants(ref):
 def get_mods_hub_install_states(game_path_str, force=False):
     """For the Mod Manager (My Mods) tab: which installed mods come from the Mods
     Hub, keyed by file path -> {ref, slug, handle, branch, name, page_url,
-    has_update}. Lets the Mod Manager treat hub mods authoritatively (variant-
+    is_beta, has_update}. Lets the Mod Manager treat hub mods authoritatively (variant-
     scoped updates, variant switching) and skip the Trovesaurus lookup for them."""
     try:
         states, paths = _compute_install_states(game_path_str, force=force)
@@ -550,6 +553,7 @@ def get_mods_hub_install_states(game_path_str, force=False):
                 "branch": st.get("branch"),
                 "name": st.get("name"),
                 "page_url": st.get("page_url"),
+                "is_beta": bool(st.get("is_beta")),
                 "has_update": bool(st.get("needs_update")),
             }
         return resp(True, data={"states": by_path}, states=by_path)

@@ -191,6 +191,7 @@
                             <div class="mod-front-tags">
                                 <span v-if="canUpdate(mod)" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('common.update') }}</span>
                                 <span v-if="mod.locked" class="mod-flag mod-flag-locked" :title="t('mod_manager.updates_locked_tip')"><i class="fa-solid fa-lock"></i> {{ t('mod_manager.locked') }}</span>
+                                <span v-if="mod.isBeta" class="mod-flag mod-flag-beta" :title="t('mods_hub.beta_tip')">{{ t('mods_hub.beta') }}</span>
                                 <span v-if="mod.fromHub" class="mod-flag mod-flag-hub" :title="t('mods_hub.switch_variant')" @click.stop="openVariantPicker(mod)"><i class="fa-solid fa-code-branch"></i> {{ mod.hubBranch || t('mod_manager.mods_hub') }}</span>
                             </div>
 
@@ -458,7 +459,8 @@
                                 <img :src="mod.image || '/assets/images/no_preview.png'" :alt="mod.name" class="mod-preview-img" loading="lazy" @error="$event.target.src='/assets/images/no_preview.png'">
                             </button>
 
-                            <div v-if="mod.tags && mod.tags.length" class="mh-mod-tags">
+                            <div v-if="mod.is_beta || (mod.tags && mod.tags.length)" class="mh-mod-tags">
+                                <span v-if="mod.is_beta" class="mh-mod-tag mh-mod-tag-beta" :title="t('mods_hub.beta_tip')">{{ t('mods_hub.beta') }}</span>
                                 <span v-for="tag in mod.tags.slice(0, 3)" :key="tag" class="mh-mod-tag">{{ tag }}</span>
                             </div>
 
