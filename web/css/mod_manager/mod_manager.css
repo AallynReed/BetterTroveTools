@@ -583,6 +583,10 @@
     outline-offset: 2px;
 }
 .mod-meta { font-size: var(--t-fs-label); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: var(--t-1); }
+.mod-meta-row { display: flex; align-items: baseline; gap: var(--t-2); min-width: 0; margin-top: var(--t-1); }
+.mod-meta-row .mod-meta { flex: 1 1 auto; margin-top: 0; }
+/* Version is reference detail, not a status, so it stays in the neutral ramp. */
+.mod-version { flex: 0 0 auto; font-size: var(--t-fs-micro); font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mod-status-pill { display: inline-flex; align-items: center; gap: var(--t-2); width: fit-content; font-size: var(--t-fs-micro); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; padding: var(--t-1) 10px; border-radius: var(--radius-pill); border: 1px solid transparent; }
 .mod-status-toggle { margin-top: auto; cursor: pointer; width: 100%; justify-content: center; }
 .mod-status-toggle:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }

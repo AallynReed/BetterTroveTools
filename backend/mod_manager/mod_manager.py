@@ -154,6 +154,7 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                 {
                     "name": mod.name or "Unknown Mod",
                     "author": mod.author or "Unknown Author",
+                    "version": mod.mod_version,
                     "status": "enabled" if mod.enabled else "disabled",
                     "path": str(mod.mod_path),
                     "locked": _lock_key(mod.mod_path) in locked_keys,

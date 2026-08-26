@@ -1130,6 +1130,7 @@
         "mod_manager.locked_only": "Locked only",
         "mod_manager.maintenance": "Maintenance",
         "mod_manager.mod_manager_cache_cleared": "Mod Manager cache cleared.",
+        "mod_manager.mod_version": "Mod version",
         "mod_manager.modpack": "Modpack",
         "mod_manager.modpacks": "Modpacks",
         "mod_manager.mods_hub": "Mods Hub",

@@ -177,8 +177,11 @@
                                 </button>
                             </div>
 
-                            <a v-if="authorUrl(mod)" class="mod-meta mod-author-link" :href="authorUrl(mod) || '#'" :title="t('mod_manager.view_author_profile')" @click.prevent="openAuthor(mod)" v-html="highlightSearch(mod.author)"></a>
-                            <span v-else class="mod-meta" v-html="highlightSearch(mod.author)"></span>
+                            <div class="mod-meta-row">
+                                <a v-if="authorUrl(mod)" class="mod-meta mod-author-link" :href="authorUrl(mod) || '#'" :title="t('mod_manager.view_author_profile')" @click.prevent="openAuthor(mod)" v-html="highlightSearch(mod.author)"></a>
+                                <span v-else class="mod-meta" v-html="highlightSearch(mod.author)"></span>
+                                <span v-if="modVersion(mod)" class="mod-version" :title="t('mod_manager.mod_version')">{{ modVersion(mod) }}</span>
+                            </div>
 
                             <button v-if="showPreviewOnInfoSide" class="mod-front-preview" @click="mod.image && openImageModal(mod)" :disabled="!mod.image" :title="mod.image ? t('mod_manager.open_preview') : t('mod_manager.no_preview_available')">
                                 <img v-if="mod.image" :src="'data:image/png;base64,' + mod.image" alt="Preview" class="mod-front-preview-img" loading="lazy">

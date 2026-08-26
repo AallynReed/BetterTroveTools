@@ -386,6 +386,16 @@ class TroveMod:
         self.add_property("SteamId", value)
 
     @property
+    def mod_version(self):
+        """Optional: not every .tmod carries a modVersion property."""
+        value = self.get_property_value("modVersion")
+        return value.strip() if isinstance(value, str) else ""
+
+    @mod_version.setter
+    def mod_version(self, value: str):
+        self.add_property("modVersion", str(value or "").strip())
+
+    @property
     def game_version(self):
         return self.get_property_value("gameVersion")
 

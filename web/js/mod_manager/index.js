@@ -968,6 +968,12 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             const openUrl = (url) => eel.open_url_in_browser(url)();
             const modNameUrl = (mod) => mod?.tsUrl || null;
+            // modVersion is optional in a .tmod header, so cards without it show nothing.
+            const modVersion = (mod) => {
+                const raw = String(mod?.version || '').trim();
+                if (!raw) return '';
+                return /^v/i.test(raw) ? raw : `v${raw}`;
+            };
             const authorUrl = (mod) => {
                 // Hub mods link to the author's hub page; Trovesaurus mods to the TS profile.
                 if (mod?.fromHub && mod.hubHandle) {
@@ -1270,6 +1276,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 getConflictTitle,
                 openUrl,
                 modNameUrl,
+                modVersion,
                 authorUrl,
                 openAuthor,
                 showContextMenu,
