@@ -25,22 +25,31 @@ def _cache_root():
 
 
 def mods_signature(game_path_str):
-    """Cheap fingerprint of a mods folder: name, size and mtime of every file in
-    it. Callers cache installed/outdated state against this.
+    """Cheap fingerprint of a mods folder: path, size and mtime of every file in
+    it, plus the Steam Workshop folder when the install has one. Callers cache
+    installed/outdated state against this.
 
     The folder's own mtime is deliberately NOT used: updating a mod overwrites
     its file in place, which leaves the directory timestamp untouched on
     Windows, so an mtime-keyed cache would keep serving "update available" for a
     mod that was just updated."""
-    mods_dir = Path(game_path_str) / "mods"
-    try:
-        return tuple(
-            (entry.name, entry.stat().st_size, entry.stat().st_mtime_ns)
-            for entry in sorted(mods_dir.iterdir(), key=lambda p: p.name)
-            if entry.is_file()
-        )
-    except OSError:
-        return ()
+    trove_path = TroveGamePath(Path(game_path_str))
+    sources = [(trove_path.mods_path, False)]
+    workshop = trove_path.workshop_path
+    if workshop:
+        sources.append((workshop, True))
+
+    entries = []
+    for directory, recursive in sources:
+        try:
+            tree = directory.rglob("*") if recursive else directory.iterdir()
+            for entry in tree:
+                if entry.is_file():
+                    stat = entry.stat()
+                    entries.append((str(entry), stat.st_size, stat.st_mtime_ns))
+        except OSError:
+            continue
+    return tuple(sorted(entries))
 
 
 def _trash_manifest_path():
@@ -157,6 +166,7 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                     "version": mod.mod_version,
                     "status": "enabled" if mod.enabled else "disabled",
                     "path": str(mod.mod_path),
+                    "workshop": mod.is_workshop,
                     "locked": _lock_key(mod.mod_path) in locked_keys,
                     "image": mod.image,
                     "has_conflicts": mod.has_conflicts,
@@ -219,6 +229,9 @@ def delete_mod(game_path_str, mod_path_str):
         trove_path = TroveGamePath(Path(game_path_str))
         mods_dir = trove_path.path.joinpath("mods").resolve()
         mod_path = Path(mod_path_str).resolve()
+
+        if trove_path.is_workshop_file(mod_path):
+            return resp(False, error="Steam Workshop mods are removed by unsubscribing in Steam.", code="WORKSHOP_MOD")
 
         if not str(mod_path).lower().startswith(str(mods_dir).lower()):
             return resp(False, error="Refusing to delete file outside mods directory.", code="INVALID_PATH")
@@ -324,7 +337,7 @@ def fix_mod_names(game_path_str):
         fixed_count = 0
 
         for mod in mod_list:
-            if mod.has_wrong_name:
+            if mod.has_wrong_name and not mod.is_workshop:
                 mod.fix_name()
                 fixed_count += 1
 
@@ -346,7 +359,7 @@ def get_mod_urls(game_path_str):
         hash_to_path = {
             getattr(mod, "hash").lower(): str(mod.mod_path)
             for mod in mod_list
-            if getattr(mod, "hash", None)
+            if getattr(mod, "hash", None) and not mod.is_workshop
         }
         if not hash_to_path:
             return resp(True, data={"urls": {}}, urls={})
@@ -424,6 +437,9 @@ def perform_mod_update(game_path_str, mod_path_str):
             return resp(False, error="Updates are locked for this mod.", code="MOD_LOCKED")
 
         trove_path = TroveGamePath(Path(game_path_str))
+        if trove_path.is_workshop_file(mod_path_str):
+            return resp(False, error="Steam Workshop mods are updated by Steam, not here.", code="WORKSHOP_MOD")
+
         mod_list = TroveModList(path=trove_path, partial=True)
         mod_list.update_trovesaurus_data()
 

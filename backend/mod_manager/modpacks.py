@@ -214,7 +214,7 @@ def _quarantine_conflicts(game_path_str, names_lower):
     disabled_dir = trove_path.mods_path / "disabled"
     for mod in mod_list:
         name = (mod.name or "").strip()
-        if not name or name.lower() not in names_lower:
+        if not name or name.lower() not in names_lower or mod.is_workshop:
             continue
         try:
             disabled_dir.mkdir(parents=True, exist_ok=True)

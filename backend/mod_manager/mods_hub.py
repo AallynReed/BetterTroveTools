@@ -220,12 +220,17 @@ def _compute_install_states(game_path_str, force=False):
 
     try:
         trove_path = TroveGamePath(Path(game_path_str))
-        files = (
-            list(trove_path.enabled_tmods)
-            + list(trove_path.disabled_tmods)
-            + list(trove_path.enabled_zips)
-            + list(trove_path.disabled_zips)
-        )
+        files = [
+            f
+            for f in (
+                list(trove_path.enabled_tmods)
+                + list(trove_path.disabled_tmods)
+                + list(trove_path.enabled_zips)
+                + list(trove_path.disabled_zips)
+            )
+            # Steam Workshop mods aren't hub mods and can't be installed over.
+            if not trove_path.is_workshop_file(f)
+        ]
     except Exception as e:
         print(f"Failed to enumerate local mods for hub lookup: {e}")
         files = []

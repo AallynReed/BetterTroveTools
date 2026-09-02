@@ -169,10 +169,10 @@
                                 </span>
                                 <a v-if="mod.tsUrl" class="mod-title mod-link ts-mod-title" :href="modNameUrl(mod) || '#'" :title="mod.fromHub ? t('mods_hub.open_in_hub') : t('mod_manager.title_click_to_view_on_trovesaurus').replace('{title}', mod.name)" @click.prevent="openUrl(mod.tsUrl)" v-html="highlightSearch(mod.name)"></a>
                                 <span v-else class="mod-title" v-html="highlightSearch(mod.name)"></span>
-                                <button class="mod-card-lock-hover" :class="{ 'is-locked': mod.locked }" :title="mod.locked ? t('mod_manager.unlock_updates') : t('mod_manager.lock_updates')" :aria-pressed="mod.locked ? 'true' : 'false'" @click.stop.prevent="toggleModLock(mod)" :disabled="mod.isLocking">
+                                <button v-if="canManage(mod)" class="mod-card-lock-hover" :class="{ 'is-locked': mod.locked }" :title="mod.locked ? t('mod_manager.unlock_updates') : t('mod_manager.lock_updates')" :aria-pressed="mod.locked ? 'true' : 'false'" @click.stop.prevent="toggleModLock(mod)" :disabled="mod.isLocking">
                                     <i class="fa-solid" :class="mod.isLocking ? 'fa-spinner fa-spin' : (mod.locked ? 'fa-lock' : 'fa-lock-open')"></i>
                                 </button>
-                                <button class="mod-card-delete-hover" :title="t('common.delete_mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
+                                <button v-if="canManage(mod)" class="mod-card-delete-hover" :title="t('common.delete_mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
                                     <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
                                 </button>
                             </div>
@@ -192,6 +192,7 @@
                                 <span v-if="canUpdate(mod)" class="mod-flag mod-flag-update"><i class="fa-solid fa-cloud-arrow-down"></i> {{ t('common.update') }}</span>
                                 <span v-if="mod.locked" class="mod-flag mod-flag-locked" :title="t('mod_manager.updates_locked_tip')"><i class="fa-solid fa-lock"></i> {{ t('mod_manager.locked') }}</span>
                                 <span v-if="mod.isBeta" class="mod-flag mod-flag-beta" :title="t('mods_hub.beta_tip')">{{ t('mods_hub.beta') }}</span>
+                                <span v-if="mod.isWorkshop" class="mod-flag mod-flag-workshop" :title="t('mod_manager.workshop_tip')"><i class="fa-brands fa-steam"></i> {{ t('mod_manager.workshop') }}</span>
                                 <span v-if="mod.fromHub" class="mod-flag mod-flag-hub" :title="t('mods_hub.switch_variant')" @click.stop="openVariantPicker(mod)"><i class="fa-solid fa-code-branch"></i> {{ mod.hubBranch || t('mod_manager.mods_hub') }}</span>
                             </div>
 

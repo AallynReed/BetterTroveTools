@@ -243,6 +243,7 @@ class TroveMod:
         self.files = []
         self.name_conflicts = []
         self.file_conflicts = []
+        self.is_workshop = False
 
     def __str__(self):
         return f'<TroveMod "{self.name}">'
@@ -627,6 +628,11 @@ class TroveMod:
         
     @property
     def has_update(self):
+        # Steam owns the Workshop folder: overwriting a file in it just gets
+        # reverted on the next Steam validation, so those mods never update
+        # through us -- the user updates them by resubscribing in Steam.
+        if self.is_workshop:
+            return False
         if self.trovesaurus_data is not None and self.trovesaurus_data.file_objs:
             files = [f for f in self.trovesaurus_data.file_objs if not f.is_config]
             files.sort(key=lambda f: -f.file_id)
@@ -961,6 +967,8 @@ class TroveModList:
                 print(f"Failed to fetch hash batch: {e}")
 
         for mod in self.mods:
+            if mod.is_workshop:
+                continue
             mod_id = hash_to_id.get(mod.hash)
             if mod_id is not None:
                 raw_mod_data = mods_all_data.get(str(mod_id))
@@ -983,7 +991,9 @@ class TroveModList:
 
     @property
     def all_hashes(self):
-        return [mod.hash for mod in self.mods]
+        # Workshop mods aren't managed by Trovesaurus or the Mods Hub, and
+        # hashing one means recompiling the whole archive -- skip them.
+        return [mod.hash for mod in self.mods if not mod.is_workshop]
 
     @property
     def name(self):
@@ -1049,17 +1059,20 @@ class TroveModList:
             self._ensure_mod_configs()
 
     def _ensure_correct_extensions(self):
+        # Workshop files are skipped throughout: renaming one makes Steam
+        # re-download the item on its next validation pass.
+        workshop = self.trove_path.is_workshop_file
         for file in self.trove_path.enabled_tmods:
-            if zipfile.is_zipfile(file):
+            if zipfile.is_zipfile(file) and not workshop(file):
                 file.rename(file.with_suffix(".zip"))
         for file in self.trove_path.disabled_tmods:
-            if zipfile.is_zipfile(file):
+            if zipfile.is_zipfile(file) and not workshop(file):
                 file.rename(file.with_suffix("").with_suffix(".zip.disabled"))
         for file in self.trove_path.enabled_zips:
-            if not zipfile.is_zipfile(file):
+            if not zipfile.is_zipfile(file) and not workshop(file):
                 file.rename(file.with_suffix(".tmod"))
         for file in self.trove_path.disabled_zips:
-            if not zipfile.is_zipfile(file):
+            if not zipfile.is_zipfile(file) and not workshop(file):
                 file.rename(file.with_suffix("").with_suffix(".tmod.disabled"))
 
     def _populate_tmod_enabled(self, fix_names=False, partial=False):
@@ -1073,9 +1086,10 @@ class TroveModList:
                 else:
                     file_data = f.read()
                 mod = TMod.read_bytes(file, file_data, partial)
+            mod.is_workshop = self.trove_path.is_workshop_file(file)
             # The read handle is closed here BEFORE renaming: Windows refuses to
             # rename a file while it's open (WinError 32 -> PermissionError).
-            if mod.has_wrong_name and fix_names:
+            if mod.has_wrong_name and fix_names and not mod.is_workshop:
                 mod.fix_name()
             self._mods.append(mod)
 
@@ -1091,8 +1105,9 @@ class TroveModList:
                     file_data = f.read()
                 mod = TMod.read_bytes(file, file_data, partial)
             mod.enabled = False
+            mod.is_workshop = self.trove_path.is_workshop_file(file)
             # Handle closed before rename (see _populate_tmod_enabled).
-            if mod.has_wrong_name and fix_names:
+            if mod.has_wrong_name and fix_names and not mod.is_workshop:
                 mod.fix_name()
             self._mods.append(mod)
 
@@ -1100,6 +1115,7 @@ class TroveModList:
         for file in self.trove_path.enabled_zips:
             file_data = file.read_bytes()
             mod = ZMod.read_bytes(file, BytesIO(file_data))
+            mod.is_workshop = self.trove_path.is_workshop_file(file)
             self._mods.append(mod)
 
     def _populate_zip_disabled(self):
@@ -1107,4 +1123,5 @@ class TroveModList:
             file_data = file.read_bytes()
             mod = ZMod.read_bytes(file, BytesIO(file_data))
             mod.enabled = False
+            mod.is_workshop = self.trove_path.is_workshop_file(file)
             self._mods.append(mod)

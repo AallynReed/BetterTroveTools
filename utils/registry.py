@@ -55,10 +55,24 @@ def remove_from_startup(app_name):
     winreg.CloseKey(registry_key)
 
 
+def steam_library_from_game_path(path: Path) -> Optional[Path]:
+    """A Steam Trove install lives at
+    `<library>/steamapps/common/Trove/Games/Trove/<Live>`, so the library root is
+    whatever holds the `steamapps` folder above it. Derived here so a
+    TroveGamePath built from nothing but an install path (which is what every
+    mod-manager entry point does) still finds the Workshop folder next to it."""
+    for parent in path.parents:
+        if parent.name.lower() == "steamapps":
+            return parent.parent
+    return None
+
+
 class TroveGamePath:
     def __init__(self, path: Path, steam: Optional[Path] = None, name: str = None):
         self.path = path
-        self.steam = steam
+        # A custom directory is just a mods folder the user pointed us at; it has
+        # no Workshop of its own, so it never gets a Steam root.
+        self.steam = steam or (None if name else steam_library_from_game_path(path))
         self._clean_name = None
         self.clean_name = name or self.path.name
         self._is_custom = bool(name)
@@ -137,6 +151,18 @@ class TroveGamePath:
             if workshop_path.exists():
                 return workshop_path
         return None
+
+    def is_workshop_file(self, path) -> bool:
+        """True when `path` sits under the Steam Workshop folder. Steam owns
+        those files, so nothing may rename, move, update or delete them."""
+        root = self.workshop_path
+        if root is None:
+            return False
+        try:
+            Path(path).resolve().relative_to(root.resolve())
+        except (ValueError, OSError):
+            return False
+        return True
 
     @staticmethod
     def get_from_dir(path: Path, pattern: str, recursive: bool = False):

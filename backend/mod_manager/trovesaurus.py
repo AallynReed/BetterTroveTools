@@ -22,13 +22,16 @@ _local_hash_cache = {}
 
 
 def _local_hash_to_path(game_path_str):
-    """{content hash (lowercase) -> absolute path} for every installed mod."""
+    """{content hash (lowercase) -> absolute path} for every installed mod.
+
+    Steam Workshop mods are excluded: Trovesaurus doesn't manage them and we
+    can't install over them, so hashing them only costs time."""
     trove_path = TroveGamePath(Path(game_path_str))
     mod_list = TroveModList(path=trove_path, partial=True)
     return {
         mod.hash.lower(): str(mod.mod_path)
         for mod in mod_list
-        if getattr(mod, "hash", None)
+        if getattr(mod, "hash", None) and not mod.is_workshop
     }
 
 

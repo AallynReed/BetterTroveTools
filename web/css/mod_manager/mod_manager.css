@@ -676,6 +676,14 @@
     background: var(--bg-hover);
 }
 
+/* "Workshop" is a provenance label like "Locked", not a status, so it stays in
+   the neutral ramp (DESIGN.md > The Four Semantics Rule). */
+.mod-flag-workshop {
+    color: var(--text-main);
+    border-color: var(--border-color);
+    background: var(--bg-hover);
+}
+
 .mod-flag-update {
     color: var(--warning-ink);
     border-color: rgba(var(--warning-rgb), 0.35);

@@ -163,7 +163,10 @@ document.addEventListener('mod_manager_loaded', async () => {
             // A locked mod is pinned by the user: it keeps its real `hasUpdate`
             // flag (so unlocking reveals the pending update straight away) but is
             // never offered or installed while the lock is on.
-            const canUpdate = (mod) => !!mod.hasUpdate && !mod.locked;
+            // Steam owns the Workshop folder, so those mods are never updated,
+            // pinned or deleted from here -- Steam does all three.
+            const canUpdate = (mod) => !!mod.hasUpdate && !mod.locked && !mod.isWorkshop;
+            const canManage = (mod) => !mod.isWorkshop;
 
             const hasActiveConflict = (mod) => mod.status === 'enabled' && mod.conflicts_with && mod.conflicts_with.some(c => c.enabled);
 
@@ -362,6 +365,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                         mods.value = (data.mods || []).map(m => ({
                             ...m,
                             hasUpdate: false,
+                            isWorkshop: !!m.workshop,
                             locked: !!m.locked,
                             tsUrl: null,
                             fromHub: false,
@@ -457,7 +461,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 : window.callBackend(eel.perform_mod_update(selectedInstall.value, mod.path)(), 'Failed to update mod');
 
             const updateMod = async (mod) => {
-                if (mod.isUpdating || mod.locked) return;
+                if (mod.isUpdating || mod.locked || mod.isWorkshop) return;
                 mod.isUpdating = true;
                 try {
                     const response = await runManagedJob({
@@ -477,7 +481,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
 
             const toggleModLock = async (mod) => {
-                if (mod.isLocking) return;
+                if (mod.isLocking || mod.isWorkshop) return;
                 const next = !mod.locked;
                 mod.isLocking = true;
                 try {
@@ -897,7 +901,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
 
             const deleteMod = async (mod) => {
-                if (mod.isDeleting) return;
+                if (mod.isDeleting || mod.isWorkshop) return;
                 const confirmed = await window.showConfirmModal({
                     title: t('common.delete_mod'),
                     message: t("common.are_you_sure_you_want_to_permanently_del_7a0256").replace('{name}', mod.name),
@@ -1010,11 +1014,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                     });
                 }
 
-                menuItems.push({
-                    label: mod.locked ? 'Unlock Updates' : 'Lock Updates',
-                    icon: mod.locked ? 'fa-lock-open' : 'fa-lock',
-                    action: () => toggleModLock(mod)
-                });
+                if (canManage(mod)) {
+                    menuItems.push({
+                        label: mod.locked ? 'Unlock Updates' : 'Lock Updates',
+                        icon: mod.locked ? 'fa-lock-open' : 'fa-lock',
+                        action: () => toggleModLock(mod)
+                    });
+                }
 
                 if (mod.fromHub) {
                     menuItems.push({
@@ -1024,12 +1030,14 @@ document.addEventListener('mod_manager_loaded', async () => {
                     });
                 }
 
-                menuItems.push({
-                    label: 'Delete Mod',
-                    icon: 'fa-trash',
-                    danger: true,
-                    action: () => deleteMod(mod)
-                });
+                if (canManage(mod)) {
+                    menuItems.push({
+                        label: 'Delete Mod',
+                        icon: 'fa-trash',
+                        danger: true,
+                        action: () => deleteMod(mod)
+                    });
+                }
                 menuItems.push({ separator: true });
                 menuItems.push({
                     label: 'Copy Mod Name',
@@ -1267,6 +1275,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 updateAllMods,
                 toggleModLock,
                 canUpdate,
+                canManage,
                 deleteMod,
                 fixNames,
                 variantPicker,
