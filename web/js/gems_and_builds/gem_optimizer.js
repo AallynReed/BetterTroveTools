@@ -372,7 +372,8 @@
             if (config.character === CL.SOLARION || config.subclass === CL.SOLARION) third += 140;
             if (damageType === SN.PHYSICAL && config.subclass === CL.LUNAR_LANCER) first += 750;
             if (damageType === SN.MAGIC && (config.subclass === CL.ICE_SAGE || config.subclass === CL.SHADOW_HUNTER)) first += 750;
-            if (config.subclass === CL.BARD || config.subclass === CL.BOOMERANGER) second += 20;
+            if (config.subclass === CL.BARD) second += 15;
+            if (config.subclass === CL.BOOMERANGER) second += 20;
 
             if (config.subclass_active) {
                 if (config.subclass === CL.BARD) { fourth += 45; second += 45; }

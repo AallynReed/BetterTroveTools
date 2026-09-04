@@ -387,7 +387,8 @@ class GemOptimizerEngine:
             if Class.solarion in [config.character, config.subclass]: third += 140
             if damage_type == StatName.physical_damage and config.subclass in [Class.lunar_lancer]: first += 750
             if damage_type == StatName.magic_damage and config.subclass in [Class.ice_sage, Class.shadow_hunter]: first += 750
-            if config.subclass in [Class.bard, Class.boomeranger]: second += 20
+            if config.subclass in [Class.bard]: second += 15
+            if config.subclass in [Class.boomeranger]: second += 20
             
             if config.subclass_active:
                 if config.subclass in [Class.bard]: fourth += 45; second += 45
