@@ -739,25 +739,39 @@ def detect_override_files(source_dir_str):
         if not source_dir.exists() or not source_dir.is_dir():
             return {"success": False, "error": "Invalid source directory."}
             
-        valid_dirs = [d.value.lower() for d in Directories]
+        valid_dirs = {d.value.lower() for d in Directories}
         files = []
-        
-        for file_path in source_dir.rglob("*"):
+
+        # Walk with scandir and prune: once the internal path has a first
+        # component it can no longer change, so a subtree that does not start
+        # with a game directory can never contribute. On a real install that
+        # skips `extracted/`, which is ~96% of the files.
+        stack = [(str(source_dir), (), False)]
+        while stack:
+            current_dir, internal_parts, in_override = stack.pop()
             _raise_if_cancelled("detect_overrides")
-            if file_path.is_file():
-                parts = file_path.relative_to(source_dir).parts
-                if "override" in [p.lower() for p in parts]:
-                    internal_parts = [p for p in parts if p.lower() != "override"]
-                    
-                    if internal_parts:
-                        root_dir = internal_parts[0].lower()
-                        if root_dir in valid_dirs:
-                            internal_path = "/".join(internal_parts)
-                            files.append({
-                                "path": str(file_path),
-                                "internal_path": internal_path
-                            })
-                    
+            try:
+                entries = list(os.scandir(current_dir))
+            except OSError:
+                continue
+
+            for entry in entries:
+                is_override = entry.name.lower() == "override"
+                child_parts = internal_parts if is_override else internal_parts + (entry.name,)
+                if child_parts and child_parts[0].lower() not in valid_dirs:
+                    continue
+                try:
+                    is_dir = entry.is_dir(follow_symlinks=False)
+                except OSError:
+                    continue
+                if is_dir:
+                    stack.append((entry.path, child_parts, in_override or is_override))
+                elif (in_override or is_override) and child_parts:
+                    files.append({
+                        "path": entry.path,
+                        "internal_path": "/".join(child_parts)
+                    })
+
         return {"success": True, "files": files}
     except OperationCancelled as e:
         return {"success": False, "cancelled": True, "error": str(e)}
