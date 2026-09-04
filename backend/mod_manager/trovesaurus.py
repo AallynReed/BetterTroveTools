@@ -7,7 +7,7 @@ from pathlib import Path
 
 import gevent
 import eel
-import requests
+from utils.http import SESSION
 
 from backend.response import resp
 from backend.mod_manager.mod_manager import delete_mod, mods_signature
@@ -50,7 +50,7 @@ def _resolve_hashes(hashes, label="Fetching Mod Hashes"):
         except Exception:
             pass
         try:
-            response = requests.post(HASHES_TO_MODS, data={"hashes": ",".join(batch)}, timeout=10)
+            response = SESSION.post(HASHES_TO_MODS, data={"hashes": ",".join(batch)}, timeout=10)
             if req_id:
                 eel.remove_external_request(req_id, response.status_code == 200)()
                 req_id = None
@@ -178,7 +178,7 @@ def _get_cached_api(endpoint, cache_filename, expiry=900):
 
     try:
         headers = {"User-Agent": "TroveManager/1.0"}
-        response = requests.get(endpoint, headers=headers, timeout=15)
+        response = SESSION.get(endpoint, headers=headers, timeout=15)
         if req_id:
             eel.remove_external_request(req_id, response.status_code == 200)()
             req_id = None
@@ -214,7 +214,7 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
             except Exception:
                 pass
             try:
-                test_resp = requests.head("https://trovesaurus.com/api/ping", timeout=5)
+                test_resp = SESSION.head("https://trovesaurus.com/api/ping", timeout=5)
                 if req_id:
                     eel.remove_external_request(req_id, test_resp.status_code < 500)()
                 if test_resp.status_code >= 500:
@@ -332,7 +332,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
             except Exception:
                 pass
             try:
-                test_resp = requests.head("https://trovesaurus.com/api/ping", timeout=5)
+                test_resp = SESSION.head("https://trovesaurus.com/api/ping", timeout=5)
                 if req_id:
                     eel.remove_external_request(req_id, test_resp.status_code < 500)()
                 if test_resp.status_code >= 500:
@@ -385,7 +385,7 @@ def install_trovesaurus_mod(game_path_str, mod_id):
             except Exception:
                 pass
             try:
-                download = requests.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"}, timeout=(10, 300))
+                download = SESSION.get(url, headers={"User-Agent": "TroveLocalModManager/1.0"}, timeout=(10, 300))
                 if req_id:
                     eel.remove_external_request(req_id, download.status_code == 200)()
                     req_id = None

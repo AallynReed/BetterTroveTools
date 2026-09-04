@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 
 import eel
-import requests
+from utils.http import SESSION
 from binary_reader import BinaryReader
 from pydantic import BaseModel
 from toml import dumps
@@ -27,6 +27,52 @@ from utils.registry import TroveGamePath
 from ..trovesaurus.mods import Mod
 
 mod_file_cache = {}
+
+
+def _read_header_str(data: BinaryReader, length: int, char_lengths: bool) -> str:
+    """Read a .tmod header string of `length` UTF-8 bytes, or of `length`
+    characters when the mod was written by a build that counted characters."""
+    if not char_lengths:
+        return data.read_str(length)
+    buf = data.buffer()
+    start = end = data.pos()
+    for _ in range(length):
+        lead = buf[end]
+        end += 1 if lead < 0x80 else 2 if lead < 0xE0 else 3 if lead < 0xF0 else 4
+    if end > len(buf):
+        raise ValueError("header string runs past the end of the file")
+    data.seek(start)
+    return data.read_str(end - start)
+
+
+def _header_uses_char_lengths(raw: bytes) -> bool:
+    """True if this .tmod's header string lengths count characters where the
+    format wants UTF-8 bytes.
+
+    Builds of BTT before this was fixed wrote `len(str)` while writing the string
+    as UTF-8, so one non-ASCII character in the title/notes/tags (or an internal
+    path) under-declares that length and desyncs every field after it - Trove then
+    rejects the mod with "Could not read archive header". Published mods with that
+    defect still have to open here, and the reading isn't guessed: the file table
+    has to end exactly on header_size, which only the right one does.
+    """
+    def walks(char_lengths: bool) -> bool:
+        try:
+            data = BinaryReader(bytearray(raw))
+            header_size = data.read_uint64()
+            data.read_uint16()
+            for _ in range(data.read_uint16()):
+                for _ in range(2):
+                    _read_header_str(data, read_leb128(data, data.pos()), char_lengths)
+            while data.pos() < header_size:
+                _read_header_str(data, data.read_uint8(), char_lengths)
+                for _ in range(4):
+                    read_leb128(data, data.pos())
+            return data.pos() == header_size
+        except Exception:
+            return False
+
+    return not walks(False) and walks(True)
 
 
 def _normalize_internal_path(path) -> str | None:
@@ -149,14 +195,17 @@ class TroveModFile:
     @property
     def header_format(self) -> bytes:
         data = BinaryReader(bytearray())
-        name_length = len(str(self.trove_path))
+        # The length is the UTF-8 BYTE count, not the character count: write_str
+        # encodes as UTF-8, so counting characters under-declares any non-ASCII
+        # path and desyncs every field after it in the header.
+        path_bytes = str(self.trove_path).encode("utf-8")
         # The format stores the name length in a single byte read back as uint8,
         # so it must be written unsigned (write_int8 caps at 127 and raises for
         # 128-255). Byte-identical to the old write_int8 for lengths <= 127.
-        if name_length > 255:
-            raise ValueError(f"Mod internal path is too long for the .tmod format (>255 chars): {self.trove_path}")
-        data.write_uint8(name_length)
-        data.write_str(str(self.trove_path))
+        if len(path_bytes) > 255:
+            raise ValueError(f"Mod internal path is too long for the .tmod format (>255 bytes): {self.trove_path}")
+        data.write_uint8(len(path_bytes))
+        data.write_bytes(path_bytes)
         data.extend(write_leb128(self.index))
         data.extend(write_leb128(self.offset if self.content.buffer() else 0))
         data.extend(write_leb128(self.size))
@@ -550,10 +599,13 @@ class TroveMod:
         file_stream = BinaryReader(bytearray())
         self.add_property("modLoader", "BTT")
         for prop in self.properties:
-            properties_stream.write_bytes(write_leb128(len(prop.name)))
-            properties_stream.write_str(prop.name)
-            properties_stream.write_bytes(write_leb128(len(prop.value)))
-            properties_stream.write_str(prop.value)
+            # UTF-8 BYTE counts - see TroveModFile.header_format.
+            name = prop.name.encode("utf-8")
+            value = prop.value.encode("utf-8")
+            properties_stream.write_bytes(write_leb128(len(name)))
+            properties_stream.write_bytes(name)
+            properties_stream.write_bytes(write_leb128(len(value)))
+            properties_stream.write_bytes(value)
         for file in self.files:
             file_stream.extend(bytearray(file.padded_data))
         compressor = zlib.compressobj(level=0, strategy=0, wbits=zlib.MAX_WBITS)
@@ -659,7 +711,7 @@ class TroveMod:
             pass
             
         try:
-            response = requests.get(url, timeout=60)
+            response = SESSION.get(url, timeout=60)
             if req_id:
                 eel.remove_external_request(req_id, response.status_code == 200)()
             if response.status_code == 200:
@@ -710,6 +762,7 @@ class TMod(TroveMod):
         mod.tmod_content = data
         mod.mod_path = path
         mod.files = []
+        char_lengths = _header_uses_char_lengths(data)
         data = BinaryReader(bytearray(data))
         header_size = data.read_uint64()
         mod.version = data.read_uint16()
@@ -717,9 +770,9 @@ class TMod(TroveMod):
         mod.properties = []
         for i in range(properties_count):
             name_size = read_leb128(data, data.pos())
-            name = data.read_str(name_size)
+            name = _read_header_str(data, name_size, char_lengths)
             value_size = read_leb128(data, data.pos())
-            value = data.read_str(value_size)
+            value = _read_header_str(data, value_size, char_lengths)
             mod.properties.append(Property(name=name, value=value))
         if not partial:
             file_stream = data.buffer()[header_size:]
@@ -734,7 +787,7 @@ class TMod(TroveMod):
                 )
         while data.pos() < header_size:
             name_size = data.read_uint8()
-            name = data.read_str(name_size)
+            name = _read_header_str(data, name_size, char_lengths)
             index = read_leb128(data, data.pos())
             offset = read_leb128(data, data.pos())
             size = read_leb128(data, data.pos())
@@ -900,7 +953,7 @@ class TroveModList:
             pass
 
         try:
-            response = requests.get("https://trovesaurus.com/api/mods-all", timeout=15)
+            response = SESSION.get("https://trovesaurus.com/api/mods-all", timeout=15)
             if req_id:
                 eel.remove_external_request(req_id, response.status_code == 200)()
                 req_id = None
@@ -925,8 +978,14 @@ class TroveModList:
                 pass
         return {}
 
-    def update_trovesaurus_data(self, force=False):
-        all_hashes = self.all_hashes
+    def update_trovesaurus_data(self, force=False, skip_paths=None):
+        """`skip_paths` drops mods another source already resolved (the Mods Hub)
+        from both the hash batch and the match pass -- Trovesaurus has no answer
+        for a mod it doesn't host, so sending those hashes only costs a round
+        trip."""
+        skip = {str(p) for p in (skip_paths or ())}
+        all_hashes = [m.hash for m in self.mods
+                      if not m.is_workshop and str(m.mod_path) not in skip]
         if not all_hashes:
             return
 
@@ -949,7 +1008,7 @@ class TroveModList:
                 pass
             try:
                 payload = {"hashes": ",".join(batch)}
-                response = requests.post(
+                response = SESSION.post(
                     "https://trovesaurus.com/api/mods-hashes-to-mods",
                     data=payload,
                     timeout=10,
@@ -967,7 +1026,7 @@ class TroveModList:
                 print(f"Failed to fetch hash batch: {e}")
 
         for mod in self.mods:
-            if mod.is_workshop:
+            if mod.is_workshop or str(mod.mod_path) in skip:
                 continue
             mod_id = hash_to_id.get(mod.hash)
             if mod_id is not None:

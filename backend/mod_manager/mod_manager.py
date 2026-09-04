@@ -6,12 +6,12 @@ import uuid
 from pathlib import Path
 
 import eel
-import requests
 
 from backend.feature_flags import MODS_HUB_ENABLED
 from backend.response import resp
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
+from utils.http import SESSION
 from utils.path import get_app_data_dir, get_cache_root
 from utils.trove_cfg import ensure_mods_enabled
 
@@ -350,16 +350,33 @@ def fix_mod_names(game_path_str):
         return resp(False, error=str(e), code="FIX_NAMES_FAILED")
 
 
+def _hub_claimed(game_path_str):
+    """Installed paths the Mods Hub already owns, or an empty set when the hub is
+    off. Imported lazily on purpose: with the flag off `main.py` never loads the
+    module at all."""
+    if not MODS_HUB_ENABLED:
+        return set()
+    try:
+        from backend.mod_manager import mods_hub
+        return mods_hub.hub_claimed_paths(game_path_str)
+    except Exception:
+        return set()
+
+
 @eel.expose
 def get_mod_urls(game_path_str):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
 
+        # Hub mods are resolved by the hub and their rows are discarded on the
+        # other side, so leave them out of the batch entirely.
+        claimed = _hub_claimed(game_path_str)
         hash_to_path = {
             getattr(mod, "hash").lower(): str(mod.mod_path)
             for mod in mod_list
             if getattr(mod, "hash", None) and not mod.is_workshop
+            and str(mod.mod_path) not in claimed
         }
         if not hash_to_path:
             return resp(True, data={"urls": {}}, urls={})
@@ -378,7 +395,7 @@ def get_mod_urls(game_path_str):
             except Exception:
                 pass
             try:
-                response = requests.post(
+                response = SESSION.post(
                     "https://trovesaurus.com/api/mods-hashes-to-mods", data=payload, timeout=10
                 )
                 if req_id:
@@ -412,7 +429,7 @@ def check_mod_updates(game_path_str, force=False):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
-        mod_list.update_trovesaurus_data(force)
+        mod_list.update_trovesaurus_data(force, skip_paths=_hub_claimed(game_path_str))
 
         updates_available = {}
         for mod in mod_list:
@@ -498,7 +515,7 @@ def auto_update_unlocked_mods(game_path_str):
 
     trove_path = TroveGamePath(Path(game_path_str))
     mod_list = TroveModList(path=trove_path, partial=True)
-    mod_list.update_trovesaurus_data(True)
+    mod_list.update_trovesaurus_data(True, skip_paths=hub_paths)
     for mod in mod_list:
         path = str(mod.mod_path)
         if path in hub_paths or not mod.has_update or _lock_key(path) in locked:

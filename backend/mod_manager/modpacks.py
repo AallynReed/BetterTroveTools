@@ -141,10 +141,12 @@ def _rebuild_tpack(version, outer_props, entries):
     files_list_stream = BinaryReader(bytearray())
 
     for name, value in outer_props:
-        properties_stream.write_bytes(write_leb128(len(name)))
-        properties_stream.write_str(name)
-        properties_stream.write_bytes(write_leb128(len(value)))
-        properties_stream.write_str(value)
+        # UTF-8 BYTE counts - see TroveModFile.header_format.
+        name_bytes, value_bytes = name.encode("utf-8"), value.encode("utf-8")
+        properties_stream.write_bytes(write_leb128(len(name_bytes)))
+        properties_stream.write_bytes(name_bytes)
+        properties_stream.write_bytes(write_leb128(len(value_bytes)))
+        properties_stream.write_bytes(value_bytes)
 
     body = BinaryReader(bytearray())
     for f in files:

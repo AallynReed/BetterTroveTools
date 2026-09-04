@@ -18,7 +18,7 @@ from pathlib import Path
 
 import eel
 import gevent
-import requests
+from utils.http import SESSION
 
 from backend.response import resp
 from backend.home import KIWI_API_BASE
@@ -68,7 +68,7 @@ def _get_cached_api(endpoint, cache_filename, expiry=3600):
         pass
 
     try:
-        response = requests.get(endpoint, headers=_headers(), timeout=15)
+        response = SESSION.get(endpoint, headers=_headers(), timeout=15)
         if req_id:
             eel.remove_external_request(req_id, response.status_code == 200)()
             req_id = None
@@ -175,6 +175,12 @@ def _safe_filename(name):
 def _lookup_hashes(hashes):
     """POST a batch of <=200 sha256s to /v1/mods/lookup -> {hash: {mod, release}}.
 
+    `include_releases` asks the hub to attach each matched mod's published
+    releases[] to its `mod` object, which is what the outdated check needs - so
+    identifying a mods folder is ONE request instead of this batch plus a serial
+    GET /v1/mods/<handle>/<slug> per installed mod. An older hub ignores the flag
+    and omits the key; the caller falls back to fetching detail per ref.
+
     Returns None if the request itself failed, so callers can tell "the hub says
     none of these are its mods" apart from "the hub didn't answer"."""
     if not hashes:
@@ -185,9 +191,9 @@ def _lookup_hashes(hashes):
     except Exception:
         pass
     try:
-        resp = requests.post(
+        resp = SESSION.post(
             f"{KIWI_API_BASE}/mods/lookup",
-            json={"hashes": list(hashes)},
+            json={"hashes": list(hashes), "include_releases": True},
             headers=_headers(),
             timeout=15,
         )
@@ -270,6 +276,9 @@ def _compute_install_states(game_path_str, force=False):
                 ref_match[ref] = {
                     "path": hash_to_path.get(h),
                     "matched": matched,
+                    # Attached by include_releases; None on an older hub, which
+                    # falls back to a per-ref detail fetch below.
+                    "releases": mod.get("releases"),
                     "name": mod.get("title"),
                     "page_url": mod.get("page_url") or f"{MOD_PAGE_BASE}/{ref}",
                     "handle": handle,
@@ -281,8 +290,10 @@ def _compute_install_states(game_path_str, force=False):
     paths = {}
     for ref, info in ref_match.items():
         matched = info["matched"]
-        detail = _fetch_mod_detail(ref, use_cache=not force)
-        releases = (detail or {}).get("releases") or []
+        releases = info.get("releases")
+        if releases is None:
+            # Older hub: no releases[] in the lookup, so pay the round trip.
+            releases = (_fetch_mod_detail(ref, use_cache=not force) or {}).get("releases") or []
         states[ref] = {
             "is_installed": True,
             # Update check is scoped to the installed variant's branch.
@@ -313,7 +324,7 @@ def _fetch_mod_detail(ref, use_cache=True):
     except Exception:
         pass
     try:
-        resp = requests.get(url, headers=_headers(), timeout=15)
+        resp = SESSION.get(url, headers=_headers(), timeout=15)
         if req_id:
             eel.remove_external_request(req_id, resp.status_code == 200)()
             req_id = None
@@ -350,7 +361,7 @@ def get_mods_hub_mods(page=1, query="", tag="", sort="popular", game_path_str=""
             except Exception:
                 pass
             try:
-                resp = requests.get(f"{KIWI_API_BASE}/mods", params=params, headers=_headers(), timeout=15)
+                resp = SESSION.get(f"{KIWI_API_BASE}/mods", params=params, headers=_headers(), timeout=15)
                 if req_id:
                     eel.remove_external_request(req_id, resp.status_code == 200)()
                     req_id = None
@@ -442,7 +453,7 @@ def _do_install(game_path_str, ref, branch=None):
     except Exception:
         pass
     try:
-        dl = requests.get(url, headers={"User-Agent": USER_AGENT}, timeout=(10, 300))
+        dl = SESSION.get(url, headers={"User-Agent": USER_AGENT}, timeout=(10, 300))
         if req_id:
             eel.remove_external_request(req_id, dl.status_code == 200)()
             req_id = None
@@ -536,6 +547,22 @@ def get_mods_hub_variants(ref):
     title = detail.get("title") or ref
     return resp(True, data={"ref": ref, "title": title, "variants": variants},
                  ref=ref, title=title, variants=variants)
+
+
+def hub_claimed_paths(game_path_str, force=False):
+    """Absolute paths of installed mods the hub resolved as its own.
+
+    The Mod Manager's Trovesaurus pass skips these: the hub is authoritative for a
+    mod it published, so asking Trovesaurus about one it doesn't own is a round trip
+    that can only come back empty. Reads the same signature-cached states the hub
+    pass just computed, so it costs nothing after that ran."""
+    if not game_path_str:
+        return set()
+    try:
+        _, paths = _compute_install_states(game_path_str, force=force)
+        return {str(p) for p in paths.values() if p}
+    except Exception:
+        return set()
 
 
 @eel.expose
