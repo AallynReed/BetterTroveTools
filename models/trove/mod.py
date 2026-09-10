@@ -76,9 +76,17 @@ def _header_uses_char_lengths(raw: bytes) -> bool:
 
 
 def _normalize_internal_path(path) -> str | None:
+    """An embedded path as the archive stores it: posix, and lowercased the way the
+    engine resolves a game file.
+
+    A `.cfg` keeps its own case. It is not a game file and is never resolved as one -
+    the game reads it from `ModCfgs/<Mod Title>.cfg` - so lowercasing the packed path
+    renames the config."""
     if path is None:
         return None
-    normalized = Path(path).as_posix().strip().lower()
+    normalized = Path(path).as_posix().strip()
+    if not normalized.lower().endswith(".cfg"):
+        normalized = normalized.lower()
     return normalized or None
 
 
@@ -147,7 +155,7 @@ class TroveModFile:
     offset: int = 0
 
     def __init__(self, trove_path: Path, data: bytes):
-        self.trove_path = trove_path.as_posix().lower()
+        self.trove_path = _normalize_internal_path(trove_path) or ""
         self._content = BinaryReader(bytearray(data))
         self._checksum = None
 
@@ -218,7 +226,7 @@ class PartialTroveModFile(TroveModFile):
 
     def __init__(self, trove_path: Path, archive_path: Path):
         super().__init__(trove_path, b"")
-        self.trove_path = trove_path.as_posix().lower()
+        self.trove_path = _normalize_internal_path(trove_path) or ""
         self.archive_path = archive_path
         self._content = None
         self._checksum = None
@@ -467,9 +475,9 @@ class TroveMod:
 
     @preview_path.setter
     def preview_path(self, value: Path):
-        # Stored lowercased because TroveModFile lowercases every embedded path:
-        # a mixed-case property pointed at a path that isn't in the archive, and
-        # strict readers (Trovesaurus) then report the preview as missing.
+        # Normalized the same way the embedded path is - a preview is a game path,
+        # so both are lowercased. A mixed-case property pointed at a path that isn't
+        # in the archive, and strict readers (Trovesaurus) then report it missing.
         self.add_property("previewPath", _normalize_internal_path(value) or "")
 
     @property
@@ -478,7 +486,8 @@ class TroveMod:
 
     @config_path.setter
     def config_path(self, value: Path):
-        # Lowercased for the same reason as previewPath above.
+        # Normalized the same way the embedded path is, so the property and the file
+        # it names always agree - a .cfg keeps its case, and this keeps it here too.
         self.add_property("configPath", _normalize_internal_path(value) or "")
 
     @property

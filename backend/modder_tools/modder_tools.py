@@ -31,7 +31,7 @@ from backend.response import standardize_response
 from binary_reader import BinaryReader
 
 from models.trove.directory import Directories
-from models.trove.mod import TMod, TroveModFile
+from models.trove.mod import TMod, TroveModFile, _normalize_internal_path
 from utils.path import get_app_data_dir
 
 
@@ -81,13 +81,6 @@ def _decode_data_url(data_url):
 
 def _encode_data_url(data: bytes, mime_type: str = "application/octet-stream"):
     return f"data:{mime_type};base64,{base64.b64encode(data).decode('utf-8')}"
-
-
-def _normalize_internal_path(path) -> str | None:
-    if path is None:
-        return None
-    normalized = Path(path).as_posix().strip().lower()
-    return normalized or None
 
 
 def _config_internal_path(title) -> Path:
@@ -141,17 +134,17 @@ def _validate_special_paths(file_paths, preview_path=None, include_config=False,
     # hand-added at the mod's own path still validates (as ui/default.cfg did
     # before the rename) instead of being rejected outright.
     mod_cfg = _normalize_internal_path(_config_internal_path(title).as_posix())
-    cfg_paths = [path for path in normalized_files if path.endswith(".cfg")]
+    cfg_paths = [path for path in normalized_files if path.lower().endswith(".cfg")]
     if include_config:
         cfg_paths.append(mod_cfg)
-        if mod_cfg in seen_files:
+        if mod_cfg.lower() in {seen.lower() for seen in seen_files}:
             return "The config file can only be added through the config file option."
 
     if not cfg_paths:
         return None
     if len(cfg_paths) > 1:
         return "Only one config file can be included in a mod."
-    if cfg_paths[0] != mod_cfg:
+    if cfg_paths[0].lower() != mod_cfg.lower():
         return "The config file can only be added through the config file option."
     return None
 
