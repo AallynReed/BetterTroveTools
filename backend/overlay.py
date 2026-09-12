@@ -428,11 +428,11 @@ _STAMPY_BIOMES = [
     "Sundered Uplands",
 ]
 _MANA_EPOCH = datetime(2023, 11, 20, 11, 0, 0, tzinfo=UTC)
-# Stampy runs fortnightly from a Monday, for 48 hours -- so in server time it is
-# always Monday and Tuesday, and never a weekend. The biome list and its order
-# are unchanged; only the anchor and the cadence were wrong.
-_STAMPY_EPOCH = datetime(2023, 9, 25, 11, 0, 0, tzinfo=UTC)
-_STAMPY_PERIOD = timedelta(days=14)
+# Stampy runs weekly over the server weekend, for 48 hours -- the in-game day
+# rolls at 11:00 UTC, so the window opens Saturday 11:00 UTC and covers server
+# Saturday and Sunday. The biome list advances one step per week.
+_STAMPY_EPOCH = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC)
+_STAMPY_PERIOD = timedelta(days=7)
 _STAMPY_DURATION = timedelta(hours=48)
 _WEEK = timedelta(weeks=1)
 

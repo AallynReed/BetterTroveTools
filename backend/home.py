@@ -734,19 +734,19 @@ def get_yearly_calendar_data():
         }
         
         stampy_biomes = ['Desert Frontier', 'The Lost Isles', 'Geode Topside', 'Neon City', 'Dragonfire Peaks', 'Permafrost', 'Candoria', 'Cursed Vale', 'Forbidden Spires', 'Fae Forest', 'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands']
-        # Fortnightly from a Monday, 48h -- server-time Monday and Tuesday, never
-        # a weekend. The biome order is unchanged.
-        base_stampy = datetime(2023, 9, 25, 11, 0, 0, tzinfo=UTC)
+        # Weekly, 48h from Saturday 11:00 UTC -- server-time Saturday and Sunday.
+        # The biome order is unchanged; it advances one step per week.
+        base_stampy = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC)
         diff = (start_date - base_stampy).total_seconds()
-        weeks_stampy = int(diff // (14 * 24 * 3600))
-        s = base_stampy + timedelta(days=14 * weeks_stampy)
+        weeks_stampy = int(diff // (7 * 24 * 3600))
+        s = base_stampy + timedelta(days=7 * weeks_stampy)
         while s < end_date:
             e = s + timedelta(hours=48)
             if e > start_date:
                 b = stampy_biomes[weeks_stampy % len(stampy_biomes)]
                 icon = icon_map.get(b, fallback_map.get(b, "unknown"))
                 events.append({"type": "stampy", "start": int(s.timestamp()), "end": int(e.timestamp()), "name": "Stampy", "icons": [icon], "biome_names": [b]})
-            s += timedelta(days=14)
+            s += timedelta(days=7)
             weeks_stampy += 1
             
         mana_biomes = ["Neon City", "Jurassic Jungle", "Dragonfire Peaks", "Forbidden Spires", "Sundered Uplands", "Medieval Highlands", "Permafrost", "Cursed Vale", "Desert Frontier", "Fae Forest", "Candoria"]
@@ -1116,16 +1116,16 @@ def get_stampy_rotation():
         'Medieval Highlands', 'Jurassic Jungle', 'Sundered Uplands'
     ]
 
-    # Fortnightly from a Monday, 48h -- server-time Monday and Tuesday, never a
-    # weekend. The biome order is unchanged.
-    base_date = datetime(2023, 9, 25, 11, 0, 0, tzinfo=UTC)
+    # Weekly, 48h from Saturday 11:00 UTC -- server-time Saturday and Sunday.
+    # The biome order is unchanged; it advances one step per week.
+    base_date = datetime(2023, 9, 30, 11, 0, 0, tzinfo=UTC)
     now = datetime.now(UTC)
 
-    weeks_offset = int((now - base_date).total_seconds() // (14 * 24 * 3600))
+    weeks_offset = int((now - base_date).total_seconds() // (7 * 24 * 3600))
 
     events = []
     for w in range(weeks_offset - 1, weeks_offset + 10):
-        s = base_date + timedelta(days=14 * w)
+        s = base_date + timedelta(days=7 * w)
         e = s + timedelta(hours=48) 
         
         if e > now:
