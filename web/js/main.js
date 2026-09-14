@@ -184,7 +184,6 @@ window.BTT_ENABLE_MODS_HUB = true;
 // attached by the time the event fires.
 window.BTT_VIEW_SCRIPTS = {
     home: ['js/home.js'],
-    trove: ['js/overlay/editor.js', 'js/trove.js'],
     mod_manager: ['js/mod_manager/index.js'],
     modder_tools: [
         'js/modder_tools/shared.js',

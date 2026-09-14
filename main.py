@@ -18,7 +18,7 @@ import requests
 import webview
 from gevent.exceptions import ConcurrentObjectUseError
 
-from utils import image_proxy
+from utils import image_proxy, legacy_launcher_cleanup
 from utils.path import get_app_data_dir, get_cache_root
 from utils.win_tray import create_tray_icon
 
@@ -50,11 +50,9 @@ import backend.mod_manager.mod_manager
 import backend.mod_manager.mod_watcher
 import backend.modder_tools.modder_tools
 import backend.modder_tools.steam_workshop
-import backend.overlay
 import backend.codexes.recipes
 import backend.codexes.styles
 import backend.settings
-import backend.trove
 import backend.gems_and_builds.star_chart
 import backend.mod_manager.trovesaurus
 
@@ -548,6 +546,8 @@ def _sweep_stale_update_cache():
 
 
 threading.Thread(target=_sweep_stale_update_cache, daemon=True).start()
+# The Trove launcher and overlay were removed; wipe any saved Glyph passwords/tickets they left.
+threading.Thread(target=legacy_launcher_cleanup.purge, daemon=True, name='launcher-purge').start()
 
 
 def _read_settings_dict():
@@ -978,12 +978,6 @@ if _use_webview:
 
     def _quit_from_tray():
         _tray_state["quitting"] = True
-        # Tear the overlay down first: it's a topmost window over the game, and
-        # leaving it behind after the app quits would strand it there.
-        try:
-            backend.overlay.shutdown()
-        except Exception:
-            pass
         if tray_icon:
             try:
                 tray_icon.destroy()
@@ -1033,45 +1027,11 @@ if _use_webview:
         tooltip=WINDOW_TITLE,
     )
 
-    # --- In-game overlay -----------------------------------------------------
-    # A frameless, per-pixel-transparent, topmost native window that only ever
-    # appears over a running Trove. It owns its own window and thread (see
-    # utils/overlay_window.py), so nothing about it lives here beyond arming it
-    # at launch and routing notifications into it below.
-    #
-    # It was a second pywebview window until that proved impossible to make
-    # see-through -- WebView2 renders through DirectComposition and never
-    # reaches the layered window's redirection surface, so every transparency
-    # route left an opaque slab over the game. The measurements are recorded in
-    # utils/overlay_draw.py's docstring.
-    if backend.overlay.SUPPORTED:
-        # Re-arm on launch if the user left the overlay enabled last session.
-        threading.Thread(
-            target=backend.overlay.start_from_settings, daemon=True, name='overlay-init'
-        ).start()
-
-    def _notification_sink(title, message):
-        """Prefer the overlay, fall back to the tray balloon.
-
-        While the overlay is actually on screen and the user has opted in, a
-        notification renders as a dismissable card over the game -- a Windows
-        toast during combat is worse than useless. `tracker.notify` returns False
-        for every other case (overlay off, muted, page not mounted, opted out),
-        and delivery falls straight back to the balloon it always used.
-        """
-        if backend.overlay.tracker.notify(title, message):
-            return True
-        if tray_icon:
-            return tray_icon.notify(title, message)
-        return False
-
-    # Route desktop notifications, and let the reminder scheduler keep the tray
-    # icon present. The sink is registered when *either* delivery path can work,
-    # so `desktop_notifications_available()` stays an honest answer.
-    if tray_icon or backend.overlay.SUPPORTED:
-        notifier.set_sink(_notification_sink)
-        notifier.set_active_handler(_set_reminders_active)
+    # Route desktop notifications to the tray balloon, and let the reminder
+    # scheduler keep the tray icon present.
     if tray_icon:
+        notifier.set_sink(tray_icon.notify)
+        notifier.set_active_handler(_set_reminders_active)
         _apply_tray_visibility()  # show now if reminders were already enabled
     # Second launches restore the window from the tray instead of just poking
     # the Win32 handle (keeps pywebview's own shown/hidden state in sync).
@@ -1097,10 +1057,6 @@ if _use_webview:
         debug=_webview_debug,
     )
     # webview.start() returns once the user closes the window (real quit).
-    try:
-        backend.overlay.shutdown()
-    except Exception:
-        pass
     if tray_icon:
         try:
             tray_icon.destroy()

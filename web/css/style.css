@@ -2425,7 +2425,6 @@ html.btt-native .command-palette-footer { display: none !important; }
     .modder-tools-container,
     .gem-sim-container,
     .about-view-container,
-    .trove-container,
     .view-container
 ) {
     padding: 14px !important;
@@ -3106,7 +3105,6 @@ input[type="range"]:disabled {
     .gem-sim-container,
     .about-view-container,
     .calculators-container,
-    .trove-container,
     .view-container
 ) {
     height: 100%;
