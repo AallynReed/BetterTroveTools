@@ -1,502 +1,398 @@
-            <div class="tool-panel qb-editor-panel">
-                <div class="qb-toolbar">
-                    <div>
-                        <h3>{{ t('modder_tools.voxel_editor') }}</h3>
-                        <p class="help-text" style="margin-bottom: 0;">
-                            {{ t('modder_tools.open_a_qb_file_or_a_trove_blueprint_pack_bb1f77') }}
-                        </p>
-                    </div>
-                    <div class="qb-toolbar-actions">
-                        <button class="primary-btn" @click="newQbDocument">
-                            <i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.new') }}</span>
-                        </button>
-                        <button class="primary-btn" @click="openQbDocument">
-                            <i class="fa-solid fa-folder-open"></i> <span>{{ t('common.open') }}</span>
-                        </button>
-                        <button class="primary-btn" @click="saveQbDocument" :disabled="store.isWorking.savingQb">
-                            <template v-if="store.isWorking.savingQb"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
-                            <template v-else><i class="fa-solid fa-floppy-disk"></i> <span>{{ t('common.save') }}</span></template>
-                        </button>
-                        <button class="primary-btn" @click="saveQbDocumentAs" :disabled="store.isWorking.savingQb">
-                            <i class="fa-solid fa-file-export"></i> <span>{{ t('modder_tools.save_as') }}</span>
-                        </button>
-                        <button class="primary-btn" @click="openQbFileLocation" :disabled="!qbEditor.path" :title="t('modder_tools.open_qb_file_location')">
-                            <i class="fa-solid fa-folder-tree"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="qb-warning-banner" role="alert">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <span>{{ t("modder_tools.this_tool_isn_t_working_correctly_it_is_d7f0b6") }}</span>
-                </div>
+<div id="bpe-page" class="bpe-root">
 
-                <details class="qb-collapsible-card qb-meta-card">
-                    <summary class="qb-collapsible-summary">
-                        <div>
-                            <strong>{{ t('modder_tools.document_info') }}</strong>
-                            <span>{{ qbPackageActive ? qbContainerName : qbDisplayName }}</span>
-                        </div>
-                        <i class="fa-solid fa-chevron-down"></i>
-                    </summary>
-                    <div class="qb-collapsible-body">
-                        <div class="qb-summary-bar">
-                            <div class="qb-summary-pill">
-                                <span class="qb-summary-label">{{ qbPackageActive ? t('modder_tools.asset') : t('modder_tools.file') }}</span>
-                                <span class="qb-summary-value">{{ qbDisplayName }}</span>
-                            </div>
-                            <div class="qb-summary-pill" v-if="qbPackageActive">
-                                <span class="qb-summary-label">{{ t('modder_tools.blueprint') }}</span>
-                                <span class="qb-summary-value">{{ qbContainerName }}</span>
-                            </div>
-                            <div class="qb-summary-pill">
-                                <span class="qb-summary-label">{{ t('modder_tools.matrices') }}</span>
-                                <span class="qb-summary-value">{{ qbEditor.matrices.length }}</span>
-                            </div>
-                            <div class="qb-summary-pill">
-                                <span class="qb-summary-label">{{ t('modder_tools.voxels') }}</span>
-                                <span class="qb-summary-value">{{ qbTotalVoxelCount }}</span>
-                            </div>
-                            <div class="qb-summary-pill qb-summary-status" :class="{ dirty: qbHasUnsavedAssets }">
-                                <span class="qb-summary-label">{{ t('modder_tools.status') }}</span>
-                                <span class="qb-summary-value">{{ qbHasUnsavedAssets ? t('modder_tools.unsaved_changes') : t('modder_tools.saved') }}</span>
-                            </div>
-                        </div>
+    <div id="bpe-empty" class="bpe-empty">
+        <i class="fa-solid fa-cube" aria-hidden="true"></i>
+        <h2>Open a blueprint</h2>
+        <p>Drop a <code>.blueprint</code> file onto this tab, or pick one below.</p>
+        <div class="bpe-openrow">
+            <button type="button" class="bpe-btn bpe-primary" id="bpe-open">
+                <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                <span>Choose a file</span>
+            </button>
+            <button type="button" class="bpe-btn" id="bpe-open-model">
+                <i class="fa-solid fa-dragon" aria-hidden="true"></i>
+                <span>Open a whole model</span>
+            </button>
+            <button type="button" class="bpe-btn" id="bpe-import-qb">
+                <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                <span>Open .qb files</span>
+            </button>
+        </div>
+        <p class="bpe-hint bpe-openhint">A creature is never one file — a mount is a head, a jaw, four legs and a tail. Open its <code>.tmod</code> (or the blueprints together) and you get the whole thing assembled on its skeleton, with every part editable in place.</p>
 
-                        <div v-if="qbDecodeInfoRows.length > 0" class="qb-decode-card">
-                            <div class="qb-sidebar-header">
-                                <div>
-                                    <h4>{{ t('modder_tools.decode_insight') }}</h4>
-                                    <span>{{ t('modder_tools.how_this_blueprint_payload_was_interpret_cee86f') }}</span>
-                                </div>
-                            </div>
-                            <div class="qb-decode-grid">
-                                <div v-for="row in qbDecodeInfoRows" :key="row.label" class="qb-decode-pill">
-                                    <span class="qb-summary-label">{{ t(row.label) }}</span>
-                                    <strong class="qb-summary-value">{{ row.value }}</strong>
-                                </div>
-                            </div>
-                        </div>
+        <div class="bpe-resume" id="bpe-resume" hidden>
+            <h3>Pick up where you left off</h3>
+            <p class="bpe-hint">Saved on this PC as you work. Clearing the app's browser data clears these too.</p>
+            <ul class="bpe-resumelist" id="bpe-resumelist"></ul>
+        </div>
 
-                        <div class="qb-settings-grid">
-                            <div class="form-group">
-                                <label>{{ t('modder_tools.version') }}</label>
-                                <input type="text" :value="qbVersionLabel" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label>{{ t('modder_tools.color_format') }}</label>
-                                <select v-model.number="qbEditor.header.color_format" @change="markQbDirty">
-                                    <option :value="0">{{ t('RGBA') }}</option>
-                                    <option :value="1">{{ t('BGRA') }}</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>{{ t('modder_tools.z_axis_orientation') }}</label>
-                                <select v-model.number="qbEditor.header.z_axis_orientation" @change="markQbDirty">
-                                    <option :value="0">{{ t('modder_tools.left_handed') }}</option>
-                                    <option :value="1">{{ t('modder_tools.right_handed') }}</option>
-                                </select>
-                            </div>
-                            <label class="qb-toggle-card">
-                                <input type="checkbox" v-model="qbEditor.header.compressed" @change="markQbDirty">
-                                <div>
-                                    <strong>{{ t('modder_tools.compressed') }}</strong>
-                                    <span>{{ t('modder_tools.write_slice_compressed_qb_data_when_savi_f62f3d') }}</span>
-                                </div>
-                            </label>
-                            <label class="qb-toggle-card">
-                                <input type="checkbox" v-model="qbEditor.header.visibility_mask_encoded" @change="toggleQbVisibilityMaskMode">
-                                <div>
-                                    <strong>{{ t('modder_tools.visibility_mask_encoded') }}</strong>
-                                    <span>{{ t('modder_tools.use_mask_values_instead_of_alpha_for_vox_086df9') }}</span>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                </details>
+        <div class="bpe-browse">
+            <h3>Or start from something already in the game</h3>
+            <p class="bpe-hint">Search the mounts, dragons, allies and costumes in your Trove install. Pick one and the whole thing opens on its skeleton, every part ready to edit.</p>
+            <div class="bpe-browserow">
+                <label class="sr-only" for="bpe-search">Search game models</label>
+                <input type="search" id="bpe-search" placeholder="Search mounts, dragons, allies…" autocomplete="off">
+                <label class="sr-only" for="bpe-searchtype">Kind of model</label>
+                <select id="bpe-searchtype" data-native-select="true">
+                    <option value="">Anything</option>
+                    <option value="mount">Mounts</option>
+                    <option value="dragon">Dragons</option>
+                    <option value="ally">Allies</option>
+                    <option value="skin">Costumes</option>
+                    <option value="wings">Wings</option>
+                    <option value="boat">Boats</option>
+                    <option value="magrider">Magriders</option>
+                    <option value="npc">Creatures</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <ul class="bpe-results" id="bpe-results"></ul>
+            <p class="bpe-hint" id="bpe-resultnote" aria-live="polite" hidden></p>
+        </div>
 
-                <div class="qb-layout">
-                    <aside class="qb-matrix-sidebar">
-                        <div v-if="qbPackageActive" class="qb-blueprint-panel">
-                            <div class="qb-sidebar-header">
-                                <div>
-                                    <h4>{{ t('modder_tools.blueprint_assets') }}</h4>
-                                    <span>{{ t('modder_tools.select_an_internal_qb_asset_to_edit') }}</span>
-                                </div>
-                            </div>
+        <p class="bpe-hint bpe-openhint">Working in Qubicle or MagicaVoxel? Save as <code>.qb</code>, then pick it along with its <code>_a</code>, <code>_s</code> and <code>_t</code> material maps and they'll be compiled into a blueprint. Qubicle's own <code>.qbcl</code> holds several models at once and can't be read.</p>
+    </div>
 
-                            <div v-if="qbBlueprintAssetRows.length === 0" class="qb-empty-matrices">
-                                {{ t('modder_tools.no_internal_blueprint_assets_were_found') }}
-                            </div>
+    <div id="bpe-workspace" class="bpe-workspace" hidden>
 
-                            <div v-for="row in qbBlueprintAssetRows" :key="row.id">
-                                <button
-                                    v-if="row.assetId"
-                                    class="qb-asset-item"
-                                    :class="{ active: qbEditor.selectedAssetId === row.assetId }"
-                                    :style="{ paddingLeft: `${12 + (row.depth * 18)}px` }"
-                                    @click="selectQbPackageAsset(row.assetId)"
-                                    :title="row.path"
-                                >
-                                    <span class="qb-asset-item-label">
-                                        <i class="fa-solid" :class="row.kind === 'blueprint' ? 'fa-folder-tree' : 'fa-cube'"></i>
-                                        <span>{{ row.label }}</span>
-                                    </span>
-                                </button>
+        <aside class="bpe-panel">
+            <h2>Tools</h2>
 
-                                <div
-                                    v-else
-                                    class="qb-asset-group"
-                                    :style="{ paddingLeft: `${12 + (row.depth * 18)}px` }"
-                                    :title="row.path"
-                                >
-                                    <span class="qb-asset-item-label">
-                                        <i class="fa-solid fa-folder-tree"></i>
-                                        <span>{{ row.label }}</span>
-                                    </span>
-                                    <small v-if="row.error">{{ row.error }}</small>
-                                </div>
-                            </div>
-                        </div>
+            <div class="bpe-chips bpe-tools">
+                <button type="button" data-tool="paint" aria-pressed="true" title="Paint" aria-label="Paint">
+                    <i class="fa-solid fa-brush" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-tool="pick" aria-pressed="false" title="Pick up a colour" aria-label="Pick up a colour">
+                    <i class="fa-solid fa-eye-dropper" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-tool="add" aria-pressed="false" title="Add voxels" aria-label="Add voxels">
+                    <i class="fa-solid fa-cube" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-tool="erase" aria-pressed="false" title="Erase" aria-label="Erase">
+                    <i class="fa-solid fa-eraser" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-tool="move" aria-pressed="false" title="Move" aria-label="Move">
+                    <i class="fa-solid fa-up-down-left-right" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-tool="select" aria-pressed="false" title="Select" aria-label="Select">
+                    <i class="fa-solid fa-object-ungroup" aria-hidden="true"></i>
+                </button>
+                <button type="button" data-tool="box" aria-pressed="false" title="Box fill" aria-label="Box fill">
+                    <i class="fa-solid fa-vector-square" aria-hidden="true"></i>
+                </button>
+            </div>
+            <p class="bpe-hint bpe-toolhint" id="bpe-toolhint">Click a voxel to paint it.</p>
 
-                        <div class="qb-sidebar-header">
-                            <div>
-                                <h4>{{ t('modder_tools.matrices') }}</h4>
-                                <span>{{ t('modder_tools.select_a_matrix_to_edit') }}</span>
-                            </div>
-                            <button class="icon-btn-small" @click="addQbMatrix" :title="t('modder_tools.add_matrix')">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
+            <h3 id="bpe-xform-label">Turn it</h3>
+            <div class="bpe-xforms" id="bpe-transforms"></div>
+            <p class="bpe-hint">The attachment point and any placed objects come with it.</p>
 
-                        <div v-if="qbEditor.matrices.length === 0" class="qb-empty-matrices">
-                            {{ t('modder_tools.no_matrices_yet_add_one_to_start_editing') }}
-                        </div>
+            <div id="bpe-grabblock" hidden>
+                <h3>Select</h3>
+                <div class="bpe-chips" id="bpe-grabs"></div>
+            </div>
 
-                        <button
-                            v-for="(matrix, index) in qbEditor.matrices"
-                            :key="matrix.name + '_' + index"
-                            class="qb-matrix-item"
-                            :class="{ active: qbEditor.selectedMatrixIndex === index }"
-                            @click="selectQbMatrix(index)"
-                        >
-                            <div class="qb-matrix-item-main">
-                                <strong>{{ matrix.name }}</strong>
-                                <span>{{ matrix.size_x }} x {{ matrix.size_y }} x {{ matrix.size_z }}</span>
-                            </div>
-                            <span class="qb-matrix-item-count">{{ matrix.voxels.length }}</span>
-                        </button>
-
-                        <button class="danger-btn qb-remove-matrix-btn" @click="removeSelectedQbMatrix" :disabled="!selectedQbMatrix">
-                            <i class="fa-solid fa-trash"></i> <span>{{ t('modder_tools.remove_selected_matrix') }}</span>
-                        </button>
-
-                        <details class="qb-collapsible-card qb-paint-panel" open>
-                            <summary class="qb-collapsible-summary">
-                                <div>
-                                    <strong>{{ t('modder_tools.paint_attachment') }}</strong>
-                                    <span>{{ qbEditor.paintColor.toUpperCase() }} - {{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.mask') : t('modder_tools.alpha') }} {{ qbEditor.paintAlpha }}</span>
-                                </div>
-                                <i class="fa-solid fa-chevron-down"></i>
-                            </summary>
-                            <div class="qb-collapsible-body">
-                                <div class="form-group">
-                                    <label>{{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.paint_mask') : t('modder_tools.paint_alpha') }}</label>
-                                    <input type="text" v-model.number="qbEditor.paintAlpha">
-                                </div>
-                                <div class="form-group">
-                                    <label>{{ t('modder_tools.paint_color') }}</label>
-                                    <div class="qb-paint-row">
-                                        <input type="color" v-model="qbEditor.paintColor" class="qb-color-input">
-                                        <div class="qb-color-code">{{ qbEditor.paintColor.toUpperCase() }}</div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group" v-if="qbLayerReadOnly">
-                                    <div class="qb-readonly-note">
-                                        <i class="fa-solid fa-eye"></i>
-                                        {{ t('modder_tools.read_only_composite_preview_deco_fill_ed_f5c264') }}
-                                    </div>
-                                </div>
-
-                                <div class="form-group" v-if="activeLayerPresets.length">
-                                    <label>{{ t('modder_tools.material_presets') }} <small>({{ qbActiveLayer }})</small></label>
-                                    <div class="qb-material-presets">
-                                        <button
-                                            v-for="opt in activeLayerPresets"
-                                            :key="opt.label"
-                                            type="button"
-                                            class="qb-material-chip"
-                                            :class="{ active: qbEditor.paintColor.toUpperCase() === rgbToHex(opt.rgb).toUpperCase() }"
-                                            :title="opt.description"
-                                            @click="applyMaterialPreset(opt)"
-                                        >
-                                            <span class="qb-material-swatch" :style="{ background: rgbToHex(opt.rgb) }"></span>
-                                            <span>{{ opt.label }}</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="qb-paint-actions">
-                                    <button class="primary-btn" @click="fillQbSlice">
-                                        <i class="fa-solid fa-fill-drip"></i> <span>{{ t('modder_tools.fill_slice') }}</span>
-                                    </button>
-                                    <button class="primary-btn" @click="clearQbSlice" style="background: var(--danger);">
-                                        <i class="fa-solid fa-eraser"></i> <span>{{ t('modder_tools.clear_slice') }}</span>
-                                    </button>
-                                </div>
-
-                                <div class="qb-attachment-card">
-                                    <div class="qb-attachment-header">
-                                        <strong>
-                                            {{ t('modder_tools.attachment_point') }}
-                                            <span class="qb-attachment-swatch" :title="t('modder_tools.shown_as_pink_in_the_viewers')"></span>
-                                        </strong>
-                                        <span>{{ qbAttachmentStatus.currentLabel }}</span>
-                                    </div>
-                                    <div class="qb-attachment-meta">
-                                        <span v-if="qbCurrentAttachmentPoint">
-                                            {{ qbCurrentAttachmentPoint.x }}, {{ qbCurrentAttachmentPoint.y }}, {{ qbCurrentAttachmentPoint.z }}
-                                        </span>
-                                        <span v-else>
-                                            {{ qbAttachmentStatus.currentCount === 0 ? t('modder_tools.no_pink_attachment_voxel_set') : t('modder_tools.more_than_one_pink_voxel_found') }}
-                                        </span>
-                                    </div>
-                                    <div class="qb-attachment-note">
-                                        {{ qbPackageActive ? t('modder_tools.sync_copies_this_pink_point_to_sibling_q_08d781') : t('modder_tools.set_hovered_turns_the_current_hovered_vo_f8d947') }}
-                                    </div>
-                                    <div class="qb-attachment-actions">
-                                        <button class="qb-tool-btn" @click="focusCurrentQbAttachmentPoint" :disabled="!qbCurrentAttachmentPoint" :title="t('modder_tools.jump_to_the_attachment_slice_and_highlig_f80ebb')">
-                                            <i class="fa-solid fa-crosshairs"></i> <span>{{ t('modder_tools.jump') }}</span>
-                                        </button>
-                                        <button class="qb-tool-btn" @click="setCurrentQbAttachmentPoint()" :disabled="!qbHoveredEditableCell" :title="t('modder_tools.replace_the_current_attachment_point_wit_0cbd36')">
-                                            <i class="fa-solid fa-thumbtack"></i> <span>{{ t('modder_tools.set_hovered') }}</span>
-                                        </button>
-                                        <button class="qb-tool-btn" @click="clearCurrentQbAttachmentPoints()" :disabled="qbAttachmentStatus.currentCount === 0" :title="t('modder_tools.remove_all_attachment_points_from_this_a_ea7b34')">
-                                            <i class="fa-solid fa-ban"></i> <span>{{ t('common.clear') }}</span>
-                                        </button>
-                                    </div>
-                                    <button class="qb-tool-btn qb-attachment-sync" @click="syncAttachmentPointAcrossPackageFamily" :disabled="!qbPackageActive || !qbCurrentAttachmentPoint || qbAttachmentStatus.familyCount < 2" :title="t('modder_tools.copy_this_attachment_point_to_sibling_pa_e9b873')">
-                                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                        <span>{{ t('modder_tools.sync_across_package_maps') }}</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </details>
-                    </aside>
-
-                    <section class="qb-editor-workspace">
-                        <div v-if="!selectedQbMatrix" class="qb-empty-state">
-                            <i class="fa-solid fa-cubes-stacked"></i>
-                            <p>{{ t('modder_tools.no_matrix_selected_add_a_matrix_or_open_136f1a') }}</p>
-                        </div>
-
-                        <template v-else>
-                            <div class="qb-workspace-top">
-                                <details class="qb-collapsible-card qb-matrix-form">
-                                    <summary class="qb-collapsible-summary">
-                                        <div>
-                                            <strong>{{ t('modder_tools.matrix_settings') }}</strong>
-                                            <span>{{ selectedQbMatrix.name }} - {{ selectedQbMatrix.size_x }} x {{ selectedQbMatrix.size_y }} x {{ selectedQbMatrix.size_z }}</span>
-                                        </div>
-                                        <i class="fa-solid fa-chevron-down"></i>
-                                    </summary>
-                                    <div class="qb-collapsible-body">
-                                        <div class="form-row">
-                                            <div class="form-group" style="flex: 2;">
-                                                <label>{{ t('modder_tools.matrix_name') }}</label>
-                                                <input type="text" v-model="qbMatrixForm.name">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>{{ t('modder_tools.pos_x') }}</label>
-                                                <input type="text" v-model.number="qbMatrixForm.pos_x">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>{{ t('modder_tools.pos_y') }}</label>
-                                                <input type="text" v-model.number="qbMatrixForm.pos_y">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>{{ t('modder_tools.pos_z') }}</label>
-                                                <input type="text" v-model.number="qbMatrixForm.pos_z">
-                                            </div>
-                                        </div>
-                                        <div class="form-row">
-                                            <div class="form-group">
-                                                <label>{{ t('modder_tools.size_x') }}</label>
-                                                <input type="text" v-model.number="qbMatrixForm.size_x">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>{{ t('modder_tools.size_y') }}</label>
-                                                <input type="text" v-model.number="qbMatrixForm.size_y">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>{{ t('modder_tools.size_z') }}</label>
-                                                <input type="text" v-model.number="qbMatrixForm.size_z">
-                                            </div>
-                                            <div class="form-group qb-matrix-apply-wrap">
-                                                <label>&nbsp;</label>
-                                                <button class="primary-btn" @click="applyQbMatrixForm">
-                                                    <i class="fa-solid fa-wrench"></i> <span>{{ t('modder_tools.apply_matrix_changes') }}</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </details>
-
-                            </div>
-
-                            <div class="qb-display-toolbar">
-                                <div class="qb-view-mode-toggle" role="tablist" :aria-label="t('modder_tools.qb_view_mode')">
-                                    <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '3d' }" @click="setQbViewMode('3d')">
-                                        <i class="fa-solid fa-cubes"></i> <span>{{ t('modder_tools.3d_edit') }}</span>
-                                    </button>
-                                    <button class="qb-tool-btn qb-mode-btn" :class="{ active: qbEditor.viewMode === '2d' }" @click="setQbViewMode('2d')">
-                                        <i class="fa-solid fa-table-cells-large"></i> <span>{{ t('modder_tools.2d_slice') }}</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="qb-viewport-card" v-if="qbEditor.viewMode === '3d'">
-                                <div class="qb-canvas-header">
-                                    <strong>{{ t('modder_tools.3d_viewport') }}</strong>
-                                    <div class="qb-viewport-header-inline">
-                                        <strong>{{ qbActiveToolLabel }}</strong>
-                                        <span>{{ t('modder_tools.visible_in_clip') }}: {{ qbVisibleVoxelCount }}</span>
-                                        <div class="form-group qb-inline-clip">
-                                            <select v-model="qbEditor.clipMode">
-                                                <option value="off">{{ t('modder_tools.show_all') }}</option>
-                                                <option value="below">{{ t('modder_tools.show_up_to_slice') }}</option>
-                                                <option value="slice">{{ t('modder_tools.only_current_slice') }}</option>
-                                            </select>
-                                        </div>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" @click="resetQbView" :title="t('modder_tools.reset_view')" :aria-label="t('modder_tools.reset_view')">
-                                            <i class="fa-solid fa-compass-drafting"></i>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="qb-viewport-shell">
-                                    <div class="qb-tool-rail">
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'orbit' }" @click="setQbTool('orbit')" :title="t('modder_tools.orbit')" :aria-label="t('modder_tools.orbit')">
-                                            <i class="fa-solid fa-arrows-rotate"></i>
-                                        </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'pan' }" @click="setQbTool('pan')" :title="t('modder_tools.pan')" :aria-label="t('modder_tools.pan')">
-                                            <i class="fa-solid fa-hand"></i>
-                                        </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'paint' }" @click="setQbTool('paint')" :title="t('modder_tools.paint')" :aria-label="t('modder_tools.paint')">
-                                            <i class="fa-solid fa-paintbrush"></i>
-                                        </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'add' }" @click="setQbTool('add')" :title="t('modder_tools.add')" :aria-label="t('modder_tools.add')">
-                                            <i class="fa-solid fa-cube"></i>
-                                        </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'erase' }" @click="setQbTool('erase')" :title="t('modder_tools.erase')" :aria-label="t('modder_tools.erase')">
-                                            <i class="fa-solid fa-eraser"></i>
-                                        </button>
-                                        <button class="qb-tool-btn qb-tool-icon-btn" :class="{ active: qbEditor.activeTool === 'sample' }" @click="setQbTool('sample')" :title="t('modder_tools.sample')" :aria-label="t('modder_tools.sample')">
-                                            <i class="fa-solid fa-eye-dropper"></i>
-                                        </button>
-                                    </div>
-
-                                    <div class="qb-viewport-wrap">
-                                        <canvas
-                                            ref="qbViewportCanvasRef"
-                                            class="qb-viewport-canvas"
-                                            @mousedown="onQbViewportMouseDown"
-                                            @mousemove="onQbViewportMouseMove"
-                                            @mouseleave="onQbViewportMouseLeave"
-                                            @wheel.prevent="onQbViewportWheel"
-                                        ></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="qb-slice-toolbar" v-if="qbEditor.viewMode === '2d' || qbEditor.clipMode !== 'off'">
-                                <div class="qb-slice-controls">
-                                    <button class="icon-btn-small" @click="stepQbSlice(-1)" :disabled="qbEditor.selectedSlice <= 0" :title="t('modder_tools.previous_slice')">
-                                        <i class="fa-solid fa-chevron-left"></i>
-                                    </button>
-                                    <div class="qb-slice-readout">
-                                        <strong>{{ t('modder_tools.z_slice') }}</strong>
-                                        <span>{{ qbEditor.selectedSlice + 1 }} / {{ selectedQbMatrix.size_z }}</span>
-                                    </div>
-                                    <button class="icon-btn-small" @click="stepQbSlice(1)" :disabled="qbEditor.selectedSlice >= selectedQbMatrix.size_z - 1" :title="t('modder_tools.next_slice')">
-                                        <i class="fa-solid fa-chevron-right"></i>
-                                    </button>
-                                </div>
-                                <input type="range" min="0" :max="Math.max(0, selectedQbMatrix.size_z - 1)" v-model.number="qbEditor.selectedSlice" class="qb-slice-range">
-                                <div class="qb-slice-zoom" v-if="qbEditor.viewMode === '2d'">
-                                    <label>{{ t('modder_tools.cell_size') }}</label>
-                                    <input type="range" min="12" max="34" v-model.number="qbEditor.sliceZoom">
-                                </div>
-                            </div>
-
-                            <div class="qb-canvas-card" v-if="qbEditor.viewMode === '2d'">
-                                <div class="qb-canvas-header">
-                                    <div>
-                                        <strong>{{ t('modder_tools.slice_painter') }}</strong>
-                                        <span>{{ t('modder_tools.left_click_to_paint_right_click_to_erase_247ce5') }}</span>
-                                    </div>
-                                    <div class="qb-hover-readout">
-                                        <template v-if="qbHoverSummary">
-                                            <strong>{{ qbHoverSummary.coords }}</strong>
-                                            <span>{{ qbHoverSummary.color }}</span>
-                                        </template>
-                                        <template v-else>
-                                            <span>{{ t('modder_tools.hover_a_cell_to_inspect_it') }}</span>
-                                        </template>
-                                    </div>
-                                </div>
-                                <div class="qb-canvas-wrap">
-                                    <canvas
-                                        ref="qbCanvasRef"
-                                        class="qb-slice-canvas"
-                                        @mousedown="onQbCanvasMouseDown"
-                                        @mousemove="onQbCanvasMouseMove"
-                                        @mouseleave="onQbCanvasMouseLeave"
-                                    ></canvas>
-                                </div>
-                            </div>
-
-                            <div class="qb-slice-table-card" v-if="qbEditor.viewMode === '2d'">
-                                <div class="qb-slice-table-header">
-                                    <strong>{{ t('modder_tools.current_slice_voxels') }}</strong>
-                                    <span>{{ qbSliceVoxels.length }} {{ t('modder_tools.voxel_s') }}</span>
-                                </div>
-                                <div class="table-container" style="max-height: 220px; overflow-y: auto;">
-                                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body);">
-                                        <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
-                                            <tr>
-                                                <th style="padding: 8px 10px;">{{ t('modder_tools.coord') }}</th>
-                                                <th style="padding: 8px 10px;">{{ t('modder_tools.color') }}</th>
-                                                <th style="padding: 8px 10px;">{{ qbEditor.header.visibility_mask_encoded ? t('modder_tools.mask') : t('modder_tools.alpha') }}</th>
-                                                <th style="padding: 8px 10px; width: 74px;"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-if="qbSliceVoxels.length === 0">
-                                                <td colspan="4" style="padding: 10px; color: var(--text-muted); text-align: center;">{{ t('modder_tools.no_visible_voxels_in_this_slice') }}</td>
-                                            </tr>
-                                            <tr v-for="voxel in qbSliceVoxels" :key="voxel.key">
-                                                <td style="padding: 8px 10px; font-family: monospace;">{{ voxel.coords }}</td>
-                                                <td style="padding: 8px 10px;">
-                                                    <div class="qb-voxel-color-cell">
-                                                        <span class="qb-voxel-swatch" :style="{ background: voxel.swatch }"></span>
-                                                        <span>{{ voxel.color }}</span>
-                                                    </div>
-                                                </td>
-                                                <td style="padding: 8px 10px;">{{ voxel.a }}</td>
-                                                <td style="padding: 8px 10px; text-align: right;">
-                                                    <button class="icon-btn-small" @click="sampleQbVoxel(voxel.raw)" :title="t('modder_tools.sample_color')">
-                                                        <i class="fa-solid fa-eye-dropper"></i>
-                                                    </button>
-                                                    <button class="icon-btn-small danger" @click="removeQbVoxel(voxel.raw)" :title="t('modder_tools.delete_voxel')">
-                                                        <i class="fa-solid fa-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </template>
-                    </section>
+            <div id="bpe-boxblock" hidden>
+                <h3>The box</h3>
+                <div class="bpe-chips" id="bpe-boxmodes">
+                    <button type="button" data-boxmode="fill" aria-pressed="true">Fills it</button>
+                    <button type="button" data-boxmode="clear" aria-pressed="false">Clears it</button>
                 </div>
             </div>
+
+            <h3 id="bpe-slice-label">Slice</h3>
+            <div class="bpe-chips" id="bpe-slice-axes">
+                <button type="button" data-slice="off" aria-pressed="true">Off</button>
+                <button type="button" data-slice="x" aria-pressed="false" title="Slice across X">X</button>
+                <button type="button" data-slice="y" aria-pressed="false" title="Slice across Y">Y</button>
+                <button type="button" data-slice="z" aria-pressed="false" title="Slice across Z">Z</button>
+            </div>
+            <div class="bpe-slicebar" id="bpe-slicebar" hidden>
+                <button type="button" class="bpe-xform" data-slicestep="-1" aria-label="Previous layer">&minus;</button>
+                <input type="range" id="bpe-slice-at" min="0" max="0" value="0" aria-label="Which layer">
+                <button type="button" class="bpe-xform" data-slicestep="1" aria-label="Next layer">+</button>
+                <span class="bpe-nudge-val" id="bpe-slice-read">0</span>
+            </div>
+            <p class="bpe-hint" id="bpe-slicehint" hidden>Only this layer is drawn, so clicks reach the voxels inside. Use the bracket keys to step through it.</p>
+
+            <div id="bpe-unionblock">
+                <h3 id="bpe-union-label">Union</h3>
+                <div class="bpe-actions">
+                    <button type="button" class="bpe-btn" id="bpe-flatten" disabled>
+                        <i class="fa-solid fa-object-group" aria-hidden="true"></i>
+                        <span>Union the layers</span>
+                    </button>
+                </div>
+                <p class="bpe-hint" id="bpe-unionhint">Merges every layer into a single blueprint. Where two overlap, the top one wins.</p>
+            </div>
+
+            <div class="bpe-selbar" id="bpe-selbar" hidden>
+                <p class="bpe-selcount" id="bpe-selcount"></p>
+                <div class="bpe-actions">
+                    <button type="button" class="bpe-btn" id="bpe-selout" aria-pressed="false">Working inside it</button>
+                    <button type="button" class="bpe-btn" id="bpe-selclear">Clear</button>
+                </div>
+                <div class="bpe-nudge" id="bpe-selnudge">
+                    <span class="bpe-nudge-axis">X</span>
+                    <button type="button" class="bpe-xform" data-selnudge="-1,0,0">&minus;</button>
+                    <button type="button" class="bpe-xform" data-selnudge="1,0,0">+</button>
+                    <span class="bpe-nudge-axis">Y</span>
+                    <button type="button" class="bpe-xform" data-selnudge="0,-1,0">&minus;</button>
+                    <button type="button" class="bpe-xform" data-selnudge="0,1,0">+</button>
+                    <span class="bpe-nudge-axis">Z</span>
+                    <button type="button" class="bpe-xform" data-selnudge="0,0,-1">&minus;</button>
+                    <button type="button" class="bpe-xform" data-selnudge="0,0,1">+</button>
+                </div>
+                <label class="bpe-toggle">
+                    <input type="checkbox" id="bpe-selcopy">
+                    <span>Leave a copy behind</span>
+                </label>
+            </div>
+
+            <h3 id="bpe-paint-colour">Colour</h3>
+            <div class="bpe-colourrow">
+                <input type="color" id="bpe-colour" value="#ff6b6b" aria-label="Paint colour">
+                <span class="bpe-colourhex" id="bpe-colour-hex">#FF6B6B</span>
+                <button type="button" class="bpe-swatchadd" id="bpe-swatch-add" title="Save this colour to the palette">
+                    <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                    <span class="sr-only">Save this colour</span>
+                </button>
+            </div>
+            <ul class="bpe-swatches" id="bpe-swatches"></ul>
+
+            <h3 id="bpe-paint-material">Material</h3>
+            <div class="bpe-chips" id="bpe-types"></div>
+
+            <h3 id="bpe-finish-label">Finish</h3>
+            <div class="bpe-chips" id="bpe-finish"></div>
+
+            <h3 id="bpe-modes-label">A click changes</h3>
+            <div class="bpe-chips" id="bpe-modes">
+                <button type="button" data-mode="both" aria-pressed="true">Both</button>
+                <button type="button" data-mode="colour" aria-pressed="false">Colour only</button>
+                <button type="button" data-mode="material" aria-pressed="false">Material only</button>
+            </div>
+
+            <h3 id="bpe-scope-label">And affects</h3>
+            <div class="bpe-chips" id="bpe-scopes">
+                <button type="button" data-scope="voxel" aria-pressed="true">Just that voxel</button>
+                <button type="button" data-scope="colour" aria-pressed="false">Every voxel of that colour</button>
+                <button type="button" data-scope="material" aria-pressed="false">Every voxel of that material</button>
+            </div>
+            <p class="bpe-hint bpe-scopehint" id="bpe-scopehint"></p>
+
+            <h3>Show</h3>
+            <label class="bpe-toggle">
+                <input type="checkbox" id="bpe-show-attach" checked>
+                <span>Attachment point</span>
+            </label>
+
+            <details class="bpe-fold" id="bpe-movefold" hidden>
+                <summary><span id="bpe-movefold-label">Move on the rig</span></summary>
+                <div id="bpe-layerctl">
+                    <label class="sr-only" for="bpe-align">How should this layer line up?</label>
+                    <select id="bpe-align" data-native-select="true"></select>
+                    <div class="bpe-nudge" id="bpe-nudge">
+                        <span class="bpe-nudge-axis">X</span>
+                        <button type="button" class="bpe-xform" data-nudge="-1,0,0">&minus;</button>
+                        <span class="bpe-nudge-val" id="bpe-nudge-x">0</span>
+                        <button type="button" class="bpe-xform" data-nudge="1,0,0">+</button>
+                        <span class="bpe-nudge-axis">Y</span>
+                        <button type="button" class="bpe-xform" data-nudge="0,-1,0">&minus;</button>
+                        <span class="bpe-nudge-val" id="bpe-nudge-y">0</span>
+                        <button type="button" class="bpe-xform" data-nudge="0,1,0">+</button>
+                        <span class="bpe-nudge-axis">Z</span>
+                        <button type="button" class="bpe-xform" data-nudge="0,0,-1">&minus;</button>
+                        <span class="bpe-nudge-val" id="bpe-nudge-z">0</span>
+                        <button type="button" class="bpe-xform" data-nudge="0,0,1">+</button>
+                    </div>
+                </div>
+            </details>
+        </aside>
+
+        <div class="bpe-centre">
+        <section class="bpe-panel bpe-stagecard">
+            <div class="bpe-stagebar">
+                <label class="sr-only" for="bpe-stagepart">Part being edited</label>
+                <select id="bpe-stagepart" class="bpe-partpick" data-native-select="true" hidden></select>
+                <strong id="bpe-filename">blueprint</strong>
+                <span class="bpe-metaline" id="bpe-meta"></span>
+                <div class="bpe-stageacts">
+                    <button type="button" class="bpe-btn bpe-projectonly" id="bpe-isolate" aria-pressed="false" disabled>
+                        <i class="fa-solid fa-expand" aria-hidden="true"></i>
+                        <span id="bpe-isolate-label">This part only</span>
+                    </button>
+                    <button type="button" class="bpe-btn bpe-projectonly" id="bpe-animate" aria-pressed="false" hidden>
+                        <i class="fa-solid fa-play" aria-hidden="true"></i>
+                        <span id="bpe-animate-label">Animate</span>
+                    </button>
+                </div>
+            </div>
+            <div class="bpe-stage" id="bpe-stage">
+                <span class="bpe-hoverline" id="bpe-hover" aria-live="off" hidden></span>
+            </div>
+            <div id="bpe-animbar" hidden></div>
+            <div class="bpe-stagefoot">
+                <div class="bpe-footacts">
+                    <button type="button" class="bpe-btn" id="bpe-open-model2"
+                            title="Open a whole model — a .tmod, a .zip, or its blueprints together">
+                        <i class="fa-solid fa-dragon" aria-hidden="true"></i>
+                        <span>Open a model</span>
+                    </button>
+                    <button type="button" class="bpe-btn" id="bpe-open2" title="Open a single .blueprint">
+                        <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                        <span>Open a blueprint</span>
+                    </button>
+                    <button type="button" class="bpe-btn" id="bpe-import-qb2"
+                            title="Compile Qubicle .qb files — the model plus its _a, _s and _t material maps — into a blueprint">
+                        <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                        <span>Import .qb</span>
+                    </button>
+                    <button type="button" class="bpe-btn" id="bpe-export-qb"
+                            title="Export this model as the four .qb files Qubicle and MagicaVoxel author in">
+                        <i class="fa-solid fa-file-export" aria-hidden="true"></i>
+                        <span>Export .qb</span>
+                    </button>
+                </div>
+                <button type="button" class="bpe-btn bpe-keysbtn" id="bpe-keys">
+                    <i class="fa-solid fa-keyboard" aria-hidden="true"></i>
+                    <span>Controls</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="bpe-panel bpe-underbar">
+            <div class="bpe-under-sel">
+                <h3>Selected</h3>
+                <div id="bpe-selection">
+                    <p class="bpe-hint">Click a voxel to select it.</p>
+                </div>
+            </div>
+            <div class="bpe-under-mats">
+                <h3>Materials used</h3>
+                <ul class="bpe-materials" id="bpe-materials"></ul>
+                <ul class="bpe-notes" id="bpe-notes" hidden></ul>
+            </div>
+        </section>
+        </div>
+
+        <aside class="bpe-panel">
+            <h2>Save</h2>
+            <div class="bpe-saveblock">
+                <p class="bpe-dirty" id="bpe-dirty" aria-live="polite">No changes yet</p>
+                <p class="bpe-saved" id="bpe-saved" hidden></p>
+                <div class="bpe-actions">
+                    <button type="button" class="bpe-btn bpe-primary" id="bpe-save">
+                        <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                        <span id="bpe-save-label">Save</span>
+                    </button>
+                    <button type="button" class="bpe-btn bpe-projectonly" id="bpe-save-part">
+                        <i class="fa-solid fa-file-arrow-down" aria-hidden="true"></i>
+                        <span>This part only</span>
+                    </button>
+                    <span class="bpe-btnpair">
+                        <button type="button" class="bpe-btn" id="bpe-undo" disabled>
+                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                            <span>Undo</span>
+                        </button>
+                        <button type="button" class="bpe-btn" id="bpe-redo" disabled>
+                            <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                            <span>Redo</span>
+                        </button>
+                    </span>
+                    <button type="button" class="bpe-btn" id="bpe-revert" disabled>Revert all</button>
+                </div>
+            </div>
+
+            <h3 id="bpe-layers-title">Layers</h3>
+            <p class="bpe-hint" id="bpe-layers-hint">Each layer is its own blueprint. Pick one to edit it, drag it about with the Move tool, and reorder them — on save the top layer wins wherever two overlap.</p>
+            <ul class="bpe-layers" id="bpe-layerlist"></ul>
+            <div id="bpe-apctl" hidden>
+                <label class="bpe-aplabel" for="bpe-apsel" id="bpe-aplabel">Attaches at</label>
+                <select id="bpe-apsel" class="bpe-apsel" data-native-select="true"></select>
+            </div>
+            <div class="bpe-actions">
+                <button type="button" class="bpe-btn" id="bpe-layer-open">
+                    <i class="fa-solid fa-layer-group" aria-hidden="true"></i>
+                    <span id="bpe-layer-open-label">Add a layer</span>
+                </button>
+            </div>
+            <p class="bpe-hint" id="bpe-layerinfo"></p>
+
+            <div id="bpe-checkblock">
+                <h3>Check it over</h3>
+                <p class="bpe-hint">Trove has size, orientation and attachment rules per item type. Tell it what you're making and it'll check.</p>
+                <div class="bpe-checkrow">
+                    <label class="sr-only" for="bpe-kind">What are you making?</label>
+                    <select id="bpe-kind" data-native-select="true"></select>
+                    <button type="button" class="bpe-btn" id="bpe-check">
+                        <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>
+                        <span>Check</span>
+                    </button>
+                </div>
+                <div id="bpe-report" class="bpe-report" aria-live="polite" hidden></div>
+            </div>
+        </aside>
+    </div>
+
+    <p class="bpe-status" id="bpe-status" role="status" hidden></p>
+
+    <dialog id="bpe-keysdlg" class="bpe-dlg" aria-labelledby="bpe-keys-title">
+        <div class="bpe-dlg-head">
+            <h2 id="bpe-keys-title">Controls</h2>
+            <button type="button" class="bpe-dlg-x" id="bpe-keys-close" aria-label="Close">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+        <div class="bpe-navpick">
+            <span class="bpe-navpick-label" id="bpe-navlabel">Mouse controls</span>
+            <div class="bpe-navbtns" role="radiogroup" aria-labelledby="bpe-navlabel">
+                <button type="button" class="bpe-navbtn" data-nav="magicavoxel" role="radio" aria-checked="false">MagicaVoxel</button>
+                <button type="button" class="bpe-navbtn" data-nav="blender" role="radio" aria-checked="false">Blender</button>
+                <button type="button" class="bpe-navbtn" data-nav="maya" role="radio" aria-checked="false">Maya</button>
+            </div>
+        </div>
+
+        <dl class="bpe-keys">
+            <dt>Turn the view</dt><dd id="bpe-nav-orbit"></dd>
+            <dt>Pan</dt><dd id="bpe-nav-pan"></dd>
+            <dt>Zoom</dt><dd id="bpe-nav-zoom"></dd>
+
+            <dt>Use the current tool</dt><dd><span>Click, or drag across voxels</span></dd>
+            <dt class="bpe-keys-wide">Pick a tool</dt>
+            <dd class="bpe-keys-wide">
+                <span class="bpe-keycombo bpe-keycombo-own-line"><kbd>1</kbd>&ndash;<kbd>7</kbd> <span>along the row, or</span></span>
+                <span class="bpe-keycombo"><kbd>B</kbd> <span>paint</span></span>
+                <span class="bpe-keycombo"><kbd>I</kbd> <span>pick up</span></span>
+                <span class="bpe-keycombo"><kbd>A</kbd> <span>add</span></span>
+                <span class="bpe-keycombo"><kbd>E</kbd> <span>erase</span></span>
+                <span class="bpe-keycombo"><kbd>V</kbd> <span>move</span></span>
+                <span class="bpe-keycombo"><kbd>S</kbd> <span>select</span></span>
+                <span class="bpe-keycombo"><kbd>R</kbd> <span>box</span></span>
+            </dd>
+            <dt>Select a region</dt>
+            <dd><span>Drag a box with the Select tool</span></dd>
+            <dt>Add to / take from a selection</dt>
+            <dd><kbd>Shift</kbd> / <kbd>Ctrl</kbd> + <span>click or drag</span></dd>
+            <dt>Pick up a colour and material</dt><dd><kbd>Alt</kbd> + click</dd>
+            <dt>Undo</dt><dd><kbd>Ctrl</kbd> + <kbd>Z</kbd></dd>
+            <dt>Redo</dt>
+            <dd><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd>, <span>or</span> <kbd>Ctrl</kbd> + <kbd>Y</kbd></dd>
+            <dt>Step through a slice</dt><dd><kbd>[</kbd> <span>and</span> <kbd>]</kbd></dd>
+
+            <dt class="bpe-keys-model">Work on another part</dt>
+            <dd class="bpe-keys-model"><span>Middle-click, or</span> <kbd>Shift</kbd> + <span>click</span></dd>
+            <dt class="bpe-keys-model">Work on a part on its own</dt>
+            <dd class="bpe-keys-model">Double-click it</dd>
+            <dt class="bpe-keys-model">Move a part along its bone</dt>
+            <dd class="bpe-keys-model">Unlock it, pick Move, then drag</dd>
+        </dl>
+        <p class="bpe-hint">No middle mouse button? Ctrl + drag turns the view and Shift + drag pans it, in every preset.</p>
+        <p class="bpe-hint">Undo keeps a separate history for each part and for the whole model, so undoing a move never takes back your painting.</p>
+    </dialog>
+
+    <input type="file" id="bpe-input" accept=".blueprint" hidden>
+    <input type="file" id="bpe-qb-input" accept=".qb" multiple hidden>
+    <input type="file" id="bpe-layer-input" accept=".blueprint" multiple hidden>
+    <input type="file" id="bpe-model-input" accept=".tmod,.zip,.blueprint" multiple hidden>
+</div>

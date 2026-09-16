@@ -27,6 +27,7 @@ build_exe_options = {
     ],
     "include_files": [
         ("web/", "web/"),
+        ("data/", "data/"),
         ("metadata.json", "metadata.json"),
         ("LICENSE", "LICENSE"),
         ("README.md", "README.md"),
