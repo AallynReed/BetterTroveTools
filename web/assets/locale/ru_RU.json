@@ -1401,6 +1401,8 @@
         "feedback.title": "Отправить отзыв",
         "feedback.button_title": "Отправить отзыв разработчику",
         "feedback.intro": "Баг, идея или просто комментарий? Сообщение пойдёт напрямую разработчику.",
+        "feedback.scope_title": "Это НЕ для Zakros UI",
+        "feedback.scope_body": "Эта форма только для приложения Better Trove Tools. Отзывы о Zakros UI, отправленные сюда, не дойдут до его разработчиков.",
         "feedback.category_label": "Категория",
         "feedback.category_general": "Общий отзыв",
         "feedback.category_bug": "Сообщение об ошибке",

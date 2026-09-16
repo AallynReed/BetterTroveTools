@@ -3292,6 +3292,31 @@ input[type="range"]:disabled {
     flex-direction: column;
     gap: 8px;
 }
+.feedback-scope-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 2px solid var(--warning);
+    border-radius: var(--radius-surface);
+    background: rgba(var(--warning-rgb), 0.16);
+    color: var(--text-main);
+    font-size: var(--t-fs-body);
+    line-height: 1.4;
+}
+.feedback-scope-notice > i {
+    color: var(--warning);
+    font-size: 22px;
+    margin-top: 2px;
+}
+.feedback-scope-notice strong {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--warning-ink);
+    font-size: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
 .feedback-intro {
     margin: 0 0 6px;
     color: var(--text-muted, var(--text-main));

@@ -1401,6 +1401,8 @@
         "feedback.title": "피드백 보내기",
         "feedback.button_title": "개발자에게 피드백 보내기",
         "feedback.intro": "버그, 아이디어, 그냥 한마디라도? 개발자에게 바로 전달됩니다.",
+        "feedback.scope_title": "Zakros UI용이 아닙니다",
+        "feedback.scope_body": "이 양식은 Better Trove Tools 앱 전용입니다. 여기로 보낸 Zakros UI 관련 피드백은 해당 개발자에게 전달되지 않습니다.",
         "feedback.category_label": "카테고리",
         "feedback.category_general": "일반 피드백",
         "feedback.category_bug": "버그 신고",

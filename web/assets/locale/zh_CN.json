@@ -1401,6 +1401,8 @@
         "feedback.title": "发送反馈",
         "feedback.button_title": "向开发者发送反馈",
         "feedback.intro": "发现了 bug、有想法或只是想说点什么？直接发送给开发者。",
+        "feedback.scope_title": "这不是 Zakros UI 的反馈",
+        "feedback.scope_body": "此表单仅用于 Better Trove Tools 应用。在此提交的 Zakros UI 相关反馈不会送达其开发者。",
         "feedback.category_label": "类别",
         "feedback.category_general": "一般反馈",
         "feedback.category_bug": "Bug 报告",

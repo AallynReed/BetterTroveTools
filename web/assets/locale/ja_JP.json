@@ -1401,6 +1401,8 @@
         "feedback.title": "フィードバックを送信",
         "feedback.button_title": "開発者にフィードバックを送信",
         "feedback.intro": "バグ、アイデア、ただのコメントなど何でも？開発者に直接届きます。",
+        "feedback.scope_title": "これは Zakros UI 用ではありません",
+        "feedback.scope_body": "このフォームは Better Trove Tools アプリ専用です。ここに送られた Zakros UI へのフィードバックはその開発者には届きません。",
         "feedback.category_label": "カテゴリ",
         "feedback.category_general": "一般的なフィードバック",
         "feedback.category_bug": "バグ報告",

@@ -1401,6 +1401,8 @@
         "feedback.title": "Envoyer des commentaires",
         "feedback.button_title": "Envoyer des commentaires au développeur",
         "feedback.intro": "Un bug, une idée ou juste un commentaire ? Cela va directement au développeur.",
+        "feedback.scope_title": "Ceci n'est PAS pour Zakros UI",
+        "feedback.scope_body": "Ce formulaire concerne uniquement l'application Better Trove Tools. Les retours sur Zakros UI envoyés ici n'atteindront pas ses développeurs.",
         "feedback.category_label": "Catégorie",
         "feedback.category_general": "Commentaires généraux",
         "feedback.category_bug": "Signalement de bug",

@@ -1401,6 +1401,8 @@
         "feedback.title": "Feedback senden",
         "feedback.button_title": "Feedback an den Entwickler senden",
         "feedback.intro": "Einen Bug, eine Idee oder einfach einen Kommentar? Es geht direkt an den Entwickler.",
+        "feedback.scope_title": "Dies ist NICHT für Zakros UI",
+        "feedback.scope_body": "Dieses Formular ist nur für die App Better Trove Tools. Feedback zu Zakros UI erreicht dessen Entwickler hier nicht.",
         "feedback.category_label": "Kategorie",
         "feedback.category_general": "Allgemeines Feedback",
         "feedback.category_bug": "Bug-Report",
