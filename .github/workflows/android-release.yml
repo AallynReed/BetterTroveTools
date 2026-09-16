@@ -52,8 +52,12 @@ jobs:
       - name: Install JavaScript dependencies
         run: npm ci
 
+      # The action's default also asks for the legacy `tools` package, which current
+      # cmdline-tools no longer ship; the step below installs the rest.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android SDK packages
         run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
@@ -62,6 +66,12 @@ jobs:
       # offline sidebar shows the real version instead of a placeholder.
       - name: Sync app version into the web build
         run: cp metadata.json web/metadata.json
+
+      # The Blueprint Editor is desktop-only; keep its three.js/editor assets out of the APK.
+      - name: Drop desktop-only assets from the web build
+        run: |
+          rm -rf web/js/modder_tools/blueprint_editor
+          rm -f web/lib/three.min.js web/css/modder_tools/blueprint_editor.css web/views/modder_tools/qb_editor.html
 
       # cap sync copies the web/ build into the native project and regenerates
       # the Capacitor plugin glue (both are git-ignored / not committed).
