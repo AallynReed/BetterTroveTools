@@ -5,6 +5,7 @@ import io
 import json
 import os
 import re
+import sys
 import time
 import zipfile
 import zlib
@@ -27,6 +28,28 @@ from utils.registry import TroveGamePath
 from ..trovesaurus.mods import Mod
 
 mod_file_cache = {}
+_no_preview_cache = None
+
+
+def _no_preview_image():
+    """The placeholder every mod without an embedded preview gets, encoded once.
+
+    This used to `open()` a cwd-relative path per preview-less mod and never
+    close it, so listing a mods folder leaked a handle per card and re-read the
+    same PNG dozens of times. The asset sits next to the exe in the packaged
+    build and at the repo root in source; cwd is tried last because that is all
+    the old path had to go on."""
+    global _no_preview_cache
+    if _no_preview_cache is None:
+        roots = [Path(sys.executable).parent] if getattr(sys, "frozen", False) else []
+        roots += [Path(__file__).resolve().parents[2], Path.cwd()]
+        _no_preview_cache = ""
+        for root in roots:
+            candidate = root / "web" / "assets" / "images" / "no_preview.png"
+            if candidate.is_file():
+                _no_preview_cache = base64.b64encode(candidate.read_bytes()).decode("utf-8")
+                break
+    return _no_preview_cache
 
 
 def _read_header_str(data: BinaryReader, length: int, char_lengths: bool) -> str:
@@ -495,9 +518,7 @@ class TroveMod:
         for file in self.files:
             if file.trove_path == self.preview_path:
                 return base64.b64encode(file.data).decode("utf-8")
-        return base64.b64encode(
-            open("web/assets/images/no_preview.png", "rb").read()
-        ).decode("utf-8")
+        return _no_preview_image()
 
     @property
     def config(self):
