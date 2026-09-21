@@ -10,7 +10,7 @@ from unittest import mock
 import eel
 import gevent
 
-from tests.support import Sandbox, FakeTrovesaurus, build_tmod, build_zip_mod
+from tests.support import Sandbox, FakeTrovesaurus, build_tmod, build_zip_mod, patch_http
 
 import backend.mod_manager.mod_manager as mod_manager
 import backend.mod_manager.trovesaurus as trovesaurus
@@ -286,7 +286,7 @@ class TrovesaurusTabTests(UpdateTestCase):
         self.publish(1, "Alpha", 100, data)
         self.install("Alpha.tmod", data)
 
-        with mock.patch("requests.post", side_effect=OSError("offline")):
+        with patch_http(post=mock.Mock(side_effect=OSError("offline"))):
             self.assertEqual(
                 trovesaurus._compute_installed_states(
                     self.sandbox.path, list(self.api.mods.values())

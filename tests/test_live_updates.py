@@ -28,6 +28,10 @@ class ModWatcherTestCase(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
         self.watcher = mod_watcher.ModWatcher()
+        # set_target() starts the poll thread and wakes it at once, so the real
+        # loop would tick in parallel with the manual ticks below and eat a
+        # pending sighting. These tests own the clock.
+        self.watcher._ensure_running = lambda: None
 
     def test_settled_change_announces_once(self):
         self.watcher.set_target(self.sandbox.path)

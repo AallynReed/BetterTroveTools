@@ -22,7 +22,7 @@ from utils.http import SESSION
 
 from backend.response import resp
 from backend.home import KIWI_API_BASE
-from backend.mod_manager.mod_manager import delete_mod, mods_signature
+from backend.mod_manager.mod_manager import delete_mod, mods_signature, _lock_key, _locked_keys
 from utils.path import get_cache_root
 from utils.registry import TroveGamePath
 
@@ -224,16 +224,18 @@ def _compute_install_states(game_path_str, force=False):
     if not force and cached and cached.get("signature") == signature:
         return cached["states"], cached["paths"]
 
+    # Enabled files first: when several local copies of one mod turn up, the
+    # enabled one is what the game actually loads, so it is the one the update
+    # state has to be about.
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         files = [
-            f
-            for f in (
-                list(trove_path.enabled_tmods)
-                + list(trove_path.disabled_tmods)
-                + list(trove_path.enabled_zips)
-                + list(trove_path.disabled_zips)
+            (enabled, f)
+            for enabled, group in (
+                (True, list(trove_path.enabled_tmods) + list(trove_path.enabled_zips)),
+                (False, list(trove_path.disabled_tmods) + list(trove_path.disabled_zips)),
             )
+            for f in group
             # Steam Workshop mods aren't hub mods and can't be installed over.
             if not trove_path.is_workshop_file(f)
         ]
@@ -242,12 +244,16 @@ def _compute_install_states(game_path_str, force=False):
         files = []
 
     hash_to_path = {}
-    for f in files:
+    hash_enabled = {}
+    for enabled, f in files:
         try:
             digest = hashlib.sha256(Path(f).read_bytes()).hexdigest()
         except OSError:
             continue
-        hash_to_path.setdefault(digest, str(f))
+        if digest in hash_to_path:
+            continue
+        hash_to_path[digest] = str(f)
+        hash_enabled[digest] = enabled
 
     # Resolve every local hash -> {ref, installed release}. The /lookup `mod`
     # object does NOT carry releases[], so we keep the matched release here and
@@ -271,9 +277,15 @@ def _compute_install_states(game_path_str, force=False):
                 if not slug:
                     continue
                 ref = _mod_ref(handle, slug)
-                if ref in ref_match:
+                # Several copies of one mod: the enabled one wins, and among
+                # equals the newest release does. Without a rule here it came
+                # down to folder order, so an old spare copy could keep
+                # reporting an update that Update had already installed.
+                rank = (bool(hash_enabled.get(h, True)), _pub(matched))
+                if ref in ref_match and rank <= ref_match[ref]["rank"]:
                     continue
                 ref_match[ref] = {
+                    "rank": rank,
                     "path": hash_to_path.get(h),
                     "matched": matched,
                     # Attached by include_releases; None on an older hub, which
@@ -438,7 +450,24 @@ def _do_install(game_path_str, ref, branch=None):
     if not game_path_str:
         return False, "No game path provided.", None
 
-    detail = _fetch_mod_detail(ref)
+    # Resolve the file this mod is installed as before anything is written: it
+    # decides the enabled/disabled suffix to keep, the stale copy to clear, and
+    # whether the user's update lock applies.
+    states, paths = _compute_install_states(game_path_str)
+    old_path_str = paths.get(ref)
+    installed_branch = (states.get(ref) or {}).get("branch")
+
+    # The lock is a user pin, so it is enforced here and not only in the UI -- a
+    # stale card must not be able to push an update through. Switching to another
+    # variant is a deliberate choice and stays allowed.
+    if old_path_str and branch in (None, installed_branch):
+        if _lock_key(old_path_str) in _locked_keys(game_path_str):
+            return False, "Updates are locked for this mod.", None
+
+    # Never cached: a forced refresh sees a new release through /lookup, so
+    # resolving the release to install from a detail cached up to DETAIL_TTL ago
+    # would download the previous one and leave the update flag set.
+    detail = _fetch_mod_detail(ref, use_cache=False)
     if detail is None:
         return False, "Couldn't reach the mod hub to fetch this mod.", None
 
@@ -470,13 +499,9 @@ def _do_install(game_path_str, ref, branch=None):
     safe_name = _safe_filename(detail.get("title") or release.get("filename") or "mod")
     mods_dir = Path(game_path_str) / "mods"
     mods_dir.mkdir(parents=True, exist_ok=True)
-    out_path = mods_dir / f"{safe_name}{ext}"
-
-    # On update / variant switch the previous artifact may live under a different
-    # filename (renamed, or a different format/variant) — clear it so we don't
-    # leave a stale duplicate of the same mod behind.
-    _, paths = _compute_install_states(game_path_str)
-    old_path_str = paths.get(ref)
+    # Updating a mod the user switched off has to leave it switched off.
+    suffix = ".disabled" if str(old_path_str or "").lower().endswith(".disabled") else ""
+    out_path = mods_dir / f"{safe_name}{ext}{suffix}"
 
     out_path.write_bytes(data)
 

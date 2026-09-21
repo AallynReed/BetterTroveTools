@@ -109,6 +109,45 @@ class Sandbox:
         raise AssertionError(f"{filename} not found in {self.filenames()}")
 
 
+def patch_http(**handlers):
+    """Route every outbound HTTP call to `handlers` ({"get": fn, ...}).
+
+    Two surfaces have to be covered or a test silently talks to the real
+    internet: most modules now go through the pooled `utils.http.SESSION`, while
+    a few (`backend.home`, `modpacks`, `profiles`) still call `requests.get` /
+    `requests.post` directly. `SESSION` is a single shared object every importer
+    holds a reference to, so patching its bound methods reaches all of them."""
+    from utils.http import SESSION
+
+    patchers = [mock.patch.multiple("requests", **handlers)]
+    patchers += [mock.patch.object(SESSION, name, handler)
+                 for name, handler in handlers.items()]
+    return _MultiPatch(patchers)
+
+
+class _MultiPatch:
+    """Several mock patchers as one context manager / start-stop pair."""
+
+    def __init__(self, patchers):
+        self._patchers = patchers
+
+    def start(self):
+        for patcher in self._patchers:
+            patcher.start()
+
+    def stop(self):
+        for patcher in reversed(self._patchers):
+            patcher.stop()
+
+    def __enter__(self):
+        self.start()
+        return self
+
+    def __exit__(self, *exc):
+        self.stop()
+        return False
+
+
 class FakeResponse:
     def __init__(self, payload=None, content=b"", status_code=200):
         self.status_code = status_code
@@ -195,8 +234,4 @@ class FakeTrovesaurus:
         return FakeResponse()
 
     def patch(self):
-        """Patch requests at the module level -- every backend module does a
-        plain `import requests`, so they all see these."""
-        return mock.patch.multiple(
-            "requests", get=self.get, post=self.post, head=self.head
-        )
+        return patch_http(get=self.get, post=self.post, head=self.head)
