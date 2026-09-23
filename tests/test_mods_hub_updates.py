@@ -201,6 +201,14 @@ class HubUpdateTests(ModsHubTestCase):
         self.assertEqual(self.sandbox.filenames(), ["Alpha.tmod"])
         self.assertFalse(next(iter(self.states().values()))["has_update"])
 
+    def test_install_is_named_after_the_tmod_title_not_the_hub_title(self):
+        data = build_tmod("RadiantStellarCrystalVFXNoToolTip")
+        self.api.release("aallyn/gears", "Gears VFX No Tooltips", "main", "v1", data)
+
+        self.install("aallyn/gears")
+
+        self.assertEqual(self.sandbox.filenames(), ["RadiantStellarCrystalVFXNoToolTip.tmod"])
+
     def test_variant_switch_leaves_one_file(self):
         lite = build_tmod("Alpha", payload=b"lite")
         self.api.release("aallyn/alpha", "Alpha", "lite", "v1", lite, published_at="2026-01-01T00:00:00Z")

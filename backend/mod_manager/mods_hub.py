@@ -23,6 +23,7 @@ from utils.http import SESSION
 from backend.response import resp
 from backend.home import KIWI_API_BASE
 from backend.mod_manager.mod_manager import delete_mod, mods_signature, _lock_key, _locked_keys
+from models.trove.mod import TMod
 from utils.path import get_cache_root
 from utils.registry import TroveGamePath
 
@@ -168,8 +169,26 @@ def _release_extension(release):
 
 
 def _safe_filename(name):
-    safe = "".join(c for c in str(name) if c.isalpha() or c.isdigit() or c in " _-").strip()
+    safe = "".join(c for c in str(name) if c.isprintable() and c not in '<>:"/\\|?*').strip().rstrip(".")
     return safe or "mod"
+
+
+def _install_name(data, ext, release, detail):
+    """Trove checks a .tmod's filename against its header title, so that title
+    wins; the hub listing's title is only a last resort."""
+    if ext == ".tmod":
+        try:
+            title = TMod.read_bytes(Path("download.tmod"), data, partial=True).name
+            if title and title.strip():
+                return _safe_filename(title)
+        except Exception:
+            pass
+    filename = Path(str(release.get("filename") or "")).name
+    low = filename.lower()
+    for known in (".tmod", ".zip"):
+        if low.endswith(known):
+            return _safe_filename(filename[: -len(known)])
+    return _safe_filename(detail.get("title") or "mod")
 
 
 def _lookup_hashes(hashes):
@@ -496,7 +515,7 @@ def _do_install(game_path_str, ref, branch=None):
 
     data = dl.content
     ext = _release_extension(release)
-    safe_name = _safe_filename(detail.get("title") or release.get("filename") or "mod")
+    safe_name = _install_name(data, ext, release, detail)
     mods_dir = Path(game_path_str) / "mods"
     mods_dir.mkdir(parents=True, exist_ok=True)
     # Updating a mod the user switched off has to leave it switched off.
