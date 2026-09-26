@@ -172,7 +172,7 @@ class FakeTrovesaurus:
         self.calls = []
 
     def mod(self, mod_id, name, file_id, file_hash, fmt="tmod", extra=0,
-            author="tester"):
+            author="tester", changes=""):
         entry = self.mods.setdefault(str(mod_id), {
             "id": str(mod_id),
             "name": name,
@@ -192,7 +192,7 @@ class FakeTrovesaurus:
             "version": str(file_id),
             "date": "1716397853",
             "downloads": "1",
-            "changes": "",
+            "changes": changes,
             "format": fmt,
             "extra": str(extra),
             "hash": file_hash,

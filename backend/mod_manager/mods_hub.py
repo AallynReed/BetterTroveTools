@@ -158,6 +158,27 @@ def _release_outdated(matched, releases):
     return bool(matched_hash) and bool(latest_hash) and matched_hash != latest_hash
 
 
+def _changes_since(matched, releases, limit=10):
+    """What an update would bring in: the releases on the installed branch newer
+    than the installed one, newest first. `total` counts past the `limit` cap."""
+    installed = _pub(matched)
+    branch = matched.get("branch")
+    releases = [r for r in releases if isinstance(r, dict)]
+    same_branch = [r for r in releases if r.get("branch") == branch] if branch else []
+    newer = sorted((r for r in (same_branch or releases) if _pub(r) > installed), key=_pub, reverse=True)
+    entries = []
+    for r in newer[:limit]:
+        tag = r.get("tag") or ""
+        title = r.get("title") or ""
+        entries.append({
+            "version": tag or title,
+            "title": title if tag and title.lstrip("vV") != tag.lstrip("vV") else "",
+            "date": r.get("published_at") or "",
+            "notes": (r.get("changelog") or "").strip(),
+        })
+    return {"entries": entries, "total": len(newer)}
+
+
 def _release_extension(release):
     filename = (release.get("filename") or "").lower()
     if filename.endswith(".zip") or filename.endswith(".zip.disabled"):
@@ -191,7 +212,7 @@ def _install_name(data, ext, release, detail):
     return _safe_filename(detail.get("title") or "mod")
 
 
-def _lookup_hashes(hashes):
+def _lookup_hashes(hashes, releases="latest", label="Identifying Installed Mods"):
     """POST a batch of <=200 sha256s to /v1/mods/lookup -> {hash: {mod, release}}.
 
     `include_releases` asks the hub to attach each matched mod's published
@@ -199,6 +220,8 @@ def _lookup_hashes(hashes):
     identifying a mods folder is ONE request instead of this batch plus a serial
     GET /v1/mods/<handle>/<slug> per installed mod. An older hub ignores the flag
     and omits the key; the caller falls back to fetching detail per ref.
+    `releases="all"` returns the full history instead (for changelogs), so it is
+    only sent for the few mods that are actually outdated.
 
     Returns None if the request itself failed, so callers can tell "the hub says
     none of these are its mods" apart from "the hub didn't answer"."""
@@ -206,13 +229,13 @@ def _lookup_hashes(hashes):
         return {}
     req_id = None
     try:
-        req_id = eel.add_external_request("Identifying Installed Mods", f"{KIWI_API_BASE}/mods/lookup")()
+        req_id = eel.add_external_request(label, f"{KIWI_API_BASE}/mods/lookup")()
     except Exception:
         pass
     try:
         resp = SESSION.post(
             f"{KIWI_API_BASE}/mods/lookup",
-            json={"hashes": list(hashes), "include_releases": True},
+            json={"hashes": list(hashes), "include_releases": True, "releases": releases},
             headers=_headers(),
             timeout=15,
         )
@@ -305,6 +328,7 @@ def _compute_install_states(game_path_str, force=False):
                     continue
                 ref_match[ref] = {
                     "rank": rank,
+                    "hash": h,
                     "path": hash_to_path.get(h),
                     "matched": matched,
                     # Attached by include_releases; None on an older hub, which
@@ -320,15 +344,32 @@ def _compute_install_states(game_path_str, force=False):
     states = {}
     paths = {}
     for ref, info in ref_match.items():
-        matched = info["matched"]
         releases = info.get("releases")
         if releases is None:
             # Older hub: no releases[] in the lookup, so pay the round trip.
             releases = (_fetch_mod_detail(ref, use_cache=not force) or {}).get("releases") or []
+            info["releases"] = releases
+        info["outdated"] = _release_outdated(info["matched"], releases)
+
+    # Changelogs need every release since the installed one, not just the latest
+    # per branch: one more lookup, full history, outdated mods only. If it fails
+    # the latest release's notes still show.
+    history = {}
+    outdated_hashes = [info["hash"] for info in ref_match.values() if info["outdated"]]
+    if outdated_hashes:
+        for entry in (_lookup_hashes(outdated_hashes, "all", "Fetching Mod Changelogs") or {}).values():
+            mod = (entry or {}).get("mod") or {}
+            if mod.get("slug") and mod.get("releases"):
+                history[_mod_ref(mod.get("handle"), mod.get("slug"))] = mod["releases"]
+
+    for ref, info in ref_match.items():
+        matched = info["matched"]
+        outdated = info["outdated"]
         states[ref] = {
             "is_installed": True,
             # Update check is scoped to the installed variant's branch.
-            "needs_update": _release_outdated(matched, releases),
+            "needs_update": outdated,
+            "changes": _changes_since(matched, history.get(ref) or info["releases"]) if outdated else None,
             "branch": matched.get("branch"),
             "name": info.get("name"),
             "page_url": info.get("page_url"),
@@ -613,7 +654,7 @@ def hub_claimed_paths(game_path_str, force=False):
 def get_mods_hub_install_states(game_path_str, force=False):
     """For the Mod Manager (My Mods) tab: which installed mods come from the Mods
     Hub, keyed by file path -> {ref, slug, handle, branch, name, page_url,
-    is_beta, has_update}. Lets the Mod Manager treat hub mods authoritatively (variant-
+    is_beta, has_update, changes}. Lets the Mod Manager treat hub mods authoritatively (variant-
     scoped updates, variant switching) and skip the Trovesaurus lookup for them."""
     try:
         states, paths = _compute_install_states(game_path_str, force=force)
@@ -631,6 +672,7 @@ def get_mods_hub_install_states(game_path_str, force=False):
                 "page_url": st.get("page_url"),
                 "is_beta": bool(st.get("is_beta")),
                 "has_update": bool(st.get("needs_update")),
+                "changes": st.get("changes"),
             }
         return resp(True, data={"states": by_path}, states=by_path)
     except Exception as e:

@@ -29,10 +29,10 @@ class UpdateTestCase(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def publish(self, mod_id, name, file_id, data, fmt="tmod"):
+    def publish(self, mod_id, name, file_id, data, fmt="tmod", changes=""):
         """Register `data` as mod `mod_id`'s file `file_id` on the fake API."""
         digest = self._hash_of_bytes(data, fmt)
-        self.api.mod(mod_id, name, file_id, digest, fmt=fmt)
+        self.api.mod(mod_id, name, file_id, digest, fmt=fmt, changes=changes)
         self.api.serve(file_id, data)
         self.api.link(digest, mod_id)
         return digest
@@ -73,6 +73,19 @@ class HasUpdateTests(UpdateTestCase):
         self.install("Alpha.tmod", old)
 
         self.assertEqual(self.updates(), {"Alpha.tmod"})
+
+    def test_an_update_carries_the_newer_files_notes_as_text(self):
+        old = build_tmod("Alpha", payload=b"v1")
+        self.publish(1, "Alpha", 100, old, changes="<p>Old</p>")
+        self.publish(1, "Alpha", 200, build_tmod("Alpha", payload=b"v2"),
+                     changes="<p>Fixed<br />stuff &amp; things</p><ul><li>One</li></ul>")
+        path = self.install("Alpha.tmod", old)
+
+        changes = mod_manager.check_mod_updates(self.sandbox.path)["data"]["changes"][str(path)]
+
+        self.assertEqual([(e["version"], e["notes"]) for e in changes["entries"]],
+                         [("200", "Fixed\nstuff & things\n• One")])
+        self.assertEqual(changes["total"], 1)
 
     def test_config_upload_is_not_an_update(self):
         """A .cfg posted after the mod file has a higher file id but must not

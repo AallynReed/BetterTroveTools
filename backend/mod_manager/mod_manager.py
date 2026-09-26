@@ -1,8 +1,10 @@
 import json
 import os
+import re
 import shutil
 import time
 import uuid
+from html import unescape
 from pathlib import Path
 
 import eel
@@ -422,6 +424,31 @@ def get_mod_urls(game_path_str):
         return resp(False, error=str(e), code="MOD_URLS_FAILED")
 
 
+def _html_to_text(value):
+    """Trovesaurus change notes are HTML; the UI shows them as plain text."""
+    text = re.sub(r"<br\s*/?>|</(?:p|div|li|h\d)>", "\n", value or "", flags=re.IGNORECASE)
+    text = re.sub(r"<li[^>]*>", "• ", text, flags=re.IGNORECASE)
+    text = unescape(re.sub(r"<[^>]+>", "", text))
+    lines = (" ".join(line.split()) for line in text.splitlines())
+    return "\n".join(line for line in lines if line)
+
+
+def _trovesaurus_changes(mod, limit=10):
+    """The Trovesaurus files newer than the installed one, newest first, in the
+    same shape as the Mods Hub's `changes`."""
+    data = mod.trovesaurus_data
+    files = sorted((f for f in data.file_objs if not f.is_config), key=lambda f: -f.file_id)
+    installed = data.installed_file
+    newer = [f for f in files if f.file_id > installed.file_id] if installed else files[:1]
+    entries = [{
+        "version": f.version,
+        "title": "",
+        "date": f.created_at.isoformat(),
+        "notes": _html_to_text(f.changes),
+    } for f in newer[:limit]]
+    return {"entries": entries, "total": len(newer)}
+
+
 @eel.expose
 def check_mod_updates(game_path_str, force=False):
     """`force` skips the 15-minute master-list cache, so the Refresh button
@@ -432,11 +459,14 @@ def check_mod_updates(game_path_str, force=False):
         mod_list.update_trovesaurus_data(force, skip_paths=_hub_claimed(game_path_str))
 
         updates_available = {}
+        changes = {}
         for mod in mod_list:
             if mod.has_update:
                 updates_available[str(mod.mod_path)] = True
+                changes[str(mod.mod_path)] = _trovesaurus_changes(mod)
 
-        return resp(True, data={"updates": updates_available}, updates=updates_available)
+        return resp(True, data={"updates": updates_available, "changes": changes},
+                    updates=updates_available, changes=changes)
 
     except Exception as e:
         import traceback

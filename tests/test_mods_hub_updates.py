@@ -21,7 +21,7 @@ class FakeKiwi:
         self.artifacts = {} # download url -> bytes
         self.include_releases = True  # False = an older hub with no include_releases
 
-    def release(self, ref, title, branch, tag, data, fmt="tmod", published_at="2026-01-01T00:00:00Z"):
+    def release(self, ref, title, branch, tag, data, fmt="tmod", published_at="2026-01-01T00:00:00Z", changelog=""):
         url = f"https://cdn.example/{ref}/{branch}/{tag}"
         entry = self.mods.setdefault(ref, {"title": title, "handle": ref.split("/")[0],
                                            "slug": ref.split("/")[-1], "releases": []})
@@ -33,6 +33,7 @@ class FakeKiwi:
             "filename": f"{title}.{fmt}",
             "sha256": hashlib.sha256(data).hexdigest(),
             "published_at": published_at,
+            "changelog": changelog,
             "download_url": url,
             "size": len(data),
         })
@@ -77,7 +78,8 @@ class FakeKiwi:
                 # check needs. `self.include_releases = False` plays an older hub
                 # that ignores the flag, so the per-ref detail fallback runs.
                 if body.get("include_releases") and self.include_releases:
-                    mod["releases"] = self._latest_per_branch(entry)
+                    mod["releases"] = (entry["releases"] if body.get("releases") == "all"
+                                       else self._latest_per_branch(entry))
                 results[digest] = {"mod": mod, "release": release}
             return FakeResponse(payload=copy.deepcopy({"results": results}))
         return FakeResponse(status_code=404)
@@ -141,6 +143,30 @@ class InstallStateTests(ModsHubTestCase):
         path = self.sandbox.write("Alpha.tmod", installed)
 
         self.assertFalse(self.states()[str(path)]["has_update"])
+
+    def test_an_update_lists_the_changelogs_since_the_installed_release(self):
+        old = build_tmod("Alpha", payload=b"v1")
+        self.api.release("aallyn/alpha", "Alpha", "main", "v1", old,
+                         published_at="2026-01-01T00:00:00Z", changelog="First")
+        for n, when in ((2, "2026-02-01"), (3, "2026-03-01")):
+            self.api.release("aallyn/alpha", "Alpha", "main", f"v{n}", build_tmod("Alpha", payload=f"v{n}".encode()),
+                             published_at=f"{when}T00:00:00Z", changelog=f"Change {n}")
+        self.api.release("aallyn/alpha", "Alpha", "full", "v9", build_tmod("Alpha", payload=b"full"),
+                         published_at="2026-04-01T00:00:00Z", changelog="Other variant")
+        path = self.sandbox.write("Alpha.tmod", old)
+
+        changes = self.states()[str(path)]["changes"]
+
+        self.assertEqual([e["version"] for e in changes["entries"]], ["v3", "v2"])
+        self.assertEqual([e["notes"] for e in changes["entries"]], ["Change 3", "Change 2"])
+        self.assertEqual(changes["total"], 2)
+
+    def test_an_up_to_date_mod_has_no_changelog(self):
+        data = build_tmod("Alpha")
+        self.api.release("aallyn/alpha", "Alpha", "main", "v1", data, changelog="First")
+        path = self.sandbox.write("Alpha.tmod", data)
+
+        self.assertIsNone(self.states()[str(path)]["changes"])
 
     def test_state_follows_a_file_replaced_in_place(self):
         """Overwriting a mod file doesn't change the mods folder's mtime, so a

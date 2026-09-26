@@ -1236,15 +1236,52 @@ window.showConfirmModal = function({ title, message, items = null, confirmLabel,
         messageEl.textContent = message || '';
         // `items` spells out exactly what the action will touch. Built with
         // textContent, never innerHTML -- the entries are mod names off disk.
+        // An entry is a string, or { label, badge, details: [{ title, meta,
+        // text, muted }], footer } to expand into those details.
         if (listEl) {
             listEl.textContent = '';
             const entries = Array.isArray(items) ? items.filter(Boolean) : [];
+            const expandable = entries.filter(e => typeof e === 'object' && Array.isArray(e.details) && e.details.length);
+            const el = (tag, className, text) => {
+                const node = document.createElement(tag);
+                if (className) node.className = className;
+                if (text) node.textContent = String(text);
+                return node;
+            };
             entries.forEach(entry => {
                 const li = document.createElement('li');
-                li.textContent = String(entry);
-                li.title = String(entry);
+                const label = typeof entry === 'object' ? String(entry.label || '') : String(entry);
+                if (!expandable.includes(entry)) {
+                    li.textContent = label;
+                    li.title = label;
+                    listEl.appendChild(li);
+                    return;
+                }
+                li.className = 'global-modal-list-expandable';
+                const details = document.createElement('details');
+                details.open = expandable.length === 1;
+                const summary = el('summary');
+                summary.append(
+                    el('i', 'fa-solid fa-chevron-right global-modal-list-chevron'),
+                    el('span', 'global-modal-list-label', label)
+                );
+                summary.lastChild.title = label;
+                if (entry.badge) summary.append(el('span', 'global-modal-list-badge', entry.badge));
+                const body = el('div', 'global-modal-list-details');
+                entry.details.forEach(d => {
+                    const block = el('div', 'global-modal-list-detail');
+                    const head = el('div', 'global-modal-list-detail-head');
+                    head.append(el('span', 'global-modal-list-detail-title', d.title));
+                    if (d.meta) head.append(el('span', 'global-modal-list-detail-meta', d.meta));
+                    block.append(head, el('div', 'global-modal-list-detail-text' + (d.muted ? ' is-muted' : ''), d.text));
+                    body.append(block);
+                });
+                if (entry.footer) body.append(el('div', 'global-modal-list-detail-more', entry.footer));
+                details.append(summary, body);
+                li.append(details);
                 listEl.appendChild(li);
             });
+            listEl.classList.toggle('has-details', expandable.length > 0);
             listEl.style.display = entries.length ? '' : 'none';
         }
         cancelBtn.textContent = cancelLabel || t('common.cancel');
@@ -1265,7 +1302,7 @@ window.showConfirmModal = function({ title, message, items = null, confirmLabel,
             }
             if (e.key === 'Enter') {
                 const targetTag = (e.target && e.target.tagName ? e.target.tagName : '').toLowerCase();
-                if (targetTag === 'textarea') return;
+                if (targetTag === 'textarea' || targetTag === 'summary') return;
                 e.preventDefault();
                 cleanup();
                 resolve(true);
@@ -1277,6 +1314,7 @@ window.showConfirmModal = function({ title, message, items = null, confirmLabel,
             overlay.style.display = 'none';
             if (listEl) {
                 listEl.textContent = '';
+                listEl.classList.remove('has-details');
                 listEl.style.display = 'none';
             }
             cancelBtn.onclick = null;

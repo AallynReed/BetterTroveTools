@@ -1999,6 +1999,108 @@ html.btt-native .command-palette-footer { display: none !important; }
     border-top: 1px solid var(--border-color);
 }
 
+/* Rows that fold out into details (Update All's release notes). */
+.global-modal-list.has-details {
+    max-height: calc(48 * var(--vh));
+}
+
+.global-modal-list li.global-modal-list-expandable {
+    padding: 0;
+    white-space: normal;
+}
+
+.global-modal-list.has-details > li:not(.global-modal-list-expandable) {
+    padding-left: 28px;
+}
+
+.global-modal-list-expandable summary {
+    display: flex;
+    align-items: center;
+    gap: var(--t-2);
+    padding: var(--t-1) var(--t-2);
+    list-style: none;
+    cursor: pointer;
+    border-radius: var(--radius-control);
+    transition: background-color var(--dur-fast) var(--t-ease);
+}
+
+.global-modal-list-expandable summary::-webkit-details-marker {
+    display: none;
+}
+
+.global-modal-list-expandable summary:hover {
+    background-color: var(--bg-hover);
+}
+
+.global-modal-list-chevron {
+    flex: none;
+    width: 12px;
+    font-size: var(--t-fs-micro);
+    color: var(--text-muted);
+    transition: transform var(--dur-fast) var(--t-ease);
+}
+
+.global-modal-list-expandable details[open] > summary .global-modal-list-chevron {
+    transform: rotate(90deg);
+}
+
+.global-modal-list-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.global-modal-list-badge {
+    flex: none;
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
+}
+
+.global-modal-list-details {
+    display: flex;
+    flex-direction: column;
+    gap: var(--t-3);
+    padding: var(--t-1) var(--t-2) var(--t-3) 28px;
+}
+
+.global-modal-list-detail-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--t-2);
+    font-size: var(--t-fs-label);
+}
+
+.global-modal-list-detail-title {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.global-modal-list-detail-meta,
+.global-modal-list-detail-more,
+.global-modal-list-detail-text.is-muted {
+    color: var(--text-muted);
+}
+
+.global-modal-list-detail-more {
+    font-size: var(--t-fs-label);
+}
+
+.global-modal-list-detail-text {
+    margin-top: 2px;
+    color: var(--text-main);
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .global-modal-list-expandable summary,
+    .global-modal-list-chevron {
+        transition: none;
+    }
+}
+
 .global-modal-actions {
     display: flex;
     justify-content: space-between;

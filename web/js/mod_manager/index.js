@@ -272,6 +272,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     mod.hubPageUrl = s.page_url || null;
                     mod.isBeta = !!s.is_beta;
                     mod.hasUpdate = !!s.has_update;     // variant-scoped: only same-branch updates flag
+                    mod.updateNotes = s.changes || null;
                     mod.tsUrl = s.page_url || mod.tsUrl; // title links to the hub page
                 });
             };
@@ -297,9 +298,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                     return;
                 }
                 const updates = response.data.updates || response.raw?.updates || {};
+                const changes = response.data.changes || response.raw?.changes || {};
                 mods.value.forEach(mod => {
                     if (mod.fromHub) return;            // hub update state already set from the hub
                     mod.hasUpdate = !!updates[mod.path];
+                    mod.updateNotes = changes[mod.path] || null;
                 });
                 if (notify) window.showToast(t('mod_manager.update_state_refreshed'));
             };
@@ -365,6 +368,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                         mods.value = (data.mods || []).map(m => ({
                             ...m,
                             hasUpdate: false,
+                            updateNotes: null,
                             isWorkshop: !!m.workshop,
                             locked: !!m.locked,
                             tsUrl: null,
@@ -502,6 +506,30 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            // A confirm-list row that expands to the releases the update pulls in.
+            const updateNotesItem = (mod) => {
+                const notes = mod.updateNotes;
+                const entries = (notes && notes.entries) || [];
+                if (!entries.length) return mod.name;
+                const locale = window.I18nManager ? window.I18nManager.currentLocale.replace('_', '-') : undefined;
+                const formatDate = (iso) => {
+                    const date = new Date(iso);
+                    return isNaN(date) ? '' : date.toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+                };
+                const more = (notes.total || entries.length) - entries.length;
+                return {
+                    label: mod.name,
+                    badge: entries[0].version,
+                    details: entries.map(e => ({
+                        title: [e.version, e.title].filter(Boolean).join(' · '),
+                        meta: formatDate(e.date),
+                        text: e.notes || t('mod_manager.update_notes_none'),
+                        muted: !e.notes
+                    })),
+                    footer: more > 0 ? t('mod_manager.update_notes_more').replace('{count}', more) : ''
+                };
+            };
+
             // Sequential on purpose: the updates write into the same mods folder,
             // and the watcher/JobQueue progress both read better one at a time.
             const updateAllMods = async () => {
@@ -509,11 +537,15 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const pending = updatableMods.value.slice();
                 if (pending.length === 0) return;
 
+                const items = pending.map(updateNotesItem);
+                const listKey = items.some(item => typeof item === 'object')
+                    ? 'mod_manager.update_all_confirm_list_notes'
+                    : 'mod_manager.update_all_confirm_list';
                 const confirmed = await window.showConfirmModal({
                     title: t('mod_manager.update_all'),
                     message: t('mod_manager.update_all_confirm') + '\n'
-                        + t('mod_manager.update_all_confirm_list').replace('{count}', pending.length),
-                    items: pending.map(m => m.name),
+                        + t(listKey).replace('{count}', pending.length),
+                    items,
                     confirmLabel: t('common.update'),
                     cancelLabel: t('common.cancel'),
                     danger: false
