@@ -16,7 +16,7 @@ from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
 from utils.http import SESSION
 from utils.path import get_app_data_dir, get_cache_root
-from utils.trove_cfg import ensure_mods_enabled
+from utils.trove_cfg import ensure_mods_enabled, mod_key, read_disabled_mods, set_mods_disabled
 
 
 
@@ -144,6 +144,50 @@ def set_mod_update_lock(game_path_str, mod_path_str, locked):
         return resp(False, error=str(e), code="LOCK_FAILED")
 
 
+# --- Trove.cfg DisabledMods -------------------------------------------------
+# The game keeps its own off-list next to the file renames: mods switched off in
+# game, and the losers when Trove resolves a conflict (it keeps one, disables the
+# rest). A listed mod with an enabled file is "disabled by Trove".
+
+
+def _trove_key(mod):
+    return mod_key(mod.name, mod.author, mod.is_workshop)
+
+
+def _disabled_by_trove(mod, trove_disabled):
+    return mod.enabled and _trove_key(mod) in trove_disabled
+
+
+def _is_on(mod, trove_disabled):
+    return mod.enabled and _trove_key(mod) not in trove_disabled
+
+
+def _set_mod_enabled(mod, enabled, trove_disabled):
+    """Enabling clears both the `.disabled` suffix and the DisabledMods entry.
+    Disabling renames local mods but lists Workshop ones in DisabledMods, since
+    Steam owns those files."""
+    key = _trove_key(mod)
+    if enabled:
+        if not mod.enabled:
+            mod.toggle()
+        if key in trove_disabled:
+            set_mods_disabled(enable=[key])
+    elif mod.is_workshop:
+        set_mods_disabled(disable=[key])
+    elif mod.enabled:
+        mod.toggle()
+
+
+def _toggle_result(mod):
+    trove_disabled = read_disabled_mods()
+    state = {
+        "new_path": str(mod.mod_path),
+        "status": "enabled" if _is_on(mod, trove_disabled) else "disabled",
+        "disabled_by_trove": _disabled_by_trove(mod, trove_disabled),
+    }
+    return resp(True, data=state, **state)
+
+
 @eel.expose
 def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
     try:
@@ -159,6 +203,7 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
         )
 
         locked_keys = _locked_keys(game_path_str)
+        trove_disabled = read_disabled_mods()
 
         result_mods = []
         for mod in mod_list:
@@ -167,14 +212,16 @@ def get_installed_mods(game_path_str, fix_names=False, fix_configs=False):
                     "name": mod.name or "Unknown Mod",
                     "author": mod.author or "Unknown Author",
                     "version": mod.mod_version,
-                    "status": "enabled" if mod.enabled else "disabled",
+                    "status": "enabled" if _is_on(mod, trove_disabled) else "disabled",
+                    "disabled_by_trove": _disabled_by_trove(mod, trove_disabled),
                     "path": str(mod.mod_path),
                     "workshop": mod.is_workshop,
                     "locked": _lock_key(mod.mod_path) in locked_keys,
                     "image": mod.image,
                     "has_conflicts": mod.has_conflicts,
                     "conflicts_with": [
-                        {"name": c.name, "enabled": c.enabled} for c in mod.conflicts
+                        {"name": c.name, "enabled": _is_on(c, trove_disabled)}
+                        for c in mod.conflicts
                     ],
                 }
             )
@@ -210,12 +257,39 @@ def toggle_mod(game_path_str, mod_path_str):
 
         for mod in mod_list:
             if str(mod.mod_path) == mod_path_str:
-                mod.toggle()
-                return resp(
-                    True, data={"new_path": str(mod.mod_path)}, new_path=str(mod.mod_path)
-                )
+                trove_disabled = read_disabled_mods()
+                _set_mod_enabled(mod, not _is_on(mod, trove_disabled), trove_disabled)
+                return _toggle_result(mod)
 
         return resp(False, error="Could not locate the mod in the parsed list.", code="MOD_NOT_FOUND")
+
+    except FileExistsError:
+        return resp(False, error="A file with the toggled name already exists.", code="TOGGLE_COLLISION")
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return resp(False, error=str(e), code="TOGGLE_FAILED")
+
+
+@eel.expose
+def reenable_mod(game_path_str, mod_path_str):
+    """Turn a mod back on and switch off every enabled mod it conflicts with.
+    Trove keeps only one of a conflicting set at launch, so re-enabling it alone
+    would just be undone the next time the game starts."""
+    try:
+        trove_path = TroveGamePath(Path(game_path_str))
+        mod_list = TroveModList(path=trove_path, partial=True)
+        mod = next((m for m in mod_list if str(m.mod_path) == mod_path_str), None)
+        if mod is None:
+            return resp(False, error="Could not locate the mod in the parsed list.", code="MOD_NOT_FOUND")
+
+        trove_disabled = read_disabled_mods()
+        for other in dict.fromkeys(mod.conflicts):
+            if _is_on(other, trove_disabled):
+                _set_mod_enabled(other, False, trove_disabled)
+        _set_mod_enabled(mod, True, trove_disabled)
+        return _toggle_result(mod)
 
     except FileExistsError:
         return resp(False, error="A file with the toggled name already exists.", code="TOGGLE_COLLISION")

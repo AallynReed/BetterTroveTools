@@ -597,6 +597,8 @@
 /* "Disabled" is not a semantic status — it is simply off, so it reads in the
    neutral ramp instead of inventing a fifth colour. */
 .mod-status-pill.disabled { color: var(--text-muted); background: var(--bg-hover); border-color: var(--border-color); }
+/* Switched off in Trove.cfg rather than by the user here, so it needs attention. */
+.mod-status-pill.trove-disabled { color: var(--warning-ink); background: rgba(var(--warning-rgb), 0.14); border-color: rgba(var(--warning-rgb), 0.35); }
 
 .mod-front-tags {
     display: flex;

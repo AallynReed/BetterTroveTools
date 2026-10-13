@@ -154,6 +154,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 [t('mod_manager.all_mods'), 'all'],
                 [t('mod_manager.enabled_only'), 'enabled'],
                 [t('mod_manager.disabled_only'), 'disabled'],
+                [t('mod_manager.disabled_by_trove'), 'trove_disabled'],
                 [t('mod_manager.has_conflicts'), 'conflicts'],
                 [t('mod_manager.has_updates'), 'has_updates'],
                 [t('mod_manager.locked_only'), 'locked'],
@@ -183,6 +184,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                     }
                     if (stat === 'enabled') return mod.status === 'enabled';
                     if (stat === 'disabled') return mod.status === 'disabled';
+                    if (stat === 'trove_disabled') return mod.disabledByTrove;
                     if (stat === 'conflicts') return hasActiveConflict(mod);
                     if (stat === 'has_updates') return canUpdate(mod);
                     if (stat === 'locked') return !!mod.locked;
@@ -370,6 +372,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                             hasUpdate: false,
                             updateNotes: null,
                             isWorkshop: !!m.workshop,
+                            disabledByTrove: !!m.disabled_by_trove,
                             locked: !!m.locked,
                             tsUrl: null,
                             fromHub: false,
@@ -703,6 +706,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             };
 
             const toggleMod = async (mod) => {
+                if (mod.disabledByTrove) return reenableMod(mod);
                 if (mod.isToggling) return;
                 mod.isToggling = true;
                 try {
@@ -716,10 +720,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                         return;
                     }
 
-                    mod.status = mod.status === 'enabled' ? 'disabled' : 'enabled';
-                    const newPath = response.data.new_path || response.raw?.new_path;
-                    if (newPath) {
-                        mod.path = newPath;
+                    const result = response.data || response.raw || {};
+                    mod.status = result.status;
+                    mod.disabledByTrove = !!result.disabled_by_trove;
+                    if (result.new_path) {
+                        mod.path = result.new_path;
                     }
 
                     mods.value.forEach(m => {
@@ -736,6 +741,42 @@ document.addEventListener('mod_manager_loaded', async () => {
                 } finally {
                     mod.isToggling = false;
                 }
+            };
+
+            // Trove.cfg has the mod switched off. Trove keeps only one of a set of
+            // conflicting mods at launch, so turning this one back on also turns
+            // off the others -- otherwise the game just disables it again.
+            const reenableMod = async (mod) => {
+                if (mod.isToggling) return;
+                const rivals = (mod.conflicts_with || []).filter(c => c.enabled).map(c => c.name);
+                if (rivals.length) {
+                    const confirmed = await window.showConfirmModal({
+                        title: t('mod_manager.reenable_title').replace('{name}', mod.name),
+                        message: t('mod_manager.reenable_conflicts_message'),
+                        items: rivals,
+                        confirmLabel: t('mod_manager.reenable'),
+                        cancelLabel: t('common.cancel'),
+                        danger: false
+                    });
+                    if (!confirmed) return;
+                }
+                mod.isToggling = true;
+                try {
+                    const response = await runManagedJob({
+                        label: t("mod_manager.action_mod_name").replace('{action}', t('mod_manager.reenable')).replace('{name}', mod.name),
+                        task: async () => window.callBackend(eel.reenable_mod(selectedInstall.value, mod.path)(), 'Failed to re-enable mod')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('mod_manager.failed_to_toggle_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                        return;
+                    }
+                    window.showToast(rivals.length
+                        ? t('mod_manager.reenabled_name_disabled_count').replace('{name}', mod.name).replace('{count}', rivals.length)
+                        : t('mod_manager.enabled_name').replace('{name}', mod.name));
+                } finally {
+                    mod.isToggling = false;
+                }
+                await loadMods({ quiet: true });
             };
 
             // Import a local .tpack modpack file: a native dialog picks the file,
@@ -1032,7 +1073,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 const isEnabled = mod.status === 'enabled';
                 const menuItems = [
                     {
-                        label: isEnabled ? 'Disable Mod' : 'Enable Mod',
+                        label: isEnabled ? 'Disable Mod' : (mod.disabledByTrove ? 'Re-enable Mod' : 'Enable Mod'),
                         icon: isEnabled ? 'fa-ban' : 'fa-check',
                         action: () => toggleMod(mod)
                     }

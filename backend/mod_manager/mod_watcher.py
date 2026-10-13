@@ -6,9 +6,10 @@ Two jobs, one module:
     when its list loads (embedded mod config -> ``%AppData%/ModCfgs/<mod>.cfg``).
     Running it at launch means a mod dropped in while the app was closed gets a
     usable config without the user ever opening the Mod Manager tab.
-  * ``ModWatcher`` polls ``<install>/mods`` and, when it settles on a change,
-    re-probes and pushes ``receive_mods_changed`` to the UI so the list reloads
-    itself.
+  * ``ModWatcher`` polls ``<install>/mods`` (and Trove.cfg's ``DisabledMods``,
+    which the game rewrites when it resolves conflicts) and, when it settles on
+    a change, re-probes and pushes ``receive_mods_changed`` to the UI so the
+    list reloads itself.
 
 Polling (name/size/mtime per file -- what ``mods_signature`` already computes for
 the update cache) rather than a native watcher: mods folders hold tens of files,
@@ -25,9 +26,13 @@ import eel
 from backend.mod_manager.mod_manager import mods_signature
 from backend.response import resp, standardize_response
 from models.trove.mod import TroveGamePath, TroveModList
-from utils.trove_cfg import ensure_mods_enabled
+from utils.trove_cfg import ensure_mods_enabled, read_disabled_mods
 
 POLL_SECONDS = 2.0
+
+
+def _snapshot(game_path):
+    return mods_signature(game_path), frozenset(read_disabled_mods())
 
 
 def probe_configs(game_path):
@@ -66,7 +71,7 @@ class ModWatcher:
             if path == self._target:
                 return
             self._target = path
-            self._signature = mods_signature(path) if path else None
+            self._signature = _snapshot(path) if path else None
             self._pending = None
         self._wake.set()
         if path:
@@ -97,7 +102,7 @@ class ModWatcher:
         if not target:
             return None
 
-        current = mods_signature(target)
+        current = _snapshot(target)
         if current == settled:
             if pending is not None:
                 with self._lock:

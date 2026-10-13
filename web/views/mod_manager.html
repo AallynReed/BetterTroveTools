@@ -203,7 +203,11 @@
                                 </button>
                             </div>
 
-                            <button class="mod-status-pill mod-status-toggle" :class="mod.status === 'enabled' ? 'enabled' : 'disabled'" :title="mod.status === 'enabled' ? t('mod_manager.click_to_disable_mod') : t('mod_manager.click_to_enable_mod')" @click.stop.prevent="toggleMod(mod)" :disabled="mod.isToggling">
+                            <button v-if="mod.disabledByTrove" class="mod-status-pill mod-status-toggle trove-disabled" :title="t('mod_manager.disabled_by_trove_tip')" @click.stop.prevent="toggleMod(mod)" :disabled="mod.isToggling">
+                                <template v-if="mod.isToggling"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.working') }}</template>
+                                <template v-else><i class="fa-solid fa-ban"></i> {{ t('mod_manager.disabled_by_trove') }}</template>
+                            </button>
+                            <button v-else class="mod-status-pill mod-status-toggle" :class="mod.status === 'enabled' ? 'enabled' : 'disabled'" :title="mod.status === 'enabled' ? t('mod_manager.click_to_disable_mod') : t('mod_manager.click_to_enable_mod')" @click.stop.prevent="toggleMod(mod)" :disabled="mod.isToggling">
                                 <template v-if="mod.isToggling"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.working') }}</template>
                                 <template v-else>
                                     <i class="fa-solid" :class="mod.status === 'enabled' ? 'fa-circle-check' : 'fa-circle-pause'"></i>
