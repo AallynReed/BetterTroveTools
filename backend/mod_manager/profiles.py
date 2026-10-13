@@ -34,10 +34,8 @@ from backend.mod_manager.modpacks import (USER_AGENT, _decompile_tpack,
                                           _name_from_filename, _rebuild_tpack,
                                           _unique_path)
 from backend.response import resp
-from models.trove.mod import TroveModList
 from utils.path import get_app_data_dir
 from utils.registry import TroveGamePath
-from utils.trove_cfg import mod_key, set_mods_disabled
 
 
 def _profiles_dir() -> Path:
@@ -386,15 +384,6 @@ def _disable_current_loadout(game_path_str):
     return moved
 
 
-def _clear_trove_disabled(game_path_str, filenames):
-    """Take the installed mods off Trove.cfg's DisabledMods, so one the game
-    switched off earlier doesn't stay off after the profile puts it back."""
-    names = set(filenames)
-    mod_list = TroveModList(path=TroveGamePath(Path(game_path_str)), partial=True)
-    set_mods_disabled(enable=[mod_key(m.name, m.author, False) for m in mod_list
-                              if not m.is_workshop and m.mod_path.name in names])
-
-
 @eel.expose
 def apply_profile(game_path_str, profile_id):
     """Full-switch apply: disable the current `mods/` loadout, then install the
@@ -413,7 +402,6 @@ def apply_profile(game_path_str, profile_id):
         ok, error, result = _install_tpack_bytes(game_path_str, data)
         if not ok:
             return resp(False, error=error, code="PROFILE_APPLY_FAILED")
-        _clear_trove_disabled(game_path_str, result["files"])
 
         payload = dict(result)
         payload["disabled"] = disabled

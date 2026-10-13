@@ -11,7 +11,8 @@ from unittest import mock
 from tests.support import Sandbox, build_tmod
 
 from backend.mod_manager.mod_manager import get_installed_mods, reenable_mod, toggle_mod
-from backend.mod_manager.modpacks import _rebuild_tpack
+from backend.mod_manager import modpacks
+from backend.mod_manager.modpacks import _rebuild_tpack, import_tpack_file, install_modpack
 from backend.mod_manager.profiles import _profile_file, apply_profile
 from utils.path import get_cache_root
 from utils.registry import TroveGamePath
@@ -184,22 +185,37 @@ class WorkshopTests(CfgTestCase):
         self.assertEqual(read_disabled_mods(), {"Workshop-Alpha-Soles"})
 
 
-class ProfileTests(CfgTestCase):
-    def save_profile(self, *mods):
-        path = _profile_file("loadout")
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(_rebuild_tpack(1, [], [(f"{name}.tmod", build_tmod(name, internal=f"ui/{name}.swf"))
-                                                for name in mods]))
+class PackInstallTests(CfgTestCase):
+    """Every way a .tpack lands takes its mods off DisabledMods."""
 
-    def test_applying_takes_the_profiles_mods_off_the_list(self):
-        self.save_profile("Alpha", "Beta")
+    def setUp(self):
+        super().setUp()
+        self.pack = _rebuild_tpack(1, [], [(f"{name}.tmod", build_tmod(name, internal=f"ui/{name}.swf"))
+                                           for name in ("Alpha", "Beta")])
         self.write_cfg(CFG.format("Trove-Alpha-tester|Workshop-Beta-tester|Trove-Other-x"))
 
-        result = apply_profile(self.sandbox.path, "loadout")
-
+    def assert_cleared(self, result):
         self.assertTrue(result["success"], result.get("error"))
         self.assertEqual(self.sandbox.filenames(), ["Alpha.tmod", "Beta.tmod"])
         self.assertEqual(read_disabled_mods(), {"Workshop-Beta-tester", "Trove-Other-x"})
+
+    def test_applying_a_profile(self):
+        path = _profile_file("loadout")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(self.pack)
+
+        self.assert_cleared(apply_profile(self.sandbox.path, "loadout"))
+
+    def test_installing_a_modpack(self):
+        with mock.patch.object(modpacks, "_download_tpack", return_value=(self.pack, None)):
+            self.assert_cleared(install_modpack(self.sandbox.path, "aallyn", "pack"))
+
+    def test_importing_a_tpack_file(self):
+        source = self.sandbox.root / "pack.tpack"
+        source.write_bytes(self.pack)
+        dialog = mock.Mock(askopenfilename=mock.Mock(return_value=str(source)))
+        with mock.patch.object(modpacks, "filedialog", dialog), mock.patch.object(modpacks, "tk", mock.Mock()):
+            self.assert_cleared(import_tpack_file(self.sandbox.path))
 
 
 if __name__ == "__main__":

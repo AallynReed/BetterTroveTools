@@ -9,7 +9,8 @@ into those individual `.tmod`s and drop them into the game's `mods/` folder.
 We do NOT track modpacks as installed (unlike the Mods Hub) — installing just
 places the mods. Before writing, any locally-installed mod whose name collides
 with one of the modpack's mods is quarantined into `mods/disabled/` so the
-modpack's version wins without leaving a duplicate behind.
+modpack's version wins without leaving a duplicate behind. After writing, the
+installed mods are taken off Trove.cfg's `DisabledMods` so none stays off.
 """
 
 import math
@@ -36,6 +37,7 @@ from backend.home import KIWI_API_BASE
 from models.trove.mod import TMod, TroveModFile, TroveModList
 from utils.functions import chunks, read_leb128, write_leb128
 from utils.registry import TroveGamePath
+from utils.trove_cfg import mod_key, set_mods_disabled
 
 USER_AGENT = "BetterTroveTools/1.0"
 ITEMS_PER_PAGE = 24
@@ -228,6 +230,15 @@ def _quarantine_conflicts(game_path_str, names_lower):
     return moved
 
 
+def _clear_trove_disabled(game_path_str, filenames):
+    """Take the installed mods off Trove.cfg's DisabledMods, so one the game
+    switched off earlier doesn't stay off after the pack puts it back."""
+    names = set(filenames)
+    mod_list = TroveModList(path=TroveGamePath(Path(game_path_str)), partial=True)
+    set_mods_disabled(enable=[mod_key(m.name, m.author, False) for m in mod_list
+                              if not m.is_workshop and m.mod_path.name in names])
+
+
 def _fetch_modpack_detail(handle, slug):
     ref = _ref(handle, slug)
     url = f"{KIWI_API_BASE}/modpacks/{ref}"
@@ -368,8 +379,9 @@ def get_modpack_variants(handle, slug):
 
 def _install_tpack_bytes(game_path_str, data):
     """Decompile raw `.tpack` bytes, quarantine same-name local mods into
-    `mods/disabled/`, then write the modpack's `.tmod`s. Returns
-    (ok, error, result_dict). Shared by the hub download and the manual import."""
+    `mods/disabled/`, then write the modpack's `.tmod`s and take them off
+    Trove.cfg's DisabledMods. Returns (ok, error, result_dict). Shared by the hub
+    download, the manual import and profile apply."""
     if not game_path_str:
         return False, "No game path provided.", None
 
@@ -392,6 +404,7 @@ def _install_tpack_bytes(game_path_str, data):
         out_path = mods_dir / _safe_pack_filename(filename)
         out_path.write_bytes(content)
         installed.append(out_path.name)
+    _clear_trove_disabled(game_path_str, installed)
 
     return True, None, {"installed": len(installed), "files": installed, "quarantined": quarantined}
 
