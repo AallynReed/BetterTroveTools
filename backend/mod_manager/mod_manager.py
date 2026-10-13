@@ -10,6 +10,7 @@ from pathlib import Path
 import eel
 
 from backend.feature_flags import MODS_HUB_ENABLED
+from backend.mod_manager import blocklist
 from backend.response import resp
 from models.trove.mod import TroveGamePath, TroveModList
 from utils.functions import BasePath
@@ -383,7 +384,7 @@ def get_mod_urls(game_path_str):
         if not hash_to_path:
             return resp(True, data={"urls": {}}, urls={})
 
-        urls = {}
+        found = {}
         hashes_list = list(hash_to_path.keys())
         hash_batches = [hashes_list[i : i + 200] for i in range(0, len(hashes_list), 200)]
 
@@ -408,12 +409,24 @@ def get_mod_urls(game_path_str):
                     for h, mod_id in batch_results.items():
                         path = hash_to_path.get(h.lower())
                         if path:
-                            urls[path] = f"https://trovesaurus.com/mod={mod_id}"
+                            found[path] = (h, mod_id)
             except Exception as e:
                 if req_id:
                     eel.remove_external_request(req_id, False)()
                     req_id = None
                 print(f"Failed hash batch: {e}")
+
+        urls = {}
+        if found:
+            blocked = blocklist.load()
+            mods_all = mod_list._get_cached_mods_all()
+            if isinstance(mods_all, list):
+                mods_all = {str(m.get("id")): m for m in mods_all if isinstance(m, dict)}
+            for path, (h, mod_id) in found.items():
+                # Without the catalog, the id and the installed file's hash still count.
+                entry = (mods_all or {}).get(str(mod_id)) or {"id": mod_id, "downloads": [{"hash": h}]}
+                if not blocked(entry):
+                    urls[path] = f"https://trovesaurus.com/mod={mod_id}"
 
         return resp(True, data={"urls": urls}, urls=urls)
 
@@ -456,7 +469,8 @@ def check_mod_updates(game_path_str, force=False):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         mod_list = TroveModList(path=trove_path, partial=True)
-        mod_list.update_trovesaurus_data(force, skip_paths=_hub_claimed(game_path_str))
+        mod_list.update_trovesaurus_data(force, skip_paths=_hub_claimed(game_path_str),
+                                         blocked=blocklist.load())
 
         updates_available = {}
         changes = {}
@@ -488,7 +502,7 @@ def perform_mod_update(game_path_str, mod_path_str):
             return resp(False, error="Steam Workshop mods are updated by Steam, not here.", code="WORKSHOP_MOD")
 
         mod_list = TroveModList(path=trove_path, partial=True)
-        mod_list.update_trovesaurus_data()
+        mod_list.update_trovesaurus_data(blocked=blocklist.load())
 
         for mod in mod_list:
             if str(mod.mod_path) == mod_path_str:
@@ -545,7 +559,7 @@ def auto_update_unlocked_mods(game_path_str):
 
     trove_path = TroveGamePath(Path(game_path_str))
     mod_list = TroveModList(path=trove_path, partial=True)
-    mod_list.update_trovesaurus_data(True, skip_paths=hub_paths)
+    mod_list.update_trovesaurus_data(True, skip_paths=hub_paths, blocked=blocklist.load())
     for mod in mod_list:
         path = str(mod.mod_path)
         if path in hub_paths or not mod.has_update or _lock_key(path) in locked:

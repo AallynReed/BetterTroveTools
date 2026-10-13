@@ -29,10 +29,11 @@ class UpdateTestCase(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def publish(self, mod_id, name, file_id, data, fmt="tmod", changes=""):
+    def publish(self, mod_id, name, file_id, data, fmt="tmod", changes="", author_id="1"):
         """Register `data` as mod `mod_id`'s file `file_id` on the fake API."""
         digest = self._hash_of_bytes(data, fmt)
-        self.api.mod(mod_id, name, file_id, digest, fmt=fmt, changes=changes)
+        self.api.mod(mod_id, name, file_id, digest, fmt=fmt, changes=changes,
+                     author_id=author_id)
         self.api.serve(file_id, data)
         self.api.link(digest, mod_id)
         return digest
@@ -50,6 +51,17 @@ class UpdateTestCase(unittest.TestCase):
 
     def install(self, filename, data):
         return self.sandbox.write(filename, data)
+
+    def install_from_tab(self, mod_id):
+        results = []
+        eel.receive_install_result = lambda payload: (lambda: results.append(payload))
+        trovesaurus.install_trovesaurus_mod(self.sandbox.path, mod_id)
+        for _ in range(200):
+            if results:
+                break
+            gevent.sleep(0.01)
+        self.assertTrue(results, "install never reported a result")
+        return results[0]
 
     def updates(self):
         response = mod_manager.check_mod_updates(self.sandbox.path)
@@ -172,6 +184,21 @@ class ModUrlTests(UpdateTestCase):
             response["data"]["urls"], {str(path): "https://trovesaurus.com/mod=1"}
         )
 
+    def test_a_blocked_mod_gets_no_link(self):
+        self.install("Alpha.tmod", build_tmod("Alpha"))
+        self.publish(1, "Alpha", 100, build_tmod("Alpha"), author_id="7")
+        beta = build_tmod("Beta")
+        self.publish(2, "Beta", 200, beta)
+        beta_path = self.install("Beta.tmod", beta)
+        self.api.blocklist = {"authors": ["7"]}
+
+        response = mod_manager.get_mod_urls(self.sandbox.path)
+
+        self.assertTrue(response["success"], response.get("error"))
+        self.assertEqual(
+            response["data"]["urls"], {str(beta_path): "https://trovesaurus.com/mod=2"}
+        )
+
     def test_empty_mods_folder_is_not_an_error(self):
         response = mod_manager.get_mod_urls(self.sandbox.path)
 
@@ -182,17 +209,6 @@ class ModUrlTests(UpdateTestCase):
 class TrovesaurusTabTests(UpdateTestCase):
     """The Trovesaurus browse tab: install/update buttons and the installed +
     outdated badges shown on each card."""
-
-    def install_from_tab(self, mod_id):
-        results = []
-        eel.receive_install_result = lambda payload: (lambda: results.append(payload))
-        trovesaurus.install_trovesaurus_mod(self.sandbox.path, mod_id)
-        for _ in range(200):
-            if results:
-                break
-            gevent.sleep(0.01)
-        self.assertTrue(results, "install never reported a result")
-        return results[0]
 
     def test_install_writes_the_mod(self):
         data = build_tmod("Alpha")
@@ -351,6 +367,61 @@ class RefreshTests(UpdateTestCase):
         self.assertEqual(
             {Path(p).name for p in forced["data"]["updates"]}, {"Alpha.tmod"}
         )
+
+
+class BlocklistTests(UpdateTestCase):
+    """Mods on the Kiwi API blocklist stay out of the Trovesaurus tab, its
+    installs and the Mod Manager's update checks."""
+
+    def browse(self):
+        results = []
+        eel.receive_trovesaurus_mods = lambda payload: (lambda: results.append(payload))
+        trovesaurus.get_trovesaurus_mods(game_path_str=self.sandbox.path)
+        for _ in range(200):
+            if results:
+                break
+            gevent.sleep(0.01)
+        self.assertTrue(results, "browse never reported a result")
+        self.assertTrue(results[0]["success"], results[0].get("error"))
+        return {m["name"] for m in results[0]["mods"]}
+
+    def test_hides_mods_by_id_author_and_file_hash(self):
+        self.publish(1, "Alpha", 100, build_tmod("Alpha"))
+        self.publish(2, "Beta", 200, build_tmod("Beta"), author_id="7")
+        gamma = self.publish(3, "Gamma", 300, build_tmod("Gamma"))
+        self.publish(4, "Delta", 400, build_tmod("Delta"))
+        self.api.blocklist = {"mods": ["1"], "authors": ["7"], "hashes": [gamma.upper()]}
+
+        self.assertEqual(self.browse(), {"Delta"})
+
+    def test_nothing_is_hidden_when_the_blocklist_is_unreachable(self):
+        self.publish(1, "Alpha", 100, build_tmod("Alpha"))
+
+        self.assertEqual(self.browse(), {"Alpha"})
+
+    def test_nothing_is_hidden_when_the_blocklist_times_out(self):
+        self.publish(1, "Alpha", 100, build_tmod("Alpha"))
+        self.api.blocklist = TimeoutError("no answer within 2 seconds")
+
+        self.assertEqual(self.browse(), {"Alpha"})
+
+    def test_install_refuses_a_blocked_mod(self):
+        self.publish(1, "Alpha", 100, build_tmod("Alpha"))
+        self.api.blocklist = {"mods": ["1"]}
+
+        result = self.install_from_tab(1)
+
+        self.assertFalse(result["success"])
+        self.assertEqual(self.sandbox.filenames(), [])
+
+    def test_a_blocked_release_is_not_offered_as_an_update(self):
+        old = build_tmod("Alpha", payload=b"v1")
+        self.publish(1, "Alpha", 100, old)
+        new_hash = self.publish(1, "Alpha", 200, build_tmod("Alpha", payload=b"v2"))
+        self.install("Alpha.tmod", old)
+        self.api.blocklist = {"hashes": [new_hash]}
+
+        self.assertEqual(self.updates(), set())
 
 
 if __name__ == "__main__":

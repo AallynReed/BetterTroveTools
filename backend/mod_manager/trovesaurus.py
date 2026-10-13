@@ -10,6 +10,7 @@ import eel
 from utils.http import SESSION
 
 from backend.response import resp
+from backend.mod_manager import blocklist
 from backend.mod_manager.mod_manager import delete_mod, mods_signature
 from models.trove.mod import TroveModList
 from utils.path import get_cache_root
@@ -236,9 +237,10 @@ def get_trovesaurus_mods(page=1, query="", category="", sort="hot", game_path_st
             if isinstance(mods_all, dict):
                 mods_all = list(mods_all.values())
 
+            blocked = blocklist.load()
             filtered_mods = []
             for mod in mods_all:
-                if not isinstance(mod, dict): continue
+                if not isinstance(mod, dict) or blocked(mod): continue
 
                 if query:
                     q = query.lower()
@@ -353,8 +355,11 @@ def install_trovesaurus_mod(game_path_str, mod_id):
                 return
 
             mod_data = mods_all.get(str(mod_id))
-            if not mod_data: 
+            if not mod_data:
                 eel.receive_install_result({"success": False, "error": "Mod no longer exists.", "mod_id": mod_id})()
+                return
+            if blocklist.load()(mod_data):
+                eel.receive_install_result({"success": False, "error": "This mod isn't available.", "mod_id": mod_id})()
                 return
 
             latest_file = _latest_mod_file(mod_data)

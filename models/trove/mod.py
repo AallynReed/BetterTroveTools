@@ -1008,11 +1008,12 @@ class TroveModList:
                 pass
         return {}
 
-    def update_trovesaurus_data(self, force=False, skip_paths=None):
+    def update_trovesaurus_data(self, force=False, skip_paths=None, blocked=None):
         """`skip_paths` drops mods another source already resolved (the Mods Hub)
         from both the hash batch and the match pass -- Trovesaurus has no answer
         for a mod it doesn't host, so sending those hashes only costs a round
-        trip."""
+        trip. `blocked` takes a raw catalog entry and returns True for a mod that
+        must never be matched, so it is never offered as an update."""
         skip = {str(p) for p in (skip_paths or ())}
         all_hashes = [m.hash for m in self.mods
                       if not m.is_workshop and str(m.mod_path) not in skip]
@@ -1061,8 +1062,8 @@ class TroveModList:
             mod_id = hash_to_id.get(mod.hash)
             if mod_id is not None:
                 raw_mod_data = mods_all_data.get(str(mod_id))
-                
-                if raw_mod_data:
+
+                if raw_mod_data and not (blocked and blocked(raw_mod_data)):
                     try:
                         parsed_mod = Mod(**raw_mod_data)
                         parsed_mod.installed = True

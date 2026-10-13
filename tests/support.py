@@ -169,10 +169,11 @@ class FakeTrovesaurus:
         self.mods = mods or {}
         self.hashes = hashes or {}
         self.files = files or {}
+        self.blocklist = None
         self.calls = []
 
     def mod(self, mod_id, name, file_id, file_hash, fmt="tmod", extra=0,
-            author="tester", changes=""):
+            author="tester", changes="", author_id="1"):
         entry = self.mods.setdefault(str(mod_id), {
             "id": str(mod_id),
             "name": name,
@@ -183,7 +184,7 @@ class FakeTrovesaurus:
             "notes": "",
             "likes": "0",
             "obsolete": "0",
-            "author": {"ID": "1", "Username": author},
+            "author": {"ID": str(author_id), "Username": author},
             "downloads": [],
         })
         entry["downloads"].append({
@@ -212,6 +213,10 @@ class FakeTrovesaurus:
             return FakeResponse(payload=list(self.mods.values()))
         if "mods-hot" in url:
             return FakeResponse(payload=[])
+        if "mod-blocklist" in url and self.blocklist is not None:
+            if isinstance(self.blocklist, Exception):
+                raise self.blocklist
+            return FakeResponse(payload=self.blocklist)
         if "downloadfile.php" in url:
             file_id = url.split("fileid=")[-1]
             data = self.files.get(str(file_id))
