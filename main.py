@@ -881,6 +881,32 @@ def auto_update_mods_on_launch():
         pass  # launch work is best effort; the Mod Manager still updates on demand
 
 
+def remove_taken_down_mods_task():
+    """Delete mods a moderator took down from the Mods Hub, from every detected
+    install: once at launch, then every hour while the app runs."""
+    from backend.mod_manager.mods_hub import remove_taken_down_mods
+    from utils.registry import get_trove_locations
+
+    # The lookup reports to the page's network log, and a call into JS with no
+    # client attached blocks for eel's full 10s result timeout.
+    deadline = time.time() + 30
+    while not eel._websockets and time.time() < deadline:
+        time.sleep(0.25)
+    while True:
+        installs = set()
+        try:
+            installs.add(active_game_install())
+            installs.update(str(game.path) for game in get_trove_locations() if game.is_valid)
+        except Exception:
+            pass
+        for install in installs - {None}:
+            try:
+                remove_taken_down_mods(install)
+            except Exception:
+                pass
+        time.sleep(3600)
+
+
 def wait_for_server(port, timeout=15.0):
     deadline = time.time() + timeout
     while time.time() < deadline:
@@ -921,6 +947,9 @@ threading.Thread(target=probe_mods_on_launch, daemon=True, name="mods-probe").st
 # right after the probe, so the app opens on up-to-date mods. Locked mods are
 # skipped (backend/mod_manager/mod_manager.py > auto_update_unlocked_mods).
 threading.Thread(target=auto_update_mods_on_launch, daemon=True, name="mods-auto-update").start()
+
+# Mods taken down from the Mods Hub are deleted from every install, silently.
+threading.Thread(target=remove_taken_down_mods_task, daemon=True, name="mods-takedown").start()
 
 # One SSE connection to the TroveAPI, opened at launch and shared by desktop
 # notifications and the live UI data.

@@ -20,6 +20,7 @@ class FakeKiwi:
         self.mods = {}      # ref -> {"title", "releases": [...]}
         self.artifacts = {} # download url -> bytes
         self.include_releases = True  # False = an older hub with no include_releases
+        self.taken_down = set()  # refs a moderator took down
 
     def release(self, ref, title, branch, tag, data, fmt="tmod", published_at="2026-01-01T00:00:00Z", changelog=""):
         url = f"https://cdn.example/{ref}/{branch}/{tag}"
@@ -67,9 +68,13 @@ class FakeKiwi:
         if url.endswith("/mods/lookup"):
             body = kwargs.get("json") or {}
             results = {}
+            taken_down = []
             for digest in body.get("hashes", []):
                 ref, entry, release = self._release_by_hash(digest)
                 if not ref:
+                    continue
+                if ref in self.taken_down:
+                    taken_down.append(digest)
                     continue
                 mod = {"slug": entry["slug"], "handle": entry["handle"],
                        "title": entry["title"], "page_url": f"https://trove.aallyn.net/mods/{ref}"}
@@ -81,7 +86,7 @@ class FakeKiwi:
                     mod["releases"] = (entry["releases"] if body.get("releases") == "all"
                                        else self._latest_per_branch(entry))
                 results[digest] = {"mod": mod, "release": release}
-            return FakeResponse(payload=copy.deepcopy({"results": results}))
+            return FakeResponse(payload=copy.deepcopy({"results": results, "taken_down": taken_down}))
         return FakeResponse(status_code=404)
 
     def _latest_per_branch(self, entry):
@@ -466,6 +471,51 @@ class DuplicateCopyTests(ModsHubTestCase):
         path, state = next(iter(states.items()))
         self.assertEqual(path, str(self.sandbox.mods / "Alpha.tmod"))
         self.assertTrue(state["has_update"])
+
+
+class TakenDownTests(ModsHubTestCase):
+    def setUp(self):
+        super().setUp()
+        self.alpha = build_tmod("Alpha")
+        self.beta = build_tmod("Beta")
+        self.api.release("aallyn/alpha", "Alpha", "main", "v1", self.alpha)
+        self.api.release("aallyn/beta", "Beta", "main", "v1", self.beta)
+        self.sandbox.write("Alpha.tmod", self.alpha)
+        self.sandbox.write("Alpha copy.tmod.disabled", self.alpha)
+        self.sandbox.write("Beta.tmod", self.beta)
+        self.sandbox.write("Gamma.tmod", build_tmod("Gamma"))
+
+    def test_every_copy_of_a_taken_down_mod_is_deleted(self):
+        self.api.taken_down.add("aallyn/alpha")
+
+        mods_hub.remove_taken_down_mods(self.sandbox.path)
+
+        self.assertEqual(self.sandbox.filenames(), ["Beta.tmod", "Gamma.tmod"])
+
+    def test_deleted_for_good_not_moved_to_the_trash(self):
+        self.api.taken_down.add("aallyn/alpha")
+
+        mods_hub.remove_taken_down_mods(self.sandbox.path)
+
+        leftovers = [p.name for p in self.sandbox.root.rglob("*") if p.is_file() and "Alpha" in p.name]
+        self.assertEqual(leftovers, [])
+
+    def test_the_states_after_a_removal_list_only_what_is_left(self):
+        self.states()
+        self.api.taken_down.add("aallyn/alpha")
+
+        states = self.states(force=True)
+
+        self.assertEqual([s["ref"] for s in states.values()], ["aallyn/beta"])
+
+    def test_nothing_is_deleted_while_the_hub_is_unreachable(self):
+        self.api.taken_down.add("aallyn/alpha")
+
+        with mock.patch.object(mods_hub, "_lookup_hashes", return_value=None):
+            mods_hub.remove_taken_down_mods(self.sandbox.path)
+
+        self.assertEqual(self.sandbox.filenames(),
+                         ["Alpha copy.tmod.disabled", "Alpha.tmod", "Beta.tmod", "Gamma.tmod"])
 
 
 if __name__ == "__main__":

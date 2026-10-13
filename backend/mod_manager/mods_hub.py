@@ -213,7 +213,9 @@ def _install_name(data, ext, release, detail):
 
 
 def _lookup_hashes(hashes, releases="latest", label="Identifying Installed Mods"):
-    """POST a batch of <=200 sha256s to /v1/mods/lookup -> {hash: {mod, release}}.
+    """POST a batch of <=200 sha256s to /v1/mods/lookup -> the response body:
+    `results` ({hash: {mod, release}}) and `taken_down` (hashes of mods a
+    moderator removed from the hub).
 
     `include_releases` asks the hub to attach each matched mod's published
     releases[] to its `mod` object, which is what the outdated check needs - so
@@ -243,12 +245,35 @@ def _lookup_hashes(hashes, releases="latest", label="Identifying Installed Mods"
             eel.remove_external_request(req_id, resp.status_code == 200)()
             req_id = None
         if resp.status_code == 200:
-            return (resp.json() or {}).get("results", {}) or {}
+            return resp.json() or {}
     except Exception as e:
         if req_id:
             eel.remove_external_request(req_id, False)()
         print(f"Mods Hub lookup failed: {e}")
     return None
+
+
+def _remove_taken_down(game_path_str, files):
+    """Delete installed copies of mods a moderator took down from the hub, for
+    good and silently: no trash, no undo, no notice. The open views only get the
+    same refresh the folder watcher sends. Returns whether anything was removed."""
+    mods_dir = (Path(game_path_str) / "mods").resolve()
+    removed = False
+    for f in files:
+        path = Path(f).resolve()
+        if mods_dir not in path.parents:
+            continue
+        try:
+            path.unlink()
+        except OSError:
+            continue
+        removed = True
+    if removed:
+        try:
+            eel.receive_mods_changed(game_path_str)
+        except Exception:
+            pass
+    return removed
 
 
 def _compute_install_states(game_path_str, force=False):
@@ -287,11 +312,13 @@ def _compute_install_states(game_path_str, force=False):
 
     hash_to_path = {}
     hash_enabled = {}
+    copies = {}
     for enabled, f in files:
         try:
             digest = hashlib.sha256(Path(f).read_bytes()).hexdigest()
         except OSError:
             continue
+        copies.setdefault(digest, []).append(f)
         if digest in hash_to_path:
             continue
         hash_to_path[digest] = str(f)
@@ -301,17 +328,19 @@ def _compute_install_states(game_path_str, force=False):
     # object does NOT carry releases[], so we keep the matched release here and
     # fetch the mod detail once per ref below to decide "outdated on this branch".
     ref_match = {}  # ref -> {"path", "matched", "name", "page_url", "handle", "slug"}
+    taken_down = set()
     if hash_to_path:
         all_hashes = list(hash_to_path.keys())
         for i in range(0, len(all_hashes), 200):
             batch = all_hashes[i:i + 200]
-            results = _lookup_hashes(batch)
-            if results is None:
+            payload = _lookup_hashes(batch)
+            if payload is None:
                 # The hub didn't answer. Report nothing this round rather than
                 # caching "no hub mods installed" against a signature that only
                 # changes when the user touches the mods folder.
                 return {}, {}
-            for h, entry in results.items():
+            taken_down.update(payload.get("taken_down") or [])
+            for h, entry in (payload.get("results") or {}).items():
                 mod = (entry or {}).get("mod") or {}
                 matched = (entry or {}).get("release") or {}
                 slug = mod.get("slug")
@@ -341,6 +370,9 @@ def _compute_install_states(game_path_str, force=False):
                     "is_beta": bool(mod.get("is_beta")),
                 }
 
+    if _remove_taken_down(game_path_str, [f for h in taken_down for f in copies.get(h, [])]):
+        signature = mods_signature(game_path_str)
+
     states = {}
     paths = {}
     for ref, info in ref_match.items():
@@ -357,7 +389,8 @@ def _compute_install_states(game_path_str, force=False):
     history = {}
     outdated_hashes = [info["hash"] for info in ref_match.values() if info["outdated"]]
     if outdated_hashes:
-        for entry in (_lookup_hashes(outdated_hashes, "all", "Fetching Mod Changelogs") or {}).values():
+        payload = _lookup_hashes(outdated_hashes, "all", "Fetching Mod Changelogs") or {}
+        for entry in (payload.get("results") or {}).values():
             mod = (entry or {}).get("mod") or {}
             if mod.get("slug") and mod.get("releases"):
                 history[_mod_ref(mod.get("handle"), mod.get("slug"))] = mod["releases"]
@@ -632,6 +665,12 @@ def get_mods_hub_variants(ref):
     title = detail.get("title") or ref
     return resp(True, data={"ref": ref, "title": title, "variants": variants},
                  ref=ref, title=title, variants=variants)
+
+
+def remove_taken_down_mods(game_path_str):
+    """Identify an install's mods against the hub, which deletes any a moderator
+    took down. Run by main.py's background task, so no tab has to be opened."""
+    _compute_install_states(game_path_str, force=True)
 
 
 def hub_claimed_paths(game_path_str, force=False):
