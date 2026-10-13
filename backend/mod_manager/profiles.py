@@ -14,7 +14,7 @@ Storage (`%APPDATA%/Trove/Profiles` on Windows, via utils.path.get_app_data_dir)
 
 Applying a profile is a FULL SWITCH: every currently-enabled mod in the game's
 `mods/` folder is moved aside into `mods/disabled/`, then the profile's mods are
-installed. Before applying, each inner mod is checked against the Mods Hub (the
+installed and taken off Trove.cfg's `DisabledMods`. Before applying, each inner mod is checked against the Mods Hub (the
 ground truth for updates); if newer hub releases exist the UI can rebuild the
 saved `.tpack` with them first (`update_profile_file`).
 """
@@ -34,8 +34,10 @@ from backend.mod_manager.modpacks import (USER_AGENT, _decompile_tpack,
                                           _name_from_filename, _rebuild_tpack,
                                           _unique_path)
 from backend.response import resp
+from models.trove.mod import TroveModList
 from utils.path import get_app_data_dir
 from utils.registry import TroveGamePath
+from utils.trove_cfg import mod_key, set_mods_disabled
 
 
 def _profiles_dir() -> Path:
@@ -384,10 +386,20 @@ def _disable_current_loadout(game_path_str):
     return moved
 
 
+def _clear_trove_disabled(game_path_str, filenames):
+    """Take the installed mods off Trove.cfg's DisabledMods, so one the game
+    switched off earlier doesn't stay off after the profile puts it back."""
+    names = set(filenames)
+    mod_list = TroveModList(path=TroveGamePath(Path(game_path_str)), partial=True)
+    set_mods_disabled(enable=[mod_key(m.name, m.author, False) for m in mod_list
+                              if not m.is_workshop and m.mod_path.name in names])
+
+
 @eel.expose
 def apply_profile(game_path_str, profile_id):
     """Full-switch apply: disable the current `mods/` loadout, then install the
-    profile's mods. Returns counts of installed + disabled mods."""
+    profile's mods and re-enable any Trove.cfg had switched off. Returns counts
+    of installed + disabled mods."""
     try:
         if not game_path_str:
             return resp(False, error="No game path provided.", code="MISSING_GAME_PATH")
@@ -401,6 +413,7 @@ def apply_profile(game_path_str, profile_id):
         ok, error, result = _install_tpack_bytes(game_path_str, data)
         if not ok:
             return resp(False, error=error, code="PROFILE_APPLY_FAILED")
+        _clear_trove_disabled(game_path_str, result["files"])
 
         payload = dict(result)
         payload["disabled"] = disabled
