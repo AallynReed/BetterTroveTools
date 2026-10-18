@@ -506,6 +506,20 @@ _LOCK = threading.RLock()
 _BUSY = threading.Lock()
 
 
+def unsubscribe_item(item_id) -> bool:
+    """Unsubscribe the signed-in Steam account from one Trove workshop item, on the
+    user's request. Raises SteamError when Steam cannot be reached, so the caller
+    can tell "Steam is closed" apart from "Steam said no"."""
+    with _LOCK:
+        opened = not _SESSION.connected
+        try:
+            _SESSION.connect()
+            return _SESSION.unsubscribe(int(item_id))
+        finally:
+            if opened:
+                _SESSION.disconnect()
+
+
 def unsubscribe_items(item_ids) -> list:
     """Unsubscribe the signed-in Steam account from these Trove workshop items,
     silently and best effort: Steam not running, a refused connection or a

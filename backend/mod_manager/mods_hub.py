@@ -23,6 +23,7 @@ from utils.http import SESSION
 
 from backend.response import resp
 from backend.home import KIWI_API_BASE
+from backend.mod_manager import blocklist
 from backend.mod_manager.mod_manager import delete_mod, mods_signature, _lock_key, _locked_keys
 from models.trove.mod import TMod
 from utils.path import get_cache_root
@@ -686,8 +687,21 @@ def get_mods_hub_variants(ref):
 
 def remove_taken_down_mods(game_path_str):
     """Identify an install's mods against the hub, which deletes any a moderator
-    took down. Run by main.py's background task, so no tab has to be opened."""
+    took down, then do the same to the Steam Workshop items the blocklist names,
+    by id or by author. Run by main.py's background task, so no tab has to be
+    opened."""
     _compute_install_states(game_path_str, force=True)
+    workshop = TroveGamePath(Path(game_path_str)).workshop_path
+    if not workshop:
+        return
+    installed = [p for p in workshop.iterdir() if p.is_dir() and p.name.isdigit()]
+    if not installed:
+        return
+    items, authors = blocklist.workshop()
+    creators = blocklist.workshop_creators([p.name for p in installed]) if authors else {}
+    listed = [p for p in installed if p.name in items or creators.get(p.name) in authors]
+    if listed:
+        _remove_taken_down(game_path_str, listed)
 
 
 def hub_claimed_paths(game_path_str, force=False):

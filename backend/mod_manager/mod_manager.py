@@ -301,6 +301,34 @@ def reenable_mod(game_path_str, mod_path_str):
 
 
 @eel.expose
+def unsubscribe_workshop_mod(game_path_str, mod_path_str):
+    """Unsubscribe from a Steam Workshop mod and remove its item folder. Anything
+    that keeps Steam from answering comes back as STEAM_UNAVAILABLE, so the page
+    can say so in the user's language."""
+    from backend.modder_tools.steam_workshop import SteamError, unsubscribe_item
+
+    try:
+        trove_path = TroveGamePath(Path(game_path_str))
+        workshop = trove_path.workshop_path
+        mod_path = Path(mod_path_str).resolve()
+        if not workshop or not trove_path.is_workshop_file(mod_path):
+            return resp(False, error="Not a Steam Workshop mod.", code="NOT_WORKSHOP")
+        item = workshop.resolve() / mod_path.relative_to(workshop.resolve()).parts[0]
+        if not item.is_dir() or not item.name.isdigit():
+            return resp(False, error="Not a Steam Workshop item folder.", code="NOT_WORKSHOP")
+        try:
+            unsubscribed = unsubscribe_item(item.name)
+        except SteamError as e:
+            return resp(False, error=str(e), code="STEAM_UNAVAILABLE")
+        if not unsubscribed:
+            return resp(False, error="Steam did not unsubscribe this account from the item.", code="UNSUBSCRIBE_REFUSED")
+        shutil.rmtree(item, ignore_errors=True)
+        return resp(True, data={"item_id": item.name})
+    except Exception as e:
+        return resp(False, error=str(e), code="UNSUBSCRIBE_FAILED")
+
+
+@eel.expose
 def delete_mod(game_path_str, mod_path_str):
     try:
         trove_path = TroveGamePath(Path(game_path_str))

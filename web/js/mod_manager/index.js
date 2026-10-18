@@ -1019,6 +1019,36 @@ document.addEventListener('mod_manager_loaded', async () => {
                 }
             };
 
+            const unsubscribeMod = async (mod) => {
+                if (mod.isUnsubscribing || !mod.isWorkshop) return;
+                const confirmed = await window.showConfirmModal({
+                    title: t('mod_manager.unsubscribe'),
+                    message: t('mod_manager.unsubscribe_confirm').replace('{name}', mod.name),
+                    confirmLabel: t('mod_manager.unsubscribe'),
+                    cancelLabel: t('common.cancel'),
+                    danger: true
+                });
+                if (!confirmed) return;
+
+                mod.isUnsubscribing = true;
+                const response = await runManagedJob({
+                    label: t('mod_manager.unsubscribe_name').replace('{name}', mod.name),
+                    task: async () => window.callBackend(eel.unsubscribe_workshop_mod(selectedInstall.value, mod.path)(), 'Failed to unsubscribe')
+                });
+                mod.isUnsubscribing = false;
+
+                if (!response.success) {
+                    const message = response.code === 'STEAM_UNAVAILABLE'
+                        ? t('mod_manager.unsubscribe_steam_unavailable')
+                        : t('mod_manager.unsubscribe_failed_error').replace('{error}', response.error || t('common.unknown_error_occurred'));
+                    window.showToast(message, true);
+                    return;
+                }
+
+                removeModLocally(mod);
+                window.showToast(t('mod_manager.unsubscribed_name').replace('{name}', mod.name));
+            };
+
             const fixNames = async () => {
                 if (!selectedInstall.value) return window.showToast(t('common.select_a_game_first'), true);
                 isFixingNames.value = true;
@@ -1109,6 +1139,15 @@ document.addEventListener('mod_manager_loaded', async () => {
                         icon: 'fa-trash',
                         danger: true,
                         action: () => deleteMod(mod)
+                    });
+                }
+
+                if (mod.isWorkshop) {
+                    menuItems.push({
+                        label: 'Unsubscribe',
+                        icon: 'fa-link-slash',
+                        danger: true,
+                        action: () => unsubscribeMod(mod)
                     });
                 }
                 menuItems.push({ separator: true });
@@ -1350,6 +1389,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 canUpdate,
                 canManage,
                 deleteMod,
+                unsubscribeMod,
                 fixNames,
                 variantPicker,
                 openVariantPicker,

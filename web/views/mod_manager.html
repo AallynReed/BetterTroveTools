@@ -175,6 +175,9 @@
                                 <button v-if="canManage(mod)" class="mod-card-delete-hover" :title="t('common.delete_mod')" @click.stop.prevent="deleteMod(mod)" :disabled="mod.isDeleting">
                                     <i class="fa-solid" :class="mod.isDeleting ? 'fa-spinner fa-spin' : 'fa-trash'"></i>
                                 </button>
+                                <button v-if="mod.isWorkshop" class="mod-card-delete-hover" :title="t('mod_manager.unsubscribe')" :aria-label="t('mod_manager.unsubscribe')" @click.stop.prevent="unsubscribeMod(mod)" :disabled="mod.isUnsubscribing">
+                                    <i class="fa-solid" :class="mod.isUnsubscribing ? 'fa-spinner fa-spin' : 'fa-link-slash'"></i>
+                                </button>
                             </div>
 
                             <div class="mod-meta-row">

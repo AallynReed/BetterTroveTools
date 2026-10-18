@@ -487,6 +487,12 @@ class TakenDownTests(ModsHubTestCase):
         patcher = mock.patch("backend.modder_tools.steam_workshop.unsubscribe_items", return_value=[])
         self.unsubscribe = patcher.start()
         self.addCleanup(patcher.stop)
+        patcher = mock.patch.object(mods_hub.blocklist, "workshop", return_value=(set(), set()))
+        self.listed = patcher.start()
+        self.addCleanup(patcher.stop)
+        patcher = mock.patch.object(mods_hub.blocklist, "workshop_creators", return_value={})
+        self.creators = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_every_copy_of_a_taken_down_mod_is_deleted(self):
         self.api.taken_down.add("aallyn/alpha")
@@ -554,6 +560,40 @@ class TakenDownTests(ModsHubTestCase):
         mods_hub.remove_taken_down_mods(self.sandbox.path)
 
         self.unsubscribe.assert_not_called()
+
+    def test_a_listed_workshop_item_goes_whatever_its_hash(self):
+        game, workshop = self.steam_install()
+        self.listed.return_value = ({"222"}, set())
+
+        mods_hub.remove_taken_down_mods(str(game))
+
+        self.assertEqual(sorted(p.name for p in workshop.iterdir()), ["111"])
+        self.unsubscribe.assert_called_once_with(["222"])
+        self.creators.assert_not_called()
+
+    def test_every_item_by_a_listed_workshop_author_goes(self):
+        game, workshop = self.steam_install()
+        self.listed.return_value = (set(), {"76561198357878692"})
+        self.creators.return_value = {"111": "76561198000000001", "222": "76561198357878692"}
+
+        mods_hub.remove_taken_down_mods(str(game))
+
+        self.assertEqual(sorted(p.name for p in workshop.iterdir()), ["111"])
+        self.assertEqual(sorted(self.creators.call_args.args[0]), ["111", "222"])
+
+    def test_nothing_goes_by_author_when_steam_does_not_answer(self):
+        game, workshop = self.steam_install()
+        self.listed.return_value = (set(), {"76561198357878692"})
+
+        mods_hub.remove_taken_down_mods(str(game))
+
+        self.assertEqual(sorted(p.name for p in workshop.iterdir()), ["111", "222"])
+        self.unsubscribe.assert_not_called()
+
+    def test_a_glyph_install_never_reads_the_workshop_list(self):
+        mods_hub.remove_taken_down_mods(self.sandbox.path)
+
+        self.listed.assert_not_called()
 
     def test_a_workshop_copy_is_still_not_a_hub_install(self):
         game, workshop = self.steam_install()
