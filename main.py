@@ -56,6 +56,7 @@ import backend.codexes.styles
 import backend.settings
 import backend.gems_and_builds.star_chart
 import backend.mod_manager.trovesaurus
+import backend.mod_manager.steam_catalog
 
 # Mods Hub endpoints are only registered while the hub is enabled — see
 # backend/feature_flags.py. Profiles ride on the hub's .tpack pipeline, so it

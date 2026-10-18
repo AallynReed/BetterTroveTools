@@ -53,6 +53,7 @@ LEGAL_AGREEMENT_URL = "https://steamcommunity.com/sharedfiles/workshoplegalagree
 CB_QUERY_COMPLETED = 3401
 CB_CREATE_ITEM = 3403
 CB_SUBMIT_ITEM_UPDATE = 3404
+CB_SUBSCRIBE = 1313
 CB_UNSUBSCRIBE = 1315
 
 # ERemoteStoragePublishedFileVisibility
@@ -109,6 +110,9 @@ class UnsubscribeResult(Structure):
         ("result", c_int32),
         ("published_file_id", c_uint64),
     ]
+
+
+SubscribeResult = UnsubscribeResult
 
 
 class SteamUGCQueryCompleted(Structure):
@@ -220,6 +224,7 @@ _SIGNATURES = {
     "SteamAPI_ISteamUGC_GetQueryUGCResult": ([c_void_p, c_uint64, c_uint32, POINTER(SteamUGCDetails)], c_bool),
     "SteamAPI_ISteamUGC_ReleaseQueryUGCRequest": ([c_void_p, c_uint64], c_bool),
     "SteamAPI_ISteamUGC_UnsubscribeItem": ([c_void_p, c_uint64], c_uint64),
+    "SteamAPI_ISteamUGC_SubscribeItem": ([c_void_p, c_uint64], c_uint64),
 }
 
 INVALID_HANDLE = 0xFFFFFFFFFFFFFFFF
@@ -426,6 +431,10 @@ class SteamSession:
             page += 1
         return items
 
+    def subscribe(self, item_id: int) -> bool:
+        call = self._dll.SteamAPI_ISteamUGC_SubscribeItem(self.ugc, int(item_id))
+        return self.wait(call, SubscribeResult, CB_SUBSCRIBE, timeout=30).result == 1
+
     def unsubscribe(self, item_id: int) -> bool:
         call = self._dll.SteamAPI_ISteamUGC_UnsubscribeItem(self.ugc, int(item_id))
         return self.wait(call, UnsubscribeResult, CB_UNSUBSCRIBE, timeout=30).result == 1
@@ -504,6 +513,20 @@ def _details_to_dict(d: SteamUGCDetails) -> dict:
 _SESSION = SteamSession()
 _LOCK = threading.RLock()
 _BUSY = threading.Lock()
+
+
+def subscribe_item(item_id) -> bool:
+    """Subscribe the signed-in Steam account to one Trove workshop item; Steam then
+    downloads it into the Workshop folder. Raises SteamError when Steam cannot be
+    reached."""
+    with _LOCK:
+        opened = not _SESSION.connected
+        try:
+            _SESSION.connect()
+            return _SESSION.subscribe(int(item_id))
+        finally:
+            if opened:
+                _SESSION.disconnect()
 
 
 def unsubscribe_item(item_id) -> bool:

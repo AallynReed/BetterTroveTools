@@ -3,6 +3,7 @@
     <link rel="stylesheet" href="css/mod_manager/trovesaurus.css">
     <link rel="stylesheet" href="css/mod_manager/mods_hub.css">
     <link rel="stylesheet" href="css/mod_manager/modpacks.css">
+    <link rel="stylesheet" href="css/mod_manager/steam.css">
 </head>
 
 <div id="mod-manager-unified-root" class="file-manager-container mod-manager-root">
@@ -22,6 +23,9 @@
             <button class="mm-tab-btn" data-mm-tab="trovesaurus">
                 <img src="https://trovesaurus.com/images/logos/Sage_64.png" alt="Trovesaurus" class="nav-icon" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle;">
                 <span data-i18n="mod_manager.trovesaurus">Trovesaurus</span>
+            </button>
+            <button class="mm-tab-btn" data-mm-tab="steam" hidden>
+                <i class="fa-brands fa-steam"></i> <span data-i18n="steam.tab">Steam</span>
             </button>
         </div>
     </div>
@@ -396,6 +400,74 @@
                     </div>
                     <button class="mh-promo-dont-show" @click="dismissHubPromoForever">{{ t('mods_hub.promo_dont_show') }}</button>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mm-tab-content" data-mm-panel="steam" hidden>
+        <div id="steam-workshop-vue-app" class="trovesaurus-container" v-cloak>
+            <div class="file-manager-header steam-ws-header">
+                <p class="steam-ws-intro">{{ t('steam_workshop.intro') }}</p>
+                <button class="secondary-btn" @click="refresh" :disabled="isLoading || isRefreshing" :title="t('manage.refresh')" :aria-label="t('manage.refresh')">
+                    <i class="fa-solid fa-arrows-rotate" :class="{ 'fa-spin': isRefreshing }"></i>
+                </button>
+            </div>
+
+            <div class="search-filter-bar steam-ws-filters">
+                <div class="search-wrapper steam-ws-search">
+                    <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" v-model="searchQuery" :placeholder="t('common.search_by_name_author_or_id')" :aria-label="t('common.search')">
+                </div>
+                <div class="steam-ws-sort">
+                    <custom-vue-select v-model="selectedSort" :options="sortOptions"></custom-vue-select>
+                </div>
+            </div>
+
+            <div class="mod-grid steam-ws-grid" :style="pagedItems.length > 0 && !isLoading && !error ? 'display: grid;' : 'display: block;'">
+                <div v-if="isLoading" class="placeholder-box ui-state ui-state-loading"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('steam_workshop.loading') }}</div>
+                <div v-else-if="error" class="placeholder-box ui-state ui-state-error">{{ error }}</div>
+                <div v-else-if="items.length === 0" class="placeholder-box ui-state ui-state-empty">{{ t('steam_workshop.unavailable') }}</div>
+                <div v-else-if="filteredItems.length === 0" class="placeholder-box ui-state ui-state-empty">{{ t('common.no_mods_found_matching_your_search') }}</div>
+                <template v-else>
+                    <div v-for="item in pagedItems" :key="item.published_file_id" class="ts-mod-card">
+                        <div class="ts-card-content">
+                            <div class="ts-front-top">
+                                <a class="mod-title ts-mod-title" href="#" :title="t('steam_workshop.open_on_steam')" @click.prevent="openItem(item)">{{ item.title }}</a>
+                            </div>
+
+                            <span class="mod-meta">
+                                <a class="ts-mod-author" href="#" :title="t('steam_workshop.view_author').replace('{author}', item.creator_name || item.creator)" @click.prevent="openAuthor(item)">{{ item.creator_name || item.creator }}</a>
+                            </span>
+
+                            <button class="ts-front-preview" @click="openItem(item)" :title="t('steam_workshop.open_on_steam')">
+                                <img :src="item.preview_url || 'assets/images/no_preview.png'" :alt="item.title" class="mod-preview-img" loading="lazy" @error="$event.target.src='assets/images/no_preview.png'">
+                            </button>
+
+                            <div class="ts-mod-stats">
+                                <span class="ts-stat-item" :title="t('steam_workshop.subscribers')"><i class="fa-solid fa-user-check"></i> {{ formatCount(item.subscriptions) }}</span>
+                                <span class="ts-stat-item" :title="t('steam_workshop.favorites')"><i class="fa-solid fa-star"></i> {{ formatCount(item.favorites) }}</span>
+                            </div>
+
+                            <div class="ts-inline-actions">
+                                <button class="ts-install-btn" :class="{ installed: item.installed }" :disabled="item.isSubscribing || item.installed" @click.stop.prevent="subscribe(item)">
+                                    <template v-if="item.isSubscribing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('steam_workshop.subscribing') }}</template>
+                                    <template v-else-if="item.installed"><i class="fa-solid fa-check"></i> {{ t('steam_workshop.subscribed') }}</template>
+                                    <template v-else><i class="fa-brands fa-steam"></i> {{ t('steam_workshop.subscribe') }}</template>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div v-if="maxPages > 1 && !isLoading" class="pagination-controls steam-ws-pages">
+                <button class="secondary-btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+                    <i class="fa-solid fa-chevron-left"></i> <span>{{ t('common.previous') }}</span>
+                </button>
+                <span class="steam-ws-page-label">{{ t('common.page') }} {{ currentPage }} {{ t('common.of') }} {{ maxPages }}</span>
+                <button class="secondary-btn" :disabled="currentPage >= maxPages" @click="goToPage(currentPage + 1)">
+                    <span>{{ t('common.next') }}</span> <i class="fa-solid fa-chevron-right"></i>
+                </button>
             </div>
         </div>
     </section>

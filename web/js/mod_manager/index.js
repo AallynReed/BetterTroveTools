@@ -9,7 +9,8 @@ document.addEventListener('mod_manager_loaded', async () => {
     // Lazy-loaded sub-tabs: each loads its script once on first activation, then
     // fires its `<section>_loaded` event so the (just-attached) listener mounts.
     const lazySections = {
-        trovesaurus: { script: 'js/mod_manager/trovesaurus.js', event: 'trovesaurus_loaded', initialized: false }
+        trovesaurus: { script: 'js/mod_manager/trovesaurus.js', event: 'trovesaurus_loaded', initialized: false },
+        steam: { script: 'js/mod_manager/steam.js', event: 'steam_workshop_loaded', initialized: false }
     };
     if (modsHubEnabled) {
         lazySections.mods_hub = { script: 'js/mod_manager/mods_hub.js', event: 'mods_hub_loaded', initialized: false };
@@ -28,7 +29,11 @@ document.addEventListener('mod_manager_loaded', async () => {
         });
     }
 
-    const isSectionAvailable = (section) => section === 'mod_manager' || !!lazySections[section];
+    // The Steam tab exists only while My Mods has a Steam install selected: the
+    // Workshop is Steam's, so a Glyph install has nothing to subscribe with.
+    let steamInstall = '';
+    const isSectionAvailable = (section) => section === 'mod_manager'
+        || (section === 'steam' ? !!steamInstall : !!lazySections[section]);
 
     let activeSection = null;
     const setModManagerSection = (requested) => {
@@ -68,6 +73,16 @@ document.addEventListener('mod_manager_loaded', async () => {
 
     window.setModManagerSection = setModManagerSection;
     window.getModManagerSection = () => activeSection;
+    window.getSteamTabInstall = () => steamInstall;
+    window.setSteamTabInstall = (path) => {
+        if ((path || '') === steamInstall) return;
+        steamInstall = path || '';
+        document.querySelectorAll('[data-mm-tab="steam"], [data-mm-panel="steam"]').forEach((el) => {
+            el.hidden = !steamInstall;
+        });
+        if (!steamInstall && activeSection === 'steam') setModManagerSection('mod_manager');
+        document.dispatchEvent(new CustomEvent('mm_steam_install_changed', { detail: { path: steamInstall } }));
+    };
     const requestedSection = window.pendingModManagerSection || 'mod_manager';
     window.pendingModManagerSection = null;
     setModManagerSection(requestedSection);
@@ -149,6 +164,11 @@ document.addEventListener('mod_manager_loaded', async () => {
                     g.path
                 ]);
             });
+
+            watch([selectedInstall, installs], () => {
+                const install = installs.value.find(g => g.path === selectedInstall.value);
+                window.setSteamTabInstall(install && install.is_steam ? install.path : '');
+            }, { immediate: true });
 
             const statusOptions = computed(() => [
                 [t('mod_manager.all_mods'), 'all'],

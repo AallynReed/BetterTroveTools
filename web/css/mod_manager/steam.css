@@ -1,0 +1,65 @@
+.steam-ws-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--t-4);
+}
+
+.steam-ws-intro {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--t-fs-body);
+    max-width: 70ch;
+}
+
+.steam-ws-filters {
+    margin-top: var(--t-5);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--control-gap);
+    align-items: center;
+}
+
+.steam-ws-search {
+    flex: 1 1 250px;
+    min-width: 0;
+}
+
+.steam-ws-search input {
+    width: 100%;
+    padding: 10px 10px 10px 35px;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    color: var(--text-main);
+    outline: none;
+    transition: border-color var(--dur) var(--t-ease);
+}
+
+.steam-ws-search input::placeholder { color: var(--text-placeholder); }
+.steam-ws-search input:focus { border-color: var(--accent-blue); }
+.steam-ws-search input:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+.steam-ws-sort {
+    flex: 0 1 200px;
+    min-width: 160px;
+}
+
+.steam-ws-grid {
+    margin-top: var(--t-5);
+    align-items: start;
+}
+
+.steam-ws-pages {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--t-4);
+    margin-top: var(--t-5);
+    padding-bottom: var(--t-5);
+}
+
+.steam-ws-page-label {
+    color: var(--text-main);
+    font-weight: 600;
+}

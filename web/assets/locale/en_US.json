@@ -1201,6 +1201,21 @@
         "mod_manager.unsubscribed_name": "Unsubscribed from '{name}'",
         "mod_manager.unsubscribe_steam_unavailable": "Couldn't reach Steam. Start Steam, sign in, and try again.",
         "mod_manager.unsubscribe_failed_error": "Couldn't unsubscribe: {error}",
+        "steam_workshop.intro": "Trove's Steam Workshop. Subscribe to a mod and Steam downloads it, then it shows up in My Mods. Subscribing needs Steam running.",
+        "steam_workshop.loading": "Loading the Steam Workshop...",
+        "steam_workshop.unavailable": "The Steam Workshop list isn't available right now.",
+        "steam_workshop.subscribe": "Subscribe",
+        "steam_workshop.subscribed": "Subscribed",
+        "steam_workshop.subscribing": "Subscribing...",
+        "steam_workshop.subscribe_name": "Subscribe to '{name}'",
+        "steam_workshop.subscribed_name": "Subscribed to '{name}'. Steam is downloading it.",
+        "steam_workshop.subscribe_failed_error": "Couldn't subscribe: {error}",
+        "steam_workshop.sort_popular": "Most subscribed",
+        "steam_workshop.sort_updated": "Recently updated",
+        "steam_workshop.subscribers": "Subscribers",
+        "steam_workshop.favorites": "Favorites",
+        "steam_workshop.open_on_steam": "Open on Steam",
+        "steam_workshop.view_author": "View {author}'s Workshop",
         "modder_tools.2d_slice": "2D Slice",
         "modder_tools.3d_edit": "3D Edit",
         "modder_tools.3d_viewport": "3D Viewport",
@@ -4240,6 +4255,8 @@
         "Dreadnought Clusterbomb Prototype": "",
         "Dr. Darknik abandoned this particular piece of research in favor of higher-yield single warhead weapons.": "",
         "Jadebound Blast-beast": "",
-        "Electric Boogaloo": ""
+        "Electric Boogaloo": "",
+        "Thread-spinner Loom": "",
+        "Cerulean Squad Quad": ""
     }
 }
