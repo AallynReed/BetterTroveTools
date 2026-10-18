@@ -154,7 +154,8 @@ class TroveGamePath:
 
     def is_workshop_file(self, path) -> bool:
         """True when `path` sits under the Steam Workshop folder. Steam owns
-        those files, so nothing may rename, move, update or delete them."""
+        those files, so nothing may rename, move, update or delete them - except
+        a Mods Hub takedown, which deletes the item's folder."""
         root = self.workshop_path
         if root is None:
             return False

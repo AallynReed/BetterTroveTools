@@ -49,10 +49,11 @@ APP_ID = 304050
 ITEM_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={id}"
 LEGAL_AGREEMENT_URL = "https://steamcommunity.com/sharedfiles/workshoplegalagreement"
 
-# k_iSteamUGCCallbacks is 3400.
+# k_iSteamUGCCallbacks is 3400, k_iClientRemoteStorageCallbacks 1300.
 CB_QUERY_COMPLETED = 3401
 CB_CREATE_ITEM = 3403
 CB_SUBMIT_ITEM_UPDATE = 3404
+CB_UNSUBSCRIBE = 1315
 
 # ERemoteStoragePublishedFileVisibility
 VIS_PUBLIC, VIS_FRIENDS, VIS_PRIVATE = 0, 1, 2
@@ -99,6 +100,14 @@ class SubmitItemUpdateResult(Structure):
     _fields_ = [
         ("result", c_int32),
         ("needs_legal_agreement", c_bool),
+    ]
+
+
+class UnsubscribeResult(Structure):
+    _pack_ = 8
+    _fields_ = [
+        ("result", c_int32),
+        ("published_file_id", c_uint64),
     ]
 
 
@@ -164,6 +173,7 @@ def _check_layout() -> None:
     expected = [
         (ctypes.sizeof(CreateItemResult), 24, "CreateItemResult size"),
         (ctypes.sizeof(SubmitItemUpdateResult), 8, "SubmitItemUpdateResult size"),
+        (ctypes.sizeof(UnsubscribeResult), 16, "UnsubscribeResult size"),
         (ctypes.sizeof(SteamUGCQueryCompleted), 24, "SteamUGCQueryCompleted size"),
         (ctypes.sizeof(SteamUGCDetails), 9776, "SteamUGCDetails size"),
         (SteamUGCDetails.steam_id_owner.offset, 8160, "SteamUGCDetails.steam_id_owner offset"),
@@ -209,6 +219,7 @@ _SIGNATURES = {
     "SteamAPI_ISteamUGC_SendQueryUGCRequest": ([c_void_p, c_uint64], c_uint64),
     "SteamAPI_ISteamUGC_GetQueryUGCResult": ([c_void_p, c_uint64, c_uint32, POINTER(SteamUGCDetails)], c_bool),
     "SteamAPI_ISteamUGC_ReleaseQueryUGCRequest": ([c_void_p, c_uint64], c_bool),
+    "SteamAPI_ISteamUGC_UnsubscribeItem": ([c_void_p, c_uint64], c_uint64),
 }
 
 INVALID_HANDLE = 0xFFFFFFFFFFFFFFFF
@@ -415,6 +426,10 @@ class SteamSession:
             page += 1
         return items
 
+    def unsubscribe(self, item_id: int) -> bool:
+        call = self._dll.SteamAPI_ISteamUGC_UnsubscribeItem(self.ugc, int(item_id))
+        return self.wait(call, UnsubscribeResult, CB_UNSUBSCRIBE, timeout=30).result == 1
+
     # --- publishing --------------------------------------------------------
 
     def create_item(self) -> CreateItemResult:
@@ -489,6 +504,30 @@ def _details_to_dict(d: SteamUGCDetails) -> dict:
 _SESSION = SteamSession()
 _LOCK = threading.RLock()
 _BUSY = threading.Lock()
+
+
+def unsubscribe_items(item_ids) -> list:
+    """Unsubscribe the signed-in Steam account from these Trove workshop items,
+    silently and best effort: Steam not running, a refused connection or a
+    failed call just leaves that item subscribed. Returns the ids that went.
+    A session opened here is closed again; one already open is left as it was."""
+    done = []
+    with _LOCK:
+        opened = not _SESSION.connected
+        try:
+            _SESSION.connect()
+            for item_id in item_ids:
+                try:
+                    if _SESSION.unsubscribe(int(item_id)):
+                        done.append(str(item_id))
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        finally:
+            if opened:
+                _SESSION.disconnect()
+    return done
 
 
 # --- .tmod metadata ---------------------------------------------------------

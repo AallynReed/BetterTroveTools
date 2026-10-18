@@ -13,6 +13,7 @@ instead of Trovesaurus:
 import hashlib
 import json
 import math
+import shutil
 import time
 from pathlib import Path
 
@@ -255,16 +256,30 @@ def _lookup_hashes(hashes, releases="latest", label="Identifying Installed Mods"
 
 def _remove_taken_down(game_path_str, files):
     """Delete installed copies of mods a moderator took down from the hub, for
-    good and silently: no trash, no undo, no notice. The open views only get the
-    same refresh the folder watcher sends. Returns whether anything was removed."""
+    good and silently: no trash, no undo, no notice. A Steam Workshop copy is
+    unsubscribed from, so Steam does not bring it back, and goes with its whole
+    item folder. The open views only get the same refresh the folder watcher
+    sends. Returns whether anything was removed."""
     mods_dir = (Path(game_path_str) / "mods").resolve()
-    removed = False
+    workshop = TroveGamePath(Path(game_path_str)).workshop_path
+    workshop = workshop.resolve() if workshop else None
+    local, items = [], set()
     for f in files:
         path = Path(f).resolve()
-        if mods_dir not in path.parents:
-            continue
+        if mods_dir in path.parents:
+            local.append(path)
+        elif workshop and workshop in path.parents:
+            items.add(workshop / path.relative_to(workshop).parts[0])
+    if any(item.name.isdigit() for item in items):
+        from backend.modder_tools.steam_workshop import unsubscribe_items
+        unsubscribe_items(sorted(item.name for item in items if item.name.isdigit()))
+    removed = False
+    for path in local + sorted(items):
         try:
-            path.unlink()
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
         except OSError:
             continue
         removed = True
@@ -297,14 +312,12 @@ def _compute_install_states(game_path_str, force=False):
     try:
         trove_path = TroveGamePath(Path(game_path_str))
         files = [
-            (enabled, f)
+            (enabled, f, trove_path.is_workshop_file(f))
             for enabled, group in (
                 (True, list(trove_path.enabled_tmods) + list(trove_path.enabled_zips)),
                 (False, list(trove_path.disabled_tmods) + list(trove_path.disabled_zips)),
             )
             for f in group
-            # Steam Workshop mods aren't hub mods and can't be installed over.
-            if not trove_path.is_workshop_file(f)
         ]
     except Exception as e:
         print(f"Failed to enumerate local mods for hub lookup: {e}")
@@ -313,13 +326,15 @@ def _compute_install_states(game_path_str, force=False):
     hash_to_path = {}
     hash_enabled = {}
     copies = {}
-    for enabled, f in files:
+    for enabled, f, workshop in files:
         try:
             digest = hashlib.sha256(Path(f).read_bytes()).hexdigest()
         except OSError:
             continue
         copies.setdefault(digest, []).append(f)
-        if digest in hash_to_path:
+        # Steam Workshop mods aren't hub mods and can't be installed over; they
+        # are looked up only so a takedown reaches them.
+        if workshop or digest in hash_to_path:
             continue
         hash_to_path[digest] = str(f)
         hash_enabled[digest] = enabled
@@ -329,8 +344,8 @@ def _compute_install_states(game_path_str, force=False):
     # fetch the mod detail once per ref below to decide "outdated on this branch".
     ref_match = {}  # ref -> {"path", "matched", "name", "page_url", "handle", "slug"}
     taken_down = set()
-    if hash_to_path:
-        all_hashes = list(hash_to_path.keys())
+    if copies:
+        all_hashes = list(copies.keys())
         for i in range(0, len(all_hashes), 200):
             batch = all_hashes[i:i + 200]
             payload = _lookup_hashes(batch)
@@ -341,6 +356,8 @@ def _compute_install_states(game_path_str, force=False):
                 return {}, {}
             taken_down.update(payload.get("taken_down") or [])
             for h, entry in (payload.get("results") or {}).items():
+                if h not in hash_to_path:
+                    continue
                 mod = (entry or {}).get("mod") or {}
                 matched = (entry or {}).get("release") or {}
                 slug = mod.get("slug")

@@ -484,6 +484,9 @@ class TakenDownTests(ModsHubTestCase):
         self.sandbox.write("Alpha copy.tmod.disabled", self.alpha)
         self.sandbox.write("Beta.tmod", self.beta)
         self.sandbox.write("Gamma.tmod", build_tmod("Gamma"))
+        patcher = mock.patch("backend.modder_tools.steam_workshop.unsubscribe_items", return_value=[])
+        self.unsubscribe = patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_every_copy_of_a_taken_down_mod_is_deleted(self):
         self.api.taken_down.add("aallyn/alpha")
@@ -507,6 +510,60 @@ class TakenDownTests(ModsHubTestCase):
         states = self.states(force=True)
 
         self.assertEqual([s["ref"] for s in states.values()], ["aallyn/beta"])
+
+    def steam_install(self):
+        library = self.sandbox.root / "library" / "steamapps"
+        game = library / "common" / "Trove" / "Games" / "Trove" / "Live"
+        (game / "mods").mkdir(parents=True)
+        workshop = library / "workshop" / "content" / "304050"
+        for item, name, data in (("111", "Alpha.tmod", self.alpha), ("222", "Gamma.tmod", build_tmod("Gamma"))):
+            (workshop / item).mkdir(parents=True)
+            (workshop / item / name).write_bytes(data)
+        (game / "mods" / "Alpha.tmod").write_bytes(self.alpha)
+        return game, workshop
+
+    def test_a_workshop_copy_goes_with_its_item_folder(self):
+        game, workshop = self.steam_install()
+        self.api.taken_down.add("aallyn/alpha")
+
+        mods_hub.remove_taken_down_mods(str(game))
+
+        self.assertEqual(sorted(p.name for p in workshop.iterdir()), ["222"])
+        self.assertEqual(list((game / "mods").iterdir()), [])
+
+    def test_a_workshop_copy_is_unsubscribed_from(self):
+        game, _ = self.steam_install()
+        self.api.taken_down.add("aallyn/alpha")
+
+        mods_hub.remove_taken_down_mods(str(game))
+
+        self.unsubscribe.assert_called_once_with(["111"])
+
+    def test_a_failed_unsubscribe_still_deletes_the_folder(self):
+        game, workshop = self.steam_install()
+        self.api.taken_down.add("aallyn/alpha")
+        self.unsubscribe.return_value = []
+
+        mods_hub.remove_taken_down_mods(str(game))
+
+        self.assertEqual(sorted(p.name for p in workshop.iterdir()), ["222"])
+
+    def test_no_steam_call_without_a_workshop_copy(self):
+        self.api.taken_down.add("aallyn/alpha")
+
+        mods_hub.remove_taken_down_mods(self.sandbox.path)
+
+        self.unsubscribe.assert_not_called()
+
+    def test_a_workshop_copy_is_still_not_a_hub_install(self):
+        game, workshop = self.steam_install()
+        (game / "mods" / "Alpha.tmod").unlink()
+
+        response = mods_hub.get_mods_hub_install_states(str(game), True)
+
+        self.assertEqual(response["data"]["states"], {})
+        self.assertEqual(sorted(p.name for p in workshop.iterdir()), ["111", "222"])
+        self.unsubscribe.assert_not_called()
 
     def test_nothing_is_deleted_while_the_hub_is_unreachable(self):
         self.api.taken_down.add("aallyn/alpha")
