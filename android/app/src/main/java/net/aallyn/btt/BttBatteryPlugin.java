@@ -69,24 +69,17 @@ public class BttBatteryPlugin extends Plugin {
         call.resolve(result);
     }
 
+    // Opens the full battery-optimization list; the per-app dialog needs
+    // REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, which Google Play doesn't allow for us.
     @PluginMethod
     public void requestIgnoreBatteryOptimizations(PluginCall call) {
         try {
-            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
-            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            Intent intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             getContext().startActivity(intent);
             call.resolve();
         } catch (Exception e) {
-            // Some OEM ROMs hide the targeted dialog. Fall back to the full list.
-            try {
-                Intent fallback = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
-                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                getContext().startActivity(fallback);
-                call.resolve();
-            } catch (Exception e2) {
-                call.reject("Could not open battery optimization settings: " + e2.getMessage());
-            }
+            call.reject("Could not open battery optimization settings: " + e.getMessage());
         }
     }
 

@@ -42,13 +42,9 @@
          Android 13+ runtime permission requested via the LocalNotifications API.
          SCHEDULE_EXACT_ALARM gives Android 12+ exact-time delivery so reminders
          fire at the precise minute the rotation starts, not on the next doze
-         maintenance window. -->
+         maintenance window. USE_EXACT_ALARM and REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+         are left out: Google Play restricts both to alarm-clock-type apps. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Lets the app launch the system "ignore battery optimizations" dialog
-         targeted at this package (no notification, no service — just lets
-         AlarmManager broadcasts survive aggressive background killing). -->
-    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 </manifest>

@@ -50,7 +50,7 @@ jobs:
           packages: platform-tools
 
       - name: Install Android SDK packages
-        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platform-tools" "platforms;android-36" "build-tools;35.0.0"
 
       # Mirror the app version (root metadata.json) into the web build so the
       # offline sidebar shows the real version instead of a placeholder.
