@@ -1,0 +1,59 @@
+name: Desktop build check
+# Tests btt-core and bundles the desktop app on every push and PR, without touching
+# any release. The bundles are kept as workflow artifacts.
+on:
+  push:
+    branches: [main, tauri-port]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: msi
+          - os: ubuntu-22.04
+            bundles: appimage,deb
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install WebKitGTK and bundling tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - name: Test btt-core
+        run: cargo test -p btt-core
+
+      - name: Bundle
+        run: |
+          node tools/tauri_version.mjs > version.conf.json
+          npx tauri build --bundles ${{ matrix.bundles }} --config version.conf.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ runner.os }}
+          path: |
+            target/release/bundle/msi/*.msi
+            target/release/bundle/appimage/*.AppImage
+            target/release/bundle/deb/*.deb
+          if-no-files-found: error
