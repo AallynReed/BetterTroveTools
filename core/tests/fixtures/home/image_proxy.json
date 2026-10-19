@@ -1,0 +1,33 @@
+{
+"urls":[
+{"url":"https://i0.hdslb.com/bfs/archive/abc.jpg","out":"https://i0.hdslb.com/bfs/archive/abc.jpg"},
+{"url":"http://i1.hdslb.com/bfs/a.png?x=1&y=2#frag","out":"https://i1.hdslb.com/bfs/a.png?x=1&y=2"},
+{"url":"HTTPS://I2.HDSLB.COM./bfs/a.webp","out":"https://i2.hdslb.com/bfs/a.webp"},
+{"url":"https://hdslb.com:8443/x?","out":"https://hdslb.com/x"},
+{"url":"https://user:pw@s1.hdslb.com/x","out":"https://s1.hdslb.com/x"},
+{"url":"https://s2.hdslb.com@evil.example/x","out":null},
+{"url":"https://evil.example/?hdslb.com","out":null},
+{"url":"https://hdslb.com.evil.example/x","out":null},
+{"url":"https://archive.biliimg.com","out":"https://archive.biliimg.com"},
+{"url":"  \t https://i0.hdslb.com/a\n.jpg","out":"https://i0.hdslb.com/a.jpg"},
+{"url":"ftp://i0.hdslb.com/a.jpg","out":null},
+{"url":"//i0.hdslb.com/a.jpg","out":null},
+{"url":"https:/i0.hdslb.com/a.jpg","out":null},
+{"url":"https://[::1]/a.jpg","out":null},
+{"url":"https://i0.hdslb.com]/a.jpg","out":null},
+{"url":"https://a[b]@i0.hdslb.com/a.jpg","out":null},
+{"url":"https://i0.hdslb.com/a b.jpg?q=a b","out":"https://i0.hdslb.com/a b.jpg?q=a b"},
+{"url":"javascript:alert(1)","out":null},
+{"url":"1https://i0.hdslb.com/x","out":null},
+{"url":"","out":null},
+{"url":null,"out":null}
+],
+"queries":[
+{"query":"url=https%3A%2F%2Fi0.hdslb.com%2Fa.jpg","url":"https://i0.hdslb.com/a.jpg"},
+{"query":"url=a&url=https%3A%2F%2Fi0.hdslb.com%2Fb.jpg","url":"https://i0.hdslb.com/b.jpg"},
+{"query":"x=1&url=https://i0.hdslb.com/a+b.jpg","url":"https://i0.hdslb.com/a b.jpg"},
+{"query":"url","url":""},
+{"query":"","url":null},
+{"query":"&&url=%zz&","url":"%zz"}
+]
+}

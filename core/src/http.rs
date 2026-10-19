@@ -69,13 +69,15 @@ pub fn send_bytes(req: Request, body: &[u8]) -> Result<Response> {
     unwrap_status(req.send_bytes(body))
 }
 
-/// `response.raise_for_status()`.
+/// `response.raise_for_status()`, with requests' wording ("404 Client Error: ...").
 pub fn raise_for_status(resp: Response) -> Result<Response> {
     let status = resp.status();
-    if (400..600).contains(&status) {
-        return Err(anyhow!("{} {} for url: {}", status, resp.status_text().to_string(), resp.get_url().to_string()));
-    }
-    Ok(resp)
+    let kind = match status {
+        400..=499 => "Client",
+        500..=599 => "Server",
+        _ => return Ok(resp),
+    };
+    Err(anyhow!("{} {} Error: {} for url: {}", status, kind, resp.status_text(), resp.get_url()))
 }
 
 pub fn is_ok(resp: &Response) -> bool {

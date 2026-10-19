@@ -24,9 +24,9 @@ impl Request {
         self.headers.iter().find(|(k, _)| k.eq_ignore_ascii_case(name)).map(|(_, v)| v.as_str())
     }
 
-    /// First value of a query parameter, percent-decoded.
+    /// A query parameter, percent-decoded. The last one wins when repeated, as in bottle.
     pub fn query_param(&self, name: &str) -> Option<String> {
-        parse_query(&self.query).into_iter().find(|(k, _)| k == name).map(|(_, v)| v)
+        parse_query(&self.query).into_iter().rev().find(|(k, _)| k == name).map(|(_, v)| v)
     }
 }
 
