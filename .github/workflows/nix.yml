@@ -1,0 +1,21 @@
+name: Nix flake
+# Builds the flake's package so a broken Nix build shows up before a release.
+on:
+  push:
+    branches: [main, tauri-port]
+    paths: ["flake.nix", "flake.lock", "pkgs/**", "Cargo.lock", "**/Cargo.toml", "src-tauri/**"]
+  pull_request:
+    paths: ["flake.nix", "flake.lock", "pkgs/**", "Cargo.lock", "**/Cargo.toml", "src-tauri/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - run: nix build .#better-trove-tools -L
+      - run: ls -R result | head -50
