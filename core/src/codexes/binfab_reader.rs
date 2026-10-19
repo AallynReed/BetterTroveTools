@@ -8,7 +8,7 @@
 use indexmap::IndexMap;
 use serde_json::{json, Map, Value};
 
-use super::py;
+use crate::py;
 
 /// The errors Python let escape (`ValueError` from an over-long varint, `RecursionError`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

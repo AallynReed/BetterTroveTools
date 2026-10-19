@@ -14,7 +14,6 @@ pub mod prefab_memento;
 pub mod prefab_mount;
 pub mod prefab_recipe;
 pub mod prefab_style;
-pub mod py;
 
 #[cfg(test)]
 mod parity_tests;

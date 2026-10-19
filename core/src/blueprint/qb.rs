@@ -5,7 +5,7 @@ use serde_json::{json, Value};
 
 use super::codec::{self, Decoded, Voxel};
 use super::materials::{self, Class};
-use super::py;
+use crate::py;
 use super::util::{Cell, Error, Kind, OrderedMap, Result};
 
 const QB_VERSION: u32 = 257;

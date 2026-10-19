@@ -7,7 +7,8 @@ use serde_json::{json, Value};
 use super::assembly;
 use super::codec;
 use super::editor;
-use super::py::{self, IntError, Obj, Py};
+use super::pyobj::{self, IntError, Obj, Py};
+use crate::py;
 use super::tmod;
 use super::transform;
 use super::util::{Error, FxMap, Kind, Result};
@@ -120,7 +121,7 @@ pub fn open_project(
             Some(a) => o.str("ap", a),
             None => o.key("ap").push_str("null"),
         }
-        py::write_f64(o.key("scale"), if placed_ap.is_some() { scale } else { 1.0 });
+        pyobj::write_f64(o.key("scale"), if placed_ap.is_some() { scale } else { 1.0 });
         let out = o.key("blueprint");
         out.push('"');
         base64::engine::general_purpose::STANDARD.encode_string(raw, out);

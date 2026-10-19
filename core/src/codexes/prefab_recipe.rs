@@ -17,7 +17,7 @@ use super::prefab_ally::{
     clean_localized_text, extract_designer_from_blueprint, load_blueprint_path_map, load_language_map, load_multipliers_map, read_files, read_varint,
     resolve_blueprint_catalog_path, resolve_localized_value, Blob, BlueprintMap, GameFiles, LanguageMap, MultiplierMap, PrefabIndex,
 };
-use super::py;
+use crate::py;
 use crate::game::archive::IndexedFile;
 
 pub const RECIPE_PREFIX: &str = "recipes/";
@@ -41,7 +41,7 @@ pub fn normalize_recipe_string(text: &str) -> String {
 
 pub fn pretty_name_from_path(path: &str) -> String {
     let normalized = path.replace('\\', "/");
-    let mut stem = py::stem(&normalized);
+    let mut stem = py::stem_any_sep(&normalized);
     for suffix in ["_notrade", "_trade"] {
         if let Some(s) = stem.strip_suffix(suffix) {
             stem = s;
@@ -284,7 +284,7 @@ pub fn heuristic_blueprint_from_content(prefab_path: &str, content: &[u8]) -> St
         }
     }
     if prefab_path.to_lowercase().contains("placeable/") {
-        let stem = py::stem(&prefab_path.replace('\\', "/")).to_string();
+        let stem = py::stem_any_sep(&prefab_path.replace('\\', "/")).to_string();
         if !stem.is_empty() {
             return stem;
         }
@@ -348,7 +348,7 @@ pub fn extract_prefab_metadata(prefab_path: &str, content: &[u8], language: &Lan
         source = if blueprint.is_empty() { "" } else { "heuristic" };
     }
     if blueprint.is_empty() {
-        blueprint = py::stem(&prefab_path.replace('\\', "/")).to_string();
+        blueprint = py::stem_any_sep(&prefab_path.replace('\\', "/")).to_string();
         source = "fallback";
     }
     let resolved = resolve_blueprint_catalog_path(&blueprint, blueprints);
@@ -406,7 +406,7 @@ pub fn category_from_output(recipe_path: &str, output_path: &str) -> String {
         return label.to_string();
     }
     let lowered_recipe = recipe_path.to_lowercase();
-    let stem = py::stem(&lowered_recipe);
+    let stem = py::stem_any_sep(&lowered_recipe);
     let stem = stem.strip_prefix("recipe_").unwrap_or(stem);
     if !stem.is_empty() {
         return py::title(stem.split('_').next().unwrap_or(""));
@@ -649,7 +649,7 @@ pub fn build_recipes_dataset(game_path: &Path, locale: &str) -> Result<(Map<Stri
         let default_meta = || MetaEntry {
             name: Some(pretty_name_from_path(fallback_path)),
             desc: Some(String::new()),
-            blueprint: Some(py::stem(fallback_path).to_string()),
+            blueprint: Some(py::stem_any_sep(fallback_path).to_string()),
             blueprint_source: Some("fallback"),
             designer: Some("Trove Team".into()),
             lootbox: Some(false),
@@ -737,7 +737,7 @@ pub fn build_recipes_dataset(game_path: &Path, locale: &str) -> Result<(Map<Stri
     let count = |f: &dyn Fn(&Value) -> bool| rows.values().filter(|r| f(r)).count();
     let truthy = |v: &Value| crate::args::truthy(v);
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("recipe_count".into(), json!(rows.len()));
     manifest.insert("decoded_outputs".into(), json!(decoded_outputs));
     manifest.insert("resolved_names".into(), json!(count(&|r| truthy(&r["name"]))));

@@ -21,7 +21,7 @@ use parking_lot::Mutex;
 use serde_json::{json, Map, Value};
 
 use crate::args::Args;
-use crate::modfile::compat::{self, display, file_name, file_suffix, py_int, py_str, strip, truthy};
+use crate::py::{self, display, file_name, file_suffix, int_lenient, str_of, strip, truthy};
 use crate::modfile::TroveMod;
 
 pub const APP_ID: u32 = 304050;
@@ -601,7 +601,7 @@ fn details_to_value(d: &SteamUGCDetails) -> Value {
 }
 
 fn parse_item_id(item_id: &str) -> Result<u64> {
-    let id = py_int(&Value::String(item_id.to_string()))?;
+    let id = int_lenient(&Value::String(item_id.to_string()))?;
     Ok(id as u64)
 }
 
@@ -657,22 +657,22 @@ fn safe_name(value: &str) -> String {
 
 /// Everything the publish form needs, out of the archive.
 pub fn read_tmod_metadata(tmod_path: &Path) -> Result<Value> {
-    let m = TroveMod::read_tmod(tmod_path, compat::read_bytes(tmod_path)?, false)?;
+    let m = TroveMod::read_tmod(tmod_path, py::read_bytes(tmod_path)?, false)?;
     let preview_path = m.preview_path();
     let (mut preview, mut preview_name): (Option<&[u8]>, String) = (None, String::new());
     if let Some(pp) = &preview_path {
         if let Some(f) = m.files.iter().find(|f| &f.trove_path == pp) {
             preview = Some(f.data()?);
-            preview_name = compat::name_of(&f.trove_path);
+            preview_name = py::name_of(&f.trove_path);
         }
     }
-    let title = m.name().filter(|n| !n.is_empty()).map(String::from).unwrap_or_else(|| compat::file_stem(tmod_path));
+    let title = m.name().filter(|n| !n.is_empty()).map(String::from).unwrap_or_else(|| py::file_stem(tmod_path));
     let mut tags = m.tags();
     let subtype = m.subtype();
     if !subtype.is_empty() && !tags.contains(&subtype) {
         tags.push(subtype.clone());
     }
-    let size = std::fs::metadata(tmod_path).map_err(|e| compat::os_error(e, tmod_path, None))?.len();
+    let size = std::fs::metadata(tmod_path).map_err(|e| py::os_error(e, tmod_path, None))?.len();
     let preview = preview.filter(|p| !p.is_empty());
     Ok(json!({
         "path": display(tmod_path),
@@ -687,7 +687,7 @@ pub fn read_tmod_metadata(tmod_path: &Path) -> Result<Value> {
         "modVersion": m.get_property_value("modVersion").unwrap_or(""),
         "gameVersion": m.game_version().unwrap_or(""),
         "steamId": strip(m.steam_id().unwrap_or("")),
-        "previewBase64": preview.map(|p| format!("data:image/png;base64,{}", compat::b64encode(p))),
+        "previewBase64": preview.map(|p| format!("data:image/png;base64,{}", py::b64encode(p))),
         "previewName": preview_name,
         "previewSize": preview.map(|p| p.len()).unwrap_or(0),
         "previewTooLarge": preview.map(|p| p.len() as u64 > MAX_PREVIEW_BYTES).unwrap_or(false),
@@ -720,7 +720,7 @@ fn mkdtemp(prefix: &str) -> Result<PathBuf> {
         match std::fs::create_dir(&dir) {
             Ok(()) => return Ok(dir),
             Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => continue,
-            Err(e) => return Err(compat::os_error(e, &dir, None)),
+            Err(e) => return Err(py::os_error(e, &dir, None)),
         }
     }
     Err(anyhow!("No usable temporary directory name found"))
@@ -731,14 +731,14 @@ fn stage_upload(tmod_path: &Path, title: &str, preview_source: Option<&Path>) ->
     let root = mkdtemp("troveworkshop-upload-")?;
     let safe = safe_name(title);
     let content_dir = root.join(&safe);
-    std::fs::create_dir(&content_dir).map_err(|e| compat::os_error(e, &content_dir, None))?;
-    compat::copy2(tmod_path, &content_dir.join(format!("{}.tmod", safe)))?;
+    std::fs::create_dir(&content_dir).map_err(|e| py::os_error(e, &content_dir, None))?;
+    py::copy2(tmod_path, &content_dir.join(format!("{}.tmod", safe)))?;
     let preview = match preview_source {
         Some(src) => {
             let suffix = file_suffix(src).to_lowercase();
             let suffix = if suffix.is_empty() { ".png".to_string() } else { suffix };
             let dest = root.join(format!("{}-Preview{}", safe, suffix));
-            compat::copy2(src, &dest)?;
+            py::copy2(src, &dest)?;
             Some(dest)
         }
         None => None,
@@ -747,35 +747,35 @@ fn stage_upload(tmod_path: &Path, title: &str, preview_source: Option<&Path>) ->
 }
 
 fn extract_preview(tmod_path: &Path, root: &Path) -> Result<Option<PathBuf>> {
-    let m = TroveMod::read_tmod(tmod_path, compat::read_bytes(tmod_path)?, false)?;
+    let m = TroveMod::read_tmod(tmod_path, py::read_bytes(tmod_path)?, false)?;
     let Some(pp) = m.preview_path() else { return Ok(None) };
     let Some(f) = m.files.iter().find(|f| f.trove_path == pp) else { return Ok(None) };
-    let suffix = compat::suffix_of(&f.trove_path).to_lowercase();
+    let suffix = py::suffix_of(&f.trove_path).to_lowercase();
     let out = root.join(format!("embedded-preview{}", if suffix.is_empty() { ".png" } else { &suffix }));
-    compat::write_bytes(&out, f.data()?)?;
+    py::write_bytes(&out, f.data()?)?;
     Ok(Some(out))
 }
 
 fn payload_str(payload: &Map<String, Value>, key: &str) -> String {
-    payload.get(key).filter(|v| truthy(v)).map(py_str).unwrap_or_default()
+    payload.get(key).filter(|v| truthy(v)).map(str_of).unwrap_or_default()
 }
 
 fn publish(payload: &Map<String, Value>, scratch: &mut Option<PathBuf>, staging: &mut Option<PathBuf>) -> Result<()> {
-    let tmod_path = compat::py_path(strip(&payload_str(payload, "tmodPath")));
+    let tmod_path = py::py_path(strip(&payload_str(payload, "tmodPath")));
     if !tmod_path.is_file() {
         return steam_err("That .tmod file no longer exists.");
     }
-    let title = compat::char_prefix(strip(&payload_str(payload, "title")), MAX_TITLE);
+    let title = py::char_prefix(strip(&payload_str(payload, "title")), MAX_TITLE);
     if title.is_empty() {
         return steam_err("A title is required.");
     }
-    let description = compat::char_prefix(&payload_str(payload, "description"), MAX_DESCRIPTION);
+    let description = py::char_prefix(&payload_str(payload, "description"), MAX_DESCRIPTION);
     let tags: Vec<String> = match payload.get("tags").filter(|v| truthy(v)) {
-        Some(v) => compat::iterate(v)?.iter().map(|t| strip(&py_str(t)).to_string()).filter(|t| !t.is_empty()).collect(),
+        Some(v) => py::iterate(v)?.iter().map(|t| strip(&str_of(t)).to_string()).filter(|t| !t.is_empty()).collect(),
         None => Vec::new(),
     };
     let mut visibility = match payload.get("visibility") {
-        Some(v) => py_int(v)?,
+        Some(v) => int_lenient(v)?,
         None => VIS_PRIVATE,
     };
     if ![VIS_PUBLIC, VIS_FRIENDS, VIS_PRIVATE].contains(&visibility) {
@@ -788,7 +788,7 @@ fn publish(payload: &Map<String, Value>, scratch: &mut Option<PathBuf>, staging:
     *scratch = Some(mkdtemp("troveworkshop-preview-")?);
     let preview_override = strip(&payload_str(payload, "previewPath")).to_string();
     let preview_source = if !preview_override.is_empty() {
-        let src = compat::py_path(&preview_override);
+        let src = py::py_path(&preview_override);
         if !src.is_file() {
             return steam_err("The chosen preview image no longer exists.");
         }
@@ -797,7 +797,7 @@ fn publish(payload: &Map<String, Value>, scratch: &mut Option<PathBuf>, staging:
         extract_preview(&tmod_path, scratch.as_ref().unwrap())?
     };
     if let Some(src) = &preview_source {
-        let size = std::fs::metadata(src).map_err(|e| compat::os_error(e, src, None))?.len();
+        let size = std::fs::metadata(src).map_err(|e| py::os_error(e, src, None))?.len();
         if size > MAX_PREVIEW_BYTES {
             return steam_err(format!("Steam caps workshop preview images at 1 MB; this one is {:.0} KB. Pick a smaller image.", size as f64 / 1024.0));
         }
@@ -845,7 +845,7 @@ fn publish(payload: &Map<String, Value>, scratch: &mut Option<PathBuf>, staging:
     };
 
     // Steam's "success" is not proof the bytes landed: compare with what it was given.
-    let size_of = |p: &Path| std::fs::metadata(p).map(|m| m.len()).map_err(|e| compat::os_error(e, p, None));
+    let size_of = |p: &Path| std::fs::metadata(p).map(|m| m.len()).map_err(|e| py::os_error(e, p, None));
     let expected_content = size_of(&tmod_path)?;
     let expected_preview = match &preview_path {
         Some(p) => size_of(p)?,
@@ -917,8 +917,8 @@ pub fn steam_workshop_disconnect(_: &Args) -> Result<Value> {
 }
 
 pub fn steam_workshop_read_tmod(a: &Args) -> Result<Value> {
-    let raw = if truthy(a.get(0)) { py_str(a.get(0)) } else { String::new() };
-    let path = compat::py_path(strip(&raw));
+    let raw = if truthy(a.get(0)) { str_of(a.get(0)) } else { String::new() };
+    let path = py::py_path(strip(&raw));
     if !path.is_file() {
         return Ok(json!({"success": false, "error": "That .tmod file does not exist."}));
     }
@@ -935,10 +935,10 @@ pub fn steam_workshop_list_items(_: &Args) -> Result<Value> {
 pub fn steam_workshop_set_visibility(a: &Args) -> Result<Value> {
     let mut s = SESSION.lock();
     s.connect()?;
-    let item_id = py_int(a.get(0))?;
-    let visibility = py_int(a.get(1))?;
+    let item_id = int_lenient(a.get(0))?;
+    let visibility = int_lenient(a.get(1))?;
     s.submit_update(item_id as u64, &ItemUpdate { visibility: Some(visibility as i32), ..Default::default() }, None)?;
-    Ok(json!({"itemId": py_str(a.get(0)), "visibility": visibility}))
+    Ok(json!({"itemId": str_of(a.get(0)), "visibility": visibility}))
 }
 
 pub fn steam_workshop_publish(a: &Args) -> Result<Value> {
@@ -957,7 +957,7 @@ fn py_dict(v: &Value) -> Result<Map<String, Value>> {
         Value::Object(m) => return Ok(m.clone()),
         Value::Array(items) => items,
         Value::String(_) => return Err(anyhow!("dictionary update sequence element #0 has length 1; 2 is required")),
-        other => return Err(anyhow!("'{}' object is not iterable", compat::type_name(other))),
+        other => return Err(anyhow!("'{}' object is not iterable", py::type_name(other))),
     };
     let mut out = Map::new();
     for (i, item) in items.iter().enumerate() {
@@ -971,9 +971,9 @@ fn py_dict(v: &Value) -> Result<Map<String, Value>> {
             return Err(anyhow!("dictionary update sequence element #{} has length {}; 2 is required", i, pair.len()));
         }
         if matches!(pair[0], Value::Array(_) | Value::Object(_)) {
-            return Err(anyhow!("unhashable type: '{}'", compat::type_name(&pair[0])));
+            return Err(anyhow!("unhashable type: '{}'", py::type_name(&pair[0])));
         }
-        out.insert(py_str(&pair[0]), pair[1].clone());
+        out.insert(str_of(&pair[0]), pair[1].clone());
     }
     Ok(out)
 }

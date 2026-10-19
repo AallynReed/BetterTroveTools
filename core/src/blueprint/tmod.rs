@@ -8,7 +8,7 @@ use zlib_rs::DeflateFlush;
 
 use crate::game::hash::{calculate_hash, write_uleb};
 
-use super::py;
+use crate::py;
 use super::pyzlib::{self, Compressor};
 use super::util::{Error, Kind, Result};
 

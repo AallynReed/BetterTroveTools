@@ -39,7 +39,8 @@ fn load(shown: &mut Option<Map<String, Value>>) -> &mut Map<String, Value> {
 fn save(shown: &Map<String, Value>) {
     let dir = get_cache_root();
     let _ = std::fs::create_dir_all(&dir);
-    let _ = std::fs::write(dir.join(STATE_FILENAME), crate::json::dumps_indent(&json!({ "shown": shown }), 2));
+    let text = crate::json::dumps_indent(&json!({ "shown": shown }), 2);
+    let _ = std::fs::write(dir.join(STATE_FILENAME), crate::py::text_mode(&text).as_bytes());
 }
 
 /// Whether notifications can be delivered here.

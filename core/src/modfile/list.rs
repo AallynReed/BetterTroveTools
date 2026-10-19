@@ -9,7 +9,7 @@ use std::time::Duration;
 use anyhow::{anyhow, Result};
 use serde_json::{Map, Value};
 
-use super::compat::{self, file_stem, py_str};
+use crate::py::{self, file_stem, str_of};
 use super::model::TroveMod;
 use super::trovesaurus;
 use super::zipmod::is_zipfile;
@@ -60,7 +60,7 @@ fn read_header_bytes(path: &Path) -> Result<Vec<u8>> {
         (&mut f).take(u64::from_le_bytes(size)).read_to_end(&mut out)?;
         Ok(out)
     };
-    read().map_err(|e| compat::errno_error(e, path))
+    read().map_err(|e| py::errno_error(e, path))
 }
 
 fn type_of(name: Option<&str>) -> &'static str {
@@ -156,7 +156,7 @@ impl TroveModList {
         let game = self.trove_path.clone();
         for (files, enabled) in [(game.enabled_tmods(), true), (game.disabled_tmods(), false)] {
             for file in files {
-                let data = if opts.partial { read_header_bytes(&file)? } else { compat::read_bytes(&file)? };
+                let data = if opts.partial { read_header_bytes(&file)? } else { py::read_bytes(&file)? };
                 let mut m = TroveMod::read_tmod(&file, data, opts.partial)?;
                 m.enabled = enabled;
                 m.is_workshop = game.is_workshop_file(&file);
@@ -168,7 +168,7 @@ impl TroveModList {
         }
         for (files, enabled) in [(game.enabled_zips(), true), (game.disabled_zips(), false)] {
             for file in files {
-                let mut m = TroveMod::read_zip(&file, compat::read_bytes(&file)?)?;
+                let mut m = TroveMod::read_zip(&file, py::read_bytes(&file)?)?;
                 m.enabled = enabled;
                 m.is_workshop = game.is_workshop_file(&file);
                 self.mods.push(m);
@@ -189,7 +189,7 @@ impl TroveModList {
         let fix = |files: Vec<PathBuf>, want_zip: bool, target: &dyn Fn(&Path) -> PathBuf| -> Result<()> {
             for file in files {
                 if is_zipfile(&file) == want_zip && !game.is_workshop_file(&file) {
-                    compat::rename(&file, &target(&file))?;
+                    py::rename(&file, &target(&file))?;
                 }
             }
             Ok(())
@@ -237,7 +237,7 @@ impl TroveModList {
                 continue;
             }
             if let Err(e) = m.ensure_config() {
-                if !compat::is_os_error(&e) {
+                if !py::is_os_error(&e) {
                     return Err(e);
                 }
                 let name = m.name().filter(|n| !n.is_empty()).unwrap_or("Unknown Mod");
@@ -251,18 +251,18 @@ impl TroveModList {
     /// `ModManagerCache/trovesaurus_mods_all.json`, with the stale copy as a fallback.
     pub fn get_cached_mods_all(&self, force: bool) -> Result<Value> {
         let cache_dir = crate::paths::get_cache_root();
-        compat::mkdir_all(&cache_dir)?;
+        py::mkdir_all(&cache_dir)?;
         let cache_file = cache_dir.join("trovesaurus_mods_all.json");
         let now = || std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0);
 
         if cache_file.exists() && !force {
-            let text = compat::read_text(&cache_file)?;
+            let text = py::read_text(&cache_file)?;
             if let Ok(Value::Object(wrapper)) = serde_json::from_str::<Value>(&text) {
                 let ts = match wrapper.get("timestamp") {
                     None => 0.0,
                     Some(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
                     Some(Value::Bool(b)) => *b as u8 as f64,
-                    Some(other) => return Err(anyhow!("unsupported operand type(s) for -: 'float' and '{}'", compat::type_name(other))),
+                    Some(other) => return Err(anyhow!("unsupported operand type(s) for -: 'float' and '{}'", py::type_name(other))),
                 };
                 if now() - ts < 900.0 {
                     return Ok(wrapper.get("data").cloned().unwrap_or_else(|| Value::Object(Map::new())));
@@ -282,7 +282,7 @@ impl TroveModList {
             }
             let data = crate::http::read_json(resp)?;
             let wrapper = serde_json::json!({ "timestamp": now(), "data": data });
-            compat::write_text(&cache_file, &crate::json::dumps(&wrapper))?;
+            py::write_text(&cache_file, &crate::json::dumps(&wrapper))?;
             Ok(Some(data))
         })();
         match fetched {
@@ -292,7 +292,7 @@ impl TroveModList {
         }
 
         if cache_file.exists() {
-            let text = compat::read_text(&cache_file)?;
+            let text = py::read_text(&cache_file)?;
             if let Ok(cached) = serde_json::from_str::<Value>(&text) {
                 return Ok(match &cached {
                     Value::Object(m) if m.contains_key("data") => m["data"].clone(),
@@ -307,7 +307,7 @@ impl TroveModList {
     /// `skip_paths` are mods another source already resolved; `blocked` rejects entries
     /// that must never be offered as updates.
     pub fn update_trovesaurus_data(&mut self, force: bool, skip_paths: &HashSet<String>, blocked: Option<Blocked>) -> Result<()> {
-        let skipped = |m: &TroveMod| m.is_workshop || skip_paths.contains(&compat::display(&m.mod_path));
+        let skipped = |m: &TroveMod| m.is_workshop || skip_paths.contains(&py::display(&m.mod_path));
         let mut all_hashes = Vec::new();
         for m in self.mods.iter_mut() {
             if !skipped(m) {
@@ -318,7 +318,7 @@ impl TroveModList {
             return Ok(());
         }
         let mut mods_all = self.get_cached_mods_all(force)?;
-        if !compat::truthy(&mods_all) {
+        if !py::truthy(&mods_all) {
             eprintln!("Could not retrieve master mod list.");
             return Ok(());
         }
@@ -327,7 +327,7 @@ impl TroveModList {
             for m in items {
                 if let Value::Object(o) = m {
                     if let Some(id) = o.get("id") {
-                        by_id.insert(py_str(id), m.clone());
+                        by_id.insert(str_of(id), m.clone());
                     }
                 }
             }
@@ -347,7 +347,7 @@ impl TroveModList {
                 if ok {
                     match crate::http::read_json(resp)? {
                         Value::Object(found) => hash_to_id.extend(found),
-                        other => return Err(anyhow!("cannot convert dictionary update sequence element #0 to a sequence: {}", compat::type_name(&other))),
+                        other => return Err(anyhow!("cannot convert dictionary update sequence element #0 to a sequence: {}", py::type_name(&other))),
                     }
                 }
                 Ok(())
@@ -363,9 +363,9 @@ impl TroveModList {
             }
             let hash = m.hash()?;
             let Some(mod_id) = hash_to_id.get(&hash).filter(|v| !v.is_null()) else { continue };
-            let Value::Object(catalog) = &mods_all else { return Err(anyhow!("'{}' object has no attribute 'get'", compat::type_name(&mods_all))) };
-            let Some(raw) = catalog.get(&py_str(mod_id)) else { continue };
-            if !compat::truthy(raw) || blocked.map(|b| b(raw)).unwrap_or(false) {
+            let Value::Object(catalog) = &mods_all else { return Err(anyhow!("'{}' object has no attribute 'get'", py::type_name(&mods_all))) };
+            let Some(raw) = catalog.get(&str_of(mod_id)) else { continue };
+            if !py::truthy(raw) || blocked.map(|b| b(raw)).unwrap_or(false) {
                 continue;
             }
             match trovesaurus::Mod::from_value(raw) {

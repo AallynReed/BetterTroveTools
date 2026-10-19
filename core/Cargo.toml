@@ -15,7 +15,7 @@ modfile = []
 modder_tools = ["modfile"]
 file_manager = []
 mod_manager = ["modfile", "modder_tools"]
-blueprint = []
+blueprint = ["codexes"]
 auth = []
 
 [dependencies]

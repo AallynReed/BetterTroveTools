@@ -10,7 +10,7 @@ use serde_json::{json, Map, Value};
 use super::binfab_reader::decode_identity;
 use super::prefab_ally::{load_blueprint_path_map, load_language_map, read_files, GameFiles, PrefabIndex};
 use super::prefab_recipe::{extract_prefab_metadata, PrefabMetadata};
-use super::py;
+use crate::py;
 use crate::game::archive::IndexedFile;
 
 pub const ITEM_PREFIX: &str = "item/";
@@ -38,7 +38,7 @@ pub fn category_from_item_path(identifier: &str) -> String {
 
 pub fn tradability_from_item_path(identifier: &str) -> &'static str {
     let normalized = py::strip(&identifier.replace('\\', "/")).to_lowercase();
-    let stem = py::stem(&normalized);
+    let stem = py::stem_any_sep(&normalized);
     if stem.ends_with("_notrade") {
         "Untradable"
     } else if stem.ends_with("_trade") {
@@ -75,7 +75,7 @@ pub fn extract_unlocks(strings: &[String], identifier: &str) -> Vec<String> {
 }
 
 fn unlock_title(normalized: &str) -> String {
-    py::title(&py::stem(normalized).replace('_', " "))
+    py::title(&py::stem_any_sep(normalized).replace('_', " "))
 }
 
 /// `str(path).replace("\\", "/").strip().removesuffix(".binfab")`.
@@ -155,7 +155,7 @@ pub fn build_items_dataset(game_path: &Path, locale: &str) -> Result<(Map<String
         }
         total_unlocks += unlocks.len();
         let m = scan.meta;
-        let name = if m.name.is_empty() { py::title(&py::stem(&scan.identifier).replace('_', " ")) } else { m.name };
+        let name = if m.name.is_empty() { py::title(&py::stem_any_sep(&scan.identifier).replace('_', " ")) } else { m.name };
         rows.insert(
             scan.identifier.clone(),
             json!({
@@ -178,7 +178,7 @@ pub fn build_items_dataset(game_path: &Path, locale: &str) -> Result<(Map<String
     let count = |f: &dyn Fn(&Value) -> bool| rows.values().filter(|r| f(r)).count();
     let truthy = |v: &Value| crate::args::truthy(v);
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("item_count".into(), json!(rows.len()));
     manifest.insert("decoded_names".into(), json!(count(&|r| truthy(&r["name"]))));
     manifest.insert("decoded_descriptions".into(), json!(count(&|r| truthy(&r["desc"]))));

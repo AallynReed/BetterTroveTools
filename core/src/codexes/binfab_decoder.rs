@@ -4,7 +4,7 @@
 use serde_json::{json, Map, Value};
 
 use super::binfab_reader::{float_value, int_value};
-use super::py;
+use crate::py;
 
 pub const TYPE_VARINT: u8 = 0x0;
 pub const TYPE_FIXED32: u8 = 0x4;
@@ -180,24 +180,10 @@ pub fn analyze_binfab(data: &[u8], source_name: &str) -> Value {
     })
 }
 
-/// Python `repr()` of a printable ASCII string.
-fn py_repr(s: &str) -> String {
-    let quote = if s.contains('\'') && !s.contains('"') { '"' } else { '\'' };
-    let mut out = String::from(quote);
-    for c in s.chars() {
-        if c == '\\' || c == quote {
-            out.push('\\');
-        }
-        out.push(c);
-    }
-    out.push(quote);
-    out
-}
-
 fn format_payload(payload: &Payload) -> String {
     match payload {
         Payload::Varint(v) => v.to_string(),
-        Payload::Bytes { ascii: Some(a), .. } => py_repr(a),
+        Payload::Bytes { ascii: Some(a), .. } => py::repr_str(a),
         Payload::Bytes { length, .. } | Payload::Container { length } => format!("length={}", length),
         Payload::Fixed32 { f32: Some(f), hex, .. } => format!("f32={} hex={}", crate::json::float_repr(*f), hex),
         Payload::Fixed64 { u64, hex, .. } => format!("u64={} hex={}", u64, hex),

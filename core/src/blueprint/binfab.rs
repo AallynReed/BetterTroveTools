@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 
 use regex::bytes::Regex;
 
-use super::py;
+use crate::py;
 
 /// `read_uleb`: raises `IndexError` past the end and `ValueError` past 10 bytes.
 fn read_uleb(data: &[u8], mut pos: usize) -> Result<(u128, usize), &'static str> {

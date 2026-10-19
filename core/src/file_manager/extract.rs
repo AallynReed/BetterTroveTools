@@ -10,13 +10,14 @@ use anyhow::{anyhow, Result};
 use rayon::prelude::*;
 use serde_json::{json, Value};
 
-use super::py::{self, path_arg, py_int, py_str, tk_path};
+use super::files;
+use crate::py;
 use super::{check_cancel, outcome, pool, progress, reset_cancel, save_file};
 use crate::{Args, Dialog};
 
 /// One `.tfa`, read and inflated, with Python's error text for a missing file.
 pub fn read_archive(path: &Path) -> Result<Vec<u8>> {
-    crate::game::archive::decompress(&py::read_file(path)?)
+    crate::game::archive::decompress(&files::read_file(path)?)
 }
 
 pub fn extract_file_to_disk(a: &Args) -> Result<Value> {
@@ -26,18 +27,18 @@ pub fn extract_file_to_disk(a: &Args) -> Result<Value> {
         return Ok(json!({ "success": false, "canceled": true }));
     };
     Ok(match extract_one(a, &save_path) {
-        Ok(()) => json!({ "success": true, "saved_to": tk_path(&save_path) }),
+        Ok(()) => json!({ "success": true, "saved_to": py::tk_path(&save_path) }),
         Err(e) => json!({ "success": false, "error": e.to_string() }),
     })
 }
 
 fn extract_one(a: &Args, save_path: &Path) -> Result<()> {
-    let tfi = path_arg(a.get(0))?;
-    let tfa = tfi.parent().unwrap_or(Path::new("")).join(format!("archive{}.tfa", py_str(a.get(1))));
-    py::archive_id(&tfa)?;
+    let tfi = py::path_arg_components(a.get(0))?;
+    let tfa = tfi.parent().unwrap_or(Path::new("")).join(format!("archive{}.tfa", py::str_loose(a.get(1))));
+    files::archive_id(&tfa)?;
     let content = read_archive(&tfa)?;
-    let bytes = py::binary_read(&content, py_int(a.get(2))?, py_int(a.get(3))?)?;
-    py::write_file(save_path, bytes)
+    let bytes = files::binary_read(&content, py::int_loose(a.get(2))?, py::int_loose(a.get(3))?)?;
+    files::write_file(save_path, bytes)
 }
 
 pub fn mass_extract_files(dest: &Value, files: &Value) -> Value {
@@ -60,17 +61,17 @@ pub fn extract_archive(tfa: &Path, dest: &Path, specs: &[Spec]) -> Result<usize>
         let out = dest.join(rel);
         if let Some(parent) = out.parent().filter(|p| !p.as_os_str().is_empty()) {
             if made.insert(parent.to_path_buf()) {
-                py::create_dirs(parent)?;
+                files::create_dirs(parent)?;
             }
         }
-        py::write_file(&out, py::py_slice(&content, *offset, *size))?;
+        files::write_file(&out, py::slice_signed(&content, *offset, *offset + *size))?;
     }
     Ok(specs.len())
 }
 
 fn mass_extract(dest: &Value, files: &Value) -> Result<()> {
-    let dest = path_arg(dest)?;
-    let list = files.as_array().ok_or_else(|| anyhow!("object of type '{}' has no len()", py::py_type(files)))?;
+    let dest = py::path_arg_components(dest)?;
+    let list = files.as_array().ok_or_else(|| anyhow!("object of type '{}' has no len()", py::type_name(files)))?;
     let total = list.len();
     let start = Instant::now();
 
@@ -79,7 +80,7 @@ fn mass_extract(dest: &Value, files: &Value) -> Result<()> {
     let mut by_tfi: HashMap<String, usize> = HashMap::new();
     for f in list {
         let tfi = field(f, "tfi")?;
-        let archive = py_str(field(f, "archive")?);
+        let archive = py::str_loose(field(f, "archive")?);
         let gi = *by_tfi.entry(tfi.to_string()).or_insert_with(|| {
             groups.push((tfi.clone(), Vec::new()));
             groups.len() - 1
@@ -92,11 +93,11 @@ fn mass_extract(dest: &Value, files: &Value) -> Result<()> {
     }
     let mut work: Vec<(PathBuf, Vec<Spec>)> = Vec::new();
     for (tfi, archives) in &groups {
-        let parent = path_arg(tfi)?.parent().map(Path::to_path_buf).unwrap_or_default();
+        let parent = py::path_arg_components(tfi)?.parent().map(Path::to_path_buf).unwrap_or_default();
         for (archive, members) in archives {
             let mut specs = Vec::with_capacity(members.len());
             for f in members {
-                let (offset, size) = (py_int(field(f, "offset")?)?, py_int(field(f, "size")?)?);
+                let (offset, size) = (py::int_loose(field(f, "offset")?)?, py::int_loose(field(f, "size")?)?);
                 let filepath = field(f, "filepath")?;
                 let filepath = filepath.as_str().ok_or_else(|| py::no_attr(filepath, "replace"))?;
                 specs.push((offset, size, filepath.replace('\\', "/")));

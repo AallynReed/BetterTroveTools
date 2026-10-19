@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use serde_json::{json, Map, Value};
 
-use super::py;
+use crate::py;
 use super::server_time::*;
 use crate::{Cmd, Resp};
 
@@ -74,7 +74,7 @@ fn load_biomes() -> Result<Map<String, Value>, String> {
     let path = crate::ctx().web_path("assets").join("data").join("biomes.json");
     let text = std::fs::read_to_string(&path).map_err(|e| match e.kind() {
         std::io::ErrorKind::NotFound => {
-            format!("[Errno 2] No such file or directory: {}", py::repr_str(&path.to_string_lossy()))
+            format!("[Errno 2] No such file or directory: {}", py::repr_str_ascii(&path.to_string_lossy()))
         }
         _ => e.to_string(),
     })?;
@@ -223,7 +223,7 @@ fn weekly_buff_events(now: i64, start_date: i64, end_date: i64, events: &mut Vec
     let data: Value = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
     let data = data.as_object()?;
 
-    let mut keys: Vec<(i64, &String)> = data.keys().map(|k| py::int(&json!(k)).ok().map(|n| (n, k))).collect::<Option<_>>()?;
+    let mut keys: Vec<(i64, &String)> = data.keys().map(|k| py::int_ascii(&json!(k)).ok().map(|n| (n, k))).collect::<Option<_>>()?;
     keys.sort_by_key(|(n, _)| *n);
     let name_of = |v: &Value| v.get("name").cloned().unwrap_or(Value::Null);
     let wanted = name_of(&current_weekly);

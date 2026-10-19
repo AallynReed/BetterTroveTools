@@ -5,7 +5,7 @@ use rand::Rng;
 use serde_json::{json, Map, Value};
 
 use super::constants::*;
-use super::py::{self, Float, Int, Num};
+use crate::py::{self, Float, Int, Num};
 use super::pyd::{self, Errors, Fail};
 
 #[derive(Clone, Debug)]
@@ -80,11 +80,11 @@ impl StatContainer {
 
     fn dump(&self) -> Value {
         json!({
-            "base": py::float(self.base),
+            "base": py::json_float(self.base),
             "augments": self.augments.iter().map(|a| json!({"type": a.kind.value(), "count": a.count})).collect::<Vec<_>>(),
-            "increase": py::float(self.increase()),
-            "value": py::float(self.value().f()),
-            "real_value": py::float(self.real_value()),
+            "increase": py::json_float(self.increase()),
+            "value": py::json_float(self.value().f()),
+            "real_value": py::json_float(self.real_value()),
         })
     }
 }
@@ -125,7 +125,7 @@ impl Stat {
             "type": self.kind.value(),
             "containers": self.containers.iter().map(StatContainer::dump).collect::<Vec<_>>(),
             "locked": self.locked,
-            "augmentation_progress": py::float(self.augmentation_progress()?.f()),
+            "augmentation_progress": py::json_float(self.augmentation_progress()?.f()),
         }))
     }
 }
@@ -477,7 +477,7 @@ impl Gem {
                 power_rank += get_increment_power_rank(self.tier, level).unwrap_or(0) as f64;
             }
         }
-        py::round_int(power_rank)
+        Ok(py::round_int(power_rank)?)
     }
 
     fn stat_values(&self) -> Result<Value, String> {
@@ -510,11 +510,11 @@ impl Gem {
             "ability": self.ability.map(GemAbility::value),
             "level": self.level,
             "stats": stats,
-            "augmentation": self.augmentation.map(py::float),
+            "augmentation": self.augmentation.map(py::json_float),
             "ability_name": self.ability_name(),
             "gem_name": gem_name,
             "is_max_level": self.level == get_gem_max_level(self.tier),
-            "quality": py::float(self.quality()),
+            "quality": py::json_float(self.quality()),
             "power_rank": self.power_rank()?,
             "stat_values": self.stat_values()?,
         }))
@@ -523,7 +523,7 @@ impl Gem {
 
 /// `SomeEnum(v)` (a plain call, not pydantic).
 pub fn lookup<T>(v: &Value, from: fn(i64) -> Option<T>, name: &str) -> Result<T, String> {
-    py::enum_key(v).and_then(from).ok_or_else(|| format!("{} is not a valid {}", py::repr(v), name))
+    py::enum_key(v).and_then(from).ok_or_else(|| format!("{} is not a valid {}", py::repr_latin1(v), name))
 }
 
 /// models/trove/gems.py `PartialGem`: a gem known only by its Power Rank.

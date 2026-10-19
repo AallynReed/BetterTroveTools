@@ -13,6 +13,7 @@ pub mod http;
 pub mod json;
 pub mod notify;
 pub mod paths;
+pub mod py;
 pub mod response;
 pub mod routes;
 pub mod settings;

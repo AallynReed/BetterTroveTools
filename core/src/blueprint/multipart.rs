@@ -5,7 +5,8 @@
 
 use crate::routes::{percent_decode, Request};
 
-use super::py;
+use super::pyobj;
+use crate::py;
 
 /// bottle's `MEMFILE_MAX`, which the editor raises to 256 MiB.
 const MEM_LIMIT: usize = 256 * 1024 * 1024;
@@ -288,7 +289,7 @@ impl Part {
             }
         }
         if let Some(cl) = self.header("Content-Length") {
-            self.content_length = py::int_from_str(cl).ok_or(FormError::Internal)? as i64;
+            self.content_length = pyobj::int_from_str(cl).ok_or(FormError::Internal)? as i64;
         }
         Ok(())
     }

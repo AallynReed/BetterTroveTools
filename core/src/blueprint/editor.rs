@@ -10,7 +10,8 @@ use super::codec::{self, Decoded, Voxel};
 use super::lint;
 use super::materials;
 use super::merge;
-use super::py::{self, IntError, Obj, Py};
+use super::pyobj::{self, IntError, Obj, Py};
+use crate::py;
 use super::qb;
 use super::transform as bp_transform;
 use super::util::{fx_map, Cell, Error, FxBuild, FxMap, Kind, Result};
@@ -54,11 +55,11 @@ fn statics_json() -> &'static str {
     TEXT.get_or_init(|| {
         let mut out = String::new();
         out.push_str("\"creation_types\": ");
-        py::write_value(&mut out, &json!(lint::creation_types().collect::<Vec<_>>()));
+        pyobj::write_value(&mut out, &json!(lint::creation_types().collect::<Vec<_>>()));
         out.push_str(", \"transforms\": ");
-        py::write_value(&mut out, &Value::Array(bp_transform::OPERATIONS.iter().map(|(op, label)| json!({"op": op, "label": label})).collect()));
+        pyobj::write_value(&mut out, &Value::Array(bp_transform::OPERATIONS.iter().map(|(op, label)| json!({"op": op, "label": label})).collect()));
         out.push_str(", \"align_modes\": ");
-        py::write_value(&mut out, &Value::Array(merge::ALIGN_MODES.iter().map(|(mode, label)| json!({"mode": mode, "label": label})).collect()));
+        pyobj::write_value(&mut out, &Value::Array(merge::ALIGN_MODES.iter().map(|(mode, label)| json!({"mode": mode, "label": label})).collect()));
         out
     })
 }
@@ -111,23 +112,23 @@ pub fn inspect(raw: &[u8], name: &str) -> Result<Inspected> {
     let mut o = Obj::new(&mut out);
     o.str("name", name);
     o.int("count", n as i64);
-    py::write_ints(o.key("size"), decoded.size);
+    pyobj::write_ints(o.key("size"), decoded.size);
     o.int("version", decoded.version as i64);
-    py::write_opt_ints(o.key("attachment"), codec::attachment_point(&decoded).as_ref().map(|a| &a[..]));
-    py::write_ints(o.key("origin"), if decoded.version == 5 { decoded.pos } else { decoded.offset });
+    pyobj::write_opt_ints(o.key("attachment"), codec::attachment_point(&decoded).as_ref().map(|a| &a[..]));
+    pyobj::write_ints(o.key("origin"), if decoded.version == 5 { decoded.pos } else { decoded.offset });
     o.out.push_str(", ");
     o.out.push_str(statics_json());
-    py::write_ints(o.key("x"), voxels.iter().map(|v| v.x));
-    py::write_ints(o.key("y"), voxels.iter().map(|v| v.y));
-    py::write_ints(o.key("z"), voxels.iter().map(|v| v.z));
-    py::write_ints(o.key("rgb"), &rgb);
-    py::write_ints(o.key("kind"), &kind);
-    py::write_ints(o.key("level"), &level);
-    py::write_ints(o.key("spec"), &spec);
-    py::write_ints(o.key("type"), voxels.iter().map(|v| v.t));
-    py::write_ints(o.key("w"), voxels.iter().map(|v| v.w));
-    py::write_ints(o.key("edit"), voxels.iter().map(|v| materials::is_editable(v.t) as u8));
-    py::write_ints(o.key("paint"), voxels.iter().map(|v| !materials::is_procedural(v.t, v.r, v.g, v.b) as u8));
+    pyobj::write_ints(o.key("x"), voxels.iter().map(|v| v.x));
+    pyobj::write_ints(o.key("y"), voxels.iter().map(|v| v.y));
+    pyobj::write_ints(o.key("z"), voxels.iter().map(|v| v.z));
+    pyobj::write_ints(o.key("rgb"), &rgb);
+    pyobj::write_ints(o.key("kind"), &kind);
+    pyobj::write_ints(o.key("level"), &level);
+    pyobj::write_ints(o.key("spec"), &spec);
+    pyobj::write_ints(o.key("type"), voxels.iter().map(|v| v.t));
+    pyobj::write_ints(o.key("w"), voxels.iter().map(|v| v.w));
+    pyobj::write_ints(o.key("edit"), voxels.iter().map(|v| materials::is_editable(v.t) as u8));
+    pyobj::write_ints(o.key("paint"), voxels.iter().map(|v| !materials::is_procedural(v.t, v.r, v.g, v.b) as u8));
     let materials_list: Vec<Value> = seen
         .iter()
         .map(|&((t, w), count)| json!({"type": t, "w": w, "count": count, "label": materials::describe(t, w as i64), "editable": materials::is_editable(t)}))

@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use indexmap::IndexMap;
 use serde_json::{json, Map, Value};
 
-use super::py;
+use crate::py;
 
 /// Stat id (the zig-zag decoded header byte) to the game's `KStatType` name.
 pub const STAT_GUESSES: [&str; 45] = [
@@ -692,7 +692,7 @@ pub fn inspect_pet_prefab_stats_content(contents: &[u8], source_name: &str) -> S
         component_types: IndexMap::new(),
         warnings: Vec::new(),
     };
-    let base = py::stem(if source_name.is_empty() { "prefab" } else { source_name });
+    let base = py::stem_any_sep(if source_name.is_empty() { "prefab" } else { source_name });
     let mut desc_pos = py::find(contents, DESC, 0);
     let ui_pos = py::rfind(contents, UI);
     if desc_pos.is_none() {

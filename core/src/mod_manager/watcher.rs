@@ -13,7 +13,7 @@ use super::manager::{mods_signature, Signature};
 use super::or_str;
 use crate::game::registry::TroveGamePath;
 use crate::game::trove_cfg::{ensure_mods_enabled, read_disabled_mods};
-use crate::modfile::compat;
+use crate::py;
 use crate::modfile::{ListOptions, TroveModList};
 use crate::{Args, Resp};
 
@@ -28,13 +28,13 @@ fn snapshot(game: &str) -> Snapshot {
 /// Reconciles every installed mod's .cfg for `game` and undoes the game's
 /// `DisableAllMods`. The mods whose config could not be written. Never fails.
 pub(super) fn probe_configs(game: &str) -> Vec<String> {
-    let path = compat::strip(game);
+    let path = py::strip(game);
     if path.is_empty() {
         return Vec::new();
     }
     ensure_mods_enabled(None);
     let opts = ListOptions { partial: true, fix_configs: true, ..Default::default() };
-    TroveModList::new(TroveGamePath::new(compat::py_path(path), None), opts).map(|l| l.read_only_configs).unwrap_or_default()
+    TroveModList::new(TroveGamePath::new(py::py_path(path), None), opts).map(|l| l.read_only_configs).unwrap_or_default()
 }
 
 #[derive(Default)]
@@ -52,7 +52,7 @@ static WAKE: Condvar = Condvar::new();
 /// Points the watch at an install (or nothing). Re-baselines, so switching installs
 /// never fires a spurious change.
 pub(super) fn set_target(game: &str) {
-    let path = Some(compat::strip(game).to_string()).filter(|p| !p.is_empty());
+    let path = Some(py::strip(game).to_string()).filter(|p| !p.is_empty());
     let start = {
         let mut s = STATE.lock();
         if path == s.target {

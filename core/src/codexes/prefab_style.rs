@@ -10,7 +10,7 @@ use serde_json::{json, Map, Value};
 use super::binfab_reader::decode_identity;
 use super::prefab_ally::{load_geode_multipliers_map, load_language_map, load_multipliers_map, read_files, resolve_localized_value, MultiplierMap, GameFiles, PrefabIndex};
 use super::prefab_badge::{first_blueprint, identity_name_key};
-use super::py;
+use crate::py;
 use crate::game::archive::IndexedFile;
 
 pub const STYLE_PREFIX: &str = "equipment/";
@@ -95,7 +95,7 @@ pub fn build_styles_dataset(game_path: &Path, locale: &str) -> Result<(Map<Strin
 
     let families: BTreeSet<&str> = rows.values().filter_map(|r| r["family"].as_str()).filter(|s| !s.is_empty()).collect();
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("style_count".into(), json!(rows.len()));
     manifest.insert("families".into(), json!(families));
     manifest.insert("decoded_names".into(), json!(rows.values().filter(|r| r["name"] != "").count()));

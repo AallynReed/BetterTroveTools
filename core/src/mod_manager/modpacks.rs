@@ -15,7 +15,7 @@ use super::{ext, finish, get, js, or, spawn, to_int};
 use crate::ctx::Dialog;
 use crate::game::trove_cfg::{mod_key, set_mods_disabled};
 use crate::http;
-use crate::modfile::compat;
+use crate::py;
 use crate::modfile::{format, ListOptions, ModFile, TroveMod};
 use crate::{Args, Resp, KIWI_API_BASE};
 
@@ -62,7 +62,7 @@ pub(super) fn rebuild(version: u16, props: &[(String, String)], entries: &Entrie
 
 /// The internal title a `.tmod` filename encodes.
 pub(super) fn name_from_filename(filename: &str) -> String {
-    let name = compat::name_of(filename);
+    let name = py::name_of(filename);
     let low = name.to_lowercase();
     for ext in [".tmod.disabled", ".zip.disabled", ".tmod", ".zip"] {
         if low.ends_with(ext) && name.is_char_boundary(name.len() - ext.len()) {
@@ -74,7 +74,7 @@ pub(super) fn name_from_filename(filename: &str) -> String {
 
 /// Directory components dropped (no traversal), case and spaces kept.
 pub(super) fn safe_pack_filename(filename: &str) -> String {
-    let base = compat::strip(&compat::name_of(filename)).to_string();
+    let base = py::strip(&py::name_of(filename)).to_string();
     if base.is_empty() {
         "mod.tmod".into()
     } else {
@@ -86,8 +86,8 @@ pub(super) fn unique_path(dest: &Path) -> PathBuf {
     if !dest.exists() {
         return dest.to_path_buf();
     }
-    let name = compat::file_name(dest);
-    let (stem, suffix) = (compat::stem_of(&name), compat::suffix_of(&name));
+    let name = py::file_name(dest);
+    let (stem, suffix) = (py::stem_of(&name), py::suffix_of(&name));
     (1..).map(|i| dest.with_file_name(format!("{}_{}{}", stem, i, suffix))).find(|c| !c.exists()).unwrap()
 }
 
@@ -103,11 +103,11 @@ fn quarantine_conflicts(game: &Value, names_lower: &HashSet<String>) -> Vec<Stri
     };
     let disabled_dir = list.trove_path.mods_path().join("disabled");
     for m in &list.mods {
-        let name = compat::strip(m.name().unwrap_or("")).to_string();
+        let name = py::strip(m.name().unwrap_or("")).to_string();
         if name.is_empty() || !names_lower.contains(&name.to_lowercase()) || m.is_workshop {
             continue;
         }
-        let res = compat::mkdir_all(&disabled_dir).and_then(|_| compat::shutil_move(&m.mod_path, &unique_path(&disabled_dir.join(compat::file_name(&m.mod_path)))));
+        let res = py::mkdir_all(&disabled_dir).and_then(|_| py::shutil_move(&m.mod_path, &unique_path(&disabled_dir.join(py::file_name(&m.mod_path)))));
         match res {
             Ok(_) => moved.push(name),
             Err(e) => eprintln!("Failed to quarantine conflicting mod {}: {}", name, e),
@@ -122,7 +122,7 @@ fn clear_trove_disabled(game: &Value, filenames: &[String]) -> Result<()> {
     let enable: Vec<String> = list
         .mods
         .iter()
-        .filter(|m| !m.is_workshop && filenames.contains(&compat::file_name(&m.mod_path)))
+        .filter(|m| !m.is_workshop && filenames.contains(&py::file_name(&m.mod_path)))
         .map(|m| mod_key(m.name().unwrap_or(""), m.author().unwrap_or(""), false))
         .collect();
     set_mods_disabled(&enable, &[], None);
@@ -139,7 +139,7 @@ fn fetch_modpack_detail(handle: &Value, slug: &Value) -> Option<Value> {
             finish(req, ok);
             if ok {
                 match http::read_json(resp) {
-                    Ok(v) => return Some(if compat::truthy(&v) { v } else { json!({}) }),
+                    Ok(v) => return Some(if py::truthy(&v) { v } else { json!({}) }),
                     Err(e) => eprintln!("Modpack detail fetch failed: {}", e),
                 }
             }
@@ -154,7 +154,7 @@ fn fetch_modpack_detail(handle: &Value, slug: &Value) -> Option<Value> {
 
 fn listing(a: &Args) -> Result<Value> {
     let page = match a.get(0) {
-        v if compat::truthy(v) => compat::py_int(v)?,
+        v if py::truthy(v) => py::int_lenient(v)?,
         _ => 1,
     }
     .max(1);
@@ -163,8 +163,8 @@ fn listing(a: &Args) -> Result<Value> {
         _ => "recent".to_string(),
     };
     let mut params: Vec<(&str, String)> = vec![("limit", ITEMS_PER_PAGE.to_string()), ("offset", ((page - 1) * ITEMS_PER_PAGE).to_string()), ("sort", sort)];
-    if compat::truthy(a.get(1)) {
-        params.push(("q", compat::py_str(a.get(1))));
+    if py::truthy(a.get(1)) {
+        params.push(("q", py::str_of(a.get(1))));
     }
     let base = format!("{}/modpacks", KIWI_API_BASE);
     let req = ext("Browsing Modpacks", &base);
@@ -183,10 +183,10 @@ fn listing(a: &Args) -> Result<Value> {
         return Ok(json!({ "success": false, "error": format!("The modpacks hub returned HTTP {}.", resp.status()) }));
     }
     let payload = http::read_json(resp)?;
-    let payload = if compat::truthy(&payload) { payload } else { json!({}) };
-    let items = compat::iterate(or(get(&payload, "items"), &json!([])))?;
+    let payload = if py::truthy(&payload) { payload } else { json!({}) };
+    let items = py::iterate(or(get(&payload, "items"), &json!([])))?;
     let total = match get(&payload, "total") {
-        v if compat::truthy(v) => compat::py_int(v)?,
+        v if py::truthy(v) => py::int_lenient(v)?,
         _ => items.len() as i64,
     };
     let max_pages = ((total + ITEMS_PER_PAGE - 1).div_euclid(ITEMS_PER_PAGE)).max(1);
@@ -199,10 +199,10 @@ fn listing(a: &Args) -> Result<Value> {
         let (slug, handle) = (get(m, "slug"), get(m, "handle"));
         let r = pack_ref(handle, slug);
         let previews = get(m, "preview_urls");
-        let first_preview = if compat::truthy(previews) { super::items(previews).first().cloned().unwrap_or(Value::Null) } else { Value::Null };
+        let first_preview = if py::truthy(previews) { super::items(previews).first().cloned().unwrap_or(Value::Null) } else { Value::Null };
         let preview = or(get(m, "banner_url"), or(&first_preview, &json!(""))).clone();
         let page_url = match get(m, "page_url") {
-            v if compat::truthy(v) => v.clone(),
+            v if py::truthy(v) => v.clone(),
             _ => json!(format!("{}/{}", MODPACK_PAGE_BASE, r)),
         };
         result.push(json!({
@@ -249,7 +249,7 @@ pub(super) fn get_modpack_variants(a: &Args) -> Result<Value> {
         let mods: Vec<Value> = super::items(or(get(v, "mods"), &json!([])))
             .iter()
             .filter(|mm| mm.is_object())
-            .map(|mm| json!({ "title": get(mm, "title"), "available": compat::truthy(mm.get("available").unwrap_or(&json!(true))) }))
+            .map(|mm| json!({ "title": get(mm, "title"), "available": py::truthy(mm.get("available").unwrap_or(&json!(true))) }))
             .collect();
         variants.push(json!({
             "name": get(v, "name"),
@@ -260,7 +260,7 @@ pub(super) fn get_modpack_variants(a: &Args) -> Result<Value> {
         }));
     }
     let title = match get(&detail, "title") {
-        t if compat::truthy(t) => t.clone(),
+        t if py::truthy(t) => t.clone(),
         _ => json!(pack_ref(handle, slug)),
     };
     let default_variant = get(&detail, "default_variant").clone();
@@ -273,7 +273,7 @@ pub(super) fn get_modpack_variants(a: &Args) -> Result<Value> {
 
 /// `_install_tpack_bytes`: Ok(Err(message)) for the failures the page shows.
 pub(super) fn install_tpack_bytes(game: &Value, data: &[u8]) -> Result<std::result::Result<Value, String>> {
-    if !compat::truthy(game) {
+    if !py::truthy(game) {
         return Ok(Err("No game path provided.".into()));
     }
     let entries = match decompile(data) {
@@ -283,16 +283,16 @@ pub(super) fn install_tpack_bytes(game: &Value, data: &[u8]) -> Result<std::resu
     if entries.is_empty() {
         return Ok(Err("The modpack contained no mods.".into()));
     }
-    let installing: HashSet<String> = entries.iter().map(|(name, _)| compat::strip(&name_from_filename(name)).to_lowercase()).collect();
+    let installing: HashSet<String> = entries.iter().map(|(name, _)| py::strip(&name_from_filename(name)).to_lowercase()).collect();
     let quarantined = quarantine_conflicts(game, &installing);
 
-    let mods_dir = compat::path_arg(game)?.join("mods");
-    compat::mkdir_all(&mods_dir)?;
+    let mods_dir = py::path_arg(game)?.join("mods");
+    py::mkdir_all(&mods_dir)?;
     let mut installed = Vec::new();
     for (filename, content) in &entries {
-        let out_path = compat::join(&mods_dir, &safe_pack_filename(filename));
-        compat::write_bytes(&out_path, content)?;
-        installed.push(compat::file_name(&out_path));
+        let out_path = py::join(&mods_dir, &safe_pack_filename(filename));
+        py::write_bytes(&out_path, content)?;
+        installed.push(py::file_name(&out_path));
     }
     clear_trove_disabled(game, &installed)?;
     Ok(Ok(json!({ "installed": installed.len(), "files": installed, "quarantined": quarantined })))
@@ -302,8 +302,8 @@ pub(super) fn install_tpack_bytes(game: &Value, data: &[u8]) -> Result<std::resu
 pub(super) fn download_tpack(handle: &Value, slug: &Value, variant: &Value) -> std::result::Result<Vec<u8>, String> {
     let r = pack_ref(handle, slug);
     let mut url = format!("{}/modpacks/{}/download?format=tpack", KIWI_API_BASE, r);
-    if compat::truthy(variant) {
-        url.push_str(&format!("&variant={}", http::quote_safe(&compat::py_str(variant), "/")));
+    if py::truthy(variant) {
+        url.push_str(&format!("&variant={}", http::quote_safe(&py::str_of(variant), "/")));
     }
     let req = ext(&format!("Downloading Modpack {}", r), &url);
     match super::download(&url, USER_AGENT, 610, req) {
@@ -316,7 +316,7 @@ pub(super) fn download_tpack(handle: &Value, slug: &Value, variant: &Value) -> s
 pub(super) fn install_modpack(a: &Args) -> Result<Value> {
     Ok(super::guard("MODPACK_INSTALL_FAILED", || {
         let game = a.get(0);
-        if !compat::truthy(game) {
+        if !py::truthy(game) {
             return Ok(Resp::fail("No game path provided.", "MISSING_GAME_PATH").into());
         }
         let data = match download_tpack(a.get(1), a.get(2), a.get(3)) {
@@ -334,21 +334,21 @@ pub(super) fn install_modpack(a: &Args) -> Result<Value> {
 pub(super) fn import_tpack_file(a: &Args) -> Result<Value> {
     Ok(super::guard("TPACK_IMPORT_FAILED", || {
         let game = a.get(0);
-        if !compat::truthy(game) {
+        if !py::truthy(game) {
             return Ok(Resp::fail("No game path provided.", "MISSING_GAME_PATH").into());
         }
-        let initial = compat::path_arg(game)?.join("mods");
+        let initial = py::path_arg(game)?.join("mods");
         let dialog = Dialog::new("Select a .tpack modpack file").initial_dir(initial).filter("Trove Modpacks", &["tpack"]).filter("All Files", &["*"]);
         let Some(file) = pick_file(dialog) else {
             return Ok(Resp::ok(json!({ "cancelled": true })).with("cancelled", true).into());
         };
-        let data = compat::read_bytes(&file)?;
+        let data = py::read_bytes(&file)?;
         let mut payload = match install_tpack_bytes(game, &data)? {
             Ok(result) => result,
             Err(e) => return Ok(Resp::fail(e, "TPACK_IMPORT_FAILED").into()),
         };
         payload["cancelled"] = json!(false);
-        payload["source"] = json!(compat::file_name(&file));
+        payload["source"] = json!(py::file_name(&file));
         Ok(Resp::ok(payload).spread().into())
     }))
 }

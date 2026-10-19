@@ -5,7 +5,7 @@
 //! through the shared `/api/cache/<filename>` route.
 
 mod extract;
-mod py;
+mod files;
 #[cfg(test)]
 mod tests;
 mod tracking;
@@ -24,7 +24,7 @@ use crate::game::executable::find_trove_executable;
 use crate::game::registry::{get_trove_locations, invalidate_trove_locations_cache};
 use crate::paths::display;
 use crate::{Args, Cmd, Dialog, Resp};
-use py::{path_arg, py_path, py_str, tk_path};
+use crate::py;
 
 pub fn commands() -> Vec<Cmd> {
     vec![
@@ -36,12 +36,12 @@ pub fn commands() -> Vec<Cmd> {
         Cmd::std("open_path_in_explorer", |a| Ok(open_path_in_explorer(a))),
         Cmd::std("extract_file_to_disk", extract::extract_file_to_disk),
         Cmd::std("ask_extraction_directory", |_| {
-            Ok(Value::String(pick_folder(Dialog::new("Select Extraction Destination")).map(|p| tk_path(&p)).unwrap_or_default()))
+            Ok(Value::String(pick_folder(Dialog::new("Select Extraction Destination")).map(|p| py::tk_path(&p)).unwrap_or_default()))
         }),
         Cmd::std("mass_extract_files", |a| Ok(extract::mass_extract_files(a.get(0), a.get(1)))),
         Cmd::std("select_tracking_directory", |_| {
             Ok(match pick_folder(Dialog::new("Select Update Tracking Folder")) {
-                Some(p) => json!({ "success": true, "path": tk_path(&p) }),
+                Some(p) => json!({ "success": true, "path": py::tk_path(&p) }),
                 None => json!({ "success": false }),
             })
         }),
@@ -91,7 +91,7 @@ fn check_cancel(operation: &str) -> Result<()> {
 }
 
 fn cancel(a: &Args) -> Value {
-    let operation = if truthy(a.get(0)) { py_str(a.get(0)) } else { String::new() };
+    let operation = if truthy(a.get(0)) { py::str_loose(a.get(0)) } else { String::new() };
     match flag(&operation) {
         Some(f) => {
             f.store(true, Ordering::SeqCst);
@@ -153,7 +153,7 @@ fn browse_for_game_dir() -> Value {
     let Some(picked) = pick_folder(Dialog::new("Select Trove Installation Folder")) else {
         return json!({ "success": false, "canceled": true });
     };
-    let path = py_path(&display(&picked));
+    let path = py::path_from_components(&display(&picked));
     if find_trove_executable(&path).is_some() {
         json!({ "success": true, "path": display(&path) })
     } else {
@@ -163,19 +163,19 @@ fn browse_for_game_dir() -> Value {
 
 /// A plain folder picker (no Trove check) for settings that just need a directory.
 fn browse_for_folder(a: &Args) -> Value {
-    let title = if a.is_empty() || !truthy(a.get(0)) { "Select Folder".to_string() } else { py_str(a.get(0)) };
+    let title = if a.is_empty() || !truthy(a.get(0)) { "Select Folder".to_string() } else { py::str_loose(a.get(0)) };
     match pick_folder(Dialog::new(&title)) {
-        Some(p) => json!({ "success": true, "path": display(&py_path(&display(&p))) }),
+        Some(p) => json!({ "success": true, "path": display(&py::path_from_components(&display(&p))) }),
         None => json!({ "success": false, "canceled": true }),
     }
 }
 
 fn open_path_in_explorer(a: &Args) -> Value {
-    let raw = if truthy(a.get(0)) { py_str(a.get(0)).trim().to_string() } else { String::new() };
+    let raw = if truthy(a.get(0)) { py::str_loose(a.get(0)).trim().to_string() } else { String::new() };
     if raw.is_empty() {
         return json!({ "success": false, "error": "No path was provided." });
     }
-    let target = py_path(&display(&crate::paths::expand_user(&display(&py_path(&raw)))));
+    let target = py::path_from_components(&display(&crate::paths::expand_user(&display(&py::path_from_components(&raw)))));
     if !target.exists() {
         return json!({ "success": false, "error": "The selected path does not exist." });
     }
@@ -202,25 +202,25 @@ fn detected_game_paths(force_refresh: bool) -> Value {
     };
 
     for game in get_trove_locations() {
-        add(game.name(), &display(&py_path(&display(&game.path))), game.is_steam(), game.is_glyph());
+        add(game.name(), &display(&py::path_from_components(&display(&game.path))), game.is_steam(), game.is_glyph());
     }
-    // The registered endpoint, so its migration of stale custom folders runs as it did.
-    let settings = crate::call("get_settings", Vec::new()).and_then(Result::ok).unwrap_or_default();
+    // Through the endpoint's envelope, so its migration of stale custom folders runs as it did.
+    let settings = crate::settings::get_settings(true).map(crate::response::normalize).unwrap_or_default();
     for item in settings.get("custom_directories").and_then(Value::as_array).into_iter().flatten() {
         let (name, path) = match item {
             Value::Object(o) => {
-                let path = o.get("path").filter(|p| truthy(p)).map(py_str).unwrap_or_default();
-                (o.get("name").map(py_str).unwrap_or_else(|| "Unknown".into()), path)
+                let path = o.get("path").filter(|p| truthy(p)).map(py::str_loose).unwrap_or_default();
+                (o.get("name").map(py::str_loose).unwrap_or_else(|| "Unknown".into()), path)
             }
             other => {
-                let raw = py_str(other);
-                (py_path(&raw).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(), raw)
+                let raw = py::str_loose(other);
+                (py::path_from_components(&raw).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(), raw)
             }
         };
         add(format!("(Custom) {}", name), &path, false, false);
     }
     if let Some(last) = settings.get("last_game_path").and_then(Value::as_str).filter(|s| !s.trim().is_empty()) {
-        let saved = py_path(last);
+        let saved = py::path_from_components(last);
         if find_trove_executable(&saved).is_some() {
             add("(Saved) Last Used".into(), &display(&saved), false, false);
         }
@@ -251,7 +251,7 @@ fn get_tracking_directories() -> Result<Value> {
     let dirs = tracking_list(store);
     let mut valid = Vec::new();
     for d in &dirs {
-        if path_arg(entry_path(d)?)?.exists() {
+        if py::path_arg_components(entry_path(d)?)?.exists() {
             valid.push(d.clone());
         }
     }
@@ -270,7 +270,7 @@ fn save_tracking_directory(name: &Value, path: &Value) -> Result<Value> {
     let mut data = crate::storage::read_storage();
     let store = storage_object(&mut data)?;
     let mut dirs = tracking_list(store);
-    let now = py::utc_iso_z();
+    let now = py::utcnow_iso_z();
     let mut found = false;
     for d in dirs.iter_mut() {
         if entry_path(d)? == path {
@@ -293,7 +293,7 @@ fn set_last_tracking_directory(path: &Value) -> Result<Value> {
     let mut data = crate::storage::read_storage();
     let store = storage_object(&mut data)?;
     let mut dirs = tracking_list(store);
-    let now = py::utc_iso_z();
+    let now = py::utcnow_iso_z();
     for d in dirs.iter_mut() {
         if entry_path(d)? == path {
             d["last_used"] = json!(now);

@@ -16,7 +16,7 @@ use super::manager::{self, lock_key, locked_keys, mods_signature, Signature};
 use super::{blocklist, ext, finish, get, js, now, or, or_str, spawn, to_int};
 use crate::game::registry::TroveGamePath;
 use crate::http;
-use crate::modfile::compat::{self, display};
+use crate::py::{self, display};
 use crate::modfile::TroveMod;
 use crate::{Args, Resp, KIWI_API_BASE};
 
@@ -53,7 +53,7 @@ fn pub_at(release: &Value) -> String {
 
 /// `<handle>/<slug>`: slugs are unique per owner, not globally.
 pub(super) fn mod_ref(handle: &Value, slug: &Value) -> String {
-    let clean = |v: &Value| compat::strip(&or_str(v)).trim_matches('/').to_string();
+    let clean = |v: &Value| py::strip(&or_str(v)).trim_matches('/').to_string();
     let (handle, slug) = (clean(handle), clean(slug));
     if handle.is_empty() {
         slug
@@ -64,7 +64,7 @@ pub(super) fn mod_ref(handle: &Value, slug: &Value) -> String {
 
 /// The newest release, scoped to `branch` when one is given and has releases.
 pub(super) fn latest_release<'a>(releases: &'a [Value], branch: &Value) -> Option<&'a Value> {
-    let mut candidates: Vec<&Value> = if compat::truthy(branch) { releases.iter().filter(|r| r.is_object() && get(r, "branch") == branch).collect() } else { Vec::new() };
+    let mut candidates: Vec<&Value> = if py::truthy(branch) { releases.iter().filter(|r| r.is_object() && get(r, "branch") == branch).collect() } else { Vec::new() };
     if candidates.is_empty() {
         candidates = releases.iter().filter(|r| r.is_object()).collect();
     }
@@ -77,7 +77,7 @@ pub(super) fn branch_variants(releases: &[Value]) -> Vec<Value> {
     let mut by_branch: IndexMap<String, &Value> = IndexMap::new();
     for r in releases.iter().filter(|r| r.is_object()) {
         let branch = match get(r, "branch") {
-            v if compat::truthy(v) => compat::py_str(v),
+            v if py::truthy(v) => py::str_of(v),
             _ => "main".to_string(),
         };
         match by_branch.get(&branch) {
@@ -94,7 +94,7 @@ pub(super) fn branch_variants(releases: &[Value]) -> Vec<Value> {
 
 /// A newer release exists on the branch the user installed.
 pub(super) fn release_outdated(matched: &Value, releases: &[Value]) -> bool {
-    if !compat::truthy(matched) || releases.is_empty() {
+    if !py::truthy(matched) || releases.is_empty() {
         return false;
     }
     let Some(latest) = latest_release(releases, get(matched, "branch")) else { return false };
@@ -113,7 +113,7 @@ pub(super) fn changes_since(matched: &Value, releases: &[Value]) -> Value {
     let installed = pub_at(matched);
     let branch = get(matched, "branch");
     let releases: Vec<&Value> = releases.iter().filter(|r| r.is_object()).collect();
-    let same_branch: Vec<&Value> = if compat::truthy(branch) { releases.iter().copied().filter(|r| get(r, "branch") == branch).collect() } else { Vec::new() };
+    let same_branch: Vec<&Value> = if py::truthy(branch) { releases.iter().copied().filter(|r| get(r, "branch") == branch).collect() } else { Vec::new() };
     let pool = if same_branch.is_empty() { releases } else { same_branch };
     let mut newer: Vec<&Value> = pool.into_iter().filter(|r| pub_at(r) > installed).collect();
     newer.sort_by_key(|r| std::cmp::Reverse(pub_at(r)));
@@ -128,7 +128,7 @@ pub(super) fn changes_since(matched: &Value, releases: &[Value]) -> Value {
                 "version": if tag.is_empty() { title } else { tag },
                 "title": shown_title,
                 "date": pub_at(r),
-                "notes": compat::strip(&or_str(get(r, "changelog"))),
+                "notes": py::strip(&or_str(get(r, "changelog"))),
             })
         })
         .collect();
@@ -152,8 +152,8 @@ pub(super) fn release_extension(release: &Value) -> &'static str {
 }
 
 pub(super) fn safe_filename(name: &str) -> String {
-    let kept: String = name.chars().filter(|&c| compat::is_printable(c) && !"<>:\"/\\|?*".contains(c)).collect();
-    let safe = compat::strip(&kept).trim_end_matches('.');
+    let kept: String = name.chars().filter(|&c| py::is_printable(c) && !"<>:\"/\\|?*".contains(c)).collect();
+    let safe = py::strip(&kept).trim_end_matches('.');
     if safe.is_empty() {
         "mod".into()
     } else {
@@ -165,12 +165,12 @@ pub(super) fn safe_filename(name: &str) -> String {
 pub(super) fn install_name(data: &[u8], ext: &str, release: &Value, detail: &Value) -> String {
     if ext == ".tmod" {
         if let Ok(m) = TroveMod::read_tmod(Path::new("download.tmod"), data.to_vec(), true) {
-            if let Some(title) = m.name().filter(|t| !compat::strip(t).is_empty()) {
+            if let Some(title) = m.name().filter(|t| !py::strip(t).is_empty()) {
                 return safe_filename(title);
             }
         }
     }
-    let filename = compat::name_of(&or_str(get(release, "filename")));
+    let filename = py::name_of(&or_str(get(release, "filename")));
     let low = filename.to_lowercase();
     for known in [".tmod", ".zip"] {
         if low.ends_with(known) && filename.is_char_boundary(filename.len() - known.len()) {
@@ -178,7 +178,7 @@ pub(super) fn install_name(data: &[u8], ext: &str, release: &Value, detail: &Val
         }
     }
     let t = get(detail, "title");
-    safe_filename(&if compat::truthy(t) { compat::py_str(t) } else { "mod".into() })
+    safe_filename(&if py::truthy(t) { py::str_of(t) } else { "mod".into() })
 }
 
 /// POSTs a batch of sha256s to `/mods/lookup`: `results` ({hash: {mod, release}}) and
@@ -196,7 +196,7 @@ fn lookup_hashes(hashes: &[String], releases: &str, label: &str) -> Option<Value
             finish(req, ok);
             if ok {
                 match http::read_json(resp) {
-                    Ok(v) => return Some(if compat::truthy(&v) { v } else { json!({}) }),
+                    Ok(v) => return Some(if py::truthy(&v) { v } else { json!({}) }),
                     Err(e) => eprintln!("Mods Hub lookup failed: {}", e),
                 }
             }
@@ -216,25 +216,25 @@ fn unsubscribe(ids: &[String]) {
 /// Deletes installed copies of mods a moderator took down, for good and silently. A
 /// Workshop copy is unsubscribed from and goes with its item folder.
 fn remove_taken_down(game: &str, files: &[PathBuf]) -> bool {
-    let game_path = compat::py_path(game);
-    let mods_dir = compat::resolve(&game_path.join("mods"));
-    let workshop = TroveGamePath::new(game_path, None).workshop_path().map(|w| compat::resolve(&w));
+    let game_path = py::py_path(game);
+    let mods_dir = py::resolve(&game_path.join("mods"));
+    let workshop = TroveGamePath::new(game_path, None).workshop_path().map(|w| py::resolve(&w));
     let (mut local, mut items) = (Vec::new(), Vec::<PathBuf>::new());
     for f in files {
-        let path = compat::resolve(f);
+        let path = py::resolve(f);
         if under(&path, &mods_dir) {
             local.push(path);
         } else if let Some(ws) = workshop.as_ref().filter(|ws| under(&path, ws)) {
-            if let Some(first) = compat::relative_parts(&path, ws).and_then(|p| p.into_iter().next()) {
+            if let Some(first) = py::relative_parts(&path, ws).and_then(|p| p.into_iter().next()) {
                 let item = ws.join(first);
-                if !items.iter().any(|i| compat::same_path(i, &item)) {
+                if !items.iter().any(|i| py::same_path(i, &item)) {
                     items.push(item);
                 }
             }
         }
     }
     items.sort_by_key(|p| display(p).to_lowercase());
-    let ids: Vec<String> = items.iter().map(|i| compat::file_name(i)).filter(|n| super::isdigit(n)).collect();
+    let ids: Vec<String> = items.iter().map(|i| py::file_name(i)).filter(|n| py::isdigit(n)).collect();
     if !ids.is_empty() {
         let mut sorted = ids;
         sorted.sort();
@@ -257,7 +257,7 @@ fn remove_taken_down(game: &str, files: &[PathBuf]) -> bool {
 
 /// `parent in path.parents`.
 fn under(path: &Path, parent: &Path) -> bool {
-    compat::is_within(path, parent) && !compat::same_path(path, parent)
+    py::is_within(path, parent) && !py::same_path(path, parent)
 }
 
 struct RefInfo {
@@ -281,10 +281,10 @@ fn releases_of(v: &Value) -> Vec<Value> {
 /// Which installed mods come from the hub (and whether each is outdated), keyed by
 /// `<handle>/<slug>`. Cached against the mods folder's signature; `force` re-checks.
 fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Value>, IndexMap<String, Option<String>>)> {
-    if !compat::truthy(game) {
+    if !py::truthy(game) {
         return Ok((Map::new(), IndexMap::new()));
     }
-    let key = compat::py_str(game);
+    let key = py::str_of(game);
     let game_str = super::path_string(game)?;
     let mut signature = mods_signature(&game_str);
     if !force {
@@ -296,7 +296,7 @@ fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Valu
     }
 
     // Enabled files first: of several copies, the one the game loads is what counts.
-    let tp = TroveGamePath::new(compat::py_path(&game_str), None);
+    let tp = TroveGamePath::new(py::py_path(&game_str), None);
     let mut files: Vec<(bool, PathBuf, bool)> = Vec::new();
     for (enabled, group) in [(true, [tp.enabled_tmods(), tp.enabled_zips()].concat()), (false, [tp.disabled_tmods(), tp.disabled_zips()].concat())] {
         for f in group {
@@ -329,7 +329,7 @@ fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Valu
             let Some(payload) = lookup_hashes(batch, "latest", "Identifying Installed Mods") else {
                 return Ok((Map::new(), IndexMap::new()));
             };
-            for h in compat::iterate(or(get(&payload, "taken_down"), &json!([]))).unwrap_or_default() {
+            for h in py::iterate(or(get(&payload, "taken_down"), &json!([]))).unwrap_or_default() {
                 if let Value::String(h) = h {
                     if !taken_down.contains(&h) {
                         taken_down.push(h);
@@ -344,7 +344,7 @@ fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Valu
                 let m = or(get(&entry, "mod"), &json!({})).clone();
                 let matched = or(get(&entry, "release"), &json!({})).clone();
                 let slug = get(&m, "slug").clone();
-                if !compat::truthy(&slug) {
+                if !py::truthy(&slug) {
                     continue;
                 }
                 let handle = get(&m, "handle").clone();
@@ -355,7 +355,7 @@ fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Valu
                     continue;
                 }
                 let page_url = match get(&m, "page_url") {
-                    v if compat::truthy(v) => v.clone(),
+                    v if py::truthy(v) => v.clone(),
                     _ => json!(format!("{}/{}", MOD_PAGE_BASE, r)),
                 };
                 let releases = match get(&m, "releases") {
@@ -374,7 +374,7 @@ fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Valu
                         page_url,
                         handle,
                         slug,
-                        is_beta: compat::truthy(get(&m, "is_beta")),
+                        is_beta: py::truthy(get(&m, "is_beta")),
                         outdated: false,
                     },
                 );
@@ -405,7 +405,7 @@ fn compute_install_states(game: &Value, force: bool) -> Result<(Map<String, Valu
         if let Some(results) = or(get(&payload, "results"), &json!({})).as_object() {
             for entry in results.values() {
                 let m = get(entry, "mod");
-                if compat::truthy(get(m, "slug")) && compat::truthy(get(m, "releases")) {
+                if py::truthy(get(m, "slug")) && py::truthy(get(m, "releases")) {
                     history.insert(mod_ref(get(m, "handle"), get(m, "slug")), releases_of(get(m, "releases")));
                 }
             }
@@ -458,7 +458,7 @@ pub(super) fn fetch_mod_detail(r: &str, use_cache: bool) -> Option<Value> {
             if ok {
                 match http::read_json(resp) {
                     Ok(v) => {
-                        let detail = if compat::truthy(&v) { v } else { json!({}) };
+                        let detail = if py::truthy(&v) { v } else { json!({}) };
                         DETAIL_CACHE.lock().get_or_insert_with(HashMap::new).insert(r.to_string(), (now(), detail.clone()));
                         return Some(detail);
                     }
@@ -476,7 +476,7 @@ pub(super) fn fetch_mod_detail(r: &str, use_cache: bool) -> Option<Value> {
 
 fn listing(a: &Args) -> Result<Value> {
     let page = match a.get(0) {
-        v if compat::truthy(v) => compat::py_int(v)?,
+        v if py::truthy(v) => py::int_lenient(v)?,
         _ => 1,
     }
     .max(1);
@@ -485,11 +485,11 @@ fn listing(a: &Args) -> Result<Value> {
         _ => "popular".to_string(),
     };
     let mut params: Vec<(&str, String)> = vec![("limit", ITEMS_PER_PAGE.to_string()), ("offset", ((page - 1) * ITEMS_PER_PAGE).to_string()), ("sort", sort)];
-    if compat::truthy(a.get(1)) {
-        params.push(("q", compat::py_str(a.get(1))));
+    if py::truthy(a.get(1)) {
+        params.push(("q", py::str_of(a.get(1))));
     }
-    if compat::truthy(a.get(2)) {
-        params.push(("tag", compat::py_str(a.get(2))));
+    if py::truthy(a.get(2)) {
+        params.push(("tag", py::str_of(a.get(2))));
     }
     let base = format!("{}/mods", KIWI_API_BASE);
     let req = ext("Browsing the Mods Hub", &base);
@@ -508,16 +508,16 @@ fn listing(a: &Args) -> Result<Value> {
         return Ok(json!({ "success": false, "error": format!("The mod hub returned HTTP {}.", resp.status()) }));
     }
     let payload = http::read_json(resp)?;
-    let payload = if compat::truthy(&payload) { payload } else { json!({}) };
+    let payload = if py::truthy(&payload) { payload } else { json!({}) };
     let items = or(get(&payload, "items"), &json!([])).clone();
-    let items = compat::iterate(&items)?;
+    let items = py::iterate(&items)?;
     let total = match get(&payload, "total") {
-        v if compat::truthy(v) => compat::py_int(v)?,
+        v if py::truthy(v) => py::int_lenient(v)?,
         _ => items.len() as i64,
     };
     let max_pages = ((total + ITEMS_PER_PAGE - 1).div_euclid(ITEMS_PER_PAGE)).max(1);
 
-    let (states, _) = compute_install_states(a.get(4), compat::truthy(a.get(6)))?;
+    let (states, _) = compute_install_states(a.get(4), py::truthy(a.get(6)))?;
 
     let mut result = Vec::new();
     for m in &items {
@@ -528,10 +528,10 @@ fn listing(a: &Args) -> Result<Value> {
         let r = mod_ref(handle, slug);
         let state = states.get(&r).cloned().unwrap_or(json!({}));
         let previews = get(m, "preview_urls");
-        let first_preview = if compat::truthy(previews) { super::items(previews).first().cloned().unwrap_or(Value::Null) } else { Value::Null };
+        let first_preview = if py::truthy(previews) { super::items(previews).first().cloned().unwrap_or(Value::Null) } else { Value::Null };
         let preview = or(get(m, "banner_url"), or(&first_preview, &json!(""))).clone();
         let page_url = match get(m, "page_url") {
-            v if compat::truthy(v) => v.clone(),
+            v if py::truthy(v) => v.clone(),
             _ => json!(format!("{}/{}", MOD_PAGE_BASE, r)),
         };
         result.push(json!({
@@ -546,9 +546,9 @@ fn listing(a: &Args) -> Result<Value> {
             "image": preview,
             "page_url": page_url,
             "tags": or(get(m, "categories"), or(get(m, "tags"), &json!([]))),
-            "is_beta": compat::truthy(get(m, "is_beta")),
-            "is_installed": compat::truthy(get(&state, "is_installed")),
-            "needs_update": compat::truthy(get(&state, "needs_update")),
+            "is_beta": py::truthy(get(m, "is_beta")),
+            "is_installed": py::truthy(get(&state, "is_installed")),
+            "needs_update": py::truthy(get(&state, "needs_update")),
             "installed_branch": get(&state, "branch"),
         }));
     }
@@ -568,10 +568,10 @@ pub(super) fn get_mods_hub_mods(a: &Args) -> Result<Value> {
 /// Downloads a release into the mods folder: (success, error, installed branch).
 fn do_install(game: &Value, r: &Value, branch: &Value) -> Result<(bool, Option<String>, Value)> {
     let fail = |msg: &str| Ok((false, Some(msg.to_string()), Value::Null));
-    if !compat::truthy(game) {
+    if !py::truthy(game) {
         return fail("No game path provided.");
     }
-    let ref_str = compat::py_str(r);
+    let ref_str = py::str_of(r);
     // The installed file decides the suffix to keep, the stale copy to clear, and
     // whether the user's update lock applies.
     let (states, paths) = compute_install_states(game, false)?;
@@ -588,12 +588,12 @@ fn do_install(game: &Value, r: &Value, branch: &Value) -> Result<(bool, Option<S
     // Never cached: a forced refresh sees a new release through /lookup first.
     let Some(detail) = fetch_mod_detail(&ref_str, false) else { return fail("Couldn't reach the mod hub to fetch this mod.") };
     let releases = releases_of(or(get(&detail, "releases"), &json!([])));
-    let Some(release) = latest_release(&releases, branch).filter(|r| compat::truthy(get(r, "download_url"))).cloned() else {
+    let Some(release) = latest_release(&releases, branch).filter(|r| py::truthy(get(r, "download_url"))).cloned() else {
         return fail("This mod has no downloadable releases yet.");
     };
 
-    let url = compat::py_str(get(&release, "download_url"));
-    let label = format!("Downloading Mod {}", compat::py_str(or(get(&detail, "title"), r)));
+    let url = py::str_of(get(&release, "download_url"));
+    let label = format!("Downloading Mod {}", py::str_of(or(get(&detail, "title"), r)));
     let req = ext(&label, &url);
     let Ok((status, data)) = super::download(&url, USER_AGENT, 310, req) else { return fail("Failed to download the mod file from the hub.") };
     if status != 200 {
@@ -601,20 +601,20 @@ fn do_install(game: &Value, r: &Value, branch: &Value) -> Result<(bool, Option<S
     }
     let ext_name = release_extension(&release);
     let safe_name = install_name(&data, ext_name, &release, &detail);
-    let mods_dir = compat::path_arg(game)?.join("mods");
-    compat::mkdir_all(&mods_dir)?;
+    let mods_dir = py::path_arg(game)?.join("mods");
+    py::mkdir_all(&mods_dir)?;
     // Updating a mod the user switched off leaves it switched off.
     let suffix = if old_path.as_deref().unwrap_or("").to_lowercase().ends_with(".disabled") { ".disabled" } else { "" };
     let out_path = mods_dir.join(format!("{}{}{}", safe_name, ext_name, suffix));
-    compat::write_bytes(&out_path, &data)?;
+    py::write_bytes(&out_path, &data)?;
 
     if let Some(old) = &old_path {
-        let old = compat::py_path(old);
-        if old.exists() && !compat::same_path(&compat::resolve(&old), &compat::resolve(&out_path)) {
+        let old = py::py_path(old);
+        if old.exists() && !py::same_path(&py::resolve(&old), &py::resolve(&out_path)) {
             let _ = std::fs::remove_file(&old);
         }
     }
-    install_cache_pop(&compat::py_str(game));
+    install_cache_pop(&py::str_of(game));
     Ok((true, None, get(&release, "branch").clone()))
 }
 
@@ -649,7 +649,7 @@ pub(super) fn install_mods_hub_mod_sync(game: &Value, r: &Value, branch: &Value)
 /// A mod's variants: one per branch, the latest release of each.
 pub(super) fn get_mods_hub_variants(a: &Args) -> Result<Value> {
     let r = a.get(0);
-    let Some(detail) = fetch_mod_detail(&compat::py_str(r), false) else {
+    let Some(detail) = fetch_mod_detail(&py::str_of(r), false) else {
         return Ok(Resp::fail("Couldn't reach the Mods Hub to load this mod's variants.", "MODS_HUB_VARIANTS_FAILED").into());
     };
     let mut variants = Vec::new();
@@ -657,8 +657,8 @@ pub(super) fn get_mods_hub_variants(a: &Args) -> Result<Value> {
         let branch = or(get(&v, "branch"), &json!("main")).clone();
         let format = match get(&v, "format") {
             Value::String(s) => s.trim_start_matches('.').to_string(),
-            other if !compat::truthy(other) => String::new(),
-            other => anyhow::bail!("'{}' object has no attribute 'lstrip'", compat::type_name(other)),
+            other if !py::truthy(other) => String::new(),
+            other => anyhow::bail!("'{}' object has no attribute 'lstrip'", py::type_name(other)),
         };
         variants.push(json!({
             "branch": branch,
@@ -679,17 +679,17 @@ pub(super) fn get_mods_hub_variants(a: &Args) -> Result<Value> {
 /// removes the Steam Workshop items the blocklist names, by id or by author.
 pub(super) fn remove_taken_down_mods(game: &str) {
     let _ = compute_install_states(&json!(game), true);
-    let Some(workshop) = TroveGamePath::new(compat::py_path(game), None).workshop_path() else { return };
+    let Some(workshop) = TroveGamePath::new(py::py_path(game), None).workshop_path() else { return };
     let Ok(rd) = std::fs::read_dir(&workshop) else { return };
-    let installed: Vec<PathBuf> = rd.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.is_dir() && super::isdigit(&compat::file_name(p))).collect();
+    let installed: Vec<PathBuf> = rd.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.is_dir() && py::isdigit(&py::file_name(p))).collect();
     if installed.is_empty() {
         return;
     }
     let (items, authors) = blocklist::workshop();
-    let names: Vec<String> = installed.iter().map(|p| compat::file_name(p)).collect();
+    let names: Vec<String> = installed.iter().map(|p| py::file_name(p)).collect();
     let creators = if authors.is_empty() { HashMap::new() } else { blocklist::workshop_creators(&names) };
     let listed: Vec<PathBuf> = installed.into_iter().filter(|p| {
-        let name = compat::file_name(p);
+        let name = py::file_name(p);
         items.contains(&name) || creators.get(&name).map(|c| authors.contains(c)).unwrap_or(false)
     }).collect();
     if !listed.is_empty() {
@@ -699,7 +699,7 @@ pub(super) fn remove_taken_down_mods(game: &str) {
 
 /// Paths of installed mods the hub resolved as its own; the Trovesaurus pass skips them.
 pub(super) fn hub_claimed_paths(game: &Value, force: bool) -> HashSet<String> {
-    if !compat::truthy(game) {
+    if !py::truthy(game) {
         return HashSet::new();
     }
     match compute_install_states(game, force) {
@@ -727,8 +727,8 @@ pub(super) fn get_mods_hub_install_states(game: &Value, force: bool) -> Value {
                     "branch": get(st, "branch"),
                     "name": get(st, "name"),
                     "page_url": get(st, "page_url"),
-                    "is_beta": compat::truthy(get(st, "is_beta")),
-                    "has_update": compat::truthy(get(st, "needs_update")),
+                    "is_beta": py::truthy(get(st, "is_beta")),
+                    "has_update": py::truthy(get(st, "needs_update")),
                     "changes": get(st, "changes"),
                 }),
             );
@@ -741,15 +741,15 @@ pub(super) fn get_mods_hub_install_states(game: &Value, force: bool) -> Value {
 pub(super) fn delete_mods_hub_installed_mod(a: &Args) -> Result<Value> {
     Ok(super::guard("DELETE_MODS_HUB_MOD_FAILED", || {
         let game = a.get(0);
-        if !compat::truthy(game) {
+        if !py::truthy(game) {
             return Ok(Resp::fail("No game path provided.", "MISSING_GAME_PATH").into());
         }
-        let r = compat::py_str(a.get(1));
+        let r = py::str_of(a.get(1));
         let (_, paths) = compute_install_states(game, false)?;
         let mut path = paths.get(&r).cloned().flatten().filter(|p| !p.is_empty());
         if path.is_none() {
             // The cache may predate a manual change: rescan once before giving up.
-            install_cache_pop(&compat::py_str(game));
+            install_cache_pop(&py::str_of(game));
             let (_, paths) = compute_install_states(game, false)?;
             path = paths.get(&r).cloned().flatten().filter(|p| !p.is_empty());
         }
@@ -757,7 +757,7 @@ pub(super) fn delete_mods_hub_installed_mod(a: &Args) -> Result<Value> {
             return Ok(Resp::fail("Could not find an installed file for this mod.", "INSTALLED_FILE_NOT_FOUND").into());
         };
         let result = manager::delete_mod(game, &json!(path));
-        install_cache_pop(&compat::py_str(game));
+        install_cache_pop(&py::str_of(game));
         Ok(result)
     }))
 }
@@ -774,7 +774,7 @@ pub(super) fn clear_mods_hub_cache(_: &Args) -> Result<Value> {
         let file = crate::paths::get_cache_root().join("mods_hub_categories.json");
         let mut removed = Vec::new();
         if file.exists() {
-            compat::unlink(&file)?;
+            py::unlink(&file)?;
             removed.push("mods_hub_categories.json");
         }
         *INSTALL_CACHE.lock() = None;

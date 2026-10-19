@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use regex::Regex;
 use serde_json::{json, Map, Value};
 
-use super::py::{self, Float, Int, Num};
+use crate::py::{self, Float, Int, Num};
 use super::pyd::{self, Errors};
 
 /// Blessing of the Lilypad: the ally buff, per stat class.
@@ -64,7 +64,7 @@ impl ParsedChart {
     pub fn json(&self) -> Value {
         let mut stats = Map::new();
         for (name, flat, pct) in &self.stats {
-            stats.insert(name.clone(), json!({"flat": py::float(*flat), "pct": py::float(*pct)}));
+            stats.insert(name.clone(), json!({"flat": py::json_float(*flat), "pct": py::json_float(*pct)}));
         }
         json!({
             "stats": stats,
@@ -227,7 +227,7 @@ impl StarChartParser {
         }
         let text = match code {
             Value::String(s) => s.clone(),
-            other => py::repr(other),
+            other => py::repr_latin1(other),
         };
         let Ok(selected) = self.decode_build_code(&text) else {
             return result;
@@ -479,7 +479,7 @@ fn load_json(base: &Path, rel: &str) -> Result<Value, String> {
 
 /// `x[key]` on loaded data, with Python's KeyError text.
 fn key<'a>(v: &'a Value, k: &str) -> Result<&'a Value, String> {
-    py::subscript(v, k)
+    Ok(py::subscript(v, k)?)
 }
 
 fn index(v: &Value, i: usize) -> Result<Num, String> {
@@ -805,12 +805,12 @@ impl Engine {
                     "layout": layout,
                     "base_dmg": row.cfirst.round(digits(2)).json(),
                     "crit_dmg": row.csecond.round(digits(1)).json(),
-                    "light": py::float(row.light),
+                    "light": py::json_float(row.light),
                     "bonus_dmg": fourth.round(8).json(),
                     "crit_bonus": (fifth - Int(100)).round(8).json(),
                     "total_dmg": row.total.round(digits(2)).json(),
-                    "class_bonus": class_bonus.map(py::float),
-                    "coefficient": py::float(row.coefficient),
+                    "class_bonus": class_bonus.map(py::json_float),
+                    "coefficient": py::json_float(row.coefficient),
                 })
             })
             .collect())

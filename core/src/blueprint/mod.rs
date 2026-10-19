@@ -15,7 +15,7 @@ mod materials;
 mod merge;
 mod model;
 mod multipart;
-mod py;
+mod pyobj;
 mod pyzlib;
 mod qb;
 mod tmod;
@@ -37,7 +37,8 @@ use crate::routes::{Params, Request, Response, Route};
 use crate::{Args, Cmd, Dialog};
 
 use multipart::{Form, FormError};
-use py::Py;
+use pyobj::Py;
+use crate::py;
 use util::{Error, Kind, Result};
 
 pub fn commands() -> Vec<Cmd> {
@@ -128,9 +129,9 @@ fn base_name(filename: &str, default: &str) -> String {
 
 /// `_form_json(field, default, what)`.
 fn form_json(form: &Form, field: &str, default: &str, what: &str) -> Result<Py> {
-    py::loads(&form.text(field, default)).map_err(|e| match e {
-        py::JsonError::Invalid => refused(400, what),
-        py::JsonError::TooDeep => Error::internal("maximum recursion depth exceeded"),
+    pyobj::loads(&form.text(field, default)).map_err(|e| match e {
+        pyobj::JsonError::Invalid => refused(400, what),
+        pyobj::JsonError::TooDeep => Error::internal("maximum recursion depth exceeded"),
     })
 }
 
@@ -158,7 +159,7 @@ fn stack<'a>(form: &Form<'a>) -> Result<(Vec<&'a [u8]>, Py)> {
 
 /// `_anchor()`.
 fn anchor(form: &Form) -> i128 {
-    py::int_from_str(&form.text("anchor_at", "0")).unwrap_or(0)
+    pyobj::int_from_str(&form.text("anchor_at", "0")).unwrap_or(0)
 }
 
 fn lower_ends_with(name: &str, suffix: &str) -> bool {
@@ -472,7 +473,7 @@ fn search(req: &Request, _: &Params) -> Response {
         let raw_limit = multipart::query_raw(req, "limit").map(|b| py::latin1(&b)).filter(|s| !s.is_empty());
         let limit = match raw_limit {
             None => 60,
-            Some(s) => py::int_from_str(&s).map(|v| v.clamp(1, 200) as usize).unwrap_or(60),
+            Some(s) => pyobj::int_from_str(&s).map(|v| v.clamp(1, 200) as usize).unwrap_or(60),
         };
         let q = multipart::query_text(req, "q").unwrap_or_default();
         let kind = multipart::query_text(req, "type").unwrap_or_default();
@@ -526,7 +527,7 @@ fn os_error(e: &std::io::Error, path: &str) -> String {
         std::io::ErrorKind::StorageFull => (28, "No space left on device"),
         _ => return e.to_string(),
     };
-    format!("[Errno {errno}] {text}: {}", py::repr_str(path))
+    format!("[Errno {errno}] {text}: {}", py::repr_str_cc(path))
 }
 
 /// `save_blueprint_editor_file(filename, data_base64)`: the page's downloads, through a

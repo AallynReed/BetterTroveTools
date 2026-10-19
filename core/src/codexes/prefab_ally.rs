@@ -15,7 +15,7 @@ use serde_json::{json, Map, Value};
 
 use super::binfab::{self, parse_binfab_content, ParsedPrefab};
 use super::binfab_reader::{self, parse_collection_table};
-use super::py;
+use crate::py;
 use crate::game::archive::{self, GameIndex, IndexedFile};
 
 pub const PREFAB_PREFIX: &str = "collections/pet/";
@@ -94,7 +94,7 @@ impl<T> Derived<T> {
 pub fn require_prefabs_root(game_path: &Path) -> Result<PathBuf> {
     let root = game_path.join("prefabs");
     if !root.exists() {
-        bail!("Prefabs directory was not found: {}", py::path_str(&root));
+        bail!("Prefabs directory was not found: {}", py::path_str_simple(&root));
     }
     Ok(root)
 }
@@ -191,7 +191,7 @@ impl PrefabIndex {
 pub fn ally_key_from_prefab_path(prefab_path: &str) -> String {
     let normalized = prefab_path.replace('\\', "/");
     let rest = if normalized.to_lowercase().starts_with(PREFAB_PREFIX) { &normalized[PREFAB_PREFIX.len()..] } else { &normalized };
-    let key = py::stem(rest);
+    let key = py::stem_any_sep(rest);
     if key == "tentacle_bopplepod" {
         return "tentacle_bobblepod".into();
     }
@@ -347,7 +347,7 @@ pub fn load_collection_pet_category_map(game: &GameFiles) -> Result<HashMap<Stri
     if let Some(content) = game.read_prefab("collections/collection_pet.binfab")? {
         for group in parse_collection_table(&content) {
             for member in &group.members {
-                out.insert(py::stem(&member.replace('\\', "/")).to_string(), group.id.clone());
+                out.insert(py::stem_any_sep(&member.replace('\\', "/")).to_string(), group.id.clone());
             }
         }
     }
@@ -357,7 +357,7 @@ pub fn load_collection_pet_category_map(game: &GameFiles) -> Result<HashMap<Stri
 // --- Blueprints ----------------------------------------------------------------------
 
 pub fn extract_designer_from_blueprint(blueprint: &str) -> String {
-    DESIGNER_RE.captures(py::stem(blueprint)).map(|c| c[1].to_string()).unwrap_or_default()
+    DESIGNER_RE.captures(py::stem_any_sep(blueprint)).map(|c| c[1].to_string()).unwrap_or_default()
 }
 
 /// `re.sub(r"\[[^\]]+\]", "", text)`.
@@ -450,7 +450,7 @@ pub fn load_blueprint_path_map(game: &GameFiles) -> Result<Arc<BlueprintMap>> {
                     return None;
                 }
                 let no_ext = normalized.strip_suffix(".blueprint").unwrap_or(&normalized).to_string();
-                let basename = py::name(&no_ext).to_lowercase();
+                let basename = py::name_any_sep(&no_ext).to_lowercase();
                 let unbracketed = strip_brackets(&basename);
                 let key = normalize_blueprint_lookup_key(&basename);
                 Some([lowered, basename, unbracketed, no_ext, key])
@@ -475,7 +475,7 @@ pub fn resolve_blueprint_catalog_path(blueprint: &str, map: &BlueprintMap) -> St
     }
     let trimmed = normalized.strip_suffix(".blueprint").unwrap_or(&normalized).trim_start_matches('$');
     let normalized = strip_leading_junk(trimmed).to_string();
-    let basename = py::name(&normalized).to_lowercase();
+    let basename = py::name_any_sep(&normalized).to_lowercase();
     let keys = [format!("{}.blueprint", normalized.to_lowercase()), basename.clone(), strip_brackets(&basename)];
     for key in &keys {
         if let Some(hit) = map.exact.get(key) {
@@ -993,12 +993,12 @@ pub fn build_allies_dataset(game_path: &Path, extract_dir: &Path, locale: &str) 
     let count = |f: &dyn Fn(&Value) -> bool| merged.values().filter(|r| f(r)).count();
     let filename = |r: &Value| r["filename"].as_str().unwrap_or("").to_string();
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("match_count".into(), json!(matches.len()));
     manifest.insert("extracted_count".into(), json!(loaded.len()));
     manifest.insert("matched_allies".into(), json!(merged.len()));
     manifest.insert("decoded_tooltips".into(), json!(decoded_count));
-    manifest.insert("extract_dir".into(), json!(py::path_str(extract_dir)));
+    manifest.insert("extract_dir".into(), json!(py::path_str_simple(extract_dir)));
     manifest.insert("ability_paths".into(), json!(ability_paths.len()));
     manifest.insert("resolved_abilities".into(), json!(abilities.values().filter(|a| !a.description.is_empty() || !a.name.is_empty()).count()));
     manifest.insert("decoded_mastery".into(), json!(count(&|r| multipliers.contains_key(&filename(r)))));

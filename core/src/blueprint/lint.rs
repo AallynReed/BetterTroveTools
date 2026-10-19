@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 
 use super::codec::{self, Decoded, Voxel};
 use super::materials;
-use super::py;
+use crate::py;
 use super::util::{Cell, FxBuild, OrderedMap};
 
 /// label -> (max_x, max_y, max_z), in `CREATION_TYPES` order.

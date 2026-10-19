@@ -91,7 +91,7 @@ fn real_mods_extract_like_python() {
     let (mods, out, scratch) = (&paths[0], &paths[1], &paths[2]);
     let _ = std::fs::remove_dir_all(scratch);
     let report: Value = serde_json::from_str(&std::fs::read_to_string(out.join("report.json")).unwrap()).unwrap();
-    let root = crate::modfile::compat::path_str(&mods.to_string_lossy());
+    let root = crate::py::path_str(&mods.to_string_lossy());
     let digest = |v: &Value| {
         let opts = crate::json::DumpOpts { sort_keys: true, ..Default::default() };
         hex::encode(Md5::digest(crate::json::dumps_with(&normalize(v, &root, ""), opts).as_bytes()))
@@ -109,6 +109,7 @@ fn real_mods_extract_like_python() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "fixtures recorded on Windows paths")]
 fn endpoints_match_python() {
     crate::ctx::testing::init();
     let cases: Value = serde_json::from_str(&std::fs::read_to_string(fixtures().join("cases.json")).unwrap()).unwrap();
@@ -119,7 +120,8 @@ fn endpoints_match_python() {
     std::env::set_var("APPDATA", sandbox.join("appdata"));
     let fixed = chrono::DateTime::parse_from_rfc3339(cases["fixed_now"].as_str().unwrap()).unwrap();
     FIXED_NOW.store(fixed.timestamp_micros(), std::sync::atomic::Ordering::SeqCst);
-    let root = sandbox.to_string_lossy().into_owned();
+    // The runner's temp dir can be an 8.3 short path; responses carry the long form.
+    let root = crate::game::registry::dunce_canonical(&sandbox).unwrap_or(sandbox.clone()).to_string_lossy().into_owned();
 
     let (mut token, mut placed) = (String::new(), json!([]));
     for (i, case) in cases["calls"].as_array().unwrap().iter().enumerate() {

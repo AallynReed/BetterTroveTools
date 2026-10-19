@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use serde_json::{json, Value};
 
 use super::arity;
-use super::py;
+use crate::py;
 use super::simulator::{storage_get, storage_set};
 use crate::storage::{read_storage, write_storage};
 use crate::{ctx, Cmd, Resp};
@@ -51,7 +51,7 @@ fn rotate(origin: (f64, f64), point: (f64, f64), angle: f64) -> (f64, f64) {
 
 fn set_coords(node: &mut Value, p: (f64, f64)) {
     if let Some(obj) = node.as_object_mut() {
-        obj.insert("Coords".into(), json!([py::float(p.0), py::float(p.1)]));
+        obj.insert("Coords".into(), json!([py::json_float(p.0), py::json_float(p.1)]));
     }
 }
 
@@ -97,7 +97,7 @@ static CHART_CACHE: Mutex<Option<(Option<SystemTime>, Value)>> = Mutex::new(None
 
 fn calculate(path: &std::path::Path) -> Result<Value, String> {
     let text = std::fs::read_to_string(path).map_err(|e| match e.kind() {
-        std::io::ErrorKind::NotFound => format!("[Errno 2] No such file or directory: {}", py::str_repr(&crate::paths::display(path))),
+        std::io::ErrorKind::NotFound => format!("[Errno 2] No such file or directory: {}", py::repr_str_latin1(&crate::paths::display(path))),
         _ => e.to_string(),
     })?;
     let mut chart: Value = serde_json::from_str(&text).map_err(|e| e.to_string())?;
@@ -140,7 +140,7 @@ fn key_of(name: &Value) -> Result<String, String> {
         Value::String(s) => Ok(s.clone()),
         Value::Null => Ok("null".into()),
         Value::Bool(b) => Ok(b.to_string()),
-        Value::Number(_) => Ok(py::repr(name)),
+        Value::Number(_) => Ok(py::repr_latin1(name)),
         other => Err(format!("cannot use '{0}' as a dict key (unhashable type: '{0}')", py::type_name(other))),
     }
 }

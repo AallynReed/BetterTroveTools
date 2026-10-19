@@ -8,7 +8,7 @@ use serde_json::{json, Value};
 
 use super::{ext, finish, get, or_str};
 use crate::http;
-use crate::modfile::compat;
+use crate::py;
 
 const STEAM_DETAILS_URL: &str = "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
@@ -41,10 +41,10 @@ fn fetch() -> Value {
 /// `{str(x) for x in data.get(key) or ()}`.
 fn str_set(data: &Value, key: &str) -> HashSet<String> {
     let v = get(data, key);
-    if !compat::truthy(v) {
+    if !py::truthy(v) {
         return HashSet::new();
     }
-    compat::iterate(v).unwrap_or_default().iter().map(compat::py_str).collect()
+    py::iterate(v).unwrap_or_default().iter().map(py::str_of).collect()
 }
 
 fn as_dict(data: Value) -> Value {
@@ -83,9 +83,9 @@ pub(super) fn workshop_creators(item_ids: &[String]) -> HashMap<String, String> 
         }
     };
     let mut out = HashMap::new();
-    for d in compat::iterate(&details).unwrap_or_default() {
-        if d.is_object() && compat::truthy(get(&d, "creator")) {
-            out.insert(compat::py_str(get(&d, "publishedfileid")), compat::py_str(get(&d, "creator")));
+    for d in py::iterate(&details).unwrap_or_default() {
+        if d.is_object() && py::truthy(get(&d, "creator")) {
+            out.insert(py::str_of(get(&d, "publishedfileid")), py::str_of(get(&d, "creator")));
         }
     }
     out
@@ -122,10 +122,10 @@ impl Blocklist {
             return true;
         }
         let downloads = get(m, "downloads");
-        if !compat::truthy(downloads) {
+        if !py::truthy(downloads) {
             return false;
         }
-        compat::iterate(downloads)
+        py::iterate(downloads)
             .unwrap_or_default()
             .iter()
             .filter(|f| f.is_object())

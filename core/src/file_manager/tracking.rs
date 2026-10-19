@@ -12,7 +12,8 @@ use rayon::prelude::*;
 use serde_json::{json, Map, Value};
 
 use super::extract::{extract_archive, read_archive, Spec};
-use super::py::{self, archives_of, as_posix, io_err, no_attr, path_arg, rel_posix, rglob_index, stat_sig, utc_iso_z};
+use super::files;
+use crate::py;
 use super::{check_cancel, outcome, pool, progress, reset_cancel, Cancelled};
 use crate::game::archive::{md5_hex, parse_index};
 use crate::game::executable::find_trove_executable;
@@ -21,12 +22,12 @@ use crate::paths::display;
 const DATA_FILE: &str = "extraction_data.json";
 
 pub fn get_tracking_status(dir: &Value) -> Result<Value> {
-    let data_path = path_arg(dir)?.join(DATA_FILE);
+    let data_path = py::path_arg_components(dir)?.join(DATA_FILE);
     if !data_path.exists() {
         return Ok(json!({ "exists": false }));
     }
-    let status = py::read_json(&data_path).and_then(|data| {
-        let obj = data.as_object().ok_or_else(|| no_attr(&data, "get"))?;
+    let status = files::read_json(&data_path).and_then(|data| {
+        let obj = data.as_object().ok_or_else(|| py::no_attr(&data, "get"))?;
         let get = |key: &str| obj.get(key).cloned().unwrap_or_else(|| json!("Unknown"));
         Ok(json!({ "exists": true, "last_scan": get("last_scan_date"), "game_path": get("game_path") }))
     });
@@ -48,20 +49,20 @@ pub fn build_baseline_cache(game: &Value, tracking: &Value) -> Value {
 type Slice = (String, u32, u32);
 
 fn build_baseline(game_arg: &Value, tracking_arg: &Value) -> Result<()> {
-    let game = path_arg(game_arg)?;
-    let tracking = path_arg(tracking_arg)?;
-    let last_scan = utc_iso_z();
+    let game = py::path_arg_components(game_arg)?;
+    let tracking = py::path_arg_components(tracking_arg)?;
+    let last_scan = py::utcnow_iso_z();
     let mut archives = Map::new();
     let mut stats = Map::new();
 
     // Pass 1: parse every index and list every archive with the slices it holds.
     let mut work: Vec<(String, PathBuf, Vec<Slice>)> = Vec::new();
-    for tfi in rglob_index(&game) {
+    for tfi in py::rglob_named(&game, "index.tfi") {
         check_cancel("build_baseline")?;
-        let rel_tfi = rel_posix(&game, &tfi);
-        let tfas = archives_of(&tfi)?;
-        stats.insert(rel_tfi.clone(), json!(stat_sig(&tfi)));
-        let raw = py::read_file(&tfi)?;
+        let rel_tfi = py::rel_posix(&game, &tfi);
+        let tfas = files::archives_of(&tfi)?;
+        stats.insert(rel_tfi.clone(), json!(files::stat_sig(&tfi)));
+        let raw = files::read_file(&tfi)?;
         let entries = parse_index(&raw)?;
         archives.insert(rel_tfi.clone(), json!(md5_hex(&raw)));
         let mut by_archive: HashMap<u64, Vec<Slice>> = HashMap::new();
@@ -69,8 +70,8 @@ fn build_baseline(game_arg: &Value, tracking_arg: &Value) -> Result<()> {
             by_archive.entry(e.archive_index as u64).or_default().push((file_key(&rel_tfi, &e.name), e.offset, e.size));
         }
         for (path, id) in tfas {
-            let rel_tfa = rel_posix(&game, &path);
-            stats.insert(rel_tfa.clone(), json!(stat_sig(&path)));
+            let rel_tfa = py::rel_posix(&game, &path);
+            stats.insert(rel_tfa.clone(), json!(files::stat_sig(&path)));
             work.push((rel_tfa, path, by_archive.get(&id).cloned().unwrap_or_default()));
         }
     }
@@ -85,7 +86,7 @@ fn build_baseline(game_arg: &Value, tracking_arg: &Value) -> Result<()> {
             .map(|(rel_tfa, path, slices)| -> Result<_> {
                 check_cancel("build_baseline")?;
                 let content = read_archive(path)?;
-                let hashes = slices.iter().map(|(_, offset, size)| md5_hex(py::py_slice(&content, *offset as i64, *size as i64))).collect();
+                let hashes = slices.iter().map(|(_, offset, size)| md5_hex(py::slice_signed(&content, *offset as i64, *offset as i64 + *size as i64))).collect();
                 let archive_hash = md5_hex(&content);
                 drop(content);
                 let n = done.fetch_add(1, Ordering::SeqCst) + 1;
@@ -109,7 +110,7 @@ fn build_baseline(game_arg: &Value, tracking_arg: &Value) -> Result<()> {
         "files": files,
         "stats": stats,
     });
-    py::write_text(&tracking.join(DATA_FILE), &crate::json::dumps_indent(&cache, 4))
+    files::write_text(&tracking.join(DATA_FILE), &crate::json::dumps_indent(&cache, 4))
 }
 
 // --- Scan -----------------------------------------------------------------------------
@@ -150,13 +151,13 @@ struct Hashed {
 /// `old_cache[key]` as a dict (KeyError / AttributeError otherwise).
 fn old_map<'a>(old: &'a Map<String, Value>, key: &str) -> Result<&'a Map<String, Value>> {
     let value = old.get(key).ok_or_else(|| anyhow!("'{}'", key))?;
-    value.as_object().ok_or_else(|| no_attr(value, "get"))
+    value.as_object().ok_or_else(|| py::no_attr(value, "get"))
 }
 
 /// Hashes an index and its archives; on any difference, every file it lists.
 fn hash_plan(plan: &Plan, old_archives: &Map<String, Value>) -> Result<Hashed> {
     check_cancel("scan_updates")?;
-    let raw = py::read_file(&plan.tfi)?;
+    let raw = files::read_file(&plan.tfi)?;
     let tfi_hash = md5_hex(&raw);
     let mut contents: Vec<Vec<u8>> = Vec::new();
     let mut by_id: HashMap<u64, usize> = HashMap::new();
@@ -180,11 +181,11 @@ fn hash_plan(plan: &Plan, old_archives: &Map<String, Value>) -> Result<Hashed> {
         check_cancel("scan_updates")?;
         let Some(&slot) = by_id.get(&(e.archive_index as u64)) else { continue };
         let clean = e.name.replace('\\', "/");
-        let hash = md5_hex(py::binary_read(&contents[slot], e.offset as i64, e.size as i64)?);
+        let hash = md5_hex(files::binary_read(&contents[slot], e.offset as i64, e.size as i64)?);
         files.push(Found {
             key: format!("{}::{}", plan.rel_tfi, clean),
             hash,
-            path: as_posix(&plan.tfi_dir.join(&clean)),
+            path: py::as_posix_components(&plan.tfi_dir.join(&clean)),
             tfa: plan.archives[slot].0.clone(),
             offset: e.offset,
             size: e.size,
@@ -194,24 +195,24 @@ fn hash_plan(plan: &Plan, old_archives: &Map<String, Value>) -> Result<Hashed> {
 }
 
 fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: bool) -> Result<Value> {
-    let game = path_arg(game_arg)?;
-    let tracking = path_arg(tracking_arg)?;
+    let game = py::path_arg_components(game_arg)?;
+    let tracking = py::path_arg_components(tracking_arg)?;
     let data_path = tracking.join(DATA_FILE);
-    let old_value = py::read_json(&data_path)?;
-    let old = old_value.as_object().ok_or_else(|| no_attr(&old_value, "get"))?;
+    let old_value = files::read_json(&data_path)?;
+    let old = old_value.as_object().ok_or_else(|| py::no_attr(&old_value, "get"))?;
     let empty = Map::new();
     let old_stats = || -> Result<&Map<String, Value>> {
         match old.get("stats") {
             None => Ok(&empty),
-            Some(v) => v.as_object().ok_or_else(|| no_attr(v, "get")),
+            Some(v) => v.as_object().ok_or_else(|| py::no_attr(v, "get")),
         }
     };
 
-    let last_scan = utc_iso_z();
+    let last_scan = py::utcnow_iso_z();
     let date_str = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
     let update_folder = tracking.join(&date_str);
     let mut stats = Map::new();
-    let indexes = rglob_index(&game);
+    let indexes = py::rglob_named(&game, "index.tfi");
     let total = indexes.len();
     let start = Instant::now();
     let seen = AtomicUsize::new(0);
@@ -220,18 +221,18 @@ fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: 
     let mut plans = Vec::with_capacity(total);
     for tfi in indexes {
         check_cancel("scan_updates")?;
-        let rel_tfi = rel_posix(&game, &tfi);
+        let rel_tfi = py::rel_posix(&game, &tfi);
         let tfi_dir = tfi.parent().and_then(|p| p.strip_prefix(&game).ok()).map(Path::to_path_buf).unwrap_or_default();
         let mut archives = Vec::new();
-        for (path, id) in archives_of(&tfi)? {
-            let rel_tfa = rel_posix(&game, &path);
+        for (path, id) in files::archives_of(&tfi)? {
+            let rel_tfa = py::rel_posix(&game, &path);
             archives.push((path, id, rel_tfa));
         }
-        let sig = stat_sig(&tfi);
+        let sig = files::stat_sig(&tfi);
         stats.insert(rel_tfi.clone(), json!(sig));
         let mut unchanged = !full_rescan && !old_stats()?.is_empty() && old_stats()?.get(&rel_tfi) == Some(&json!(sig));
         for (path, _, rel_tfa) in &archives {
-            let sig = stat_sig(path);
+            let sig = files::stat_sig(path);
             if old_stats()?.get(rel_tfa) != Some(&json!(sig)) {
                 unchanged = false;
             }
@@ -324,7 +325,7 @@ fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: 
 
     let any_change = !added.is_empty() || !changed.is_empty() || !removed.is_empty();
     if any_change {
-        py::create_dirs(&update_folder)?;
+        files::create_dirs(&update_folder)?;
         extract_found(&update_folder, &added, &changed)?;
         if run_catalog && (!added.is_empty() || !changed.is_empty()) {
             catalog(&game, &update_folder, &added, &changed)?;
@@ -334,7 +335,7 @@ fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: 
         let mut log = format!(
             "Trove Update Scan - {}\nGame Path: {}\nTime Elapsed: {}\n{}\n\n",
             date_str,
-            py::py_str(game_arg),
+            py::str_loose(game_arg),
             elapsed,
             "=".repeat(40)
         );
@@ -350,7 +351,7 @@ fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: 
         for name in &removed {
             log.push_str(&format!(" - {}\n", name.rsplit("::").next().unwrap_or(name)));
         }
-        py::write_text(&update_folder.join("changelog.txt"), &log)?;
+        files::write_text(&update_folder.join("changelog.txt"), &log)?;
         copy2(&data_path, &update_folder.join("extraction_data_backup.json"))?;
     }
 
@@ -361,7 +362,7 @@ fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: 
         "files": files,
         "stats": stats,
     });
-    py::write_text(&data_path, &crate::json::dumps_indent(&cache, 4))?;
+    files::write_text(&data_path, &crate::json::dumps_indent(&cache, 4))?;
     Ok(json!({
         "added": added.len(),
         "changed": changed.len(),
@@ -373,7 +374,7 @@ fn scan(game_arg: &Value, tracking_arg: &Value, run_catalog: bool, full_rescan: 
 /// Writes added files under `added/` and changed ones under `changed/`, each archive
 /// inflated once. When two land on the same path the later one wins, as it did serially.
 fn extract_found(folder: &Path, added: &[Found], changed: &[Found]) -> Result<()> {
-    let out = |sub: &str, f: &Found| py::py_path(&display(&folder.join(sub).join(&f.path)));
+    let out = |sub: &str, f: &Found| py::path_from_components(&display(&folder.join(sub).join(&f.path)));
     let targets: Vec<(PathBuf, &Found)> =
         added.iter().map(|f| (out("added", f), f)).chain(changed.iter().map(|f| (out("changed", f), f))).collect();
     let last: HashMap<&PathBuf, usize> = targets.iter().enumerate().map(|(i, (out, _))| (out, i)).collect();
@@ -399,11 +400,11 @@ fn extract_found(folder: &Path, added: &[Found], changed: &[Found]) -> Result<()
 
 /// `shutil.copy2`: contents plus access and modification times.
 fn copy2(src: &Path, dst: &Path) -> Result<()> {
-    std::fs::copy(src, dst).map_err(|e| io_err(e, src))?;
-    let meta = std::fs::metadata(src).map_err(|e| io_err(e, src))?;
+    std::fs::copy(src, dst).map_err(|e| py::errno_error_basic(e, src))?;
+    let meta = std::fs::metadata(src).map_err(|e| py::errno_error_basic(e, src))?;
     if let (Ok(accessed), Ok(modified)) = (meta.accessed(), meta.modified()) {
-        let file = std::fs::File::options().write(true).open(dst).map_err(|e| io_err(e, dst))?;
-        file.set_times(std::fs::FileTimes::new().set_accessed(accessed).set_modified(modified)).map_err(|e| io_err(e, dst))?;
+        let file = std::fs::File::options().write(true).open(dst).map_err(|e| py::errno_error_basic(e, dst))?;
+        file.set_times(std::fs::FileTimes::new().set_accessed(accessed).set_modified(modified)).map_err(|e| py::errno_error_basic(e, dst))?;
     }
     Ok(())
 }
@@ -412,7 +413,7 @@ fn copy_tree(src: &Path, dst: &Path) -> Result<()> {
     for entry in walkdir::WalkDir::new(src).into_iter().filter_map(|e| e.ok()) {
         let target = dst.join(entry.path().strip_prefix(src).unwrap_or(entry.path()));
         if entry.file_type().is_dir() {
-            py::create_dirs(&target)?;
+            files::create_dirs(&target)?;
         } else {
             copy2(entry.path(), &target)?;
         }
@@ -472,7 +473,7 @@ fn catalog(game: &Path, update_folder: &Path, added: &[Found], changed: &[Found]
         }
         if std::fs::rename(&catalog_dir, &dest).is_err() {
             copy_tree(&catalog_dir, &dest)?;
-            std::fs::remove_dir_all(&catalog_dir).map_err(|e| io_err(e, &catalog_dir))?;
+            std::fs::remove_dir_all(&catalog_dir).map_err(|e| py::errno_error_basic(e, &catalog_dir))?;
         }
         // Python globbed the update folder itself, not the moved catalog folder.
         for entry in std::fs::read_dir(update_folder).into_iter().flatten().flatten() {
@@ -481,7 +482,7 @@ fn catalog(game: &Path, update_folder: &Path, added: &[Found], changed: &[Found]
             let renamed = name.replace(".blueprint.png", ".png");
             if matches && renamed != name {
                 let target = entry.path().with_file_name(renamed);
-                std::fs::rename(entry.path(), &target).map_err(|e| io_err(e, &entry.path()))?;
+                std::fs::rename(entry.path(), &target).map_err(|e| py::errno_error_basic(e, &entry.path()))?;
             }
         }
     }
@@ -640,6 +641,6 @@ mod proc {
     }
 
     pub fn spawn_error(err: std::io::Error, command: &str) -> anyhow::Error {
-        super::io_err(err, Path::new(command))
+        crate::py::errno_error_basic(err, Path::new(command))
     }
 }

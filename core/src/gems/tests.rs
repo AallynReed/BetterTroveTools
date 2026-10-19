@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
-use super::py;
+use crate::py;
 
 fn fixtures() -> PathBuf {
     std::env::var_os("BTT_GEMS_FIXTURES")
@@ -94,7 +94,7 @@ impl Exact<'_> {
                     "null" => Value::Null,
                     "true" => json!(true),
                     "false" => json!(false),
-                    t if t.contains(['.', 'e', 'E']) => py::float(t.parse().unwrap()),
+                    t if t.contains(['.', 'e', 'E']) => py::json_float(t.parse().unwrap()),
                     t => serde_json::from_str(t).unwrap(),
                 }
             }
@@ -311,13 +311,14 @@ fn storage_matches_python() {
         }
     }
     assert!(failures.is_empty(), "{}", failures.join("\n"));
-    assert_eq!(std::fs::read_to_string(&file).unwrap(), script["file"].as_str().unwrap());
+    // Read back in text mode, as the fixture was.
+    assert_eq!(std::fs::read_to_string(&file).unwrap().replace("\r\n", "\n"), script["file"].as_str().unwrap());
 }
 
 /// Must match `summarize` in tools/parity/gems.py.
 fn summarize(gem: &Value, freq: &mut BTreeMap<String, f64>, bases: &mut Vec<f64>) {
     let mut bump = |k: String| *freq.entry(k).or_default() += 1.0;
-    let repr = |v: &Value| py::repr(v);
+    let repr = |v: &Value| py::repr_latin1(v);
     for key in ["tier", "type", "element", "restriction", "ability", "level"] {
         bump(format!("{key}={}", repr(&gem[key])));
     }

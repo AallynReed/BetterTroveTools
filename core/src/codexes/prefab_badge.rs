@@ -9,7 +9,7 @@ use serde_json::{json, Map, Value};
 
 use super::binfab_reader::{decode_identity, harvest_strings, parse_collection_table, Identity};
 use super::prefab_ally::{infer_mastery_base, load_language_map, load_multipliers_map, read_files, resolve_localized_value, MultiplierMap, GameFiles, PrefabIndex};
-use super::py;
+use crate::py;
 use crate::game::archive::IndexedFile;
 
 pub const BADGE_PREFIX: &str = "collections/badge/";
@@ -31,7 +31,7 @@ pub fn load_badge_category_map(index: &PrefabIndex) -> Result<HashMap<String, St
     if let Some((_, content)) = index.read_prefab_content(COLLECTION_TABLE_PATH)? {
         for group in parse_collection_table(&content) {
             for member in &group.members {
-                out.entry(py::stem(&member.replace('\\', "/")).to_string()).or_insert_with(|| group.id.clone());
+                out.entry(py::stem_any_sep(&member.replace('\\', "/")).to_string()).or_insert_with(|| group.id.clone());
             }
         }
     }
@@ -114,7 +114,7 @@ pub fn build_badges_dataset(game_path: &Path, locale: &str) -> Result<(Map<Strin
     let groups: HashSet<&str> = rows.values().filter_map(|r| r["group"].as_str()).collect();
     let count = |f: &dyn Fn(&Value) -> bool| rows.values().filter(|r| f(r)).count();
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("badge_count".into(), json!(rows.len()));
     manifest.insert("tiers".into(), json!(sort_by_order(str_set("tier"), &TIER_ORDER)));
     manifest.insert("in_game_categories".into(), json!(categories_sorted));

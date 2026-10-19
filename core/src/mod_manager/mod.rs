@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use serde_json::{json, Map, Value};
 
 use crate::ctx::{try_ctx, ExternalRequest};
-use crate::modfile::compat;
+use crate::py::{self, get_any as get, or};
 use crate::{Cmd, Resp};
 
 mod blocklist;
@@ -52,7 +52,7 @@ pub fn commands() -> Vec<Cmd> {
             Cmd::raw("install_mods_hub_mod", hub::install_mods_hub_mod),
             Cmd::raw("install_mods_hub_mod_sync", |a| Ok(hub::install_mods_hub_mod_sync(a.get(0), a.get(1), a.get(2)))),
             Cmd::raw("get_mods_hub_variants", hub::get_mods_hub_variants),
-            Cmd::raw("get_mods_hub_install_states", |a| Ok(hub::get_mods_hub_install_states(a.get(0), compat::truthy(a.get(1))))),
+            Cmd::raw("get_mods_hub_install_states", |a| Ok(hub::get_mods_hub_install_states(a.get(0), py::truthy(a.get(1))))),
             Cmd::raw("delete_mods_hub_installed_mod", hub::delete_mods_hub_installed_mod),
             Cmd::raw("get_mods_hub_categories", hub::get_mods_hub_categories),
             Cmd::raw("clear_mods_hub_cache", hub::clear_mods_hub_cache),
@@ -114,7 +114,7 @@ pub fn remove_taken_down_mods_task() {
     loop {
         let mut installs: Vec<String> = Vec::new();
         let candidates = crate::app::active_game_install().into_iter().chain(
-            crate::game::registry::get_trove_locations().into_iter().filter(|g| g.is_valid()).map(|g| compat::display(&g.path)),
+            crate::game::registry::get_trove_locations().into_iter().filter(|g| g.is_valid()).map(|g| py::display(&g.path)),
         );
         for install in candidates {
             if !installs.contains(&install) {
@@ -172,25 +172,10 @@ fn guard(code: &str, body: impl FnOnce() -> Result<Value>) -> Value {
 
 /// `str(value or "")`.
 fn or_str(v: &Value) -> String {
-    if compat::truthy(v) {
-        compat::py_str(v)
+    if py::truthy(v) {
+        py::str_of(v)
     } else {
         String::new()
-    }
-}
-
-/// `value.get(key)` on a dict, `None` on anything else.
-fn get<'a>(v: &'a Value, key: &str) -> &'a Value {
-    static NULL: Value = Value::Null;
-    v.get(key).unwrap_or(&NULL)
-}
-
-/// `a or b`.
-fn or<'a>(a: &'a Value, b: &'a Value) -> &'a Value {
-    if compat::truthy(a) {
-        a
-    } else {
-        b
     }
 }
 
@@ -203,47 +188,31 @@ fn items(v: &Value) -> &[Value] {
 fn to_int(v: &Value) -> i64 {
     match v {
         Value::Null | Value::Array(_) | Value::Object(_) => 0,
-        other => compat::py_int(other).unwrap_or(0),
+        other => py::int_lenient(other).unwrap_or(0),
     }
 }
 
 /// `str(Path(value))`.
 fn path_string(v: &Value) -> Result<String> {
-    compat::path_arg(v).map(|p| compat::display(&p))
-}
-
-/// `str.isdigit()` for a non-empty string.
-fn isdigit(s: &str) -> bool {
-    !s.is_empty() && s.chars().all(char::is_numeric)
-}
-
-/// `str.title()` for the ASCII cache-file labels.
-fn title(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    let mut prev_alpha = false;
-    for c in s.chars() {
-        out.extend(if prev_alpha { c.to_lowercase().collect::<Vec<_>>() } else { c.to_uppercase().collect() });
-        prev_alpha = c.is_alphabetic();
-    }
-    out
+    Ok(py::display(&py::path_arg(v)?))
 }
 
 /// `_get_cached_api`: `data` from `ModManagerCache/<file>` while it is younger than
 /// `expiry`, else a fresh fetch, else the stale copy, else `fallback`.
 fn cached_api(endpoint: &str, cache_filename: &str, expiry: f64, label: &str, headers: &[(&str, &str)], fallback: Value) -> Result<Value> {
     let cache_dir = crate::paths::get_cache_root();
-    compat::mkdir_all(&cache_dir)?;
+    py::mkdir_all(&cache_dir)?;
     let cache_file = cache_dir.join(cache_filename);
 
     if cache_file.exists() {
-        let text = compat::read_text(&cache_file)?;
+        let text = py::read_text(&cache_file)?;
         if let Ok(wrapper) = serde_json::from_str::<Value>(&text) {
             if let Value::Object(w) = &wrapper {
                 let ts = match w.get("timestamp") {
                     None => 0.0,
                     Some(Value::Number(n)) => n.as_f64().unwrap_or(0.0),
                     Some(Value::Bool(b)) => *b as u8 as f64,
-                    Some(other) => return Err(anyhow!("unsupported operand type(s) for -: 'float' and '{}'", compat::type_name(other))),
+                    Some(other) => return Err(anyhow!("unsupported operand type(s) for -: 'float' and '{}'", py::type_name(other))),
                 };
                 if now() - ts < expiry {
                     return Ok(w.get("data").cloned().unwrap_or(Value::Null));
@@ -264,7 +233,7 @@ fn cached_api(endpoint: &str, cache_filename: &str, expiry: f64, label: &str, he
             if ok {
                 let stored = crate::http::read_json(resp).and_then(|data| {
                     let wrapper = json!({ "timestamp": now(), "data": data });
-                    compat::write_text(&cache_file, &crate::json::dumps(&wrapper))?;
+                    py::write_text(&cache_file, &crate::json::dumps(&wrapper))?;
                     Ok(wrapper["data"].clone())
                 });
                 match stored {
@@ -280,7 +249,7 @@ fn cached_api(endpoint: &str, cache_filename: &str, expiry: f64, label: &str, he
     }
 
     if cache_file.exists() {
-        if let Ok(cached) = serde_json::from_str::<Value>(&compat::read_text(&cache_file)?) {
+        if let Ok(cached) = serde_json::from_str::<Value>(&py::read_text(&cache_file)?) {
             return Ok(match cached {
                 Value::Object(mut m) if m.contains_key("data") => m.remove("data").unwrap_or(Value::Null),
                 other => other,
@@ -295,7 +264,7 @@ fn by_id(items: &[Value]) -> Map<String, Value> {
     let mut out = Map::new();
     for m in items {
         if m.is_object() {
-            out.insert(compat::py_str(get(m, "id")), m.clone());
+            out.insert(py::str_of(get(m, "id")), m.clone());
         }
     }
     out

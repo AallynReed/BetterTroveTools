@@ -6,7 +6,7 @@ use serde_json::{json, Map, Value};
 use super::arity;
 use super::constants::*;
 use super::model::{lookup, Gem};
-use super::py;
+use crate::py;
 use crate::storage::{read_storage, write_storage};
 use crate::{Args, Cmd, Resp};
 

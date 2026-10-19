@@ -12,7 +12,7 @@ use super::{ext, finish, get, now, or_str};
 use crate::game::registry::TroveGamePath;
 use crate::http;
 use crate::modder_tools::steam_workshop::{self, SteamError};
-use crate::modfile::compat;
+use crate::py;
 use crate::{Args, Resp};
 
 const FRESH_SECONDS: f64 = 600.0;
@@ -47,10 +47,10 @@ fn fetch() -> Option<Value> {
 }
 
 fn installed(game: &Value) -> Result<HashSet<String>> {
-    if !compat::truthy(game) {
+    if !py::truthy(game) {
         return Ok(HashSet::new());
     }
-    let Some(workshop) = TroveGamePath::new(compat::path_arg(game)?, None).workshop_path() else { return Ok(HashSet::new()) };
+    let Some(workshop) = TroveGamePath::new(py::path_arg(game)?, None).workshop_path() else { return Ok(HashSet::new()) };
     let Ok(rd) = std::fs::read_dir(&workshop) else { return Ok(HashSet::new()) };
     Ok(rd.filter_map(|e| e.ok()).filter(|e| e.path().is_dir()).map(|e| e.file_name().to_string_lossy().into_owned()).collect())
 }
@@ -60,7 +60,7 @@ fn installed(game: &Value) -> Result<HashSet<String>> {
 pub(super) fn get_steam_workshop_catalog(a: &Args) -> Result<Value> {
     let stale = {
         let c = CACHE.lock();
-        compat::truthy(a.get(1)) || c.1.is_none() || now() - c.0 > FRESH_SECONDS
+        py::truthy(a.get(1)) || c.1.is_none() || now() - c.0 > FRESH_SECONDS
     };
     if stale {
         if let Some(data) = fetch() {
@@ -76,7 +76,7 @@ pub(super) fn get_steam_workshop_catalog(a: &Args) -> Result<Value> {
         let Value::Object(mut m) = item.clone() else {
             return Err(anyhow!("cannot convert dictionary update sequence element #0 to a sequence"));
         };
-        let id = compat::py_str(m.get("published_file_id").unwrap_or(&Value::Null));
+        let id = py::str_of(m.get("published_file_id").unwrap_or(&Value::Null));
         m.insert("installed".into(), json!(installed.contains(&id)));
         items.push(Value::Object(m));
     }
@@ -84,8 +84,8 @@ pub(super) fn get_steam_workshop_catalog(a: &Args) -> Result<Value> {
 }
 
 pub(super) fn subscribe_workshop_item(a: &Args) -> Result<Value> {
-    let item_id = compat::strip(&or_str(a.get(0))).to_string();
-    if !super::isdigit(&item_id) {
+    let item_id = py::strip(&or_str(a.get(0))).to_string();
+    if !py::isdigit(&item_id) {
         return Ok(Resp::fail("Not a Steam Workshop item id.", "INVALID_ID").into());
     }
     Ok(match steam_workshop::subscribe_item(&item_id) {

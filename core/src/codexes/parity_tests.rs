@@ -193,7 +193,7 @@ fn mask(value: &Value, appdata: &[String]) -> Value {
 fn endpoint_flow_parity() {
     let out = env_path("BTT_PARITY_OUT").expect("set BTT_PARITY_OUT");
     let appdata = std::env::var("APPDATA").unwrap_or_default();
-    let mut forms = vec![appdata.clone(), super::py::normalize_path(&appdata)];
+    let mut forms = vec![appdata.clone(), crate::py::normalize_simple(&appdata)];
     forms.sort_by_key(|f| std::cmp::Reverse(f.len()));
     let mut results = Map::new();
     let mut timings = Map::new();

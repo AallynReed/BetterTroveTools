@@ -2,7 +2,7 @@
 //! bounding box, the attachment point and the placed decos along with the voxels.
 
 use super::codec::{self, Decoded};
-use super::py::Py;
+use super::pyobj::Py;
 use super::util::{Error, Kind, Result};
 
 pub const OPERATIONS: [(&str, &str); 6] = [

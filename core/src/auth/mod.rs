@@ -12,11 +12,12 @@ mod tests;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use parking_lot::Mutex;
 use serde_json::{json, Map, Value};
 
-use crate::args::{to_str, truthy};
+use crate::args::truthy;
+use crate::py;
 use crate::{http, Args, Cmd, Dialog, Resp, KIWI_API_BASE};
 
 pub use launcher_cleanup::purge_legacy_launcher_secrets;
@@ -94,102 +95,6 @@ pub fn commands() -> Vec<Cmd> {
     ]
 }
 
-// --- Python value semantics -----------------------------------------------------------
-
-/// `str(value)`, with `None` for null (what an f-string prints).
-fn py_str(v: &Value) -> String {
-    if v.is_null() {
-        "None".into()
-    } else {
-        to_str(v)
-    }
-}
-
-fn py_type(v: &Value) -> &'static str {
-    match v {
-        Value::Null => "NoneType",
-        Value::Bool(_) => "bool",
-        Value::Number(n) if n.is_f64() => "float",
-        Value::Number(_) => "int",
-        Value::String(_) => "str",
-        Value::Array(_) => "list",
-        Value::Object(_) => "dict",
-    }
-}
-
-fn no_attr(v: &Value, attr: &str) -> anyhow::Error {
-    anyhow!("'{}' object has no attribute '{}'", py_type(v), attr)
-}
-
-/// `int(value)`.
-fn py_int(v: &Value) -> Result<i64> {
-    match v {
-        Value::Bool(b) => Ok(*b as i64),
-        Value::Number(n) => Ok(n.as_i64().unwrap_or_else(|| n.as_f64().unwrap_or(0.0) as i64)),
-        Value::String(s) => {
-            let digits = s.trim().replace('_', "");
-            match digits.parse::<i64>() {
-                Ok(n) if !s.trim().starts_with('_') && !s.trim().ends_with('_') && !s.contains("__") => Ok(n),
-                _ => Err(anyhow!("invalid literal for int() with base 10: {}", py_repr(s))),
-            }
-        }
-        other => Err(anyhow!("int() argument must be a string, a bytes-like object or a real number, not '{}'", py_type(other))),
-    }
-}
-
-fn py_repr(s: &str) -> String {
-    let quote = if s.contains('\'') && !s.contains('"') { '"' } else { '\'' };
-    let mut out = String::from(quote);
-    for c in s.chars() {
-        match c {
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c == quote => {
-                out.push('\\');
-                out.push(c);
-            }
-            c if (c as u32) < 0x20 || c as u32 == 0x7f => out.push_str(&format!("\\x{:02x}", c as u32)),
-            c => out.push(c),
-        }
-    }
-    out.push(quote);
-    out
-}
-
-/// `response.json()`, with json.JSONDecodeError's message for the common syntax errors.
-fn json_loads(bytes: &[u8]) -> Result<Value> {
-    let bytes = bytes.strip_prefix(b"\xef\xbb\xbf").unwrap_or(bytes);
-    serde_json::from_slice(bytes).map_err(|err| {
-        const KINDS: [(&str, &str); 7] = [
-            ("key must be a string", "Expecting property name enclosed in double quotes"),
-            ("expected `:`", "Expecting ':' delimiter"),
-            ("expected `,` or `}`", "Expecting ',' delimiter"),
-            ("expected `,` or `]`", "Expecting ',' delimiter"),
-            ("trailing characters", "Extra data"),
-            ("expected value", "Expecting value"),
-            ("EOF while parsing a value", "Expecting value"),
-        ];
-        let text = String::from_utf8_lossy(bytes);
-        let message = err.to_string();
-        let Some((serde, python)) = KINDS.iter().find(|(serde, _)| message.starts_with(serde)) else { return anyhow!(message) };
-        let mut byte = if serde.starts_with("EOF") {
-            text.len()
-        } else {
-            let line_start: usize = text.split_inclusive('\n').take(err.line().saturating_sub(1)).map(str::len).sum();
-            (line_start + err.column().saturating_sub(1)).min(text.len())
-        };
-        while !text.is_char_boundary(byte) {
-            byte -= 1;
-        }
-        let pos = text[..byte].chars().count();
-        let line = text[..byte].matches('\n').count() + 1;
-        let column = pos - text[..byte].rfind('\n').map(|i| text[..=i].chars().count()).unwrap_or(0) + 1;
-        anyhow!("{}: line {} column {} (char {})", python, line, column, pos)
-    })
-}
-
 // --- Token state ----------------------------------------------------------------------
 
 /// In-memory mirror of the stored tokens and the last `/me` snapshot.
@@ -213,7 +118,7 @@ fn token(key: &str) -> Option<Value> {
 
 /// Persists a fresh pair from an exchange or a refresh rotation (`_set_tokens`).
 fn set_tokens(data: &Value) -> Result<()> {
-    let obj = data.as_object().ok_or_else(|| no_attr(data, "get"))?;
+    let obj = data.as_object().ok_or_else(|| py::no_attr(data, "get"))?;
     let mut tokens = Map::new();
     for key in ["access_token", "refresh_token"] {
         tokens.insert(key.into(), obj.get(key).cloned().unwrap_or(Value::Null));
@@ -275,7 +180,7 @@ impl Reply {
     }
 
     fn json(&self) -> Result<Value> {
-        json_loads(&self.body)
+        py::loads_bytes(&self.body)
     }
 }
 
@@ -349,9 +254,7 @@ fn send(method: &str, url: &str, bearer: Option<&str>, body: &Body, timeout: Dur
         req = req.set("Authorization", &format!("Bearer {}", token));
     }
     let sent = match body {
-        Body::None if matches!(method, "GET" | "HEAD") => http::send(req),
-        // requests sends `Content-Length: 0` for a bodiless POST/PATCH/PUT/DELETE.
-        Body::None => http::send_bytes(req, &[]),
+        Body::None => http::send(req),
         Body::Json(value) => http::send_bytes(req.set("Content-Type", "application/json"), crate::json::dumps(value).as_bytes()),
         Body::Multipart(fields, file) => {
             let (content_type, bytes) = multipart(fields, file);
@@ -390,7 +293,7 @@ fn refresh() -> Result<bool> {
 }
 
 fn current_access() -> String {
-    STATE.lock().tokens.as_ref().and_then(|t| t.get("access_token")).map(py_str).unwrap_or_else(|| "None".into())
+    STATE.lock().tokens.as_ref().and_then(|t| t.get("access_token")).map(py::str_loose).unwrap_or_else(|| "None".into())
 }
 
 /// `_authed_request`: the bearer call, refreshed once on a 401. `None` when signed out or
@@ -398,7 +301,7 @@ fn current_access() -> String {
 fn authed_request(method: &str, url: &str, body: &Body, timeout: Duration, label: &str) -> Result<Option<Reply>> {
     let Some(access) = token("access_token") else { return Ok(None) };
     let log = crate::ctx().external_request(label, url);
-    let Ok(mut reply) = send(method, url, Some(&py_str(&access)), body, timeout) else {
+    let Ok(mut reply) = send(method, url, Some(&py::str_loose(&access)), body, timeout) else {
         log.finish(false);
         return Ok(None);
     };
@@ -503,7 +406,7 @@ fn project(prefix: &str, a: &Args, suffix: &str) -> String {
 }
 
 fn seg(a: &Args, i: usize) -> String {
-    py_str(a.get(i))
+    py::str_loose(a.get(i))
 }
 
 /// `json=value or default`.
@@ -560,8 +463,8 @@ fn manage_site(path: &str, label: &str) -> Result<Value> {
 
 fn hub_search(a: &Args) -> Result<Value> {
     let raw = a.get(0);
-    let q = if truthy(raw) { raw.as_str().ok_or_else(|| no_attr(raw, "strip"))?.trim().to_string() } else { String::new() };
-    let limit = if a.len() > 1 { py_int(a.get(1))? } else { 20 };
+    let q = if truthy(raw) { raw.as_str().ok_or_else(|| py::no_attr(raw, "strip"))?.trim().to_string() } else { String::new() };
+    let limit = if a.len() > 1 { py::int_loose_underscores(a.get(1))? } else { 20 };
     let path = if q.is_empty() {
         format!("/mods?sort=downloads&limit={}", limit)
     } else {
@@ -628,16 +531,16 @@ fn release_upload(a: &Args) -> Result<Value> {
         return Ok(not_signed_in());
     }
     let meta = if truthy(a.get(2)) { a.get(2).clone() } else { json!({}) };
-    let meta = meta.as_object().ok_or_else(|| no_attr(&meta, "get"))?;
+    let meta = meta.as_object().ok_or_else(|| py::no_attr(&meta, "get"))?;
     let tag = meta.get("tag").filter(|v| truthy(v)).cloned().unwrap_or_else(|| json!(""));
-    let tag = tag.as_str().ok_or_else(|| no_attr(&tag, "strip"))?.trim().to_string();
+    let tag = tag.as_str().ok_or_else(|| py::no_attr(&tag, "strip"))?.trim().to_string();
     if tag.is_empty() {
         return Ok(Resp::fail("A version tag is required.", "MISSING_TAG").into());
     }
     let Some((path, bytes)) = pick_upload("Select a .tmod or .zip release", "Trove mod / archive", &["tmod", "zip"]) else {
         return Ok(Resp::ok(json!({ "cancelled": true })).into());
     };
-    let field = |key: &str, default: &str| meta.get(key).filter(|v| truthy(v)).map(py_str).unwrap_or_else(|| default.to_string());
+    let field = |key: &str, default: &str| meta.get(key).filter(|v| truthy(v)).map(py::str_loose).unwrap_or_else(|| default.to_string());
     let fields = vec![
         ("tag", tag),
         ("title", field("title", "")),

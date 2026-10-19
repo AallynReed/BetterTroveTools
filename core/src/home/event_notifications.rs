@@ -10,7 +10,7 @@ use anyhow::Result;
 use parking_lot::Mutex;
 use serde_json::{json, Map, Value};
 
-use super::py;
+use crate::py;
 use crate::args::truthy;
 use crate::{Args, Resp};
 
@@ -33,7 +33,7 @@ fn biomes_text(d: &Map<String, Value>) -> Option<(String, String)> {
             names.push(name.as_str()?.to_string());
         }
     }
-    Some((names.join(", "), py::str_of(py::get(current, "starts_at"))))
+    Some((names.join(", "), py::str_of_ascii(py::get(current, "starts_at"))))
 }
 
 fn notice(key: impl Into<String>, sig: String, title: &str, body: String) -> Option<Notice> {
@@ -43,7 +43,7 @@ fn notice(key: impl Into<String>, sig: String, title: &str, body: String) -> Opt
 /// Maps an event payload to its notice. `None` ignores it (as does any payload Python's
 /// handler would have raised on).
 pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
-    let s = |k: &str| py::str_of(py::get(d, k));
+    let s = |k: &str| py::str_of_ascii(py::get(d, k));
     match event_type {
         "challenge" => {
             let raw = py::get(d, "name");
@@ -69,7 +69,7 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
             if !truthy(name) {
                 return None;
             }
-            let name = py::str_of(name);
+            let name = py::str_of_ascii(name);
             notice("chaos", format!("{}:{}", s("starts_at"), name), "Chaos Chest", format!("This week's item: {}", name))
         }
         "corruxion" => {
@@ -82,7 +82,7 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
             if !truthy(py::get(d, "active")) {
                 return None;
             }
-            let state = py::str_of(py::or(py::get(d, "state"), &json!("")));
+            let state = py::str_of_ascii(py::or(py::get(d, "state"), &json!("")));
             let body = format!("Fluxion is here ({}).", state).replace(" ().", ".");
             notice("fluxion", format!("fluxion:{}:{}", s("starts_at"), state), "Merchant Fluxion", body)
         }
@@ -113,7 +113,7 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
                 }
             }
             let body = if parts.is_empty() { "A new day in Trove has begun.".to_string() } else { parts.join(" — ") };
-            let sig = format!("daily:{}", py::str_of(py::or(name, py::get(buff, "weekday"))));
+            let sig = format!("daily:{}", py::str_of_ascii(py::or(name, py::get(buff, "weekday"))));
             notice("daily_bonuses", sig, "Daily Reset", body)
         }
         "activity" => notice(
@@ -123,7 +123,7 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
             "A fresh daily player-activity snapshot is available.".into(),
         ),
         "server_status" => {
-            let overall = py::str_of(py::or(py::get(d, "overall"), &json!("unknown")));
+            let overall = py::str_of_ascii(py::or(py::get(d, "overall"), &json!("unknown")));
             notice("server_status", format!("status:{}", overall), "Trove Servers", format!("Server status is now: {}.", overall))
         }
         "trove_news" => {
@@ -132,7 +132,7 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
             if !truthy(title) {
                 return None;
             }
-            notice("trove_news", format!("news:{}", py::str_of(py::get(item, "url"))), "Trove News", py::str_of(title))
+            notice("trove_news", format!("news:{}", py::str_of_ascii(py::get(item, "url"))), "Trove News", py::str_of_ascii(title))
         }
         "giveaways" => {
             let newest = py::dict_or_empty(py::get(d, "newest")).ok()?;
@@ -140,7 +140,7 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
             if !truthy(title) {
                 return None;
             }
-            notice("giveaways", format!("giveaway:{}", py::str_of(py::get(newest, "id"))), "New Giveaway", py::str_of(title))
+            notice("giveaways", format!("giveaway:{}", py::str_of_ascii(py::get(newest, "id"))), "New Giveaway", py::str_of_ascii(title))
         }
         "game_update" => {
             let ver = py::dict_or_empty(py::get(d, "version")).ok()?;
@@ -148,8 +148,8 @@ pub fn handle(event_type: &str, d: &Map<String, Value>) -> Option<Notice> {
             if !truthy(tag) {
                 return None;
             }
-            let sig = format!("update:{}:{}", py::str_of(py::get(ver, "branch")), py::str_of(py::get(ver, "ordinal")));
-            notice("game_update", sig, "Game Update", format!("Trove updated to {}.", py::str_of(tag)))
+            let sig = format!("update:{}:{}", py::str_of_ascii(py::get(ver, "branch")), py::str_of_ascii(py::get(ver, "ordinal")));
+            notice("game_update", sig, "Game Update", format!("Trove updated to {}.", py::str_of_ascii(tag)))
         }
         _ => None,
     }
@@ -226,7 +226,7 @@ impl EventNotifier {
 fn load_state(path: &PathBuf) -> Map<String, Value> {
     let parsed = std::fs::read_to_string(path).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok());
     match parsed.as_ref().and_then(|v| v.get("last_sig")).and_then(Value::as_object) {
-        Some(sigs) => sigs.iter().map(|(k, v)| (k.clone(), Value::String(py::str_of(v)))).collect(),
+        Some(sigs) => sigs.iter().map(|(k, v)| (k.clone(), Value::String(py::str_of_ascii(v)))).collect(),
         None => Map::new(),
     }
 }

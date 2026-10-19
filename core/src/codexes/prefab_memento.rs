@@ -14,7 +14,7 @@ use super::prefab_ally::{
     clean_localized_text, extract_designer_from_blueprint, find_prefabs, infer_mastery_base, load_blueprint_path_map, load_language_map, load_multiplier_file_map,
     load_prefabs, prefabs_index, require_prefabs_root, resolve_blueprint_catalog_path, resolve_localized_value, BlueprintMap, GameFiles, LanguageMap, MultiplierMap,
 };
-use super::py;
+use crate::py;
 
 pub const ITEM_UNLOCKER_PREFIX: &str = "item/unlocker/";
 const DELVE_TIER_PREFIX: &str = "$DelveTier_";
@@ -58,12 +58,12 @@ fn extract_identifier_suffix(identifier: &str) -> String {
             return rest.to_string();
         }
     }
-    py::name(&normalized).to_string()
+    py::name_any_sep(&normalized).to_string()
 }
 
 fn extract_blueprint_suffix(raw_blueprint: &str) -> String {
     let s = raw_blueprint.replace('\\', "/");
-    let stem = py::name(s.strip_suffix(".blueprint").unwrap_or(&s));
+    let stem = py::name_any_sep(s.strip_suffix(".blueprint").unwrap_or(&s));
     for prefix in BLUEPRINT_PREFIXES {
         if let Some(rest) = stem.strip_prefix(prefix) {
             return rest.to_string();
@@ -385,7 +385,7 @@ pub fn build_mementos_dataset(game_path: &Path, locale: &str) -> Result<(Map<Str
 
     let count = |f: &dyn Fn(&Value) -> bool| merged.values().filter(|r| f(r)).count();
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("memento_count".into(), json!(merged.len()));
     manifest.insert("collection_categories".into(), json!(categories.len()));
     manifest.insert("item_unlocker_prefabs".into(), json!(matches.len()));

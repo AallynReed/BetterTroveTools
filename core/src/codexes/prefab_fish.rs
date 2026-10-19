@@ -11,7 +11,7 @@ use serde_json::{json, Map, Value};
 use super::binfab_reader::{decode_identity, harvest_strings};
 use super::prefab_ally::{load_language_map, read_files, resolve_localized_value, GameFiles, PrefabIndex};
 use super::prefab_badge::{first_blueprint, identity_name_key, sort_by_order};
-use super::py;
+use crate::py;
 use crate::game::archive::IndexedFile;
 
 pub const FISH_PREFIX: &str = "item/fish/";
@@ -145,7 +145,7 @@ pub fn build_fish_dataset(game_path: &Path, locale: &str) -> Result<(Map<String,
     let count = |f: &dyn Fn(&Value) -> bool| rows.values().filter(|r| f(r)).count();
     let truthy = |v: &Value| crate::args::truthy(v);
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("fish_count".into(), json!(rows.len()));
     manifest.insert("sources".into(), json!(sources));
     manifest.insert("rarities".into(), json!(sort_by_order(str_set("rarity"), &RARITY_ORDER)));

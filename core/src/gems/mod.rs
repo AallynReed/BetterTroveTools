@@ -7,7 +7,6 @@ mod constants;
 mod engine;
 mod evaluator;
 mod model;
-mod py;
 mod pyd;
 mod simulator;
 mod star_chart;

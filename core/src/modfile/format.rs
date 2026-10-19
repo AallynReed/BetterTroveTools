@@ -13,7 +13,7 @@ use std::io::Write;
 use anyhow::Result;
 use flate2::{Decompress, FlushDecompress, Status};
 
-use super::compat::decode_utf8;
+use crate::py;
 use crate::game::hash::write_uleb;
 
 pub const READ_PAST_END: &str = "BinaryReader Error: cannot read farther than buffer length.";
@@ -116,7 +116,7 @@ impl<'a> Reader<'a> {
     pub fn read_str(&mut self, n: usize) -> Result<String> {
         let raw = self.read_bytes(n)?;
         let raw = raw.split(|&b| b == 0).next().unwrap_or(raw);
-        decode_utf8(raw).map_err(|e| FormatError(e.to_string()).into())
+        py::utf8(raw).map(str::to_string).map_err(|e| FormatError(e.to_string()).into())
     }
 
     /// `_read_header_str`: `length` bytes, or `length` characters for headers written

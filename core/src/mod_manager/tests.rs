@@ -5,7 +5,7 @@ use parking_lot::Mutex;
 use serde_json::{json, Map, Value};
 
 use super::*;
-use crate::modfile::compat;
+use crate::py;
 
 /// Test-only answer for the file dialog.
 pub(super) static PICK: Mutex<Option<PathBuf>> = Mutex::new(None);
@@ -19,7 +19,7 @@ fn raised(e: anyhow::Error) -> Value {
 }
 
 fn strs(v: &Value) -> String {
-    compat::py_str(v)
+    py::str_of(v)
 }
 
 /// Runs one pure helper the way `tools/parity/mod_manager.py fixtures` ran Python's.
@@ -38,7 +38,7 @@ fn run_helper(f: &str, args: &[Value]) -> Value {
         "name_from_filename" => json!(modpacks::name_from_filename(args[0].as_str().unwrap())),
         "safe_pack_filename" => json!(modpacks::safe_pack_filename(args[0].as_str().unwrap())),
         "install_name" => {
-            let data = compat::b64decode(args[0].as_str().unwrap()).unwrap();
+            let data = py::a2b_base64(args[0].as_str().unwrap().as_bytes()).unwrap();
             let ext = match args[1].as_str().unwrap() {
                 ".tmod" => ".tmod",
                 _ => ".zip",
@@ -51,7 +51,7 @@ fn run_helper(f: &str, args: &[Value]) -> Value {
         },
         "install_target" => {
             let existing = args[3].as_str();
-            json!(compat::display(&trovesaurus::install_target(&compat::py_path(args[0].as_str().unwrap()), &strs(&args[1]), args[2].as_str().unwrap(), existing)))
+            json!(py::display(&trovesaurus::install_target(&py::py_path(args[0].as_str().unwrap()), &strs(&args[1]), args[2].as_str().unwrap(), existing)))
         }
         "blocked" => json!(blocklist::Blocklist::from_data(&args[0]).blocked(&args[1])),
         other => panic!("no helper {other}"),
@@ -130,7 +130,7 @@ fn resolve(value: &Value, env: &Map<String, Value>, results: &Map<String, Value>
             if let Some(c) = re.captures(&s).filter(|c| c[0].len() == s.len()) {
                 return lookup(&c[1], &c[2]);
             }
-            json!(re.replace_all(&s, |c: &regex::Captures| compat::py_str(&lookup(&c[1], &c[2]))).into_owned())
+            json!(re.replace_all(&s, |c: &regex::Captures| py::str_of(&lookup(&c[1], &c[2]))).into_owned())
         }
         Value::Array(items) => Value::Array(items.iter().map(|v| resolve(v, env, results)).collect()),
         other => other.clone(),
@@ -143,8 +143,8 @@ fn file_op(op: &str, step: &Value, path: &Path) -> Value {
         "read" if path.exists() => json!(text(path)),
         "readdir" if path.exists() => {
             let mut names: Vec<PathBuf> = std::fs::read_dir(path).unwrap().map(|e| e.unwrap().path()).collect();
-            names.sort_by_key(|p| compat::file_name(p));
-            Value::Object(names.iter().map(|p| (compat::file_name(p), json!(text(p)))).collect())
+            names.sort_by_key(|p| py::file_name(p));
+            Value::Object(names.iter().map(|p| (py::file_name(p), json!(text(p)))).collect())
         }
         "listdir" if path.exists() => {
             let mut names: Vec<String> = std::fs::read_dir(path).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();

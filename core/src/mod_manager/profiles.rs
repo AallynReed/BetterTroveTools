@@ -16,7 +16,7 @@ use super::modpacks::{decompile, decompile_meta, download_tpack, install_tpack_b
 use super::{ext, finish, get, guard, or};
 use crate::game::registry::{files_with_suffix, TroveGamePath};
 use crate::http;
-use crate::modfile::compat;
+use crate::py;
 use crate::paths::get_app_data_dir;
 use crate::{Args, Resp, KIWI_API_BASE};
 
@@ -29,12 +29,12 @@ fn manifest_path() -> PathBuf {
 }
 
 fn profile_file(id: &Value) -> PathBuf {
-    profiles_dir().join(format!("{}.tpack", compat::py_str(id)))
+    profiles_dir().join(format!("{}.tpack", py::str_of(id)))
 }
 
 /// The manifest, rebuilt from the `.tpack`s on disk when missing or corrupt.
 fn load_manifest() -> Value {
-    if let Ok(m) = compat::read_json(&manifest_path()) {
+    if let Ok(m) = py::read_json(&manifest_path()) {
         if get(&m, "profiles").is_array() {
             return m;
         }
@@ -44,7 +44,7 @@ fn load_manifest() -> Value {
     let dir = profiles_dir();
     if dir.exists() {
         for tpack in files_with_suffix(&dir, ".tpack", false) {
-            let id = compat::file_stem(&tpack);
+            let id = py::file_stem(&tpack);
             if known.contains(&id) {
                 continue;
             }
@@ -59,8 +59,8 @@ fn load_manifest() -> Value {
 }
 
 fn save_manifest(manifest: &Value) -> Result<()> {
-    compat::mkdir_all(&profiles_dir())?;
-    compat::write_text(&manifest_path(), &crate::json::dumps_indent(manifest, 2))
+    py::mkdir_all(&profiles_dir())?;
+    py::write_text(&manifest_path(), &crate::json::dumps_indent(manifest, 2))
 }
 
 fn find_index(manifest: &Value, id: &Value) -> Option<usize> {
@@ -125,11 +125,11 @@ fn resolve_updates(entries: &Entries) -> (Vec<Update>, bool) {
 
     let mut updates = Vec::new();
     for (digest, filename) in &hash_to_entry {
-        let Some(entry) = matches.get(digest).filter(|e| compat::truthy(e)) else { continue };
+        let Some(entry) = matches.get(digest).filter(|e| py::truthy(e)) else { continue };
         let m = or(get(entry, "mod"), &json!({})).clone();
         let matched = or(get(entry, "release"), &json!({})).clone();
         let slug = get(&m, "slug");
-        if !compat::truthy(slug) {
+        if !py::truthy(slug) {
             continue;
         }
         let r = hub::mod_ref(get(&m, "handle"), slug);
@@ -139,7 +139,7 @@ fn resolve_updates(entries: &Entries) -> (Vec<Update>, bool) {
             continue;
         }
         let Some(latest) = hub::latest_release(&releases, get(&matched, "branch")) else { continue };
-        if !compat::truthy(get(latest, "download_url")) {
+        if !py::truthy(get(latest, "download_url")) {
             continue;
         }
         updates.push(Update {
@@ -171,8 +171,8 @@ fn sort_newest_first(profiles: &mut Vec<Value>) -> Result<()> {
     let numeric = keys.iter().all(|k| k.is_number() || k.is_boolean());
     let textual = keys.iter().all(Value::is_string);
     if !numeric && !textual {
-        let a = keys.iter().find(|k| k.is_string()).map(compat::type_name).unwrap_or("dict");
-        let b = keys.iter().find(|k| !k.is_string()).map(compat::type_name).unwrap_or("int");
+        let a = keys.iter().find(|k| k.is_string()).map(py::type_name).unwrap_or("dict");
+        let b = keys.iter().find(|k| !k.is_string()).map(py::type_name).unwrap_or("int");
         return Err(anyhow!("'<' not supported between instances of '{}' and '{}'", a, b));
     }
     let mut paired: Vec<(Value, Value)> = keys.into_iter().zip(profiles.drain(..)).collect();
@@ -215,13 +215,13 @@ pub(super) fn save_modpack_as_profile(a: &Args) -> Result<Value> {
         let mut manifest = load_manifest();
         let id = json!(uuid::Uuid::new_v4().simple().to_string());
         let file = profile_file(&id);
-        compat::mkdir_all(&profiles_dir())?;
-        compat::write_bytes(&file, &data)?;
+        py::mkdir_all(&profiles_dir())?;
+        py::write_bytes(&file, &data)?;
 
         let display_name = match a.get(3) {
-            Value::String(s) => compat::strip(s).to_string(),
-            v if !compat::truthy(v) => String::new(),
-            other => return Err(anyhow!("'{}' object has no attribute 'strip'", compat::type_name(other))),
+            Value::String(s) => py::strip(s).to_string(),
+            v if !py::truthy(v) => String::new(),
+            other => return Err(anyhow!("'{}' object has no attribute 'strip'", py::type_name(other))),
         };
         let name = if display_name.is_empty() { or(slug, &json!("Modpack")).clone() } else { json!(display_name) };
         let created_at = a.get(4).clone();
@@ -241,9 +241,9 @@ pub(super) fn save_modpack_as_profile(a: &Args) -> Result<Value> {
 pub(super) fn rename_profile(a: &Args) -> Result<Value> {
     Ok(guard("PROFILE_RENAME_FAILED", || {
         let name = match a.get(1) {
-            Value::String(s) => compat::strip(s).to_string(),
-            v if !compat::truthy(v) => String::new(),
-            other => return Err(anyhow!("'{}' object has no attribute 'strip'", compat::type_name(other))),
+            Value::String(s) => py::strip(s).to_string(),
+            v if !py::truthy(v) => String::new(),
+            other => return Err(anyhow!("'{}' object has no attribute 'strip'", py::type_name(other))),
         };
         if name.is_empty() {
             return Ok(Resp::fail("A profile name is required.", "EMPTY_NAME").into());
@@ -272,7 +272,7 @@ pub(super) fn delete_profile(a: &Args) -> Result<Value> {
         let file = profile_file(id);
         if let Err(e) = std::fs::remove_file(&file) {
             if e.kind() != std::io::ErrorKind::NotFound {
-                eprintln!("Failed to remove profile file {}: {}", compat::py_str(id), e);
+                eprintln!("Failed to remove profile file {}: {}", py::str_of(id), e);
             }
         }
         Ok(Resp::ok(json!({ "deleted": existed })).with("deleted", existed).into())
@@ -287,7 +287,7 @@ pub(super) fn check_profile_updates(a: &Args) -> Result<Value> {
         if !path.exists() {
             return Ok(Resp::fail("Profile file not found.", "PROFILE_FILE_NOT_FOUND").into());
         }
-        let entries = decompile(&compat::read_bytes(&path)?)?;
+        let entries = decompile(&py::read_bytes(&path)?)?;
         let (updates, checked) = resolve_updates(&entries);
         let public: Vec<Value> = updates.iter().map(|u| json!({ "name": u.name, "ref": u.r, "branch": u.branch })).collect();
         Ok(Resp::ok(json!({ "checked": checked, "updates": public })).with("checked", checked).with("updates", public).into())
@@ -302,7 +302,7 @@ pub(super) fn update_profile_file(a: &Args) -> Result<Value> {
         if !path.exists() {
             return Ok(Resp::fail("Profile file not found.", "PROFILE_FILE_NOT_FOUND").into());
         }
-        let (version, props, entries) = decompile_meta(&compat::read_bytes(&path)?)?;
+        let (version, props, entries) = decompile_meta(&py::read_bytes(&path)?)?;
         let (updates, _) = resolve_updates(&entries);
         if updates.is_empty() {
             return Ok(Resp::ok(json!({ "updated": 0 })).with("updated", 0).into());
@@ -312,7 +312,7 @@ pub(super) fn update_profile_file(a: &Args) -> Result<Value> {
         let mut updated = 0;
         for (filename, content) in &entries {
             if let Some(u) = by_filename.get(filename.as_str()) {
-                if let Some(data) = download_release(&compat::py_str(&u.download_url), &u.name).filter(|d| !d.is_empty()) {
+                if let Some(data) = download_release(&py::str_of(&u.download_url), &u.name).filter(|d| !d.is_empty()) {
                     new_entries.push((filename.clone(), data));
                     updated += 1;
                     continue;
@@ -327,7 +327,7 @@ pub(super) fn update_profile_file(a: &Args) -> Result<Value> {
         if decompile(&rebuilt)? != new_entries {
             return Ok(Resp::fail("Rebuilt modpack failed verification; the saved file was left unchanged.", "PROFILE_REBUILD_VERIFY_FAILED").into());
         }
-        compat::write_bytes(&path, &rebuilt)?;
+        py::write_bytes(&path, &rebuilt)?;
 
         let mut manifest = load_manifest();
         if let Some(i) = find_index(&manifest, a.get(0)) {
@@ -344,15 +344,15 @@ pub(super) fn update_profile_file(a: &Args) -> Result<Value> {
 
 /// Moves every enabled mod at the top of `mods/` into `mods/disabled/`.
 fn disable_current_loadout(game: &Value) -> Result<usize> {
-    let mods_dir = TroveGamePath::new(compat::path_arg(game)?, None).mods_path();
+    let mods_dir = TroveGamePath::new(py::path_arg(game)?, None).mods_path();
     let disabled_dir = mods_dir.join("disabled");
     let mut moved = 0;
     for suffix in [".tmod", ".zip"] {
         for file in files_with_suffix(&mods_dir, suffix, false) {
-            let res = compat::mkdir_all(&disabled_dir).and_then(|_| compat::shutil_move(&file, &unique_path(&disabled_dir.join(compat::file_name(&file)))));
+            let res = py::mkdir_all(&disabled_dir).and_then(|_| py::shutil_move(&file, &unique_path(&disabled_dir.join(py::file_name(&file)))));
             match res {
                 Ok(_) => moved += 1,
-                Err(e) => eprintln!("Failed to disable mod {}: {}", compat::file_name(&file), e),
+                Err(e) => eprintln!("Failed to disable mod {}: {}", py::file_name(&file), e),
             }
         }
     }
@@ -363,14 +363,14 @@ fn disable_current_loadout(game: &Value) -> Result<usize> {
 pub(super) fn apply_profile(a: &Args) -> Result<Value> {
     Ok(guard("PROFILE_APPLY_FAILED", || {
         let game = a.get(0);
-        if !compat::truthy(game) {
+        if !py::truthy(game) {
             return Ok(Resp::fail("No game path provided.", "MISSING_GAME_PATH").into());
         }
         let path = profile_file(a.get(1));
         if !path.exists() {
             return Ok(Resp::fail("Profile file not found.", "PROFILE_FILE_NOT_FOUND").into());
         }
-        let data = compat::read_bytes(&path)?;
+        let data = py::read_bytes(&path)?;
         let disabled = disable_current_loadout(game)?;
         let mut payload = match install_tpack_bytes(game, &data)? {
             Ok(result) => result,

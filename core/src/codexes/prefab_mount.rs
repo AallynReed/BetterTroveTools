@@ -14,7 +14,7 @@ use super::prefab_ally::{
     clean_localized_text, extract_designer_from_blueprint, find_prefabs, infer_mastery_base, load_blueprint_path_map, load_language_map, load_multiplier_file_map,
     load_prefabs, parse_item_pet_signature, prefabs_index, require_prefabs_root, resolve_blueprint_catalog_path, resolve_localized_value, GameFiles, LanguageMap, MultiplierMap,
 };
-use super::py;
+use crate::py;
 
 pub const MOUNT_PREFIX: &str = "collections/mount/";
 pub const ITEM_MOUNT_PREFIX: &str = "item/mount/";
@@ -25,7 +25,7 @@ static DESC_KEY_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\$prefabs_[
 pub fn mount_key_from_prefab_path(prefab_path: &str) -> String {
     let normalized = prefab_path.replace('\\', "/");
     let rest = if normalized.to_lowercase().starts_with(MOUNT_PREFIX) { &normalized[MOUNT_PREFIX.len()..] } else { &normalized };
-    py::stem(rest).to_string()
+    py::stem_any_sep(rest).to_string()
 }
 
 pub fn item_mount_key_from_prefab_path(prefab_path: &str) -> String {
@@ -52,7 +52,7 @@ pub fn load_collection_mount_category_map(game: &GameFiles) -> Result<HashMap<St
         }
         let normalized = text.trim_start_matches('$');
         if normalized.starts_with(MOUNT_PREFIX) && !current.is_empty() {
-            out.insert(py::stem(normalized).to_string(), current.clone());
+            out.insert(py::stem_any_sep(normalized).to_string(), current.clone());
         }
     }
     Ok(out)
@@ -212,7 +212,7 @@ pub fn build_mounts_dataset(game_path: &Path, locale: &str) -> Result<(Map<Strin
     let count = |f: &dyn Fn(&Value) -> bool| merged.values().filter(|r| f(r)).count();
     let truthy = |v: &Value| crate::args::truthy(v);
     let mut manifest = Map::new();
-    manifest.insert("game_path".into(), json!(py::path_str(game_path)));
+    manifest.insert("game_path".into(), json!(py::path_str_simple(game_path)));
     manifest.insert("mount_count".into(), json!(merged.len()));
     manifest.insert("collection_mount_prefabs".into(), json!(mount_matches.len()));
     manifest.insert("item_mount_prefabs".into(), json!(item_matches.len()));

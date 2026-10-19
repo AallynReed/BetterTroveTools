@@ -86,7 +86,7 @@ pub struct Mod {
 impl Mod {
     /// `Mod(**raw)`.
     pub fn from_value(raw: &Value) -> Result<Mod> {
-        let Value::Object(m) = raw else { bail!("argument after ** must be a mapping, not {}", super::compat::type_name(raw)) };
+        let Value::Object(m) = raw else { bail!("argument after ** must be a mapping, not {}", crate::py::type_name(raw)) };
         Ok(Mod {
             id: int_field(m, "id")?,
             name: str_field(m, "name")?,
@@ -157,7 +157,7 @@ impl TsFile {
             Some(Value::String(s)) => {
                 if matches!(is_config, Ok(true)) {
                     Ok("config".to_string())
-                } else if super::compat::strip(s).is_empty() {
+                } else if crate::py::strip(s).is_empty() {
                     Ok(format!("File: [{}]", file_id.as_ref().map(|i| i.to_string()).unwrap_or_else(|_| "None".into())))
                 } else {
                     Ok(s.clone())
@@ -205,8 +205,8 @@ fn lax_int(v: &Value) -> Option<i64> {
         Value::Bool(b) => Some(*b as i64),
         Value::Number(n) => n.as_i64().or_else(|| n.as_f64().filter(|f| f.fract() == 0.0 && f.is_finite()).map(|f| f as i64)),
         Value::String(s) => {
-            let as_int = |t: &str| super::compat::py_int(&Value::String(t.to_string())).ok();
-            let t = super::compat::strip(s);
+            let as_int = |t: &str| crate::py::int_lenient(&Value::String(t.to_string())).ok();
+            let t = crate::py::strip(s);
             if let Some(i) = as_int(t) {
                 return Some(i);
             }
@@ -272,7 +272,7 @@ fn str_or(m: &Map<String, Value>, key: &str, default: &str) -> Result<String> {
 /// The `parse_timestamp` validator: `datetime.fromtimestamp(int(value), timezone.utc)`.
 fn timestamp_field(m: &Map<String, Value>, key: &str) -> Result<DateTime<Utc>> {
     let v = m.get(key).ok_or_else(|| anyhow!("{}: Field required", key))?;
-    let secs = super::compat::py_int(v)?;
+    let secs = crate::py::int_lenient(v)?;
     let dt = DateTime::from_timestamp(secs, 0).ok_or_else(|| anyhow!("timestamp out of range"))?;
     use chrono::Datelike;
     if !(1..=9999).contains(&dt.year()) {

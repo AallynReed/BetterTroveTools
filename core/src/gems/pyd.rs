@@ -3,7 +3,7 @@
 
 use serde_json::{Map, Value};
 
-use super::py::{parse_float_literal, parse_int_literal, repr, strip, type_name};
+use crate::py::{float_literal as parse_float_literal, int_literal as parse_int_literal, repr_latin1 as repr, strip, type_name};
 
 const PYDANTIC_DOCS: &str = "https://errors.pydantic.dev/2.12/v/";
 

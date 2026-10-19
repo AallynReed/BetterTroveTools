@@ -6,7 +6,6 @@ mod event_notifications;
 mod feeds;
 mod image_proxy;
 mod live_feed;
-mod py;
 mod rotations;
 mod server_time;
 

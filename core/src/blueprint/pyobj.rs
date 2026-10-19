@@ -1,10 +1,11 @@
-//! The slices of Python's semantics the engine's answers depend on: `json.loads` (with
-//! correctly rounded floats, which serde_json's default parser is not), `str()`, `int()`,
-//! `round()`, `f"{n:,}"`, `str.title()`, and the text `json.dumps` writes.
+//! `json.loads` into Python objects (with correctly rounded floats, which serde_json's
+//! default parser is not), `int()` of them, and the text `json.dumps` writes.
 
 use std::fmt::Write as _;
 
 use serde_json::{Map, Number, Value};
+
+use crate::py::{float_str, repr_str_cc, strip};
 
 /// A value as `json.loads` returns it.
 #[derive(Debug, Clone, PartialEq)]
@@ -375,11 +376,11 @@ impl Py {
             Py::Bool(false) => "False".into(),
             Py::Int(i) => i.to_string(),
             Py::Float(f) => float_str(*f),
-            Py::Str(s) => repr_str(s),
+            Py::Str(s) => repr_str_cc(s),
             Py::List(v) => format!("[{}]", v.iter().map(Py::repr).collect::<Vec<_>>().join(", ")),
             Py::Dict(items) => format!(
                 "{{{}}}",
-                items.iter().map(|(k, v)| format!("{}: {}", repr_str(k), v.repr())).collect::<Vec<_>>().join(", ")
+                items.iter().map(|(k, v)| format!("{}: {}", repr_str_cc(k), v.repr())).collect::<Vec<_>>().join(", ")
             ),
         }
     }
@@ -430,214 +431,6 @@ pub fn int_from_str(text: &str) -> Option<i128> {
     Some(if neg { -v } else { v })
 }
 
-/// Python's `str.isspace()`: Rust's whitespace plus the four ASCII separators.
-pub fn is_space(c: char) -> bool {
-    c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
-}
-
-/// `str.strip()`.
-pub fn strip(s: &str) -> &str {
-    s.trim_matches(is_space)
-}
-
-/// `str.split()`.
-pub fn split_ws(s: &str) -> impl Iterator<Item = &str> {
-    s.split(is_space).filter(|w| !w.is_empty())
-}
-
-/// `str.title()`.
-pub fn title(s: &str) -> String {
-    let mut out = String::with_capacity(s.len());
-    let mut prev_cased = false;
-    for c in s.chars() {
-        let cased = c.is_lowercase() || c.is_uppercase();
-        if cased {
-            if prev_cased {
-                out.extend(c.to_lowercase());
-            } else {
-                out.extend(c.to_uppercase());
-            }
-        } else {
-            out.push(c);
-        }
-        prev_cased = cased;
-    }
-    out
-}
-
-/// `str(float)`.
-pub fn float_str(f: f64) -> String {
-    if f.is_nan() {
-        "nan".into()
-    } else if f.is_infinite() {
-        if f > 0.0 { "inf" } else { "-inf" }.into()
-    } else {
-        crate::json::float_repr(f)
-    }
-}
-
-/// `repr(str)`.
-pub fn repr_str(s: &str) -> String {
-    let quote = if s.contains('\'') && !s.contains('"') { '"' } else { '\'' };
-    let mut out = String::with_capacity(s.len() + 2);
-    out.push(quote);
-    for c in s.chars() {
-        match c {
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            c if c == quote => {
-                out.push('\\');
-                out.push(c);
-            }
-            c if (c as u32) < 0x20 || c as u32 == 0x7f => {
-                let _ = write!(out, "\\x{:02x}", c as u32);
-            }
-            c if c.is_control() => {
-                let n = c as u32;
-                let _ = if n <= 0xff { write!(out, "\\x{n:02x}") } else { write!(out, "\\u{n:04x}") };
-            }
-            c => out.push(c),
-        }
-    }
-    out.push(quote);
-    out
-}
-
-/// `repr(bytes)`.
-pub fn repr_bytes(b: &[u8]) -> String {
-    let quote = if b.contains(&b'\'') && !b.contains(&b'"') { '"' } else { '\'' };
-    let mut out = String::from("b");
-    out.push(quote);
-    for &c in b {
-        match c {
-            b'\\' => out.push_str("\\\\"),
-            b'\n' => out.push_str("\\n"),
-            b'\r' => out.push_str("\\r"),
-            b'\t' => out.push_str("\\t"),
-            c if c as char == quote => {
-                out.push('\\');
-                out.push(c as char);
-            }
-            0x20..=0x7e => out.push(c as char),
-            c => {
-                let _ = write!(out, "\\x{c:02x}");
-            }
-        }
-    }
-    out.push(quote);
-    out
-}
-
-/// `f"{n:,}"`.
-pub fn thousands(n: i64) -> String {
-    let digits = n.unsigned_abs().to_string();
-    let mut out = String::with_capacity(digits.len() + digits.len() / 3 + 1);
-    if n < 0 {
-        out.push('-');
-    }
-    for (i, c) in digits.chars().enumerate() {
-        if i > 0 && (digits.len() - i).is_multiple_of(3) {
-            out.push(',');
-        }
-        out.push(c);
-    }
-    out
-}
-
-/// `round(x)` to an int: halves go to the even neighbour.
-pub fn round(x: f64) -> i64 {
-    x.round_ties_even() as i64
-}
-
-/// `bytes.decode("latin-1")`.
-pub fn latin1(b: &[u8]) -> String {
-    b.iter().map(|&c| c as char).collect()
-}
-
-/// `bytes.decode("utf-8")`, failing with the `UnicodeDecodeError` text Python gives.
-pub fn utf8(b: &[u8]) -> Result<&str, String> {
-    std::str::from_utf8(b).map_err(|e| {
-        let at = e.valid_up_to();
-        let (end, reason) = match e.error_len() {
-            None => (b.len(), "unexpected end of data"),
-            Some(1) if !matches!(b[at], 0xC2..=0xF4) => (at + 1, "invalid start byte"),
-            Some(n) => (at + n, "invalid continuation byte"),
-        };
-        if end - at == 1 {
-            format!("'utf-8' codec can't decode byte 0x{:02x} in position {at}: {reason}", b[at])
-        } else {
-            format!("'utf-8' codec can't decode bytes in position {at}-{}: {reason}", end - 1)
-        }
-    })
-}
-
-/// `bytes.decode("utf-8", errors="ignore")`.
-pub fn utf8_ignore(b: &[u8]) -> String {
-    let mut out = String::with_capacity(b.len());
-    for chunk in b.utf8_chunks() {
-        out.push_str(chunk.valid());
-    }
-    out
-}
-
-/// `base64.b64decode(text)`: non-alphabet characters are skipped, padding ends the input.
-pub fn b64decode(text: &str) -> Result<Vec<u8>, String> {
-    if !text.is_ascii() {
-        return Err("string argument should contain only ASCII characters".into());
-    }
-    let mut out = Vec::with_capacity(text.len() / 4 * 3);
-    let (mut quad, mut left, mut pads) = (0u8, 0u8, 0u8);
-    for c in text.bytes() {
-        if c == b'=' {
-            if quad >= 2 {
-                pads += 1;
-                if quad + pads >= 4 {
-                    return Ok(out);
-                }
-            }
-            continue;
-        }
-        let v = match c {
-            b'A'..=b'Z' => c - b'A',
-            b'a'..=b'z' => c - b'a' + 26,
-            b'0'..=b'9' => c - b'0' + 52,
-            b'+' => 62,
-            b'/' => 63,
-            _ => continue,
-        };
-        pads = 0;
-        match quad {
-            0 => {
-                left = v;
-                quad = 1;
-            }
-            1 => {
-                out.push((left << 2) | (v >> 4));
-                left = v & 0x0f;
-                quad = 2;
-            }
-            2 => {
-                out.push((left << 4) | (v >> 2));
-                left = v & 0x03;
-                quad = 3;
-            }
-            _ => {
-                out.push((left << 6) | v);
-                quad = 0;
-            }
-        }
-    }
-    match quad {
-        0 => Ok(out),
-        1 => Err(format!(
-            "Invalid base64-encoded string: number of data characters ({}) cannot be 1 more than a multiple of 4",
-            out.len() / 3 * 4 + 1
-        )),
-        _ => Err("Incorrect padding".into()),
-    }
-}
 
 // --- JSON text, as `json.dumps` writes it ---------------------------------------------
 
@@ -748,15 +541,5 @@ mod tests {
         assert_eq!(Py::None.int(), Err(IntError::Type));
         assert_eq!(Py::Dict(vec![("a".into(), Py::Int(1))]).str(), "{'a': 1}");
         assert_eq!(Py::List(vec![Py::Str("it's".into()), Py::Float(1.0)]).str(), "[\"it's\", 1.0]");
-        assert_eq!(thousands(1234567), "1,234,567");
-        assert_eq!(thousands(999), "999");
-        assert_eq!(round(2.5), 2);
-        assert_eq!(round(-0.5), 0);
-        assert_eq!(title("dragon mount2a x"), "Dragon Mount2A X");
-        assert_eq!(utf8(b"ab\xff").unwrap_err(), "'utf-8' codec can't decode byte 0xff in position 2: invalid start byte");
-        assert_eq!(utf8(b"\xe2\x82").unwrap_err(), "'utf-8' codec can't decode bytes in position 0-1: unexpected end of data");
-        assert_eq!(b64decode("aGk=").unwrap(), b"hi");
-        assert_eq!(b64decode("aGk").unwrap_err(), "Incorrect padding");
-        assert_eq!(b64decode("a").unwrap_err(), "Invalid base64-encoded string: number of data characters (1) cannot be 1 more than a multiple of 4");
     }
 }

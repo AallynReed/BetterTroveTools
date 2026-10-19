@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 
 use serde_json::{json, Value};
 
-use super::py;
+use crate::py;
 use super::qb;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,7 +73,7 @@ pub fn is_editable(t: u16) -> bool {
 }
 
 fn opacity_pct(w: i64) -> i64 {
-    py::round(alpha_for_w(w) as f64 / 255.0 * 100.0)
+    py::round_i64(alpha_for_w(w) as f64 / 255.0 * 100.0)
 }
 
 /// A human label for a `(type, w)` pair.

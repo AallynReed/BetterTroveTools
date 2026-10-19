@@ -8,7 +8,7 @@ use anyhow::{anyhow, Result};
 use parking_lot::Mutex;
 use serde_json::{json, Value};
 
-use super::py;
+use crate::py;
 use super::rotations::chaos_fallback_times;
 use super::server_time::now_us;
 use crate::args::truthy;
@@ -185,7 +185,7 @@ pub fn giveaway_list(payload: Value) -> Value {
 /// `(items or [])`, iterated.
 fn items_of(items: &Value) -> Result<Vec<Value>> {
     if truthy(items) {
-        py::iterate(items)
+        Ok(py::iterate(items)?)
     } else {
         Ok(Vec::new())
     }
@@ -226,7 +226,7 @@ pub fn map_events(items: Value) -> Result<Value> {
     }
     let mut keyed = events
         .into_iter()
-        .map(|e| Ok((py::int(py::or(py::get(&e, "startdate"), &json!(0)))?, e)))
+        .map(|e| Ok((py::int_ascii(py::or(py::get(&e, "startdate"), &json!(0)))?, e)))
         .collect::<Result<Vec<_>>>()?;
     keyed.sort_by_key(|(k, _)| *k);
     Ok(Value::Array(keyed.into_iter().map(|(_, e)| Value::Object(e)).collect()))
@@ -264,7 +264,7 @@ pub fn chaos_item(payload: &Value) -> Result<Option<Value>> {
     let window = |k: &str| -> Result<Value> {
         match payload.get(k) {
             None | Some(Value::Null) => Ok(Value::Null),
-            Some(v) => Ok(json!(py::int(v)?)),
+            Some(v) => Ok(json!(py::int_ascii(v)?)),
         }
     };
     let normalized = json!({

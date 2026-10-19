@@ -8,7 +8,7 @@ use md5::{Digest, Md5};
 use parking_lot::Mutex;
 use serde_json::{Map, Value};
 
-use super::compat::{self, file_name, file_stem, strip};
+use crate::py::{self, file_name, file_stem, strip};
 use super::format::{self, decompress_body, HeaderReader, OutFile, Reader};
 use super::trovesaurus;
 use super::{cfg, toml_out, zipmod};
@@ -60,7 +60,7 @@ pub struct Property {
 /// `_normalize_internal_path`: posix, and lowercased unless it is a `.cfg` (the game
 /// reads configs by the mod title, so their case is kept).
 pub fn normalize_internal_path(path: &str) -> Option<String> {
-    let normalized = strip(&compat::as_posix(path)).to_string();
+    let normalized = strip(&py::as_posix(path)).to_string();
     let normalized = if normalized.to_lowercase().ends_with(".cfg") { normalized } else { normalized.to_lowercase() };
     if normalized.is_empty() {
         None
@@ -88,7 +88,7 @@ impl PartialBody {
             return Ok(d.clone());
         }
         let path = self.path.lock().clone();
-        let raw = compat::read_bytes(&path)?;
+        let raw = py::read_bytes(&path)?;
         let body = Arc::new(decompress_body(&raw[format::header_slice(&raw).len()..]));
         *guard = Some(body.clone());
         Ok(body)
@@ -255,7 +255,7 @@ pub fn no_preview_image() -> String {
             if let Ok(cwd) = std::env::current_dir() {
                 roots.push(cwd);
             }
-            roots.iter().map(|r| r.join(&rel)).find(|p| p.is_file()).and_then(|p| std::fs::read(p).ok()).map(|b| compat::b64encode(&b)).unwrap_or_default()
+            roots.iter().map(|r| r.join(&rel)).find(|p| p.is_file()).and_then(|p| std::fs::read(p).ok()).map(|b| py::b64encode(&b)).unwrap_or_default()
         })
         .clone()
 }
@@ -454,7 +454,7 @@ impl TroveMod {
         let preview = self.preview_path();
         for f in &self.files {
             if Some(&f.trove_path) == preview.as_ref() {
-                return Ok(compat::b64encode(f.data()?));
+                return Ok(py::b64encode(f.data()?));
             }
         }
         Ok(no_preview_image())
@@ -536,7 +536,7 @@ impl TroveMod {
         if new_path.exists() {
             return Err(FileExistsError.into());
         }
-        compat::rename(&self.mod_path, &new_path)?;
+        py::rename(&self.mod_path, &new_path)?;
         self.mod_path = new_path;
         Ok(())
     }
@@ -548,20 +548,20 @@ impl TroveMod {
         let Some(name) = self.name() else { return Err(anyhow!("unsupported operand type(s) for +: 'NoneType' and 'str'")) };
         let new_name = format!("{}{}", name, ext);
         if new_name.contains('/') || (cfg!(windows) && new_name.contains('\\')) {
-            return Err(anyhow!("Invalid name {}", compat::repr_str(&new_name)));
+            return Err(anyhow!("Invalid name {}", py::repr_str(&new_name)));
         }
         let new_path = self.mod_path.with_file_name(&new_name);
-        if compat::same_path(&new_path, &self.mod_path) || new_path.exists() {
+        if py::same_path(&new_path, &self.mod_path) || new_path.exists() {
             return Ok(());
         }
-        match compat::rename(&self.mod_path, &new_path) {
+        match py::rename(&self.mod_path, &new_path) {
             Ok(()) => {
                 self.mod_path = new_path.clone();
                 for f in &self.files {
                     f.repoint(&new_path);
                 }
             }
-            Err(e) => eprintln!("Failed to rename mod {} at {}: {}", name, compat::display(&self.mod_path), e),
+            Err(e) => eprintln!("Failed to rename mod {} at {}: {}", name, py::display(&self.mod_path), e),
         }
         Ok(())
     }
@@ -698,10 +698,10 @@ impl TroveMod {
             let base_ext = format!(".{}", latest.file_type.value());
             let final_ext = if self.enabled { base_ext } else { format!("{}.disabled", base_ext) };
             let new_path = self.cwd().join(format!("{}{}", stem, final_ext));
-            if !compat::same_path(&self.mod_path, &new_path) && self.mod_path.exists() {
-                compat::unlink(&self.mod_path)?;
+            if !py::same_path(&self.mod_path, &new_path) && self.mod_path.exists() {
+                py::unlink(&self.mod_path)?;
             }
-            compat::write_bytes(&new_path, &data)?;
+            py::write_bytes(&new_path, &data)?;
             self.mod_path = new_path;
             Ok(true)
         })();
@@ -731,10 +731,10 @@ impl TroveMod {
             return Ok(());
         }
         let dir = crate::paths::get_mod_cfgs_dir();
-        compat::mkdir_all(&dir)?;
+        py::mkdir_all(&dir)?;
         let config_file = dir.join(format!("{}.cfg", self.name().unwrap_or("None")));
         let mut desired = match self.config()? {
-            Some(bytes) => cfg::parse(&compat::decode_lossy_sig(bytes)),
+            Some(bytes) => cfg::parse(&py::decode_lossy_sig(bytes)),
             None => cfg::Sections::new(),
         };
         for f in &self.files {
@@ -743,11 +743,11 @@ impl TroveMod {
                 desired.entry(swf).or_insert_with(|| Value::Object(Map::new()));
             }
         }
-        let current = if config_file.exists() { cfg::parse(&compat::read_text_lossy_sig(&config_file)?) } else { cfg::Sections::new() };
+        let current = if config_file.exists() { cfg::parse(&py::read_text_lossy_sig(&config_file)?) } else { cfg::Sections::new() };
         let merged = cfg::merge(current, &desired);
         if merged.is_empty() {
             return Ok(());
         }
-        compat::write_text(&config_file, &cfg::serialize(&merged))
+        py::write_text(&config_file, &cfg::serialize(&merged))
     }
 }

@@ -20,6 +20,6 @@ pub fn read_storage() -> Value {
 
 /// Rewrites the file (`json.dump(data, f, indent=4)`).
 pub fn write_storage(data: &Value) -> anyhow::Result<()> {
-    std::fs::write(get_storage_file(), crate::json::dumps_indent(data, 4))?;
+    std::fs::write(get_storage_file(), crate::py::text_mode(&crate::json::dumps_indent(data, 4)).as_bytes())?;
     Ok(())
 }

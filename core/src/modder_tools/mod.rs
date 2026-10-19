@@ -1,7 +1,6 @@
 //! backend/modder_tools: the Modder Tools tab (modder_tools.py) and Steam Workshop
 //! publishing (steam_workshop.py). The File Manager and Blueprint Editor live elsewhere.
 
-use std::path::Path;
 use std::sync::atomic::{AtomicI64, Ordering};
 
 use chrono::{DateTime, Utc};
@@ -21,16 +20,6 @@ fn now_utc() -> DateTime<Utc> {
     match FIXED_NOW.load(Ordering::SeqCst) {
         i64::MIN => Utc::now(),
         micros => DateTime::from_timestamp_micros(micros).unwrap_or_else(Utc::now),
-    }
-}
-
-/// What tkinter's dialogs returned: forward slashes on Windows too.
-fn tk_path(path: &Path) -> String {
-    let s = path.to_string_lossy();
-    if cfg!(windows) {
-        s.replace('\\', "/")
-    } else {
-        s.into_owned()
     }
 }
 

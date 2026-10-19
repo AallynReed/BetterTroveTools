@@ -7,7 +7,7 @@ use std::sync::OnceLock;
 
 use serde_json::Value;
 
-use super::py::{self, Py};
+use super::pyobj::{self, Py};
 
 pub struct Rig {
     pub voxel_scale: Value,
@@ -68,7 +68,7 @@ fn load_rigs() -> HashMap<String, Rig> {
         if !matches || file.starts_with('.') || !entry.path().is_file() {
             continue;
         }
-        let Some(rig) = std::fs::read_to_string(entry.path()).ok().and_then(|t| py::loads(&t).ok()) else { continue };
+        let Some(rig) = std::fs::read_to_string(entry.path()).ok().and_then(|t| pyobj::loads(&t).ok()) else { continue };
         let value = |k: &str| rig.get(k).and_then(Py::to_value).unwrap_or(Value::Null);
         let animations = match rig.get("animations") {
             Some(Py::Dict(items)) => items.iter().map(|(k, _)| k.clone()).collect(),

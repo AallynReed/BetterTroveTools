@@ -5,7 +5,7 @@ use serde_json::{json, Map, Value};
 
 use super::constants::*;
 use super::model::{lookup, PartialGem};
-use super::py::{self, Int};
+use crate::py::{self, Int};
 use crate::{Args, Cmd, Resp};
 
 pub fn commands() -> Vec<Cmd> {
@@ -121,8 +121,8 @@ impl FocusPlan {
         let per: Map<String, Value> = FOCUS_OPTIONS.iter().zip(&self.per_container).map(|(o, c)| (o.key.to_string(), Value::Object(c.json()))).collect();
         let totals: Map<String, Value> = FOCUS_OPTIONS.iter().zip(&self.totals).map(|(o, t)| (o.key.to_string(), t.json(o, false))).collect();
         json!({
-            "current_percent": py::float(self.current_percent),
-            "remaining_percent": py::float(py::round_to(self.remaining_percent, 2)),
+            "current_percent": py::json_float(self.current_percent),
+            "remaining_percent": py::json_float(py::round_to(self.remaining_percent, 2)),
             "per_container": per,
             "totals": totals,
         })
@@ -237,15 +237,15 @@ impl Candidate {
                 json!({
                     "type": s.kind.value(),
                     "display_name": s.kind.display_name(),
-                    "entered_value": py::float(s.entered_value),
+                    "entered_value": py::json_float(s.entered_value),
                     "extra_containers": s.extra_containers,
                     "containers": s.containers,
-                    "progress": py::float(s.progress),
-                    "quality_percent": py::float(s.quality_percent),
-                    "estimated_pr_contribution": py::float(s.pr_contribution),
+                    "progress": py::json_float(s.progress),
+                    "quality_percent": py::json_float(s.quality_percent),
+                    "estimated_pr_contribution": py::json_float(s.pr_contribution),
                     "is_within_range": s.within,
-                    "raw_progress": py::float(s.raw_progress),
-                    "threshold_progress": py::float(s.threshold_progress),
+                    "raw_progress": py::json_float(s.raw_progress),
+                    "threshold_progress": py::json_float(s.threshold_progress),
                     "focus_plan": s.focus_plan.json(),
                 })
             })
@@ -257,8 +257,8 @@ impl Candidate {
             "element_name": self.element.display_name(),
             "restriction": self.restriction.map(GemRestriction::value),
             "restriction_name": self.restriction.map(GemRestriction::display_name).unwrap_or("Any"),
-            "quality": py::float(py::round_to(self.quality, 4)),
-            "quality_percent": py::float(self.quality_percent()),
+            "quality": py::json_float(py::round_to(self.quality, 4)),
+            "quality_percent": py::json_float(self.quality_percent()),
             "calculated_power_rank": self.power_rank,
             "has_issues": !self.issues.is_empty(),
             "issues": self.issues,
@@ -517,7 +517,7 @@ fn guess_gem_stats(data: &Value) -> Result<Value, String> {
         Ok(items) => items,
         Err(resp) => return Ok(resp),
     };
-    let values = items.iter().map(|s| py::to_float(get_or(py::as_dict(s)?, "value", &json!(0)))).collect::<Result<Vec<f64>, String>>()?;
+    let values = items.iter().map(|s| Ok(py::to_float(get_or(py::as_dict(s)?, "value", &json!(0)))?)).collect::<Result<Vec<f64>, String>>()?;
 
     let candidates = stat_restrictions(GemElement::Cosmic);
     let mut best: Option<(Score, Vec<i64>, Vec<i64>, Candidate)> = None;
@@ -622,7 +622,7 @@ fn evaluate_gem_simple(data: &Value) -> Result<Value, String> {
                 "power_rank": power_rank,
                 "min_power_rank": min_pr,
                 "max_power_rank": max_pr,
-                "quality_percent": py::float(py::round_to(progress * 100.0, 2)),
+                "quality_percent": py::json_float(py::round_to(progress * 100.0, 2)),
                 "is_within_range": within,
                 "distance": distance,
                 "containers": containers,
@@ -727,12 +727,12 @@ fn simulate_next_focus(data: &Value) -> Result<Value, String> {
                 "stat_index": index,
                 "stat_type": st.value(),
                 "stat_display_name": st.display_name(),
-                "current_quality_percent": py::float(baseline.stats[index].quality_percent),
-                "current_value": py::float(py::to_float(get_or(stat, "value", &json!(0)))?),
+                "current_quality_percent": py::json_float(baseline.stats[index].quality_percent),
+                "current_value": py::json_float(py::to_float(get_or(stat, "value", &json!(0)))?),
                 "maxed_value": maxed.round(4).json(),
-                "resulting_quality_percent": py::float(sim.quality_percent()),
+                "resulting_quality_percent": py::json_float(sim.quality_percent()),
                 "resulting_power_rank": sim.power_rank,
-                "quality_gain_percent": py::float(quality_gain),
+                "quality_gain_percent": py::json_float(quality_gain),
                 "pr_gain": pr_gain,
             }),
         ));
@@ -749,7 +749,7 @@ fn simulate_next_focus(data: &Value) -> Result<Value, String> {
     let best_quality = first_max(|s| s.0);
     let best_pr = first_max(|s| s.1 as f64);
     Ok(Resp::ok(json!({
-        "baseline_quality_percent": py::float(baseline_quality),
+        "baseline_quality_percent": py::json_float(baseline_quality),
         "baseline_power_rank": baseline_pr,
         "per_stat": sims.into_iter().map(|s| s.2).collect::<Vec<_>>(),
         "best_for_quality": best_quality,

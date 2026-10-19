@@ -8,7 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{bail, Result};
 use serde_json::{json, Map, Value};
 
-use super::py;
+use crate::py;
 use crate::game::archive;
 use crate::json::{dumps_indent, dumps_with, DumpOpts};
 use crate::paths::get_cache_root;
@@ -126,17 +126,17 @@ impl Codex {
     }
 
     fn compatible(&self, manifest: &Value, game_path: &Path) -> Result<bool> {
-        let m = as_dict(manifest)?;
+        let m = py::as_dict(manifest)?;
         if let Some(version) = self.schema_version {
             let raw = m.get("cache_schema_version").cloned().unwrap_or(json!(0));
-            let found = if crate::args::truthy(&raw) { py_int(&raw)? } else { 0 };
+            let found = if crate::args::truthy(&raw) { py::int_strip_underscores(&raw)? } else { 0 };
             if found != version {
                 return Ok(false);
             }
         }
-        let recorded = m.get("game_path").map(py_str).unwrap_or_default();
+        let recorded = m.get("game_path").map(py::str_loose_pyfloat).unwrap_or_default();
         let recorded = py::strip(&recorded);
-        Ok(recorded.is_empty() || py::same_path(recorded, &py::path_str(game_path)))
+        Ok(recorded.is_empty() || py::same_path_simple(recorded, &py::path_str_simple(game_path)))
     }
 
     fn fresh(&self, manifest: &Value, game_path: &Path) -> Result<bool> {
@@ -156,7 +156,7 @@ impl Codex {
         let mut full = manifest;
         full.insert("generated_at".into(), json!(generated_at));
         full.insert("expires_at".into(), json!(generated_at + CACHE_EXPIRY_SECONDS));
-        full.insert("cache_file".into(), json!(py::path_str(&self.cache_file()?)));
+        full.insert("cache_file".into(), json!(py::path_str_simple(&self.cache_file()?)));
         full.insert("cache_expiry_seconds".into(), json!(CACHE_EXPIRY_SECONDS));
         if let Some(v) = self.schema_version {
             full.insert("cache_schema_version".into(), json!(v));
@@ -236,7 +236,7 @@ impl Codex {
                 let blank = if path == manifest_file { json!({"generated_at": 0, "expires_at": 0}) } else { json!({}) };
                 std::fs::write(&path, text_file(dumps_indent(&blank, 2)))?;
             }
-            cleared.push(py::path_str(&path));
+            cleared.push(py::path_str_simple(&path));
         }
         Ok(Resp::ok(json!({ "cleared": cleared })).into())
     }
@@ -249,11 +249,11 @@ pub fn resolve_install(game_path: Option<&str>) -> Result<PathBuf> {
         if raw.is_empty() {
             String::new()
         } else {
-            py::normalize_path(raw)
+            py::normalize_simple(raw)
         }
     });
     let found = archive::resolve_game_install(normalized.as_deref())?;
-    Ok(PathBuf::from(py::path_str(&found)))
+    Ok(PathBuf::from(py::path_str_simple(&found)))
 }
 
 /// The cache file: `json.dumps(data, separators=(",", ":"), ensure_ascii=False)`.
@@ -279,46 +279,6 @@ fn now() -> f64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs_f64()).unwrap_or(0.0)
 }
 
-fn type_name(v: &Value) -> &'static str {
-    match v {
-        Value::Null => "NoneType",
-        Value::Bool(_) => "bool",
-        Value::Number(n) if n.is_f64() => "float",
-        Value::Number(_) => "int",
-        Value::String(_) => "str",
-        Value::Array(_) => "list",
-        Value::Object(_) => "dict",
-    }
-}
-
-fn as_dict(v: &Value) -> Result<&Map<String, Value>> {
-    match v {
-        Value::Object(m) => Ok(m),
-        other => bail!("'{}' object has no attribute 'get'", type_name(other)),
-    }
-}
-
-/// `str(value)`.
-fn py_str(v: &Value) -> String {
-    match v {
-        Value::Null => "None".into(),
-        Value::Number(n) if n.is_f64() => crate::json::float_repr(n.as_f64().unwrap_or(0.0)),
-        other => crate::args::to_str(other),
-    }
-}
-
-/// `int(value)`.
-fn py_int(v: &Value) -> Result<i64> {
-    match v {
-        Value::Number(n) => Ok(n.as_i64().unwrap_or_else(|| n.as_f64().unwrap_or(0.0).trunc() as i64)),
-        Value::Bool(b) => Ok(*b as i64),
-        Value::String(s) => match py::strip(s).replace('_', "").parse::<i64>() {
-            Ok(i) => Ok(i),
-            Err(_) => bail!("invalid literal for int() with base 10: '{}'", s),
-        },
-        other => bail!("int() argument must be a string, a bytes-like object or a real number, not '{}'", type_name(other)),
-    }
-}
 
 /// Whole seconds since `generated_at`, never negative; `None` when it isn't a number.
 fn age(manifest: &Value) -> Option<i64> {
@@ -338,9 +298,9 @@ mod tests {
     fn manifest_freshness_rules() {
         assert_eq!(age(&json!({"generated_at": "x"})), None);
         assert!(age(&json!({"generated_at": now() - 10.5})).unwrap() >= 10);
-        assert_eq!(py_int(&json!("  2 ")).unwrap(), 2);
-        assert_eq!(py_int(&json!(1.9)).unwrap(), 1);
-        assert_eq!(as_dict(&json!([])).unwrap_err().to_string(), "'list' object has no attribute 'get'");
-        assert_eq!(py_str(&json!(null)), "None");
+        assert_eq!(py::int_strip_underscores(&json!("  2 ")).unwrap(), 2);
+        assert_eq!(py::int_strip_underscores(&json!(1.9)).unwrap(), 1);
+        assert_eq!(py::as_dict(&json!([])).unwrap_err().to_string(), "'list' object has no attribute 'get'");
+        assert_eq!(py::str_loose_pyfloat(&json!(null)), "None");
     }
 }

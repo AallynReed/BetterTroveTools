@@ -8,7 +8,8 @@ use anyhow::{anyhow, Result};
 use rayon::prelude::*;
 use serde_json::{json, Value};
 
-use super::py::{self, path_arg, rel_posix, rglob_index};
+use super::files;
+use crate::py;
 use super::{check_cancel, outcome, reset_cancel};
 use crate::game::archive::{md5_hex, parse_index, IndexEntry};
 use crate::paths::{display, get_cache_root};
@@ -22,15 +23,15 @@ pub fn load_entire_game_tree(game: &Value, force_refresh: bool) -> Value {
 
 fn load(game: &Value, force_refresh: bool) -> Result<Value> {
     let cache_dir = get_cache_root();
-    py::create_dirs(&cache_dir)?;
+    files::create_dirs(&cache_dir)?;
     let cache_file = cache_dir.join("temp_tree.json");
     let manifest_file = cache_dir.join("temp_tree_manifest.json");
 
-    let game_path = path_arg(game)?;
+    let game_path = py::path_arg_components(game)?;
     if !game_path.exists() {
         return Err(anyhow!("Game path does not exist."));
     }
-    let indexes = rglob_index(&game_path);
+    let indexes = py::rglob_named(&game_path, "index.tfi");
     let signature = index_signature(&game_path, &indexes);
     let game_str = display(&game_path);
 
@@ -43,9 +44,9 @@ fn load(game: &Value, force_refresh: bool) -> Result<Value> {
     }
 
     let tree = build_tree(&game_path, &indexes)?;
-    py::write_file(&cache_file, tree.as_bytes())?;
+    files::write_file(&cache_file, tree.as_bytes())?;
     let manifest = crate::json::dumps(&json!({ "game_path": game_str, "signature": signature }));
-    py::write_file(&manifest_file, manifest.as_bytes())?;
+    files::write_file(&manifest_file, manifest.as_bytes())?;
     Ok(json!({ "success": true, "cached_file": CACHED_FILE, "from_cache": false }))
 }
 
@@ -55,7 +56,7 @@ fn index_signature(game: &Path, indexes: &[PathBuf]) -> String {
         .iter()
         .filter_map(|tfi| {
             let meta = std::fs::metadata(tfi).ok()?;
-            Some(format!("{}|{}|{}", rel_posix(game, tfi), py::mtime_ns(&meta), meta.len()))
+            Some(format!("{}|{}|{}", py::rel_posix(game, tfi), py::mtime_ns(&meta), meta.len()))
         })
         .collect();
     parts.sort();
@@ -81,7 +82,7 @@ pub(super) fn build_tree(game: &Path, indexes: &[PathBuf]) -> Result<String> {
         .par_iter()
         .map(|tfi| {
             check_cancel("load_tree")?;
-            parse_index(&py::read_file(tfi)?)
+            parse_index(&files::read_file(tfi)?)
         })
         .collect::<Result<_>>()?;
 

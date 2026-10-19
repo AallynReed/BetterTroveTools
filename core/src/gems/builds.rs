@@ -50,7 +50,7 @@ fn spread_engine_data(pick: fn(&super::engine::Engine) -> &Value, code: &str) ->
     };
     let data = pick(engine);
     if !data.is_object() {
-        let msg = format!("backend.response.resp() argument after ** must be a mapping, not {}", super::py::type_name(data));
+        let msg = format!("backend.response.resp() argument after ** must be a mapping, not {}", crate::py::type_name(data));
         return Resp::fail(msg, code).data(json!({})).into();
     }
     Resp::ok(data.clone()).spread().into()
@@ -70,7 +70,7 @@ fn calculate_gem_builds(config: &Value) -> Value {
 fn save_gem_builds_csv(a: &Args) -> Result<Value> {
     arity(a, "save_gem_builds_csv", &["csv_text", "default_file_name"], 1)?;
     let csv = match a.get(0) {
-        Value::String(s) if !super::py::strip(s).is_empty() => s.clone(),
+        Value::String(s) if !crate::py::strip(s).is_empty() => s.clone(),
         _ => return Ok(Resp::fail("There is nothing to export.", "EMPTY_EXPORT").into()),
     };
     let name = if a.len() < 2 {

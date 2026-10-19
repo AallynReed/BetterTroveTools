@@ -2,7 +2,7 @@
 
 use serde_json::{Map, Value};
 
-use super::compat::{lstrip, splitlines, strip};
+use crate::py::{lstrip, splitlines, strip};
 
 /// Sections in file order, each an ordered `key -> value` map.
 pub type Sections = Map<String, Value>;

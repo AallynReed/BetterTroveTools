@@ -9,7 +9,8 @@ use zlib_rs::deflate::{self, DeflateConfig, DeflateStream};
 use zlib_rs::inflate::{self, InflateConfig, InflateStream};
 use zlib_rs::{DeflateFlush, InflateFlush, ReturnCode};
 
-use super::py;
+use super::pyobj;
+use crate::py;
 
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
@@ -153,7 +154,7 @@ pub fn zip_now() -> ZipTime {
     let now = std::env::var("SOURCE_DATE_EPOCH")
         .ok()
         .filter(|v| !v.is_empty())
-        .and_then(|v| py::int_from_str(&v))
+        .and_then(|v| pyobj::int_from_str(&v))
         .and_then(|secs| Local.timestamp_opt(secs as i64, 0).single())
         .unwrap_or_else(Local::now);
     (now.year(), now.month(), now.day(), now.hour(), now.minute(), now.second())
@@ -301,7 +302,7 @@ fn cp437(b: &[u8]) -> String {
 
 fn decode_name(raw: &[u8], flags: u16) -> Result<String, ZipError> {
     if flags & 0x800 != 0 {
-        py::utf8(raw).map(str::to_string).map_err(ZipError::Uncaught)
+        py::utf8(raw).map(str::to_string).map_err(|e| ZipError::Uncaught(e.into()))
     } else {
         Ok(cp437(raw))
     }
@@ -481,13 +482,13 @@ pub fn zip_read(data: &[u8], m: &ZipMember) -> Result<Vec<u8>, ZipError> {
     if decode_name(raw_name, u16_at(head, 6))? != m.orig_filename {
         return Err(ZipError::Caught(format!(
             "File name in directory {} and header {} differ.",
-            py::repr_str(&m.orig_filename),
+            py::repr_str_cc(&m.orig_filename),
             py::repr_bytes(raw_name)
         )));
     }
     let start = at + 30 + name_len + extra_len;
     if start as u64 + m.compress_size > m.end_offset && m.end_offset != m.header_offset {
-        return Err(ZipError::Caught(format!("Overlapped entries: {} (possible zip bomb)", py::repr_str(&m.orig_filename))));
+        return Err(ZipError::Caught(format!("Overlapped entries: {} (possible zip bomb)", py::repr_str_cc(&m.orig_filename))));
     }
     if m.flag_bits & 0x1 != 0 {
         return Err(ZipError::Caught(format!("File {} is encrypted, password required for extraction", zipinfo_repr(m))));
@@ -514,14 +515,14 @@ pub fn zip_read(data: &[u8], m: &ZipMember) -> Result<Vec<u8>, ZipError> {
     }
     content.truncate(want);
     if crc32(&content) != m.crc {
-        return Err(ZipError::Caught(format!("Bad CRC-32 for file {}", py::repr_str(&m.filename))));
+        return Err(ZipError::Caught(format!("Bad CRC-32 for file {}", py::repr_str_cc(&m.filename))));
     }
     Ok(content)
 }
 
 /// `repr(ZipInfo)`, which is what an encrypted member's error names.
 fn zipinfo_repr(m: &ZipMember) -> String {
-    let mut out = format!("<ZipInfo filename={}", py::repr_str(&m.filename));
+    let mut out = format!("<ZipInfo filename={}", py::repr_str_cc(&m.filename));
     if m.compress_type != 0 {
         let name = match m.compress_type {
             1 => "shrink",
@@ -547,7 +548,7 @@ fn zipinfo_repr(m: &ZipMember) -> String {
     }
     let (hi, lo) = (m.external_attr >> 16, m.external_attr & 0xFFFF);
     if hi != 0 {
-        out.push_str(&format!(" filemode={}", py::repr_str(&filemode(hi))));
+        out.push_str(&format!(" filemode={}", py::repr_str_cc(&filemode(hi))));
     }
     if lo != 0 {
         out.push_str(&format!(" external_attr={lo:#x}"));

@@ -80,6 +80,7 @@ fn describe(m: &mut TroveMod) -> Value {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "fixtures recorded with Windows pathlib")]
 fn internal_paths_normalize_like_python() {
     for (input, expected) in load("internal_paths.json").as_object().unwrap() {
         let got = normalize_internal_path(input);

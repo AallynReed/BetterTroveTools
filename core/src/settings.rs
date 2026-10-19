@@ -122,7 +122,7 @@ fn games_payload(games: &[TroveGamePath]) -> Value {
     Value::Array(games.iter().map(|g| json!({ "name": g.name(), "path": display(&g.path) })).collect())
 }
 
-fn get_settings(include_games: bool) -> Result<Value> {
+pub fn get_settings(include_games: bool) -> Result<Value> {
     let file = get_settings_file();
     if file.exists() {
         let parsed = std::fs::read_to_string(&file).ok().and_then(|t| serde_json::from_str::<Value>(&t).ok());

@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 use parking_lot::Mutex;
 use serde_json::{json, Value};
 
-use super::py::rglob_index;
 use super::*;
 use crate::game::hash::write_uleb;
 
@@ -44,7 +43,7 @@ fn tree_matches_python_layout() {
     let game = tempfile::tempdir().unwrap();
     write_pack(&game.path().join("ui"), &[("b.png", b"bb"), ("sub\\a.png", b"a"), ("a.png", b"aaa")]);
     write_pack(&game.path().join("ui").join("sub"), &[("z.png", b"z")]);
-    let indexes = rglob_index(game.path());
+    let indexes = py::rglob_named(game.path(), "index.tfi");
     let text = tree::build_tree(game.path(), &indexes).unwrap();
     let tree: Value = serde_json::from_str(&text).unwrap();
     let ui = &tree["children"]["ui"];

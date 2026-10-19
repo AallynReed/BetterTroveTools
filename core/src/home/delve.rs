@@ -7,7 +7,7 @@ use anyhow::Result;
 use parking_lot::Mutex;
 use serde_json::{json, Map, Value};
 
-use super::py;
+use crate::py;
 use super::server_time::{now_us, secs, ts, utc, TROVE_TIME, WEEK};
 use crate::args::truthy;
 use crate::{ctx, http, Cmd, Resp, KIWI_API_BASE};
@@ -63,7 +63,7 @@ fn normalize_enemy(enemy: &Value) -> Value {
 fn list_field(d: &Map<String, Value>, key: &str) -> Result<Vec<Value>> {
     match d.get(key) {
         None => Ok(Vec::new()),
-        Some(v) => py::iterate(v),
+        Some(v) => Ok(py::iterate(v)?),
     }
 }
 

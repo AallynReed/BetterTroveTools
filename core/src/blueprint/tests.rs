@@ -149,6 +149,7 @@ fn routes_are_registered() {
 }
 
 #[test]
+#[cfg_attr(not(windows), ignore = "fixtures recorded on Windows; zipfile writes the host OS")]
 fn fixture_parity() {
     setup();
     let (failures, timings) = replay(&fixtures(), false);
@@ -204,8 +205,8 @@ fn install_sweep() {
         let mut got = serde_json::Map::new();
         got.insert("inspect".into(), guarded(editor::inspect(&raw, "m.blueprint").map(|p| short_sha(&[p.json.as_bytes()]))).into());
         if let Some(edits) = row["edits"].as_str() {
-            let edits = py::loads(edits).unwrap();
-            let ops = py::loads(r#"["rotate_y", "mirror_x", "rotate_z"]"#).unwrap();
+            let edits = pyobj::loads(edits).unwrap();
+            let ops = pyobj::loads(r#"["rotate_y", "mirror_x", "rotate_z"]"#).unwrap();
             got.insert("save".into(), guarded(editor::composite(&raw, &none, &[], &none, 0).map(|(b, _)| short_sha(&[&b]))).into());
             got.insert(
                 "edited".into(),

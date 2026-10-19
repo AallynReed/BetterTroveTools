@@ -49,9 +49,18 @@ fn unwrap_status(result: std::result::Result<Response, ureq::Error>) -> Result<R
     }
 }
 
-/// Sends with no body. Non-2xx statuses are returned, not raised.
+/// Sends with no body. Non-2xx statuses are returned, not raised. Like requests, any
+/// method but GET and HEAD carries `Content-Length: 0`.
 pub fn send(req: Request) -> Result<Response> {
+    if sends_empty_length(req.method()) {
+        return send_bytes(req, &[]);
+    }
     unwrap_status(req.call())
+}
+
+/// requests' `prepare_content_length` for a request without a body.
+fn sends_empty_length(method: &str) -> bool {
+    !method.eq_ignore_ascii_case("GET") && !method.eq_ignore_ascii_case("HEAD")
 }
 
 /// Sends a JSON body.
@@ -106,7 +115,8 @@ pub fn get_json(url: &str, timeout: Duration) -> Result<Value> {
     read_json(raise_for_status(send(get(url).timeout(timeout))?)?)
 }
 
-/// `urllib.parse.quote(s, safe="")`.
+/// `urllib.parse.quote(s, safe="")`. Python's default is `safe="/"`, so a bare
+/// `quote(s)` in the Python source is `quote_safe(s, "/")`.
 pub fn quote(s: &str) -> String {
     quote_safe(s, "")
 }

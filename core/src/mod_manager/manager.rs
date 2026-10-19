@@ -14,19 +14,19 @@ use super::{blocklist, ext, finish, get, guard, hub, path_string};
 use crate::game::registry::TroveGamePath;
 use crate::game::trove_cfg::{ensure_mods_enabled, mod_key, read_disabled_mods, set_mods_disabled};
 use crate::modder_tools::steam_workshop::{self, SteamError};
-use crate::modfile::compat::{self, display, file_name, PyOsError};
+use crate::py::{self, display, file_name, PyOsError};
 use crate::modfile::{FileExistsError, ListOptions, TroveMod, TroveModList};
 use crate::paths::{get_app_data_dir, get_cache_root};
 use crate::{Args, Resp};
 
 pub(super) fn cache_root() -> Result<PathBuf> {
     let root = get_cache_root();
-    compat::mkdir_all(&root)?;
+    py::mkdir_all(&root)?;
     Ok(root)
 }
 
 pub(super) fn trove_game(game: &Value) -> Result<TroveGamePath> {
-    Ok(TroveGamePath::new(compat::path_arg(game)?, None))
+    Ok(TroveGamePath::new(py::path_arg(game)?, None))
 }
 
 /// `TroveModList(path=TroveGamePath(Path(game)), partial=True, ...)`.
@@ -44,7 +44,7 @@ fn mtime_ns(meta: &std::fs::Metadata) -> u128 {
 /// Workshop folder). The folder's own mtime is not used: an in-place update leaves it
 /// untouched on Windows.
 pub(super) fn mods_signature(game: &str) -> Signature {
-    let tp = TroveGamePath::new(compat::py_path(game), None);
+    let tp = TroveGamePath::new(py::py_path(game), None);
     let mut sources = vec![(tp.mods_path(), false)];
     if let Some(ws) = tp.workshop_path() {
         sources.push((ws, true));
@@ -52,7 +52,7 @@ pub(super) fn mods_signature(game: &str) -> Signature {
     let mut entries = Vec::new();
     for (dir, recursive) in sources {
         let paths: Vec<PathBuf> = if recursive {
-            compat::Rglob::new(&dir).collect()
+            py::Rglob::new(&dir).collect()
         } else {
             match std::fs::read_dir(&dir) {
                 Ok(rd) => rd.filter_map(|e| e.ok().map(|e| e.path())).collect(),
@@ -75,17 +75,17 @@ pub(super) fn mods_signature(game: &str) -> Signature {
 
 fn trash_manifest_path() -> Result<PathBuf> {
     let dir = cache_root()?.join("trash");
-    compat::mkdir_all(&dir)?;
+    py::mkdir_all(&dir)?;
     Ok(dir.join("deletions.json"))
 }
 
 fn read_trash_manifest() -> Result<Map<String, Value>> {
     let path = trash_manifest_path()?;
-    Ok(compat::read_json(&path).ok().and_then(|v| v.as_object().cloned()).unwrap_or_default())
+    Ok(py::read_json(&path).ok().and_then(|v| v.as_object().cloned()).unwrap_or_default())
 }
 
 fn write_trash_manifest(manifest: &Map<String, Value>) -> Result<()> {
-    compat::write_text(&trash_manifest_path()?, &crate::json::dumps_indent(&Value::Object(manifest.clone()), 2))
+    py::write_text(&trash_manifest_path()?, &crate::json::dumps_indent(&Value::Object(manifest.clone()), 2))
 }
 
 // --- update locks --------------------------------------------------------------------------
@@ -98,7 +98,7 @@ fn locks_path() -> PathBuf {
 
 /// The file name minus `.disabled`, lowercased: toggling renames in place.
 pub(super) fn lock_key(mod_path: &str) -> String {
-    let mut name = compat::name_of(mod_path);
+    let mut name = py::name_of(mod_path);
     if name.to_lowercase().ends_with(".disabled") && name.len() >= 9 && name.is_char_boundary(name.len() - 9) {
         name.truncate(name.len() - 9);
     }
@@ -114,21 +114,21 @@ fn install_key(game: &Value) -> Result<String> {
 }
 
 fn read_locks() -> Map<String, Value> {
-    compat::read_json(&locks_path()).ok().and_then(|v| v.as_object().cloned()).unwrap_or_default()
+    py::read_json(&locks_path()).ok().and_then(|v| v.as_object().cloned()).unwrap_or_default()
 }
 
 fn write_locks(data: &Map<String, Value>) -> Result<()> {
     let path = locks_path();
     if let Some(parent) = path.parent() {
-        compat::mkdir_all(parent)?;
+        py::mkdir_all(parent)?;
     }
-    compat::write_text(&path, &crate::json::dumps_indent(&Value::Object(data.clone()), 2))
+    py::write_text(&path, &crate::json::dumps_indent(&Value::Object(data.clone()), 2))
 }
 
 pub(super) fn locked_keys(game: &Value) -> Result<HashSet<String>> {
     let install = install_key(game)?;
     Ok(match read_locks().get(&install) {
-        Some(Value::Array(keys)) => keys.iter().map(|k| compat::py_str(k).to_lowercase()).collect(),
+        Some(Value::Array(keys)) => keys.iter().map(|k| py::str_of(k).to_lowercase()).collect(),
         _ => HashSet::new(),
     })
 }
@@ -138,7 +138,7 @@ pub(super) fn set_mod_update_lock(a: &Args) -> Result<Value> {
         let mut data = read_locks();
         let install = install_key(a.get(0))?;
         let mut keys = locked_keys(a.get(0))?;
-        let locked = compat::truthy(a.get(2));
+        let locked = py::truthy(a.get(2));
         let key = lock_key_arg(a.get(1))?;
         if locked {
             keys.insert(key);
@@ -205,7 +205,7 @@ fn toggle_result(m: &TroveMod) -> Value {
 pub(super) fn get_installed_mods(a: &Args) -> Result<Value> {
     Ok(guard("INSTALLED_MODS_FAILED", || {
         ensure_mods_enabled(None);
-        let opts = ListOptions { fix_names: compat::truthy(a.get(1)), fix_configs: compat::truthy(a.get(2)), ..Default::default() };
+        let opts = ListOptions { fix_names: py::truthy(a.get(1)), fix_configs: py::truthy(a.get(2)), ..Default::default() };
         let list = mod_list(a.get(0), opts)?;
         let locked = locked_keys(a.get(0))?;
         let trove_disabled = read_disabled_mods(None);
@@ -229,7 +229,7 @@ pub(super) fn get_installed_mods(a: &Args) -> Result<Value> {
             }));
         }
         let cache_file = cache_root()?.join("installed_mods.json");
-        compat::write_bytes(&cache_file, crate::json::dumps(&json!({ "mods": result_mods })).as_bytes())?;
+        py::write_bytes(&cache_file, crate::json::dumps(&json!({ "mods": result_mods })).as_bytes())?;
 
         let cached = "/api/cache/installed_mods.json";
         Ok(Resp::ok(json!({ "cached_file": cached, "read_only_configs": list.read_only_configs }))
@@ -305,14 +305,14 @@ pub(super) fn unsubscribe_workshop_mod(a: &Args) -> Result<Value> {
     Ok(guard("UNSUBSCRIBE_FAILED", || {
         let tp = trove_game(a.get(0))?;
         let workshop = tp.workshop_path();
-        let mod_path = compat::resolve(&compat::path_arg(a.get(1))?);
+        let mod_path = py::resolve(&py::path_arg(a.get(1))?);
         let Some(workshop) = workshop.filter(|_| tp.is_workshop_file(&mod_path)) else {
             return Ok(Resp::fail("Not a Steam Workshop mod.", "NOT_WORKSHOP").into());
         };
-        let root = compat::resolve(&workshop);
-        let first = compat::relative_parts(&mod_path, &root).and_then(|p| p.into_iter().next()).ok_or_else(|| anyhow!("tuple index out of range"))?;
+        let root = py::resolve(&workshop);
+        let first = py::relative_parts(&mod_path, &root).and_then(|p| p.into_iter().next()).ok_or_else(|| anyhow!("tuple index out of range"))?;
         let item = root.join(&first);
-        if !item.is_dir() || !super::isdigit(&first) {
+        if !item.is_dir() || !py::isdigit(&first) {
             return Ok(Resp::fail("Not a Steam Workshop item folder.", "NOT_WORKSHOP").into());
         }
         match steam_workshop::unsubscribe_item(&first) {
@@ -329,8 +329,8 @@ pub(super) fn unsubscribe_workshop_mod(a: &Args) -> Result<Value> {
 pub(super) fn delete_mod(game: &Value, mod_path: &Value) -> Value {
     guard("DELETE_FAILED", || {
         let tp = trove_game(game)?;
-        let mods_dir = compat::resolve(&tp.path.join("mods"));
-        let mod_path = compat::resolve(&compat::path_arg(mod_path)?);
+        let mods_dir = py::resolve(&tp.path.join("mods"));
+        let mod_path = py::resolve(&py::path_arg(mod_path)?);
 
         if tp.is_workshop_file(&mod_path) {
             return Ok(Resp::fail("Steam Workshop mods are removed by unsubscribing in Steam.", "WORKSHOP_MOD").into());
@@ -346,10 +346,10 @@ pub(super) fn delete_mod(game: &Value, mod_path: &Value) -> Value {
         }
 
         let trash_dir = cache_root()?.join("trash");
-        compat::mkdir_all(&trash_dir)?;
+        py::mkdir_all(&trash_dir)?;
         let token = uuid::Uuid::new_v4().simple().to_string();
         let trash_path = trash_dir.join(format!("{}_{}_{}", super::now() as i64, token, file_name(&mod_path)));
-        compat::shutil_move(&mod_path, &trash_path)?;
+        py::shutil_move(&mod_path, &trash_path)?;
 
         let (original, trashed) = (display(&mod_path), display(&trash_path));
         let mut manifest = read_trash_manifest()?;
@@ -362,13 +362,13 @@ pub(super) fn delete_mod(game: &Value, mod_path: &Value) -> Value {
 
 pub(super) fn undo_delete_mod(a: &Args) -> Result<Value> {
     Ok(guard("UNDO_FAILED", || {
-        let token = compat::py_str(a.get(0));
+        let token = py::str_of(a.get(0));
         let mut manifest = read_trash_manifest()?;
         let info = manifest.get(&token).cloned().unwrap_or(Value::Null);
-        if !compat::truthy(&info) {
+        if !py::truthy(&info) {
             return Ok(Resp::fail("Undo token not found or expired.", "UNDO_TOKEN_NOT_FOUND").into());
         }
-        let field = |k: &str| -> Result<PathBuf> { compat::path_arg(info.get(k).ok_or_else(|| anyhow!("{}", compat::repr_str(k)))?) };
+        let field = |k: &str| -> Result<PathBuf> { Ok(py::path_arg(info.get(k).ok_or_else(|| anyhow!("{}", py::repr_str(k)))?)?) };
         let original = field("original_path")?;
         let trash = field("trash_path")?;
 
@@ -378,12 +378,12 @@ pub(super) fn undo_delete_mod(a: &Args) -> Result<Value> {
             return Ok(Resp::fail("Deleted file can no longer be restored.", "UNDO_SOURCE_MISSING").into());
         }
         if let Some(parent) = original.parent() {
-            compat::mkdir_all(parent)?;
+            py::mkdir_all(parent)?;
         }
         if original.exists() {
             return Ok(Resp::fail("Cannot restore because a file already exists at the original path.", "UNDO_CONFLICT").into());
         }
-        compat::shutil_move(&trash, &original)?;
+        py::shutil_move(&trash, &original)?;
         manifest.shift_remove(&token);
         write_trash_manifest(&manifest)?;
         let restored = display(&original);
@@ -398,7 +398,7 @@ pub(super) fn clear_mod_manager_cache(_: &Args) -> Result<Value> {
         for name in ["installed_mods.json", "trovesaurus_mods_all.json"] {
             let path = dir.join(name);
             if path.exists() {
-                compat::unlink(&path)?;
+                py::unlink(&path)?;
                 removed.push(name);
             }
         }
@@ -481,13 +481,13 @@ pub(super) fn get_mod_urls(a: &Args) -> Result<Value> {
             }
             for (path, (h, mod_id)) in found {
                 let entry = match &mods_all {
-                    v if !compat::truthy(v) => None,
-                    Value::Object(m) => m.get(&compat::py_str(&mod_id)).filter(|e| compat::truthy(e)).cloned(),
-                    other => return Err(anyhow!("'{}' object has no attribute 'get'", compat::type_name(other))),
+                    v if !py::truthy(v) => None,
+                    Value::Object(m) => m.get(&py::str_of(&mod_id)).filter(|e| py::truthy(e)).cloned(),
+                    other => return Err(anyhow!("'{}' object has no attribute 'get'", py::type_name(other))),
                 };
                 let entry = entry.unwrap_or_else(|| json!({ "id": mod_id, "downloads": [{ "hash": h }] }));
                 if !blocked.blocked(&entry) {
-                    urls.insert(path, json!(format!("https://trovesaurus.com/mod={}", compat::py_str(&mod_id))));
+                    urls.insert(path, json!(format!("https://trovesaurus.com/mod={}", py::str_of(&mod_id))));
                 }
             }
         }
@@ -514,9 +514,9 @@ pub(super) fn html_to_text(value: &str) -> String {
     let text = items.replace_all(&text, "\u{2022} ");
     let text = tags.replace_all(&text, "");
     let text = unescape(&text);
-    compat::splitlines(&text)
+    py::splitlines(&text)
         .into_iter()
-        .map(|line| line.split(compat::is_py_space).filter(|w| !w.is_empty()).collect::<Vec<_>>().join(" "))
+        .map(|line| line.split(py::is_space).filter(|w| !w.is_empty()).collect::<Vec<_>>().join(" "))
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()
         .join("\n")
@@ -606,7 +606,7 @@ pub(super) fn check_mod_updates(a: &Args) -> Result<Value> {
         let mut list = mod_list(a.get(0), ListOptions::default())?;
         let claimed = hub_claimed(a.get(0));
         let blocked = blocklist::load();
-        list.update_trovesaurus_data(compat::truthy(a.get(1)), &claimed, Some(&|v: &Value| blocked.blocked(v)))?;
+        list.update_trovesaurus_data(py::truthy(a.get(1)), &claimed, Some(&|v: &Value| blocked.blocked(v)))?;
         let (mut updates, mut changes) = (Map::new(), Map::new());
         for m in list.mods.iter_mut() {
             if m.has_update()? {
@@ -627,7 +627,7 @@ pub(super) fn perform_mod_update(a: &Args) -> Result<Value> {
             return Ok(Resp::fail("Updates are locked for this mod.", "MOD_LOCKED").into());
         }
         let tp = trove_game(a.get(0))?;
-        if tp.is_workshop_file(&compat::path_arg(a.get(1))?) {
+        if tp.is_workshop_file(&py::path_arg(a.get(1))?) {
             return Ok(Resp::fail("Steam Workshop mods are updated by Steam, not here.", "WORKSHOP_MOD").into());
         }
         let mut list = mod_list(a.get(0), ListOptions::default())?;
@@ -640,7 +640,7 @@ pub(super) fn perform_mod_update(a: &Args) -> Result<Value> {
 }
 
 fn stem_of(path: &str) -> String {
-    compat::stem_of(path)
+    py::stem_of(path)
 }
 
 /// Updates every mod with a pending update except the locked ones (the launch-time
@@ -656,15 +656,15 @@ pub(super) fn auto_update_unlocked_mods(game: &str) -> Result<(Vec<String>, Vec<
         let states = get(get(&states, "data"), "states").as_object().cloned().unwrap_or_default();
         for (path, state) in states {
             hub_paths.insert(path.clone());
-            if !compat::truthy(get(&state, "has_update")) || locked.contains(&lock_key(&path)) {
+            if !py::truthy(get(&state, "has_update")) || locked.contains(&lock_key(&path)) {
                 continue;
             }
             let name = match get(&state, "name") {
-                v if compat::truthy(v) => compat::py_str(v),
+                v if py::truthy(v) => py::str_of(v),
                 _ => stem_of(&path),
             };
             let result = hub::install_mods_hub_mod_sync(&game_v, get(&state, "ref"), get(&state, "branch"));
-            let ok = compat::truthy(get(&result, "success"));
+            let ok = py::truthy(get(&result, "success"));
             if ok { &mut updated } else { &mut failed }.push(name);
         }
     }

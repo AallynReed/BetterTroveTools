@@ -8,11 +8,11 @@ use anyhow::{anyhow, Result};
 use regex::Regex;
 use serde_json::{json, Map, Value};
 
-use super::{now_utc, tk_path};
+use super::now_utc;
 use crate::args::Args;
 use crate::ctx::{ctx, Dialog};
 use crate::game::DIRECTORIES;
-use crate::modfile::compat::{self, display, file_name, file_suffix, get, path_arg, py_str, strip, strip_value, truthy, Rglob};
+use crate::py::{self, display, file_name, file_suffix, path_arg, str_of, strip, strip_value, truthy, Rglob};
 use crate::modfile::format::Reader;
 use crate::modfile::{normalize_internal_path, ModFile, ModKind, TroveMod};
 
@@ -82,7 +82,7 @@ fn guarded(body: impl FnOnce() -> Result<Value>) -> Value {
 }
 
 pub fn cancel_modder_tools_operation(a: &Args) -> Result<Value> {
-    let op = if truthy(a.get(0)) { py_str(a.get(0)) } else { String::new() };
+    let op = if truthy(a.get(0)) { str_of(a.get(0)) } else { String::new() };
     match flag(&op) {
         None => Ok(json!({"success": false, "error": "Unknown operation."})),
         Some(f) => {
@@ -136,18 +136,18 @@ fn decode_data_url(v: &Value) -> Result<Option<Vec<u8>>> {
         Value::String(s) => s,
         Value::Array(items) if !items.contains(&json!(",")) => return Ok(None),
         Value::Object(m) if !m.contains_key(",") => return Ok(None),
-        Value::Array(_) | Value::Object(_) => return Err(anyhow!("'{}' object has no attribute 'split'", compat::type_name(v))),
-        other => return Err(anyhow!("argument of type '{}' is not a container or iterable", compat::type_name(other))),
+        Value::Array(_) | Value::Object(_) => return Err(anyhow!("'{}' object has no attribute 'split'", py::type_name(v))),
+        other => return Err(anyhow!("argument of type '{}' is not a container or iterable", py::type_name(other))),
     };
     let Some((_, data)) = s.split_once(',') else { return Ok(None) };
     if !data.is_ascii() {
         return Err(anyhow!("string argument should contain only ASCII characters"));
     }
-    compat::b64decode(data).map(Some)
+    Ok(Some(py::a2b_base64(data.as_bytes())?))
 }
 
 fn encode_data_url(data: &[u8], mime: &str) -> String {
-    format!("data:{};base64,{}", mime, compat::b64encode(data))
+    format!("data:{};base64,{}", mime, py::b64encode(data))
 }
 
 fn illegal_title_chars() -> &'static Regex {
@@ -167,8 +167,8 @@ fn config_internal_path(title: &str) -> String {
 
 /// `_preview_internal_path(title, source_name)`: `ui/<title>.<png|jpg|jpeg>`.
 fn preview_internal_path(title: &str, source_name: &Value) -> String {
-    let source = if truthy(source_name) { py_str(source_name) } else { String::new() };
-    let ext = compat::suffix_of(&source).to_lowercase();
+    let source = if truthy(source_name) { str_of(source_name) } else { String::new() };
+    let ext = py::suffix_of(&source).to_lowercase();
     let ext = if PREVIEW_EXTENSIONS.contains(&ext.as_str()) { ext } else { ".png".into() };
     format!("ui/{}{}", clean_title(title), ext)
 }
@@ -178,7 +178,7 @@ fn normalize_value(v: &Value) -> Result<Option<String>> {
     match v {
         Value::Null => Ok(None),
         Value::String(s) => Ok(normalize_internal_path(s)),
-        other => path_arg(other).map(|_| None),
+        other => path_arg(other).map(|_| None).map_err(Into::into),
     }
 }
 
@@ -217,9 +217,9 @@ fn validate_special_paths(file_paths: &[Value], preview_path: Option<&str>, incl
 fn split_type_and_subtype(tags: &Value, explicit_subtype: &str) -> Result<(Vec<String>, String)> {
     let mut clean = Vec::new();
     let mut found = strip(explicit_subtype).to_string();
-    let items = if truthy(tags) { compat::iterate(tags)? } else { Vec::new() };
+    let items = if truthy(tags) { py::iterate(tags)? } else { Vec::new() };
     for tag in items {
-        let t = if truthy(&tag) { strip(&py_str(&tag)).to_string() } else { String::new() };
+        let t = if truthy(&tag) { strip(&str_of(&tag)).to_string() } else { String::new() };
         if t.is_empty() {
             continue;
         }
@@ -244,14 +244,14 @@ fn combine_tags_with_subtype(tags: &Value, subtype: &str) -> Result<Vec<String>>
 
 /// `payload.get(key, default).strip()`.
 fn get_stripped(obj: &Value, key: &str, default: &str) -> Result<String> {
-    match get(obj, key)? {
+    match py::dict_get(obj, key)? {
         None => Ok(strip(default).to_string()),
-        Some(v) => strip_value(v),
+        Some(v) => Ok(strip_value(v)?),
     }
 }
 
 fn get_or<'a>(obj: &'a Value, key: &str, default: &'a Value) -> Result<&'a Value> {
-    Ok(get(obj, key)?.unwrap_or(default))
+    Ok(py::dict_get(obj, key)?.unwrap_or(default))
 }
 
 /// A title with a trailing `.tmod` dropped.
@@ -271,7 +271,7 @@ fn compile_date() -> String {
 /// `path.unlink(missing_ok=True)`.
 fn unlink_missing_ok(path: &Path) -> Result<()> {
     match std::fs::remove_file(path) {
-        Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(compat::os_error(e, path, None)),
+        Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(py::os_error(e, path, None)),
         _ => Ok(()),
     }
 }
@@ -286,11 +286,11 @@ fn game_file_map(game_path: &Path, op: &str, log_failures: bool) -> Result<std::
         if !dir.exists() {
             continue;
         }
-        for tfi in compat::rglob_named(&dir, "index.tfi") {
+        for tfi in py::rglob_named(&dir, "index.tfi") {
             raise_if_cancelled(op)?;
-            let rel_dir = tfi.parent().and_then(|p| compat::relative_parts(p, game_path)).unwrap_or_default().join(if cfg!(windows) { "\\" } else { "/" });
+            let rel_dir = tfi.parent().and_then(|p| py::relative_parts(p, game_path)).unwrap_or_default().join(if cfg!(windows) { "\\" } else { "/" });
             let parsed = (|| -> Result<()> {
-                let data = compat::read_bytes(&tfi)?;
+                let data = py::read_bytes(&tfi)?;
                 let mut r = Reader::new(&data);
                 while r.pos < data.len() {
                     let n = r.read_leb_unbounded()? as usize;
@@ -298,8 +298,8 @@ fn game_file_map(game_path: &Path, op: &str, log_failures: bool) -> Result<std::
                     for _ in 0..4 {
                         r.read_leb_unbounded()?;
                     }
-                    let full = compat::as_posix(&compat::join_str(&rel_dir, &internal));
-                    map.entry(compat::name_of(&full).to_lowercase()).or_insert(full);
+                    let full = py::as_posix(&py::join_str(&rel_dir, &internal));
+                    map.entry(py::name_of(&full).to_lowercase()).or_insert(full);
                 }
                 Ok(())
             })();
@@ -312,17 +312,17 @@ fn game_file_map(game_path: &Path, op: &str, log_failures: bool) -> Result<std::
 }
 
 fn has_dunder_part(file: &Path, root: &Path) -> bool {
-    compat::relative_parts(file, root).unwrap_or_default().iter().any(|p| p.starts_with("__"))
+    py::relative_parts(file, root).unwrap_or_default().iter().any(|p| p.starts_with("__"))
 }
 
 fn rel_posix(file: &Path, root: &Path) -> String {
-    compat::relative_parts(file, root).unwrap_or_default().join("/")
+    py::relative_parts(file, root).unwrap_or_default().join("/")
 }
 
 // --- dialogs ------------------------------------------------------------------------
 
 fn initial_dir(a: &Args, i: usize) -> Option<String> {
-    truthy(a.get(i)).then(|| py_str(a.get(i)))
+    truthy(a.get(i)).then(|| str_of(a.get(i)))
 }
 
 fn dialog(title: &str, dir: Option<String>) -> Dialog {
@@ -334,25 +334,25 @@ fn dialog(title: &str, dir: Option<String>) -> Dialog {
 }
 
 pub fn ask_mod_source_directory(_: &Args) -> Result<Value> {
-    Ok(json!(ctx().host().pick_folder(Dialog::new("Select Mod Source Folder")).map(|p| tk_path(&p)).unwrap_or_default()))
+    Ok(json!(ctx().host().pick_folder(Dialog::new("Select Mod Source Folder")).map(|p| py::tk_path(&p)).unwrap_or_default()))
 }
 
 pub fn ask_tmod_file(_: &Args) -> Result<Value> {
     let d = Dialog::new("Select TMod File").filter("Trove Mods", &["tmod"]);
-    Ok(json!(ctx().host().pick_file(d).map(|p| tk_path(&p)).unwrap_or_default()))
+    Ok(json!(ctx().host().pick_file(d).map(|p| py::tk_path(&p)).unwrap_or_default()))
 }
 
 pub fn ask_extract_destination(_: &Args) -> Result<Value> {
-    Ok(json!(ctx().host().pick_folder(Dialog::new("Select Extraction Destination")).map(|p| tk_path(&p)).unwrap_or_default()))
+    Ok(json!(ctx().host().pick_folder(Dialog::new("Select Extraction Destination")).map(|p| py::tk_path(&p)).unwrap_or_default()))
 }
 
 fn picked_file(path: Option<PathBuf>, mime: impl Fn(&Path) -> String) -> Result<Value> {
     let Some(path) = path else { return Ok(json!({"success": true, "file": null})) };
-    let path = compat::py_path(&display(&path));
-    let data = compat::read_bytes(&path)?;
+    let path = py::py_path(&display(&path));
+    let data = py::read_bytes(&path)?;
     Ok(json!({
         "success": true,
-        "file": {"name": file_name(&path), "path": display(&path), "data": format!("{}{}", mime(&path), compat::b64encode(&data))},
+        "file": {"name": file_name(&path), "path": display(&path), "data": format!("{}{}", mime(&path), py::b64encode(&data))},
     }))
 }
 
@@ -395,15 +395,15 @@ pub(super) fn classify_added_files(game_path_arg: &Value, picked: &[PathBuf]) ->
         return json!({"success": true, "files": files, "rejected": rejected, "rejected_cfg": rejected_cfg});
     }
     let game_path = match game_path_arg {
-        Value::String(s) if !s.is_empty() => Some(compat::resolve(&compat::py_path(s))),
+        Value::String(s) if !s.is_empty() => Some(py::resolve(&py::py_path(s))),
         _ => None,
     };
     for p in picked {
-        let file_path = compat::resolve(&compat::py_path(&display(p)));
+        let file_path = py::resolve(&py::py_path(&display(p)));
         let mut internal: Vec<String> = Vec::new();
         let mut is_relative = false;
         if let Some(game) = &game_path {
-            if let Some(parts) = compat::relative_parts(&file_path, game) {
+            if let Some(parts) = py::relative_parts(&file_path, game) {
                 is_relative = true;
                 internal = parts;
             } else {
@@ -411,7 +411,7 @@ pub(super) fn classify_added_files(game_path_arg: &Value, picked: &[PathBuf]) ->
                 if file_str.to_lowercase().starts_with(&game_str.to_lowercase()) {
                     is_relative = true;
                     let rest: String = file_str.chars().skip(game_str.chars().count()).collect();
-                    internal = compat::path_parts(rest.trim_matches(|c| c == '\\' || c == '/'));
+                    internal = py::path_parts(rest.trim_matches(|c| c == '\\' || c == '/'));
                 }
             }
             internal.retain(|p| p.to_lowercase() != "override");
@@ -435,7 +435,7 @@ pub(super) fn classify_added_files(game_path_arg: &Value, picked: &[PathBuf]) ->
 fn safe_extract_target(dest_root: &Path, internal_path: &str) -> Option<PathBuf> {
     let raw = internal_path.replace('\\', "/");
     let mut parts = Vec::new();
-    for part in compat::posix_parts(&raw) {
+    for part in py::posix_parts(&raw) {
         if part.is_empty() || part == "/" || part == "." {
             continue;
         }
@@ -448,7 +448,7 @@ fn safe_extract_target(dest_root: &Path, internal_path: &str) -> Option<PathBuf>
         return None;
     }
     let candidate = parts.iter().fold(dest_root.to_path_buf(), |acc, p| acc.join(p));
-    if !compat::is_within(&compat::resolve(&candidate), &compat::resolve(dest_root)) {
+    if !py::is_within(&py::resolve(&candidate), &py::resolve(dest_root)) {
         return None;
     }
     Some(candidate)
@@ -462,8 +462,8 @@ pub fn extract_tmod(a: &Args) -> Result<Value> {
         if !tmod_path.is_file() {
             return Ok(failed("TMod file does not exist."));
         }
-        compat::mkdir_all(&dest_path)?;
-        let m = TroveMod::read_tmod(&tmod_path, compat::read_bytes(&tmod_path)?, false)?;
+        py::mkdir_all(&dest_path)?;
+        let m = TroveMod::read_tmod(&tmod_path, py::read_bytes(&tmod_path)?, false)?;
         let mut count = 0;
         let mut skipped = Vec::new();
         for f in &m.files {
@@ -473,9 +473,9 @@ pub fn extract_tmod(a: &Args) -> Result<Value> {
                 continue;
             };
             if let Some(parent) = out.parent() {
-                compat::mkdir_all(parent)?;
+                py::mkdir_all(parent)?;
             }
-            compat::write_bytes(&out, f.data()?)?;
+            py::write_bytes(&out, f.data()?)?;
             count += 1;
         }
         let mut result = json!({"success": true, "count": count});
@@ -487,8 +487,8 @@ pub fn extract_tmod(a: &Args) -> Result<Value> {
 }
 
 fn stripped_arg_path(v: &Value) -> PathBuf {
-    let s = if truthy(v) { py_str(v) } else { String::new() };
-    compat::py_path(strip(&s))
+    let s = if truthy(v) { str_of(v) } else { String::new() };
+    py::py_path(strip(&s))
 }
 
 pub fn load_tmod_for_edit(a: &Args) -> Result<Value> {
@@ -497,7 +497,7 @@ pub fn load_tmod_for_edit(a: &Args) -> Result<Value> {
         if !tmod_path.is_file() {
             return Ok(failed("TMod file does not exist."));
         }
-        let m = TroveMod::read_tmod(&tmod_path, compat::read_bytes(&tmod_path)?, false)?;
+        let m = TroveMod::read_tmod(&tmod_path, py::read_bytes(&tmod_path)?, false)?;
         let (preview_path, config_path) = (m.preview_path(), m.config_path());
         let (mut preview, mut preview_name, mut config, mut config_name) = (Value::Null, String::new(), Value::Null, String::new());
         let mut regular = Vec::new();
@@ -505,17 +505,17 @@ pub fn load_tmod_for_edit(a: &Args) -> Result<Value> {
             let normalized = normalize_internal_path(&f.trove_path);
             if normalized.is_some() && normalized == preview_path {
                 preview = json!(encode_data_url(f.data()?, "image/png"));
-                preview_name = compat::name_of(&f.trove_path);
+                preview_name = py::name_of(&f.trove_path);
                 continue;
             }
             if normalized.is_some() && normalized == config_path {
                 config = json!(encode_data_url(f.data()?, "text/plain"));
-                config_name = compat::name_of(&f.trove_path);
+                config_name = py::name_of(&f.trove_path);
                 continue;
             }
             regular.push(json!({
                 "internal_path": f.trove_path,
-                "name": compat::name_of(&f.trove_path),
+                "name": py::name_of(&f.trove_path),
                 "source": "archive",
                 "path": "",
                 "data": encode_data_url(f.data()?, "application/octet-stream"),
@@ -523,7 +523,7 @@ pub fn load_tmod_for_edit(a: &Args) -> Result<Value> {
         }
         let tags = json!(m.tags());
         let (tags, subtype) = split_type_and_subtype(&tags, &m.subtype())?;
-        let title = m.name().filter(|n| !n.is_empty()).map(String::from).unwrap_or_else(|| compat::file_stem(&tmod_path));
+        let title = m.name().filter(|n| !n.is_empty()).map(String::from).unwrap_or_else(|| py::file_stem(&tmod_path));
         Ok(json!({
             "success": true,
             "data": {
@@ -600,18 +600,18 @@ pub fn auto_structure_workspace(a: &Args) -> Result<Value> {
                 if !file.is_file() || ignored_extension(&file) {
                     continue;
                 }
-                if compat::path_parts(&display(&file)).iter().any(|p| p.to_lowercase() == "override") {
+                if py::path_parts(&display(&file)).iter().any(|p| p.to_lowercase() == "override") {
                     continue;
                 }
                 let Some(expected) = file_map.get(&file_name(&file).to_lowercase()) else { continue };
                 let mut parts: Vec<&str> = expected.split('/').collect();
                 parts.insert(parts.len() - 1, "override");
-                let new_path = compat::join(&workspace, &parts.join("/"));
-                if !compat::same_path(&compat::resolve(&file), &compat::resolve(&new_path)) {
+                let new_path = py::join(&workspace, &parts.join("/"));
+                if !py::same_path(&py::resolve(&file), &py::resolve(&new_path)) {
                     if let Some(parent) = new_path.parent() {
-                        compat::mkdir_all(parent)?;
+                        py::mkdir_all(parent)?;
                     }
-                    compat::shutil_move(&file, &new_path)?;
+                    py::shutil_move(&file, &new_path)?;
                     moved += 1;
                 }
             }
@@ -623,7 +623,7 @@ pub fn auto_structure_workspace(a: &Args) -> Result<Value> {
 pub fn get_missing_files(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
         let mut missing = Vec::new();
-        for p in compat::iterate(a.get(0))? {
+        for p in py::iterate(a.get(0))? {
             if !path_arg(&p)?.is_file() {
                 missing.push(p);
             }
@@ -673,15 +673,15 @@ fn add_preview_and_config(m: &mut TroveMod, preview: Option<(&str, Option<Vec<u8
 }
 
 fn file_internal_path(f: &Value) -> Result<Value> {
-    let name = get(f, "name")?.cloned().unwrap_or(json!("unknown_file"));
-    Ok(get(f, "internal_path")?.cloned().unwrap_or(name))
+    let name = py::dict_get(f, "name")?.cloned().unwrap_or(json!("unknown_file"));
+    Ok(py::dict_get(f, "internal_path")?.cloned().unwrap_or(name))
 }
 
 pub fn build_tmod(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
         reset_cancel_flag("build_tmod");
         let payload = a.get(0);
-        let game_path_value = get(payload, "gamePath")?.cloned().unwrap_or(Value::Null);
+        let game_path_value = py::dict_get(payload, "gamePath")?.cloned().unwrap_or(Value::Null);
         if !truthy(&game_path_value) {
             return Ok(failed("No game installation selected."));
         }
@@ -696,7 +696,7 @@ pub fn build_tmod(a: &Args) -> Result<Value> {
         let author = get_stripped(payload, "author", "")?;
         let version = get_stripped(payload, "version", "")?;
         let notes = get_stripped(payload, "notes", "")?;
-        if compat::char_len(&notes) > 220 {
+        if py::char_len(&notes) > 220 {
             return Ok(failed("Mod notes cannot exceed 220 characters."));
         }
         let empty_list = json!([]);
@@ -721,7 +721,7 @@ pub fn build_tmod(a: &Args) -> Result<Value> {
         let preview_name = get_or(payload, "previewName", &preview_name_default)?;
         let preview_b64 = get_or(payload, "previewBase64", &Value::Null)?;
         let preview_path = truthy(preview_b64).then(|| preview_internal_path(&title, preview_name));
-        let file_list = compat::iterate(&files)?;
+        let file_list = py::iterate(&files)?;
         let internal_paths = file_list.iter().map(file_internal_path).collect::<Result<Vec<_>>>()?;
         if let Some(err) = validate_special_paths(&internal_paths, preview_path.as_deref(), config_data.is_some(), &title)? {
             return Ok(failed(err));
@@ -745,24 +745,24 @@ pub fn build_tmod(a: &Args) -> Result<Value> {
 
         for (f, internal) in file_list.iter().zip(&internal_paths) {
             raise_if_cancelled("build_tmod")?;
-            let abs_path = get(f, "abs_path")?.cloned().unwrap_or(Value::Null);
+            let abs_path = py::dict_get(f, "abs_path")?.cloned().unwrap_or(Value::Null);
             let internal = path_arg(internal)?;
             let internal = display(&internal);
             if truthy(&abs_path) && path_arg(&abs_path)?.exists() {
-                let bytes = compat::read_bytes(&path_arg(&abs_path)?)?;
+                let bytes = py::read_bytes(&path_arg(&abs_path)?)?;
                 m.add_file(ModFile::new(&internal, bytes))?;
             } else if let Some(bytes) = decode_data_url(get_or(f, "data", &Value::Null)?)? {
                 m.add_file(ModFile::new(&internal, bytes))?;
             }
         }
 
-        compat::mkdir_all(&out_dir)?;
+        py::mkdir_all(&out_dir)?;
         if save_path.exists() && overwrite {
             unlink_missing_ok(&save_path)?;
         }
         m.mod_path = save_path.clone();
         let bytes = m.compile_tmod()?;
-        compat::write_bytes(&save_path, &bytes)?;
+        py::write_bytes(&save_path, &bytes)?;
         Ok(json!({"success": true, "path": display(&save_path)}))
     }))
 }
@@ -771,11 +771,11 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
         reset_cancel_flag("build_tmod");
         let payload = a.get(0);
-        let tmod_path_str = strip(&py_str(get_or(payload, "tmodPath", &json!(""))?)).to_string();
+        let tmod_path_str = strip(&str_of(get_or(payload, "tmodPath", &json!(""))?)).to_string();
         if tmod_path_str.is_empty() {
             return Ok(failed("No TMod file was selected."));
         }
-        let source_path = compat::py_path(&tmod_path_str);
+        let source_path = py::py_path(&tmod_path_str);
         if !source_path.is_file() {
             return Ok(failed("Selected TMod file does not exist."));
         }
@@ -800,7 +800,7 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
         if notes.is_empty() {
             return Ok(failed("Mod notes are required."));
         }
-        if compat::char_len(&notes) > 220 {
+        if py::char_len(&notes) > 220 {
             return Ok(failed("Mod notes cannot exceed 220 characters."));
         }
         if !truthy(&tags) {
@@ -826,7 +826,7 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
         let preview_path = truthy(preview_b64).then(|| preview_internal_path(&title, preview_name));
         let config_data = decode_data_url(get_or(payload, "configBase64", &Value::Null)?)?;
         let config_path = config_data.as_ref().map(|_| config_internal_path(&title));
-        let file_list = compat::iterate(&files)?;
+        let file_list = py::iterate(&files)?;
         let internal_paths = file_list.iter().map(file_internal_path).collect::<Result<Vec<_>>>()?;
         if let Some(err) = validate_special_paths(&internal_paths, preview_path.as_deref(), config_data.is_some(), &title)? {
             return Ok(failed(err));
@@ -840,14 +840,14 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
         for (f, internal) in file_list.iter().zip(&internal_paths) {
             raise_if_cancelled("build_tmod")?;
             let internal = path_arg(internal)?;
-            let abs_path = strip(&py_str(get_or(f, "path", &json!(""))?)).to_string();
-            let bytes = if !abs_path.is_empty() && compat::py_path(&abs_path).exists() {
-                Some(compat::read_bytes(&compat::py_path(&abs_path))?)
+            let abs_path = strip(&str_of(get_or(f, "path", &json!(""))?)).to_string();
+            let bytes = if !abs_path.is_empty() && py::py_path(&abs_path).exists() {
+                Some(py::read_bytes(&py::py_path(&abs_path))?)
             } else {
                 decode_data_url(get_or(f, "data", &Value::Null)?)?
             };
             let Some(bytes) = bytes else {
-                return Ok(failed(format!("Missing file data for {}.", compat::as_posix(&display(&internal)))));
+                return Ok(failed(format!("Missing file data for {}.", py::as_posix(&display(&internal)))));
             };
             m.add_file(ModFile::new(&display(&internal), bytes))?;
         }
@@ -856,7 +856,7 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
             unlink_missing_ok(&save_path)?;
         }
         let bytes = m.compile_tmod()?;
-        compat::write_bytes(&save_path, &bytes)?;
+        py::write_bytes(&save_path, &bytes)?;
         Ok(json!({"success": true, "path": display(&save_path), "fileName": file_name(&save_path)}))
     }))
 }
@@ -864,7 +864,7 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
 // --- projects -----------------------------------------------------------------------
 
 fn write_json_indent(path: &Path, data: &Value, indent: usize) -> Result<()> {
-    compat::write_text(path, &crate::json::dumps_indent(data, indent))
+    py::write_text(path, &crate::json::dumps_indent(data, indent))
 }
 
 /// `sorted(values)` over JSON strings or numbers; mixing them raises like Python.
@@ -879,17 +879,17 @@ fn py_sorted(values: Vec<Value>) -> Result<Vec<Value>> {
         v.sort_by(|a, b| a.as_f64().partial_cmp(&b.as_f64()).unwrap_or(std::cmp::Ordering::Equal));
         return Ok(v);
     }
-    let first = values.iter().map(compat::type_name).collect::<Vec<_>>();
+    let first = values.iter().map(py::type_name).collect::<Vec<_>>();
     let other = first.iter().find(|t| **t != first[0]).copied().unwrap_or(first[0]);
     Err(anyhow!("'<' not supported between instances of '{}' and '{}'", other, first[0]))
 }
 
 fn project_dir(a: &Args, i: usize) -> Result<PathBuf> {
-    path_arg(a.get(i))
+    Ok(path_arg(a.get(i))?)
 }
 
 fn version_dir(project: &Path, version: &Value) -> PathBuf {
-    compat::join(project, &format!("v{}", py_str(version)))
+    py::join(project, &format!("v{}", str_of(version)))
 }
 
 pub fn load_mod_project(a: &Args) -> Result<Value> {
@@ -900,7 +900,7 @@ pub fn load_mod_project(a: &Args) -> Result<Value> {
         }
         let project_file = project_path.join("project.json");
         let mut versions: Vec<String> = Vec::new();
-        for entry in std::fs::read_dir(&project_path).map_err(|e| compat::os_error(e, &project_path, None))?.filter_map(|e| e.ok()) {
+        for entry in std::fs::read_dir(&project_path).map_err(|e| py::os_error(e, &project_path, None))?.filter_map(|e| e.ok()) {
             let name = entry.file_name().to_string_lossy().into_owned();
             if entry.path().is_dir() && name.starts_with('v') {
                 versions.push(name.trim_start_matches('v').to_string());
@@ -910,12 +910,12 @@ pub fn load_mod_project(a: &Args) -> Result<Value> {
             versions.push("1.0".into());
             let v = project_path.join("v1.0");
             if !v.is_dir() {
-                std::fs::create_dir(&v).map_err(|e| compat::os_error(e, &v, None))?;
+                std::fs::create_dir(&v).map_err(|e| py::os_error(e, &v, None))?;
             }
         }
         if project_file.exists() {
-            let mut data = compat::read_json(&project_file)?;
-            let Value::Object(map) = &mut data else { return Err(anyhow!("'{}' object has no attribute 'setdefault'", compat::type_name(&data))) };
+            let mut data = py::read_json(&project_file)?;
+            let Value::Object(map) = &mut data else { return Err(anyhow!("'{}' object has no attribute 'setdefault'", py::type_name(&data))) };
             map.entry("configBase64").or_insert(Value::Null);
             map.entry("configName").or_insert(json!(""));
             map.entry("subtype").or_insert(json!(""));
@@ -923,7 +923,7 @@ pub fn load_mod_project(a: &Args) -> Result<Value> {
             match map.get("versions") {
                 None => {}
                 Some(Value::Array(saved)) => all.extend(saved.iter().cloned()),
-                Some(other) => return Err(anyhow!("can only concatenate list (not \"{}\") to list", compat::type_name(other))),
+                Some(other) => return Err(anyhow!("can only concatenate list (not \"{}\") to list", py::type_name(other))),
             }
             let mut unique: Vec<Value> = Vec::new();
             for v in all {
@@ -952,10 +952,10 @@ pub fn load_mod_project(a: &Args) -> Result<Value> {
 
 fn py_len(v: &Value) -> Result<usize> {
     match v {
-        Value::String(s) => Ok(compat::char_len(s)),
+        Value::String(s) => Ok(py::char_len(s)),
         Value::Array(a) => Ok(a.len()),
         Value::Object(m) => Ok(m.len()),
-        other => Err(anyhow!("object of type '{}' has no len()", compat::type_name(other))),
+        other => Err(anyhow!("object of type '{}' has no len()", py::type_name(other))),
     }
 }
 
@@ -968,9 +968,9 @@ pub fn save_mod_project(a: &Args) -> Result<Value> {
         let project_path = project_dir(a, 0)?;
         let project_file = project_path.join("project.json");
         let data = if project_file.exists() {
-            let mut data = compat::read_json(&project_file)?;
+            let mut data = py::read_json(&project_file)?;
             let (Value::Object(map), Value::Object(update)) = (&mut data, payload) else {
-                return Err(anyhow!("'{}' object has no attribute 'update'", compat::type_name(&data)));
+                return Err(anyhow!("'{}' object has no attribute 'update'", py::type_name(&data)));
             };
             for (k, v) in update {
                 map.insert(k.clone(), v.clone());
@@ -992,23 +992,23 @@ pub fn create_project_version(a: &Args) -> Result<Value> {
         if version_folder.exists() {
             return Ok(failed("Version folder already exists."));
         }
-        compat::mkdir_all(&version_folder)?;
+        py::mkdir_all(&version_folder)?;
         let project_file = project_path.join("project.json");
         if project_file.exists() {
-            let mut data = compat::read_json(&project_file)?;
-            let Value::Object(map) = &mut data else { return Err(anyhow!("'{}' object has no attribute 'get'", compat::type_name(&data))) };
+            let mut data = py::read_json(&project_file)?;
+            let Value::Object(map) = &mut data else { return Err(anyhow!("'{}' object has no attribute 'get'", py::type_name(&data))) };
             let versions = map.get("versions").cloned().unwrap_or(json!([]));
             let present = match &versions {
                 Value::String(s) => match new_version {
                     Value::String(v) => s.contains(v.as_str()),
-                    other => return Err(anyhow!("'in <string>' requires string as left operand, not {}", compat::type_name(other))),
+                    other => return Err(anyhow!("'in <string>' requires string as left operand, not {}", py::type_name(other))),
                 },
-                other => compat::iterate(other)?.contains(new_version),
+                other => py::iterate(other)?.contains(new_version),
             };
             if !present {
                 let mut list = match &versions {
                     Value::Array(list) => list.clone(),
-                    other => return Err(anyhow!("'{}' object has no attribute 'append'", compat::type_name(other))),
+                    other => return Err(anyhow!("'{}' object has no attribute 'append'", py::type_name(other))),
                 };
                 list.push(new_version.clone());
                 map.insert("versions".into(), Value::Array(py_sorted(list)?));
@@ -1056,12 +1056,12 @@ pub fn auto_structure_project_version(a: &Args) -> Result<Value> {
                 continue;
             }
             let Some(expected) = file_map.get(&file_name(&file).to_lowercase()) else { continue };
-            let new_path = compat::join(&target_dir, expected);
-            if !compat::same_path(&compat::resolve(&file), &compat::resolve(&new_path)) {
+            let new_path = py::join(&target_dir, expected);
+            if !py::same_path(&py::resolve(&file), &py::resolve(&new_path)) {
                 if let Some(parent) = new_path.parent() {
-                    compat::mkdir_all(parent)?;
+                    py::mkdir_all(parent)?;
                 }
-                compat::shutil_move(&file, &new_path)?;
+                py::shutil_move(&file, &new_path)?;
                 moved += 1;
             }
         }
@@ -1083,13 +1083,13 @@ pub fn place_project_overrides(a: &Args) -> Result<Value> {
             if !file.is_file() || has_dunder_part(&file, &target_dir) {
                 continue;
             }
-            let mut parts = compat::relative_parts(&file, &target_dir).unwrap_or_default();
+            let mut parts = py::relative_parts(&file, &target_dir).unwrap_or_default();
             parts.insert(parts.len().saturating_sub(1), "override".into());
-            let dest = parts.iter().fold(game_path.clone(), |acc, p| compat::join(&acc, p));
+            let dest = parts.iter().fold(game_path.clone(), |acc, p| py::join(&acc, p));
             if let Some(parent) = dest.parent() {
-                compat::mkdir_all(parent)?;
+                py::mkdir_all(parent)?;
             }
-            compat::copy2(&file, &dest)?;
+            py::copy2(&file, &dest)?;
             placed.push(display(&dest));
         }
         let count = placed.len();
@@ -1099,7 +1099,7 @@ pub fn place_project_overrides(a: &Args) -> Result<Value> {
 
 fn trash_root() -> Result<PathBuf> {
     let root = crate::paths::get_app_data_dir().join("ModderToolsTrash");
-    compat::mkdir_all(&root)?;
+    py::mkdir_all(&root)?;
     Ok(root)
 }
 
@@ -1112,7 +1112,7 @@ fn read_undo_manifest() -> Result<Map<String, Value>> {
     if !path.exists() {
         return Ok(Map::new());
     }
-    Ok(match compat::read_json(&path) {
+    Ok(match py::read_json(&path) {
         Ok(Value::Object(m)) => m,
         _ => Map::new(),
     })
@@ -1129,15 +1129,15 @@ pub fn remove_project_overrides(a: &Args) -> Result<Value> {
         let mut moved = Vec::new();
         let token = uuid::Uuid::new_v4().simple().to_string();
         let backup_dir = trash_root()?.join(&token);
-        compat::mkdir_all(&backup_dir)?;
-        for file_value in compat::iterate(a.get(0))? {
+        py::mkdir_all(&backup_dir)?;
+        for file_value in py::iterate(a.get(0))? {
             if is_cancelled("remove_overrides") {
                 break;
             }
             let file = path_arg(&file_value)?;
             if file.is_file() {
                 let backup = backup_dir.join(format!("{}_{}", removed, file_name(&file)));
-                compat::shutil_move(&file, &backup)?;
+                py::shutil_move(&file, &backup)?;
                 moved.push(json!({"original": display(&file), "backup": display(&backup)}));
                 removed += 1;
                 if let Some(parent) = file.parent() {
@@ -1149,7 +1149,7 @@ pub fn remove_project_overrides(a: &Args) -> Result<Value> {
         }
         let mut manifest = read_undo_manifest()?;
         if !moved.is_empty() {
-            manifest.insert(token.clone(), json!({"created_at": compat::utc_isoformat(now_utc()), "files": moved}));
+            manifest.insert(token.clone(), json!({"created_at": py::isoformat_utc(now_utc()), "files": moved}));
             write_undo_manifest(&manifest)?;
         }
         let undo_token = if moved.is_empty() { Value::Null } else { json!(token) };
@@ -1162,7 +1162,7 @@ pub fn remove_project_overrides(a: &Args) -> Result<Value> {
 
 pub fn undo_remove_project_overrides(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
-        let token = if truthy(a.get(0)) { strip(&py_str(a.get(0))).to_string() } else { String::new() };
+        let token = if truthy(a.get(0)) { strip(&str_of(a.get(0))).to_string() } else { String::new() };
         if token.is_empty() {
             return Ok(failed("Missing undo token."));
         }
@@ -1172,7 +1172,7 @@ pub fn undo_remove_project_overrides(a: &Args) -> Result<Value> {
             return Ok(failed("Undo token not found or expired."));
         }
         let (mut restored, mut conflicts) = (0, Vec::new());
-        for item in compat::iterate(get_or(&entry, "files", &json!([]))?)? {
+        for item in py::iterate(get_or(&entry, "files", &json!([]))?)? {
             let original = path_arg(get_or(&item, "original", &json!(""))?)?;
             let backup = path_arg(get_or(&item, "backup", &json!(""))?)?;
             if !backup.is_file() {
@@ -1183,9 +1183,9 @@ pub fn undo_remove_project_overrides(a: &Args) -> Result<Value> {
                 continue;
             }
             if let Some(parent) = original.parent() {
-                compat::mkdir_all(parent)?;
+                py::mkdir_all(parent)?;
             }
-            compat::shutil_move(&backup, &original)?;
+            py::shutil_move(&backup, &original)?;
             restored += 1;
         }
         let token_dir = trash_root()?.join(&token);
@@ -1209,8 +1209,8 @@ pub fn compile_project(a: &Args) -> Result<Value> {
         if !game_path.exists() || !target_dir.exists() || !project_file.exists() {
             return Ok(failed("Invalid paths or missing project.json. Please save the project first."));
         }
-        let meta = compat::read_json(&project_file)?;
-        if compat::char_len(&get_stripped(&meta, "notes", "")?) > 220 {
+        let meta = py::read_json(&project_file)?;
+        if py::char_len(&get_stripped(&meta, "notes", "")?) > 220 {
             return Ok(failed("Mod notes cannot exceed 220 characters. Please edit the notes and try again."));
         }
         let title = strip_tmod_suffix(get_stripped(&meta, "title", "Untitled Project")?);
@@ -1246,22 +1246,22 @@ pub fn compile_project(a: &Args) -> Result<Value> {
             if !file.is_file() || ignored_extension(&file) || has_dunder_part(&file, &target_dir) {
                 continue;
             }
-            let bytes = compat::read_bytes(&file)?;
+            let bytes = py::read_bytes(&file)?;
             m.add_file(ModFile::new(&rel_posix(&file, &target_dir), bytes))?;
             count += 1;
         }
         if count == 0 {
-            return Ok(failed(format!("No valid game files found in the v{} folder.", py_str(version))));
+            return Ok(failed(format!("No valid game files found in the v{} folder.", str_of(version))));
         }
         let out_dir = game_path.join("mods");
-        compat::mkdir_all(&out_dir)?;
+        py::mkdir_all(&out_dir)?;
         let save_path = out_dir.join(format!("{}.tmod", title));
         if save_path.exists() {
             unlink_missing_ok(&save_path)?;
         }
         m.mod_path = save_path.clone();
         let bytes = m.compile_tmod()?;
-        compat::write_bytes(&save_path, &bytes)?;
+        py::write_bytes(&save_path, &bytes)?;
         Ok(json!({"success": true, "path": display(&save_path)}))
     }))
 }

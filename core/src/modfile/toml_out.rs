@@ -3,7 +3,7 @@
 
 use anyhow::{anyhow, Result};
 
-use super::compat::repr_str;
+use crate::py::repr_str;
 
 /// `toml.encoder._dump_str`, quirks included: it starts from Python's `repr()` and
 /// rewrites `\xNN` escapes, dropping their backslash (and raising for a leading one).

@@ -6,7 +6,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, bail, Result};
 
-use super::compat::repr_str;
+use crate::py::repr_str;
 
 const EOCD_SIZE: usize = 22;
 const EOCD_SIG: &[u8] = b"PK\x05\x06";
@@ -170,7 +170,7 @@ fn cp437(bytes: &[u8]) -> String {
 
 fn decode_name(raw: &[u8], utf8: bool) -> Result<String> {
     if utf8 {
-        super::compat::decode_utf8(raw)
+        Ok(crate::py::utf8(raw)?.to_string())
     } else {
         Ok(cp437(raw))
     }

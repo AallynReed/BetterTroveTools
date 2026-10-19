@@ -4,7 +4,7 @@
 use serde_json::{json, Map, Value};
 
 use super::codec::{self, Decoded, Voxel};
-use super::py;
+use crate::py;
 use super::util::{Cell, Error, Kind, OrderedMap, Result};
 
 pub const ALIGN_MODES: [(&str, &str); 3] = [
@@ -23,7 +23,7 @@ fn err(msg: impl Into<String>) -> Error {
 fn align_offset(base: &Decoded, over: &Decoded, mode: &str) -> Result<[i64; 3]> {
     match mode {
         "corner" => Ok([0, 0, 0]),
-        "centre" => Ok(std::array::from_fn(|i| py::round((base.size[i] - 1) as f64 / 2.0 - (over.size[i] - 1) as f64 / 2.0))),
+        "centre" => Ok(std::array::from_fn(|i| py::round_i64((base.size[i] - 1) as f64 / 2.0 - (over.size[i] - 1) as f64 / 2.0))),
         _ => match (codec::attachment_point(base), codec::attachment_point(over)) {
             (Some(a), Some(b)) => Ok([a[0] - b[0], a[1] - b[1], a[2] - b[2]]),
             _ => Err(err(

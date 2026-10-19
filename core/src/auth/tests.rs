@@ -19,21 +19,21 @@ fn requotes_like_requests() {
 
 #[test]
 fn int_like_python() {
-    assert_eq!(py_int(&json!(20)).unwrap(), 20);
-    assert_eq!(py_int(&json!(20.9)).unwrap(), 20);
-    assert_eq!(py_int(&json!(" 1_5 ")).unwrap(), 15);
-    assert_eq!(py_int(&json!("2.5")).unwrap_err().to_string(), "invalid literal for int() with base 10: '2.5'");
+    assert_eq!(crate::py::int_loose_underscores(&json!(20)).unwrap(), 20);
+    assert_eq!(crate::py::int_loose_underscores(&json!(20.9)).unwrap(), 20);
+    assert_eq!(crate::py::int_loose_underscores(&json!(" 1_5 ")).unwrap(), 15);
+    assert_eq!(crate::py::int_loose_underscores(&json!("2.5")).unwrap_err().to_string(), "invalid literal for int() with base 10: '2.5'");
     assert_eq!(
-        py_int(&Value::Null).unwrap_err().to_string(),
+        crate::py::int_loose_underscores(&Value::Null).unwrap_err().to_string(),
         "int() argument must be a string, a bytes-like object or a real number, not 'NoneType'"
     );
 }
 
 #[test]
 fn json_errors_like_python() {
-    assert_eq!(json_loads(b"").unwrap_err().to_string(), "Expecting value: line 1 column 1 (char 0)");
-    assert_eq!(json_loads(b"\n  <html>").unwrap_err().to_string(), "Expecting value: line 2 column 3 (char 3)");
-    assert_eq!(json_loads(b"\xef\xbb\xbf{\"a\": 1}").unwrap(), json!({"a": 1}));
+    assert_eq!(crate::py::loads_bytes(b"").unwrap_err().to_string(), "Expecting value: line 1 column 1 (char 0)");
+    assert_eq!(crate::py::loads_bytes(b"\n  <html>").unwrap_err().to_string(), "Expecting value: line 2 column 3 (char 3)");
+    assert_eq!(crate::py::loads_bytes(b"\xef\xbb\xbf{\"a\": 1}").unwrap(), json!({"a": 1}));
 }
 
 #[test]

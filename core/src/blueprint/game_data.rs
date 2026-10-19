@@ -12,44 +12,16 @@ use regex::Regex;
 use serde_json::{json, Value};
 
 use crate::game::archive::{archive_path, load_index, read_archive_content, GameIndex, IndexEntry};
+use crate::codexes::prefab_ally::{load_language_map, GameFiles, LanguageMap};
 use crate::paths::get_cache_root;
 
 use super::assembly;
 use super::binfab;
-use super::py::{self, Py};
+use super::pyobj::{self, Py};
+use crate::py;
 use super::pyzlib;
 
 const INDEX_VERSION: i128 = 1;
-
-/// `str(path)` as pathlib prints it: native separators, no doubled or trailing ones.
-pub fn path_str(p: &Path) -> String {
-    let raw = p.to_string_lossy();
-    let out = if cfg!(windows) {
-        let s = raw.replace('/', "\\");
-        let (drive, rest) = if s.len() >= 2 && s.as_bytes()[1] == b':' { s.split_at(2) } else { ("", s.as_str()) };
-        let parts: Vec<&str> = rest.split('\\').filter(|c| !c.is_empty() && *c != ".").collect();
-        if drive.is_empty() && rest.starts_with("\\\\") {
-            format!("\\\\{}", parts.join("\\"))
-        } else {
-            format!("{drive}{}{}", if rest.starts_with('\\') { "\\" } else { "" }, parts.join("\\"))
-        }
-    } else {
-        let root = if raw.starts_with("//") && !raw.starts_with("///") {
-            "//"
-        } else if raw.starts_with('/') {
-            "/"
-        } else {
-            ""
-        };
-        let parts: Vec<&str> = raw.split('/').filter(|c| !c.is_empty() && *c != ".").collect();
-        format!("{root}{}", parts.join("/"))
-    };
-    if out.is_empty() {
-        ".".into()
-    } else {
-        out
-    }
-}
 
 fn slice<'a>(content: &'a [u8], e: &IndexEntry) -> &'a [u8] {
     let start = (e.offset as usize).min(content.len());
@@ -189,9 +161,9 @@ fn build_map(mut rows: Vec<Row>, names: HashMap<String, String>) -> RigMap {
 fn sorted_indexes(root: &Path) -> Vec<PathBuf> {
     let mut found = crate::game::archive::find_index_files(root);
     if cfg!(windows) {
-        found.sort_by_cached_key(|p| path_str(p).to_lowercase().split('\\').map(str::to_string).collect::<Vec<_>>());
+        found.sort_by_cached_key(|p| py::path_str_flat(p).to_lowercase().split('\\').map(str::to_string).collect::<Vec<_>>());
     } else {
-        found.sort_by_cached_key(|p| path_str(p).split('/').map(str::to_string).collect::<Vec<_>>());
+        found.sort_by_cached_key(|p| py::path_str_flat(p).split('/').map(str::to_string).collect::<Vec<_>>());
     }
     found
 }
@@ -205,9 +177,9 @@ fn signature(game: &Path) -> Result<Py, String> {
     let mut sig = Vec::new();
     for tfi in sorted_indexes(&game.join("prefabs")) {
         let st = std::fs::metadata(&tfi).map_err(|e| e.to_string())?;
-        sig.push(Py::List(vec![Py::Str(path_str(&tfi)), Py::Int(mtime_ns(&st)), Py::Int(st.len() as i128)]));
+        sig.push(Py::List(vec![Py::Str(py::path_str_flat(&tfi)), Py::Int(mtime_ns(&st)), Py::Int(st.len() as i128)]));
     }
-    Ok(Py::List(vec![Py::Int(INDEX_VERSION), Py::Str(path_str(game)), Py::List(sig)]))
+    Ok(Py::List(vec![Py::Int(INDEX_VERSION), Py::Str(py::path_str_flat(game)), Py::List(sig)]))
 }
 
 fn cache_file() -> Result<PathBuf, String> {
@@ -287,7 +259,7 @@ fn scan(game: &Path) -> Result<Bindings, String> {
         .collect();
     let mut rows = Vec::new();
     let mut names = Vec::new();
-    let mut language: Option<HashMap<String, String>> = None;
+    let mut language: Option<Arc<LanguageMap>> = None;
     for found in per_archive {
         for (full, refs, key) in found? {
             for (bp, ap) in &refs.parts {
@@ -297,7 +269,7 @@ fn scan(game: &Path) -> Result<Bindings, String> {
             let Some(key) = key.filter(|k| k.starts_with('$')) else { continue };
             let lang = match &language {
                 Some(l) => l,
-                None => language.insert(load_language_map(game)?),
+                None => language.insert(load_language_map(&GameFiles::open(game), "en").map_err(|e| e.to_string())?),
             };
             if let Some(name) = lang.get(&key).or_else(|| lang.get(key.trim_start_matches('$'))).filter(|n| !n.is_empty()) {
                 match names.iter_mut().find(|(k, _): &&mut (String, String)| *k == full) {
@@ -329,7 +301,7 @@ fn load_or_build(game: &Path) -> Result<(Py, RigMap), String> {
     let cache = cache_file()?;
     let mut loaded = None;
     if cache.exists() {
-        if let Some(saved) = std::fs::read_to_string(&cache).ok().and_then(|t| py::loads(&t).ok()) {
+        if let Some(saved) = std::fs::read_to_string(&cache).ok().and_then(|t| pyobj::loads(&t).ok()) {
             if !matches!(saved, Py::Dict(_)) {
                 return Err(format!("'{}' object has no attribute 'get'", py_type(&saved)));
             }
@@ -368,7 +340,7 @@ fn py_type(p: &Py) -> &'static str {
 
 /// `rig_map(game)`: the map, or `None` while it is still being built in the background.
 pub fn rig_map(game: &Path) -> Option<Arc<RigMap>> {
-    let key = path_str(game);
+    let key = py::path_str_flat(game);
     let start = with_state(|s| {
         if let (Some(map), Some(Py::List(sig))) = (&s.map, &s.sig) {
             if matches!(sig.get(1), Some(Py::Str(g)) if *g == key) {
@@ -548,7 +520,7 @@ pub fn search(rig: &RigMap, q: &str, kind: &str, limit: usize) -> (Vec<Value>, u
         if !kind.is_empty() && t != kind {
             continue;
         }
-        let name = rig.names.get(prefab).filter(|n| !n.is_empty()).cloned().unwrap_or_else(|| py::title(py::strip(&prefab_stem(prefab).replace('_', " "))));
+        let name = rig.names.get(prefab).filter(|n| !n.is_empty()).cloned().unwrap_or_else(|| py::title_cased_only(py::strip(&prefab_stem(prefab).replace('_', " "))));
         let hay = format!("{name} {}", prefab_stem(prefab)).to_lowercase();
         if !words.is_empty() && !words.iter().all(|w| hay.contains(w)) {
             continue;
@@ -624,7 +596,7 @@ static BRDF: Mutex<Option<PngCache>> = Mutex::new(None);
 
 /// `brdf_png(game)`: cached per install; a DDS that can't be converted is an error.
 pub fn brdf_png(game: &Path) -> Result<Option<Arc<Vec<u8>>>, String> {
-    let key = path_str(game);
+    let key = py::path_str_flat(game);
     if let Some(hit) = BRDF.lock().as_ref().and_then(|m| m.get(&key).cloned()) {
         return Ok(hit);
     }
@@ -636,108 +608,15 @@ pub fn brdf_png(game: &Path) -> Result<Option<Arc<Vec<u8>>>, String> {
     Ok(png)
 }
 
-// --- the language map --------------------------------------------------------------
-
-// Duplicate of the codexes port; merge once both land.
-fn clean_localized_text(text: &str) -> String {
-    let mut text = text.to_string();
-    let mut chars = text.chars();
-    if let (Some(a), Some('$'), Some(c)) = (chars.next(), chars.next(), chars.next()) {
-        if a.is_ascii_alphabetic() && (c.is_alphanumeric() || c == '_') {
-            text = format!("${}", &text[2..]);
-        }
-    }
-    if text.starts_with("$$") {
-        text = format!("${}", text.trim_start_matches('$'));
-    }
-    let text = text.replace("\\n", "\n");
-    let text = py::strip(text.trim_matches('`')).to_string();
-    if !text.starts_with('$') && text.starts_with("\\\"") {
-        return text[1..].to_string();
-    }
-    text
-}
-
-fn read_varint(data: &[u8], offset: usize) -> Option<(u128, usize)> {
-    let (mut value, mut shift, mut cursor) = (0u128, 0u32, offset);
-    while cursor < data.len() && shift <= 63 {
-        let byte = data[cursor];
-        value |= ((byte & 0x7F) as u128) << shift;
-        cursor += 1;
-        if byte & 0x80 == 0 {
-            return Some((value, cursor));
-        }
-        shift += 7;
-    }
-    None
-}
-
-fn extract_localization_map(content: &[u8], mapping: &mut HashMap<String, String>) {
-    let mut cursor = 0;
-    while let Some(found) = content[cursor.min(content.len())..].iter().position(|&b| b == b'$') {
-        let start = cursor + found;
-        let mut end = start + 1;
-        while end < content.len() && matches!(content[end], b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_' | b'$') {
-            end += 1;
-        }
-        if end >= content.len() || content[end] != 0x18 {
-            cursor = start + 1;
-            continue;
-        }
-        let Some((len, value_start)) = read_varint(content, end + 1) else {
-            cursor = start + 1;
-            continue;
-        };
-        let value_end = value_start as u128 + len;
-        if value_end > content.len() as u128 {
-            cursor = start + 1;
-            continue;
-        }
-        let value_end = value_end as usize;
-        let key = clean_localized_text(&py::latin1(&content[start..end]));
-        let value = clean_localized_text(&py::utf8_ignore(&content[value_start..value_end]));
-        if key.starts_with('$') && !value.is_empty() && !value.starts_with('$') {
-            mapping.insert(key, value);
-        }
-        cursor = value_end;
-    }
-}
-
-// Duplicate of the codexes port; merge once both land.
-fn load_language_map(game: &Path) -> Result<HashMap<String, String>, String> {
-    let root = game.join("languages").join("en");
-    let mut mapping = HashMap::new();
-    if !root.exists() {
-        return Ok(mapping);
-    }
-    let index = load_index(&root).map_err(|e| e.to_string())?;
-    for f in &index.files {
-        let content = read_archive_content(&archive_path(&f.tfi_path, &f.entry)).map_err(|e| e.to_string())?;
-        extract_localization_map(slice(&content, &f.entry), &mut mapping);
-    }
-    Ok(mapping)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::codexes::prefab_ally::{clean_localized_text, extract_localization_map};
 
     #[test]
     fn localized_text() {
-        assert_eq!(clean_localized_text("x$prefabs_a"), "$prefabs_a");
-        assert_eq!(clean_localized_text("$$$a"), "$a");
         assert_eq!(clean_localized_text("`Dragon\\nKing`"), "Dragon\nKing");
         assert_eq!(clean_localized_text(" `x` "), "`x`");
-        let mut m = HashMap::new();
-        extract_localization_map(b"..$prefabs_dragon_name\x18\x06Dragon..", &mut m);
+        let m = extract_localization_map(b"..$prefabs_dragon_name\x18\x06Dragon..");
         assert_eq!(m.get("$prefabs_dragon_name").map(String::as_str), Some("Dragon"));
-    }
-
-    #[test]
-    fn windows_path_text() {
-        if cfg!(windows) {
-            assert_eq!(path_str(Path::new("C:/Games//Trove/Live/")), "C:\\Games\\Trove\\Live");
-            assert_eq!(path_str(Path::new("C:\\")), "C:\\");
-        }
     }
 }

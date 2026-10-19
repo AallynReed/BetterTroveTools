@@ -1,6 +1,6 @@
 //! models/trove/gem_constants.py and gem_bases.py: the gem enums and lookup tables.
 
-use super::py::{Float, Int, Num};
+use crate::py::{Float, Int, Num};
 
 macro_rules! gem_enum {
     ($name:ident, $($variant:ident = $value:literal, $member:literal, $display:literal;)+) => {

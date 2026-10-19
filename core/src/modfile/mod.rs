@@ -7,10 +7,9 @@
 //! - [`ModFile`] is `TroveModFile` / `PartialTroveModFile`.
 //! - [`TroveModList`] is a whole install's mods folder.
 //! - [`format`] is the container itself (shared with `.tpack` modpacks), [`trovesaurus`]
-//!   the catalog model, [`compat`] the CPython behaviour the ports lean on.
+//!   the catalog model.
 
 pub mod cfg;
-pub mod compat;
 pub mod format;
 mod list;
 mod model;
