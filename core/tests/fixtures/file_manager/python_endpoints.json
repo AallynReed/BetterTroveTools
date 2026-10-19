@@ -1,0 +1,578 @@
+[
+ {
+  "call": "get_tracking_directories",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "directories": [],
+    "last_used": ""
+   },
+   "error": null,
+   "meta": {},
+   "directories": [],
+   "last_used": ""
+  }
+ },
+ {
+  "call": "save_tracking_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {},
+   "error": null,
+   "meta": {}
+  }
+ },
+ {
+  "call": "save_tracking_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {},
+   "error": null,
+   "meta": {}
+  }
+ },
+ {
+  "call": "save_tracking_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {},
+   "error": null,
+   "meta": {}
+  }
+ },
+ {
+  "call": "set_last_tracking_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {},
+   "error": null,
+   "meta": {}
+  }
+ },
+ {
+  "call": "get_tracking_directories",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "directories": [
+     {
+      "name": "A2",
+      "path": "<SIDE>/exists",
+      "last_used": "<utc>"
+     }
+    ],
+    "last_used": "<SIDE>\\missing"
+   },
+   "error": null,
+   "meta": {},
+   "directories": [
+    {
+     "name": "A2",
+     "path": "<SIDE>/exists",
+     "last_used": "<utc>"
+    }
+   ],
+   "last_used": "<SIDE>\\missing"
+  }
+ },
+ {
+  "call": "get_tracking_status",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "exists": false
+   },
+   "error": null,
+   "meta": {},
+   "exists": false
+  }
+ },
+ {
+  "call": "get_tracking_status",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "exists": false
+   },
+   "error": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+   "meta": {},
+   "exists": false
+  }
+ },
+ {
+  "call": "get_tracking_status",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "exists": false
+   },
+   "error": "'list' object has no attribute 'get'",
+   "meta": {},
+   "exists": false
+  }
+ },
+ {
+  "call": "get_tracking_status",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "exists": true,
+    "last_scan": "x",
+    "game_path": null
+   },
+   "error": null,
+   "meta": {},
+   "exists": true,
+   "last_scan": "x",
+   "game_path": null
+  }
+ },
+ {
+  "call": "get_tracking_status",
+  "result": {
+   "success": false,
+   "code": "UNHANDLED_EXCEPTION",
+   "data": {},
+   "error": "argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'NoneType'",
+   "meta": {}
+  }
+ },
+ {
+  "call": "cancel_file_manager_operation",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "Unknown operation.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "cancel_file_manager_operation",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "Unknown operation.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "cancel_file_manager_operation",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {},
+   "error": null,
+   "meta": {}
+  }
+ },
+ {
+  "call": "open_path_in_explorer",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "No path was provided.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "open_path_in_explorer",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "No path was provided.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "open_path_in_explorer",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "The selected path does not exist.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "pick",
+  "result": null
+ },
+ {
+  "call": "browse_for_game_dir",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {
+    "canceled": true
+   },
+   "error": null,
+   "meta": {},
+   "canceled": true
+  }
+ },
+ {
+  "call": "browse_for_folder",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {
+    "canceled": true
+   },
+   "error": null,
+   "meta": {},
+   "canceled": true
+  }
+ },
+ {
+  "call": "ask_extraction_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "value": ""
+   },
+   "error": null,
+   "meta": {},
+   "value": ""
+  }
+ },
+ {
+  "call": "select_tracking_directory",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": null,
+   "meta": {}
+  }
+ },
+ {
+  "call": "extract_file_to_disk",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {
+    "canceled": true
+   },
+   "error": null,
+   "meta": {},
+   "canceled": true
+  }
+ },
+ {
+  "call": "pick",
+  "result": null
+ },
+ {
+  "call": "browse_for_game_dir",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "path": "<GAME>"
+   },
+   "error": null,
+   "meta": {},
+   "path": "<GAME>"
+  }
+ },
+ {
+  "call": "pick",
+  "result": null
+ },
+ {
+  "call": "browse_for_game_dir",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "No trove*.exe was found in the selected directory.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "browse_for_folder",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "path": "<SIDE>\\exists"
+   },
+   "error": null,
+   "meta": {},
+   "path": "<SIDE>\\exists"
+  }
+ },
+ {
+  "call": "browse_for_folder",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "path": "<SIDE>\\exists"
+   },
+   "error": null,
+   "meta": {},
+   "path": "<SIDE>\\exists"
+  }
+ },
+ {
+  "call": "ask_extraction_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "value": "<SIDE>/exists"
+   },
+   "error": null,
+   "meta": {},
+   "value": "<SIDE>/exists"
+  }
+ },
+ {
+  "call": "select_tracking_directory",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "path": "<SIDE>/exists"
+   },
+   "error": null,
+   "meta": {},
+   "path": "<SIDE>/exists"
+  }
+ },
+ {
+  "call": "pick",
+  "result": null
+ },
+ {
+  "call": "extract_file_to_disk",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "saved_to": "<SIDE>/saved.bin"
+   },
+   "error": null,
+   "meta": {},
+   "saved_to": "<SIDE>/saved.bin"
+  }
+ },
+ {
+  "call": "extract_file_to_disk",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "BinaryReader Error: cannot seek farther than buffer length.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "extract_file_to_disk",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "BinaryReader Error: cannot read farther than buffer length.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "extract_file_to_disk",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "[Errno 2] No such file or directory: '<FAKE>\\\\ui\\\\buff_icons\\\\archive77.tfa'",
+   "meta": {}
+  }
+ },
+ {
+  "call": "get_detected_game_paths",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "paths": [
+     {
+      "name": "(Glyph) Live",
+      "path": "<GAME>",
+      "is_steam": false,
+      "is_glyph": true
+     },
+     {
+      "name": "(Glyph) PTS",
+      "path": "C:\\Program Files (x86)\\Glyph\\Games\\Trove\\PTS",
+      "is_steam": false,
+      "is_glyph": true
+     },
+     {
+      "name": "(Steam) Live",
+      "path": "G:\\SteamLibrary\\steamapps\\common\\Trove\\Games\\Trove\\Live",
+      "is_steam": true,
+      "is_glyph": false
+     }
+    ]
+   },
+   "error": null,
+   "meta": {},
+   "paths": [
+    {
+     "name": "(Glyph) Live",
+     "path": "<GAME>",
+     "is_steam": false,
+     "is_glyph": true
+    },
+    {
+     "name": "(Glyph) PTS",
+     "path": "C:\\Program Files (x86)\\Glyph\\Games\\Trove\\PTS",
+     "is_steam": false,
+     "is_glyph": true
+    },
+    {
+     "name": "(Steam) Live",
+     "path": "G:\\SteamLibrary\\steamapps\\common\\Trove\\Games\\Trove\\Live",
+     "is_steam": true,
+     "is_glyph": false
+    }
+   ]
+  }
+ },
+ {
+  "call": "get_detected_game_paths",
+  "result": {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "paths": [
+     {
+      "name": "(Glyph) Live",
+      "path": "<GAME>",
+      "is_steam": false,
+      "is_glyph": true
+     },
+     {
+      "name": "(Glyph) PTS",
+      "path": "C:\\Program Files (x86)\\Glyph\\Games\\Trove\\PTS",
+      "is_steam": false,
+      "is_glyph": true
+     },
+     {
+      "name": "(Steam) Live",
+      "path": "G:\\SteamLibrary\\steamapps\\common\\Trove\\Games\\Trove\\Live",
+      "is_steam": true,
+      "is_glyph": false
+     }
+    ]
+   },
+   "error": null,
+   "meta": {},
+   "paths": [
+    {
+     "name": "(Glyph) Live",
+     "path": "<GAME>",
+     "is_steam": false,
+     "is_glyph": true
+    },
+    {
+     "name": "(Glyph) PTS",
+     "path": "C:\\Program Files (x86)\\Glyph\\Games\\Trove\\PTS",
+     "is_steam": false,
+     "is_glyph": true
+    },
+    {
+     "name": "(Steam) Live",
+     "path": "G:\\SteamLibrary\\steamapps\\common\\Trove\\Games\\Trove\\Live",
+     "is_steam": true,
+     "is_glyph": false
+    }
+   ]
+  }
+ },
+ {
+  "call": "load_entire_game_tree",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "Game path does not exist.",
+   "meta": {}
+  }
+ },
+ {
+  "call": "load_entire_game_tree",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'NoneType'",
+   "meta": {}
+  }
+ },
+ {
+  "call": "mass_extract_files",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "[Errno 2] No such file or directory: '<FAKE>\\\\ui\\\\buff_icons\\\\archive77.tfa'",
+   "meta": {}
+  }
+ },
+ {
+  "call": "mass_extract_files",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "'tfi'",
+   "meta": {}
+  }
+ },
+ {
+  "call": "mass_extract_files",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "object of type 'NoneType' has no len()",
+   "meta": {}
+  }
+ },
+ {
+  "call": "build_baseline_cache",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "[Errno 2] No such file or directory: '<SIDE>\\\\no track dir\\\\extraction_data.json'",
+   "meta": {}
+  }
+ },
+ {
+  "call": "scan_and_extract_updates",
+  "result": {
+   "success": false,
+   "code": "ERROR",
+   "data": {},
+   "error": "[Errno 2] No such file or directory: '<SIDE>\\\\exists\\\\extraction_data.json'",
+   "meta": {}
+  }
+ }
+]

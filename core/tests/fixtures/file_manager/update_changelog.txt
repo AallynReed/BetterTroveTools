@@ -1,0 +1,12 @@
+Game Path: <FAKE>
+========================================
+
+ADDED FILES (2):
+ + ui/buff_icons/parity/added file.png
+ + blueprints/2019/delves/parity_new_item_a_b_c_d.blueprint
+
+CHANGED FILES (1):
+ ~ ui/buff_icons/icon_delve_purple_two.png
+
+REMOVED FILES (1):
+ - buff_pdmg_gold.png
