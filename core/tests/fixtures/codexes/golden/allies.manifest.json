@@ -1,0 +1,15 @@
+{
+  "game_path": "<GAME>",
+  "match_count": 24,
+  "extracted_count": 24,
+  "matched_allies": 24,
+  "decoded_tooltips": 23,
+  "extract_dir": "C:\\parity\\allies_runtime_cache",
+  "ability_paths": 6,
+  "resolved_abilities": 6,
+  "decoded_mastery": 20,
+  "decoded_geode_mastery": 1,
+  "decoded_names": 24,
+  "decoded_descriptions": 24,
+  "decoded_powerrank": 24
+}

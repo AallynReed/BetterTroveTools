@@ -47,11 +47,13 @@ uuid = { version = "1", features = ["v4"] }
 # home deps
 # gems deps
 # codexes deps
+indexmap = "2"
 # modder_tools deps
 # file_manager deps
 # auth deps
 # mod_manager deps
 # blueprint deps
+zlib-rs = "=0.5.2"  # last release byte-identical to CPython 3.14's zlib-ng 2.2.4
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

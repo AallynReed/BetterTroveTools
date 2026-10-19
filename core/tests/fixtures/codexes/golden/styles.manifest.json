@@ -1,0 +1,13 @@
+{
+  "game_path": "<GAME>",
+  "style_count": 17,
+  "families": [
+    "Banner",
+    "Face",
+    "Weapon"
+  ],
+  "decoded_names": 17,
+  "decoded_descriptions": 16,
+  "with_geode": 0,
+  "total_mastery": 17
+}

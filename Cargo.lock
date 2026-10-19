@@ -361,6 +361,7 @@ dependencies = [
  "glob",
  "hex",
  "html-escape",
+ "indexmap 2.14.2",
  "libloading 0.8.9",
  "md-5",
  "open",
@@ -381,6 +382,7 @@ dependencies = [
  "windows-sys 0.59.0",
  "winreg 0.52.0",
  "zip",
+ "zlib-rs 0.5.2",
 ]
 
 [[package]]
@@ -1106,7 +1108,7 @@ checksum = "6e634e2e0ebac1ee034020da1ca582e17ffe4e0f5e985823721e168928136dcb"
 dependencies = [
  "crc32fast",
  "miniz_oxide 0.9.1",
- "zlib-rs",
+ "zlib-rs 0.6.8",
 ]
 
 [[package]]
@@ -5554,6 +5556,12 @@ dependencies = [
  "memchr",
  "zopfli",
 ]
+
+[[package]]
+name = "zlib-rs"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f06ae92f42f5e5c42443fd094f245eb656abf56dd7cce9b8b263236565e00f2"
 
 [[package]]
 name = "zlib-rs"

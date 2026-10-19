@@ -6,7 +6,6 @@
 //! `decompressed[offset..offset + size]`.
 
 use std::collections::{HashMap, VecDeque};
-use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
@@ -58,15 +57,35 @@ pub fn archive_path(tfi_path: &Path, entry: &IndexEntry) -> PathBuf {
     tfi_path.with_file_name(format!("archive{}.tfa", entry.archive_index))
 }
 
-/// Inflates a whole `.tfa`.
+/// Inflates a whole `.tfa`. Trove ends archives on a sync flush with no final block, so
+/// like Python's `decompressobj().decompress()` this returns everything up to the end of
+/// input instead of requiring a stream end.
 pub fn decompress(raw: &[u8]) -> Result<Vec<u8>> {
-    let mut out = Vec::with_capacity(raw.len() * 2);
-    flate2::read::ZlibDecoder::new(raw).read_to_end(&mut out)?;
+    use flate2::{Decompress, FlushDecompress, Status};
+    let mut d = Decompress::new(true);
+    let mut out: Vec<u8> = Vec::with_capacity(raw.len().saturating_mul(2).max(4096));
+    loop {
+        if out.len() == out.capacity() {
+            out.reserve(out.capacity());
+        }
+        let (in_before, out_before) = (d.total_in(), out.len());
+        let rest = &raw[(d.total_in() as usize).min(raw.len())..];
+        let status = d
+            .decompress_vec(rest, &mut out, FlushDecompress::None)
+            .map_err(|e| anyhow::anyhow!("Error -3 while decompressing data: {}", e))?;
+        if status == Status::StreamEnd {
+            break;
+        }
+        let drained = d.total_in() as usize >= raw.len() && out.len() < out.capacity();
+        if drained || (d.total_in() == in_before && out.len() == out_before) {
+            break;
+        }
+    }
     Ok(out)
 }
 
 pub fn decompress_file(path: &Path) -> Result<Vec<u8>> {
-    let raw = std::fs::read(path).with_context(|| format!("reading {}", path.display()))?;
+    let raw = std::fs::read(path).map_err(|e| anyhow::anyhow!("{}: '{}'", e, path.display()))?;
     decompress(&raw)
 }
 
@@ -299,6 +318,32 @@ pub fn resolve_game_install(game_path: Option<&str>) -> Result<PathBuf> {
 mod tests {
     use super::*;
     use crate::game::hash::write_uleb;
+
+    #[test]
+    fn inflates_sync_flushed_streams() {
+        use flate2::{Compress, Compression, FlushCompress};
+        let data: Vec<u8> = (0..100_000u32).flat_map(|i| (i % 251).to_le_bytes()).collect();
+        let mut c = Compress::new(Compression::default(), true);
+        let mut packed = Vec::with_capacity(data.len());
+        c.compress_vec(&data, &mut packed, FlushCompress::Sync).unwrap();
+        assert_eq!(decompress(&packed).unwrap(), data);
+    }
+
+    #[test]
+    #[ignore = "reads the local Trove install"]
+    fn inflates_every_real_archive() {
+        let root = Path::new(r"C:\Program Files (x86)\Glyph\Games\Trove\Live");
+        let mut count = 0;
+        for tfi in find_all_indexes(root) {
+            for entry in std::fs::read_dir(tfi.parent().unwrap()).unwrap().filter_map(|e| e.ok()) {
+                if entry.path().extension().map(|e| e == "tfa").unwrap_or(false) {
+                    decompress_file(&entry.path()).unwrap_or_else(|e| panic!("{}: {}", entry.path().display(), e));
+                    count += 1;
+                }
+            }
+        }
+        assert!(count > 1000, "only {} archives", count);
+    }
 
     #[test]
     fn parses_index_entries() {

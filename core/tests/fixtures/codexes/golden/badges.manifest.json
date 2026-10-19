@@ -1,0 +1,23 @@
+{
+  "game_path": "<GAME>",
+  "badge_count": 12,
+  "tiers": [
+    "Bronze",
+    "Gold",
+    "Obsidian",
+    "Trovium"
+  ],
+  "in_game_categories": [
+    "Ancient Dragon Ascension",
+    "Basic Tips",
+    "Neon Dragon Ascension",
+    "Shadow Hydrakken Objectives",
+    "Subclasses",
+    "Winter Dragon Ascension"
+  ],
+  "group_count": 12,
+  "decoded_names": 12,
+  "decoded_descriptions": 1,
+  "with_mastery": 12,
+  "total_mastery": 320
+}
