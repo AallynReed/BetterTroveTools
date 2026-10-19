@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The main window: core IPC and events only; the backend runs dialogs itself.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

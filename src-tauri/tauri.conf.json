@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Better Trove Tools",
+  "mainBinaryName": "BetterTroveTools",
+  "version": "2026.10.6",
+  "identifier": "net.aallyn.bettertrovetools",
+  "build": {
+    "frontendDist": "../web"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.ico",
+      "icons/icon.png"
+    ],
+    "resources": {
+      "../data/": "data/",
+      "../web/assets/data/": "web/assets/data/",
+      "../web/assets/locale/": "web/assets/locale/",
+      "../LICENSE": "LICENSE",
+      "../metadata.json": "metadata.json"
+    },
+    "copyright": "Aallyn Reed 2026-Present",
+    "shortDescription": "Better Trove Tools",
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "wix": {
+        "version": "26.10.6",
+        "upgradeCode": "d60960b6-3eea-423f-bf8b-bfb3158531f5"
+      }
+    }
+  }
+}

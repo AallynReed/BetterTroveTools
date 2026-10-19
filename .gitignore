@@ -48,3 +48,7 @@ android/capacitor-cordova-android-plugins/
 keystore.properties
 android/keystores/
 *.apk
+
+# Rust / Tauri
+/target/
+src-tauri/gen/
