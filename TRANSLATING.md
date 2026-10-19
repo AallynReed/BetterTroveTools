@@ -68,12 +68,12 @@ each id means.
 
 ## Adding a new language
 
-From the repo root:
+From the repo root (any Python 3; the tools use only the standard library):
 
 ```bash
-.venv\Scripts\python.exe tools\i18n\new_language.py <code> "<Endonym>" "<English name>" [--rtl]
+python tools/i18n/new_language.py <code> "<Endonym>" "<English name>" [--rtl]
 # e.g.
-.venv\Scripts\python.exe tools\i18n\new_language.py it_IT "Italiano" "Italian"
+python tools/i18n/new_language.py it_IT "Italiano" "Italian"
 ```
 
 This creates `web/assets/locale/it_IT.json` with every UI id ready to translate.
@@ -83,7 +83,7 @@ This creates `web/assets/locale/it_IT.json` with every UI id ready to translate.
 Run the validator — it must pass:
 
 ```bash
-.venv\Scripts\python.exe tools\i18n\validate.py
+python tools/i18n/validate.py
 ```
 
 It checks JSON validity, that your ids match `en_US`, that `{tokens}` and HTML tags
