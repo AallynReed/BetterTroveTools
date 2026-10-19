@@ -22,7 +22,8 @@ parking_lot.workspace = true
 tauri = { version = "2", features = ["tray-icon", "image-png", "devtools"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
-tauri-plugin-single-instance = "2"
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-deep-link = "2"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"
