@@ -1034,7 +1034,7 @@ mod tests {
         let account = s.account();
         assert!(account["steam_id"].as_str().unwrap() != "0");
         let items = s.published_items(1).unwrap();
-        eprintln!("{} items for {}", items.len(), account["persona"]);
+        eprintln!("{} published items", items.len());
         s.disconnect();
     }
 }
