@@ -9,6 +9,7 @@
 //! - [`format`] is the container itself (shared with `.tpack` modpacks), [`trovesaurus`]
 //!   the catalog model.
 
+pub mod blocklist;
 pub mod cfg;
 pub mod format;
 mod list;

@@ -147,3 +147,41 @@ fn endpoints_match_python() {
     FIXED_NOW.store(i64::MIN, std::sync::atomic::Ordering::SeqCst);
     let _ = std::fs::remove_dir_all(&sandbox);
 }
+
+#[test]
+fn blocked_words_stop_a_build_anywhere_they_appear() {
+    crate::ctx::testing::init();
+    let sandbox = std::env::temp_dir().join(format!("btt-blocklist-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&sandbox);
+    std::fs::create_dir_all(sandbox.join("game")).unwrap();
+    std::fs::write(sandbox.join("game").join("Trove.exe"), b"").unwrap();
+    let base = json!({
+        "gamePath": sandbox.join("game").to_string_lossy(),
+        "title": "Clean Mod", "author": "me", "version": "1.0", "notes": "notes",
+        "tags": ["UI"], "subtype": "",
+        "files": [{"internal_path": "ui/a.swf", "data": "data:application/octet-stream;base64,aW5saW5l"}],
+    });
+    let build = |patch: &dyn Fn(&mut Value)| {
+        let mut payload = base.clone();
+        patch(&mut payload);
+        crate::call("build_tmod", vec![payload]).unwrap().unwrap()
+    };
+
+    let cases: [(&str, &dyn Fn(&mut Value)); 5] = [
+        ("title", &|p| p["title"] = json!("My QuWaste Mod")),
+        ("author", &|p| p["author"] = json!("QUWASTE")),
+        ("notes", &|p| p["notes"] = json!("has quwaste in it")),
+        ("tag", &|p| p["tags"] = json!(["UI", "Quwaste"])),
+        ("file path", &|p| p["files"][0]["internal_path"] = json!("ui/quwaste.swf")),
+    ];
+    for (field, patch) in cases {
+        let r = build(patch);
+        assert_eq!(r["success"], false, "{field}: {r}");
+        assert_eq!(r["error"], crate::modfile::blocklist::BLOCKED_MESSAGE, "{field}");
+    }
+    assert!(!sandbox.join("game").join("mods").join("My QuWaste Mod.tmod").exists());
+
+    let ok = build(&|_| {});
+    assert_eq!(ok["success"], true, "{ok}");
+    let _ = std::fs::remove_dir_all(&sandbox);
+}

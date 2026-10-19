@@ -14,7 +14,7 @@ use crate::ctx::{ctx, Dialog};
 use crate::game::DIRECTORIES;
 use crate::py::{self, display, file_name, file_suffix, path_arg, str_of, strip, strip_value, truthy, Rglob};
 use crate::modfile::format::Reader;
-use crate::modfile::{normalize_internal_path, ModFile, ModKind, TroveMod};
+use crate::modfile::{blocklist, normalize_internal_path, ModFile, ModKind, TroveMod};
 
 // --- cancellation -------------------------------------------------------------------
 
@@ -756,11 +756,14 @@ pub fn build_tmod(a: &Args) -> Result<Value> {
             }
         }
 
+        m.mod_path = save_path.clone();
+        if blocklist::mod_is_blocked(&m) {
+            return Ok(failed(blocklist::BLOCKED_MESSAGE));
+        }
         py::mkdir_all(&out_dir)?;
         if save_path.exists() && overwrite {
             unlink_missing_ok(&save_path)?;
         }
-        m.mod_path = save_path.clone();
         let bytes = m.compile_tmod()?;
         py::write_bytes(&save_path, &bytes)?;
         Ok(json!({"success": true, "path": display(&save_path)}))
@@ -852,6 +855,9 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
             m.add_file(ModFile::new(&display(&internal), bytes))?;
         }
 
+        if blocklist::mod_is_blocked(&m) {
+            return Ok(failed(blocklist::BLOCKED_MESSAGE));
+        }
         if save_path.exists() && overwrite {
             unlink_missing_ok(&save_path)?;
         }
@@ -1254,12 +1260,15 @@ pub fn compile_project(a: &Args) -> Result<Value> {
             return Ok(failed(format!("No valid game files found in the v{} folder.", str_of(version))));
         }
         let out_dir = game_path.join("mods");
-        py::mkdir_all(&out_dir)?;
         let save_path = out_dir.join(format!("{}.tmod", title));
+        m.mod_path = save_path.clone();
+        if blocklist::mod_is_blocked(&m) {
+            return Ok(failed(blocklist::BLOCKED_MESSAGE));
+        }
+        py::mkdir_all(&out_dir)?;
         if save_path.exists() {
             unlink_missing_ok(&save_path)?;
         }
-        m.mod_path = save_path.clone();
         let bytes = m.compile_tmod()?;
         py::write_bytes(&save_path, &bytes)?;
         Ok(json!({"success": true, "path": display(&save_path)}))
