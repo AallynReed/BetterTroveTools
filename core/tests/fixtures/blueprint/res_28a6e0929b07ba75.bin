@@ -1,0 +1,1 @@
+{"detail": "Lining up the attachment points needs both models to have one, and at least one of these doesn't (older v3/v4 blueprints don't store one). Line up the centres or the corners instead."}

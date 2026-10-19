@@ -1,0 +1,1 @@
+{"kind": "deco", "attachment": [2, -7, 1], "findings": [], "satisfied": ["A blueprint stores one material per voxel, so alpha-on-solid and specular-on-glass - two of the classic .qb mistakes - can't happen here.", "No near-black voxels."], "counts": {"error": 0, "warning": 0, "info": 0}}

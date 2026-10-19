@@ -1,0 +1,6 @@
+------WebKitFormBoundaryKiwiParity7f3a
+Content-Disposition: form-data; name="file"; filename="not_kiwib.blueprint"
+Content-Type: application/octet-stream
+
+hello world, this isn't a blueprint
+------WebKitFormBoundaryKiwiParity7f3a--
