@@ -1,0 +1,14 @@
+{
+  "game_path": "<GAME>",
+  "mount_count": 16,
+  "collection_mount_prefabs": 16,
+  "item_mount_prefabs": 10,
+  "decoded_names": 16,
+  "decoded_descriptions": 16,
+  "decoded_mastery": 14,
+  "base_mastery_fallbacks": 9,
+  "decoded_blueprints": 12,
+  "decoded_categories": 16,
+  "with_item_variants": 8,
+  "with_stats": 16
+}

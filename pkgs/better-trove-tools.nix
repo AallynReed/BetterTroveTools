@@ -1,32 +1,27 @@
 {
   lib,
-  stdenv,
   src,
-  python3,
+  rustPlatform,
+  cargo-tauri,
+  pkg-config,
   wrapGAppsHook3,
-  gobject-introspection,
-  gtk3,
-  webkitgtk_4_1,
-  libsoup_3,
+  openssl,
   glib-networking,
+  webkitgtk_4_1,
+  libayatana-appindicator,
+  librsvg,
   gst_all_1,
-  copyDesktopItems,
-  makeDesktopItem,
 }:
 
-# Better Trove Tools is a "run-from-source" Python desktop app: there is no
-# setup.py / pyproject.toml, so we don't build a wheel. We stage the source
-# tree into $out/share and wrap a launcher that runs main.py with a Python
-# interpreter carrying all runtime deps. The Windows-only bits (cx-Freeze MSI,
-# pythonnet self-updater, registry auto-detect) are inert on Linux.
-
 let
-  python = python3;
+  # metadata.json's YYYY.MM.XX[a|b]: Tauri wants semver, so 2026.10.07b -> 2026.10.7-beta.
+  appVersion = (lib.importJSON ../metadata.json).APP_VERSION;
+  parts = builtins.match "([0-9]+)\\.([0-9]+)\\.([0-9]+)([ab]?)" appVersion;
+  stage = { "" = ""; a = "-alpha"; b = "-beta"; }.${builtins.elemAt parts 3};
+  num = i: toString (lib.toIntBase10 (builtins.elemAt parts i));
+  semver = "${num 0}.${num 1}.${num 2}${stage}";
 
-  # WebKitGTK renders media through GStreamer; without these on
-  # GST_PLUGIN_SYSTEM_PATH_1_0 it warns "element appsink not found" and audio/
-  # video in the webview stays silent. base carries appsink + core codecs,
-  # good/bad/libav cover the common web formats (mp4/h264, webm, mp3, ...).
+  # WebKitGTK plays media through GStreamer.
   gstPlugins = with gst_all_1; [
     gstreamer
     gst-plugins-base
@@ -34,106 +29,51 @@ let
     gst-plugins-bad
     gst-libav
   ];
-
-  pythonEnv = python.withPackages (
-    ps: with ps; [
-      binary-reader
-      eel
-
-      aiofiles
-      bottle
-      gevent
-      pydantic
-      pywebview
-      requests
-      toml
-      vdf
-      pygobject3
-      tkinter
-    ]
-  );
 in
-stdenv.mkDerivation (finalAttrs: {
+rustPlatform.buildRustPackage (finalAttrs: {
   pname = "better-trove-tools";
-  # Read straight from metadata.json (bumped as step 1 of every release), so the
-  # Nix version never drifts and there's no separate string to hand-maintain.
-  version = (lib.importJSON ../metadata.json).APP_VERSION;
+  version = appVersion;
 
   inherit src;
+  cargoLock.lockFile = ../Cargo.lock;
 
   nativeBuildInputs = [
+    cargo-tauri.hook
+    pkg-config
     wrapGAppsHook3
-    gobject-introspection
-    copyDesktopItems
   ];
 
   buildInputs = [
-    gtk3
-    webkitgtk_4_1
-    libsoup_3
+    openssl
     glib-networking
+    webkitgtk_4_1
+    libayatana-appindicator
+    librsvg
   ]
   ++ gstPlugins;
 
-  dontConfigure = true;
-  dontBuild = true;
-
-  dontWrapGApps = true;
-
-  installPhase = ''
-    runHook preInstall
-
-    appdir="$out/share/better-trove-tools"
-    mkdir -p "$appdir"
-    cp -r . "$appdir/"
-    # Drop build/CI/dev-only bits the Linux app never touches.
-    rm -rf "$appdir"/{.git,.github,android,compile.py,capacitor.config.json} \
-           "$appdir"/{package.json,package-lock.json,requirements*.txt} \
-           "$appdir"/{install-linux.sh,run.sh} \
-           "$appdir"/{flake.nix,flake.lock,pkgs}
-
-    # The app hardcodes web/favicon.ico as its pywebview window icon, but it's a
-    # PNG-compressed .ico that gdk-pixbuf refuses ("Compressed icons are not
-    # supported"), aborting window creation. GdkPixbuf sniffs format by content,
-    # not extension, so drop the plain PNG in under the same filename.
-    cp assets/icon.png "$appdir/web/favicon.ico"
-
-    makeWrapper ${pythonEnv}/bin/python $out/bin/better-trove-tools \
-      "''${gappsWrapperArgs[@]}" \
-      --prefix GI_TYPELIB_PATH : "$GI_TYPELIB_PATH" \
-      --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${lib.makeSearchPath "lib/gstreamer-1.0" gstPlugins}" \
-      --set-default PYWEBVIEW_GUI gtk \
-      --set-default GDK_BACKEND x11 \
-      --add-flags "$appdir/main.py" \
-      --chdir "$appdir"
-
-    install -Dm644 assets/icon.png \
-      "$out/share/icons/hicolor/256x256/apps/better-trove-tools.png"
-
-    runHook postInstall
-  '';
-
-  desktopItems = [
-    (makeDesktopItem {
-      name = "better-trove-tools";
-      desktopName = "Better Trove Tools";
-      comment = "Desktop companion for Trove players, collectors, and modders";
-      exec = "better-trove-tools";
-      icon = "better-trove-tools";
-      categories = [
-        "Game"
-        "Utility"
-      ];
-      startupWMClass = "Better Trove Tools";
-    })
+  buildAndTestSubdir = "src-tauri";
+  tauriBuildFlags = [
+    "--config"
+    (builtins.toJSON { version = semver; })
   ];
+
+  # btt-core's tests run in CI; several need a Trove install or the network.
+  doCheck = false;
+
+  preFixup = ''
+    gappsWrapperArgs+=(
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ libayatana-appindicator ]}"
+      --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : "${lib.makeSearchPath "lib/gstreamer-1.0" gstPlugins}"
+    )
+  '';
 
   meta = {
     description = "Offline-capable suite of utilities for players and modders of the game Trove";
     homepage = "https://github.com/AallynReed/BetterTroveTools";
     changelog = "https://github.com/AallynReed/BetterTroveTools/releases/tag/${finalAttrs.version}";
     license = lib.licenses.mit;
-    mainProgram = "better-trove-tools";
+    mainProgram = "BetterTroveTools";
     platforms = lib.platforms.linux;
     maintainers = with lib.maintainers; [ ];
   };

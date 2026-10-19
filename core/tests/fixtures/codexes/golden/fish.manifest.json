@@ -1,0 +1,39 @@
+{
+  "game_path": "<GAME>",
+  "fish_count": 12,
+  "sources": [
+    "Chocolate",
+    "Enchanted Water",
+    "Lava",
+    "Plasma",
+    "Water"
+  ],
+  "rarities": [
+    "Common",
+    "Uncommon",
+    "Rare"
+  ],
+  "decoded_names": 12,
+  "decoded_descriptions": 12,
+  "with_blueprint": 12,
+  "with_trophies": 12,
+  "with_weight": 12,
+  "weight_tiers": [
+    {
+      "min": 1.0,
+      "max": 20.0
+    },
+    {
+      "min": 5.0,
+      "max": 40.0
+    },
+    {
+      "min": 15.0,
+      "max": 70.0
+    },
+    {
+      "min": 25.0,
+      "max": 120.0
+    }
+  ]
+}

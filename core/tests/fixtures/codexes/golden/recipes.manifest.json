@@ -1,0 +1,19 @@
+{
+  "game_path": "<GAME>",
+  "recipe_count": 24,
+  "decoded_outputs": 18,
+  "resolved_names": 24,
+  "resolved_descriptions": 8,
+  "decoded_blueprints": 6,
+  "heuristic_blueprints": 9,
+  "with_requirements": 2,
+  "with_ingredients": 24,
+  "total_ingredients": 72,
+  "mastery_from_multipliers": 1,
+  "mastery_from_prefab": 23,
+  "mastery_review_only": 0,
+  "catalogue_rows": 2,
+  "in_catalogue": 2,
+  "with_providers": 1,
+  "provider_recipes": 1
+}

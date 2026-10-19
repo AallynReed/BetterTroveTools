@@ -1,0 +1,986 @@
+{
+ "results": [
+  null,
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": false,
+    "user": null
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "NOT_AUTHENTICATED",
+   "data": {},
+   "error": "You need to sign in first.",
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "MISSING_CODE",
+   "data": {},
+   "error": "Missing sign-in code",
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "EXCHANGE_REJECTED",
+   "data": {},
+   "error": "Sign-in code was invalid or expired",
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "opened": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": true,
+    "user": {
+     "id": 1,
+     "username": "tester",
+     "display": "Tëst ✓"
+    }
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": true,
+    "user": {
+     "id": 1,
+     "username": "tester",
+     "display": "Tëst ✓"
+    }
+   },
+   "error": null,
+   "meta": {}
+  },
+  null,
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": true,
+    "user": {
+     "id": 1,
+     "username": "tester",
+     "display": "Tëst ✓"
+    }
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": [
+    {
+     "handle": "h",
+     "slug": "s"
+    }
+   ],
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "items": [],
+    "total": 0
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "title": "My Mod",
+     "visibility": "draft"
+    }
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "title": "Other",
+     "visibility": null
+    }
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "HTTP_409",
+   "data": {},
+   "error": "Slug taken",
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "title": "Té"
+    },
+    "path": "/v1/mods/hub/projects/a%20b/c%7Cd%5E%C3%A9"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "HTTP_422",
+   "data": {},
+   "error": [
+    {
+     "loc": [
+      "body",
+      "title"
+     ],
+     "msg": "field required"
+    }
+   ],
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "title": "T",
+    "visibility": "draft"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "HTTP_404",
+   "data": {},
+   "error": "Not found",
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "HTTP_500",
+   "data": {},
+   "error": "Request failed (500).",
+   "meta": {}
+  },
+  null,
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "id": 42
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "MISSING_TAG",
+   "data": {},
+   "error": "A version tag is required.",
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "MISSING_TAG",
+   "data": {},
+   "error": "A version tag is required.",
+   "meta": {}
+  },
+  null,
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "banner_url": "https://x/b.png"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "banner_url": "https://x/b.png"
+   },
+   "error": null,
+   "meta": {}
+  },
+  null,
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "cancelled": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "cancelled": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "id": 42,
+    "echo": {
+     "status": "draft"
+    }
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "username": "friend"
+    },
+    "path": "/v1/mods/hub/projects/h/s/collaborators"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "username": "friend"
+    },
+    "path": "/v1/modpacks/hub/projects/h/s/collaborators"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "name": "beta"
+    },
+    "path": "/v1/modpacks/hub/projects/h/s/variants"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "name": "beta2",
+     "copy_from": "beta"
+    },
+    "path": "/v1/modpacks/hub/projects/h/s/variants"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "label": "Beta!"
+    },
+    "path": "/v1/modpacks/hub/projects/h/s/variants/beta"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "entries": []
+    },
+    "path": "/v1/modpacks/hub/projects/h/s/variants/beta/entries"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "echo": {
+     "entries": [
+      {
+       "mod": "x",
+       "branch": "main"
+      }
+     ]
+    },
+    "path": "/v1/modpacks/hub/projects/h/s/variants/beta/entries"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "query": "/v1/mods?q=h%C3%A9llo%20w%C3%B6rld/x%26y&sort=downloads&limit=20"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "query": "/v1/mods?sort=downloads&limit=15"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "query": "/v1/mods?q=x&sort=downloads&limit=20"
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "UNHANDLED_EXCEPTION",
+   "data": {},
+   "error": "invalid literal for int() with base 10: '2.5'",
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "UNHANDLED_EXCEPTION",
+   "data": {},
+   "error": "'int' object has no attribute 'strip'",
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": [
+    "main",
+    "beta"
+   ],
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "ok": true
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": [],
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": [],
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "UNHANDLED_EXCEPTION",
+   "data": {},
+   "error": "Expecting value: line 1 column 1 (char 0)",
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": false,
+    "user": null
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": false,
+    "user": null
+   },
+   "error": null,
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "ME_FAILED",
+   "data": {},
+   "error": "Signed in but couldn't load your account",
+   "meta": {}
+  },
+  {
+   "success": false,
+   "code": "UNHANDLED_EXCEPTION",
+   "data": {},
+   "error": "'list' object has no attribute 'get'",
+   "meta": {}
+  },
+  null,
+  null,
+  {
+   "success": true,
+   "code": "OK",
+   "data": {
+    "authenticated": false,
+    "user": null
+   },
+   "error": null,
+   "meta": {}
+  },
+  false,
+  null,
+  null,
+  null,
+  null,
+  false,
+  false,
+  null,
+  {
+   "success": false,
+   "code": "EXCHANGE_FAILED",
+   "data": {},
+   "error": "<transport error>",
+   "meta": {}
+  }
+ ],
+ "requests": [
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/oauth/exchange",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "15",
+   "body": "{\"code\": \"bad\"}"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/oauth/exchange",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "16",
+   "body": "{\"code\": \"good\"}"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/site-auth/me",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A1",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/refresh",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "23",
+   "body": "{\"refresh_token\": \"R1\"}"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/site-auth/me",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/site-auth/me",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/site-auth/me",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/mods/hub/me/projects",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/modpacks/hub/me/projects",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/mods/hub/projects",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "42",
+   "body": "{\"title\": \"My Mod\", \"visibility\": \"draft\"}"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/mods/hub/projects",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "38",
+   "body": "{\"title\": \"Other\", \"visibility\": null}"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/modpacks/hub/projects",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "41",
+   "body": "{\"title\": \"Pack\", \"visibility\": \"public\"}"
+  },
+  {
+   "method": "PATCH",
+   "path": "/v1/mods/hub/projects/a%20b/c%7Cd%5E%C3%A9",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "20",
+   "body": "{\"title\": \"T\\u00e9\"}"
+  },
+  {
+   "method": "PATCH",
+   "path": "/v1/modpacks/hub/projects/h/s",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "2",
+   "body": "{}"
+  },
+  {
+   "method": "DELETE",
+   "path": "/v1/mods/hub/projects/h/s",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "DELETE",
+   "path": "/v1/modpacks/hub/projects/h/s",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/site/mods/projects/h/s",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/site/modpacks/projects/h/s",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/site/mods/projects/h/s/releases",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/mods/hub/projects/h/s/releases/upload",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "multipart/form-data; boundary=BOUNDARY",
+   "content_length": "665",
+   "body": "b64:LS1CT1VOREFSWQ0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJ0YWciDQoNCnYxDQotLUJPVU5EQVJZDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9InRpdGxlIg0KDQpUDQotLUJPVU5EQVJZDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9ImNoYW5nZWxvZyINCg0KbGluZTEKbGluZTINCi0tQk9VTkRBUlkNCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0ic3RhdHVzIg0KDQpwdWJsaXNoZWQNCi0tQk9VTkRBUlkNCkNvbnRlbnQtRGlzcG9zaXRpb246IGZvcm0tZGF0YTsgbmFtZT0iYnJhbmNoIg0KDQptYWluDQotLUJPVU5EQVJZDQpDb250ZW50LURpc3Bvc2l0aW9uOiBmb3JtLWRhdGE7IG5hbWU9ImZpbGUiOyBmaWxlbmFtZT0icmVsZWFzZSB2MS50bW9kIg0KQ29udGVudC1UeXBlOiBhcHBsaWNhdGlvbi9vY3RldC1zdHJlYW0NCg0KVE1PRAABYmluYXJ5/w0KLS1CT1VOREFSWS0tDQo="
+  },
+  {
+   "method": "POST",
+   "path": "/v1/mods/hub/projects/h/s/banner",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "multipart/form-data; boundary=BOUNDARY",
+   "content_length": "183",
+   "body": "b64:LS1CT1VOREFSWQ0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJmaWxlIjsgZmlsZW5hbWU9IkJhbm5lci5QTkciDQpDb250ZW50LVR5cGU6IGltYWdlL3BuZw0KDQqJUE5HDQoaCmZha2UNCi0tQk9VTkRBUlktLQ0K"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/modpacks/hub/projects/h/s/banner",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "multipart/form-data; boundary=BOUNDARY",
+   "content_length": "183",
+   "body": "b64:LS1CT1VOREFSWQ0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJmaWxlIjsgZmlsZW5hbWU9IkJhbm5lci5QTkciDQpDb250ZW50LVR5cGU6IGltYWdlL3BuZw0KDQqJUE5HDQoaCmZha2UNCi0tQk9VTkRBUlktLQ0K"
+  },
+  {
+   "method": "PATCH",
+   "path": "/v1/mods/hub/releases/42",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "19",
+   "body": "{\"status\": \"draft\"}"
+  },
+  {
+   "method": "DELETE",
+   "path": "/v1/mods/hub/releases/42",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/mods/hub/projects/h/s/collaborators",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "22",
+   "body": "{\"username\": \"friend\"}"
+  },
+  {
+   "method": "DELETE",
+   "path": "/v1/mods/hub/projects/h/s/collaborators/9",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/modpacks/hub/projects/h/s/collaborators",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "22",
+   "body": "{\"username\": \"friend\"}"
+  },
+  {
+   "method": "DELETE",
+   "path": "/v1/modpacks/hub/projects/h/s/collaborators/u-1",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/modpacks/hub/projects/h/s/variants",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "16",
+   "body": "{\"name\": \"beta\"}"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/modpacks/hub/projects/h/s/variants",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "38",
+   "body": "{\"name\": \"beta2\", \"copy_from\": \"beta\"}"
+  },
+  {
+   "method": "PATCH",
+   "path": "/v1/modpacks/hub/projects/h/s/variants/beta",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "18",
+   "body": "{\"label\": \"Beta!\"}"
+  },
+  {
+   "method": "DELETE",
+   "path": "/v1/modpacks/hub/projects/h/s/variants/beta",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "PUT",
+   "path": "/v1/modpacks/hub/projects/h/s/variants/beta/entries",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "15",
+   "body": "{\"entries\": []}"
+  },
+  {
+   "method": "PUT",
+   "path": "/v1/modpacks/hub/projects/h/s/variants/beta/entries",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": "application/json",
+   "content_length": "45",
+   "body": "{\"entries\": [{\"mod\": \"x\", \"branch\": \"main\"}]}"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/mods?q=h%C3%A9llo%20w%C3%B6rld/x%26y&sort=downloads&limit=20",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/mods?sort=downloads&limit=15",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/mods?q=x&sort=downloads&limit=20",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/mods/hub/projects/h/s/branches",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/giveaways/7/enter",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": "0",
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/giveaways/mine",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A2",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/refresh",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "23",
+   "body": "{\"refresh_token\": \"R2\"}"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/giveaways/mine",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A3",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/giveaways/mine",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A3",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "GET",
+   "path": "/v1/site-auth/me",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer A3",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/logout",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "23",
+   "body": "{\"refresh_token\": \"R3\"}"
+  },
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/oauth/exchange",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "16",
+   "body": "{\"code\": \"nome\"}"
+  },
+  {
+   "method": "GET",
+   "path": "/v1/site-auth/me",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": "Bearer AX",
+   "content_type": null,
+   "content_length": null,
+   "body": ""
+  },
+  {
+   "method": "POST",
+   "path": "/v1/site-auth/oauth/exchange",
+   "user_agent": "BetterTroveTools/1.0",
+   "authorization": null,
+   "content_type": "application/json",
+   "content_length": "16",
+   "body": "{\"code\": \"list\"}"
+  }
+ ]
+}

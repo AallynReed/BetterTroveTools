@@ -1,0 +1,2018 @@
+{
+ "fixed_now": "2026-01-02T03:04:05.678901+00:00",
+ "calls": [
+  {
+   "name": "cancel_modder_tools_operation",
+   "args": [
+    "bogus"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Unknown operation.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "cancel_modder_tools_operation",
+   "args": [
+    "build_tmod"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {},
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "extract_tmod",
+   "args": [
+    "{ROOT}/mods_src/With Preview.tmod",
+    "{ROOT}/out/extract1"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "count": 3
+    },
+    "error": null,
+    "meta": {},
+    "count": 3
+   }
+  },
+  {
+   "name": "extract_tmod",
+   "args": [
+    "{ROOT}/mods_src/Evil.tmod",
+    "{ROOT}/out/extract2"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "count": 2,
+     "skipped": [
+      "../evil.txt",
+      "c:/abs.txt"
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "count": 2,
+    "skipped": [
+     "../evil.txt",
+     "c:/abs.txt"
+    ]
+   }
+  },
+  {
+   "name": "extract_tmod",
+   "args": [
+    "{ROOT}/mods_src/missing.tmod",
+    "{ROOT}/out/extract3"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "TMod file does not exist.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "extract_tmod",
+   "args": [
+    null,
+    "{ROOT}/out/x"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'NoneType'",
+    "meta": {}
+   }
+  },
+  {
+   "name": "load_tmod_for_edit",
+   "args": [
+    "{ROOT}/mods_src/With Preview.tmod"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "tmodPath": "{ROOT}\\mods_src\\With Preview.tmod",
+     "fileName": "With Preview.tmod",
+     "title": "With Preview",
+     "author": "tester",
+     "version": "2.1",
+     "notes": "some notes",
+     "tags": [
+      "UI",
+      "Knight"
+     ],
+     "subtype": "Bard",
+     "previewBase64": "data:image/png;base64,iVBORyBmYWtl",
+     "previewName": "with preview.png",
+     "configBase64": "data:text/plain;base64,W2h1ZC5zd2ZdCnggPSAx",
+     "configName": "With Preview.cfg",
+     "files": [
+      {
+       "internal_path": "ui/hud.swf",
+       "name": "hud.swf",
+       "source": "archive",
+       "path": "",
+       "data": "data:application/octet-stream;base64,c3dmZGF0YQ=="
+      }
+     ]
+    },
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "load_tmod_for_edit",
+   "args": [
+    "  {ROOT}/mods_src/unicode.tmod  "
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "tmodPath": "{ROOT}\\mods_src\\unicode.tmod",
+     "fileName": "unicode.tmod",
+     "title": "Caf\u00e9 \u4e2d\u6587",
+     "author": "\u00e9",
+     "version": "1.0",
+     "notes": "n\u00f6tes",
+     "tags": [],
+     "subtype": "",
+     "previewBase64": null,
+     "previewName": "",
+     "configBase64": null,
+     "configName": "",
+     "files": [
+      {
+       "internal_path": "ui/\u00e9t\u00e9.swf",
+       "name": "\u00e9t\u00e9.swf",
+       "source": "archive",
+       "path": "",
+       "data": "data:application/octet-stream;base64,BwoNEBM="
+      },
+      {
+       "internal_path": "ui/My Mod.cfg",
+       "name": "My Mod.cfg",
+       "source": "archive",
+       "path": "",
+       "data": "data:application/octet-stream;base64,W3hdCmsgPSB2"
+      }
+     ]
+    },
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "load_tmod_for_edit",
+   "args": [
+    ""
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "TMod file does not exist.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "detect_override_files",
+   "args": [
+    "{ROOT}/workspace"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [
+      {
+       "path": "{ROOT}\\workspace\\textures\\override\\d.png",
+       "internal_path": "textures/d.png"
+      },
+      {
+       "path": "{ROOT}\\workspace\\audio\\override\\x.ogg",
+       "internal_path": "audio/x.ogg"
+      }
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "files": [
+     {
+      "path": "{ROOT}\\workspace\\textures\\override\\d.png",
+      "internal_path": "textures/d.png"
+     },
+     {
+      "path": "{ROOT}\\workspace\\audio\\override\\x.ogg",
+      "internal_path": "audio/x.ogg"
+     }
+    ]
+   }
+  },
+  {
+   "name": "detect_override_files",
+   "args": [
+    "{ROOT}/nope"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Invalid source directory.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "auto_structure_workspace",
+   "args": [
+    "{ROOT}/workspace",
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "count": 5
+    },
+    "error": null,
+    "meta": {},
+    "count": 5
+   }
+  },
+  {
+   "name": "auto_structure_workspace",
+   "args": [
+    "{ROOT}/workspace",
+    "{ROOT}/nope"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Invalid game path or workspace directory.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "detect_override_files",
+   "args": [
+    "{ROOT}/workspace"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [
+      {
+       "path": "{ROOT}\\workspace\\ui\\override\\hud.swf",
+       "internal_path": "ui/hud.swf"
+      },
+      {
+       "path": "{ROOT}\\workspace\\ui\\override\\Upper.SWF",
+       "internal_path": "ui/Upper.SWF"
+      },
+      {
+       "path": "{ROOT}\\workspace\\ui\\menu\\override\\main.swf",
+       "internal_path": "ui/menu/main.swf"
+      },
+      {
+       "path": "{ROOT}\\workspace\\textures\\zz\\override\\c.png",
+       "internal_path": "textures/zz/c.png"
+      },
+      {
+       "path": "{ROOT}\\workspace\\textures\\override\\a.png",
+       "internal_path": "textures/a.png"
+      },
+      {
+       "path": "{ROOT}\\workspace\\textures\\override\\d.png",
+       "internal_path": "textures/d.png"
+      },
+      {
+       "path": "{ROOT}\\workspace\\audio\\override\\x.ogg",
+       "internal_path": "audio/x.ogg"
+      }
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "files": [
+     {
+      "path": "{ROOT}\\workspace\\ui\\override\\hud.swf",
+      "internal_path": "ui/hud.swf"
+     },
+     {
+      "path": "{ROOT}\\workspace\\ui\\override\\Upper.SWF",
+      "internal_path": "ui/Upper.SWF"
+     },
+     {
+      "path": "{ROOT}\\workspace\\ui\\menu\\override\\main.swf",
+      "internal_path": "ui/menu/main.swf"
+     },
+     {
+      "path": "{ROOT}\\workspace\\textures\\zz\\override\\c.png",
+      "internal_path": "textures/zz/c.png"
+     },
+     {
+      "path": "{ROOT}\\workspace\\textures\\override\\a.png",
+      "internal_path": "textures/a.png"
+     },
+     {
+      "path": "{ROOT}\\workspace\\textures\\override\\d.png",
+      "internal_path": "textures/d.png"
+     },
+     {
+      "path": "{ROOT}\\workspace\\audio\\override\\x.ogg",
+      "internal_path": "audio/x.ogg"
+     }
+    ]
+   }
+  },
+  {
+   "name": "get_missing_files",
+   "args": [
+    [
+     "{ROOT}/files/a.swf",
+     "{ROOT}/files/none.swf",
+     "{ROOT}/files"
+    ]
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "missing": [
+      "{ROOT}/files/none.swf",
+      "{ROOT}/files"
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "missing": [
+     "{ROOT}/files/none.swf",
+     "{ROOT}/files"
+    ]
+   }
+  },
+  {
+   "name": "get_missing_files",
+   "args": [
+    null
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "'NoneType' object is not iterable",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Built Mod.tmod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "path": "{ROOT}\\game\\mods\\Built Mod.tmod"
+    },
+    "error": null,
+    "meta": {},
+    "path": "{ROOT}\\game\\mods\\Built Mod.tmod"
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Built Mod.tmod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "FILE_EXISTS",
+    "data": {
+     "path": "{ROOT}\\game\\mods\\Built Mod.tmod"
+    },
+    "error": "A mod file named 'Built Mod.tmod' already exists in the mods folder.",
+    "meta": {},
+    "path": "{ROOT}\\game\\mods\\Built Mod.tmod"
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Built Mod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg==",
+     "overwrite": true
+    }
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "path": "{ROOT}\\game\\mods\\Built Mod.tmod"
+    },
+    "error": null,
+    "meta": {},
+    "path": "{ROOT}\\game\\mods\\Built Mod.tmod"
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Bad:Title",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Mod title contains illegal characters (< > : \" / \\ | ? *).",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": " ",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Mod title is required.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Built Mod.tmod",
+     "author": "",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Mod author is required.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Built Mod.tmod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Mod notes cannot exceed 220 characters.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Built Mod.tmod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "At least one tag is required.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Dup",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "ui/a.swf",
+       "data": "data:application/octet-stream;base64,MQ=="
+      },
+      {
+       "internal_path": "UI/A.SWF",
+       "data": "data:application/octet-stream;base64,Mg=="
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "You cannot add the same file path more than once.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Cfg",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "ui/other.cfg",
+       "data": "data:application/octet-stream;base64,MQ=="
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": null
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "The config file can only be added through the config file option.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": "Prev",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "ui/prev.jpeg",
+       "data": "data:application/octet-stream;base64,MQ=="
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Preview image path cannot also be included in the files list.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/nope",
+     "title": "Built Mod.tmod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Selected game installation path does not exist.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "",
+     "title": "Built Mod.tmod",
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "No game installation selected.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    {
+     "gamePath": "{ROOT}/game",
+     "title": null,
+     "author": " me ",
+     "version": "1.0",
+     "notes": "notes",
+     "tags": [
+      "UI",
+      "Knight",
+      ""
+     ],
+     "subtype": "Bard",
+     "files": [
+      {
+       "internal_path": "UI/A.swf",
+       "abs_path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "textures/x.png",
+       "data": "data:application/octet-stream;base64,aW5saW5l"
+      },
+      {
+       "name": "ui/nodata.swf"
+      }
+     ],
+     "previewBase64": "data:image/jpeg;base64,anBlZ2RhdGE=",
+     "previewName": "pic.JPEG",
+     "configBase64": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "'NoneType' object has no attribute 'strip'",
+    "meta": {}
+   }
+  },
+  {
+   "name": "build_tmod",
+   "args": [
+    null
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "'NoneType' object has no attribute 'get'",
+    "meta": {}
+   }
+  },
+  {
+   "name": "save_tmod_in_place",
+   "args": [
+    {
+     "tmodPath": "{ROOT}/game/mods/Built Mod.tmod",
+     "title": "Renamed",
+     "author": "me",
+     "version": "2",
+     "notes": "edited",
+     "tags": [
+      "UI"
+     ],
+     "subtype": "",
+     "overwrite": false,
+     "files": [
+      {
+       "internal_path": "ui/a.swf",
+       "path": "{ROOT}/files/a.swf"
+      },
+      {
+       "internal_path": "ui/b.swf",
+       "data": "data:application/octet-stream;base64,YmVl"
+      }
+     ]
+    }
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "path": "{ROOT}\\game\\mods\\Renamed.tmod",
+     "fileName": "Renamed.tmod"
+    },
+    "error": null,
+    "meta": {},
+    "path": "{ROOT}\\game\\mods\\Renamed.tmod",
+    "fileName": "Renamed.tmod"
+   }
+  },
+  {
+   "name": "save_tmod_in_place",
+   "args": [
+    {
+     "tmodPath": "{ROOT}/game/mods/Renamed.tmod",
+     "title": "Renamed",
+     "author": "me",
+     "version": "2",
+     "notes": "edited",
+     "tags": [
+      "UI"
+     ],
+     "files": [
+      {
+       "internal_path": "ui/a.swf",
+       "path": "{ROOT}/files/a.swf"
+      }
+     ]
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "FILE_EXISTS",
+    "data": {
+     "path": "{ROOT}\\game\\mods\\Renamed.tmod"
+    },
+    "error": "A mod file named 'Renamed.tmod' already exists.",
+    "meta": {},
+    "path": "{ROOT}\\game\\mods\\Renamed.tmod"
+   }
+  },
+  {
+   "name": "save_tmod_in_place",
+   "args": [
+    {
+     "tmodPath": "{ROOT}/game/mods/Renamed.tmod",
+     "title": "Renamed",
+     "author": "me",
+     "version": "3",
+     "notes": "again",
+     "tags": [
+      "UI"
+     ],
+     "overwrite": true,
+     "files": [
+      {
+       "internal_path": "ui/a.swf",
+       "path": ""
+      }
+     ]
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Missing file data for ui/a.swf.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "save_tmod_in_place",
+   "args": [
+    {
+     "tmodPath": null
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Selected TMod file does not exist.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "save_tmod_in_place",
+   "args": [
+    {
+     "tmodPath": ""
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "No TMod file was selected.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "load_mod_project",
+   "args": [
+    "{ROOT}/projects/Fresh"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "title": "Fresh",
+     "author": "",
+     "notes": "",
+     "tags": [],
+     "subtype": "",
+     "versions": [
+      "1.0"
+     ],
+     "active_version": "1.0",
+     "configBase64": null,
+     "configName": ""
+    },
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "load_mod_project",
+   "args": [
+    "{ROOT}/projects/P1"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "title": "Project One",
+     "author": "me",
+     "notes": "n",
+     "tags": [
+      "UI",
+      "Knight"
+     ],
+     "subtype": "Bard",
+     "versions": [
+      "0.9",
+      "1.0",
+      "3"
+     ],
+     "active_version": "1.0",
+     "configBase64": null,
+     "configName": ""
+    },
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "load_mod_project",
+   "args": [
+    "{ROOT}/projects/none"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Invalid project directory.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "save_mod_project",
+   "args": [
+    "{ROOT}/projects/P1",
+    {
+     "notes": "updated notes",
+     "author": "you",
+     "extra": [
+      1,
+      2.5,
+      null
+     ]
+    }
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {},
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "save_mod_project",
+   "args": [
+    "{ROOT}/projects/P1",
+    {
+     "notes": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    }
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Mod notes cannot exceed 220 characters.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "create_project_version",
+   "args": [
+    "{ROOT}/projects/P1",
+    "2.0"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {},
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "create_project_version",
+   "args": [
+    "{ROOT}/projects/P1",
+    "2.0"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Version folder already exists.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "create_project_version",
+   "args": [
+    "{ROOT}/projects/Fresh",
+    "1.5"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {},
+    "error": null,
+    "meta": {}
+   }
+  },
+  {
+   "name": "get_project_files",
+   "args": [
+    "{ROOT}/projects/P1",
+    "1.0"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [
+      {
+       "name": "notes.txt",
+       "rel_path": "notes.txt",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\notes.txt"
+      },
+      {
+       "name": "b.png",
+       "rel_path": "stray/b.png",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\stray\\b.png"
+      },
+      {
+       "name": "a.png",
+       "rel_path": "textures/a.png",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\textures\\a.png"
+      },
+      {
+       "name": "hud.swf",
+       "rel_path": "ui/hud.swf",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\ui\\hud.swf"
+      }
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "files": [
+     {
+      "name": "notes.txt",
+      "rel_path": "notes.txt",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\notes.txt"
+     },
+     {
+      "name": "b.png",
+      "rel_path": "stray/b.png",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\stray\\b.png"
+     },
+     {
+      "name": "a.png",
+      "rel_path": "textures/a.png",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\textures\\a.png"
+     },
+     {
+      "name": "hud.swf",
+      "rel_path": "ui/hud.swf",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\ui\\hud.swf"
+     }
+    ]
+   }
+  },
+  {
+   "name": "get_project_files",
+   "args": [
+    "{ROOT}/projects/P1",
+    "9.9"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": []
+    },
+    "error": null,
+    "meta": {},
+    "files": []
+   }
+  },
+  {
+   "name": "auto_structure_project_version",
+   "args": [
+    "{ROOT}/projects/P1",
+    "1.0",
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "count": 1
+    },
+    "error": null,
+    "meta": {},
+    "count": 1
+   }
+  },
+  {
+   "name": "get_project_files",
+   "args": [
+    "{ROOT}/projects/P1",
+    "1.0"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [
+      {
+       "name": "notes.txt",
+       "rel_path": "notes.txt",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\notes.txt"
+      },
+      {
+       "name": "a.png",
+       "rel_path": "textures/a.png",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\textures\\a.png"
+      },
+      {
+       "name": "b.png",
+       "rel_path": "textures/sub/b.png",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\textures\\sub\\b.png"
+      },
+      {
+       "name": "hud.swf",
+       "rel_path": "ui/hud.swf",
+       "abs_path": "{ROOT}\\projects\\P1\\v1.0\\ui\\hud.swf"
+      }
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "files": [
+     {
+      "name": "notes.txt",
+      "rel_path": "notes.txt",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\notes.txt"
+     },
+     {
+      "name": "a.png",
+      "rel_path": "textures/a.png",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\textures\\a.png"
+     },
+     {
+      "name": "b.png",
+      "rel_path": "textures/sub/b.png",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\textures\\sub\\b.png"
+     },
+     {
+      "name": "hud.swf",
+      "rel_path": "ui/hud.swf",
+      "abs_path": "{ROOT}\\projects\\P1\\v1.0\\ui\\hud.swf"
+     }
+    ]
+   }
+  },
+  {
+   "name": "compile_project",
+   "args": [
+    "{ROOT}/projects/P1",
+    "1.0",
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "path": "{ROOT}\\game\\mods\\Project One.tmod"
+    },
+    "error": null,
+    "meta": {},
+    "path": "{ROOT}\\game\\mods\\Project One.tmod"
+   }
+  },
+  {
+   "name": "compile_project",
+   "args": [
+    "{ROOT}/projects/P1",
+    "2.0",
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "No valid game files found in the v2.0 folder.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "compile_project",
+   "args": [
+    "{ROOT}/projects/Fresh",
+    "1.0",
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "No valid game files found in the v1.0 folder.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "place_project_overrides",
+   "args": [
+    "{ROOT}/projects/P1",
+    "1.0",
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "placed_files": [
+      "{ROOT}\\game\\override\\notes.txt",
+      "{ROOT}\\game\\textures\\override\\a.png",
+      "{ROOT}\\game\\ui\\override\\hud.swf",
+      "{ROOT}\\game\\textures\\sub\\override\\b.png"
+     ],
+     "count": 4
+    },
+    "error": null,
+    "meta": {},
+    "placed_files": [
+     "{ROOT}\\game\\override\\notes.txt",
+     "{ROOT}\\game\\textures\\override\\a.png",
+     "{ROOT}\\game\\ui\\override\\hud.swf",
+     "{ROOT}\\game\\textures\\sub\\override\\b.png"
+    ],
+    "count": 4
+   }
+  },
+  {
+   "name": "detect_override_files",
+   "args": [
+    "{ROOT}/game"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [
+      {
+       "path": "{ROOT}\\game\\ui\\override\\hud.swf",
+       "internal_path": "ui/hud.swf"
+      },
+      {
+       "path": "{ROOT}\\game\\textures\\sub\\override\\b.png",
+       "internal_path": "textures/sub/b.png"
+      },
+      {
+       "path": "{ROOT}\\game\\textures\\override\\a.png",
+       "internal_path": "textures/a.png"
+      }
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "files": [
+     {
+      "path": "{ROOT}\\game\\ui\\override\\hud.swf",
+      "internal_path": "ui/hud.swf"
+     },
+     {
+      "path": "{ROOT}\\game\\textures\\sub\\override\\b.png",
+      "internal_path": "textures/sub/b.png"
+     },
+     {
+      "path": "{ROOT}\\game\\textures\\override\\a.png",
+      "internal_path": "textures/a.png"
+     }
+    ]
+   }
+  },
+  {
+   "name": "remove_project_overrides",
+   "args": [
+    "$placed_files"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "count": 4,
+     "undo_token": "{TOKEN}"
+    },
+    "error": null,
+    "meta": {},
+    "count": 4,
+    "undo_token": "{TOKEN}"
+   }
+  },
+  {
+   "name": "undo_remove_project_overrides",
+   "args": [
+    "{TOKEN}"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "restored": 4,
+     "conflicts": []
+    },
+    "error": null,
+    "meta": {},
+    "restored": 4,
+    "conflicts": []
+   }
+  },
+  {
+   "name": "undo_remove_project_overrides",
+   "args": [
+    "{TOKEN}"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Undo token not found or expired.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "undo_remove_project_overrides",
+   "args": [
+    null
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "Missing undo token.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "remove_project_overrides",
+   "args": [
+    [
+     "{ROOT}/files/none.swf"
+    ]
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "count": 0,
+     "undo_token": null
+    },
+    "error": null,
+    "meta": {},
+    "count": 0,
+    "undo_token": null
+   }
+  },
+  {
+   "name": "steam_workshop_read_tmod",
+   "args": [
+    "{ROOT}/mods_src/With Preview.tmod"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "path": "{ROOT}\\mods_src\\With Preview.tmod",
+     "fileName": "With Preview.tmod",
+     "fileSize": 305,
+     "fileCount": 3,
+     "title": "With Preview",
+     "author": "tester",
+     "description": "some notes",
+     "tags": [
+      "UI",
+      "Knight",
+      "Bard"
+     ],
+     "subtype": "Bard",
+     "modVersion": "2.1",
+     "gameVersion": "",
+     "steamId": "",
+     "previewBase64": "data:image/png;base64,iVBORyBmYWtl",
+     "previewName": "with preview.png",
+     "previewSize": 9,
+     "previewTooLarge": false
+    },
+    "error": null,
+    "meta": {},
+    "path": "{ROOT}\\mods_src\\With Preview.tmod",
+    "fileName": "With Preview.tmod",
+    "fileSize": 305,
+    "fileCount": 3,
+    "title": "With Preview",
+    "author": "tester",
+    "description": "some notes",
+    "tags": [
+     "UI",
+     "Knight",
+     "Bard"
+    ],
+    "subtype": "Bard",
+    "modVersion": "2.1",
+    "gameVersion": "",
+    "steamId": "",
+    "previewBase64": "data:image/png;base64,iVBORyBmYWtl",
+    "previewName": "with preview.png",
+    "previewSize": 9,
+    "previewTooLarge": false
+   }
+  },
+  {
+   "name": "steam_workshop_read_tmod",
+   "args": [
+    "{ROOT}/mods_src/unicode.tmod"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "path": "{ROOT}\\mods_src\\unicode.tmod",
+     "fileName": "unicode.tmod",
+     "fileSize": 143,
+     "fileCount": 2,
+     "title": "Caf\u00e9 \u4e2d\u6587",
+     "author": "\u00e9",
+     "description": "n\u00f6tes",
+     "tags": [],
+     "subtype": "",
+     "modVersion": "",
+     "gameVersion": "",
+     "steamId": "",
+     "previewBase64": null,
+     "previewName": "",
+     "previewSize": 0,
+     "previewTooLarge": false
+    },
+    "error": null,
+    "meta": {},
+    "path": "{ROOT}\\mods_src\\unicode.tmod",
+    "fileName": "unicode.tmod",
+    "fileSize": 143,
+    "fileCount": 2,
+    "title": "Caf\u00e9 \u4e2d\u6587",
+    "author": "\u00e9",
+    "description": "n\u00f6tes",
+    "tags": [],
+    "subtype": "",
+    "modVersion": "",
+    "gameVersion": "",
+    "steamId": "",
+    "previewBase64": null,
+    "previewName": "",
+    "previewSize": 0,
+    "previewTooLarge": false
+   }
+  },
+  {
+   "name": "steam_workshop_read_tmod",
+   "args": [
+    "{ROOT}/mods_src/missing.tmod"
+   ],
+   "response": {
+    "success": false,
+    "code": "ERROR",
+    "data": {},
+    "error": "That .tmod file does not exist.",
+    "meta": {}
+   }
+  },
+  {
+   "name": "steam_workshop_publish",
+   "args": [
+    5
+   ],
+   "response": {
+    "success": false,
+    "code": "UNHANDLED_EXCEPTION",
+    "data": {},
+    "error": "'int' object is not iterable",
+    "meta": {}
+   }
+  },
+  {
+   "name": "ask_add_files",
+   "args": [
+    "{ROOT}/game"
+   ],
+   "picked": [
+    "{ROOT}/game/ui/override/hud.swf",
+    "{ROOT}/game/textures/new.png",
+    "{ROOT}/files/a.swf",
+    "{ROOT}/game/ui/my.cfg",
+    "{ROOT}/game/stray.png",
+    "{ROOT}/GAME/Ui/case.swf"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [
+      {
+       "path": "{ROOT}\\game\\ui\\override\\hud.swf",
+       "internal_path": "ui/hud.swf"
+      },
+      {
+       "path": "{ROOT}\\game\\textures\\new.png",
+       "internal_path": "textures/new.png"
+      },
+      {
+       "path": "{ROOT}\\game\\ui\\case.swf",
+       "internal_path": "ui/case.swf"
+      }
+     ],
+     "rejected": [
+      "a.swf",
+      "stray.png"
+     ],
+     "rejected_cfg": [
+      "my.cfg"
+     ]
+    },
+    "error": null,
+    "meta": {},
+    "files": [
+     {
+      "path": "{ROOT}\\game\\ui\\override\\hud.swf",
+      "internal_path": "ui/hud.swf"
+     },
+     {
+      "path": "{ROOT}\\game\\textures\\new.png",
+      "internal_path": "textures/new.png"
+     },
+     {
+      "path": "{ROOT}\\game\\ui\\case.swf",
+      "internal_path": "ui/case.swf"
+     }
+    ],
+    "rejected": [
+     "a.swf",
+     "stray.png"
+    ],
+    "rejected_cfg": [
+     "my.cfg"
+    ]
+   }
+  },
+  {
+   "name": "ask_add_files",
+   "args": [
+    null
+   ],
+   "picked": [
+    "{ROOT}/game/ui/a.swf"
+   ],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [],
+     "rejected": [
+      "a.swf"
+     ],
+     "rejected_cfg": []
+    },
+    "error": null,
+    "meta": {},
+    "files": [],
+    "rejected": [
+     "a.swf"
+    ],
+    "rejected_cfg": []
+   }
+  },
+  {
+   "name": "ask_add_files",
+   "args": [
+    "{ROOT}/game"
+   ],
+   "picked": [],
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "files": [],
+     "rejected": [],
+     "rejected_cfg": []
+    },
+    "error": null,
+    "meta": {},
+    "files": [],
+    "rejected": [],
+    "rejected_cfg": []
+   }
+  },
+  {
+   "name": "ask_preview_file",
+   "args": [
+    "{ROOT}/game"
+   ],
+   "picked": "{ROOT}/files/pic.jpeg",
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "file": {
+      "name": "pic.jpeg",
+      "path": "{ROOT}\\files\\pic.jpeg",
+      "data": "data:image/jpeg;base64,anBlZ2RhdGE="
+     }
+    },
+    "error": null,
+    "meta": {},
+    "file": {
+     "name": "pic.jpeg",
+     "path": "{ROOT}\\files\\pic.jpeg",
+     "data": "data:image/jpeg;base64,anBlZ2RhdGE="
+    }
+   }
+  },
+  {
+   "name": "ask_import_file",
+   "args": [
+    null
+   ],
+   "picked": "{ROOT}/files/a.swf",
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "file": {
+      "name": "a.swf",
+      "path": "{ROOT}\\files\\a.swf",
+      "data": "data:application/octet-stream;base64,ZmlsZSBh"
+     }
+    },
+    "error": null,
+    "meta": {},
+    "file": {
+     "name": "a.swf",
+     "path": "{ROOT}\\files\\a.swf",
+     "data": "data:application/octet-stream;base64,ZmlsZSBh"
+    }
+   }
+  },
+  {
+   "name": "ask_config_file",
+   "args": [
+    null
+   ],
+   "picked": "{ROOT}/files/my.cfg",
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "file": {
+      "name": "my.cfg",
+      "path": "{ROOT}\\files\\my.cfg",
+      "data": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+     }
+    },
+    "error": null,
+    "meta": {},
+    "file": {
+     "name": "my.cfg",
+     "path": "{ROOT}\\files\\my.cfg",
+     "data": "data:text/plain;base64,W2Euc3dmXQprID0gdg=="
+    }
+   }
+  },
+  {
+   "name": "ask_config_file",
+   "args": [
+    null
+   ],
+   "picked": "",
+   "response": {
+    "success": true,
+    "code": "OK",
+    "data": {
+     "file": null
+    },
+    "error": null,
+    "meta": {},
+    "file": null
+   }
+  }
+ ],
+ "tree": {
+  "appdata": "dir",
+  "appdata/Trove": "dir",
+  "appdata/Trove/ModderToolsTrash": "dir",
+  "appdata/Trove/ModderToolsTrash/{UUID}": "dir",
+  "appdata/Trove/ModderToolsTrash/undo_remove_overrides.json": "99914b932bd37a50b983c5e7c90ae93b",
+  "files": "dir",
+  "files/a.swf": "ae407aff5e6bbe56ba0373399eaf6a9f",
+  "files/my.cfg": "5b599a3fcdcd151bb80724c56a5815af",
+  "files/pic.jpeg": "ac7aab330c691e8fb36395be26216554",
+  "game": "dir",
+  "game/models": "dir",
+  "game/models/index.tfi": "fa7c7cea36a62a0559cffcc448c079f3",
+  "game/mods": "dir",
+  "game/mods/Built Mod.tmod": "ccb004accc80bc72cb2077581d50d41b",
+  "game/mods/keep.txt": "d41d8cd98f00b204e9800998ecf8427e",
+  "game/mods/Project One.tmod": "3dfe67b8d62cf224239b8e1b60f91696",
+  "game/mods/Renamed.tmod": "54a0dd6fbcc0acb7664fc1dca4f6e932",
+  "game/override": "dir",
+  "game/override/notes.txt": "f3f98c5d41d7c992a6fb63799f700f2b",
+  "game/textures": "dir",
+  "game/textures/aa": "dir",
+  "game/textures/aa/index.tfi": "b5b76f09ffd356861b3bffc686f94fec",
+  "game/textures/index.tfi": "1c0fa19133e121f60d3f372e2f4d1036",
+  "game/textures/override": "dir",
+  "game/textures/override/a.png": "62f7af9f4fe2f29417201ecd4664f31a",
+  "game/textures/sub": "dir",
+  "game/textures/sub/override": "dir",
+  "game/textures/sub/override/b.png": "d665c925915221a87f16e4e2851003d5",
+  "game/textures/zz": "dir",
+  "game/textures/zz/index.tfi": "917016e0a7c38dfbece4785091841248",
+  "game/ui": "dir",
+  "game/ui/index.tfi": "da1cdd46018f75b58e225913f4ea53c5",
+  "game/ui/override": "dir",
+  "game/ui/override/hud.swf": "796279f1cfbe8b357549b397fe57884b",
+  "mods_src": "dir",
+  "mods_src/Evil.tmod": "3ea59ec547a2e56816485084527b0f46",
+  "mods_src/unicode.tmod": "df0759371fd92979cc35502ce4884610",
+  "mods_src/With Preview.tmod": "23230de10ab82428808379050c78c39f",
+  "out": "dir",
+  "out/extract1": "dir",
+  "out/extract1/ui": "dir",
+  "out/extract1/ui/hud.swf": "4f5c39b4b5793fa1f65abbcdec384b46",
+  "out/extract1/ui/With Preview.cfg": "0c77072a6985c944a641d2953c598857",
+  "out/extract1/ui/with preview.png": "44b3507172ceeb6361fd0fe2e047087c",
+  "out/extract2": "dir",
+  "out/extract2/rooted.swf": "4b43b0aee35624cd95b910189b3dc231",
+  "out/extract2/ui": "dir",
+  "out/extract2/ui/fine.swf": "415290769594460e2e485922904f345d",
+  "projects": "dir",
+  "projects/Fresh": "dir",
+  "projects/Fresh/.keep": "d41d8cd98f00b204e9800998ecf8427e",
+  "projects/Fresh/project.json": "f644682fb9718979248dcc838a639202",
+  "projects/Fresh/v1.0": "dir",
+  "projects/Fresh/v1.5": "dir",
+  "projects/P1": "dir",
+  "projects/P1/project.json": "c02bb991697401fac10c4fcbc5464bc7",
+  "projects/P1/v1.0": "dir",
+  "projects/P1/v1.0/__work": "dir",
+  "projects/P1/v1.0/__work/x.png": "c2d4c4b7bb0412a88660689406b18c53",
+  "projects/P1/v1.0/notes.txt": "f3f98c5d41d7c992a6fb63799f700f2b",
+  "projects/P1/v1.0/stray": "dir",
+  "projects/P1/v1.0/textures": "dir",
+  "projects/P1/v1.0/textures/a.png": "62f7af9f4fe2f29417201ecd4664f31a",
+  "projects/P1/v1.0/textures/sub": "dir",
+  "projects/P1/v1.0/textures/sub/b.png": "d665c925915221a87f16e4e2851003d5",
+  "projects/P1/v1.0/ui": "dir",
+  "projects/P1/v1.0/ui/hud.swf": "796279f1cfbe8b357549b397fe57884b",
+  "projects/P1/v2.0": "dir",
+  "projects/P1/vv3": "dir",
+  "projects/P1/vv3/keep.swf": "9e3669d19b675bd57058fd4664205d2a",
+  "workspace": "dir",
+  "workspace/audio": "dir",
+  "workspace/audio/override": "dir",
+  "workspace/audio/override/x.ogg": "34da450e959d17db92f6876051d0faac",
+  "workspace/models": "dir",
+  "workspace/models/unknown.blueprint": "30974fddf6222c78eb5b79ee70f4e81b",
+  "workspace/textures": "dir",
+  "workspace/textures/override": "dir",
+  "workspace/textures/override/a.png": "16263d1d68e175efd0e8dbbe2cc3eb3b",
+  "workspace/textures/override/d.png": "e52e279299e912838f689d4380c81f4a",
+  "workspace/textures/stuff": "dir",
+  "workspace/textures/zz": "dir",
+  "workspace/textures/zz/override": "dir",
+  "workspace/textures/zz/override/c.png": "98296b00e27289b04f429e4eca8b138b",
+  "workspace/ui": "dir",
+  "workspace/ui/deep": "dir",
+  "workspace/ui/menu": "dir",
+  "workspace/ui/menu/override": "dir",
+  "workspace/ui/menu/override/main.swf": "fad58de7366495db4650cfefac2fcd61",
+  "workspace/ui/override": "dir",
+  "workspace/ui/override/hud.swf": "8eaab8f57cf980e83393fe2b03efe0c2",
+  "workspace/ui/override/Upper.SWF": "0122b4c2c01ee1c698ecc309d2b8eb5a",
+  "workspace/ui/readme.txt": "f3f98c5d41d7c992a6fb63799f700f2b"
+ }
+}

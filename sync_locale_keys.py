@@ -14,7 +14,7 @@ In the reworked i18n system every locale file is:
 Requires the (gitignored) strings/ directory and locale files already migrated to
 the new shape (run tools/i18n/migrate_locales.py first).
 
-Run from repo root:  .venv\\Scripts\\python.exe sync_locale_keys.py
+Run from repo root:  python sync_locale_keys.py
 """
 import json
 from pathlib import Path

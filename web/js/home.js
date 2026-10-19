@@ -712,7 +712,7 @@ document.addEventListener('home_loaded', () => {
                     // platform — cross-origin <img> loads aren't subject to CORS).
                     const biliImgBase = window.BTT_WEB_MODE
                         ? 'https://api.aallyn.net/v1/feeds/bilibili/image'
-                        : '/proxy/bilibili_image';
+                        : `${window.BTT_BACKEND_ORIGIN || ''}/proxy/bilibili_image`;
                     mediaData.bilibili.data = response.data.sort((a, b) => new Date(b.published_at) - new Date(a.published_at)).map(v => ({
                         url: v.url, thumb: `${biliImgBase}?url=${encodeURIComponent(v.thumbnail_url)}`, title: v.title, channel: v.channel,
                         badgeHtml: getTimeAgo(v.published_at),

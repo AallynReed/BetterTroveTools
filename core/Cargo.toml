@@ -1,0 +1,63 @@
+[package]
+name = "btt-core"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Better Trove Tools backend: everything the frontend calls through eel"
+
+[features]
+default = ["home", "gems", "codexes", "modfile", "modder_tools", "file_manager", "mod_manager", "blueprint", "auth"]
+home = []
+gems = []
+codexes = []
+modfile = []
+modder_tools = ["modfile"]
+file_manager = []
+mod_manager = ["modfile", "modder_tools"]
+blueprint = ["codexes"]
+auth = []
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+parking_lot.workspace = true
+ureq = { version = "2", features = ["json", "gzip"] }
+flate2 = "1"
+md-5 = "0.10"
+sha2 = "0.10"
+hex = "0.4"
+regex = "1"
+chrono = { version = "0.4", features = ["serde"] }
+rand = "0.8"
+rayon = "1"
+dirs = "5"
+open = "5"
+base64 = "0.22"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+walkdir = "2"
+glob = "0.3"
+roxmltree = "0.20"
+toml = "0.8"
+libloading = "0.8"
+html-escape = "0.2"
+png = "0.17"
+uuid = { version = "1", features = ["v4"] }
+# home deps
+# gems deps
+# codexes deps
+indexmap = "2"
+# modder_tools deps
+# file_manager deps
+# auth deps
+# mod_manager deps
+# blueprint deps
+zlib-rs = "=0.5.2"  # last release byte-identical to CPython 3.14's zlib-ng 2.2.4
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security_Cryptography", "Win32_System_Memory"] }
+
+[dev-dependencies]
+tempfile = "3"

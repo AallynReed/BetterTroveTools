@@ -1,0 +1,15 @@
+{
+    "title": "Project One",
+    "author": "me",
+    "notes": "n",
+    "tags": [
+        "UI",
+        "Knight"
+    ],
+    "subtype": "Bard",
+    "versions": [
+        "1.0",
+        "0.9"
+    ],
+    "active_version": "1.0"
+}

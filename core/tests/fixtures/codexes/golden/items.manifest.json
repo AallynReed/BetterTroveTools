@@ -1,0 +1,12 @@
+{
+  "game_path": "<GAME>",
+  "item_count": 97,
+  "decoded_names": 97,
+  "decoded_descriptions": 80,
+  "decoded_blueprints": 97,
+  "with_unlocks": 20,
+  "lootboxes": 1,
+  "decay_items": 17,
+  "with_tradability": 97,
+  "total_unlocks": 20
+}
