@@ -226,9 +226,28 @@ pub mod testing {
 
     static HOST: OnceLock<Arc<TestHost>> = OnceLock::new();
 
+    /// Held by tests that repoint APPDATA mid-run, so they don't swap each other's folder.
+    pub static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    /// Points every data folder at a throwaway directory, once, so no test touches the
+    /// user's real app data.
+    pub fn sandbox() -> &'static Path {
+        static DIR: OnceLock<PathBuf> = OnceLock::new();
+        DIR.get_or_init(|| {
+            let dir = std::env::temp_dir().join(format!("btt-core-tests-{}", std::process::id()));
+            let _ = std::fs::create_dir_all(&dir);
+            for key in ["APPDATA", "XDG_DATA_HOME", "XDG_CONFIG_HOME"] {
+                std::env::set_var(key, &dir);
+            }
+            std::env::remove_var(crate::paths::DATA_DIR_ENV_VAR);
+            dir
+        })
+    }
+
     /// Initializes the context once for the test binary, with the repo root as the
     /// resource dir. Returns the recording host.
     pub fn init() -> Arc<TestHost> {
+        sandbox();
         let host = HOST.get_or_init(|| Arc::new(TestHost::default())).clone();
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap().to_path_buf();
         super::init(Box::new(host.clone()), root, true, None);

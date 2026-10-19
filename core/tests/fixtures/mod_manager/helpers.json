@@ -1,0 +1,2629 @@
+[
+ {
+  "fn": "html_to_text",
+  "args": [
+   ""
+  ],
+  "result": ""
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "plain"
+  ],
+  "result": "plain"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>One</p><p>Two</p>"
+  ],
+  "result": "One\nTwo"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "a<br>b<BR/>c<br />d"
+  ],
+  "result": "a\nb\nc\nd"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<ul><li>x</li><li class='y'>y &amp; z</li></ul>"
+  ],
+  "result": "\u2022 x\n\u2022 y & z"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "&lt;tag&gt; &quot;q&quot; &#39;s&#39; &#x41;&#66; &nbsp;nb"
+  ],
+  "result": "<tag> \"q\" 's' AB nb"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "&amp &lt3 &copy; &notit; &unknown; &#0; &#xD800;"
+  ],
+  "result": "& <3 \u00a9 \u00acit; &unknown; \ufffd \ufffd"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "  spaced   out \t text \r\n\r\n next "
+  ],
+  "result": "spaced out text\nnext"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<h2>Head</h2>body<div>d</div>"
+  ],
+  "result": "Head\nbodyd"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "\u00e9t\u00e9 <b>bold</b>"
+  ],
+  "result": "\u00e9t\u00e9 bold"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "line\u2028sep\u001cfs"
+  ],
+  "result": "line\nsep\nfs"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "&AMP;&Eacute;&eacute&ampx"
+  ],
+  "result": "&\u00c9\u00e9&x"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<a href='x'>link</a> >> < not a tag"
+  ],
+  "result": "link >> < not a tag"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>changed something, I don't know</p>"
+  ],
+  "result": "changed something, I don't know"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Removed the blood by popular demand...</p>"
+  ],
+  "result": "Removed the blood by popular demand..."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Nifty vfx</p>"
+  ],
+  "result": "Nifty vfx"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>vfx tweaked, otherwise scootaloo's face still looks more convincing...</p>"
+  ],
+  "result": "vfx tweaked, otherwise scootaloo's face still looks more convincing..."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Changed some stuff so the face looks less horrified.&nbsp;</p>"
+  ],
+  "result": "Changed some stuff so the face looks less horrified."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Fixed some stuff, probably?</p>"
+  ],
+  "result": "Fixed some stuff, probably?"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Added a little tornado thing (hurricane if you're by the sea!).</p>"
+  ],
+  "result": "Added a little tornado thing (hurricane if you're by the sea!)."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Lots o' changes - san's water</p>"
+  ],
+  "result": "Lots o' changes - san's water"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Feel free to use this \"default\" Twirl series laser and tweak it to how you see fit.</p>\r\n<p>The colors use a simple slider. &nbsp;</p>"
+  ],
+  "result": "Feel free to use this \"default\" Twirl series laser and tweak it to how you see fit.\nThe colors use a simple slider."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Changed lots of things and added meshes.&nbsp;</p>"
+  ],
+  "result": "Changed lots of things and added meshes."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>-Replaces Basic Magrider</p>\r\n<p>-No VFX as of this version</p>"
+  ],
+  "result": "-Replaces Basic Magrider\n-No VFX as of this version"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p><strong>Wolf Hunter V2</strong> <span class=\"gold\">[Annukah] &nbsp;</span> <span class=\"green\">.tmod Version &nbsp;</span></p>"
+  ],
+  "result": "Wolf Hunter V2 [Annukah] .tmod Version"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Replaces Neon nightcycle</p>"
+  ],
+  "result": "Replaces Neon nightcycle"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p><strong>Candy Horse V2</strong> <span class=\"green\">.tmod Version &nbsp;</span></p>"
+  ],
+  "result": "Candy Horse V2 .tmod Version"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Big changes</p>"
+  ],
+  "result": "Big changes"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>fixed some stuff I guess?</p>"
+  ],
+  "result": "fixed some stuff I guess?"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Tweaked things, flowers, wood, stuff.&nbsp;</p>"
+  ],
+  "result": "Tweaked things, flowers, wood, stuff."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Added fire</p>"
+  ],
+  "result": "Added fire"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Wow, again</p>"
+  ],
+  "result": "Wow, again"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>First version</p>"
+  ],
+  "result": "First version"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Overhaul, changed colors, eyes, maps, tail, mostly color this time around.&nbsp;</p>"
+  ],
+  "result": "Overhaul, changed colors, eyes, maps, tail, mostly color this time around."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>updated to the new .tmod format</p>"
+  ],
+  "result": "updated to the new .tmod format"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>converted to the new .tmod format</p>\r\n<p>replaces Snug Snowman</p>"
+  ],
+  "result": "converted to the new .tmod format\nreplaces Snug Snowman"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>-Removed the Snowstorm Snaretrap as it changed the base model for other skins as well.</p>"
+  ],
+  "result": "-Removed the Snowstorm Snaretrap as it changed the base model for other skins as well."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>-Added Summer Fishing Pole<br />-Added Radiant Fishing Pole<br />-Autumn Fishing Pole changed to Chocolate<br />-Lava Pole changed to Summer Pinata</p>"
+  ],
+  "result": "-Added Summer Fishing Pole\n-Added Radiant Fishing Pole\n-Autumn Fishing Pole changed to Chocolate\n-Lava Pole changed to Summer Pinata"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Now with VFX</p>"
+  ],
+  "result": "Now with VFX"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Adds VFX effects and fixes visual glitch with hat.</p>"
+  ],
+  "result": "Adds VFX effects and fixes visual glitch with hat."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Complete overhaul.</p>\r\n<p>Changed skin.</p>\r\n<p>Changed VFX.</p>\r\n<p>Changed helmet.</p>\r\n<p>Changed gun.</p>"
+  ],
+  "result": "Complete overhaul.\nChanged skin.\nChanged VFX.\nChanged helmet.\nChanged gun."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p><strong>New Ultimate Urn,New Gems,New Bommerang and New Robotic Bomb!</strong></p>"
+  ],
+  "result": "New Ultimate Urn,New Gems,New Bommerang and New Robotic Bomb!"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>This is a addon to the Trovian Ranger Mod.</p>"
+  ],
+  "result": "This is a addon to the Trovian Ranger Mod."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Enjoy</p>"
+  ],
+  "result": "Enjoy"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Improved VFX</p>"
+  ],
+  "result": "Improved VFX"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>This download includes the entire Hero Suit pack which converts the Boomeranger into an all new Hero with tons of costumes, weapons, allies and a mount!</p>\r\n<p>Check the forum post for a full list of changes.</p>"
+  ],
+  "result": "This download includes the entire Hero Suit pack which converts the Boomeranger into an all new Hero with tons of costumes, weapons, allies and a mount!\nCheck the forum post for a full list of changes."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Narrowed down the shins a bit</p>\r\n<p>Fixed hands</p>\r\n<p>&nbsp;</p>"
+  ],
+  "result": "Narrowed down the shins a bit\nFixed hands"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>This mod replaces the Starter Gunslinger Costume and Shadome hat</p>"
+  ],
+  "result": "This mod replaces the Starter Gunslinger Costume and Shadome hat"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>This mod replaces Uni Cycle</p>"
+  ],
+  "result": "This mod replaces Uni Cycle"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Added more color to the No-Fly/Fledgling wings, reworked Fledgling's &amp; Adult's jaw, and reworked the foot. -Now it has flames!</p>"
+  ],
+  "result": "Added more color to the No-Fly/Fledgling wings, reworked Fledgling's & Adult's jaw, and reworked the foot. -Now it has flames!"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>V1.0: Basic Version (only Costume + Helm)<br />V2.0: Added Weapons, Abilities and Chicken Model (no VFX yet)<br />V3.0: Added VFX<br />V4.0: Added Wings</p>"
+  ],
+  "result": "V1.0: Basic Version (only Costume + Helm)\nV2.0: Added Weapons, Abilities and Chicken Model (no VFX yet)\nV3.0: Added VFX\nV4.0: Added Wings"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Polish overhaul of the model</p>"
+  ],
+  "result": "Polish overhaul of the model"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Used the Fun Police model and added custom VFX</p>"
+  ],
+  "result": "Used the Fun Police model and added custom VFX"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>-Changes to Wings, Jaws, Neck</p>\r\n<p>&nbsp;</p>\r\n<p>&nbsp;</p>"
+  ],
+  "result": "-Changes to Wings, Jaws, Neck"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Newly improved; Re-done all the models</p>"
+  ],
+  "result": "Newly improved; Re-done all the models"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Changed the eye \"lining\" color.&nbsp;</p>"
+  ],
+  "result": "Changed the eye \"lining\" color."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Added the missing Decoy Body and Decoy Spring files.</p>"
+  ],
+  "result": "Added the missing Decoy Body and Decoy Spring files."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Read theme on forums for all changes.</p>\r\n<p>New command syntax;</p>\r\n<p>many configurable mod settings;</p>\r\n<p>custom channel prefixes;</p>\r\n<p>custom timestamps;</p>\r\n<p>custom sounds;</p>\r\n<p>new mute options;</p>"
+  ],
+  "result": "Read theme on forums for all changes.\nNew command syntax;\nmany configurable mod settings;\ncustom channel prefixes;\ncustom timestamps;\ncustom sounds;\nnew mute options;"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Edited colors a bit; the eyes make more sense now.&nbsp;</p>"
+  ],
+  "result": "Edited colors a bit; the eyes make more sense now."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Changed head and other parts a little bit</p>"
+  ],
+  "result": "Changed head and other parts a little bit"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Type maps altered, small fix on a horn.</p>"
+  ],
+  "result": "Type maps altered, small fix on a horn."
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Initial Public Release</p>"
+  ],
+  "result": "Initial Public Release"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Better wings!</p>\r\n<p>Fixed download!</p>"
+  ],
+  "result": "Better wings!\nFixed download!"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Changed fingernail colors and added bone and blood between sections of finger!</p>"
+  ],
+  "result": "Changed fingernail colors and added bone and blood between sections of finger!"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>new style. changed a few of the textures around and a lot of the numbers involved in trails. Case is now brighter and rings are solid. Start Up improved by the blue energy bar progressing slowly. Flame added. Replaces adept wings (Blue mastery wings)</p>"
+  ],
+  "result": "new style. changed a few of the textures around and a lot of the numbers involved in trails. Case is now brighter and rings are solid. Start Up improved by the blue energy bar progressing slowly. Flame added. Replaces adept wings (Blue mastery wings)"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Changed the straps color...&nbsp; Changed the material maps, edited to fix clipping, and uhhh...&nbsp; The squirrels that have died in the vacuum of space due to a defective helmet containing a hole have all died for the cause of science.&nbsp; The new and improved helmet has proven sustainable in space!&nbsp; PROVEN!!!</p>"
+  ],
+  "result": "Changed the straps color... Changed the material maps, edited to fix clipping, and uhhh... The squirrels that have died in the vacuum of space due to a defective helmet containing a hole have all died for the cause of science. The new and improved helmet has proven sustainable in space! PROVEN!!!"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Hat changed to replace Shadowm instead of Bronze Crown (Fixes hair issue)</p>"
+  ],
+  "result": "Hat changed to replace Shadowm instead of Bronze Crown (Fixes hair issue)"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Fixed an issue where characters were clipping through the back of the bubbles</p>"
+  ],
+  "result": "Fixed an issue where characters were clipping through the back of the bubbles"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p><em>Added helmet and weapon</em></p>\r\n<p><em>Changed torso and shoulders to minimize intersections with head</em></p>"
+  ],
+  "result": "Added helmet and weapon\nChanged torso and shoulders to minimize intersections with head"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Fixed an Issue where allot characters tails/skirts were clipping through the back</p>"
+  ],
+  "result": "Fixed an Issue where allot characters tails/skirts were clipping through the back"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>First version, pre VFX (if any are done at a later point)</p>"
+  ],
+  "result": "First version, pre VFX (if any are done at a later point)"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Alpha Version</p>"
+  ],
+  "result": "Alpha Version"
+ },
+ {
+  "fn": "html_to_text",
+  "args": [
+   "<p>Added more shading around the hood and neck.&nbsp; Shorted the tail on the bottom/back of the torso. Fixed the right hand, and extended the bottom of the thighs by one voxel.</p>"
+  ],
+  "result": "Added more shading around the hood and neck. Shorted the tail on the bottom/back of the torso. Fixed the right hand, and extended the bottom of the thighs by one voxel."
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   "C:\\x\\Mod.tmod"
+  ],
+  "result": "mod.tmod"
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   "Mod.TMOD.DISABLED"
+  ],
+  "result": "mod.tmod"
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   "a/b/c.zip.disabled"
+  ],
+  "result": "c.zip"
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   ".disabled"
+  ],
+  "result": ""
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   "x.disabledd"
+  ],
+  "result": "x.disabledd"
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   "\u00c9.tmod.disabled"
+  ],
+  "result": "\u00e9.tmod"
+ },
+ {
+  "fn": "lock_key",
+  "args": [
+   ""
+  ],
+  "result": ""
+ },
+ {
+  "fn": "mod_ref",
+  "args": [
+   "aallyn",
+   "x"
+  ],
+  "result": "aallyn/x"
+ },
+ {
+  "fn": "mod_ref",
+  "args": [
+   " /a/ ",
+   "/b/"
+  ],
+  "result": "a/b"
+ },
+ {
+  "fn": "mod_ref",
+  "args": [
+   null,
+   "s"
+  ],
+  "result": "s"
+ },
+ {
+  "fn": "mod_ref",
+  "args": [
+   "",
+   null
+  ],
+  "result": ""
+ },
+ {
+  "fn": "mod_ref",
+  "args": [
+   5,
+   "x"
+  ],
+  "result": "5/x"
+ },
+ {
+  "fn": "mod_ref",
+  "args": [
+   "h",
+   ""
+  ],
+  "result": "h/"
+ },
+ {
+  "fn": "latest_release",
+  "args": [
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ],
+   null
+  ],
+  "result": {
+   "branch": "beta",
+   "published_at": "2025-04-01T00:00:00Z",
+   "sha256": "cc",
+   "tag": "",
+   "title": "Beta 3",
+   "download_url": null,
+   "format": "zip",
+   "size": null
+  }
+ },
+ {
+  "fn": "latest_release",
+  "args": [
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ],
+   "main"
+  ],
+  "result": {
+   "branch": "main",
+   "published_at": "2025-03-01T00:00:00Z",
+   "sha256": "bb",
+   "tag": "1.2",
+   "title": "Big update",
+   "changelog": "two",
+   "download_url": "u2",
+   "filename": "My Mod.TMOD"
+  }
+ },
+ {
+  "fn": "latest_release",
+  "args": [
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ],
+   "beta"
+  ],
+  "result": {
+   "branch": "beta",
+   "published_at": "2025-04-01T00:00:00Z",
+   "sha256": "cc",
+   "tag": "",
+   "title": "Beta 3",
+   "download_url": null,
+   "format": "zip",
+   "size": null
+  }
+ },
+ {
+  "fn": "latest_release",
+  "args": [
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ],
+   "nope"
+  ],
+  "result": {
+   "branch": "beta",
+   "published_at": "2025-04-01T00:00:00Z",
+   "sha256": "cc",
+   "tag": "",
+   "title": "Beta 3",
+   "download_url": null,
+   "format": "zip",
+   "size": null
+  }
+ },
+ {
+  "fn": "latest_release",
+  "args": [
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ],
+   ""
+  ],
+  "result": {
+   "branch": "beta",
+   "published_at": "2025-04-01T00:00:00Z",
+   "sha256": "cc",
+   "tag": "",
+   "title": "Beta 3",
+   "download_url": null,
+   "format": "zip",
+   "size": null
+  }
+ },
+ {
+  "fn": "latest_release",
+  "args": [
+   [],
+   null
+  ],
+  "result": null
+ },
+ {
+  "fn": "branch_variants",
+  "args": [
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": [
+   {
+    "branch": "beta",
+    "published_at": "2025-04-01T00:00:00Z",
+    "sha256": "cc",
+    "tag": "",
+    "title": "Beta 3",
+    "download_url": null,
+    "format": "zip",
+    "size": null
+   },
+   {
+    "branch": "main",
+    "published_at": "2025-03-01T00:00:00Z",
+    "sha256": "bb",
+    "tag": "1.2",
+    "title": "Big update",
+    "changelog": "two",
+    "download_url": "u2",
+    "filename": "My Mod.TMOD"
+   }
+  ]
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-01-01T00:00:00Z",
+    "sha256": "AA",
+    "tag": "v1.0",
+    "title": "1.0",
+    "changelog": " first ",
+    "download_url": "u1",
+    "format": ".tmod",
+    "size": "12",
+    "download_count": 3
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": true
+ },
+ {
+  "fn": "changes_since",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-01-01T00:00:00Z",
+    "sha256": "AA",
+    "tag": "v1.0",
+    "title": "1.0",
+    "changelog": " first ",
+    "download_url": "u1",
+    "format": ".tmod",
+    "size": "12",
+    "download_count": 3
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": {
+   "entries": [
+    {
+     "version": "1.2",
+     "title": "Big update",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": "two"
+    },
+    {
+     "version": "1.2b",
+     "title": "",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": ""
+    }
+   ],
+   "total": 2
+  }
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-03-01T00:00:00Z",
+    "sha256": "bb",
+    "tag": "1.2",
+    "title": "Big update",
+    "changelog": "two",
+    "download_url": "u2",
+    "filename": "My Mod.TMOD"
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": false
+ },
+ {
+  "fn": "changes_since",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-03-01T00:00:00Z",
+    "sha256": "bb",
+    "tag": "1.2",
+    "title": "Big update",
+    "changelog": "two",
+    "download_url": "u2",
+    "filename": "My Mod.TMOD"
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": {
+   "entries": [],
+   "total": 0
+  }
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {
+    "branch": "beta",
+    "published_at": "2025-04-01T00:00:00Z",
+    "sha256": "cc",
+    "tag": "",
+    "title": "Beta 3",
+    "download_url": null,
+    "format": "zip",
+    "size": null
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": false
+ },
+ {
+  "fn": "changes_since",
+  "args": [
+   {
+    "branch": "beta",
+    "published_at": "2025-04-01T00:00:00Z",
+    "sha256": "cc",
+    "tag": "",
+    "title": "Beta 3",
+    "download_url": null,
+    "format": "zip",
+    "size": null
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": {
+   "entries": [],
+   "total": 0
+  }
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {},
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": false
+ },
+ {
+  "fn": "changes_since",
+  "args": [
+   {},
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": {
+   "entries": [
+    {
+     "version": "Beta 3",
+     "title": "",
+     "date": "2025-04-01T00:00:00Z",
+     "notes": ""
+    },
+    {
+     "version": "1.2",
+     "title": "Big update",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": "two"
+    },
+    {
+     "version": "1.2b",
+     "title": "",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": ""
+    },
+    {
+     "version": "v1.0",
+     "title": "",
+     "date": "2025-01-01T00:00:00Z",
+     "notes": "first"
+    }
+   ],
+   "total": 4
+  }
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {
+    "branch": "main"
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": false
+ },
+ {
+  "fn": "changes_since",
+  "args": [
+   {
+    "branch": "main"
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": {
+   "entries": [
+    {
+     "version": "1.2",
+     "title": "Big update",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": "two"
+    },
+    {
+     "version": "1.2b",
+     "title": "",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": ""
+    },
+    {
+     "version": "v1.0",
+     "title": "",
+     "date": "2025-01-01T00:00:00Z",
+     "notes": "first"
+    }
+   ],
+   "total": 3
+  }
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {
+    "branch": "gone",
+    "sha256": "zz",
+    "published_at": "2024"
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": true
+ },
+ {
+  "fn": "changes_since",
+  "args": [
+   {
+    "branch": "gone",
+    "sha256": "zz",
+    "published_at": "2024"
+   },
+   [
+    {
+     "branch": "main",
+     "published_at": "2025-01-01T00:00:00Z",
+     "sha256": "AA",
+     "tag": "v1.0",
+     "title": "1.0",
+     "changelog": " first ",
+     "download_url": "u1",
+     "format": ".tmod",
+     "size": "12",
+     "download_count": 3
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "bb",
+     "tag": "1.2",
+     "title": "Big update",
+     "changelog": "two",
+     "download_url": "u2",
+     "filename": "My Mod.TMOD"
+    },
+    {
+     "branch": "beta",
+     "published_at": "2025-04-01T00:00:00Z",
+     "sha256": "cc",
+     "tag": "",
+     "title": "Beta 3",
+     "download_url": null,
+     "format": "zip",
+     "size": null
+    },
+    {
+     "branch": null,
+     "published_at": null,
+     "sha256": "dd",
+     "title": "",
+     "size": "1.5",
+     "download_count": "7"
+    },
+    {
+     "branch": "main",
+     "published_at": "2025-03-01T00:00:00Z",
+     "sha256": "ee",
+     "tag": "1.2b",
+     "title": "v1.2b"
+    },
+    "not a dict"
+   ]
+  ],
+  "result": {
+   "entries": [
+    {
+     "version": "Beta 3",
+     "title": "",
+     "date": "2025-04-01T00:00:00Z",
+     "notes": ""
+    },
+    {
+     "version": "1.2",
+     "title": "Big update",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": "two"
+    },
+    {
+     "version": "1.2b",
+     "title": "",
+     "date": "2025-03-01T00:00:00Z",
+     "notes": ""
+    },
+    {
+     "version": "v1.0",
+     "title": "",
+     "date": "2025-01-01T00:00:00Z",
+     "notes": "first"
+    }
+   ],
+   "total": 4
+  }
+ },
+ {
+  "fn": "release_outdated",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-01-01T00:00:00Z",
+    "sha256": "AA",
+    "tag": "v1.0",
+    "title": "1.0",
+    "changelog": " first ",
+    "download_url": "u1",
+    "format": ".tmod",
+    "size": "12",
+    "download_count": 3
+   },
+   []
+  ],
+  "result": false
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-01-01T00:00:00Z",
+    "sha256": "AA",
+    "tag": "v1.0",
+    "title": "1.0",
+    "changelog": " first ",
+    "download_url": "u1",
+    "format": ".tmod",
+    "size": "12",
+    "download_count": 3
+   }
+  ],
+  "result": ".tmod"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-03-01T00:00:00Z",
+    "sha256": "bb",
+    "tag": "1.2",
+    "title": "Big update",
+    "changelog": "two",
+    "download_url": "u2",
+    "filename": "My Mod.TMOD"
+   }
+  ],
+  "result": ".tmod"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "branch": "beta",
+    "published_at": "2025-04-01T00:00:00Z",
+    "sha256": "cc",
+    "tag": "",
+    "title": "Beta 3",
+    "download_url": null,
+    "format": "zip",
+    "size": null
+   }
+  ],
+  "result": ".zip"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "branch": null,
+    "published_at": null,
+    "sha256": "dd",
+    "title": "",
+    "size": "1.5",
+    "download_count": "7"
+   }
+  ],
+  "result": ".tmod"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "branch": "main",
+    "published_at": "2025-03-01T00:00:00Z",
+    "sha256": "ee",
+    "tag": "1.2b",
+    "title": "v1.2b"
+   }
+  ],
+  "result": ".tmod"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "filename": "x.zip.disabled"
+   }
+  ],
+  "result": ".zip"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {
+    "format": "ZIP"
+   }
+  ],
+  "result": ".zip"
+ },
+ {
+  "fn": "release_extension",
+  "args": [
+   {}
+  ],
+  "result": ".tmod"
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   "Good Name"
+  ],
+  "result": "Good Name"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   "Good Name.TMOD.disabled"
+  ],
+  "result": "Good Name"
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/Good Name"
+  ],
+  "result": "Good Name"
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   " bad<>:\"/\\|?*name. "
+  ],
+  "result": "badname"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   " bad<>:\"/\\|?*name. .TMOD.disabled"
+  ],
+  "result": "|?*name. "
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/ bad<>:\"/\\|?*name. "
+  ],
+  "result": "|?*name."
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   "..."
+  ],
+  "result": "mod"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   "....TMOD.disabled"
+  ],
+  "result": "..."
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/..."
+  ],
+  "result": "..."
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   ""
+  ],
+  "result": "mod"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   ".TMOD.disabled"
+  ],
+  "result": ""
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/"
+  ],
+  "result": "dir"
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   "tab\there"
+  ],
+  "result": "tabhere"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   "tab\there.TMOD.disabled"
+  ],
+  "result": "tab\there"
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/tab\there"
+  ],
+  "result": "tab\there"
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   "\u00e9\u4e2d"
+  ],
+  "result": "\u00e9\u4e2d"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   "\u00e9\u4e2d.TMOD.disabled"
+  ],
+  "result": "\u00e9\u4e2d"
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/\u00e9\u4e2d"
+  ],
+  "result": "\u00e9\u4e2d"
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   "x\u200by"
+  ],
+  "result": "xy"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   "x\u200by.TMOD.disabled"
+  ],
+  "result": "x\u200by"
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/x\u200by"
+  ],
+  "result": "x\u200by"
+ },
+ {
+  "fn": "safe_filename",
+  "args": [
+   "name.."
+  ],
+  "result": "name"
+ },
+ {
+  "fn": "name_from_filename",
+  "args": [
+   "name...TMOD.disabled"
+  ],
+  "result": "name.."
+ },
+ {
+  "fn": "safe_pack_filename",
+  "args": [
+   "dir/name.."
+  ],
+  "result": "name.."
+ },
+ {
+  "fn": "install_name",
+  "args": [
+   "QgAAAAAAAAABAAMABXRpdGxlBlNpbXBsZQZhdXRob3ICbWUJbW9kTG9hZGVyA0JUVAh1aS9hLnN3ZgAAA9Lk5foHeAEABAD7/2FiYwAAAAD//w==",
+   ".tmod",
+   {},
+   {}
+  ],
+  "result": "Simple"
+ },
+ {
+  "fn": "install_name",
+  "args": [
+   "QgAAAAAAAAABAAMABXRpdGxlBlNpbXBsZQZhdXRob3ICbWUJbW9kTG9hZGVyA0JUVAh1aS9hLnN3ZgAAA9Lk5foHeAEABAD7/2FiYwAAAAD//w==",
+   ".zip",
+   {
+    "filename": "dir/Zip Mod.ZIP"
+   },
+   {}
+  ],
+  "result": "Zip Mod"
+ },
+ {
+  "fn": "install_name",
+  "args": [
+   "QgAAAAAAAAABAAMABXRpdGxlBlNpbXBsZQZhdXRob3ICbWUJbW9kTG9hZGVyA0JUVAh1aS9hLnN3ZgAAA9Lk5foHeAEABAD7/2FiYwAAAAD//w==",
+   ".zip",
+   {},
+   {
+    "title": "Detail: Title"
+   }
+  ],
+  "result": "Detail Title"
+ },
+ {
+  "fn": "install_name",
+  "args": [
+   "QgAAAAAAAAABAAMABXRpdGxlBlNpbXBsZQZhdXRob3ICbWUJbW9kTG9hZGVyA0JUVAh1aS9hLnN3ZgAAA9Lk5foHeAEABAD7/2FiYwAAAAD//w==",
+   ".zip",
+   {
+    "filename": "x.tmod.disabled"
+   },
+   {
+    "title": ""
+   }
+  ],
+  "result": "mod"
+ },
+ {
+  "fn": "install_name",
+  "args": [
+   "QgAAAAAAAAABAAMABXRpdGxlBlNpbXBsZQZhdXRob3ICbWUJbW9kTG9hZGVyA0JUVAh1aS9hLnN3ZgAAA9Lk5foHeAEABAD7/2FiYwAAAAD//w==",
+   ".tmod",
+   {
+    "filename": "a.tmod"
+   },
+   {}
+  ],
+  "result": "Simple"
+ },
+ {
+  "fn": "install_name",
+  "args": [
+   "anVuaw==",
+   ".tmod",
+   {
+    "filename": "Fallback.tmod"
+   },
+   {}
+  ],
+  "result": "Fallback"
+ },
+ {
+  "fn": "latest_mod_file",
+  "args": [
+   {
+    "downloads": [
+     {
+      "fileid": "3",
+      "extra": "0"
+     },
+     {
+      "fileid": 10,
+      "extra": 1
+     },
+     {
+      "fileid": "7"
+     }
+    ]
+   }
+  ],
+  "result": {
+   "fileid": "7"
+  }
+ },
+ {
+  "fn": "latest_mod_file",
+  "args": [
+   {
+    "downloads": []
+   }
+  ],
+  "result": null
+ },
+ {
+  "fn": "latest_mod_file",
+  "args": [
+   {}
+  ],
+  "result": null
+ },
+ {
+  "fn": "latest_mod_file",
+  "args": [
+   {
+    "downloads": [
+     {
+      "fileid": "x"
+     }
+    ]
+   }
+  ],
+  "result": {
+   "raised": "ValueError: invalid literal for int() with base 10: 'x'"
+  }
+ },
+ {
+  "fn": "latest_mod_file",
+  "args": [
+   {
+    "downloads": [
+     {
+      "fileid": 2,
+      "extra": null
+     },
+     {
+      "fileid": 2,
+      "format": "zip"
+     }
+    ]
+   }
+  ],
+  "result": {
+   "fileid": 2,
+   "extra": null
+  }
+ },
+ {
+  "fn": "install_target",
+  "args": [
+   "C:\\G",
+   "My Mod! (v2)",
+   ".tmod",
+   null
+  ],
+  "result": "C:\\G\\mods\\My Mod v2.tmod"
+ },
+ {
+  "fn": "install_target",
+  "args": [
+   "C:\\G",
+   "",
+   ".zip",
+   null
+  ],
+  "result": "C:\\G\\mods\\mod.zip"
+ },
+ {
+  "fn": "install_target",
+  "args": [
+   "C:\\G",
+   "\u00e9t\u00e9_-x",
+   ".tmod",
+   null
+  ],
+  "result": "C:\\G\\mods\\\u00e9t\u00e9_-x.tmod"
+ },
+ {
+  "fn": "install_target",
+  "args": [
+   "C:\\G",
+   "x",
+   ".zip",
+   "C:\\G\\mods\\Old Name.tmod.disabled"
+  ],
+  "result": "C:\\G\\mods\\Old Name.zip.disabled"
+ },
+ {
+  "fn": "install_target",
+  "args": [
+   "C:\\G",
+   "x",
+   ".tmod",
+   "C:\\G\\mods\\noext"
+  ],
+  "result": "C:\\G\\mods\\noext.tmod"
+ },
+ {
+  "fn": "install_target",
+  "args": [
+   "C:\\G",
+   "x",
+   ".tmod",
+   "C:\\G\\mods\\a.b.zip"
+  ],
+  "result": "C:\\G\\mods\\a.b.tmod"
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 100
+   }
+  ],
+  "result": true
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": "200"
+   }
+  ],
+  "result": true
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 1,
+    "author": {
+     "ID": 7
+    }
+   }
+  ],
+  "result": true
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 1,
+    "author": {
+     "ID": "8"
+    }
+   }
+  ],
+  "result": true
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 0,
+    "author": "7"
+   }
+  ],
+  "result": false
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 1,
+    "downloads": [
+     {
+      "hash": "abc"
+     }
+    ]
+   }
+  ],
+  "result": true
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 1,
+    "downloads": [
+     {
+      "hash": "DEF"
+     },
+     "x"
+    ]
+   }
+  ],
+  "result": true
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 1,
+    "downloads": [
+     {
+      "hash": null
+     }
+    ]
+   }
+  ],
+  "result": false
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {
+    "id": 1.0,
+    "author": {
+     "ID": 0
+    }
+   }
+  ],
+  "result": false
+ },
+ {
+  "fn": "blocked",
+  "args": [
+   {
+    "authors": [
+     "7",
+     8
+    ],
+    "mods": [
+     100,
+     "200"
+    ],
+    "hashes": [
+     "ABC",
+     "def"
+    ]
+   },
+   {}
+  ],
+  "result": false
+ }
+]

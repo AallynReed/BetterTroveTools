@@ -115,6 +115,7 @@ fn endpoints_match_python() {
     let sandbox = std::env::temp_dir().join(format!("btt-modder-rs-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&sandbox);
     copy_tree(&fixtures().join("seed"), &sandbox);
+    let _env = crate::ctx::testing::ENV_LOCK.lock();
     std::env::set_var("APPDATA", sandbox.join("appdata"));
     let fixed = chrono::DateTime::parse_from_rfc3339(cases["fixed_now"].as_str().unwrap()).unwrap();
     FIXED_NOW.store(fixed.timestamp_micros(), std::sync::atomic::Ordering::SeqCst);

@@ -297,6 +297,8 @@ fn star_chart_layout_matches_python() {
 #[test]
 fn storage_matches_python() {
     init();
+    let _env = crate::ctx::testing::ENV_LOCK.lock();
+    std::env::set_var("APPDATA", crate::ctx::testing::sandbox());
     let script = load("storage.json");
     let file = crate::storage::get_storage_file();
     let _ = std::fs::remove_file(&file);

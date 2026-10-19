@@ -375,7 +375,7 @@ pub fn truthy(v: &Value) -> bool {
 }
 
 /// An approximation of `str.isprintable()` for one character.
-fn is_printable(c: char) -> bool {
+pub(crate) fn is_printable(c: char) -> bool {
     let u = c as u32;
     if u < 0x20 || u == 0x7f {
         return false;
