@@ -24,6 +24,8 @@ pub mod auth;
 pub mod blueprint;
 #[cfg(feature = "codexes")]
 pub mod codexes;
+#[cfg(feature = "file_manager")]
+pub mod file_manager;
 #[cfg(feature = "gems")]
 pub mod gems;
 #[cfg(feature = "home")]
@@ -85,6 +87,8 @@ pub fn commands() -> Vec<Cmd> {
     all.extend(codexes::commands());
     #[cfg(feature = "modder_tools")]
     all.extend(modder_tools::commands());
+    #[cfg(feature = "file_manager")]
+    all.extend(file_manager::commands());
     #[cfg(feature = "mod_manager")]
     all.extend(mod_manager::commands());
     #[cfg(feature = "blueprint")]

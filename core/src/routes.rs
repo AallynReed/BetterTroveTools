@@ -135,6 +135,7 @@ impl Route {
 }
 
 pub fn routes() -> Vec<Route> {
+    #[allow(unused_mut)]
     let mut all = vec![Route::get("/api/cache/<filename>", serve_cache)];
     #[cfg(feature = "home")]
     all.extend(crate::home::routes());
