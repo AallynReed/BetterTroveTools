@@ -100,6 +100,7 @@ fn main() {
                 shell.restore_window();
             }
         }))
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .register_asynchronous_uri_scheme_protocol(BACKEND_SCHEME, |_ctx, request, responder| {
@@ -110,6 +111,15 @@ fn main() {
             let handle = app.handle().clone();
             let shell = Arc::new(Shell::new(handle.clone()));
             app.manage(shell.clone());
+
+            // The .deb carries the btt:// MimeType itself; AppImage, Nix and source runs register at launch.
+            #[cfg(target_os = "linux")]
+            if !cfg!(debug_assertions) {
+                use tauri_plugin_deep_link::DeepLinkExt;
+                if let Err(e) = app.deep_link().register_all() {
+                    eprintln!("Failed to register btt:// links: {}", e);
+                }
+            }
 
             let (resources, dev_mode) = resource_dir(&handle);
             btt_core::init(Box::new(TauriHost(shell.clone())), resources, dev_mode, startup_url());

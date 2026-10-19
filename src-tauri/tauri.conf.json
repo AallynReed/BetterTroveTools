@@ -14,6 +14,11 @@
       "csp": null
     }
   },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["btt"] }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["msi"],
