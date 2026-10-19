@@ -14,8 +14,7 @@ on:
         type: string
 
 # Least privilege by default: every job starts read-only and opts back in to
-# what it actually needs. Without this, GITHUB_TOKEN inherits whatever the
-# repository default is — which may be write-all.
+# what it actually needs.
 permissions:
   contents: read
 
@@ -24,73 +23,85 @@ env:
   RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.tag }}
 
 jobs:
-  build:
-    name: Compile Code
+  windows:
+    name: Windows MSI
     runs-on: windows-latest
     permissions:
       contents: write  # uploads the MSI as a release asset
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_TAG }}
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
         with:
-          python-version: '3.14.3'
-          architecture: 'x64'
+          node-version: "20"
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements.txt
+      - name: Install the Tauri CLI
+        run: npm ci
 
-      - name: Compile code into MSI package
-        run: python compile.py bdist_msi
-        env:
-            PYTHONUTF8: 1
+      # metadata.json's YYYY.MM.XX[b] isn't semver, and MSI versions cap the major at 255.
+      - name: Derive bundle versions
+        run: node tools/tauri_version.mjs > version.conf.json
 
-      - name: Move and Rename Files
-        # The release name goes in through the environment, not through ${{ }}
-        # expansion: expansion pastes it into the script body, where a name
-        # containing quotes or a `;` becomes PowerShell that we run.
-        env:
-          RELEASE_NAME: ${{ env.RELEASE_TAG }}
-        run: |
-          $env:NEW_FILE_NAME="BetterTroveTools-$env:RELEASE_NAME-win64.msi"
-          $msiFile = Get-ChildItem -Path dist -Filter *.msi | Select-Object -First 1
-          Write-Host "Found MSI: $($msiFile.FullName)"
-          Move-Item -Path $msiFile.FullName -Destination ".\$env:NEW_FILE_NAME"
+      - name: Build the MSI
+        run: npx tauri build --bundles msi --config version.conf.json
 
-      # Uploaded by tag rather than the event's upload_url, so a manual run can
-      # attach to a release that was published earlier. --clobber replaces an
-      # asset left behind by a half-finished run.
-      - name: Upload file to release
+      - name: Upload the MSI to the release
+        # The tag goes in through the environment, never through ${{ }} expansion
+        # into the script body.
         env:
           GH_TOKEN: ${{ secrets.COMPILER || github.token }}
-        run: gh release upload "$env:RELEASE_TAG" "BetterTroveTools-$env:RELEASE_TAG-win64.msi" --clobber
+        run: |
+          $msi = Get-ChildItem -Path target/release/bundle/msi -Filter *.msi | Select-Object -First 1
+          $name = "BetterTroveTools-$env:RELEASE_TAG-win64.msi"
+          Move-Item -Path $msi.FullName -Destination ".\$name"
+          gh release upload "$env:RELEASE_TAG" "$name" --clobber
 
-  linux-package:
-    name: Package Linux source
-    runs-on: ubuntu-latest
+  linux:
+    name: Linux AppImage and deb
+    runs-on: ubuntu-22.04
     permissions:
-      contents: write  # uploads the source tarball as a release asset
+      contents: write  # uploads the bundles as release assets
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_TAG }}
 
-      - name: Build Linux source tarball
-        env:
-          RELEASE_NAME: ${{ env.RELEASE_TAG }}
+      - name: Install WebKitGTK and bundling tools
         run: |
-          OUT="BetterTroveTools-$RELEASE_NAME-linux.tar.gz"
-          # git archive emits only committed files (no venvs/build/dist/__pycache__)
-          # and honours `export-ignore` attributes, so it's a clean run-from-source bundle.
-          git archive --format=tar.gz --prefix=BetterTroveTools/ -o "$OUT" HEAD
-          echo "OUT=$OUT" >> "$GITHUB_ENV"
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file
 
-      - name: Upload tarball to release
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install the Tauri CLI
+        run: npm ci
+
+      - name: Derive bundle versions
+        run: node tools/tauri_version.mjs > version.conf.json
+
+      - name: Build the AppImage and deb
+        run: npx tauri build --bundles appimage,deb --config version.conf.json
+
+      - name: Upload the bundles to the release
         env:
           GH_TOKEN: ${{ secrets.COMPILER || github.token }}
-        run: gh release upload "$RELEASE_TAG" "$OUT" --clobber
+        run: |
+          appimage=$(ls target/release/bundle/appimage/*.AppImage | head -n1)
+          deb=$(ls target/release/bundle/deb/*.deb | head -n1)
+          cp "$appimage" "BetterTroveTools-$RELEASE_TAG-linux-x86_64.AppImage"
+          cp "$deb" "BetterTroveTools-$RELEASE_TAG-linux-amd64.deb"
+          gh release upload "$RELEASE_TAG" "BetterTroveTools-$RELEASE_TAG-linux-x86_64.AppImage" "BetterTroveTools-$RELEASE_TAG-linux-amd64.deb" --clobber
