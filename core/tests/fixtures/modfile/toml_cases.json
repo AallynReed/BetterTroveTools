@@ -1,0 +1,66 @@
+[
+ [
+  "abc",
+  "name = \"abc\"\nfiles = [ \"abc\", \"b\",]\n\n[properties]\ntitle = \"abc\"\n\"my key\" = \"v\"\n\"k.x\" = \"abc\"\n"
+ ],
+ [
+  "it's",
+  "name = \"it's\"\nfiles = [ \"it's\", \"b\",]\n\n[properties]\ntitle = \"it's\"\n\"my key\" = \"v\"\n\"k.x\" = \"it's\"\n"
+ ],
+ [
+  "say \"hi\"",
+  "name = \"say \\\"hi\\\"\"\nfiles = [ \"say \\\"hi\\\"\", \"b\",]\n\n[properties]\ntitle = \"say \\\"hi\\\"\"\n\"my key\" = \"v\"\n\"k.x\" = \"say \\\"hi\\\"\"\n"
+ ],
+ [
+  "a\u0001b",
+  "name = \"ax01b\"\nfiles = [ \"ax01b\", \"b\",]\n\n[properties]\ntitle = \"ax01b\"\n\"my key\" = \"v\"\n\"k.x\" = \"ax01b\"\n"
+ ],
+ [
+  "\u0001",
+  "ERR IndexError: list index out of range"
+ ],
+ [
+  "c:\\x",
+  "name = \"c:\\x\"\nfiles = [ \"c:\\x\", \"b\",]\n\n[properties]\ntitle = \"c:\\x\"\n\"my key\" = \"v\"\n\"k.x\" = \"c:\\x\"\n"
+ ],
+ [
+  "a\\x41",
+  "name = \"a\\x41\"\nfiles = [ \"a\\x41\", \"b\",]\n\n[properties]\ntitle = \"a\\x41\"\n\"my key\" = \"v\"\n\"k.x\" = \"a\\x41\"\n"
+ ],
+ [
+  "\u00e9\u4e2d",
+  "name = \"\u00e9\u4e2d\"\nfiles = [ \"\u00e9\u4e2d\", \"b\",]\n\n[properties]\ntitle = \"\u00e9\u4e2d\"\n\"my key\" = \"v\"\n\"k.x\" = \"\u00e9\u4e2d\"\n"
+ ],
+ [
+  "tab\there",
+  "name = \"tab\\there\"\nfiles = [ \"tab\\there\", \"b\",]\n\n[properties]\ntitle = \"tab\\there\"\n\"my key\" = \"v\"\n\"k.x\" = \"tab\\there\"\n"
+ ],
+ [
+  "x\u007fy",
+  "name = \"xx7fy\"\nfiles = [ \"xx7fy\", \"b\",]\n\n[properties]\ntitle = \"xx7fy\"\n\"my key\" = \"v\"\n\"k.x\" = \"xx7fy\"\n"
+ ],
+ [
+  "\\\u0001",
+  "name = \"\\u0001\"\nfiles = [ \"\\u0001\", \"b\",]\n\n[properties]\ntitle = \"\\u0001\"\n\"my key\" = \"v\"\n\"k.x\" = \"\\u0001\"\n"
+ ],
+ [
+  "a\u0001\u0002",
+  "name = \"ax01x02\"\nfiles = [ \"ax01x02\", \"b\",]\n\n[properties]\ntitle = \"ax01x02\"\n\"my key\" = \"v\"\n\"k.x\" = \"ax01x02\"\n"
+ ],
+ [
+  "nbsp\u00a0",
+  "name = \"nbspxa0\"\nfiles = [ \"nbspxa0\", \"b\",]\n\n[properties]\ntitle = \"nbspxa0\"\n\"my key\" = \"v\"\n\"k.x\" = \"nbspxa0\"\n"
+ ],
+ [
+  "q'\"",
+  "name = \"q'\\\"\"\nfiles = [ \"q'\\\"\", \"b\",]\n\n[properties]\ntitle = \"q'\\\"\"\n\"my key\" = \"v\"\n\"k.x\" = \"q'\\\"\"\n"
+ ],
+ [
+  "\u0000",
+  "ERR IndexError: list index out of range"
+ ],
+ [
+  "",
+  "name = \"\"\nfiles = [ \"\", \"b\",]\n\n[properties]\ntitle = \"\"\n\"my key\" = \"v\"\n\"k.x\" = \"\"\n"
+ ]
+]

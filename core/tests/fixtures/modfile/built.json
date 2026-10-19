@@ -1,0 +1,333 @@
+{
+ "simple": {
+  "md5": "97ec2c6b59b9ebc20603a1e931bc3c08",
+  "metadata": "name = \"Simple\"\nfiles = [ \"ui/a.swf\",]\n\n[properties]\ntitle = \"Simple\"\nauthor = \"me\"\nmodLoader = \"BTT\"\n",
+  "properties": [
+   [
+    "title",
+    "Simple"
+   ],
+   [
+    "author",
+    "me"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ]
+ },
+ "unicode": {
+  "md5": "df0759371fd92979cc35502ce4884610",
+  "metadata": "name = \"Caf\u00e9 \u4e2d\u6587\"\nfiles = [ \"ui/\u00e9t\u00e9.swf\", \"ui/My Mod.cfg\",]\n\n[properties]\ntitle = \"Caf\u00e9 \u4e2d\u6587\"\nauthor = \"\u00e9\"\nnotes = \"n\u00f6tes\"\nmodLoader = \"BTT\"\n",
+  "properties": [
+   [
+    "title",
+    "Caf\u00e9 \u4e2d\u6587"
+   ],
+   [
+    "author",
+    "\u00e9"
+   ],
+   [
+    "notes",
+    "n\u00f6tes"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ]
+ },
+ "multi_block": {
+  "md5": "077f3ee2589e32239c92f743389bfdeb",
+  "metadata": "name = \"Multi\"\nfiles = [ \"textures/big.png\", \"ui/empty.swf\", \"ui/three.swf\",]\n\n[properties]\ntitle = \"Multi\"\nauthor = \"a\"\ntags = \"a,b\"\nmodLoader = \"BTT\"\n",
+  "properties": [
+   [
+    "title",
+    "Multi"
+   ],
+   [
+    "author",
+    "a"
+   ],
+   [
+    "tags",
+    "a,b"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ]
+ },
+ "exact_block": {
+  "md5": "8217331fb3e28ee546fd1b27929f3f6e",
+  "metadata": "name = \"Exact\"\nfiles = [ \"ui/a.swf\",]\n\n[properties]\ntitle = \"Exact\"\nauthor = \"a\"\nmodLoader = \"BTT\"\n",
+  "properties": [
+   [
+    "title",
+    "Exact"
+   ],
+   [
+    "author",
+    "a"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ]
+ },
+ "version3": {
+  "md5": "be8a802e3a4e1a8fc2c7c7913da7b808",
+  "metadata": "name = \"V3\"\nfiles = [ \"ui/a.swf\",]\n\n[properties]\ntitle = \"V3\"\nauthor = \"a\"\nmodLoader = \"BTT\"\n",
+  "properties": [
+   [
+    "title",
+    "V3"
+   ],
+   [
+    "author",
+    "a"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ]
+ },
+ "legacy_read": {
+  "version": 1,
+  "properties": [
+   [
+    "title",
+    "Caf\u00e9 \u4e2d\u6587"
+   ],
+   [
+    "author",
+    "\u00e9"
+   ],
+   [
+    "notes",
+    "n\u00f6tes"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ],
+  "files": [
+   {
+    "path": "ui/\u00e9t\u00e9.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 5,
+    "checksum": 3977103919,
+    "md5": "11c4cb3becdea0b56ae9a2dffd5927cc"
+   },
+   {
+    "path": "ui/My Mod.cfg",
+    "index": 0,
+    "offset": 0,
+    "size": 9,
+    "checksum": 3867759151,
+    "md5": "67af3c056495c8c3faa8627c12951704"
+   }
+  ],
+  "hash": "6f2c6594a5d503479d0971420770e889",
+  "name": "Caf\u00e9 \u4e2d\u6587",
+  "tags": [],
+  "subtype": "",
+  "preview": null,
+  "config": null,
+  "is_ui": true,
+  "content_files": [
+   "ui/\u00e9t\u00e9.swf",
+   "ui/My Mod.cfg"
+  ],
+  "image_md5": "88bd2ab7e6cd51932911cf21abe76c41"
+ },
+ "zip_read": {
+  "version": 1,
+  "properties": [
+   [
+    "title",
+    "Zipped Mod"
+   ]
+  ],
+  "files": [
+   {
+    "path": "ui/zipped.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 6,
+    "checksum": 1369903979,
+    "md5": "8e2be1eae346c25168e1543766d2356e"
+   },
+   {
+    "path": "ui/back.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 4,
+    "checksum": 3464149733,
+    "md5": "469bba0a564235dfceede42db14f17b0"
+   },
+   {
+    "path": "\u00e9t\u00e9.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 4,
+    "checksum": 2893930512,
+    "md5": "30df7f629fcf6b940bcaef5faf2490bb"
+   }
+  ],
+  "hash": "44809c62f0b74d65dab3d825d3643ccf",
+  "name": "Zipped Mod",
+  "tags": [],
+  "subtype": "",
+  "preview": null,
+  "config": null,
+  "is_ui": false,
+  "content_files": [
+   "ui/zipped.swf",
+   "ui/back.swf",
+   "\u00e9t\u00e9.swf"
+  ],
+  "image_md5": "88bd2ab7e6cd51932911cf21abe76c41"
+ },
+ "simple_read": {
+  "version": 1,
+  "properties": [
+   [
+    "title",
+    "Simple"
+   ],
+   [
+    "author",
+    "me"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ],
+  "files": [
+   {
+    "path": "ui/a.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 3,
+    "checksum": 2136568402,
+    "md5": "900150983cd24fb0d6963f7d28e17f72"
+   }
+  ],
+  "hash": "97ec2c6b59b9ebc20603a1e931bc3c08",
+  "name": "Simple",
+  "tags": [],
+  "subtype": "",
+  "preview": null,
+  "config": null,
+  "is_ui": true,
+  "content_files": [
+   "ui/a.swf"
+  ],
+  "image_md5": "88bd2ab7e6cd51932911cf21abe76c41"
+ },
+ "unicode_read": {
+  "version": 1,
+  "properties": [
+   [
+    "title",
+    "Caf\u00e9 \u4e2d\u6587"
+   ],
+   [
+    "author",
+    "\u00e9"
+   ],
+   [
+    "notes",
+    "n\u00f6tes"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ],
+  "files": [
+   {
+    "path": "ui/\u00e9t\u00e9.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 5,
+    "checksum": 3977103919,
+    "md5": "11c4cb3becdea0b56ae9a2dffd5927cc"
+   },
+   {
+    "path": "ui/My Mod.cfg",
+    "index": 0,
+    "offset": 0,
+    "size": 9,
+    "checksum": 3867759151,
+    "md5": "67af3c056495c8c3faa8627c12951704"
+   }
+  ],
+  "hash": "df0759371fd92979cc35502ce4884610",
+  "name": "Caf\u00e9 \u4e2d\u6587",
+  "tags": [],
+  "subtype": "",
+  "preview": null,
+  "config": null,
+  "is_ui": true,
+  "content_files": [
+   "ui/\u00e9t\u00e9.swf",
+   "ui/My Mod.cfg"
+  ],
+  "image_md5": "88bd2ab7e6cd51932911cf21abe76c41"
+ },
+ "version3_read": {
+  "version": 3,
+  "properties": [
+   [
+    "title",
+    "V3"
+   ],
+   [
+    "author",
+    "a"
+   ],
+   [
+    "modLoader",
+    "BTT"
+   ]
+  ],
+  "files": [
+   {
+    "path": "ui/a.swf",
+    "index": 0,
+    "offset": 0,
+    "size": 1,
+    "checksum": 873244444,
+    "md5": "c4ca4238a0b923820dcc509a6f75849b"
+   }
+  ],
+  "hash": "be8a802e3a4e1a8fc2c7c7913da7b808",
+  "name": "V3",
+  "tags": [],
+  "subtype": "",
+  "preview": null,
+  "config": null,
+  "is_ui": true,
+  "content_files": [
+   "ui/a.swf"
+  ],
+  "image_md5": "88bd2ab7e6cd51932911cf21abe76c41"
+ },
+ "tpack": {
+  "md5": "ff988f6c8cddfae12f637324f31f2c76",
+  "names": [
+   "Simple Mod.tmod",
+   "Caf\u00e9.tmod"
+  ]
+ }
+}

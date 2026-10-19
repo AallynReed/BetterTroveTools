@@ -1,0 +1,13 @@
+{
+ "UI/Thing.SWF": "ui/thing.swf",
+ "ui\\x\\Y.png": "ui/x/y.png",
+ "./a//b/": "a/b",
+ "": ".",
+ " spaced/ X.CFG ": "spaced/ X.CFG",
+ "ui/My Mod.cfg": "ui/My Mod.cfg",
+ "C:/abs/x": "c:/abs/x",
+ "/root/x": "/root/x",
+ "a/../b": "a/../b",
+ "\u00c9t\u00e9/\u4e2d.swf": "\u00e9t\u00e9/\u4e2d.swf",
+ "ui/x.Cfg": "ui/x.Cfg"
+}
