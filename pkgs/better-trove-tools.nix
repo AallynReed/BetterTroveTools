@@ -18,7 +18,8 @@ let
   appVersion = (lib.importJSON ../metadata.json).APP_VERSION;
   parts = builtins.match "([0-9]+)\\.([0-9]+)\\.([0-9]+)([ab]?)" appVersion;
   stage = { "" = ""; a = "-alpha"; b = "-beta"; }.${builtins.elemAt parts 3};
-  semver = "${toString (lib.toInt (builtins.elemAt parts 0))}.${toString (lib.toInt (builtins.elemAt parts 1))}.${toString (lib.toInt (builtins.elemAt parts 2))}${stage}";
+  num = i: toString (lib.toIntBase10 (builtins.elemAt parts i));
+  semver = "${num 0}.${num 1}.${num 2}${stage}";
 
   # WebKitGTK plays media through GStreamer.
   gstPlugins = with gst_all_1; [
