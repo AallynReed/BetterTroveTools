@@ -56,6 +56,46 @@
         }
     }).then(() => invoke('eel_ready'));
 
+    // The Kiwi API's CORS allowlist doesn't include this page's origin, so the page's
+    // BTT_Kiwi calls (update checks, About, feedback) go through the backend instead.
+    const KIWI_BASE = 'https://api.aallyn.net/v1';
+    const kiwiResult = (res) => {
+        let data = null;
+        try { data = res.body ? JSON.parse(res.body) : null; } catch { data = res.body; }
+        if (res.status < 200 || res.status >= 300) {
+            const err = new Error(`HTTP ${res.status}`);
+            err.status = res.status;
+            err.data = data;
+            throw err;
+        }
+        return data;
+    };
+    const fileToBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+    window.BTT_Kiwi = {
+        base: KIWI_BASE,
+        get: async (path) => kiwiResult(await invoke('eel_call', { name: 'kiwi_request', args: ['GET', path, null, null] })),
+        post: async (path, body) => {
+            let payload = { json: body };
+            if (typeof FormData !== 'undefined' && body instanceof FormData) {
+                const form = [];
+                for (const [name, value] of body.entries()) {
+                    if (typeof Blob !== 'undefined' && value instanceof Blob) {
+                        form.push({ name, filename: value.name || 'file', content_type: value.type || '', data_b64: await fileToBase64(value) });
+                    } else {
+                        form.push({ name, value: String(value) });
+                    }
+                }
+                payload = { form };
+            }
+            return kiwiResult(await invoke('eel_call', { name: 'kiwi_request', args: ['POST', path, payload, null] }));
+        },
+    };
+
     // bottle served /api/* and /proxy/* on the page's own origin; they now live on a
     // custom scheme, so same-origin fetches to those paths are pointed there.
     const origin = convertFileSrc('', window.__BTT_BACKEND_SCHEME__ || 'bttapi').replace(/\/+$/, '');

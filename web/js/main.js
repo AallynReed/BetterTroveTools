@@ -3642,11 +3642,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             submitBtn.disabled = true;
             setStatus(t('feedback.sending'), 'info');
             try {
-                // BTT_Kiwi.post handles FormData on web (fetch) and on native
-                // (serializes text-only multipart to a string for CapacitorHttp,
-                // since File blobs can't cross the v7 plugin's Android bridge).
-                // The desktop build doesn't wire BTT_Kiwi at all, so fall back
-                // to a direct fetch + FormData — desktop has no CORS gate.
+                // BTT_Kiwi.post handles FormData everywhere: fetch on web, a
+                // text-only multipart string on Android, the backend on desktop.
                 if (window.BTT_Kiwi && typeof window.BTT_Kiwi.post === 'function') {
                     await window.BTT_Kiwi.post('misc/feedback', fd);
                 } else {

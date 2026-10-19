@@ -28,6 +28,7 @@ pub fn commands() -> Vec<Cmd> {
     vec![
         Cmd::raw("get_startup_url", |_| Ok(ctx().startup_url.lock().clone().map(Value::String).unwrap_or(Value::Null))),
         Cmd::raw("get_app_metadata", |_| Ok(metadata())),
+        Cmd::raw("kiwi_request", kiwi_request),
         Cmd::raw("finalize_self_update_exit", finalize_self_update_exit),
         Cmd::raw("start_self_update", start_self_update),
         Cmd::raw("clear_update_cache", |a| clear_update_cache(a.f64_or(0, 300.0))),
@@ -460,5 +461,85 @@ mod tests {
         let langs = available_languages(&ctx().web_path("assets/locale"));
         assert_eq!(langs[0]["code"], "en_US");
         assert_eq!(langs.len(), 9);
+    }
+}
+
+// --- Kiwi API on behalf of the page --------------------------------------------------
+
+/// `kiwi_request(method, path, body, label)`: the page's `BTT_Kiwi` calls, made here because
+/// the API's CORS allowlist doesn't include the desktop page's origin. `path` is relative to
+/// the API root; `body` is null, `{"json": value}` or `{"form": [{name, value}` or
+/// `{name, filename, content_type, data_b64}]}`. Returns `{status, body}` with the text body.
+fn kiwi_request(args: &Args) -> Result<Value> {
+    use base64::Engine;
+    let method = args.str_or(0, "GET").to_uppercase();
+    let path = args.str(1);
+    if path.contains("://") || path.starts_with('/') || path.contains("..") || !matches!(method.as_str(), "GET" | "POST") {
+        anyhow::bail!("Refusing Kiwi API request: {} {}", method, path);
+    }
+    let url = format!("{}/{}", crate::KIWI_API_BASE, path);
+    let label = args.opt_str(3).filter(|l| !l.is_empty()).unwrap_or_else(|| "Kiwi API".to_string());
+    let req = ctx().external_request(&label, &url);
+    let request = http::request(&method, &url).timeout(Duration::from_secs(60)).set("Accept", "application/json");
+    let body = args.get(2);
+    let sent = if let Some(json_body) = body.get("json") {
+        http::send_json(request, json_body)
+    } else if let Some(parts) = body.get("form").and_then(Value::as_array) {
+        let boundary = format!("----BTTFormBoundary{}", uuid::Uuid::new_v4().simple());
+        let mut payload = Vec::new();
+        for part in parts {
+            let name = part.get("name").and_then(Value::as_str).unwrap_or("");
+            payload.extend(format!("--{}\r\n", boundary).as_bytes());
+            if let Some(data) = part.get("data_b64").and_then(Value::as_str) {
+                let filename = part.get("filename").and_then(Value::as_str).unwrap_or("file").replace('"', "");
+                let content_type = part.get("content_type").and_then(Value::as_str).filter(|c| !c.is_empty()).unwrap_or("application/octet-stream");
+                payload.extend(format!("Content-Disposition: form-data; name=\"{}\"; filename=\"{}\"\r\nContent-Type: {}\r\n\r\n", name, filename, content_type).as_bytes());
+                payload.extend(base64::engine::general_purpose::STANDARD.decode(data)?);
+            } else {
+                let value = part.get("value").map(crate::args::to_str).unwrap_or_default();
+                payload.extend(format!("Content-Disposition: form-data; name=\"{}\"\r\n\r\n{}", name, value).as_bytes());
+            }
+            payload.extend(b"\r\n");
+        }
+        payload.extend(format!("--{}--\r\n", boundary).as_bytes());
+        http::send_bytes(request.set("Content-Type", &format!("multipart/form-data; boundary={}", boundary)), &payload)
+    } else {
+        http::send(request)
+    };
+    match sent {
+        Ok(resp) => {
+            let status = resp.status();
+            let text = http::read_text(resp)?;
+            req.finish((200..300).contains(&status));
+            Ok(json!({ "status": status, "body": text }))
+        }
+        Err(e) => {
+            req.finish(false);
+            Err(e)
+        }
+    }
+}
+
+#[cfg(test)]
+mod kiwi_tests {
+    use serde_json::json;
+
+    #[test]
+    fn refuses_paths_off_the_api() {
+        crate::ctx::testing::init();
+        for path in ["https://evil.example/x", "/etc/passwd", "../v2/x"] {
+            assert!(crate::call("kiwi_request", vec![json!("GET"), json!(path)]).unwrap().is_err(), "{path}");
+        }
+        assert!(crate::call("kiwi_request", vec![json!("DELETE"), json!("btt/check")]).unwrap().is_err());
+    }
+
+    #[test]
+    #[ignore = "needs the network"]
+    fn update_check_reaches_the_api() {
+        crate::ctx::testing::init();
+        let r = crate::call("kiwi_request", vec![json!("GET"), json!("btt/check?installed=2026.10.06&platform=windows&channel=release")]).unwrap().unwrap();
+        assert_eq!(r["status"], 200);
+        let body: serde_json::Value = serde_json::from_str(r["body"].as_str().unwrap()).unwrap();
+        assert_eq!(body["update_available"], true, "{body}");
     }
 }
