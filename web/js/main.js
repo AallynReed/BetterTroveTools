@@ -749,15 +749,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.title = `${appName} v${currentVersion}`;
         const titleEl = document.getElementById('app-title');
         if (titleEl) {
-            const isBetaVersion = /b$/i.test(currentVersion);
-            const cleanVersion = isBetaVersion ? currentVersion.replace(/b$/i, '') : currentVersion;
+            const stageMatch = /([ab])$/i.exec(currentVersion);
+            const stageLabel = stageMatch ? (stageMatch[1].toLowerCase() === 'a' ? 'ALPHA' : 'BETA') : '';
+            const cleanVersion = stageMatch ? currentVersion.slice(0, -1) : currentVersion;
             // The version sits in its own row so the manual "check for updates"
             // button can live beside it (appended later, only on builds that can
             // actually self-update).
             titleEl.innerHTML = `
                 <div class="app-name-text">${appName}</div>
                 <div class="app-version-row">
-                    <span class="app-version-text">v${cleanVersion}${isBetaVersion ? ' <span class="app-beta-pill">BETA</span>' : ''}</span>
+                    <span class="app-version-text">v${cleanVersion}${stageLabel ? ` <span class="app-beta-pill">${stageLabel}</span>` : ''}</span>
                 </div>
             `;
         }
@@ -765,13 +766,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const normalizeVersionTag = (tag) => String(tag || '').trim().replace(/^v/i, '');
 
+    // Same-numbered builds sort alpha (a) < beta (b) < stable.
+    const VERSION_STAGES = { a: 0, b: 1, '': 2 };
+
     const parseVersion = (tag) => {
         const normalized = normalizeVersionTag(tag);
-        const match = normalized.match(/^(\d+(?:\.\d+)*)(b)?$/i);
+        const match = normalized.match(/^(\d+(?:\.\d+)*)([ab])?$/i);
         if (!match) return null;
         const parts = match[1].split('.').map(n => parseInt(n, 10));
-        const isBeta = !!match[2];
-        return { normalized, parts, isBeta };
+        const suffix = (match[2] || '').toLowerCase();
+        return { normalized, parts, stage: VERSION_STAGES[suffix], isBeta: suffix === 'b', isPrerelease: suffix !== '' };
     };
 
     const compareVersionTags = (aTag, bTag) => {
@@ -786,8 +790,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (av !== bv) return av - bv;
         }
 
-        if (a.isBeta === b.isBeta) return 0;
-        return a.isBeta ? -1 : 1;
+        return a.stage - b.stage;
     };
 
     // Update checks run at launch, every 5 minutes after that, and on demand from
@@ -1093,7 +1096,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // the release channel.
     if (window.AppSettings && window.AppSettings.get('beta_builds', null) === null) {
         const currentParsed = parseVersion(currentVersion);
-        if (currentParsed && currentParsed.isBeta) {
+        if (currentParsed && currentParsed.isPrerelease) {
             try { await window.AppSettings.set('beta_builds', true); } catch {}
         }
     }
