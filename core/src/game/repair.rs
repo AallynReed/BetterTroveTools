@@ -314,8 +314,8 @@ mod tests {
 
     #[test]
     fn picks_branch_from_folder() {
-        assert_eq!(pointer_file(Path::new(r"C:\Glyph\Games\Trove\PTS")), "kiwi-pts.txt");
-        assert_eq!(pointer_file(Path::new(r"C:\Glyph\Games\Trove\Live")), "kiwi-live-us.txt");
+        assert_eq!(pointer_file(Path::new("C:/Glyph/Games/Trove/PTS")), "kiwi-pts.txt");
+        assert_eq!(pointer_file(Path::new("C:/Glyph/Games/Trove/Live")), "kiwi-live-us.txt");
         assert_eq!(pointer_file(Path::new("/steam/common/Trove/Games/Trove/Live")), "kiwi-live-us.txt");
     }
 }
