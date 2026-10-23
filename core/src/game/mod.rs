@@ -5,6 +5,7 @@ pub mod archive;
 pub mod executable;
 pub mod hash;
 pub mod registry;
+pub mod repair;
 pub mod trove_cfg;
 pub mod vdf;
 

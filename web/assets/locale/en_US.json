@@ -1949,7 +1949,28 @@
         "steam.no_items": "This account hasn't published anything for Trove yet.",
         "steam.update_this": "Update this",
         "steam.banned": "Banned",
-        "steam.no_delete": "Trove's Steam SDK has no delete call — remove an item from its page on the Steam website."
+        "steam.no_delete": "Trove's Steam SDK has no delete call — remove an item from its page on the Steam website.",
+        "settings.repair_install": "Repair Game Install",
+        "settings.repair_install_help": "Checks a Trove install against the current game build and downloads any file that is missing or damaged. Your mods and settings are left alone.",
+        "settings.repair_no_installs": "No Glyph or Steam install of Trove was found on this computer.",
+        "settings.repair_install_label": "Install",
+        "settings.repair_deep_check": "Deep check",
+        "settings.repair_deep_check_help": "Also compare the contents of every file, not just its size. Takes a few minutes.",
+        "settings.repair_start": "Repair",
+        "settings.repair_cancel": "Cancel",
+        "settings.repair_contacting": "Contacting the Trove patch server…",
+        "settings.repair_progress": "Checked {checked} of {total} files",
+        "settings.repair_progress_fixed": "Checked {checked} of {total} files · {repaired} repaired",
+        "settings.repair_cancelling": "Stopping…",
+        "settings.repair_done_clean": "All {total} files are intact. Nothing needed repairing.",
+        "settings.repair_done_fixed": "Repaired {repaired} of {total} files.",
+        "settings.repair_partial": "Repaired {repaired} files, but {failed} could not be fixed. Close Trove and anything else using the game folder, then try again.",
+        "settings.repair_cancelled": "Repair stopped.",
+        "settings.repair_failed": "Repair failed: {error}",
+        "settings.repair_game_running": "Trove is running from this install. Close the game, then repair.",
+        "settings.repair_busy": "A repair is already running.",
+        "settings.repair_not_an_install": "That folder doesn't look like a Trove install.",
+        "settings.repair_cancelled_fixed": "Repair stopped after fixing {repaired} files."
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",
@@ -4257,6 +4278,8 @@
         "Jadebound Blast-beast": "",
         "Electric Boogaloo": "",
         "Thread-spinner Loom": "",
-        "Cerulean Squad Quad": ""
+        "Cerulean Squad Quad": "",
+        "Channel Surfer": "",
+        "Professor Cortex": ""
     }
 }

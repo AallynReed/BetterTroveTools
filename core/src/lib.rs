@@ -80,6 +80,7 @@ pub fn commands() -> Vec<Cmd> {
     all.extend(app::commands());
     all.extend(settings::commands());
     all.extend(notify::commands());
+    all.extend(game::repair::commands());
     #[cfg(feature = "home")]
     all.extend(home::commands());
     #[cfg(feature = "gems")]

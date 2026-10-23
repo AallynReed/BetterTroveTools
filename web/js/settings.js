@@ -1,3 +1,8 @@
+// The backend pushes game-repair progress here; the mounted view sets the handler.
+if (window.eel && typeof window.eel.expose === 'function') {
+    window.eel.expose((payload) => window._gameRepairHandler && window._gameRepairHandler(payload), 'receive_game_repair_progress');
+}
+
 document.addEventListener('settings_loaded', async () => {
     console.log("Settings Vue initialized!");
     if (typeof Vue === 'undefined') {
@@ -5,7 +10,7 @@ document.addEventListener('settings_loaded', async () => {
         return;
     }
 
-    const { createApp, ref, reactive, watch, onMounted } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
 
     const app = createApp({
         setup() {
@@ -295,6 +300,92 @@ document.addEventListener('settings_loaded', async () => {
                 applyFolders(unwrap(await eel.get_folder_settings()()));
             };
 
+            // Game repair (core/src/game/repair.rs). phase: idle | starting | running.
+            const repair = reactive({
+                available: !isWebMode && typeof eel !== 'undefined' && typeof eel.repair_game_install === 'function',
+                installs: [], path: '', deep: false,
+                phase: 'idle', cancelling: false,
+                checked: 0, total: 0, message: '', tone: 'muted', errors: []
+            });
+            const repairInstallOptions = computed(() => repair.installs.map(g => [g.name, g.path]));
+            const repairPercent = computed(() => repair.total ? Math.round(repair.checked / repair.total * 100) : 0);
+            const fmt = (n) => Number(n || 0).toLocaleString();
+            const setRepairStatus = (message, tone) => { repair.message = message; repair.tone = tone || 'muted'; };
+
+            const loadRepairInstalls = async () => {
+                if (!repair.available) return;
+                try {
+                    const data = unwrap(await eel.get_detected_game_paths(true)());
+                    repair.installs = (data.paths || []).filter(g => g.is_steam || g.is_glyph);
+                    if (!repair.installs.some(g => g.path === repair.path)) {
+                        repair.path = repair.installs.length ? repair.installs[0].path : '';
+                    }
+                } catch (e) {
+                    console.error('[settings] could not list game installs', e);
+                }
+            };
+
+            window._gameRepairHandler = (p) => {
+                if (!p) return;
+                if (p.stage === 'checking') {
+                    repair.phase = 'running';
+                    if (!repair.cancelling) setRepairStatus(t('settings.repair_contacting'));
+                } else if (p.stage === 'progress') {
+                    repair.phase = 'running';
+                    repair.checked = p.checked;
+                    repair.total = p.total;
+                    if (!repair.cancelling) {
+                        const key = p.repaired ? 'settings.repair_progress_fixed' : 'settings.repair_progress';
+                        setRepairStatus(t(key, { checked: fmt(p.checked), total: fmt(p.total), repaired: fmt(p.repaired) }));
+                    }
+                } else if (p.stage === 'done') {
+                    repair.phase = 'idle';
+                    repair.cancelling = false;
+                    repair.errors = p.errors || [];
+                    if (p.error) setRepairStatus(t('settings.repair_failed', { error: p.error }), 'error');
+                    else if (p.cancelled) setRepairStatus(p.repaired ? t('settings.repair_cancelled_fixed', { repaired: fmt(p.repaired) }) : t('settings.repair_cancelled'));
+                    else if (p.failed) setRepairStatus(t('settings.repair_partial', { repaired: fmt(p.repaired), failed: fmt(p.failed) }), 'warn');
+                    else if (p.repaired) setRepairStatus(t('settings.repair_done_fixed', { repaired: fmt(p.repaired), total: fmt(p.total) }), 'ok');
+                    else setRepairStatus(t('settings.repair_done_clean', { total: fmt(p.total) }), 'ok');
+                    loadRepairInstalls();
+                }
+            };
+
+            const REPAIR_CODES = {
+                GAME_RUNNING: 'settings.repair_game_running',
+                BUSY: 'settings.repair_busy',
+                NOT_AN_INSTALL: 'settings.repair_not_an_install'
+            };
+
+            const startRepair = async () => {
+                if (!repair.path || repair.phase !== 'idle') return;
+                Object.assign(repair, { phase: 'starting', cancelling: false, checked: 0, total: 0, errors: [] });
+                setRepairStatus('');
+                try {
+                    const res = await eel.repair_game_install(repair.path, repair.deep)();
+                    if (res && res.success === false) {
+                        repair.phase = 'idle';
+                        setRepairStatus(REPAIR_CODES[res.code] ? t(REPAIR_CODES[res.code]) : t('settings.repair_failed', { error: res.error || '' }), 'error');
+                    } else if (repair.phase === 'starting') {
+                        repair.phase = 'running';
+                        setRepairStatus(t('settings.repair_contacting'));
+                    }
+                } catch (e) {
+                    repair.phase = 'idle';
+                    setRepairStatus(t('settings.repair_failed', { error: String(e && e.message || e) }), 'error');
+                }
+            };
+
+            const cancelRepair = async () => {
+                repair.cancelling = true;
+                setRepairStatus(t('settings.repair_cancelling'));
+                try {
+                    await eel.cancel_game_repair()();
+                } catch (e) {
+                    repair.cancelling = false;
+                }
+            };
+
             const browseInto = async (target, flag, title) => {
                 folderBusy[flag] = true;
                 try {
@@ -528,6 +619,7 @@ document.addEventListener('settings_loaded', async () => {
                 await loadSettings();
                 await refreshBgStatus();
                 await loadFolders();
+                await loadRepairInstalls();
 
                 // Deep-link: the sidebar bell (and other shortcuts) set
                 // window.pendingSettingsTab to jump straight to a sub-tab. Honor
@@ -569,11 +661,13 @@ document.addEventListener('settings_loaded', async () => {
                 browseModCfgs, saveModCfgs, resetModCfgs,
                 notifyRegistry, d15Biomes, saveAndSyncNotifications, sendTestNotification,
                 desktopEventCatalog,
-                bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications
+                bgStatus, bgAllGreen, lastSyncedText, grantBackgroundAccess, refreshNotifications,
+                repair, repairInstallOptions, repairPercent, startRepair, cancelRepair
             };
         }
     });
 
+    if (window.CustomVueSelect) app.component('custom-vue-select', window.CustomVueSelect);
     if (window._settingsApp) window._settingsApp.unmount();
     window._settingsApp = app;
     app.mount('#settings-vue-app');

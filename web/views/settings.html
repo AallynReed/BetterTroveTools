@@ -263,6 +263,48 @@
 
                     <p class="settings-help-text" style="margin-top: var(--t-3);">{{ t('settings.mod_cfgs_folder_note') }}</p>
                 </div>
+
+                <!-- Re-downloads missing or damaged game files from Trion's patch server. -->
+                <div v-if="repair.available" class="settings-section">
+                    <h3>{{ t('settings.repair_install') }}</h3>
+                    <p class="settings-help-text">{{ t('settings.repair_install_help') }}</p>
+
+                    <div v-if="repairInstallOptions.length === 0" class="placeholder-box" style="padding: var(--t-3);">{{ t('settings.repair_no_installs') }}</div>
+                    <template v-else>
+                        <div class="repair-field">
+                            <label class="repair-label">{{ t('settings.repair_install_label') }}</label>
+                            <custom-vue-select v-model="repair.path" :options="repairInstallOptions" :translate-options="false" :disabled="repair.phase !== 'idle'"></custom-vue-select>
+                        </div>
+
+                        <div class="settings-action-row repair-deep-row">
+                            <div>
+                                <div class="repair-row-title">{{ t('settings.repair_deep_check') }}</div>
+                                <div class="repair-row-help">{{ t('settings.repair_deep_check_help') }}</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" v-model="repair.deep" :disabled="repair.phase !== 'idle'" :aria-label="t('settings.repair_deep_check')">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div class="repair-actions">
+                            <button v-if="repair.phase !== 'running'" class="primary-btn" @click="startRepair" :disabled="!repair.path || repair.phase !== 'idle'">
+                                <i class="fa-solid" :class="repair.phase === 'starting' ? 'fa-spinner fa-spin' : 'fa-screwdriver-wrench'"></i> <span>{{ t('settings.repair_start') }}</span>
+                            </button>
+                            <button v-else class="secondary-btn" @click="cancelRepair" :disabled="repair.cancelling">
+                                <i class="fa-solid fa-xmark"></i> <span>{{ t('settings.repair_cancel') }}</span>
+                            </button>
+                        </div>
+
+                        <div v-if="repair.phase === 'running'" class="repair-progress" role="progressbar" :aria-label="t('settings.repair_install')" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="repairPercent">
+                            <div class="repair-progress-fill" :style="{ transform: 'scaleX(' + (repairPercent / 100) + ')' }"></div>
+                        </div>
+                        <p v-if="repair.message" class="repair-status" :class="'is-' + repair.tone" aria-live="polite">{{ repair.message }}</p>
+                        <ul v-if="repair.phase === 'idle' && repair.errors.length" class="repair-errors">
+                            <li v-for="err in repair.errors" :key="err">{{ err }}</li>
+                        </ul>
+                    </template>
+                </div>
         </div>
 
         <!-- Notifications tab (Android only). Rendered from notifyRegistry so adding

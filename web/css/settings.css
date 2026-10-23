@@ -160,6 +160,47 @@
     border-color: var(--accent-blue) !important;
 }
 
+/* ---- Repair game install ---- */
+.repair-field { display: flex; flex-direction: column; gap: var(--t-1); }
+.repair-label { color: var(--text-muted); font-size: var(--t-fs-label); }
+.repair-deep-row { margin-top: var(--t-4); }
+.repair-row-title { color: var(--text-main); font-weight: 500; font-size: var(--t-fs-body); }
+.repair-row-help { color: var(--text-muted); font-size: var(--t-fs-label); margin-top: var(--t-1); }
+.repair-actions { display: flex; gap: var(--control-gap); flex-wrap: wrap; margin-top: var(--t-4); }
+
+.repair-progress {
+    height: 6px;
+    margin-top: var(--t-4);
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+.repair-progress-fill {
+    height: 100%;
+    background: var(--accent-blue);
+    transform-origin: left center;
+    transition: transform var(--dur) var(--t-ease);
+}
+
+.repair-status {
+    margin-top: var(--t-3);
+    font-size: var(--t-fs-body);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+.repair-status.is-ok { color: var(--success-ink); }
+.repair-status.is-warn { color: var(--warning-ink); }
+.repair-status.is-error { color: var(--danger-ink); }
+.repair-errors {
+    margin: var(--t-2) 0 0;
+    padding-left: var(--t-5);
+    color: var(--text-muted);
+    font-size: var(--t-fs-label);
+    word-break: break-word;
+}
+
 /* ---- Toggle switch ----
    44x24 track with a 16px knob; the 3px inset and the 20px throw are the
    geometry that centres the knob (24 - 2 borders - 16 = 8, split 4/4 → 3px plus
