@@ -40,6 +40,8 @@ pub struct TroveModList {
     pub mods: Vec<TroveMod>,
     /// Mods whose `.cfg` could not be written (read-only or locked).
     pub read_only_configs: Vec<String>,
+    /// Files in the mods folder that could not be read, with the reason.
+    pub unreadable: Vec<(PathBuf, String)>,
 }
 
 /// `path.with_suffix(suffix)`.
@@ -63,54 +65,19 @@ fn read_header_bytes(path: &Path) -> Result<Vec<u8>> {
     read().map_err(|e| py::errno_error(e, path))
 }
 
-fn type_of(name: Option<&str>) -> &'static str {
-    if name.is_some() {
-        "str"
-    } else {
-        "NoneType"
-    }
-}
-
-/// `list.sort(key=lambda m: m.name)`: a `None` title makes Python's sort raise. The
-/// comparison it fails on is approximated (CPython's run detection, then insertion).
-fn sort_by_name(mods: &mut [TroveMod]) -> Result<()> {
-    if mods.iter().all(|m| m.name().is_some()) {
-        mods.sort_by(|a, b| a.name().cmp(&b.name()));
-        return Ok(());
-    }
-    let keys: Vec<Option<&str>> = mods.iter().map(|m| m.name()).collect();
-    let lt = |a: Option<&str>, b: Option<&str>| -> Result<bool> {
-        match (a, b) {
-            (Some(a), Some(b)) => Ok(a < b),
-            _ => Err(anyhow!("'<' not supported between instances of '{}' and '{}'", type_of(a), type_of(b))),
-        }
-    };
-    let mut n = 1;
-    while n < keys.len() {
-        if lt(keys[n], keys[n - 1])? {
-            break;
-        }
-        n += 1;
-    }
-    let mut sorted: Vec<Option<&str>> = keys[..n].to_vec();
-    for &pivot in &keys[n..] {
-        let (mut lo, mut hi) = (0, sorted.len());
-        while lo < hi {
-            let mid = (lo + hi) / 2;
-            if lt(pivot, sorted[mid])? {
-                hi = mid;
-            } else {
-                lo = mid + 1;
-            }
-        }
-        sorted.insert(lo, pivot);
-    }
-    Ok(())
+/// By title; untitled mods go last, by file name.
+fn sort_by_name(mods: &mut [TroveMod]) {
+    mods.sort_by(|a, b| match (a.name(), b.name()) {
+        (Some(x), Some(y)) => x.cmp(y),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => a.mod_path.cmp(&b.mod_path),
+    });
 }
 
 impl TroveModList {
     pub fn new(trove_path: TroveGamePath, opts: ListOptions) -> Result<Self> {
-        let mut list = TroveModList { trove_path, mods: Vec::new(), read_only_configs: Vec::new() };
+        let mut list = TroveModList { trove_path, mods: Vec::new(), read_only_configs: Vec::new(), unreadable: Vec::new() };
         list.populate(opts)?;
         Ok(list)
     }
@@ -150,31 +117,51 @@ impl TroveModList {
         self.mods.iter_mut().filter(|m| !m.is_workshop).map(|m| m.hash()).collect()
     }
 
+    /// One unreadable file is recorded in `unreadable` and skipped, so it can't hide the
+    /// rest of the folder.
     fn populate(&mut self, opts: ListOptions) -> Result<()> {
         self.mods.clear();
-        self.ensure_correct_extensions()?;
+        self.unreadable.clear();
+        self.ensure_correct_extensions();
         let game = self.trove_path.clone();
         for (files, enabled) in [(game.enabled_tmods(), true), (game.disabled_tmods(), false)] {
             for file in files {
-                let data = if opts.partial { read_header_bytes(&file)? } else { py::read_bytes(&file)? };
-                let mut m = TroveMod::read_tmod(&file, data, opts.partial)?;
+                let read = || -> Result<TroveMod> {
+                    let data = if opts.partial { read_header_bytes(&file)? } else { py::read_bytes(&file)? };
+                    TroveMod::read_tmod(&file, data, opts.partial)
+                };
+                let mut m = match read() {
+                    Ok(m) => m,
+                    Err(e) => {
+                        self.unreadable.push((file, format!("{e:#}")));
+                        continue;
+                    }
+                };
                 m.enabled = enabled;
                 m.is_workshop = game.is_workshop_file(&file);
                 if m.has_wrong_name() && opts.fix_names && !m.is_workshop {
-                    m.fix_name()?;
+                    if let Err(e) = m.fix_name() {
+                        eprintln!("Not renaming {}: {e}", py::display(&file));
+                    }
                 }
                 self.mods.push(m);
             }
         }
         for (files, enabled) in [(game.enabled_zips(), true), (game.disabled_zips(), false)] {
             for file in files {
-                let mut m = TroveMod::read_zip(&file, py::read_bytes(&file)?)?;
+                let mut m = match py::read_bytes(&file).and_then(|data| TroveMod::read_zip(&file, data)) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        self.unreadable.push((file, format!("{e:#}")));
+                        continue;
+                    }
+                };
                 m.enabled = enabled;
                 m.is_workshop = game.is_workshop_file(&file);
                 self.mods.push(m);
             }
         }
-        sort_by_name(&mut self.mods)?;
+        sort_by_name(&mut self.mods);
         self.calculate_conflicts(opts.force);
         if opts.fix_configs {
             self.ensure_mod_configs()?;
@@ -184,20 +171,21 @@ impl TroveModList {
 
     /// Renames `.tmod`s that are zips to `.zip` and back. Steam owns Workshop files,
     /// so those are left alone.
-    fn ensure_correct_extensions(&self) -> Result<()> {
+    fn ensure_correct_extensions(&self) {
         let game = &self.trove_path;
-        let fix = |files: Vec<PathBuf>, want_zip: bool, target: &dyn Fn(&Path) -> PathBuf| -> Result<()> {
+        let fix = |files: Vec<PathBuf>, want_zip: bool, target: &dyn Fn(&Path) -> PathBuf| {
             for file in files {
                 if is_zipfile(&file) == want_zip && !game.is_workshop_file(&file) {
-                    py::rename(&file, &target(&file))?;
+                    if let Err(e) = py::rename(&file, &target(&file)) {
+                        eprintln!("Could not fix the extension of {}: {e}", py::display(&file));
+                    }
                 }
             }
-            Ok(())
         };
-        fix(game.enabled_tmods(), true, &|f| with_suffix(f, ".zip"))?;
-        fix(game.disabled_tmods(), true, &|f| with_suffix(&with_suffix(f, ""), ".zip.disabled"))?;
-        fix(game.enabled_zips(), false, &|f| with_suffix(f, ".tmod"))?;
-        fix(game.disabled_zips(), false, &|f| with_suffix(&with_suffix(f, ""), ".tmod.disabled"))
+        fix(game.enabled_tmods(), true, &|f| with_suffix(f, ".zip"));
+        fix(game.disabled_tmods(), true, &|f| with_suffix(&with_suffix(f, ""), ".zip.disabled"));
+        fix(game.enabled_zips(), false, &|f| with_suffix(f, ".tmod"));
+        fix(game.disabled_zips(), false, &|f| with_suffix(&with_suffix(f, ""), ".tmod.disabled"));
     }
 
     fn calculate_conflicts(&mut self, force: bool) {

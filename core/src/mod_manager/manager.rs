@@ -169,7 +169,7 @@ fn disabled_by_trove(m: &TroveMod, trove_disabled: &HashSet<String>) -> bool {
     m.enabled && trove_disabled.contains(&trove_key(m))
 }
 
-fn is_on(m: &TroveMod, trove_disabled: &HashSet<String>) -> bool {
+pub(super) fn is_on(m: &TroveMod, trove_disabled: &HashSet<String>) -> bool {
     m.enabled && !trove_disabled.contains(&trove_key(m))
 }
 
@@ -223,7 +223,7 @@ pub(super) fn get_installed_mods(a: &Args) -> Result<Value> {
                 "path": path,
                 "workshop": m.is_workshop,
                 "locked": locked.contains(&lock_key(&path)),
-                "image": m.image()?,
+                "image": m.image().unwrap_or_else(|_| crate::modfile::no_preview_image()),
                 "has_conflicts": m.has_conflicts(),
                 "conflicts_with": conflicts,
             }));
@@ -232,9 +232,11 @@ pub(super) fn get_installed_mods(a: &Args) -> Result<Value> {
         py::write_bytes(&cache_file, crate::json::dumps(&json!({ "mods": result_mods })).as_bytes())?;
 
         let cached = "/api/cache/installed_mods.json";
-        Ok(Resp::ok(json!({ "cached_file": cached, "read_only_configs": list.read_only_configs }))
+        let unreadable: Vec<Value> = list.unreadable.iter().map(|(p, e)| json!({ "file": file_name(p), "error": e })).collect();
+        Ok(Resp::ok(json!({ "cached_file": cached, "read_only_configs": list.read_only_configs, "unreadable": unreadable }))
             .with("cached_file", cached)
             .with("read_only_configs", list.read_only_configs.clone())
+            .with("unreadable", unreadable)
             .into())
     }))
 }

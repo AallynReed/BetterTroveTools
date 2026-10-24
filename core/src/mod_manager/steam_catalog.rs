@@ -57,6 +57,20 @@ fn installed(game: &Value) -> Result<HashSet<String>> {
 
 /// The Workshop list with each item marked `installed` when its folder is in this
 /// install's Workshop folder. A failed fetch serves the last good list.
+/// The Workshop list's items, refreshed when stale; empty when it can't be loaded.
+pub(super) fn catalog_items() -> Vec<Value> {
+    let stale = {
+        let c = CACHE.lock();
+        c.1.is_none() || now() - c.0 > FRESH_SECONDS
+    };
+    if stale {
+        if let Some(data) = fetch() {
+            *CACHE.lock() = (now(), Some(data));
+        }
+    }
+    CACHE.lock().1.as_ref().map(|d| super::items(get(d, "items")).to_vec()).unwrap_or_default()
+}
+
 pub(super) fn get_steam_workshop_catalog(a: &Args) -> Result<Value> {
     let stale = {
         let c = CACHE.lock();

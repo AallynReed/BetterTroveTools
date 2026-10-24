@@ -47,7 +47,7 @@ fn local_hash_to_path(game: &Value) -> Result<IndexMap<String, String>> {
 
 /// `{hash: mod id}` from Trovesaurus. `None` when a batch failed, so callers can tell
 /// "none of these are Trovesaurus mods" from "Trovesaurus didn't answer".
-fn resolve_hashes(hashes: &[&String], label: &str) -> Option<Map<String, Value>> {
+pub(super) fn resolve_hashes(hashes: &[&String], label: &str) -> Option<Map<String, Value>> {
     let mut resolved = Map::new();
     for batch in hashes.chunks(200) {
         let joined = batch.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(",");
@@ -177,6 +177,11 @@ fn compute_installed_states(game: &Value, mods_all: &[Value], force: bool) -> Re
         Err(e) => eprintln!("Failed to load local mods for hash check: {}", e),
     }
     Ok(states)
+}
+
+/// The cached master list.
+pub(super) fn mods_all() -> Result<Value> {
+    get_cached(MODS_ALL, "mods_all.json")
 }
 
 fn get_cached(endpoint: &str, file: &str) -> Result<Value> {
@@ -341,7 +346,7 @@ pub(super) fn get_trovesaurus_mods(a: &Args) -> Result<Value> {
     Ok(Value::Null)
 }
 
-fn install(game: &Value, mod_id: &Value) -> Result<std::result::Result<(), String>> {
+pub(super) fn install(game: &Value, mod_id: &Value) -> Result<std::result::Result<(), String>> {
     if !py::truthy(game) {
         return Ok(Err("No game path provided.".into()));
     }

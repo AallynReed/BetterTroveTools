@@ -229,14 +229,14 @@
                 <div class="recommended-build-copy">
                     <div class="eyebrow">{{ t('gems.gem_builds.top_build') }}</div>
                     <div class="recommended-build-layout-row">
-                        <div class="recommended-build-layout" @click="copyLayout(fmtLayout(cachedBuilds[0].layout), $event)">{{ fmtLayout(cachedBuilds[0].layout) }}</div>
-                        <span class="help-tip">
-                            <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54')" :aria-expanded="helpOpen === 'top' ? 'true' : 'false'" @click="toggleHelp('top')">
-                                <i class="fa-solid fa-circle-question"></i>
-                            </button>
-                            <span v-if="helpOpen === 'top'" class="help-tip-pop" role="note">{{ t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54') }}</span>
-                        </span>
+                        <div class="recommended-build-layout" role="button" tabindex="0" :title="t('gems.gem_builds.click_to_copy')" @click="copyLayout(fmtLayout(cachedBuilds[0].layout), $event)" @keydown.enter.prevent="copyLayout(fmtLayout(cachedBuilds[0].layout), $event)">
+                            <span v-for="(g, i) in layoutGroups(cachedBuilds[0].layout)" :key="i" class="layout-group">
+                                <span class="layout-code"><span v-if="g.plus" class="layout-plus" aria-hidden="true">+</span>{{ g.code }}</span>
+                                <span class="layout-caption"><span class="layout-group-name">{{ g.name }}</span> {{ g.stats.join(' / ') }}</span>
+                            </span>
+                        </div>
                     </div>
+                    <p class="layout-legend-note">{{ t('gems.gem_builds.layout_legend') }}</p>
                     <p class="recommended-build-reason">{{ getBuildHeadline(cachedBuilds[0]) }}</p>
                 </div>
                 <div class="recommended-build-stats">
@@ -302,7 +302,7 @@
                     <thead>
                         <tr>
                             <th class="text-center">{{ t('#') }}</th>
-                            <th class="text-left">{{ t('gems.gem_builds.build') }}<span class="help-tip"><button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54')" :aria-expanded="helpOpen === 'table' ? 'true' : 'false'" @click="toggleHelp('table')"><i class="fa-solid fa-circle-question"></i></button><span v-if="helpOpen === 'table'" class="help-tip-pop" role="note">{{ t('gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54') }}</span></span></th>
+                            <th class="text-left">{{ t('gems.gem_builds.build') }}<span class="help-tip"><button type="button" class="info-icon-btn help-tip-btn" :title="layoutLegend" :aria-label="layoutLegend" :aria-expanded="helpOpen === 'table' ? 'true' : 'false'" @click="toggleHelp('table')"><i class="fa-solid fa-circle-question"></i></button><span v-if="helpOpen === 'table'" class="help-tip-pop" role="note">{{ layoutLegend }}</span></span></th>
                             <th class="text-right">{{ t('common.light') }}</th>
                             <th class="text-right">{{ t('gems.gem_builds.base_dmg') }}</th>
                             <th class="text-right">{{ t('gems.gem_builds.bonus_dmg') }}</th>

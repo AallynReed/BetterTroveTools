@@ -220,13 +220,52 @@ document.addEventListener("gem_builds_loaded", () => {
                 }).join(" + ");
             };
 
+            // The layout split into its gem groups, each with the stats its numbers
+            // land on: Empowered and Lesser pairs, then the Cosmic pairs (or
+            // triples, when Light is targeted) after the " + ".
+            const layoutGroups = (layout) => {
+                if (typeof layout !== "string") return [];
+                const health = config.build_type === "Health";
+                const stats = health
+                    ? [t("gems.gem_builds.stat_health"), t("gems.gem_builds.stat_health_pct"), t("common.light")]
+                    : [t("gems.gem_builds.stat_damage"), t("gems.gem_builds.stat_crit_damage"), t("common.light")];
+                const names = ["empowered", "lesser", "cosmic_empowered", "cosmic_lesser"];
+                const groups = [];
+                layout.split(" + ").forEach((seg, s) => {
+                    const p = seg.trim().split("/");
+                    const half = p.length / 2;
+                    [p.slice(0, half), p.slice(half)].forEach((nums, h) => {
+                        groups.push({
+                            plus: s > 0 && h === 0,
+                            code: nums.join("/"),
+                            name: t(`gems.gem_builds.group_${names[s * 2 + h]}`),
+                            stats: stats.slice(0, nums.length),
+                            values: nums
+                        });
+                    });
+                });
+                return groups;
+            };
+
+            const layoutLegend = computed(() => {
+                const groups = cachedBuilds.value.length ? layoutGroups(cachedBuilds.value[0].layout) : [];
+                if (!groups.length) return t("gems.gem_builds.boosts_placed_on_each_stat_by_gem_group_c77e54");
+                const parts = groups.map(g => `${g.plus ? "+ " : ""}${g.name} (${g.stats.join(" / ")})`);
+                return `${t("gems.gem_builds.layout_legend")} ${parts.join(", ")}`;
+            });
+
             const getTooltipHtml = (build) => {
                 const classBonusText = build.class_bonus ? `<span style="color: var(--accent-blue);"> + ${build.class_bonus}%</span>` : "";
                 const tradeoffText = getTradeoffSummary(build);
+                const groupRows = layoutGroups(build.layout).map(g => `
+                            <li style="margin-bottom: var(--t-1);"><strong>${g.name}:</strong> <span style="float: right; color: var(--text-main);">${g.values.map((n, i) => `${n} ${g.stats[i]}`).join(" · ")}</span></li>`).join("");
                 return `
                     <div style="min-width: 220px;">
                         <h3>${t("gems.gem_builds.build_rank_details").replace("{rank}", build.rank)}</h3>
                         <p style="margin: 0 0 var(--t-3) 0; color: var(--text-muted); line-height: 1.5;">${tradeoffText}</p>
+                        <ul style="list-style: none; padding: 0; margin: 0;">${groupRows}
+                        </ul>
+                        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: var(--t-2) 0;">
                         <ul style="list-style: none; padding: 0; margin: 0;">
                             <li style="margin-bottom: var(--t-1);"><strong>${t("common.light")}:</strong> <span style="float: right; color: var(--text-main);">${fmtNum(build.light)}</span></li>
                             <li style="margin-bottom: var(--t-1);"><strong>${t("gems.gem_builds.base_dmg")}:</strong> <span style="float: right; color: var(--text-main);">${fmtInt(build.base_dmg)}</span></li>
@@ -517,7 +556,7 @@ document.addEventListener("gem_builds_loaded", () => {
                 modifiersOpen, tipsDismissed,
                 cachedBuilds, currentPage, maxPages, paginatedBuilds, isCalculating, bestCoeff, buildsUnavailable,
                 bountyBuff, bountyPercent,
-                nextPage, prevPage, getTooltipHtml, copyLayout, fmtLayout, exportCsv, showContextMenu,
+                nextPage, prevPage, getTooltipHtml, copyLayout, fmtLayout, layoutGroups, layoutLegend, exportCsv, showContextMenu,
                 helpOpen, toggleHelp,
                 getBuildHeadline, dismissTips,
                 fmtNum, fmtInt, fmtDec

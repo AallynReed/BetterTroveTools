@@ -356,13 +356,14 @@
     align-items: center;
 }
 
-/* Anchor the legend to the row (and, in the table, to the column), not to the
-   glyph: on a phone a popover starting at the icon runs off the right edge. */
-.recommended-build-layout-row .help-tip,
+/* Anchor the legend to the column, not to the glyph: on a phone a popover
+   starting at the icon runs off the right edge. */
 .btt-table th .help-tip {
     position: static;
 }
 
+/* Each gem group's numbers sit over the gem tier and the stats they land on,
+   so the code reads without a legend. Captions wrap under their own group. */
 .recommended-build-layout {
     /* Monospace is load-bearing: the layout string is a code the user copies
        and compares column-by-column against the table below. */
@@ -371,10 +372,52 @@
     font-weight: 700;
     color: var(--text-main);
     cursor: pointer;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--t-2) var(--t-4);
+    border-radius: var(--radius-control);
 }
 
 .recommended-build-layout:hover {
     color: var(--accent-blue);
+}
+
+.layout-group {
+    display: inline-flex;
+    flex-direction: column;
+    gap: var(--t-1);
+    max-width: 18ch;
+}
+
+.layout-code {
+    line-height: 1;
+}
+
+/* Rides on the first Cosmic group so the two never wrap apart. */
+.layout-plus {
+    margin-right: var(--t-2);
+    color: var(--text-muted);
+}
+
+.layout-caption {
+    font-family: var(--font);
+    font-size: var(--t-fs-label);
+    font-weight: 400;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+.layout-group-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.layout-legend-note {
+    margin: var(--t-2) 0 0;
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
 }
 
 .recommended-build-reason {
@@ -636,12 +679,6 @@
 
     .recommended-build-layout {
         font-size: var(--t-fs-h2);
-    }
-
-    /* The layout is the loudest thing on the card here - keep its legend
-       legible rather than optically trimmed to a smaller neighbour. */
-    .recommended-build-layout-row .help-tip-btn {
-        font-size: var(--t-fs-body);
     }
 
     .recommended-build-stats {

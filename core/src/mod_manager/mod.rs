@@ -16,6 +16,7 @@ mod hub;
 mod manager;
 mod modpacks;
 mod profiles;
+mod share;
 mod steam_catalog;
 mod trovesaurus;
 mod watcher;
@@ -45,6 +46,9 @@ pub fn commands() -> Vec<Cmd> {
         Cmd::raw("clear_trovesaurus_cache", trovesaurus::clear_trovesaurus_cache),
         Cmd::raw("get_steam_workshop_catalog", steam_catalog::get_steam_workshop_catalog),
         Cmd::raw("subscribe_workshop_item", steam_catalog::subscribe_workshop_item),
+        Cmd::raw("create_mod_share_code", share::create_mod_share_code),
+        Cmd::raw("read_mod_share_code", share::read_mod_share_code),
+        Cmd::raw("install_shared_mod", share::install_shared_mod),
     ];
     if crate::MODS_HUB_ENABLED {
         cmds.extend([

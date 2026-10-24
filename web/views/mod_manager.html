@@ -92,6 +92,16 @@
                         <template v-else><i class="fa-solid fa-file-import"></i> <span>{{ t('mod_manager.import_tpack') }}</span></template>
                     </button>
 
+                    <button @click="openShareModal" class="secondary-btn" :disabled="!selectedInstall || isLoading" :title="t('mod_manager.share_mods_title')">
+                        <i class="fa-solid fa-share-nodes"></i>
+                        <span>{{ t('mod_manager.share_mods') }}</span>
+                    </button>
+
+                    <button @click="openImportModal" class="secondary-btn" :disabled="!selectedInstall" :title="t('mod_manager.paste_share_code_title')">
+                        <i class="fa-solid fa-paste"></i>
+                        <span>{{ t('mod_manager.paste_share_code') }}</span>
+                    </button>
+
                     <button @click="toggleAutoUpdate" class="secondary-btn toolbar-toggle-btn" :class="{ 'is-on': autoUpdateOnLaunch }" :disabled="isSavingAutoUpdate" :aria-pressed="autoUpdateOnLaunch ? 'true' : 'false'" :title="t('mod_manager.auto_update_title')">
                         <i class="fa-solid" :class="autoUpdateOnLaunch ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
                         <span>{{ t('mod_manager.auto_update') }}</span>
@@ -161,6 +171,7 @@
 
             <div v-if="isLoading" class="placeholder-box ui-state ui-state-loading"><i class="fa-solid fa-spinner fa-spin"></i> {{ statusText }}</div>
             <div v-else-if="!selectedInstall" class="placeholder-box ui-state ui-state-empty">{{ t('mod_manager.select_a_game_installation_to_view_insta_fd57c0') }}</div>
+            <div v-else-if="loadError" class="placeholder-box ui-state ui-state-error">{{ loadError }}</div>
             <div v-else-if="mods.length === 0" class="placeholder-box ui-state ui-state-empty">{{ t('mod_manager.no_mods_found_in_the_selected_directory') }}</div>
             <div v-else-if="filteredMods.length === 0" class="placeholder-box ui-state ui-state-empty no-results-message">{{ t('mod_manager.no_mods_match_your_current_filters') }}</div>
             <div v-else>
@@ -274,6 +285,63 @@
                         <button class="ts-install-btn" :disabled="!profileNameModal.value.trim() || profileNameModal.busy" @click="confirmRenameProfile">
                             <template v-if="profileNameModal.busy"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('common.saving') }}</template>
                             <template v-else><i class="fa-solid fa-check"></i> {{ t('common.save') }}</template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mh-variant-modal" :class="{ active: shareModal.show }" @click.self="closeShareModal" @keydown.esc="closeShareModal">
+                <div class="mh-variant-dialog share-dialog" v-if="shareModal.show" role="dialog" aria-modal="true" aria-labelledby="mm-share-title">
+                    <div class="mh-variant-head">
+                        <h3 id="mm-share-title" class="mh-variant-title">{{ t('mod_manager.share_mods') }}</h3>
+                        <button class="mh-variant-close" @click="closeShareModal" :title="t('mod_manager.close_modal')" :aria-label="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div v-if="shareModal.busy" class="share-state" role="status"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.share_building') }}</div>
+                    <template v-else>
+                        <p v-if="shareModal.error" class="share-error" role="alert">{{ shareModal.error }}</p>
+                        <template v-else>
+                            <p class="mh-variant-hint">{{ t('mod_manager.share_hint').replace('{count}', shareModal.mods.length) }}</p>
+                            <textarea id="mm-share-code-output" class="share-code-text" readonly rows="3" :value="shareModal.code" :aria-label="t('mod_manager.share_code')" @focus="$event.target.select()"></textarea>
+                        </template>
+                        <details v-if="shareModal.unshareable.length" class="share-skipped">
+                            <summary>{{ t('mod_manager.share_skipped').replace('{count}', shareModal.unshareable.length) }}</summary>
+                            <p>{{ shareModal.unshareable.join(', ') }}</p>
+                        </details>
+                        <div class="profile-name-actions">
+                            <button class="secondary-btn" @click="closeShareModal">{{ t('common.close') }}</button>
+                            <button v-if="shareModal.code" class="primary-btn" @click="copyShareCode"><i class="fa-solid fa-copy"></i> {{ t('mod_manager.copy_share_code') }}</button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="mh-variant-modal" :class="{ active: importModal.show }" @click.self="closeImportModal" @keydown.esc="closeImportModal">
+                <div class="mh-variant-dialog share-dialog" v-if="importModal.show" role="dialog" aria-modal="true" aria-labelledby="mm-import-title">
+                    <div class="mh-variant-head">
+                        <h3 id="mm-import-title" class="mh-variant-title">{{ t('mod_manager.paste_share_code') }}</h3>
+                        <button class="mh-variant-close" @click="closeImportModal" :disabled="importModal.installing" :title="t('mod_manager.close_modal')" :aria-label="t('mod_manager.close_modal')"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <p class="mh-variant-hint">{{ t('mod_manager.paste_share_code_hint') }}</p>
+                    <textarea id="mm-share-import-input" class="share-code-text" rows="3" v-model="importModal.text" :placeholder="t('mod_manager.paste_share_code_placeholder')" :aria-label="t('mod_manager.share_code')" :disabled="importModal.installing" @input="readImportCode"></textarea>
+                    <div v-if="importModal.reading" class="share-state" role="status"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.share_reading') }}</div>
+                    <p v-else-if="importModal.error" class="share-error" role="alert">{{ importModal.error }}</p>
+                    <div v-else-if="importModal.entries.length" class="mh-variant-list share-entry-list">
+                        <label v-for="e in importModal.entries" :key="e.source + ':' + e.id" class="mh-variant-row share-entry" :class="{ 'is-unavailable': !e.available }">
+                            <input type="checkbox" v-model="e.selected" :disabled="!e.available || importModal.installing">
+                            <span class="mh-variant-info">
+                                <span class="mh-variant-name-line">
+                                    <span class="mh-variant-name">{{ shareEntryName(e) }}</span>
+                                    <span v-if="e.installed" class="mh-variant-installed-pill">{{ t('common.installed') }}</span>
+                                </span>
+                                <span class="mh-variant-meta">{{ sourceLabel(e.source) }}<template v-if="e.author"> · {{ e.author }}</template><template v-if="e.branch"> · {{ e.branch }}</template><template v-if="!e.available"> · {{ t('mod_manager.share_unavailable') }}</template></span>
+                            </span>
+                        </label>
+                    </div>
+                    <div class="profile-name-actions">
+                        <button class="secondary-btn" @click="closeImportModal" :disabled="importModal.installing">{{ t('common.cancel') }}</button>
+                        <button class="ts-install-btn mh-variant-install" :disabled="!importSelection.length || importModal.installing" @click="installImported">
+                            <template v-if="importModal.installing"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('mod_manager.share_installing') }}</template>
+                            <template v-else><i class="fa-solid fa-download"></i> {{ t('mod_manager.share_install_count').replace('{count}', importSelection.length) }}</template>
                         </button>
                     </div>
                 </div>

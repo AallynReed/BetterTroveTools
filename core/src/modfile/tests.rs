@@ -264,3 +264,28 @@ fn zip_compile_matches_pythons_recursion() {
     z.reset_cache();
     assert_eq!(z.hash().unwrap_err().to_string(), "maximum recursion depth exceeded");
 }
+
+#[test]
+fn one_bad_file_does_not_hide_the_folder() {
+    let root = std::env::temp_dir().join(format!("btt-modlist-{}", std::process::id()));
+    let mods = root.join("mods");
+    let _ = std::fs::remove_dir_all(&root);
+    std::fs::create_dir_all(&mods).unwrap();
+    std::fs::write(mods.join("Simple.tmod"), build_case("simple").compile_tmod().unwrap()).unwrap();
+    let mut untitled = TroveMod::new(ModKind::Tmod);
+    untitled.add_property("author", "me");
+    untitled.add_file(ModFile::new("ui/b.swf", b"b".to_vec())).unwrap();
+    std::fs::write(mods.join("untitled.tmod"), untitled.compile_tmod().unwrap()).unwrap();
+    std::fs::write(mods.join("garbage.tmod"), b"\x10\0\0\0\0\0\0\0not a mod").unwrap();
+
+    let list = TroveModList::new(
+        crate::game::registry::TroveGamePath::new(&root, None),
+        ListOptions { partial: true, fix_names: true, ..Default::default() },
+    )
+    .unwrap();
+    let names: Vec<Option<&str>> = list.mods.iter().map(|m| m.name()).collect();
+    assert_eq!(names, vec![Some("Simple"), None]);
+    assert_eq!(list.unreadable.len(), 1);
+    assert!(list.unreadable[0].0.ends_with("garbage.tmod"));
+    let _ = std::fs::remove_dir_all(&root);
+}

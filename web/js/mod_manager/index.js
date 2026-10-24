@@ -119,6 +119,7 @@ document.addEventListener('mod_manager_loaded', async () => {
             const mods = ref([]);
             const isLoading = ref(false);
             const statusText = ref(t('mod_manager.scanning_mod_directory'));
+            const loadError = ref('');
 
             const searchQuery = ref(uiState.searchQuery || '');
             const activeResultIndex = ref(-1);
@@ -354,6 +355,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 if (!quiet) {
                     isLoading.value = true;
                     mods.value = [];
+                    loadError.value = '';
                 }
                 if (eel.set_watched_install) eel.set_watched_install(selectedInstall.value)();
 
@@ -381,6 +383,10 @@ document.addEventListener('mod_manager_loaded', async () => {
                     const readOnlyCfgs = response.data.read_only_configs || response.raw?.read_only_configs || [];
                     if (readOnlyCfgs.length) {
                         window.showToast(t('mod_manager.cfg_read_only_skipped').replace('{mods}', readOnlyCfgs.join(', ')), true);
+                    }
+                    const unreadable = response.data.unreadable || response.raw?.unreadable || [];
+                    if (unreadable.length) {
+                        window.showToast(t('mod_manager.unreadable_mods_skipped').replace('{files}', unreadable.map(u => u.file).join(', ')), true);
                     }
                     const cachePath = response.data.cached_file || response.raw?.cached_file;
                     try {
@@ -416,10 +422,12 @@ document.addEventListener('mod_manager_loaded', async () => {
                         applyEnrichment(token).catch(() => {});
                     } catch (err) {
                         if (!loadGuard.isCurrent(token)) return;
-                        statusText.value = t('mod_manager.error_reading_mod_data_from_cache');
+                        loadError.value = t('mod_manager.error_reading_mod_data_from_cache');
                     }
                 } else {
-                    statusText.value = t('mod_manager.error_loading_mods_error').replace('{error}', response.error || t('common.unknown_error_occurred'));
+                    const message = t('mod_manager.error_loading_mods_error').replace('{error}', response.error || t('common.unknown_error_occurred'));
+                    if (quiet) window.showToast(message, true);
+                    else loadError.value = message;
                 }
 
                 if (loadGuard.isCurrent(token)) isLoading.value = false;
@@ -631,6 +639,121 @@ document.addEventListener('mod_manager_loaded', async () => {
                         .replace('{names}', failed.join(', ')), true);
                 } else {
                     window.showToast(t('mod_manager.update_all_done').replace('{count}', updated));
+                }
+                await loadMods();
+            };
+
+            // --- Share codes: enabled mods as a pasteable code, and back ---------
+            const shareModal = reactive({ show: false, busy: false, code: '', mods: [], unshareable: [], error: '' });
+            const importModal = reactive({ show: false, text: '', reading: false, installing: false, entries: [], error: '' });
+            const SOURCE_LABELS = { hub: 'mod_manager.mods_hub', trovesaurus: 'mod_manager.trovesaurus', workshop: 'steam.title' };
+            const sourceLabel = (source) => t(SOURCE_LABELS[source] || source);
+
+            const openShareModal = async () => {
+                if (!selectedInstall.value) return;
+                Object.assign(shareModal, { show: true, busy: true, code: '', mods: [], unshareable: [], error: '' });
+                const response = await window.callBackend(eel.create_mod_share_code(selectedInstall.value)(), 'Failed to create a share code');
+                shareModal.busy = false;
+                shareModal.unshareable = response.data.unshareable || [];
+                if (!response.success) {
+                    shareModal.error = response.error || t('common.unknown_error_occurred');
+                    return;
+                }
+                shareModal.code = response.data.code || '';
+                shareModal.mods = response.data.mods || [];
+            };
+
+            const closeShareModal = () => { shareModal.show = false; };
+
+            const copyShareCode = () => {
+                navigator.clipboard.writeText(shareModal.code).then(
+                    () => window.showToast(t('mod_manager.share_code_copied')),
+                    () => window.showToast(t('mod_manager.share_code_copy_failed'), true)
+                );
+            };
+
+            const openImportModal = () => {
+                if (!selectedInstall.value) return;
+                Object.assign(importModal, { show: true, text: '', reading: false, installing: false, entries: [], error: '' });
+                nextTick(() => document.getElementById('mm-share-import-input')?.focus());
+            };
+
+            const closeImportModal = () => {
+                if (!importModal.installing) importModal.show = false;
+            };
+
+            let readTimer = null;
+            const readImportCode = () => {
+                clearTimeout(readTimer);
+                importModal.entries = [];
+                importModal.error = '';
+                if (!importModal.text.trim()) return;
+                readTimer = setTimeout(async () => {
+                    const text = importModal.text;
+                    importModal.reading = true;
+                    const response = await window.callBackend(eel.read_mod_share_code(selectedInstall.value, text)(), 'Failed to read the share code');
+                    if (text !== importModal.text) return;
+                    importModal.reading = false;
+                    if (!response.success) {
+                        importModal.error = response.error || t('common.unknown_error_occurred');
+                        return;
+                    }
+                    importModal.entries = (response.data.entries || []).map(e => ({ ...e, selected: e.available && !e.installed }));
+                }, 300);
+            };
+
+            const shareEntryName = (e) => e.name || `${sourceLabel(e.source)} ${e.id}`;
+            const importSelection = computed(() => importModal.entries.filter(e => e.selected && e.available));
+
+            const installImported = async () => {
+                const pending = importSelection.value.slice();
+                if (!pending.length || importModal.installing) return;
+                importModal.installing = true;
+                const failed = [];
+                let jobId = null;
+                let done = 0;
+                const setProgress = (current) => {
+                    if (!jobId || !window.JobQueue.patch) return;
+                    window.JobQueue.patch(jobId, {
+                        meta: {
+                            progressPercent: Math.round((done / pending.length) * 100),
+                            current: current || '',
+                            status: t('mod_manager.share_install_progress').replace('{done}', done).replace('{total}', pending.length)
+                        }
+                    });
+                };
+                try {
+                    await window.JobQueue.run({
+                        label: t('mod_manager.share_install_job'),
+                        onStart: (id) => { jobId = id; },
+                        task: async () => {
+                            for (const entry of pending) {
+                                const { source, id, branch } = entry;
+                                setProgress(shareEntryName(entry));
+                                const response = await window.callBackend(eel.install_shared_mod(selectedInstall.value, { source, id, branch })(), 'Failed to install mod');
+                                if (response.success) entry.installed = true;
+                                else failed.push(shareEntryName(entry));
+                                entry.selected = false;
+                                done++;
+                            }
+                            setProgress('');
+                            if (failed.length) throw new Error(failed.join(', '));
+                        }
+                    });
+                } catch (e) {
+                    // Reported by the toast below.
+                } finally {
+                    importModal.installing = false;
+                }
+                const installed = pending.length - failed.length;
+                if (failed.length) {
+                    window.showToast(t('mod_manager.share_install_partial')
+                        .replace('{done}', installed)
+                        .replace('{total}', pending.length)
+                        .replace('{names}', failed.join(', ')), true);
+                } else {
+                    window.showToast(t('mod_manager.share_install_done').replace('{count}', installed));
+                    importModal.show = false;
                 }
                 await loadMods();
             };
@@ -1369,6 +1492,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 filteredMods,
                 isLoading,
                 statusText,
+                loadError,
                 searchQuery,
                 filterStatus,
                 statusOptions,
@@ -1395,6 +1519,18 @@ document.addEventListener('mod_manager_loaded', async () => {
                 applyProfile,
                 openRenameProfile,
                 closeProfileNameModal,
+                shareModal,
+                importModal,
+                importSelection,
+                sourceLabel,
+                shareEntryName,
+                openShareModal,
+                closeShareModal,
+                copyShareCode,
+                openImportModal,
+                closeImportModal,
+                readImportCode,
+                installImported,
                 confirmRenameProfile,
                 removeProfile,
                 modal,

@@ -932,6 +932,82 @@
     padding: var(--t-4);
 }
 
+/* Share codes — also on .mh-variant-dialog. The code is data the user copies, so
+   it gets the numeric face and breaks anywhere rather than overflowing. */
+.share-code-text {
+    margin: var(--t-3) var(--t-4) 0;
+    padding: 10px var(--t-3);
+    min-height: calc(var(--control-height) * 2);
+    resize: vertical;
+    background: var(--bg-dark);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-control);
+    color: var(--text-main);
+    line-height: 1.5;
+    word-break: break-all;
+    outline: none;
+}
+/* By id: the form-control baseline's :not() chain out-specifies a class here. */
+#view-container :is(#mm-share-code-output, #mm-share-import-input) {
+    font-family: var(--font-numeric);
+    font-size: var(--t-fs-label);
+}
+.share-code-text::placeholder {
+    font-family: var(--font);
+    color: var(--text-placeholder);
+}
+.share-code-text:focus {
+    border-color: var(--accent-blue);
+}
+.share-code-text:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 2px;
+}
+.share-code-text:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+.share-state,
+.share-error {
+    margin: 0;
+    padding: var(--t-4);
+    font-size: var(--t-fs-body);
+    color: var(--text-muted);
+}
+.share-state i {
+    margin-right: var(--t-2);
+}
+.share-error {
+    color: var(--danger-ink);
+}
+.share-skipped {
+    margin: var(--t-3) var(--t-4) 0;
+    font-size: var(--t-fs-label);
+    color: var(--text-muted);
+}
+.share-skipped summary {
+    cursor: pointer;
+}
+.share-skipped p {
+    margin: var(--t-2) 0 0;
+    line-height: 1.5;
+}
+.mh-variant-row.share-entry {
+    justify-content: flex-start;
+    cursor: pointer;
+}
+.share-entry .mh-variant-info {
+    flex: 1 1 auto;
+}
+.share-entry input {
+    flex: 0 0 auto;
+    accent-color: var(--accent-blue);
+}
+.share-entry.is-unavailable {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* Reduced motion: state still changes, it just stops moving. */
 @media (prefers-reduced-motion: reduce) {
     .file-manager-container,
