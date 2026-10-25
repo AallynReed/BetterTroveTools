@@ -105,6 +105,35 @@ fn unique_path_numbers_before_the_suffix() {
     assert_eq!(modpacks::unique_path(&target), dir.path().join("Mod_2.tmod"));
 }
 
+#[test]
+fn set_mods_enabled_flips_the_whole_selection() {
+    let dir = tempfile::tempdir().unwrap();
+    let mods = dir.path().join("mods");
+    std::fs::create_dir_all(&mods).unwrap();
+    for name in ["simple.tmod", "unicode.tmod"] {
+        std::fs::copy(fixture("modfile").join(name), mods.join(name)).unwrap();
+    }
+    let game = json!(py::display(dir.path()));
+    let paths: Vec<Value> = ["simple.tmod", "unicode.tmod"].iter().map(|n| json!(py::display(&py::resolve(&mods.join(n))))).collect();
+    let call = |paths: Vec<Value>, on: bool| manager::set_mods_enabled(&crate::Args::new(vec![game.clone(), json!(paths), json!(on)])).unwrap();
+
+    let off = call(paths.clone(), false);
+    assert_eq!(off["failed"], json!([]), "{off}");
+    let renamed: Vec<Value> = paths.iter().map(|p| off["paths"][p.as_str().unwrap()].clone()).collect();
+    for p in &renamed {
+        assert!(p.as_str().unwrap().ends_with(".disabled"), "{off}");
+    }
+
+    let on = call(renamed.clone(), true);
+    assert_eq!(on["failed"], json!([]), "{on}");
+    for (old, new) in renamed.iter().zip(&paths) {
+        assert_eq!(&on["paths"][old.as_str().unwrap()], new);
+    }
+
+    let missing = call(vec![json!("nowhere.tmod")], true);
+    assert_eq!(missing["failed"].as_array().unwrap().len(), 1);
+}
+
 // --- the live parity harness --------------------------------------------------------------
 
 /// `{{step:dotted.path}}` and `<VAR>` substitution, as tools/parity/mod_manager.py does it.

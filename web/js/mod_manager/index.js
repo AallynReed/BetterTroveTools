@@ -563,9 +563,10 @@ document.addEventListener('mod_manager_loaded', async () => {
 
             // Sequential on purpose: the updates write into the same mods folder,
             // and the watcher/JobQueue progress both read better one at a time.
-            const updateAllMods = async () => {
+            const updateAllMods = () => updateMods(updatableMods.value.slice());
+
+            const updateMods = async (pending) => {
                 if (isUpdatingAll.value) return;
-                const pending = updatableMods.value.slice();
                 if (pending.length === 0) return;
 
                 const items = pending.map(updateNotesItem);
@@ -1192,6 +1193,210 @@ document.addEventListener('mod_manager_loaded', async () => {
                 window.showToast(t('mod_manager.unsubscribed_name').replace('{name}', mod.name));
             };
 
+            // --- bulk selection --------------------------------------------
+            // Selection is keyed by path and survives filter changes, so a user can
+            // gather mods across several searches. Actions apply to every selected
+            // mod, including ones the current filter hides (the bar says how many).
+            const selectMode = ref(false);
+            const selectedPaths = ref(new Set());
+            const isBulkBusy = ref(false);
+            let lastSelectedIndex = -1;
+
+            const isSelected = (mod) => selectedPaths.value.has(mod.path);
+            const selectedMods = computed(() => mods.value.filter(isSelected));
+            const hiddenSelectedCount = computed(() => {
+                const shown = new Set(filteredMods.value);
+                return selectedMods.value.filter(m => !shown.has(m)).length;
+            });
+            const allShownSelected = computed(() => filteredMods.value.length > 0 && filteredMods.value.every(isSelected));
+            const bulkTargets = computed(() => {
+                const sel = selectedMods.value;
+                return {
+                    enable: sel.filter(m => m.status !== 'enabled'),
+                    disable: sel.filter(m => m.status === 'enabled'),
+                    update: sel.filter(canUpdate),
+                    lock: sel.filter(m => canManage(m) && !m.locked),
+                    unlock: sel.filter(m => canManage(m) && m.locked),
+                    remove: sel.filter(canManage)
+                };
+            });
+
+            const setSelected = (paths) => { selectedPaths.value = new Set(paths); };
+            const clearSelection = () => { setSelected([]); lastSelectedIndex = -1; };
+            const selectAllShown = () => setSelected([...selectedPaths.value, ...filteredMods.value.map(m => m.path)]);
+
+            const toggleSelectMode = () => {
+                selectMode.value = !selectMode.value;
+                if (!selectMode.value) clearSelection();
+            };
+
+            // Shift-click extends from the last clicked card to this one, setting
+            // the whole range to the clicked card's new state.
+            const onCardSelect = (e, mod, index) => {
+                if (!selectMode.value) return;
+                const next = new Set(selectedPaths.value);
+                const on = !next.has(mod.path);
+                const range = e.shiftKey && lastSelectedIndex >= 0
+                    ? filteredMods.value.slice(Math.min(lastSelectedIndex, index), Math.max(lastSelectedIndex, index) + 1)
+                    : [mod];
+                range.forEach(m => (on ? next.add(m.path) : next.delete(m.path)));
+                selectedPaths.value = next;
+                lastSelectedIndex = index;
+            };
+
+            const bulkProgress = (jobId, done, total, current) => {
+                if (!jobId || !window.JobQueue.patch) return;
+                window.JobQueue.patch(jobId, {
+                    meta: {
+                        progressPercent: Math.round((done / total) * 100),
+                        current: current || '',
+                        status: t('mod_manager.bulk_progress').replace('{done}', done).replace('{total}', total)
+                    }
+                });
+            };
+
+            // One backend call for the whole set: a single scan and a single
+            // Trove.cfg write, instead of one per mod.
+            const bulkSetEnabled = async (on) => {
+                const targets = on ? bulkTargets.value.enable : bulkTargets.value.disable;
+                if (isBulkBusy.value || !targets.length) return;
+                isBulkBusy.value = true;
+                targets.forEach(m => { m.isToggling = true; });
+                try {
+                    const response = await runManagedJob({
+                        label: t(on ? 'mod_manager.bulk_enable_count' : 'mod_manager.bulk_disable_count').replace('{count}', targets.length),
+                        task: async () => window.callBackend(eel.set_mods_enabled(selectedInstall.value, targets.map(m => m.path), on)(), 'Failed to change mods')
+                    });
+                    if (!response.success) {
+                        window.showToast(t('mod_manager.failed_to_toggle_mod_error').replace('{error}', response.error || t('common.unknown_error_occurred')), true);
+                        return;
+                    }
+                    const data = response.data || response.raw || {};
+                    const moved = data.paths || {};
+                    const next = new Set(selectedPaths.value);
+                    Object.entries(moved).forEach(([from, to]) => {
+                        if (next.delete(from)) next.add(to);
+                    });
+                    selectedPaths.value = next;
+                    const failed = data.failed || [];
+                    const done = targets.length - failed.length;
+                    if (failed.length) {
+                        const names = failed.map(f => (targets.find(m => m.path === f.path) || {}).name || f.path).join(', ');
+                        window.showToast(t('mod_manager.bulk_partial').replace('{done}', done).replace('{total}', targets.length).replace('{names}', names), true);
+                    } else {
+                        window.showToast(t(on ? 'mod_manager.bulk_enabled_count' : 'mod_manager.bulk_disabled_count').replace('{count}', done));
+                    }
+                } finally {
+                    targets.forEach(m => { m.isToggling = false; });
+                    isBulkBusy.value = false;
+                }
+                await loadMods({ quiet: true });
+            };
+
+            const bulkSetLocked = async (locked) => {
+                const targets = locked ? bulkTargets.value.lock : bulkTargets.value.unlock;
+                if (isBulkBusy.value || !targets.length) return;
+                isBulkBusy.value = true;
+                const failed = [];
+                try {
+                    for (const mod of targets) {
+                        const response = await window.callBackend(
+                            eel.set_mod_update_lock(selectedInstall.value, mod.path, locked)(),
+                            'Failed to change the update lock'
+                        );
+                        if (response.success) mod.locked = locked;
+                        else failed.push(mod.name);
+                    }
+                } finally {
+                    isBulkBusy.value = false;
+                }
+                const done = targets.length - failed.length;
+                window.showToast(failed.length
+                    ? t('mod_manager.bulk_partial').replace('{done}', done).replace('{total}', targets.length).replace('{names}', failed.join(', '))
+                    : t(locked ? 'mod_manager.bulk_locked_count' : 'mod_manager.bulk_unlocked_count').replace('{count}', done), failed.length > 0);
+            };
+
+            const bulkUpdate = async () => {
+                if (isBulkBusy.value) return;
+                isBulkBusy.value = true;
+                try {
+                    await updateMods(bulkTargets.value.update.slice());
+                } finally {
+                    isBulkBusy.value = false;
+                }
+            };
+
+            // Each delete goes to the app's trash, so one Undo restores the lot.
+            const bulkDelete = async () => {
+                const targets = bulkTargets.value.remove.slice();
+                if (isBulkBusy.value || !targets.length) return;
+                const confirmed = await window.showConfirmModal({
+                    title: t('mod_manager.bulk_delete_title').replace('{count}', targets.length),
+                    message: t('mod_manager.bulk_delete_message'),
+                    items: targets.map(m => m.name),
+                    confirmLabel: t('common.delete'),
+                    cancelLabel: t('common.cancel'),
+                    danger: true
+                });
+                if (!confirmed) return;
+
+                isBulkBusy.value = true;
+                const failed = [];
+                const undoTokens = [];
+                let jobId = null;
+                let done = 0;
+                try {
+                    await window.JobQueue.run({
+                        label: t('mod_manager.bulk_delete_title').replace('{count}', targets.length),
+                        onStart: (id) => { jobId = id; },
+                        task: async () => {
+                            for (const mod of targets) {
+                                bulkProgress(jobId, done, targets.length, mod.name);
+                                mod.isDeleting = true;
+                                const response = await window.callBackend(eel.delete_mod(selectedInstall.value, mod.path)(), 'Failed to delete mod');
+                                mod.isDeleting = false;
+                                done++;
+                                if (!response.success) {
+                                    failed.push(mod.name);
+                                    continue;
+                                }
+                                const token = response.data.undo_token || response.raw?.undo_token;
+                                if (token) undoTokens.push(token);
+                                removeModLocally(mod);
+                            }
+                            bulkProgress(jobId, done, targets.length, '');
+                            if (failed.length) throw new Error(failed.join(', '));
+                        }
+                    });
+                } catch (e) {
+                    // Reported by the toast below.
+                } finally {
+                    isBulkBusy.value = false;
+                }
+
+                const deleted = targets.length - failed.length;
+                if (failed.length) {
+                    window.showToast(t('mod_manager.bulk_partial').replace('{done}', deleted).replace('{total}', targets.length).replace('{names}', failed.join(', ')), true);
+                }
+                if (!deleted) return;
+                const message = t('mod_manager.bulk_deleted_count').replace('{count}', deleted);
+                if (!undoTokens.length) {
+                    if (!failed.length) window.showToast(message);
+                    return;
+                }
+                window.showUndoToast(message, 8, async () => {
+                    let undoFailed = 0;
+                    for (const token of undoTokens) {
+                        const undoResp = await window.callBackend(eel.undo_delete_mod(token)(), 'Failed to undo delete');
+                        if (!undoResp.success) undoFailed++;
+                    }
+                    window.showToast(undoFailed
+                        ? t('common.undo_failed_error').replace('{error}', `${undoFailed}/${undoTokens.length}`)
+                        : t('common.deletion_undone'), undoFailed > 0);
+                    await loadMods({ quiet: true });
+                });
+            };
+
             const fixNames = async () => {
                 if (!selectedInstall.value) return window.showToast(t('common.select_a_game_first'), true);
                 isFixingNames.value = true;
@@ -1364,6 +1569,18 @@ document.addEventListener('mod_manager_loaded', async () => {
                     return;
                 }
                 const activeEl = document.activeElement;
+                const typing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable);
+                if (selectMode.value && !typing && isViewingModManager()) {
+                    if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'a') {
+                        e.preventDefault();
+                        selectAllShown();
+                        return;
+                    }
+                    if (e.key === 'Escape' && !e.defaultPrevented && !modal.show && !variantPicker.show) {
+                        toggleSelectMode();
+                        return;
+                    }
+                }
                 if (activeEl && activeEl.id === 'mod-search-input') {
                     if (e.key === 'ArrowDown') {
                         e.preventDefault();
@@ -1406,6 +1623,7 @@ document.addEventListener('mod_manager_loaded', async () => {
                 || isApplyingProfile.value
                 || isClearingCache.value
                 || isUpdatingAll.value
+                || isBulkBusy.value
                 || mods.value.some(m => m.isToggling || m.isUpdating || m.isDeleting);
 
             const isViewingModManager = () => window.BTT_CURRENT_VIEW === 'mod_manager'
@@ -1484,6 +1702,21 @@ document.addEventListener('mod_manager_loaded', async () => {
             return {
                 t,
                 modsHubEnabled,
+                selectMode,
+                isSelected,
+                selectedMods,
+                hiddenSelectedCount,
+                allShownSelected,
+                bulkTargets,
+                isBulkBusy,
+                toggleSelectMode,
+                clearSelection,
+                selectAllShown,
+                onCardSelect,
+                bulkSetEnabled,
+                bulkSetLocked,
+                bulkUpdate,
+                bulkDelete,
                 installs,
                 selectedInstall,
                 installOptions,

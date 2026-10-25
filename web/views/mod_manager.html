@@ -143,8 +143,41 @@
                     <custom-vue-select v-model="filterStatus" :options="statusOptions"></custom-vue-select>
                 </div>
 
+                <button @click="toggleSelectMode" class="secondary-btn toolbar-toggle-btn" :class="{ 'is-on': selectMode }" :aria-pressed="selectMode ? 'true' : 'false'" :disabled="!mods.length" :title="t('mod_manager.select_mods_title')">
+                    <i class="fa-solid fa-list-check"></i> <span>{{ t('mod_manager.select_mods') }}</span>
+                </button>
+
                 <div class="mod-count-display">
                     <span>{{ t('mod_manager.showing_shown_of_filtered_filtered_mods_c83e95').replace('{shown}', shownCount).replace('{filtered}', filteredCount).replace('{total}', totalCount) }}</span>
+                </div>
+            </div>
+
+            <div v-if="selectMode" class="mod-bulk-bar" role="toolbar" :aria-label="t('mod_manager.bulk_actions')">
+                <div class="mod-bulk-selection">
+                    <span class="mod-bulk-count" aria-live="polite">{{ t('mod_manager.selected_count').replace('{count}', selectedMods.length) }}</span>
+                    <span v-if="hiddenSelectedCount" class="mod-bulk-hidden">{{ t('mod_manager.selected_hidden_count').replace('{count}', hiddenSelectedCount) }}</span>
+                    <button class="ghost-btn" @click="selectAllShown" :disabled="allShownSelected || !filteredMods.length" :title="t('mod_manager.select_all_shown_title')">{{ t('mod_manager.select_all_shown') }}</button>
+                    <button class="ghost-btn" @click="clearSelection" :disabled="!selectedMods.length">{{ t('mod_manager.clear_selection') }}</button>
+                </div>
+                <div class="mod-bulk-actions">
+                    <button class="secondary-btn" @click="bulkSetEnabled(true)" :disabled="isBulkBusy || !bulkTargets.enable.length">
+                        <i class="fa-solid fa-circle-check"></i> <span>{{ t('mod_manager.enable') }}</span><span v-if="bulkTargets.enable.length" class="toolbar-btn-count">{{ bulkTargets.enable.length }}</span>
+                    </button>
+                    <button class="secondary-btn" @click="bulkSetEnabled(false)" :disabled="isBulkBusy || !bulkTargets.disable.length">
+                        <i class="fa-solid fa-circle-pause"></i> <span>{{ t('mod_manager.disable') }}</span><span v-if="bulkTargets.disable.length" class="toolbar-btn-count">{{ bulkTargets.disable.length }}</span>
+                    </button>
+                    <button class="secondary-btn" @click="bulkUpdate" :disabled="isBulkBusy || isUpdatingAll || !bulkTargets.update.length">
+                        <i class="fa-solid fa-cloud-arrow-down"></i> <span>{{ t('common.update') }}</span><span v-if="bulkTargets.update.length" class="toolbar-btn-count">{{ bulkTargets.update.length }}</span>
+                    </button>
+                    <button class="secondary-btn" @click="bulkSetLocked(true)" :disabled="isBulkBusy || !bulkTargets.lock.length" :title="t('mod_manager.lock_updates')">
+                        <i class="fa-solid fa-lock"></i> <span>{{ t('mod_manager.lock') }}</span><span v-if="bulkTargets.lock.length" class="toolbar-btn-count">{{ bulkTargets.lock.length }}</span>
+                    </button>
+                    <button class="secondary-btn" @click="bulkSetLocked(false)" :disabled="isBulkBusy || !bulkTargets.unlock.length" :title="t('mod_manager.unlock_updates')">
+                        <i class="fa-solid fa-lock-open"></i> <span>{{ t('mod_manager.unlock') }}</span><span v-if="bulkTargets.unlock.length" class="toolbar-btn-count">{{ bulkTargets.unlock.length }}</span>
+                    </button>
+                    <button class="danger-btn" @click="bulkDelete" :disabled="isBulkBusy || !bulkTargets.remove.length">
+                        <i class="fa-solid fa-trash"></i> <span>{{ t('common.delete') }}</span><span v-if="bulkTargets.remove.length" class="toolbar-btn-count">{{ bulkTargets.remove.length }}</span>
+                    </button>
                 </div>
             </div>
             <div v-if="showOnboardingTips" class="onboarding-tour">
@@ -175,8 +208,9 @@
             <div v-else-if="mods.length === 0" class="placeholder-box ui-state ui-state-empty">{{ t('mod_manager.no_mods_found_in_the_selected_directory') }}</div>
             <div v-else-if="filteredMods.length === 0" class="placeholder-box ui-state ui-state-empty no-results-message">{{ t('mod_manager.no_mods_match_your_current_filters') }}</div>
             <div v-else>
-                <div class="mod-grid">
-                    <div v-for="mod in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod) }" :style="{ opacity: mod.status === 'enabled' ? '1' : '0.6' }" @contextmenu.prevent.stop="showContextMenu($event, mod)">
+                <div class="mod-grid" :class="{ 'is-selecting': selectMode }">
+                    <div v-for="(mod, index) in filteredMods" :key="mod.path" class="mod-card" :class="{ 'is-disabled': mod.status !== 'enabled', 'is-conflicting': hasActiveConflict(mod), 'is-potential-conflict': mod.has_conflicts && !hasActiveConflict(mod), 'is-selected': selectMode && isSelected(mod) }" :role="selectMode ? 'checkbox' : null" :aria-checked="selectMode ? String(isSelected(mod)) : null" :aria-label="selectMode ? mod.name : null" :tabindex="selectMode ? 0 : null" @click="onCardSelect($event, mod, index)" @keydown.space.prevent="onCardSelect($event, mod, index)" @keydown.enter.prevent="onCardSelect($event, mod, index)" @contextmenu.prevent.stop="!selectMode && showContextMenu($event, mod)">
+                        <span v-if="selectMode" class="mod-select-check" aria-hidden="true"><i :class="isSelected(mod) ? 'fa-solid fa-square-check' : 'fa-regular fa-square'"></i></span>
                         <div class="mod-card-content">
                             <div class="mod-front-top">
                                 <span v-if="mod.has_conflicts" class="mod-conflict-icon" :class="hasActiveConflict(mod) ? 'active' : 'inactive'" :title="getConflictTitle(mod)" aria-hidden="true">

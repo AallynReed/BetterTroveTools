@@ -302,6 +302,52 @@
 
 .mod-count-display { font-size: var(--t-fs-label); color: var(--text-muted); min-width: 120px; text-align: right; }
 
+/* Sticks to the top of the scrolling view so the actions stay in reach across a
+   long grid; it floats while stuck, hence the floating shadow. */
+.mod-bulk-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--control-gap);
+    padding: var(--t-2) var(--surface-padding);
+    margin-bottom: var(--t-2);
+    background: var(--bg-panel);
+    border: 1px solid rgba(var(--accent-rgb), 0.45);
+    border-radius: var(--radius-surface);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.32);
+}
+.mod-bulk-selection,
+.mod-bulk-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--t-2); }
+.mod-bulk-count { font-weight: 600; color: var(--text-main); font-variant-numeric: tabular-nums; }
+.mod-bulk-hidden { font-size: var(--t-fs-label); color: var(--text-muted); }
+.mod-bulk-actions .secondary-btn,
+.mod-bulk-actions .danger-btn { display: inline-flex; align-items: center; gap: var(--t-2); }
+
+/* Select mode: the card is one big checkbox, so its own controls step aside. */
+.mod-grid.is-selecting .mod-card { cursor: pointer; user-select: none; }
+.mod-grid.is-selecting .mod-card-content { pointer-events: none; }
+.mod-grid.is-selecting :is(.mod-card-delete-hover, .mod-card-lock-hover) { visibility: hidden; }
+.mod-grid.is-selecting .mod-card:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.mod-grid.is-selecting .mod-card.is-selected .mod-card-content {
+    border-color: var(--accent-blue);
+    background: linear-gradient(rgba(var(--accent-rgb), 0.12), rgba(var(--accent-rgb), 0.12)), var(--bg-panel);
+}
+.mod-select-check {
+    position: absolute;
+    top: var(--t-2);
+    right: var(--t-2);
+    z-index: 5;
+    font-size: var(--t-fs-h2);
+    line-height: 1;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+.mod-card.is-selected .mod-select-check { color: var(--accent-blue); }
+
 @media (max-width: 900px) {
     .file-manager-container { padding: var(--view-padding); }
     .search-filter-bar { flex-wrap: wrap; }

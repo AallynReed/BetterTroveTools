@@ -30,6 +30,7 @@ pub fn commands() -> Vec<Cmd> {
         Cmd::raw("get_installed_mods", manager::get_installed_mods),
         Cmd::raw("toggle_mod", manager::toggle_mod),
         Cmd::raw("reenable_mod", manager::reenable_mod),
+        Cmd::raw("set_mods_enabled", manager::set_mods_enabled),
         Cmd::raw("unsubscribe_workshop_mod", manager::unsubscribe_workshop_mod),
         Cmd::raw("delete_mod", |a| Ok(manager::delete_mod(a.get(0), a.get(1)))),
         Cmd::raw("undo_delete_mod", manager::undo_delete_mod),

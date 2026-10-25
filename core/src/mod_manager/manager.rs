@@ -279,6 +279,53 @@ pub(super) fn toggle_mod(a: &Args) -> Result<Value> {
     }))
 }
 
+/// Bulk enable/disable: one scan and one Trove.cfg write for the whole selection.
+/// Returns each mod's new path and status, plus the ones that failed.
+pub(super) fn set_mods_enabled(a: &Args) -> Result<Value> {
+    Ok(guard("BULK_TOGGLE_FAILED", || {
+        let mut list = mod_list(a.get(0), ListOptions::default())?;
+        let enabled = py::truthy(a.get(2));
+        let trove_disabled = read_disabled_mods(None);
+        let (mut cfg_enable, mut cfg_disable) = (Vec::new(), Vec::new());
+        let mut changed = Map::new();
+        let mut failed = Vec::new();
+        for wanted in super::items(a.get(1)) {
+            let Some(i) = find_mod(&list, wanted) else {
+                failed.push(json!({ "path": wanted, "error": "Could not locate the mod in the parsed list." }));
+                continue;
+            };
+            let m = &mut list.mods[i];
+            let key = trove_key(m);
+            let result = if enabled {
+                if trove_disabled.contains(&key) {
+                    cfg_enable.push(key);
+                }
+                if m.enabled { Ok(()) } else { m.toggle() }
+            } else if m.is_workshop {
+                cfg_disable.push(key);
+                Ok(())
+            } else if m.enabled {
+                m.toggle()
+            } else {
+                Ok(())
+            };
+            match result {
+                Ok(()) => {
+                    changed.insert(py::str_of(wanted), json!(display(&m.mod_path)));
+                }
+                Err(e) => {
+                    let error = if is_file_exists(&e) { "A file with the toggled name already exists.".to_string() } else { e.to_string() };
+                    failed.push(json!({ "path": wanted, "error": error }));
+                }
+            }
+        }
+        if !cfg_enable.is_empty() || !cfg_disable.is_empty() {
+            set_mods_disabled(&cfg_enable, &cfg_disable, None);
+        }
+        Ok(Resp::ok(json!({ "paths": changed, "failed": failed })).spread().into())
+    }))
+}
+
 /// Turns a mod back on and switches off every enabled mod it conflicts with: Trove
 /// keeps only one of a conflicting set at launch.
 pub(super) fn reenable_mod(a: &Args) -> Result<Value> {
