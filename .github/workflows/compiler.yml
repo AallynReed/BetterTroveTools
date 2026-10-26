@@ -77,7 +77,7 @@ jobs:
       - name: Install WebKitGTK and bundling tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file zsync
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -96,12 +96,23 @@ jobs:
       - name: Build the AppImage and deb
         run: npx tauri build --bundles appimage,deb --config version.conf.json
 
+      - name: Embed update info in the AppImage
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1  # no FUSE on the runner
+        run: |
+          appimage=$(ls target/release/bundle/appimage/*.AppImage | head -n1)
+          name="BetterTroveTools-$RELEASE_TAG-x86_64.AppImage"
+          curl -fsSL -o appimagetool https://github.com/AppImage/appimagetool/releases/download/1.9.0/appimagetool-x86_64.AppImage
+          chmod +x appimagetool "$appimage"
+          "$appimage" --appimage-extract > /dev/null
+          ARCH=x86_64 ./appimagetool -u "gh-releases-zsync|AallynReed|BetterTroveTools|latest|BetterTroveTools-*-x86_64.AppImage.zsync" squashfs-root "$name"
+          test -f "$name.zsync"
+
       - name: Upload the bundles to the release
         env:
           GH_TOKEN: ${{ secrets.COMPILER || github.token }}
         run: |
-          appimage=$(ls target/release/bundle/appimage/*.AppImage | head -n1)
+          appimage="BetterTroveTools-$RELEASE_TAG-x86_64.AppImage"
           deb=$(ls target/release/bundle/deb/*.deb | head -n1)
-          cp "$appimage" "BetterTroveTools-$RELEASE_TAG-linux-x86_64.AppImage"
           cp "$deb" "BetterTroveTools-$RELEASE_TAG-linux-amd64.deb"
-          gh release upload "$RELEASE_TAG" "BetterTroveTools-$RELEASE_TAG-linux-x86_64.AppImage" "BetterTroveTools-$RELEASE_TAG-linux-amd64.deb" --clobber
+          gh release upload "$RELEASE_TAG" "$appimage" "$appimage.zsync" "BetterTroveTools-$RELEASE_TAG-linux-amd64.deb" --clobber
