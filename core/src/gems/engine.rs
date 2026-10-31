@@ -517,6 +517,70 @@ fn generate_combinations(farm: bool) -> Vec<Build> {
     out
 }
 
+pub const HEALTH_LINES: [&str; 3] = ["Critical Hit", "Maximum Health", "Maximum Health %"];
+const HEALTH_KEYS: [&str; 3] = ["critical_hit", "maximum_health", "maximum_health_per"];
+const HEALTH_FLAGS: [&str; 4] = ["weapon_ch", "ring_ch", "hat_health", "face_health"];
+
+/// `builds/health_optimizer.json`: summed per-line sources and the optional gear lines `(flag, line, value)`.
+#[derive(Clone, Debug, Default)]
+struct HealthSources {
+    sums: [f64; 3],
+    gear_lines: Vec<(String, usize, f64)>,
+}
+
+impl HealthSources {
+    fn parse(v: &Value) -> Self {
+        let sum = |line: &str| v.get(line).and_then(Value::as_object).map_or(0.0, |m| m.values().filter_map(Value::as_f64).sum());
+        let gear_lines = v
+            .get("gear_lines")
+            .and_then(Value::as_object)
+            .map(|m| {
+                m.iter()
+                    .filter_map(|(flag, line)| {
+                        let i = HEALTH_LINES.iter().position(|l| Some(*l) == line.get("stat").and_then(Value::as_str))?;
+                        Some((flag.clone(), i, line.get("value").and_then(Value::as_f64).unwrap_or(0.0)))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        HealthSources { sums: HEALTH_LINES.map(sum), gear_lines }
+    }
+}
+
+/// The Health Optimizer's request.
+#[derive(Clone, Debug)]
+pub struct HealthConfig {
+    pub character: String,
+    pub star_chart: Option<String>,
+    pub flags: [bool; 4],
+    pub high_precision: bool,
+}
+
+impl HealthConfig {
+    pub fn parse(v: &Value) -> HealthConfig {
+        let flag = |k: &str| v.get(k).is_some_and(crate::args::truthy);
+        HealthConfig {
+            character: v.get("character").and_then(Value::as_str).unwrap_or("Bard").to_string(),
+            star_chart: v.get("star_chart").and_then(Value::as_str).map(str::to_string),
+            flags: HEALTH_FLAGS.map(flag),
+            high_precision: flag("high_precision"),
+        }
+    }
+}
+
+/// `itertools.combinations_with_replacement(range(3), n)` as per-value counts, in order.
+fn health_combos(n: usize) -> Vec<[usize; 3]> {
+    let mut out = Vec::new();
+    for a in 0..=n {
+        for b in 0..=n - a {
+            out.push([n - a - b, b, a]);
+        }
+    }
+    let key = |c: &[usize; 3]| c.iter().enumerate().flat_map(|(i, &k)| std::iter::repeat_n(i, k)).collect::<Vec<_>>();
+    out.sort_by_key(key);
+    out
+}
+
 pub struct Engine {
     base: PathBuf,
     pub classes: Vec<(String, TroveClass)>,
@@ -524,6 +588,7 @@ pub struct Engine {
     pub allies: Value,
     face_damage: Num,
     gem_stats: Value,
+    health: HealthSources,
     pub star_parser: StarChartParser,
 }
 
@@ -542,6 +607,7 @@ impl Engine {
         let face = load_json(&base, "builds/face_damage.json")?;
         let face_damage = if crate::args::truthy(&face) { face.get("Face").and_then(Num::from_json).unwrap_or(Int(0)) } else { Int(0) };
         let gem_stats = load_json(&base, "mystic.json")?;
+        let health = HealthSources::parse(&load_json(&base, "builds/health_optimizer.json")?);
         let star_parser = StarChartParser::new(&load_json(&base, "star_chart.json")?);
         let mut classes: Vec<(String, TroveClass)> = Vec::new();
         if crate::args::truthy(&classes_data) {
@@ -554,7 +620,65 @@ impl Engine {
                 }
             }
         }
-        Ok(Engine { base, classes, foods, allies, face_damage, gem_stats, star_parser })
+        Ok(Engine { base, classes, foods, allies, face_damage, gem_stats, health, star_parser })
+    }
+
+    /// The Health Optimizer: the free third stat line on the 3 Empowered and 6 Lesser
+    /// elemental gems, split across Critical Hit / Max Health / Max Health %, keeping
+    /// splits that reach 100% critical hit, ranked by max health.
+    pub fn optimize_health(&self, config: &HealthConfig) -> Result<Value, String> {
+        let class = self.class(&config.character).ok_or_else(|| format!("Unknown class '{}'.", config.character))?;
+        let stat = |name: &str| class.stats.iter().filter(|s| s.name == name).filter_map(|s| s.value).sum::<f64>();
+        let mut base: [f64; 3] = std::array::from_fn(|i| stat(HEALTH_LINES[i]) + self.health.sums[i]);
+        for (name, line, value) in &self.health.gear_lines {
+            if HEALTH_FLAGS.iter().position(|f| f == name).is_some_and(|i| config.flags[i]) {
+                base[*line] += value;
+            }
+        }
+        if let Some(code) = config.star_chart.as_ref().filter(|c| !c.is_empty()) {
+            let parsed = self.star_parser.parse_build_code(&json!(code));
+            let crit = parsed.stat("Critical Hit").unwrap_or_default();
+            let health = parsed.stat("Maximum Health").unwrap_or_default();
+            base[0] += crit.0;
+            base[1] += health.0;
+            base[2] += health.1;
+        }
+        let line_values = |gem: &str| -> [f64; 3] {
+            HEALTH_LINES.map(|s| self.gem_stats.get(gem).and_then(|g| g.get(s)).and_then(|v| v.get(0)).and_then(Value::as_f64).unwrap_or(0.0) * 1.1)
+        };
+        let (emp_v, les_v) = (line_values("Empowered"), line_values("Lesser"));
+        let mut ranked: Vec<(f64, [f64; 3], [usize; 3], [usize; 3])> = Vec::new();
+        for emp in health_combos(3) {
+            for les in health_combos(6) {
+                let total: [f64; 3] = std::array::from_fn(|i| base[i] + emp_v[i] * emp[i] as f64 + les_v[i] * les[i] as f64);
+                if total[0] < 100.0 - 1e-9 {
+                    continue;
+                }
+                ranked.push((total[1] * (1.0 + total[2] / 100.0), total, emp, les));
+            }
+        }
+        let cmp = |a: f64, b: f64| a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal);
+        ranked.sort_by(|a, b| cmp(b.0, a.0).then(cmp(a.1[0], b.1[0])));
+
+        let rd = |v: f64| py::json_float(py::round_to(v, if config.high_precision { 8 } else { 2 }));
+        let lines = |vals: [f64; 3]| -> Value { HEALTH_KEYS.iter().zip(vals).map(|(k, v)| (k.to_string(), rd(v))).collect() };
+        let counts = |c: [usize; 3]| -> Value { HEALTH_KEYS.iter().zip(c).map(|(k, n)| (k.to_string(), json!(n))).collect() };
+        let join = |c: [usize; 3]| c.map(|n| n.to_string()).join("/");
+        let results: Vec<Value> = ranked
+            .into_iter()
+            .enumerate()
+            .map(|(i, (health, total, emp, les))| {
+                let mut row = lines(total);
+                let m = row.as_object_mut().expect("object");
+                m.insert("rank".into(), json!(i + 1));
+                m.insert("layout".into(), json!(format!("{} {}", join(emp), join(les))));
+                m.insert("empowered".into(), counts(emp));
+                m.insert("lesser".into(), counts(les));
+                m.insert("health".into(), rd(health));
+                row
+            })
+            .collect();
+        Ok(json!({"base": lines(base), "count": results.len(), "results": results}))
     }
 
     fn class(&self, name: &str) -> Option<&TroveClass> {
@@ -703,10 +827,7 @@ impl Engine {
             if damage == "Magic Damage" && has(&["Ice Sage", "Shadow Hunter"], config.subclass) {
                 t[0] = t[0] + Int(750);
             }
-            if config.subclass == "Bard" {
-                t[1] = t[1] + Int(15);
-            }
-            if config.subclass == "Boomeranger" {
+            if has(&["Bard", "Boomeranger"], config.subclass) {
                 t[1] = t[1] + Int(20);
             }
             if config.subclass_active {

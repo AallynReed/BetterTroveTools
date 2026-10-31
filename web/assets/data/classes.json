@@ -53,12 +53,12 @@
             },
             {
                 "name": "Attack Speed",
-                "value": 131,
+                "value": 100,
                 "percentage": true
             },
             {
                 "name": "Jump",
-                "value": 4,
+                "value": 3,
                 "percentage": false
             },
             {
@@ -663,7 +663,7 @@
             },
             {
                 "name": "Health Regen",
-                "value": 3075,
+                "value": 2575,
                 "percentage": false
             },
             {
@@ -683,7 +683,7 @@
             },
             {
                 "name": "Jump",
-                "value": 4,
+                "value": 3,
                 "percentage": false
             },
             {
@@ -1143,7 +1143,7 @@
             },
             {
                 "name": "Movement Speed",
-                "value": 40,
+                "value": 60,
                 "percentage": false
             },
             {
@@ -1852,7 +1852,7 @@
             },
             {
                 "name": "Energy Regen",
-                "value": 100,
+                "value": 0,
                 "percentage": false
             },
             {
@@ -2633,7 +2633,7 @@
             },
             {
                 "name": "Energy Regen",
-                "value": 100,
+                "value": 0,
                 "percentage": false
             },
             {
@@ -2653,7 +2653,7 @@
             },
             {
                 "name": "Critical Hit",
-                "value": 1,
+                "value": 2,
                 "percentage": true
             },
             {

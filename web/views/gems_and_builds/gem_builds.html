@@ -43,7 +43,7 @@
                         <select v-model="config.build_type">
                             <option value="Light" data-icon="fa-solid fa-lightbulb">{{ t('common.light') }}</option>
                             <option value="Farm" data-icon="fa-solid fa-seedling">{{ t('gems.gem_builds.farm') }}</option>
-                            <option value="Health" data-icon="fa-solid fa-shield-halved" disabled title="Need review">{{ t('common.health') }} ({{ t('gems.gem_builds.need_review') }})</option>
+                            <option value="Health" data-icon="fa-solid fa-shield-halved">{{ t('common.health') }}</option>
                         </select>
                     </div>
 
@@ -100,7 +100,7 @@
                     </div>
                 </div>
 
-                <div class="toggle-row">
+                <div class="toggle-row" v-if="config.build_type !== 'Health'">
                     <label class="toggle-container toggle-inline">
                         <input type="checkbox" v-model="config.no_face">
                         <span class="checkmark"></span>
@@ -224,6 +224,7 @@
             </div>
         </div>
 
+        <div class="results-column">
         <div class="card results-panel">
             <div v-if="cachedBuilds.length > 0" class="recommended-build-card">
                 <div class="recommended-build-copy">
@@ -354,6 +355,91 @@
                     <button class="btn-icon" @click="nextPage" :disabled="currentPage >= maxPages - 1"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>
+        </div>
+
+        <!-- Spends the third stat line a damage build leaves free; hidden for Health builds. -->
+        <section v-if="hpApplies && cachedBuilds.length > 0" class="card health-optimizer-panel" aria-labelledby="hp-title">
+            <div class="hp-head">
+                <h3 id="hp-title"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i> {{ t('gems.gem_builds.health_optimizer') }}</h3>
+                <p class="hp-lead">
+                    {{ t('gems.gem_builds.health_optimizer_lead') }}
+                    <button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.health_optimizer_help')" :aria-expanded="helpOpen === 'health' ? 'true' : 'false'" @click="toggleHelp('health')">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </button>
+                </p>
+                <p v-if="helpOpen === 'health'" class="help-tip-note" role="note">{{ t('gems.gem_builds.health_optimizer_help') }}</p>
+            </div>
+
+            <div class="hp-gear" role="group" :aria-label="t('gems.gem_builds.your_gear')">
+                <span class="hp-gear-label">{{ t('gems.gem_builds.your_gear') }}</span>
+                <div class="hp-gear-grid">
+                    <label class="toggle-container toggle-inline"><input type="checkbox" v-model="config.weapon_ch"><span class="checkmark"></span><span>{{ t('gems.gem_builds.critical_hit_on_weapon') }}</span></label>
+                    <label class="toggle-container toggle-inline"><input type="checkbox" v-model="config.ring_ch"><span class="checkmark"></span><span>{{ t('gems.gem_builds.critical_hit_on_ring') }}</span></label>
+                    <label class="toggle-container toggle-inline"><input type="checkbox" v-model="config.hat_health"><span class="checkmark"></span><span>{{ t('gems.gem_builds.max_health_pct_on_hat') }}</span></label>
+                    <label class="toggle-container toggle-inline"><input type="checkbox" v-model="config.face_health"><span class="checkmark"></span><span>{{ t('gems.gem_builds.max_health_pct_on_face') }}</span></label>
+                </div>
+            </div>
+
+            <div v-if="hpBest" class="recommended-build-card">
+                <div class="recommended-build-copy">
+                    <ul class="hp-split">
+                        <li v-for="row in hpBestSplit" :key="row.label"><strong>{{ t(row.label) }}</strong><span>{{ row.gems }}</span></li>
+                    </ul>
+                    <p v-if="hpBeforeGems" class="recommended-build-reason">{{ hpBeforeGems }}</p>
+                </div>
+                <div class="recommended-build-stats">
+                    <div class="recommended-stat"><span>{{ t('gems.gem_builds.max_health') }}</span><strong>{{ fmtInt(hpBest.health) }}</strong></div>
+                    <div class="recommended-stat"><span>{{ t('gems.gem_builds.crit_hit') }}</span><strong>{{ fmtNum(hpBest.critical_hit) }}%</strong></div>
+                    <div class="recommended-stat"><span>{{ t('gems.gem_builds.flat_health') }}</span><strong>{{ fmtInt(hpBest.maximum_health) }}</strong></div>
+                    <div class="recommended-stat"><span>{{ t('gems.gem_builds.health_pct') }}</span><strong>{{ fmtNum(hpBest.maximum_health_per) }}%</strong></div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="btt-table">
+                    <thead>
+                        <tr>
+                            <th class="text-center">{{ t('#') }}</th>
+                            <th class="text-left">{{ t('gems.gem_builds.spare_stat') }}<span class="help-tip"><button type="button" class="info-icon-btn help-tip-btn" :title="t('gems.gem_builds.spare_stat_help')" :aria-label="t('gems.gem_builds.spare_stat_help')" :aria-expanded="helpOpen === 'hp_table' ? 'true' : 'false'" @click="toggleHelp('hp_table')"><i class="fa-solid fa-circle-question"></i></button><span v-if="helpOpen === 'hp_table'" class="help-tip-pop" role="note">{{ t('gems.gem_builds.spare_stat_help') }}</span></span></th>
+                            <th class="text-right">{{ t('gems.gem_builds.crit_hit') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.flat_health') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.health_pct') }}</th>
+                            <th class="text-right sort-col">{{ t('gems.gem_builds.max_health') }}</th>
+                            <th class="text-right">{{ t('gems.gem_builds.diff') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="hpCalculating && !hpResults.length">
+                            <td colspan="7" class="text-center text-muted"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('gems.gem_builds.crunching_math') }}</td>
+                        </tr>
+                        <tr v-else-if="!hpResults.length">
+                            <td colspan="7" class="text-center text-muted">{{ t('gems.gem_builds.no_split_reaches_100_critical_hit') }}</td>
+                        </tr>
+                        <tr v-else v-for="row in hpPaginated" :key="row.rank" :class="{ 'row-best': row.rank === 1 }">
+                            <td class="text-center">{{ row.rank }}</td>
+                            <td class="build-layout-cell text-left">{{ row.layout }}</td>
+                            <td class="text-right">{{ fmtNum(row.critical_hit) }}%</td>
+                            <td class="text-right">{{ fmtInt(row.maximum_health) }}</td>
+                            <td class="text-right">{{ fmtNum(row.maximum_health_per) }}%</td>
+                            <td class="text-right sort-col" style="font-weight: bold; color: var(--text-main);">{{ fmtInt(row.health) }}</td>
+                            <td class="text-right">
+                                <span v-if="row.rank === 1" style="color: var(--accent-blue); font-weight: bold;">{{ t('gems.gem_builds.best') }}</span>
+                                <span v-else style="color: var(--danger-ink);">-{{ fmtDec((((hpBest.health - row.health) / hpBest.health) * 100), 3) }}%</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination-container">
+                <span class="hp-note">{{ t('gems.gem_builds.assumes_every_dragon_full_mastery_and_a_club') }}</span>
+                <div class="pagination">
+                    <button class="btn-icon" @click="hpPrevPage" :disabled="hpPage === 0"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span><span>{{ t('common.page') }}</span> <span>{{ hpPage + 1 }}</span> / <span>{{ hpMaxPages }}</span></span>
+                    <button class="btn-icon" @click="hpNextPage" :disabled="hpPage >= hpMaxPages - 1"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
         </div>
 
     </div>

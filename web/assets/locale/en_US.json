@@ -611,7 +611,26 @@
         "gems.gem_builds.how_many_of_your_gear_rolls_are_crit_dam_f442e1": "How many of your gear rolls are Crit Damage. Most endgame damage builds run 3.",
         "gems.gem_builds.includes_the_passive_stats_from_your_cho_76a69d": "Includes the passive stats from your chosen subclass.",
         "gems.gem_builds.lead_vs_2": "Lead vs #2",
-        "gems.gem_builds.need_review": "Need review",
+        "gems.gem_builds.health_optimizer": "Health optimizer",
+        "gems.gem_builds.health_optimizer_lead": "Turn the spare stat on each gem into as much health as possible, without dropping below 100% critical hit.",
+        "gems.gem_builds.health_optimizer_help": "Your damage build uses two of each gem's three stats. This picks the third on your Fire, Water and Air gems - Cosmic gems have no spare stat.",
+        "gems.gem_builds.your_gear": "Your gear",
+        "gems.gem_builds.critical_hit_on_weapon": "Critical Hit on weapon",
+        "gems.gem_builds.critical_hit_on_ring": "Critical Hit on ring",
+        "gems.gem_builds.max_health_pct_on_hat": "Max Health % on hat",
+        "gems.gem_builds.max_health_pct_on_face": "Max Health % on face",
+        "gems.gem_builds.before_gems_you_have_n_critical_hit": "Before gems you have {n}% critical hit.",
+        "gems.gem_builds.stat_crit_hit": "Critical Hit",
+        "gems.gem_builds.stat_max_health": "Maximum Health",
+        "gems.gem_builds.stat_max_health_pct": "Maximum Health %",
+        "gems.gem_builds.max_health": "Max health",
+        "gems.gem_builds.crit_hit": "Crit hit",
+        "gems.gem_builds.flat_health": "Flat health",
+        "gems.gem_builds.health_pct": "Health %",
+        "gems.gem_builds.spare_stat": "Spare stat",
+        "gems.gem_builds.spare_stat_help": "How many gems put their spare stat on each one: Empowered, then Lesser - Critical Hit / Max Health / Max Health %.",
+        "gems.gem_builds.no_split_reaches_100_critical_hit": "No split reaches 100% critical hit.",
+        "gems.gem_builds.assumes_every_dragon_full_mastery_and_a_club": "Assumes every dragon, full mastery and a club.",
         "gems.gem_builds.no_builds_available_to_export": "No builds available to export.",
         "gems.gem_builds.no_builds_generated_check_your_config": "No builds generated. Check your config.",
         "gems.gem_builds.none_auto_optimal": "None (Auto-Optimal)",
@@ -4335,4 +4354,4 @@
         "Professor Cortex": "",
         "(Custom) Sandbox": ""
     }
-}
+}

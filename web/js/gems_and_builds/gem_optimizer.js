@@ -372,8 +372,7 @@
             if (config.character === CL.SOLARION || config.subclass === CL.SOLARION) third += 140;
             if (damageType === SN.PHYSICAL && config.subclass === CL.LUNAR_LANCER) first += 750;
             if (damageType === SN.MAGIC && (config.subclass === CL.ICE_SAGE || config.subclass === CL.SHADOW_HUNTER)) first += 750;
-            if (config.subclass === CL.BARD) second += 15;
-            if (config.subclass === CL.BOOMERANGER) second += 20;
+            if (config.subclass === CL.BARD || config.subclass === CL.BOOMERANGER) second += 20;
 
             if (config.subclass_active) {
                 if (config.subclass === CL.BARD) { fourth += 45; second += 45; }
@@ -484,6 +483,70 @@
         return formattedResults;
     }
 
+    // ---- Health Optimizer -----------------------------------------------------
+    // A damage build fills two of each gem's three stat lines; this spends the
+    // third on the 3 Empowered + 6 Lesser elemental gems, keeps the splits that
+    // reach 100% critical hit and ranks them by max health.
+    const HEALTH_LINES = ['Critical Hit', SN.MAXHP, SN.MAXHP_PCT];
+    const HEALTH_KEYS = ['critical_hit', 'maximum_health', 'maximum_health_per'];
+    const HEALTH_FLAGS = ['weapon_ch', 'ring_ch', 'hat_health', 'face_health'];
+
+    // itertools.combinations_with_replacement(range(3), n) as per-value counts.
+    function healthCombos(n) {
+        const out = [];
+        const walk = (start, left, counts) => {
+            if (!left) { out.push(counts.slice()); return; }
+            for (let i = start; i < 3; i++) { counts[i]++; walk(i, left - 1, counts); counts[i]--; }
+        };
+        walk(0, n, [0, 0, 0]);
+        return out;
+    }
+
+    function computeHealth(rawConfig, data) {
+        const config = rawConfig || {};
+        const cls = data && data.classes && data.classes[config.character || 'Bard'];
+        if (!cls) throw new Error(`Unknown class '${config.character}'.`);
+        const sources = data.health || {};
+        const sum = (obj) => Object.values(obj || {}).reduce((a, v) => a + (Number(v) || 0), 0);
+        const base = HEALTH_LINES.map((line) => findStatValue(cls.stats, line) + sum(sources[line]));
+        Object.entries(sources.gear_lines || {}).forEach(([flag, line]) => {
+            const i = HEALTH_LINES.indexOf(line && line.stat);
+            if (i !== -1 && HEALTH_FLAGS.includes(flag) && config[flag]) base[i] += Number(line.value) || 0;
+        });
+        if (config.star_chart) {
+            if (!data._starParser) data._starParser = new StarChartParser(data.starChart);
+            const stats = data._starParser.parseBuildCode(config.star_chart).stats;
+            const crit = stats['Critical Hit'] || {};
+            const hp = stats[SN.MAXHP] || {};
+            base[0] += crit.flat || 0;
+            base[1] += hp.flat || 0;
+            base[2] += hp.pct || 0;
+        }
+        const lineValues = (gem) => HEALTH_LINES.map((s) => (((data.gemStats || {})[gem] || {})[s] || [0])[0] * 1.1);
+        const empV = lineValues('Empowered');
+        const lesV = lineValues('Lesser');
+        const ranked = [];
+        for (const emp of healthCombos(3)) {
+            for (const les of healthCombos(6)) {
+                const total = base.map((b, i) => b + empV[i] * emp[i] + lesV[i] * les[i]);
+                if (total[0] < 100 - 1e-9) continue;
+                ranked.push([total[1] * (1 + total[2] / 100), total, emp, les]);
+            }
+        }
+        ranked.sort((a, b) => (b[0] - a[0]) || (a[1][0] - b[1][0]));
+        const rd = (v) => pyRound(v, config.high_precision ? 8 : 2);
+        const lines = (vals) => Object.fromEntries(HEALTH_KEYS.map((k, i) => [k, rd(vals[i])]));
+        const counts = (c) => Object.fromEntries(HEALTH_KEYS.map((k, i) => [k, c[i]]));
+        const results = ranked.map(([health, total, emp, les], i) => Object.assign(lines(total), {
+            rank: i + 1,
+            layout: `${emp.join('/')} ${les.join('/')}`,
+            empowered: counts(emp),
+            lesser: counts(les),
+            health: rd(health),
+        }));
+        return { base: lines(base), count: results.length, results };
+    }
+
     // ---- async data loading + public wrapper ----------------------------------
     const SUM_PATHS = [
         'health', 'health_per', 'damage', 'critical_damage', 'light', 'bonus_damage',
@@ -505,9 +568,10 @@
                 return r.ok ? await r.json() : {};
             } catch (e) { return {}; }
         };
-        const [classesArr, foods, allies, faceDmg, gemStats, starChart] = await Promise.all([
+        const [classesArr, foods, allies, faceDmg, gemStats, starChart, health] = await Promise.all([
             getJson('classes.json'), getJson('builds/food.json'), getJson('builds/ally.json'),
             getJson('builds/face_damage.json'), getJson('mystic.json'), getJson('star_chart.json'),
+            getJson('builds/health_optimizer.json'),
         ]);
         const sumData = await Promise.all(SUM_PATHS.map((p) => getJson(`builds/${p}.json`)));
 
@@ -519,7 +583,7 @@
         return {
             classes, foods, allies,
             faceDamage: (faceDmg && faceDmg.Face) || 0,
-            gemStats, starChart, sums,
+            gemStats, starChart, sums, health,
         };
     }
 
@@ -529,6 +593,11 @@
         return computeBuilds(config, data);
     }
 
+    async function optimizeHealth(config) {
+        if (!_dataPromise) _dataPromise = loadData();
+        return computeHealth(config, await _dataPromise);
+    }
+
     async function parseStarChart(code) {
         if (!_dataPromise) _dataPromise = loadData();
         const data = await _dataPromise;
@@ -536,7 +605,7 @@
         return data._starParser.parseBuildCode(code);
     }
 
-    const api = { computeBuilds, calculateBuilds, parseStarChart, loadData, StarChartParser, pyRound, generateCombinations };
+    const api = { computeBuilds, calculateBuilds, computeHealth, optimizeHealth, parseStarChart, loadData, StarChartParser, pyRound, generateCombinations };
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     if (typeof window !== 'undefined') window.GemBuildOptimizer = api;
 })();

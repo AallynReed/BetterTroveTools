@@ -4,7 +4,7 @@ use anyhow::Result;
 use serde_json::{json, Value};
 
 use super::arity;
-use super::engine::{engine, BuildConfig};
+use super::engine::{engine, BuildConfig, HealthConfig};
 use crate::{ctx, Args, Cmd, Dialog, Resp};
 
 pub fn commands() -> Vec<Cmd> {
@@ -24,6 +24,10 @@ pub fn commands() -> Vec<Cmd> {
         Cmd::std("calculate_gem_builds", |a| {
             arity(a, "calculate_gem_builds", &["config_dict"], 1)?;
             Ok(calculate_gem_builds(a.get(0)))
+        }),
+        Cmd::std("optimize_gem_health", |a| {
+            arity(a, "optimize_gem_health", &["config_dict"], 1)?;
+            Ok(optimize_gem_health(a.get(0)))
         }),
         Cmd::std("save_gem_builds_csv", save_gem_builds_csv),
         Cmd::std("parse_star_chart_code", |a| {
@@ -63,6 +67,16 @@ fn calculate_gem_builds(config: &Value) -> Value {
     match BuildConfig::validate(config).and_then(|c| engine.calculate_builds(&c)) {
         Ok(builds) => Resp::ok(json!({"builds": builds})).with("builds", builds).into(),
         Err(e) => Resp::fail(e, "CALCULATE_GEM_BUILDS_FAILED").into(),
+    }
+}
+
+fn optimize_gem_health(config: &Value) -> Value {
+    let Some(engine) = engine() else {
+        return Resp::fail("Engine failed to initialize. Check console for path errors.", "ENGINE_NOT_READY").into();
+    };
+    match engine.optimize_health(&HealthConfig::parse(config)) {
+        Ok(plan) => Resp::ok(plan).spread().into(),
+        Err(e) => Resp::fail(e, "OPTIMIZE_GEM_HEALTH_FAILED").into(),
     }
 }
 

@@ -644,6 +644,15 @@
                 return { success: false, error: String(err && err.message || err), code: 'CALCULATE_GEM_BUILDS_FAILED' };
             }
         }, { localOnly: true }),
+        optimize_gem_health: makeEelFn('optimize_gem_health', async (config) => {
+            try {
+                if (!window.GemBuildOptimizer) return fail(t('web.gem_builds_needs_desktop'));
+                const plan = await window.GemBuildOptimizer.optimizeHealth(config || {});
+                return { success: true, data: plan, ...plan };
+            } catch (err) {
+                return { success: false, error: String(err && err.message || err), code: 'OPTIMIZE_GEM_HEALTH_FAILED' };
+            }
+        }, { localOnly: true }),
         get_trove_classes: makeEelFn('get_trove_classes', async () => {
             const classes = await fetchJson('assets/data/classes.json', []);
             return ok((classes || []).map(cls => ({ name: cls.name, value: cls.name })));

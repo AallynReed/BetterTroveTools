@@ -19,6 +19,10 @@
         "Maximum Health %": [
             567.0,
             236.25
+        ],
+        "Critical Hit": [
+            24.0,
+            8.25
         ]
     },
     "Empowered": {
@@ -41,6 +45,10 @@
         "Maximum Health %": [
             619.5,
             288.75
+        ],
+        "Critical Hit": [
+            25.25,
+            9.5
         ]
     }
 }

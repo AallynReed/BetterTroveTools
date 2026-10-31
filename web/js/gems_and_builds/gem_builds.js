@@ -36,7 +36,11 @@ document.addEventListener("gem_builds_loaded", () => {
                 star_chart: "",
                 scTemplate: "",
                 bounty_hunt: true,
-                high_precision: false
+                high_precision: false,
+                weapon_ch: false,
+                ring_ch: false,
+                hat_health: false,
+                face_health: false
             });
 
             // Bounty Hunt is a 4-hour buff from a Sundered Uplands 5-star boss, and
@@ -162,6 +166,40 @@ document.addEventListener("gem_builds_loaded", () => {
 
             const nextPage = () => { if (currentPage.value < maxPages.value - 1) currentPage.value++; };
             const prevPage = () => { if (currentPage.value > 0) currentPage.value--; };
+
+            // Health optimizer: a damage build fills two of each gem's three stats;
+            // this spends the third on the nine Fire/Water/Air gems. Meaningless for
+            // a Health build, so it hides there.
+            const healthPlan = ref(null);
+            const hpPage = ref(0);
+            const hpPerPage = 10;
+            const hpCalculating = ref(false);
+            const hpApplies = computed(() => config.build_type !== 'Health');
+            const hpResults = computed(() => (healthPlan.value && healthPlan.value.results) || []);
+            const hpBest = computed(() => hpResults.value[0] || null);
+            const hpMaxPages = computed(() => Math.ceil(hpResults.value.length / hpPerPage) || 1);
+            const hpPaginated = computed(() => hpResults.value.slice(hpPage.value * hpPerPage, (hpPage.value + 1) * hpPerPage));
+            const hpNextPage = () => { if (hpPage.value < hpMaxPages.value - 1) hpPage.value++; };
+            const hpPrevPage = () => { if (hpPage.value > 0) hpPage.value--; };
+            const HP_STATS = [
+                { key: 'critical_hit', label: 'gems.gem_builds.stat_crit_hit' },
+                { key: 'maximum_health', label: 'gems.gem_builds.stat_max_health' },
+                { key: 'maximum_health_per', label: 'gems.gem_builds.stat_max_health_pct' }
+            ];
+            // "3 Empowered · 2 Lesser", skipping a gem type that carries none of it.
+            const hpGems = (row, key) => {
+                const parts = [];
+                if (row.empowered[key]) parts.push(`${row.empowered[key]} ${t('gems.gem_builds.group_empowered')}`);
+                if (row.lesser[key]) parts.push(`${row.lesser[key]} ${t('gems.gem_builds.group_lesser')}`);
+                return parts.join(' · ');
+            };
+            const hpBestSplit = computed(() => {
+                const best = hpBest.value;
+                return best ? HP_STATS.map(s => ({ label: s.label, gems: hpGems(best, s.key) })).filter(s => s.gems) : [];
+            });
+            const hpBeforeGems = computed(() => healthPlan.value && healthPlan.value.base
+                ? t('gems.gem_builds.before_gems_you_have_n_critical_hit').replace('{n}', fmtNum(healthPlan.value.base.critical_hit))
+                : '');
 
             const getTradeoffSummary = (build) => {
                 const best = cachedBuilds.value[0];
@@ -442,6 +480,33 @@ document.addEventListener("gem_builds_loaded", () => {
                 }, 300);
             };
 
+            let hpTimeout;
+            const triggerHealth = () => {
+                clearTimeout(hpTimeout);
+                if (!hpApplies.value) return;
+                hpTimeout = setTimeout(async () => {
+                    hpCalculating.value = true;
+                    try {
+                        const res = await eel.optimize_gem_health({
+                            character: config.character,
+                            star_chart: config.star_chart || null,
+                            weapon_ch: config.weapon_ch,
+                            ring_ch: config.ring_ch,
+                            hat_health: config.hat_health,
+                            face_health: config.face_health,
+                            high_precision: config.high_precision
+                        })();
+                        healthPlan.value = res && res.success !== false ? unwrapResp(res, null, null) : null;
+                        hpPage.value = 0;
+                    } catch (e) {
+                        console.error(e);
+                        healthPlan.value = null;
+                    } finally {
+                        hpCalculating.value = false;
+                    }
+                }, 300);
+            };
+
             watch(() => config.character, (newVal) => {
                 if (newVal === config.subclass) {
                     const other = classesData.value.find(c => c.value !== newVal);
@@ -495,6 +560,7 @@ document.addEventListener("gem_builds_loaded", () => {
                     saveState();
                 }
                 triggerCalculation();
+                triggerHealth();
             }, { deep: true });
 
             watch(modifiersOpen, () => {
@@ -531,6 +597,7 @@ document.addEventListener("gem_builds_loaded", () => {
                     if (templates) starChartTemplates.value = templates;
                     
                     triggerCalculation();
+                    triggerHealth();
                     nextTick(() => { if (window.applyCustomDropdowns) window.applyCustomDropdowns(); });
                 } catch(e) {
                     console.error("Config load error:", e);
@@ -559,6 +626,8 @@ document.addEventListener("gem_builds_loaded", () => {
                 nextPage, prevPage, getTooltipHtml, copyLayout, fmtLayout, layoutGroups, layoutLegend, exportCsv, showContextMenu,
                 helpOpen, toggleHelp,
                 getBuildHeadline, dismissTips,
+                healthPlan, hpPage, hpMaxPages, hpPaginated, hpCalculating, hpApplies, hpResults, hpBest, hpBestSplit, hpBeforeGems,
+                hpNextPage, hpPrevPage,
                 fmtNum, fmtInt, fmtDec
             };
         }

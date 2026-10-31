@@ -92,7 +92,7 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 
 ## Gems & builds
 
-- **Gem Builds planner** for class‑focused optimization, with a **Blessing of the Lilypad** toggle (the ally buff, on top of your level‑30 ally) and a **high precision** mode that shows every number to 8 decimals instead of rounding.
+- **Gem Builds planner** for class‑focused optimization, with a **Blessing of the Lilypad** toggle (the ally buff, on top of your level‑30 ally) and a **high precision** mode that shows every number to 8 decimals instead of rounding. A **Health optimizer** under the results spends each gem's spare stat on as much health as possible while keeping 100% critical hit, and the **Health** build goal is available too.
 - **Star Chart builder** with a pan/zoom node map, saved templates, and shareable build codes.
 - **Gem Evaluator** for reviewing gem quality and upgrade decisions.
 - **Gem Simulator** for leveling, augmenting, sparking, and flaring experiments.

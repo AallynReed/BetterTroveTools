@@ -158,8 +158,8 @@
                                                                 "value": 5
                                                             },
                                                             {
-                                                                "name": "Maximum Health %",
-                                                                "percentage": false,
+                                                                "name": "Maximum Health",
+                                                                "percentage": true,
                                                                 "value": 10
                                                             }
                                                         ],
@@ -174,7 +174,14 @@
                                                 "Obtainables": [
                                                     "Grants a Balefire Dragon Egg Fragment when unlocked"
                                                 ],
-                                                "Acts": "Major"
+                                                "Acts": "Major",
+                                                "Ability_Values": [
+                                                    {
+                                                        "name": "Critical Hit",
+                                                        "percentage": false,
+                                                        "value": 30.0
+                                                    }
+                                                ]
                                             }
                                         ],
                                         "Obtainables": [],
@@ -206,7 +213,14 @@
                         "Obtainables": [
                             "Grants a Balefire Dragon Egg Fragment when unlocked"
                         ],
-                        "Acts": "Major"
+                        "Acts": "Major",
+                        "Ability_Values": [
+                            {
+                                "name": "Critical Hit",
+                                "percentage": false,
+                                "value": 20.0
+                            }
+                        ]
                     },
                     {
                         "Path": "combat.a.1",
@@ -257,7 +271,7 @@
                                                 "Stats": [
                                                     {
                                                         "name": "Damage Reduction",
-                                                        "percentage": false,
+                                                        "percentage": true,
                                                         "value": 3
                                                     }
                                                 ],
@@ -290,7 +304,7 @@
                                                         "Stats": [
                                                             {
                                                                 "name": "Damage Reduction",
-                                                                "percentage": false,
+                                                                "percentage": true,
                                                                 "value": 3
                                                             }
                                                         ],
@@ -332,7 +346,14 @@
                                                                 "Obtainables": [
                                                                     "Grants a Balefire Dragon Egg Fragment when unlocked"
                                                                 ],
-                                                                "Acts": "Major"
+                                                                "Acts": "Major",
+                                                                "Ability_Values": [
+                                                                    {
+                                                                        "name": "Damage Reduction",
+                                                                        "percentage": true,
+                                                                        "value": 15.0
+                                                                    }
+                                                                ]
                                                             },
                                                             {
                                                                 "Path": "combat.a.1.a.0.b.1.b",
@@ -449,8 +470,8 @@
                                         "Description": "Look at this star trying to make you less squishy over here.",
                                         "Stats": [
                                             {
-                                                "name": "Maximum Health %",
-                                                "percentage": false,
+                                                "name": "Maximum Health",
+                                                "percentage": true,
                                                 "value": 10
                                             }
                                         ],
@@ -482,8 +503,8 @@
                                                 "Description": "This star's blessing hopes you live a long and healthy life.",
                                                 "Stats": [
                                                     {
-                                                        "name": "Maximum Health %",
-                                                        "percentage": false,
+                                                        "name": "Maximum Health",
+                                                        "percentage": true,
                                                         "value": 10
                                                     }
                                                 ],
@@ -599,8 +620,8 @@
                                                                         "Description": "Ahhh this is where I put that Health Star.",
                                                                         "Stats": [
                                                                             {
-                                                                                "name": "Maximum Health %",
-                                                                                "percentage": false,
+                                                                                "name": "Maximum Health",
+                                                                                "percentage": true,
                                                                                 "value": 10
                                                                             }
                                                                         ],
@@ -644,7 +665,19 @@
                                                                                     "Grants Ursa Major when upgrading",
                                                                                     "Grants a Balefire Dragon Egg Fragment when unlocked"
                                                                                 ],
-                                                                                "Acts": "Major"
+                                                                                "Acts": "Major",
+                                                                                "Ability_Values": [
+                                                                                    {
+                                                                                        "name": "Attack Speed",
+                                                                                        "percentage": true,
+                                                                                        "value": 10.0
+                                                                                    },
+                                                                                    {
+                                                                                        "name": "Outgoing Damage",
+                                                                                        "percentage": false,
+                                                                                        "value": 12.0
+                                                                                    }
+                                                                                ]
                                                                             }
                                                                         ],
                                                                         "Obtainables": [],
@@ -654,7 +687,19 @@
                                                                 "Obtainables": [
                                                                     "Grants a Balefire Dragon Egg Fragment when unlocked"
                                                                 ],
-                                                                "Acts": "Major"
+                                                                "Acts": "Major",
+                                                                "Ability_Values": [
+                                                                    {
+                                                                        "name": "Attack Speed",
+                                                                        "percentage": true,
+                                                                        "value": 12.0
+                                                                    },
+                                                                    {
+                                                                        "name": "Outgoing Damage",
+                                                                        "percentage": false,
+                                                                        "value": 10.0
+                                                                    }
+                                                                ]
                                                             }
                                                         ],
                                                         "Obtainables": [],
@@ -664,7 +709,19 @@
                                                 "Obtainables": [
                                                     "Grants a Balefire Dragon Egg Fragment when unlocked"
                                                 ],
-                                                "Acts": "Major"
+                                                "Acts": "Major",
+                                                "Ability_Values": [
+                                                    {
+                                                        "name": "Attack Speed",
+                                                        "percentage": true,
+                                                        "value": 10.0
+                                                    },
+                                                    {
+                                                        "name": "Outgoing Damage",
+                                                        "percentage": false,
+                                                        "value": 8.0
+                                                    }
+                                                ]
                                             }
                                         ],
                                         "Obtainables": [],
@@ -678,7 +735,19 @@
                         "Obtainables": [
                             "Grants a Balefire Dragon Egg Fragment when unlocked"
                         ],
-                        "Acts": "Major"
+                        "Acts": "Major",
+                        "Ability_Values": [
+                            {
+                                "name": "Attack Speed",
+                                "percentage": true,
+                                "value": 10.0
+                            },
+                            {
+                                "name": "Outgoing Damage",
+                                "percentage": false,
+                                "value": 6.0
+                            }
+                        ]
                     },
                     {
                         "Path": "combat.b.1",
@@ -694,7 +763,7 @@
                             {
                                 "name": "Critical Damage",
                                 "percentage": false,
-                                "value": 15
+                                "value": 15.0
                             }
                         ],
                         "Stars": [
@@ -731,7 +800,7 @@
                                             {
                                                 "name": "Critical Damage",
                                                 "percentage": false,
-                                                "value": 25
+                                                "value": 25.0
                                             }
                                         ],
                                         "Stars": [],
@@ -834,7 +903,7 @@
                                     {
                                         "name": "Lasermancy",
                                         "percentage": false,
-                                        "value": 20
+                                        "value": 80
                                     }
                                 ],
                                 "Abilities": [],
@@ -929,7 +998,7 @@
                                                             {
                                                                 "name": "Magic Find",
                                                                 "percentage": true,
-                                                                "value": 8
+                                                                "value": 8.88
                                                             }
                                                         ],
                                                         "Abilities": [],
@@ -956,7 +1025,7 @@
                                                     {
                                                         "name": "Crafting Speed",
                                                         "percentage": false,
-                                                        "value": null
+                                                        "value": 30.0
                                                     }
                                                 ],
                                                 "Abilities": [],
@@ -968,7 +1037,14 @@
                                         "Obtainables": [
                                             "Grants a Balefire Dragon Egg Fragment when unlocked"
                                         ],
-                                        "Acts": "Major"
+                                        "Acts": "Major",
+                                        "Ability_Values": [
+                                            {
+                                                "name": "Experience Gain",
+                                                "percentage": true,
+                                                "value": 5.0
+                                            }
+                                        ]
                                     }
                                 ],
                                 "Obtainables": [],
@@ -987,8 +1063,8 @@
                                         "value": 1
                                     },
                                     {
-                                        "name": "Maximum Health %",
-                                        "percentage": false,
+                                        "name": "Maximum Health",
+                                        "percentage": true,
                                         "value": 5
                                     },
                                     {
@@ -1018,8 +1094,8 @@
                                                 "Description": "Grants the feeling of vigor you get from eating a large meal.",
                                                 "Stats": [
                                                     {
-                                                        "name": "Maximum Health %",
-                                                        "percentage": false,
+                                                        "name": "Maximum Health",
+                                                        "percentage": true,
                                                         "value": 10
                                                     },
                                                     {
@@ -1076,7 +1152,7 @@
                                                                 "Stats": [
                                                                     {
                                                                         "name": "Damage Reduction",
-                                                                        "percentage": false,
+                                                                        "percentage": true,
                                                                         "value": 15
                                                                     }
                                                                 ],
@@ -1104,7 +1180,7 @@
                                                 "Stats": [
                                                     {
                                                         "name": "Outgoing Damage",
-                                                        "percentage": false,
+                                                        "percentage": true,
                                                         "value": 3
                                                     }
                                                 ],
@@ -1134,11 +1210,11 @@
                                                                     {
                                                                         "name": "Lasermancy",
                                                                         "percentage": false,
-                                                                        "value": 45
+                                                                        "value": 100
                                                                     },
                                                                     {
-                                                                        "name": "Maximum Health %",
-                                                                        "percentage": false,
+                                                                        "name": "Maximum Health",
+                                                                        "percentage": true,
                                                                         "value": 15
                                                                     }
                                                                 ],
@@ -1231,12 +1307,12 @@
                     {
                         "name": "Lasermancy",
                         "percentage": false,
-                        "value": 50
+                        "value": 100
                     },
                     {
                         "name": "Jump",
                         "percentage": false,
-                        "value": 3
+                        "value": 10
                     }
                 ],
                 "Abilities": [],
@@ -1341,12 +1417,12 @@
                                     {
                                         "name": "Lasermancy",
                                         "percentage": false,
-                                        "value": 25
+                                        "value": 200
                                     },
                                     {
-                                        "name": "Maximum Health %",
-                                        "percentage": false,
-                                        "value": 5
+                                        "name": "Maximum Health",
+                                        "percentage": true,
+                                        "value": 10
                                     }
                                 ],
                                 "Abilities": [],
@@ -1391,8 +1467,8 @@
                                                 "Description": "Hee Hee this star gives more health.",
                                                 "Stats": [
                                                     {
-                                                        "name": "Maximum Health %",
-                                                        "percentage": false,
+                                                        "name": "Maximum Health",
+                                                        "percentage": true,
                                                         "value": 5
                                                     }
                                                 ],
@@ -1421,8 +1497,8 @@
                                                                 "Description": "Exploring and armoring up.",
                                                                 "Stats": [
                                                                     {
-                                                                        "name": "Incoming Damage",
-                                                                        "percentage": false,
+                                                                        "name": "Damage Reduction",
+                                                                        "percentage": true,
                                                                         "value": -5
                                                                     }
                                                                 ],
@@ -1436,8 +1512,8 @@
                                                                         "Description": "Seeing the final frontier has left you tough.",
                                                                         "Stats": [
                                                                             {
-                                                                                "name": "Incoming Damage",
-                                                                                "percentage": false,
+                                                                                "name": "Damage Reduction",
+                                                                                "percentage": true,
                                                                                 "value": -10
                                                                             }
                                                                         ],
@@ -1459,8 +1535,8 @@
                                                                 "Description": "Intense searching has led you to greater speed and adaptability.",
                                                                 "Stats": [
                                                                     {
-                                                                        "name": "Maximum Health %",
-                                                                        "percentage": false,
+                                                                        "name": "Maximum Health",
+                                                                        "percentage": true,
                                                                         "value": 10
                                                                     },
                                                                     {
@@ -1471,7 +1547,7 @@
                                                                     {
                                                                         "name": "Lasermancy",
                                                                         "percentage": false,
-                                                                        "value": 15
+                                                                        "value": 45
                                                                     }
                                                                 ],
                                                                 "Abilities": [],
@@ -1660,12 +1736,12 @@
                             {
                                 "name": "Physical Damage",
                                 "percentage": true,
-                                "value": 25
+                                "value": 25.0
                             },
                             {
                                 "name": "Magic Damage",
                                 "percentage": true,
-                                "value": 25
+                                "value": 25.0
                             }
                         ],
                         "Stars": [
@@ -1836,8 +1912,8 @@
                                                                 "Description": "Star of health bless us with more health please.",
                                                                 "Stats": [
                                                                     {
-                                                                        "name": "Maximum Health %",
-                                                                        "percentage": false,
+                                                                        "name": "Maximum Health",
+                                                                        "percentage": true,
                                                                         "value": 15
                                                                     }
                                                                 ],
@@ -1958,12 +2034,12 @@
                                     {
                                         "name": "Physical Damage",
                                         "percentage": true,
-                                        "value": 25
+                                        "value": 25.0
                                     },
                                     {
                                         "name": "Magic Damage",
                                         "percentage": true,
-                                        "value": 25
+                                        "value": 25.0
                                     }
                                 ],
                                 "Stars": [
@@ -1999,7 +2075,7 @@
                                         "Stats": [
                                             {
                                                 "name": "Damage Reduction",
-                                                "percentage": false,
+                                                "percentage": true,
                                                 "value": 8
                                             }
                                         ],
@@ -2096,8 +2172,8 @@
                                                 "value": 175
                                             },
                                             {
-                                                "name": "Maximum Health %",
-                                                "percentage": false,
+                                                "name": "Maximum Health",
+                                                "percentage": true,
                                                 "value": 14
                                             }
                                         ],
@@ -2213,14 +2289,14 @@
                                                 ],
                                                 "Ability_Values": [
                                                     {
-                                                        "name": "Physical Damage",
-                                                        "percentage": true,
-                                                        "value": 10
-                                                    },
-                                                    {
                                                         "name": "Magic Damage",
                                                         "percentage": true,
-                                                        "value": 10
+                                                        "value": 10.0
+                                                    },
+                                                    {
+                                                        "name": "Physical Damage",
+                                                        "percentage": true,
+                                                        "value": 10.0
                                                     }
                                                 ],
                                                 "Stars": [
@@ -2240,14 +2316,14 @@
                                                         ],
                                                         "Ability_Values": [
                                                             {
-                                                                "name": "Physical Damage",
-                                                                "percentage": true,
-                                                                "value": 15
-                                                            },
-                                                            {
                                                                 "name": "Magic Damage",
                                                                 "percentage": true,
-                                                                "value": 15
+                                                                "value": 15.0
+                                                            },
+                                                            {
+                                                                "name": "Physical Damage",
+                                                                "percentage": true,
+                                                                "value": 15.0
                                                             }
                                                         ],
                                                         "Stars": [],
@@ -2406,7 +2482,14 @@
                                                             "Increases the Depths boon damage reduction to 25% and duration to 1 hour."
                                                         ],
                                                         "Stars": [],
-                                                        "Obtainables": []
+                                                        "Obtainables": [],
+                                                        "Ability_Values": [
+                                                            {
+                                                                "name": "Damage Reduction",
+                                                                "percentage": true,
+                                                                "value": 25.0
+                                                            }
+                                                        ]
                                                     },
                                                     {
                                                         "Path": "pve.b.0.b.1.a.1",
@@ -2432,7 +2515,14 @@
                                                 "Obtainables": [
                                                     "Grants a Balefire Dragon Egg Fragment when unlocked"
                                                 ],
-                                                "Acts": "Major"
+                                                "Acts": "Major",
+                                                "Ability_Values": [
+                                                    {
+                                                        "name": "Damage Reduction",
+                                                        "percentage": true,
+                                                        "value": 20.0
+                                                    }
+                                                ]
                                             }
                                         ],
                                         "Obtainables": [],

@@ -253,6 +253,29 @@ fn builds_and_star_chart_codes_match_python() {
     assert_cases("builds.json");
 }
 
+/// Reference rows from the TroveAPI site's /site/gems/builds/health-optimizer.
+#[test]
+fn health_optimizer_matches_web() {
+    init();
+    let solarion = run("optimize_gem_health", vec![json!({"character": "Solarion"})]);
+    assert_eq!(solarion["count"], 155);
+    assert_eq!(solarion["base"], json!({"critical_hit": 20.8, "maximum_health": 132430.0, "maximum_health_per": 577.0}));
+    let top = &solarion["results"][0];
+    assert_eq!(top["layout"], "0/0/3 3/3/0");
+    assert_eq!(top["health"], 8695801.79);
+
+    let knight = run(
+        "optimize_gem_health",
+        vec![json!({"character": "Knight", "hat_health": true, "face_health": true, "weapon_ch": true, "star_chart": "SC:ca0a1b1|cb0a1b1b1|pb0a1a0"})],
+    );
+    assert_eq!(knight["base"], json!({"critical_hit": 32.8, "maximum_health": 132550.0, "maximum_health_per": 1211.0}));
+    let top = &knight["results"][0];
+    assert_eq!(top["layout"], "0/1/2 3/2/1");
+    assert_eq!((top["critical_hit"].clone(), top["maximum_health_per"].clone(), top["health"].clone()), (json!(112.0), json!(3197.6), json!(10731544.56)));
+
+    assert_eq!(run("optimize_gem_health", vec![json!({"character": "Nobody"})])["code"], "OPTIMIZE_GEM_HEALTH_FAILED");
+}
+
 #[test]
 fn simulator_matches_python() {
     assert_cases("simulator.json");

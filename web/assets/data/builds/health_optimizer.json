@@ -1,0 +1,22 @@
+{
+    "Critical Hit": {
+        "Dragons": 8.8,
+        "Club": 10
+    },
+    "Maximum Health": {
+        "Dragons": 51000,
+        "Hat": 37700,
+        "Face": 37700
+    },
+    "Maximum Health %": {
+        "Dragons": 147,
+        "Club": 100,
+        "Mastery": 300
+    },
+    "gear_lines": {
+        "weapon_ch": {"stat": "Critical Hit", "value": 7},
+        "ring_ch": {"stat": "Critical Hit", "value": 6.1},
+        "hat_health": {"stat": "Maximum Health %", "value": 312},
+        "face_health": {"stat": "Maximum Health %", "value": 312}
+    }
+}
