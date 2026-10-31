@@ -108,12 +108,14 @@ fn unique_path_numbers_before_the_suffix() {
 #[test]
 fn set_mods_enabled_flips_the_whole_selection() {
     let dir = tempfile::tempdir().unwrap();
-    let mods = dir.path().join("mods");
+    // Resolved like the mod paths below: CI's temp folder is an 8.3 short path.
+    let root = py::resolve(dir.path());
+    let mods = root.join("mods");
     std::fs::create_dir_all(&mods).unwrap();
     for name in ["simple.tmod", "unicode.tmod"] {
         std::fs::copy(fixture("modfile").join(name), mods.join(name)).unwrap();
     }
-    let game = json!(py::display(dir.path()));
+    let game = json!(py::display(&root));
     let paths: Vec<Value> = ["simple.tmod", "unicode.tmod"].iter().map(|n| json!(py::display(&py::resolve(&mods.join(n))))).collect();
     let call = |paths: Vec<Value>, on: bool| manager::set_mods_enabled(&crate::Args::new(vec![game.clone(), json!(paths), json!(on)])).unwrap();
 
