@@ -77,7 +77,7 @@ jobs:
       - name: Install WebKitGTK and bundling tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file zsync
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev libxdo-dev libssl-dev patchelf file zsync desktop-file-utils
 
       - uses: dtolnay/rust-toolchain@stable
 
