@@ -114,7 +114,13 @@ pub fn encode(entries: &[Shared]) -> Result<String> {
 pub fn decode(code: &str) -> Result<Vec<Shared>> {
     let compact: String = code.chars().filter(|c| !c.is_whitespace()).collect();
     let start = compact.find(PREFIX).ok_or_else(|| anyhow!("That isn't a mod share code."))?;
-    let body: String = compact[start + PREFIX.len()..].chars().take_while(|c| c.is_ascii_alphanumeric() || "+/=".contains(*c)).collect();
+    let mut body: String = compact[start + PREFIX.len()..].chars().take_while(|c| c.is_ascii_alphanumeric() || "+/=".contains(*c)).collect();
+    // Words typed after the code join it once whitespace is gone; the code ends at its
+    // padding or its last whole quad, and inflate ignores any bytes past the stream.
+    match body.rfind('=') {
+        Some(end) => body.truncate(end + 1),
+        None => body.truncate(body.len() / 4 * 4),
+    }
     let damaged = || anyhow!("This share code is incomplete or damaged. Copy the whole code and try again.");
     let bytes = py::b64decode(&body).map_err(|_| damaged())?;
     let mut text = String::new();

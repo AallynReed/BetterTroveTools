@@ -35,7 +35,7 @@ rayon = "1"
 dirs = "5"
 open = "5"
 base64 = "0.22"
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9.2", default-features = false, features = ["deflate"] }
 walkdir = "2"
 glob = "0.3"
 roxmltree = "0.20"
