@@ -586,6 +586,7 @@ document.addEventListener('mod_manager_loaded', async () => {
 
                 isUpdatingAll.value = true;
                 const failed = [];
+                const reasons = new Set();
                 let jobId = null;
                 let done = 0;
 
@@ -613,9 +614,13 @@ document.addEventListener('mod_manager_loaded', async () => {
                                 try {
                                     const response = await requestModUpdate(mod);
                                     if (response.success) mod.hasUpdate = false;
-                                    else failed.push(mod.name);
+                                    else {
+                                        failed.push(mod.name);
+                                        if (response.error) reasons.add(response.error);
+                                    }
                                 } catch (e) {
                                     failed.push(mod.name);
+                                    if (e && e.message) reasons.add(e.message);
                                 } finally {
                                     mod.isUpdating = false;
                                     done++;
@@ -637,7 +642,8 @@ document.addEventListener('mod_manager_loaded', async () => {
                     window.showToast(t('mod_manager.update_all_partial')
                         .replace('{done}', updated)
                         .replace('{total}', pending.length)
-                        .replace('{names}', failed.join(', ')), true);
+                        .replace('{names}', failed.join(', '))
+                        + (reasons.size ? '\n' + [...reasons].join('\n') : ''), true, { durationMs: 8000 });
                 } else {
                     window.showToast(t('mod_manager.update_all_done').replace('{count}', updated));
                 }

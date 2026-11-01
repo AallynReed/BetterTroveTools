@@ -606,7 +606,13 @@ fn do_install(game: &Value, r: &Value, branch: &Value) -> Result<(bool, Option<S
     // Updating a mod the user switched off leaves it switched off.
     let suffix = if old_path.as_deref().unwrap_or("").to_lowercase().ends_with(".disabled") { ".disabled" } else { "" };
     let out_path = mods_dir.join(format!("{}{}{}", safe_name, ext_name, suffix));
-    py::write_bytes(&out_path, &data)?;
+    // Trove keeps its mods open while it runs, which Windows reports as a sharing violation.
+    if let Err(e) = std::fs::write(&out_path, &data) {
+        if matches!(e.raw_os_error(), Some(32) | Some(33)) {
+            return fail("Close Trove to update this mod: the game has the file open.");
+        }
+        return Err(py::errno_error(e, &out_path));
+    }
 
     if let Some(old) = &old_path {
         let old = py::py_path(old);
