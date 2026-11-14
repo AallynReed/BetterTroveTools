@@ -2,6 +2,8 @@
 
 # Better Trove Tools
 
+[![Discord](https://img.shields.io/badge/Discord-Foxhearth-5865F2?logo=discord&logoColor=white)](https://discord.gg/c9z5dqem8P)
+
 **A desktop companion for Trove players, collectors, and modders.**
 
 Live game utilities, build planning, mod management, archive tooling, and game‑file‑powered codexes — all in a single, fast, local‑first app.
