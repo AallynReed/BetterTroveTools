@@ -1,8 +1,14 @@
 <div align="center">
 
+<img src="assets/icon.png" width="128" alt="Better Trove Tools icon">
+
 # Better Trove Tools
 
 [![Discord](https://img.shields.io/badge/Discord-Foxhearth-5865F2?logo=discord&logoColor=white)](https://discord.gg/c9z5dqem8P)
+[![Release](https://img.shields.io/github/v/release/AallynReed/BetterTroveTools)](https://github.com/AallynReed/BetterTroveTools/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/AallynReed/BetterTroveTools/total)](https://github.com/AallynReed/BetterTroveTools/releases)
+[![License](https://img.shields.io/github/license/AallynReed/BetterTroveTools)](LICENSE)
+[![foxhearth.com](https://img.shields.io/badge/foxhearth.com-project_page-e8702a)](https://foxhearth.com/projects/better-trove-tools)
 
 **A desktop companion for Trove players, collectors, and modders.**
 
