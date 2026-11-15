@@ -292,3 +292,27 @@ Translations are loaded from `web/assets/locale/` and the active language can be
 Released under the [MIT License](LICENSE). © 2026‑Present **Aallyn Reed**.
 
 > Better Trove Tools is a community project and is not affiliated with or endorsed by Trion Worlds, Gamigo, or the official Trove team. *Trove* and related assets are property of their respective owners.
+
+---
+
+## Code signing policy
+
+Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+- Committers and reviewers: [AallynReed](https://github.com/AallynReed)
+- Approvers: [AallynReed](https://github.com/AallynReed)
+
+## Privacy
+
+Better Trove Tools makes these connections on its own, without you asking:
+
+- `api.aallyn.net` (the app's own API): checks for a new version at launch and every five minutes, sending the installed version, platform and update channel.
+- `api.aallyn.net`: keeps a live event stream open, and when the Home page opens (at launch) fetches rotations, news, giveaways, player activity and lists of community videos and streams.
+- `api.aallyn.net`: when a Trove install is found, at launch and then hourly, sends SHA-256 hashes of your installed mod files to identify them and spot removed mods. If Steam Workshop mods are installed, it also fetches the mod blocklist.
+- `api.steampowered.com`: during that same check, if the blocklist names Workshop authors, sends the IDs of your installed Steam Workshop mods to look up their creators.
+- `api.aallyn.net`: if you have signed in, checks your session at launch with your sign-in token, and the Home page fetches which giveaways you entered.
+- `api.github.com`: the Home page fetches the notes for the three latest releases.
+- Image hosts linked from the Home feeds (such as YouTube, Twitch, BiliBili and Trovesaurus): thumbnails and images load from them.
+- `fonts.googleapis.com` and `fonts.gstatic.com`: a connection is opened at startup; font files are downloaded only if you pick a Google font.
+
+These servers see your IP address and the app's user agent. The app sends no analytics or usage tracking. Everything else, such as browsing and installing mods, signing in, repairing the game or opening links, happens only when you do it.
