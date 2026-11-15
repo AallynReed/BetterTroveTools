@@ -31,7 +31,6 @@ Live game utilities, build planning, mod management, archive tooling, and game�
 <!-- Project meta -->
 ![Localization](https://img.shields.io/badge/Languages-9-orange?style=for-the-badge&logo=googletranslate&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-8A2BE2?style=for-the-badge)
-[![foxhearth.com](https://img.shields.io/badge/foxhearth.com-project_page-E8702A?style=for-the-badge)](https://foxhearth.com/projects/better-trove-tools)
 
 [**Download**](https://trove.aallyn.net) · [Releases](https://github.com/AallynReed/BetterTroveTools/releases) · [Report a bug](https://github.com/AallynReed/BetterTroveTools/issues)
 
