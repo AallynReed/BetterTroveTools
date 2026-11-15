@@ -5,10 +5,6 @@
 # Better Trove Tools
 
 [![Discord](https://img.shields.io/badge/Discord-Foxhearth-5865F2?logo=discord&logoColor=white)](https://discord.gg/c9z5dqem8P)
-[![Release](https://img.shields.io/github/v/release/AallynReed/BetterTroveTools)](https://github.com/AallynReed/BetterTroveTools/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/AallynReed/BetterTroveTools/total)](https://github.com/AallynReed/BetterTroveTools/releases)
-[![License](https://img.shields.io/github/license/AallynReed/BetterTroveTools)](LICENSE)
-[![foxhearth.com](https://img.shields.io/badge/foxhearth.com-project_page-e8702a)](https://foxhearth.com/projects/better-trove-tools)
 
 **A desktop companion for Trove players, collectors, and modders.**
 
@@ -35,6 +31,7 @@ Live game utilities, build planning, mod management, archive tooling, and game�
 <!-- Project meta -->
 ![Localization](https://img.shields.io/badge/Languages-9-orange?style=for-the-badge&logo=googletranslate&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-8A2BE2?style=for-the-badge)
+[![foxhearth.com](https://img.shields.io/badge/foxhearth.com-project_page-E8702A?style=for-the-badge)](https://foxhearth.com/projects/better-trove-tools)
 
 [**Download**](https://trove.aallyn.net) · [Releases](https://github.com/AallynReed/BetterTroveTools/releases) · [Report a bug](https://github.com/AallynReed/BetterTroveTools/issues)
 
