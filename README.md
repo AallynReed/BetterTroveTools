@@ -93,11 +93,13 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 - **Interactive yearly rotation calendar** with timeline filters, time‑mode switching, and quick jumps.
 - **Server time & timezone tools** — a live Trove server clock, side‑by‑side world clocks, and a converter that produces ready‑to‑paste **Discord timestamps**.
 - **Customizable layout** — reorder dashboard sections, collapse what you don't use, and pin your most‑used tools to the Quick Tools tray (auto or manual).
+- **Giveaways** — sign in with Discord to enter them and see which ones you've joined.
 
 ## Gems & builds
 
 - **Gem Builds planner** for class‑focused optimization, with a **Blessing of the Lilypad** toggle (the ally buff, on top of your level‑30 ally) and a **high precision** mode that shows every number to 8 decimals instead of rounding. A **Health optimizer** under the results spends each gem's spare stat on as much health as possible while keeping 100% critical hit, and the **Health** build goal is available too.
 - **Star Chart builder** with a pan/zoom node map, saved templates, and shareable build codes.
+- **Labelled gem build layouts**, so each saved layout says what it's for.
 - **Gem Evaluator** for reviewing gem quality and upgrade decisions.
 - **Gem Simulator** for leveling, augmenting, sparking, and flaring experiments.
 
@@ -122,7 +124,9 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 ## Mod manager
 
 - Manage installed mods **per Trove installation** (Live, PTS, and custom installs).
-- **Enable, disable, update, and delete** mods.
+- **Enable, disable, update, and delete** mods, one at a time or in **bulk**: select several to enable, disable, update, lock or delete together.
+- **Mod share codes** — share your mod setup as a code and install someone else's from theirs.
+- **Update All** says why a mod failed, and asks you to close Trove when it holds a mod open.
 - **Conflict detection** for overlapping active mods.
 - **Rename** local mod files to match their internal titles.
 - **Search, filter, and quick‑jump** through results.
@@ -156,11 +160,12 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 - **Multi‑language interface** support (9 languages).
 - **Accent color** and **app font** customization.
 - **Custom Trove directory management** for Live, PTS, and custom installs.
+- **Game install repair** in Settings.
 - **Command palette / Quick Open** (`Ctrl/Cmd + K`) to jump to any tool or action instantly.
 - **Background job queue** for long‑running operations like extraction and scanning.
 - **Home page content toggles** for a calmer dashboard.
 - **Local‑first design** with an external request tracker for full transparency.
-- **Built‑in update checking** through GitHub releases, with one‑click in‑app self‑update.
+- **Built‑in update checking** through GitHub releases, with one‑click in‑app self‑update and an alpha channel for testers.
 
 ## Built for speed
 
