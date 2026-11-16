@@ -99,7 +99,7 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 
 - **Gem Builds planner** for class‑focused optimization, with a **Blessing of the Lilypad** toggle (the ally buff, on top of your level‑30 ally) and a **high precision** mode that shows every number to 8 decimals instead of rounding. A **Health optimizer** under the results spends each gem's spare stat on as much health as possible while keeping 100% critical hit, and the **Health** build goal is available too.
 - **Star Chart builder** with a pan/zoom node map, saved templates, and shareable build codes.
-- **Labelled gem build layouts**, so each saved layout says what it's for.
+- **Labelled gem layouts** — the top build names each gem group and the stats its numbers land on.
 - **Gem Evaluator** for reviewing gem quality and upgrade decisions.
 - **Gem Simulator** for leveling, augmenting, sparking, and flaring experiments.
 
@@ -125,7 +125,7 @@ There's also a companion website at **[trove.aallyn.net](https://trove.aallyn.ne
 
 - Manage installed mods **per Trove installation** (Live, PTS, and custom installs).
 - **Enable, disable, update, and delete** mods, one at a time or in **bulk**: select several to enable, disable, update, lock or delete together.
-- **Mod share codes** — share your mod setup as a code and install someone else's from theirs.
+- **Mod share codes** — turn an install's enabled mods into a code; pasting a friend's code installs the ones you don't have yet.
 - **Update All** says why a mod failed, and asks you to close Trove when it holds a mod open.
 - **Conflict detection** for overlapping active mods.
 - **Rename** local mod files to match their internal titles.
