@@ -297,13 +297,6 @@ Released under the [MIT License](LICENSE). © 2026‑Present **Aallyn Reed**.
 
 ---
 
-## Code signing policy
-
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
-
-- Committers and reviewers: [AallynReed](https://github.com/AallynReed)
-- Approvers: [AallynReed](https://github.com/AallynReed)
-
 ## Privacy
 
 Better Trove Tools makes these connections on its own, without you asking:
