@@ -64,13 +64,13 @@ fn raise_if_cancelled(op: &str) -> Result<()> {
     Ok(())
 }
 
-fn failed(error: impl std::fmt::Display) -> Value {
+pub(super) fn failed(error: impl std::fmt::Display) -> Value {
     json!({"success": false, "error": error.to_string()})
 }
 
 /// The `try: ... except Exception as e: return {"success": False, "error": str(e)}`
 /// every endpoint wraps itself in, with `OperationCancelled` reported as such.
-fn guarded(body: impl FnOnce() -> Result<Value>) -> Value {
+pub(super) fn guarded(body: impl FnOnce() -> Result<Value>) -> Value {
     match body() {
         Ok(v) => v,
         Err(e) if e.is::<Cancelled>() => json!({"success": false, "cancelled": true, "error": e.to_string()}),
@@ -119,11 +119,11 @@ const IGNORED_EXTENSIONS: [&str; 14] = [".tfi", ".tfa", ".exe", ".dll", ".tmod",
 
 const PREVIEW_EXTENSIONS: [&str; 3] = [".png", ".jpg", ".jpeg"];
 
-fn valid_dir(name: &str) -> bool {
+pub(super) fn valid_dir(name: &str) -> bool {
     DIRECTORIES.contains(&name.to_lowercase().as_str())
 }
 
-fn ignored_extension(path: &Path) -> bool {
+pub(super) fn ignored_extension(path: &Path) -> bool {
     IGNORED_EXTENSIONS.contains(&file_suffix(path).to_lowercase().as_str())
 }
 
@@ -280,6 +280,15 @@ fn unlink_missing_ok(path: &Path) -> Result<()> {
 /// to the full posix path of its first occurrence.
 fn game_file_map(game_path: &Path, op: &str, log_failures: bool) -> Result<std::collections::HashMap<String, String>> {
     let mut map = std::collections::HashMap::new();
+    for full in game_index_paths(game_path, op, log_failures)? {
+        map.entry(py::name_of(&full).to_lowercase()).or_insert(full);
+    }
+    Ok(map)
+}
+
+/// The full posix path of every file the game's `index.tfi`s list, in scan order.
+pub(super) fn game_index_paths(game_path: &Path, op: &str, log_failures: bool) -> Result<Vec<String>> {
+    let mut out = Vec::new();
     for d in DIRECTORIES {
         raise_if_cancelled(op)?;
         let dir = game_path.join(d);
@@ -298,8 +307,7 @@ fn game_file_map(game_path: &Path, op: &str, log_failures: bool) -> Result<std::
                     for _ in 0..4 {
                         r.read_leb_unbounded()?;
                     }
-                    let full = py::as_posix(&py::join_str(&rel_dir, &internal));
-                    map.entry(py::name_of(&full).to_lowercase()).or_insert(full);
+                    out.push(py::as_posix(&py::join_str(&rel_dir, &internal)));
                 }
                 Ok(())
             })();
@@ -308,7 +316,7 @@ fn game_file_map(game_path: &Path, op: &str, log_failures: bool) -> Result<std::
             }
         }
     }
-    Ok(map)
+    Ok(out)
 }
 
 fn has_dunder_part(file: &Path, root: &Path) -> bool {
@@ -432,7 +440,7 @@ pub(super) fn classify_added_files(game_path_arg: &Value, picked: &[PathBuf]) ->
 
 /// `_safe_extract_target`: where an archive path may be written under `dest_root`, or
 /// `None` when it would escape it (absolute, a drive, `..`).
-fn safe_extract_target(dest_root: &Path, internal_path: &str) -> Option<PathBuf> {
+pub(super) fn safe_extract_target(dest_root: &Path, internal_path: &str) -> Option<PathBuf> {
     let raw = internal_path.replace('\\', "/");
     let mut parts = Vec::new();
     for part in py::posix_parts(&raw) {
@@ -681,14 +689,22 @@ pub fn build_tmod(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
         reset_cancel_flag("build_tmod");
         let payload = a.get(0);
-        let game_path_value = py::dict_get(payload, "gamePath")?.cloned().unwrap_or(Value::Null);
-        if !truthy(&game_path_value) {
-            return Ok(failed("No game installation selected."));
-        }
-        let game_path = path_arg(&game_path_value)?;
-        if !game_path.exists() {
-            return Ok(failed("Selected game installation path does not exist."));
-        }
+        let output_value = py::dict_get(payload, "outputPath")?.cloned().unwrap_or(Value::Null);
+        let output_path = if truthy(&output_value) { Some(path_arg(&output_value)?) } else { None };
+        let game_path = match &output_path {
+            Some(_) => None,
+            None => {
+                let game_path_value = py::dict_get(payload, "gamePath")?.cloned().unwrap_or(Value::Null);
+                if !truthy(&game_path_value) {
+                    return Ok(failed("No game installation selected."));
+                }
+                let game_path = path_arg(&game_path_value)?;
+                if !game_path.exists() {
+                    return Ok(failed("Selected game installation path does not exist."));
+                }
+                Some(game_path)
+            }
+        };
         let title = match read_title(payload, ILLEGAL_TITLE)? {
             Ok(t) => t,
             Err(resp) => return Ok(resp),
@@ -727,14 +743,20 @@ pub fn build_tmod(a: &Args) -> Result<Value> {
             return Ok(failed(err));
         }
 
-        let out_dir = game_path.join("mods");
-        let save_path = out_dir.join(format!("{}.tmod", title));
+        let (out_dir, save_path) = match (&output_path, &game_path) {
+            (Some(p), _) => (p.parent().map(Path::to_path_buf).unwrap_or_default(), p.clone()),
+            (None, Some(g)) => (g.join("mods"), g.join("mods").join(format!("{}.tmod", title))),
+            (None, None) => unreachable!(),
+        };
         let overwrite = truthy(get_or(payload, "overwrite", &Value::Bool(false))?);
         if save_path.exists() && !overwrite {
             return Ok(json!({
                 "success": false,
                 "code": "FILE_EXISTS",
-                "error": format!("A mod file named '{}.tmod' already exists in the mods folder.", title),
+                "error": match output_path {
+                    Some(_) => format!("A mod file named '{}' already exists in that folder.", file_name(&save_path)),
+                    None => format!("A mod file named '{}.tmod' already exists in the mods folder.", title),
+                },
                 "path": display(&save_path),
             }));
         }

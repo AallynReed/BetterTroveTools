@@ -30,13 +30,19 @@
                     </div>
 
                     <div class="build-right-col">
-                        <div class="form-group">
-                            <label>{{ t('modder_tools.target_game_installation') }}</label>
-                            <div class="input-row">
-                                <custom-vue-select v-model="store.selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;" :class="{ 'field-invalid': isBuildFieldInvalid('gamePath') }"></custom-vue-select>
-                                <button class="primary-btn" @click="openSelectedGamePath" :disabled="!store.selectedGamePath" :title="t('common.open_selected_game_folder')">
-                                    <i class="fa-solid fa-folder-open"></i>
-                                </button>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label>{{ t('modder_tools.game_layout_reference') }}</label>
+                                <div class="input-row">
+                                    <custom-vue-select v-model="store.selectedGamePath" :options="gameOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
+                                    <button class="primary-btn" @click="openSelectedGamePath" :disabled="!store.selectedGamePath" :title="t('common.open_selected_game_folder')" :aria-label="t('common.open_selected_game_folder')">
+                                        <i class="fa-solid fa-folder-open"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label>{{ t('modder_tools.save_built_tmod_to') }}</label>
+                                <custom-vue-select v-model="build.output" :options="outputOptions" :translate-options="false" style="flex: 1;"></custom-vue-select>
                             </div>
                         </div>
 
@@ -78,33 +84,92 @@
                             <custom-vue-select v-model="build.subtype" :options="store.subtypeOptions" style="flex: 1;"></custom-vue-select>
                         </div>
                     </div>
-                    <div class="input-row" style="margin-bottom: 10px;">
-                        <button class="primary-btn" @click="detectBuildOverrides" :disabled="store.isWorking.detectingOverrides"><i class="fa-solid" :class="store.isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('modder_tools.detect_overrides') }}</span></button>
-                        <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_file') }}</span></button>
-                        <button class="primary-btn" @click="autoStructureBuild" :disabled="store.isWorking.autoStructuringBuild" style="background: var(--accent-blue);"><i class="fa-solid" :class="store.isWorking.autoStructuringBuild ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'"></i> <span>{{ t('modder_tools.auto_fix_file_locations') }}</span></button>
+                    <div class="build-source">
+                        <div class="build-source-head">
+                            <label>{{ t('modder_tools.mod_files') }}</label>
+                            <div class="build-source-switch" role="radiogroup" :aria-label="t('modder_tools.mod_files')">
+                                <button type="button" role="radio" :aria-checked="source.mode === 'folder'" :class="{ active: source.mode === 'folder' }" @click="setSourceMode('folder')">
+                                    <i class="fa-solid fa-folder-tree"></i> <span>{{ t('modder_tools.source_folder') }}</span>
+                                </button>
+                                <button type="button" role="radio" :aria-checked="source.mode === 'virtual'" :class="{ active: source.mode === 'virtual' }" @click="setSourceMode('virtual')">
+                                    <i class="fa-solid fa-hand-pointer"></i> <span>{{ t('modder_tools.dropped_files') }}</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <template v-if="source.mode === 'folder'">
+                            <div class="input-row">
+                                <input type="text" :value="source.dir" :placeholder="t('modder_tools.pick_a_folder_with_your_mod_files')" readonly :class="{ 'field-invalid': isBuildFieldInvalid('source') }" @click="chooseSourceDir">
+                                <button class="primary-btn" @click="chooseSourceDir">
+                                    <i class="fa-solid fa-folder"></i> <span>{{ t('common.browse') }}</span>
+                                </button>
+                                <button class="secondary-btn" @click="openSourceDir" :disabled="!source.dir" :title="t('modder_tools.open_source_folder')" :aria-label="t('modder_tools.open_source_folder')">
+                                    <i class="fa-solid fa-folder-open"></i>
+                                </button>
+                                <button class="secondary-btn" @click="scanFolder(true)" :disabled="!source.dir || source.scanning" :title="t('modder_tools.rescan_folder')" :aria-label="t('modder_tools.rescan_folder')">
+                                    <i class="fa-solid fa-rotate" :class="{ 'fa-spin': source.scanning }"></i>
+                                </button>
+                            </div>
+                            <p class="build-source-hint is-error" v-if="source.error">{{ source.error }}</p>
+                            <p class="build-source-hint" v-else-if="source.dir">
+                                <span class="build-watch-dot" aria-hidden="true"></span>
+                                <span>{{ store.selectedGamePath ? t('modder_tools.watching_folder_auto_fix') : t('modder_tools.watching_folder_no_game') }}</span>
+                            </p>
+                            <p class="build-source-hint" v-else>{{ t('modder_tools.folder_mode_hint') }}</p>
+                        </template>
+
+                        <template v-else>
+                            <div class="input-row">
+                                <button class="primary-btn" @click="addBuildFiles"><i class="fa-solid fa-file-circle-plus"></i> <span>{{ t('modder_tools.add_files') }}</span></button>
+                                <button class="secondary-btn" @click="detectBuildOverrides" :disabled="!store.selectedGamePath || store.isWorking.detectingOverrides" :title="t('modder_tools.import_game_overrides_hint')"><i class="fa-solid" :class="store.isWorking.detectingOverrides ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'"></i> <span>{{ t('modder_tools.import_game_overrides') }}</span></button>
+                                <button class="secondary-btn" @click="clearVirtualFiles" :disabled="virtualFiles.length === 0"><i class="fa-solid fa-broom"></i> <span>{{ t('modder_tools.clear_list') }}</span></button>
+                            </div>
+                            <p class="build-source-hint">{{ store.selectedGamePath ? t('modder_tools.virtual_mode_hint') : t('modder_tools.virtual_mode_hint_no_game') }}</p>
+                        </template>
                     </div>
-                    <div class="table-container" :class="{ 'field-invalid': isBuildFieldInvalid('files') }" style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-surface); background: var(--bg-panel);">
-                        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body);">
-                            <thead style="background: var(--bg-dark); position: sticky; top: 0; z-index: 1;">
+
+                    <div class="table-container build-file-list" :class="{ 'field-invalid': isBuildFieldInvalid('files'), 'is-drop-target': dropActive }">
+                        <table>
+                            <thead>
                                 <tr>
-                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color);">{{ t('modder_tools.file') }}</th>
-                                    <th style="padding: 10px; border-bottom: 1px solid var(--border-color); width: 40px;"></th>
+                                    <th>{{ t('modder_tools.file') }} <span class="build-file-count" v-if="activeFiles.length">{{ activeFiles.length }}</span></th>
+                                    <th style="width: 40px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="file in build.files" :key="file.path">
-                                    <td @click="openBuildFileLocation(file)" :title="'Source: ' + file.path + ' | ' + t('modder_tools.click_to_open_containing_folder')" style="color: var(--text-main); font-size: var(--t-fs-body); word-break: break-all; cursor: pointer;">
-                                        <div>{{ file.internal_path }}</div>
-                                        <div style="color: var(--text-muted); font-size: var(--t-fs-label);">{{ file.path }}</div>
+                                <tr v-for="file in activeFiles" :key="file.path">
+                                    <td class="build-file-cell">
+                                        <div class="build-file-path">
+                                            <input type="text" class="build-path-input" :value="file.internal_path" spellcheck="false" :aria-label="t('modder_tools.path_inside_the_mod')" :title="t('modder_tools.edit_path_hint')" @keydown.enter="$event.target.blur()" @keydown.esc="$event.target.value = file.internal_path; $event.target.blur()" @change="editFilePath(file, $event.target.value, $event.target)">
+                                            <span class="build-file-tag" v-if="store.selectedGamePath && file.matched === false" :title="t('modder_tools.not_a_game_file_hint')">{{ t('modder_tools.not_a_game_file') }}</span>
+                                        </div>
+                                        <button type="button" class="build-file-source" @click="openBuildFileLocation(file)" :title="t('modder_tools.click_to_open_containing_folder')">{{ file.path }}</button>
                                     </td>
-                                    <td style="text-align: right;"><button class="icon-btn-small danger" :title="t('modder_tools.remove_file')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
+                                    <td style="text-align: right;"><button v-if="source.mode === 'virtual'" class="icon-btn-small danger" :title="t('modder_tools.remove_file')" :aria-label="t('modder_tools.remove_file')" @click="removeBuildFile(file)"><i class="fa-solid fa-trash"></i></button></td>
                                 </tr>
-                                <tr v-if="build.files.length === 0">
-                                    <td colspan="2" style="padding: 10px; text-align: center; color: var(--text-muted);">{{ t('modder_tools.no_files_added') }}</td>
+                                <tr v-if="activeFiles.length === 0">
+                                    <td colspan="2" class="build-file-empty">
+                                        <i class="fa-solid fa-file-import" aria-hidden="true"></i>
+                                        <span>{{ source.mode === 'folder' && !source.dir ? t('modder_tools.no_folder_selected_drop_hint') : t('modder_tools.drop_files_or_folders_here') }}</span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
+                        <div class="build-drop-overlay" v-show="dropActive" aria-hidden="true">
+                            <i class="fa-solid fa-file-import"></i>
+                            <span>{{ source.mode === 'folder' ? t('modder_tools.drop_to_copy_into_folder') : t('modder_tools.drop_to_add_files') }}</span>
+                        </div>
                     </div>
+
+                    <details class="build-problems" v-if="problems.clashes.length">
+                        <summary>
+                            <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                            <span>{{ t('modder_tools.count_files_not_moved_target_exists').replace('{count}', problems.clashes.length) }}</span>
+                        </summary>
+                        <ul>
+                            <li v-for="p in problems.clashes" :key="p">{{ p }}</li>
+                        </ul>
+                    </details>
                 </div>
 
                 <div class="input-row" style="margin-top: 10px; align-items: stretch;">

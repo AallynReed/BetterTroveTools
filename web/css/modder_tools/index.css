@@ -135,6 +135,48 @@ textarea::placeholder { color: var(--text-placeholder); }
 .preview-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.7); color: var(--text-main); padding: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--t-1); opacity: 0; transition: opacity var(--dur) var(--t-ease); }
 .mod-preview-picker:hover .preview-overlay { opacity: 1; }
 
+/* Build TMod: file source (folder or dropped files) and its list. */
+.build-source { display: flex; flex-direction: column; gap: var(--t-2); margin-bottom: var(--t-3); }
+.build-source-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--t-2); }
+.build-source-head label { margin: 0; }
+.build-source-switch { display: inline-flex; gap: var(--t-1); padding: var(--t-1); background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-control); }
+.build-source-switch button { display: inline-flex; align-items: center; gap: var(--t-2); background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: var(--t-1) var(--t-3); border-radius: var(--radius-control); font-size: var(--t-fs-label); font-weight: 600; cursor: pointer; transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease); }
+.build-source-switch button:hover { color: var(--text-main); background: var(--bg-hover); }
+.build-source-switch button.active { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-blue); border-color: rgba(var(--accent-rgb), 0.45); }
+.build-source-switch button:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+.build-source .input-row { gap: var(--t-2); }
+.build-source .input-row input[readonly] { flex: 1; min-width: 0; cursor: pointer; }
+.build-source-hint { margin: 0; display: flex; align-items: center; gap: var(--t-2); color: var(--text-muted); font-size: var(--t-fs-label); }
+.build-source-hint.is-error { color: var(--danger-ink); }
+.build-watch-dot { flex: none; width: 6px; height: 6px; border-radius: var(--radius-pill); background: var(--success); }
+
+.build-file-list { position: relative; max-height: 250px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-surface); background: var(--bg-panel); transition: border-color var(--dur) var(--t-ease); }
+.build-file-list table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--t-fs-body); }
+.build-file-list thead { background: var(--bg-dark); position: sticky; top: 0; z-index: 1; }
+.build-file-list th { padding: var(--t-2) var(--t-3); border-bottom: 1px solid var(--border-color); }
+.build-file-list td { padding: var(--t-2) var(--t-3); border-bottom: 1px solid var(--border-color); }
+.build-file-list tbody tr:hover { background: var(--bg-hover); }
+.build-file-list.is-drop-target { border-color: var(--accent-blue); border-style: dashed; }
+.build-file-count { margin-left: var(--t-1); color: var(--text-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.build-file-cell { color: var(--text-main); }
+.build-file-path { display: flex; align-items: center; gap: var(--t-2); }
+.build-path-input { flex: 1; min-width: 0; padding: 2px var(--t-2); margin-left: calc(-1 * var(--t-2)); background: transparent; border: 1px solid transparent; border-radius: var(--radius-control); color: var(--text-main); font: inherit; transition: border-color var(--dur) var(--t-ease), background-color var(--dur) var(--t-ease); }
+.build-path-input:hover { border-color: var(--border-color); }
+.build-path-input:focus { outline: none; border-color: var(--accent-blue); background: var(--bg-dark); }
+.build-file-tag { flex: none; padding: 1px var(--t-2); border: 1px solid var(--border-color); border-radius: var(--radius-pill); color: var(--text-muted); font-size: var(--t-fs-micro); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.build-file-source { display: block; max-width: 100%; padding: 0; background: none; border: none; color: var(--text-muted); font: inherit; font-size: var(--t-fs-label); text-align: left; word-break: break-all; cursor: pointer; }
+.build-file-source:hover { color: var(--text-main); text-decoration: underline; }
+.build-file-list td.build-file-empty { padding: var(--t-5) var(--t-3); text-align: center; color: var(--text-muted); border-bottom: none; }
+.build-file-empty i { display: block; margin-bottom: var(--t-2); font-size: var(--t-fs-h2); }
+.build-file-list tbody tr:has(.build-file-empty):hover { background: transparent; }
+.build-drop-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--t-2); background: rgba(var(--accent-rgb), 0.08); color: var(--accent-blue); font-weight: 600; pointer-events: none; z-index: 2; }
+.build-drop-overlay i { font-size: var(--t-fs-h2); }
+
+.build-problems { margin-top: var(--t-2); padding: var(--t-2) var(--t-3); border: 1px solid rgba(var(--warning-rgb), 0.35); border-radius: var(--radius-control); background: rgba(var(--warning-rgb), 0.06); font-size: var(--t-fs-label); }
+.build-problems summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--t-2); color: var(--warning-ink); cursor: pointer; }
+.build-problems ul { margin: var(--t-2) 0 0; padding-left: var(--t-5); color: var(--text-muted); max-height: 120px; overflow-y: auto; word-break: break-all; }
+.build-problem-tag { color: var(--warning-ink); }
+
 .icon-btn-small { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: var(--t-1); transition: color var(--dur) var(--t-ease); }
 .icon-btn-small:hover { color: var(--text-main); }
 /* Red as text needs the lighter ink: --danger is 4.4:1 on panel and fails AA. */

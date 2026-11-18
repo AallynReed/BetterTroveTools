@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 
 use crate::Cmd;
 
+mod build_source;
 pub mod steam_workshop;
 mod tools;
 
@@ -40,6 +41,14 @@ pub fn commands() -> Vec<Cmd> {
         Cmd::std("auto_structure_workspace", tools::auto_structure_workspace),
         Cmd::std("get_missing_files", tools::get_missing_files),
         Cmd::std("build_tmod", tools::build_tmod),
+        Cmd::raw("ask_build_source_directory", build_source::ask_build_source_directory),
+        Cmd::raw("ask_build_files", build_source::ask_build_files),
+        Cmd::std("scan_build_source", build_source::scan_build_source),
+        Cmd::std("resolve_build_files", build_source::resolve_build_files),
+        Cmd::std("move_build_file", build_source::move_build_file),
+        Cmd::std("copy_into_build_source", build_source::copy_into_build_source),
+        Cmd::std("watch_build_source", build_source::watch_build_source),
+        Cmd::raw("ask_tmod_save_path", build_source::ask_tmod_save_path),
         Cmd::std("save_tmod_in_place", tools::save_tmod_in_place),
         Cmd::std("load_mod_project", tools::load_mod_project),
         Cmd::std("save_mod_project", tools::save_mod_project),
