@@ -139,6 +139,10 @@ textarea::placeholder { color: var(--text-placeholder); }
 .build-source { display: flex; flex-direction: column; gap: var(--t-2); margin-bottom: var(--t-3); }
 .build-source-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--t-2); }
 .build-source-head label { margin: 0; }
+.build-source-head > label:first-child { margin-right: auto; }
+.build-type-filter { display: inline-flex; align-items: center; gap: var(--t-2); color: var(--text-muted); font-size: var(--t-fs-label); cursor: pointer; }
+.build-type-filter input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent-blue); cursor: pointer; }
+.build-type-filter:hover { color: var(--text-main); }
 .build-source-switch { display: inline-flex; gap: var(--t-1); padding: var(--t-1); background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: var(--radius-control); }
 .build-source-switch button { display: inline-flex; align-items: center; gap: var(--t-2); background: transparent; border: 1px solid transparent; color: var(--text-muted); padding: var(--t-1) var(--t-3); border-radius: var(--radius-control); font-size: var(--t-fs-label); font-weight: 600; cursor: pointer; transition: background-color var(--dur) var(--t-ease), color var(--dur) var(--t-ease), border-color var(--dur) var(--t-ease); }
 .build-source-switch button:hover { color: var(--text-main); background: var(--bg-hover); }

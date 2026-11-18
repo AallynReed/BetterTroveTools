@@ -123,7 +123,7 @@ pub(super) fn valid_dir(name: &str) -> bool {
     DIRECTORIES.contains(&name.to_lowercase().as_str())
 }
 
-pub(super) fn ignored_extension(path: &Path) -> bool {
+fn ignored_extension(path: &Path) -> bool {
     IGNORED_EXTENSIONS.contains(&file_suffix(path).to_lowercase().as_str())
 }
 

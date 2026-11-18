@@ -1999,7 +1999,9 @@
     "Watching for changes. No game selected, so files keep the paths they have in the folder.": "modder_tools.watching_folder_no_game",
     "Drop files or folders anywhere on this tab. With no game selected, a dropped folder keeps its layout and a loose file goes to the mod root.": "modder_tools.virtual_mode_hint_no_game",
     "Drop files or folders anywhere on this tab. Nothing is moved: game files are placed at their game location, anything else keeps its own path. Click a path to edit it.": "modder_tools.virtual_mode_hint",
-    "Pick a folder that holds your mod files. Game files are moved to their game locations automatically, anything else keeps its own path, and the list updates as the folder changes.": "modder_tools.folder_mode_hint"
+    "Pick a folder that holds your mod files. Game files are moved to their game locations automatically, anything else keeps its own path, and the list updates as the folder changes.": "modder_tools.folder_mode_hint",
+    "Game file types only": "modder_tools.game_file_types_only",
+    "List only file types Trove uses (.swf, .blueprint, .png and so on). Turn it off to include every file, such as .pyc.": "modder_tools.game_file_types_only_hint"
   },
   "en": {
     "about.a_fast_and_simple_micro_framework_for_sm_66880e": "A fast and simple micro-framework for small web applications.",
@@ -4073,6 +4075,8 @@
     "modder_tools.edit_path_hint": "Path inside the mod. Edit it to place the file elsewhere; in a source folder the file is moved to match.",
     "modder_tools.not_a_game_file": "Not in game",
     "modder_tools.not_a_game_file_hint": "No file with this name exists in the selected game, so it keeps its own path. Edit the path if it belongs somewhere else.",
-    "modder_tools.that_path_is_not_valid": "That path is not valid."
+    "modder_tools.that_path_is_not_valid": "That path is not valid.",
+    "modder_tools.game_file_types_only": "Game file types only",
+    "modder_tools.game_file_types_only_hint": "List only file types Trove uses (.swf, .blueprint, .png and so on). Turn it off to include every file, such as .pyc."
   }
 }

@@ -11,10 +11,10 @@ use anyhow::Result;
 use parking_lot::Mutex;
 use serde_json::{json, Value};
 
-use super::tools::{failed, game_index_paths, guarded, ignored_extension, safe_extract_target};
+use super::tools::{failed, game_index_paths, guarded, safe_extract_target};
 use crate::args::Args;
 use crate::ctx::{ctx, try_ctx, Dialog};
-use crate::py::{self, display, file_name, path_arg, str_of, truthy};
+use crate::py::{self, display, file_name, file_suffix, path_arg, str_of, truthy};
 
 /// Where each game file lives, for placing files by name.
 #[derive(Default)]
@@ -80,9 +80,18 @@ fn list_files(root: &Path) -> Vec<PathBuf> {
     walkdir::WalkDir::new(root).into_iter().filter_map(|e| e.ok()).filter(|e| e.file_type().is_file()).map(|e| e.into_path()).collect()
 }
 
-fn skipped_file(path: &Path) -> bool {
-    let name = file_name(path);
-    name.starts_with('.') || ignored_extension(path)
+/// Every file type the live game's archives hold.
+const GAME_EXTENSIONS: [&str; 38] = [
+    ".bat", ".binfab", ".blueprint", ".bnk", ".common", ".dds", ".effect", ".fbx", ".fragment", ".gr2", ".gsf", ".han", ".hbo",
+    ".hcf", ".het", ".hlv", ".hma", ".hml", ".hmm", ".jpg", ".material", ".old", ".orig", ".pkan", ".pkat", ".pkcf", ".pkfx",
+    ".pkma", ".pkml", ".pkmm", ".png", ".psd", ".qmo", ".swf", ".ttf", ".txt", ".vertex", ".xml",
+];
+
+/// Dotfiles and `.cfg`s (the config option adds those) never; anything else when
+/// `game_types_only` is off.
+fn skipped_file(path: &Path, game_types_only: bool) -> bool {
+    let ext = file_suffix(path).to_lowercase();
+    file_name(path).starts_with('.') || ext == ".cfg" || (game_types_only && !GAME_EXTENSIONS.contains(&ext.as_str()))
 }
 
 /// Why `dir` cannot be a source folder: auto-fix moves files, so never inside a game.
@@ -120,10 +129,10 @@ fn remove_empty_parents(from: &Path, root: &Path) {
 
 /// Lists the folder's mod files and, with `fix`, moves each one not in `keep` (files
 /// already placed, possibly by hand) to its game location.
-pub(super) fn scan_dir(root: &Path, index: Option<&GameIndex>, fix: bool, keep: &HashSet<String>) -> Result<Value> {
+pub(super) fn scan_dir(root: &Path, index: Option<&GameIndex>, fix: bool, keep: &HashSet<String>, game_types_only: bool) -> Result<Value> {
     let (mut files, mut clashes, mut moved) = (Vec::new(), Vec::new(), 0);
     for file in list_files(root) {
-        if skipped_file(&file) {
+        if skipped_file(&file, game_types_only) {
             continue;
         }
         let parts = py::relative_parts(&file, root).unwrap_or_default();
@@ -179,7 +188,7 @@ pub fn ask_build_files(a: &Args) -> Result<Value> {
     Ok(json!(ctx().host().pick_files(d).iter().map(|p| py::tk_path(p)).collect::<Vec<_>>()))
 }
 
-/// `(dir, gamePath, fix, keep)`: files listed in `keep` stay where they are.
+/// `(dir, gamePath, fix, keep, gameTypesOnly)`: files listed in `keep` stay where they are.
 pub fn scan_build_source(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
         let dir = path_arg(a.get(0))?;
@@ -188,7 +197,7 @@ pub fn scan_build_source(a: &Args) -> Result<Value> {
         }
         let index = game_index(a.get(1))?;
         let keep: HashSet<String> = if truthy(a.get(3)) { py::iterate(a.get(3))?.iter().map(|v| str_of(v).to_lowercase()).collect() } else { HashSet::new() };
-        scan_dir(&dir, index.as_deref(), a.bool_or(2, true), &keep)
+        scan_dir(&dir, index.as_deref(), a.bool_or(2, true), &keep, a.bool_or(4, true))
     }))
 }
 
@@ -214,7 +223,7 @@ pub fn move_build_file(a: &Args) -> Result<Value> {
     }))
 }
 
-/// `(paths, gamePath)`: dropped files and folders, placed without moving anything.
+/// `(paths, gamePath, gameTypesOnly)`: dropped files and folders, placed without moving anything.
 pub fn resolve_build_files(a: &Args) -> Result<Value> {
     Ok(guarded(|| {
         let index = game_index(a.get(1))?;
@@ -227,7 +236,7 @@ pub fn resolve_build_files(a: &Args) -> Result<Value> {
                 vec![(p.clone(), vec![file_name(&p)])]
             };
             for (file, parts) in picked {
-                if !file.is_file() || skipped_file(&file) {
+                if !file.is_file() || skipped_file(&file, a.bool_or(2, true)) {
                     continue;
                 }
                 if let Some((internal, matched)) = resolve_internal(&parts, index.as_deref()) {
@@ -389,10 +398,10 @@ mod tests {
     fn scan_fixes_layout_and_keeps_unknown_files() {
         let tmp = tempfile::tempdir().unwrap();
         let root = tmp.path();
-        for rel in ["hud.swf", "stuff/stone.blueprint", "ui/override/custom.swf", "loose.swf", "textures/icon.png", "icon.png", "notes.txt"] {
+        for rel in ["hud.swf", "stuff/stone.blueprint", "ui/override/custom.swf", "loose.swf", "textures/icon.png", "icon.png", "cache.pyc", "settings.cfg"] {
             write(root, rel);
         }
-        let out = scan_dir(root, Some(&index()), true, &HashSet::new()).unwrap();
+        let out = scan_dir(root, Some(&index()), true, &HashSet::new(), true).unwrap();
         assert_eq!(out["moved"], 3, "{out}");
         assert!(root.join("ui/hud.swf").is_file());
         assert!(root.join("blueprints/stone.blueprint").is_file());
@@ -402,7 +411,7 @@ mod tests {
         let got: Vec<(String, bool)> = out["files"].as_array().unwrap().iter().map(|f| (str_of(&f["internal_path"]), f["matched"] == true)).collect();
         let want = [("blueprints/stone.blueprint", true), ("loose.swf", false), ("textures/icon.png", true), ("ui/custom.swf", false), ("ui/hud.swf", true), ("ui/menus/icon.png", true)];
         assert_eq!(got, want.map(|(p, m)| (p.to_string(), m)));
-        assert_eq!(scan_dir(root, Some(&index()), true, &HashSet::new()).unwrap()["moved"], 0);
+        assert_eq!(scan_dir(root, Some(&index()), true, &HashSet::new(), true).unwrap()["moved"], 0);
     }
 
     #[test]
@@ -411,7 +420,7 @@ mod tests {
         let root = tmp.path();
         write(root, "mine/hud.swf");
         let keep = HashSet::from([display(&root.join("mine").join("hud.swf")).to_lowercase()]);
-        let out = scan_dir(root, Some(&index()), true, &keep).unwrap();
+        let out = scan_dir(root, Some(&index()), true, &keep, true).unwrap();
         assert_eq!(out["moved"], 0);
         assert_eq!(out["files"][0]["internal_path"], "mine/hud.swf");
         assert_eq!(out["files"][0]["matched"], false);
@@ -425,8 +434,23 @@ mod tests {
         std::fs::write(root.join("ui/hud.swf"), "a").unwrap();
         std::fs::create_dir_all(root.join("misc")).unwrap();
         std::fs::write(root.join("misc/hud.swf"), "b").unwrap();
-        let out = scan_dir(root, Some(&index()), true, &HashSet::new()).unwrap();
+        let out = scan_dir(root, Some(&index()), true, &HashSet::new(), true).unwrap();
         assert_eq!(out["clashes"], json!(["misc/hud.swf"]));
         assert_eq!(std::fs::read_to_string(root.join("ui/hud.swf")).unwrap(), "a");
+    }
+
+    #[test]
+    fn file_type_filter() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        for rel in ["ui/a.swf", "x/cache.pyc", "ui/mod.cfg", ".hidden.png"] {
+            write(root, rel);
+        }
+        let names = |only: bool| -> Vec<String> {
+            let out = scan_dir(root, None, false, &HashSet::new(), only).unwrap();
+            out["files"].as_array().unwrap().iter().map(|f| str_of(&f["internal_path"])).collect()
+        };
+        assert_eq!(names(true), ["ui/a.swf"]);
+        assert_eq!(names(false), ["ui/a.swf", "x/cache.pyc"]);
     }
 }

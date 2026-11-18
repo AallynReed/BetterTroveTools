@@ -31,6 +31,7 @@ document.addEventListener('modder_build_loaded', () => {
             const source = reactive({
                 mode: savedSource.mode === 'virtual' ? 'virtual' : 'folder',
                 dir: typeof savedSource.dir === 'string' ? savedSource.dir : '',
+                gameTypesOnly: savedSource.gameTypesOnly !== false,
                 scanning: false,
                 error: ''
             });
@@ -44,7 +45,7 @@ document.addEventListener('modder_build_loaded', () => {
             const activeFiles = computed(() => source.mode === 'folder' ? folderFiles.value : virtualFiles.value);
 
             const persistSource = () => {
-                if (window.AppSettings) window.AppSettings.setPrefSync(SOURCE_PREF_KEY, { mode: source.mode, dir: source.dir, pinned: [...pinned].slice(-500) });
+                if (window.AppSettings) window.AppSettings.setPrefSync(SOURCE_PREF_KEY, { mode: source.mode, dir: source.dir, gameTypesOnly: source.gameTypesOnly, pinned: [...pinned].slice(-500) });
             };
 
             const validationState = reactive({
@@ -88,7 +89,7 @@ document.addEventListener('modder_build_loaded', () => {
                 const dir = source.dir;
                 try {
                     const keep = [...folderFiles.value.map(f => f.path), ...pinned];
-                    const result = await eel.scan_build_source(dir, store.selectedGamePath || null, true, keep)();
+                    const result = await eel.scan_build_source(dir, store.selectedGamePath || null, true, keep, source.gameTypesOnly)();
                     if (dir !== source.dir) return;
                     if (!result || !result.success) {
                         source.error = result?.error || t('modder_tools.could_not_read_source_folder');
@@ -147,6 +148,10 @@ document.addEventListener('modder_build_loaded', () => {
                 syncWatcher();
                 if (source.mode === 'folder') scanFolder();
             });
+            watch(() => source.gameTypesOnly, () => {
+                persistSource();
+                if (source.mode === 'folder') scanFolder();
+            });
             watch(() => store.selectedGamePath, () => {
                 if (!store.selectedGamePath && build.output === 'game') build.output = 'ask';
                 if (source.mode === 'folder') scanFolder();
@@ -193,7 +198,7 @@ document.addEventListener('modder_build_loaded', () => {
                         scanFolder();
                         return;
                     }
-                    const result = await eel.resolve_build_files(paths, store.selectedGamePath || null)();
+                    const result = await eel.resolve_build_files(paths, store.selectedGamePath || null, source.gameTypesOnly)();
                     if (!result?.success) return window.showToast(result?.error || t('modder_tools.an_error_occurred_while_adding_files'), true);
                     const added = mergeVirtual(result.files || []);
                     if (added > 0) window.showToast(t('modder_tools.added_count_files').replace('{count}', added));

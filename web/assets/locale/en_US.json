@@ -2081,7 +2081,9 @@
         "modder_tools.edit_path_hint": "Path inside the mod. Edit it to place the file elsewhere; in a source folder the file is moved to match.",
         "modder_tools.not_a_game_file": "Not in game",
         "modder_tools.not_a_game_file_hint": "No file with this name exists in the selected game, so it keeps its own path. Edit the path if it belongs somewhere else.",
-        "modder_tools.that_path_is_not_valid": "That path is not valid."
+        "modder_tools.that_path_is_not_valid": "That path is not valid.",
+        "modder_tools.game_file_types_only": "Game file types only",
+        "modder_tools.game_file_types_only_hint": "List only file types Trove uses (.swf, .blueprint, .png and so on). Turn it off to include every file, such as .pyc."
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

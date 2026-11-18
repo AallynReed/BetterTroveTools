@@ -87,6 +87,10 @@
                     <div class="build-source">
                         <div class="build-source-head">
                             <label>{{ t('modder_tools.mod_files') }}</label>
+                            <label class="build-type-filter" :title="t('modder_tools.game_file_types_only_hint')">
+                                <input type="checkbox" v-model="source.gameTypesOnly">
+                                <span>{{ t('modder_tools.game_file_types_only') }}</span>
+                            </label>
                             <div class="build-source-switch" role="radiogroup" :aria-label="t('modder_tools.mod_files')">
                                 <button type="button" role="radio" :aria-checked="source.mode === 'folder'" :class="{ active: source.mode === 'folder' }" @click="setSourceMode('folder')">
                                     <i class="fa-solid fa-folder-tree"></i> <span>{{ t('modder_tools.source_folder') }}</span>
