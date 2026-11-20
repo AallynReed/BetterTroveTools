@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "파일을 추출하지 못했습니다.",
         "modder_tools.extracted_count_files": "파일 {count}개를 추출했습니다.",
         "modder_tools.skipped_count_unsafe_paths": "경로가 폴더 밖을 가리키는 파일 {count}개를 건너뛰었습니다.",
-        "modder_tools.made_by_btt_developer": "Better Trove Tools 개발자가 만듦"
+        "modder_tools.made_by_btt_developer": "Better Trove Tools 개발자가 만듦",
+        "modder_tools.modding_software": "모딩 소프트웨어"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

@@ -2548,7 +2548,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Edit TMod', icon: 'fa-pen-to-square', modderTab: 'edit_tmod' },
         { id: 'modder_tools', title: 'Steam Workshop', icon: 'fa-steam', iconClass: 'fa-brands', modderTab: 'steam' },
         { id: 'modder_tools', title: 'Blueprint Editor', icon: 'fa-code', modderTab: 'qb_editor' },
-        { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
+        { id: 'modder_tools', title: 'Modding Software', icon: 'fa-toolbox', modderTab: 'software' },
         { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
         { id: 'gems_and_builds', title: 'Star Chart', icon: 'fa-star', gemsTab: 'star-chart' },
         { id: 'gems_and_builds', title: 'Gem Evaluator', icon: 'fa-magnifying-glass-chart', gemsTab: 'gem-evaluator' },

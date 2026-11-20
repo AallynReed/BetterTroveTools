@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "无法提取文件。",
         "modder_tools.extracted_count_files": "已提取 {count} 个文件。",
         "modder_tools.skipped_count_unsafe_paths": "已跳过 {count} 个路径指向文件夹外的文件。",
-        "modder_tools.made_by_btt_developer": "由 Better Trove Tools 开发者制作"
+        "modder_tools.made_by_btt_developer": "由 Better Trove Tools 开发者制作",
+        "modder_tools.modding_software": "模组制作软件"
     },
     "content": {
         "(no tier)": "",

@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "Не удалось извлечь файлы.",
         "modder_tools.extracted_count_files": "Извлечено файлов: {count}.",
         "modder_tools.skipped_count_unsafe_paths": "Пропущено файлов с путём за пределами папки: {count}.",
-        "modder_tools.made_by_btt_developer": "От разработчика Better Trove Tools"
+        "modder_tools.made_by_btt_developer": "От разработчика Better Trove Tools",
+        "modder_tools.modding_software": "Программы для модов"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

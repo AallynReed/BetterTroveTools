@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "Die Dateien konnten nicht entpackt werden.",
         "modder_tools.extracted_count_files": "{count} Datei(en) entpackt.",
         "modder_tools.skipped_count_unsafe_paths": "{count} Datei(en) übersprungen, deren Pfad aus dem Ordner herausführt.",
-        "modder_tools.made_by_btt_developer": "Vom Entwickler von Better Trove Tools"
+        "modder_tools.made_by_btt_developer": "Vom Entwickler von Better Trove Tools",
+        "modder_tools.modding_software": "Modding-Software"
     },
     "content": {
         "(Custom) Trove": "",

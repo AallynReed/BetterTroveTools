@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "Couldn't extract the files.",
         "modder_tools.extracted_count_files": "Extracted {count} file(s).",
         "modder_tools.skipped_count_unsafe_paths": "Skipped {count} file(s) whose path leads outside the folder.",
-        "modder_tools.made_by_btt_developer": "Made by the Better Trove Tools developer"
+        "modder_tools.made_by_btt_developer": "Made by the Better Trove Tools developer",
+        "modder_tools.modding_software": "Modding Software"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

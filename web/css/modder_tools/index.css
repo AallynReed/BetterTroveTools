@@ -26,17 +26,6 @@
 .tab-btn.active { background: rgba(var(--accent-rgb), 0.14); color: var(--accent-blue); border-color: rgba(var(--accent-rgb), 0.45); }
 .tab-btn:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
 .tab-btn .beta-label { margin-left: var(--t-1); }
-/* Third-party software: de-emphasized secondary tab. Pushed to the far right of
-   the row (margin-left:auto) and rendered muted/icon-only so it reads as an
-   "extra" rather than a core modding tool. */
-.tab-buttons .tab-btn-muted {
-    margin-left: auto;
-    color: var(--text-muted);
-    opacity: 0.6;
-    padding: 10px var(--t-3);
-}
-.tab-buttons .tab-btn-muted:hover { opacity: 1; }
-.tab-buttons .tab-btn-muted.active { opacity: 1; }
 
 /* Online-management tabs (Mods / Modpacks). They read as a distinct "your
    online stuff" group. That grouping used to be an inset 2px accent bar down

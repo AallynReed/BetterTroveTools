@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "ファイルを展開できませんでした。",
         "modder_tools.extracted_count_files": "{count} 個のファイルを展開しました。",
         "modder_tools.skipped_count_unsafe_paths": "パスがフォルダーの外を指す {count} 個のファイルをスキップしました。",
-        "modder_tools.made_by_btt_developer": "Better Trove Tools の開発者による制作"
+        "modder_tools.made_by_btt_developer": "Better Trove Tools の開発者による制作",
+        "modder_tools.modding_software": "MOD 制作ソフト"
     },
     "content": {
         "\"Cat-Hunter\" Perro": "",

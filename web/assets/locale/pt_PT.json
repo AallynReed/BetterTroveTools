@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "Não foi possível extrair os ficheiros.",
         "modder_tools.extracted_count_files": "{count} ficheiro(s) extraído(s).",
         "modder_tools.skipped_count_unsafe_paths": "{count} ficheiro(s) ignorado(s) porque o caminho sai da pasta.",
-        "modder_tools.made_by_btt_developer": "Feito pelo programador do Better Trove Tools"
+        "modder_tools.made_by_btt_developer": "Feito pelo programador do Better Trove Tools",
+        "modder_tools.modding_software": "Software de modding"
     },
     "content": {
         "\"Clam\" \"Chow\"": "",

@@ -1946,7 +1946,8 @@
         "modder_tools.could_not_extract_files": "No se pudieron extraer los archivos.",
         "modder_tools.extracted_count_files": "{count} archivo(s) extraído(s).",
         "modder_tools.skipped_count_unsafe_paths": "Se omitieron {count} archivo(s) cuya ruta sale de la carpeta.",
-        "modder_tools.made_by_btt_developer": "Hecho por el desarrollador de Better Trove Tools"
+        "modder_tools.made_by_btt_developer": "Hecho por el desarrollador de Better Trove Tools",
+        "modder_tools.modding_software": "Software de modding"
     },
     "content": {
         "(Custom) Trove": "",

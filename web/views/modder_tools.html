@@ -35,10 +35,8 @@
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="setActiveTab('qb_editor')">
                 <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('modder_tools.blueprint_editor') }}</span> <span class="beta-label">BETA</span>
             </button>
-            <!-- Third-party software: a secondary, de-emphasized utility. Icon-only and
-                 pushed to the far right so it doesn't compete with the core tools. -->
-            <button v-if="!isWebMode" class="tab-btn tab-btn-muted" :class="{ active: activeTab === 'software' }" @click="setActiveTab('software')" :title="t('modder_tools.third_party_software')" :aria-label="t('modder_tools.third_party_software')">
-                <i class="fa-solid fa-computer"></i>
+            <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'software' }" @click="setActiveTab('software')" :title="t('modder_tools.tools_and_software_used_for_creating_tro_2664e8')">
+                <i class="fa-solid fa-toolbox"></i> <span>{{ t('modder_tools.modding_software') }}</span>
             </button>
         </div>
 
