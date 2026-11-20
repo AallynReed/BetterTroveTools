@@ -190,6 +190,8 @@ textarea::placeholder { color: var(--text-placeholder); }
 /* The developer's own tools: a fixed gold, not the accent, so it reads the same whatever colour the user picks. */
 .software-badge.is-author { border-color: rgba(var(--author-gold-rgb), 0.55); background-color: rgba(var(--author-gold-rgb), 0.06); }
 .software-badge.is-author i { color: var(--author-gold); }
+.software-icon { width: 20px; height: 20px; flex: none; border-radius: var(--radius-control); object-fit: contain; }
+.software-author-star { font-size: var(--t-fs-micro); }
 .software-badge.is-author:hover { border-color: var(--author-gold); background-color: rgba(var(--author-gold-rgb), 0.12); }
 
 .sw-price-tag { font-size: var(--t-fs-micro); font-weight: 800; text-transform: uppercase; padding: var(--t-1) var(--t-2); border-radius: var(--radius-pill); margin-left: auto; letter-spacing: 1px; }

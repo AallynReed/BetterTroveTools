@@ -7,31 +7,36 @@
                 "free": true,
                 "author": true,
                 "url": "https://aallynreed.github.io/Trove-BP/",
-                "description": "Trove-BP is a free in-browser editor for Trove .blueprint voxel models, made by the Better Trove Tools developer."
+                "description": "Trove-BP is a free in-browser editor for Trove .blueprint voxel models, made by the Better Trove Tools developer.",
+                "icon": "assets/images/software/trove-bp.png"
             },
             {
                 "name": "Qubicle",
                 "free": false,
                 "url": "https://www.voxelmade.com/qubicle/",
-                "description": "Qubicle is a professional voxel editor that is used to create voxel models."
+                "description": "Qubicle is a professional voxel editor that is used to create voxel models.",
+                "icon": "assets/images/software/qubicle.png"
             },
             {
                 "name": "MagicaVoxel",
                 "free": true,
                 "url": "https://ephtracy.github.io/",
-                "description": "MagicaVoxel is a free lightweight 8-bit voxel editor and interactive path tracing renderer."
+                "description": "MagicaVoxel is a free lightweight 8-bit voxel editor and interactive path tracing renderer.",
+                "icon": "assets/images/software/magicavoxel.png"
             },
             {
                 "name": "Zoxel",
                 "free": true,
                 "url": "https://github.com/chrmoritz/zoxel/releases/tag/0.6.2",
-                "description": "Zoxel is a free voxel editor that is used to create and edit voxel models."
+                "description": "Zoxel is a free voxel editor that is used to create and edit voxel models.",
+                "icon": "assets/images/software/zoxel.png"
             },
             {
                 "name": "VoxelShop",
                 "free": true,
                 "url": "https://github.com/simlu/voxelshop",
-                "description": "VoxelShop is a free voxel editor that is used to create and edit voxel models."
+                "description": "VoxelShop is a free voxel editor that is used to create and edit voxel models.",
+                "icon": "assets/images/software/voxelshop.png"
             },
             {
                 "name": "Troxel",
@@ -43,7 +48,8 @@
                 "name": "Metaforge",
                 "free": true,
                 "url": "https://trovesaurus.com/page=3977/metaforge-guide",
-                "description": "Metaforge is a free in-game voxel editor that is used to create and edit voxel models."
+                "description": "Metaforge is a free in-game voxel editor that is used to create and edit voxel models.",
+                "icon": "assets/images/software/metaforge.png"
             }
         ]
     },
@@ -54,7 +60,8 @@
                 "name": "PopcornFX (1.13.5)",
                 "free": true,
                 "url": "https://wiki.popcornfx.com/index.php/PK-Editor_v1.13",
-                "description": "PopcornFX is a free particle editor that is used to create visual effects."
+                "description": "PopcornFX is a free particle editor that is used to create visual effects.",
+                "icon": "assets/images/software/popcornfx.png"
             }
         ]
     },
@@ -66,19 +73,22 @@
                 "free": true,
                 "author": true,
                 "url": "https://github.com/AallynReed/Lumen-SWF",
-                "description": "Lumen-SWF is a free Flash SWF decompiler and editor written in Rust, made by the Better Trove Tools developer."
+                "description": "Lumen-SWF is a free Flash SWF decompiler and editor written in Rust, made by the Better Trove Tools developer.",
+                "icon": "assets/images/software/lumen-swf.png"
             },
             {
                 "name": "Adobe Animate",
                 "free": false,
                 "url": "https://www.adobe.com/products/animate.html",
-                "description": "Adobe Animate is a professional animation software that is used to create visual effects."
+                "description": "Adobe Animate is a professional animation software that is used to create visual effects.",
+                "icon": "assets/images/software/adobe-animate.png"
             },
             {
                 "name": "Jpexs Free Flash Decompiler",
                 "free": true,
                 "url": "https://www.free-decompiler.com/flash/",
-                "description": "Jpexs Free Flash Decompiler is a free tool that is used to decompile and edit SWF files."
+                "description": "Jpexs Free Flash Decompiler is a free tool that is used to decompile and edit SWF files.",
+                "icon": "assets/images/software/jpexs.png"
             }
         ]
     },
@@ -89,7 +99,8 @@
                 "name": "BKSMTool",
                 "free": true,
                 "url": "https://saltwatersam.github.io/BKSMTool/",
-                "description": "This GUI/CLI allows users to modify *.bnk files used by Wwise."
+                "description": "This GUI/CLI allows users to modify *.bnk files used by Wwise.",
+                "icon": "assets/images/software/bksmtool.png"
             },
             {
                 "name": "BNK Replacer",
@@ -106,13 +117,15 @@
                 "name": "Paint.NET",
                 "free": true,
                 "url": "https://www.getpaint.net/",
-                "description": "Paint.NET is a free image and photo editing software that is used to create and edit textures."
+                "description": "Paint.NET is a free image and photo editing software that is used to create and edit textures.",
+                "icon": "assets/images/software/paint-net.png"
             },
             {
                 "name": "GIMP",
                 "free": true,
                 "url": "https://www.gimp.org/",
-                "description": "GIMP is a free image and photo editing software that is used to create and edit textures."
+                "description": "GIMP is a free image and photo editing software that is used to create and edit textures.",
+                "icon": "assets/images/software/gimp.png"
             }
         ]
     }
