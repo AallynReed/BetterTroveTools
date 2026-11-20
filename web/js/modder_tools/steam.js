@@ -218,17 +218,29 @@
                     matchTarget();
                 };
 
-                const browseTmod = async () => {
+                const readTmod = async (path) => {
                     busy.reading = true;
                     try {
-                        const fileResp = await eel.ask_tmod_file()();
-                        const path = fileResp?.value ?? fileResp?.data?.value ?? fileResp;
-                        if (!path) { busy.reading = false; return; }
                         const res = await eel.steam_workshop_read_tmod(path)();
                         if (res && res.success) applyMeta(unwrapResponse(res, null, {}));
                         else toast((res && res.error) || t('steam.read_failed'), true);
                     } catch (e) { toast(String(e && e.message || e), true); }
                     busy.reading = false;
+                };
+
+                const browseTmod = async () => {
+                    const fileResp = await eel.ask_tmod_file()();
+                    const path = fileResp?.value ?? fileResp?.data?.value ?? fileResp;
+                    if (path) await readTmod(path);
+                };
+
+                // Build's "Publish to Workshop" hands its output over through the store.
+                const takePendingTmod = () => {
+                    const { store } = window.ModderTools;
+                    const path = store.pendingSteamTmod;
+                    if (!path) return;
+                    store.pendingSteamTmod = '';
+                    readTmod(path);
                 };
 
                 const browsePreview = async () => {
@@ -368,6 +380,7 @@
                 };
 
                 const onShown = () => {
+                    takePendingTmod();
                     refreshStatus().then(() => { if (status.connected) loadItems(); });
                 };
                 document.addEventListener('modder_steam_shown', onShown);

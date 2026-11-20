@@ -65,6 +65,20 @@ fn read_header_bytes(path: &Path) -> Result<Vec<u8>> {
     read().map_err(|e| py::errno_error(e, path))
 }
 
+/// Every enabled mod's path, title and content files, headers only and without touching
+/// the folder (no renames, no config fixes). Unreadable mods are skipped.
+pub fn enabled_mod_contents(game: &TroveGamePath) -> Vec<(PathBuf, Option<String>, Vec<String>)> {
+    let tmods = game.enabled_tmods().into_iter().filter_map(|f| {
+        let m = TroveMod::read_tmod(&f, read_header_bytes(&f).ok()?, true).ok()?;
+        Some((f, m))
+    });
+    let zips = game.enabled_zips().into_iter().filter_map(|f| {
+        let m = py::read_bytes(&f).and_then(|d| TroveMod::read_zip(&f, d)).ok()?;
+        Some((f, m))
+    });
+    tmods.chain(zips).map(|(f, m)| (f, m.name().map(String::from), m.content_files())).collect()
+}
+
 /// By title; untitled mods go last, by file name.
 fn sort_by_name(mods: &mut [TroveMod]) {
     mods.sort_by(|a, b| match (a.name(), b.name()) {

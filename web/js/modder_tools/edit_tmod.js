@@ -4,7 +4,7 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
         return;
     }
 
-    const { createApp, ref, reactive, computed, onMounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, watch, onMounted, nextTick } = Vue;
 
     const app = createApp({
         setup() {
@@ -493,6 +493,71 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
                 });
             };
 
+            // --- not-in-game check -------------------------------------------------------
+
+            const missingPaths = ref(new Set());
+            let missingTimer = null;
+            let missingRun = 0;
+            const refreshMissing = () => {
+                clearTimeout(missingTimer);
+                missingTimer = setTimeout(async () => {
+                    const run = ++missingRun;
+                    const paths = getActiveEditTmodFiles().map(f => f.internal_path);
+                    if (!store.selectedGamePath || !paths.length) {
+                        missingPaths.value = new Set();
+                        return;
+                    }
+                    try {
+                        const result = await eel.check_game_paths(store.selectedGamePath, paths)();
+                        if (run !== missingRun) return;
+                        const missing = window.ModderTools.unwrapResponse(result, 'missing', []) || [];
+                        missingPaths.value = new Set(missing.map(p => window.ModderTools.normalizeInternalPath(p)));
+                    } catch (e) {
+                        if (run === missingRun) missingPaths.value = new Set();
+                    }
+                }, 300);
+            };
+            const isNotInGame = (file) => Boolean(store.selectedGamePath) && !file?.removed
+                && missingPaths.value.has(window.ModderTools.normalizeInternalPath(file.internal_path));
+            watch(() => [getActiveEditTmodFiles().map(f => f.internal_path).join('|'), store.selectedGamePath], refreshMissing);
+
+            // --- extract selected ---------------------------------------------------------
+
+            const selectedPaths = ref(new Set());
+            const keyOf = (file) => window.ModderTools.normalizeInternalPath(file?.internal_path);
+            const isSelected = (file) => selectedPaths.value.has(keyOf(file));
+            const toggleSelected = (file) => {
+                const next = new Set(selectedPaths.value);
+                if (next.has(keyOf(file))) next.delete(keyOf(file));
+                else next.add(keyOf(file));
+                selectedPaths.value = next;
+            };
+            const selectedFiles = computed(() => getActiveEditTmodFiles().filter(isSelected));
+            const allSelected = computed(() => {
+                const active = getActiveEditTmodFiles();
+                return active.length > 0 && active.every(isSelected);
+            });
+            const toggleSelectAll = () => {
+                selectedPaths.value = allSelected.value ? new Set() : new Set(getActiveEditTmodFiles().map(keyOf));
+            };
+            watch(() => editTmod.tmodPath, () => { selectedPaths.value = new Set(); });
+
+            const extractSelected = async () => {
+                const files = selectedFiles.value;
+                if (!files.length) return;
+                const dirResp = await eel.ask_extract_destination()();
+                const dest = dirResp?.value ?? dirResp?.data?.value ?? dirResp;
+                if (!dest) return;
+                try {
+                    const result = await eel.extract_edit_files(dest, files.map(f => ({ internal_path: f.internal_path, data: f.data || '', path: f.path || '' })))();
+                    if (!result?.success) return window.showToast(result?.error || t('modder_tools.could_not_extract_files'), true);
+                    window.showToast(t('modder_tools.extracted_count_files').replace('{count}', result.count));
+                    if (result.skipped?.length) window.showToast(t('modder_tools.skipped_count_unsafe_paths').replace('{count}', result.skipped.length), true);
+                } catch (e) {
+                    window.showToast(t('modder_tools.could_not_extract_files'), true);
+                }
+            };
+
             const saveEditTmod = async () => {
                 validationState.editTmod = true;
                 if (!editTmod.loaded || !editTmod.tmodPath) return window.showToast(t("modder_tools.please_load_a_tmod_first"), true);
@@ -580,6 +645,7 @@ document.addEventListener('modder_edit_tmod_loaded', () => {
             return {
                 t, store, editTmod, editTmodDisplayFiles, previousEditTmodSnapshot,
                 configDisplayName: window.ModderTools.configDisplayName,
+                isNotInGame, isSelected, toggleSelected, selectedFiles, allSelected, toggleSelectAll, extractSelected,
                 isEditTmodFieldInvalid, hasEditTmodFieldChanged, restoreEditTmodField, canRestoreOriginalEditTmodFile, restoreOriginalEditTmodFile, isEditTmodFileRemoved,
                 browseEditTmodSource, loadEditTmod, restorePreviousEditTmod, restoreRemovedEditTmodFile, chooseEditTmodPreview, chooseEditTmodConfig, addEditTmodFiles, addEditTmodFilesFromTmod, replaceEditTmodFile, removeEditTmodFile, saveEditTmod
             };

@@ -17,6 +17,9 @@
     const store = reactive({
         selectedGamePath: '',
         installs: [],
+        steamSupported: false,
+        // A .tmod the Steam tab should open next (set by Build's "Publish to Workshop").
+        pendingSteamTmod: '',
         isWorking: {
             detectingOverrides: false,
             autoStructuringBuild: false,
@@ -24,11 +27,6 @@
             extracting: false,
             loadingEditTmod: false,
             savingEditTmod: false,
-            refreshProjectFiles: false,
-            autoStructuringProject: false,
-            compilingProject: false,
-            placingOverrides: false,
-            removingOverrides: false,
             savingQb: false
         },
         tagOptions: [
@@ -159,6 +157,8 @@
         unwrapResponse,
         readSettings,
         openPathInExplorer,
-        buildGameOptions
+        buildGameOptions,
+        // Replaced by index.js once the tab host mounts.
+        openTab: () => {}
     };
 })();

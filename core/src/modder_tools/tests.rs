@@ -123,7 +123,7 @@ fn endpoints_match_python() {
     // The runner's temp dir can be an 8.3 short path; responses carry the long form.
     let root = crate::game::registry::dunce_canonical(&sandbox).unwrap_or(sandbox.clone()).to_string_lossy().into_owned();
 
-    let (mut token, mut placed) = (String::new(), json!([]));
+    let (token, placed) = (String::new(), json!([]));
     for (i, case) in cases["calls"].as_array().unwrap().iter().enumerate() {
         // Other modules' tests point APPDATA at their own sandboxes too.
         std::env::set_var("APPDATA", sandbox.join("appdata"));
@@ -133,14 +133,6 @@ fn endpoints_match_python() {
             Some(picked) => dialog_response(name, &args, &substitute(picked, &root, &token, &placed)),
             None => crate::call(name, args).expect("registered").unwrap(),
         };
-        if name == "remove_project_overrides" {
-            if let Some(t) = response["undo_token"].as_str() {
-                token = t.to_string();
-            }
-        }
-        if name == "place_project_overrides" {
-            placed = response["placed_files"].clone();
-        }
         assert_eq!(normalize(&response, &root, &token), case["response"], "call #{i} {name}");
     }
     assert_eq!(snapshot(&sandbox, &token), cases["tree"], "files left behind");
@@ -183,5 +175,63 @@ fn blocked_words_stop_a_build_anywhere_they_appear() {
 
     let ok = build(&|_| {});
     assert_eq!(ok["success"], true, "{ok}");
+    let _ = std::fs::remove_dir_all(&sandbox);
+}
+
+#[test]
+fn test_builds_conflicts_and_removal() {
+    crate::ctx::testing::init();
+    let sandbox = std::env::temp_dir().join(format!("btt-conflicts-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&sandbox);
+    let game = sandbox.join("game");
+    std::fs::create_dir_all(&game).unwrap();
+    std::fs::write(game.join("Trove.exe"), b"").unwrap();
+    let g = json!(game.to_string_lossy());
+    let build = |title: &str, path: &str| {
+        let payload = json!({
+            "gamePath": g, "title": title, "author": "me", "version": "1.0", "notes": "n", "tags": ["UI"], "subtype": "",
+            "files": [{"internal_path": path, "data": "data:application/octet-stream;base64,aW5saW5l"}],
+        });
+        let r = crate::call("build_tmod", vec![payload]).unwrap().unwrap();
+        assert_eq!(r["success"], true, "{r}");
+        r["path"].as_str().unwrap().to_string()
+    };
+    let other = build("Other HUD", "ui/hud.swf");
+    let mine = build("My HUD", "ui/hud.swf");
+    build("Unrelated", "ui/map.swf");
+
+    let r = crate::call("find_mod_conflicts", vec![g.clone(), json!([r"UI\hud.swf", "ui/x.swf"]), json!("My HUD")]).unwrap().unwrap();
+    let conflicts = r["data"]["conflicts"].as_array().or(r["conflicts"].as_array()).unwrap().clone();
+    assert_eq!(conflicts.len(), 1, "{r}");
+    assert_eq!(conflicts[0]["name"], "Other HUD");
+    assert_eq!(conflicts[0]["paths"], json!([r"UI\hud.swf"]));
+
+    let refused = crate::call("remove_built_tmod", vec![json!(other), json!(sandbox.to_string_lossy())]).unwrap().unwrap();
+    assert_eq!(refused["success"], false, "{refused}");
+    let removed = crate::call("remove_built_tmod", vec![json!(mine.clone()), g]).unwrap().unwrap();
+    assert_eq!(removed["success"], true, "{removed}");
+    assert!(!PathBuf::from(mine).exists());
+    let _ = std::fs::remove_dir_all(&sandbox);
+}
+
+#[test]
+fn edit_files_extract_from_data_and_disk() {
+    crate::ctx::testing::init();
+    let sandbox = std::env::temp_dir().join(format!("btt-edit-extract-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&sandbox);
+    std::fs::create_dir_all(&sandbox).unwrap();
+    let src = sandbox.join("disk.png");
+    std::fs::write(&src, b"disk").unwrap();
+    let dest = sandbox.join("out");
+    let files = json!([
+        {"internal_path": "ui/a.swf", "data": "data:application/octet-stream;base64,aW5saW5l"},
+        {"internal_path": "textures/b.png", "path": src.to_string_lossy()},
+        {"internal_path": "../escape.txt", "data": "data:application/octet-stream;base64,aW5saW5l"},
+    ]);
+    let r = crate::call("extract_edit_files", vec![json!(dest.to_string_lossy()), files]).unwrap().unwrap();
+    assert_eq!(r["count"], 2, "{r}");
+    assert_eq!(std::fs::read(dest.join("ui").join("a.swf")).unwrap(), b"inline");
+    assert_eq!(std::fs::read(dest.join("textures").join("b.png")).unwrap(), b"disk");
+    assert!(!sandbox.join("escape.txt").exists());
     let _ = std::fs::remove_dir_all(&sandbox);
 }

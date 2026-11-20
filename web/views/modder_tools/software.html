@@ -8,8 +8,8 @@
                             <i class="fa-solid" :class="catData.icon" style="color: var(--text-muted); margin-right: 5px;"></i> {{ t(catKey) }}
                         </h4>
                         <div style="display: flex; flex-wrap: wrap; gap: 10px; width: 100%;">
-                            <a v-for="sw in catData.software" :key="sw.name" :href="sw.url" target="_blank" class="software-badge" :title="t(sw.description)">
-                                <i class="fa-solid" :class="catData.icon"></i>
+                            <a v-for="sw in catData.software" :key="sw.name" :href="sw.url" target="_blank" class="software-badge" :class="{ 'is-author': sw.author }" :title="sw.author ? t('modder_tools.made_by_btt_developer') + ' · ' + t(sw.description) : t(sw.description)">
+                                <i class="fa-solid" :class="sw.author ? 'fa-star' : catData.icon"></i>
                                 <span class="software-name">{{ sw.name }}</span>
                                 <span class="sw-price-tag" :class="sw.free ? 'free' : 'paid'">{{ sw.free ? t('modder_tools.free') : t('modder_tools.paid') }}</span>
                             </a>

@@ -24,7 +24,7 @@ pub fn commands() -> Vec<Cmd> {
 const FONTS: [&str; 7] = ["system", "product-sans", "noto-sans", "inter", "roboto", "segoe-ui", "arial"];
 
 /// Keys passed through as-is. A key missing here is silently dropped on save.
-pub const ALLOWED_KEYS: [&str; 14] = [
+pub const ALLOWED_KEYS: [&str; 13] = [
     "accent_color",
     "show_community_content",
     "show_official_news",
@@ -33,7 +33,6 @@ pub const ALLOWED_KEYS: [&str; 14] = [
     "auto_update_mods",
     "show_mod_preview_on_info_side",
     "hide_beta_features",
-    "enable_legacy_projects",
     "close_to_tray",
     "beta_builds",
     "last_game_path",

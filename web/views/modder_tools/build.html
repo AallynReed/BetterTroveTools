@@ -174,6 +174,19 @@
                             <li v-for="p in problems.clashes" :key="p">{{ p }}</li>
                         </ul>
                     </details>
+
+                    <details class="build-problems" v-if="conflicts.length">
+                        <summary>
+                            <i class="fa-solid fa-code-merge" aria-hidden="true"></i>
+                            <span>{{ t('modder_tools.count_installed_mods_change_same_files').replace('{count}', conflicts.length) }}</span>
+                        </summary>
+                        <p class="build-conflict-hint">{{ t('modder_tools.installed_mod_conflict_hint') }}</p>
+                        <ul>
+                            <li v-for="c in conflicts" :key="c.file" :title="c.file">
+                                <span class="build-conflict-name">{{ c.name }}</span>: {{ c.paths.join(', ') }}
+                            </li>
+                        </ul>
+                    </details>
                 </div>
 
                 <div class="input-row" style="margin-top: 10px; align-items: stretch;">
@@ -181,8 +194,14 @@
                         <template v-if="store.isWorking.buildingTMod"><i class="fa-solid fa-spinner fa-spin"></i> {{ t('modder_tools.compiling_tmod') }}</template>
                         <template v-else><i class="fa-solid fa-hammer"></i> <span>{{ t('modder_tools.build_tmod') }}</span></template>
                     </button>
-                    <button class="primary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('modder_tools.open_built_tmod_folder')" style="min-width: 44px; padding: 0 12px;">
+                    <button class="secondary-btn" @click="openBuildOutputFolder" :disabled="!lastBuildOutputPath" :title="t('modder_tools.open_built_tmod_folder')" :aria-label="t('modder_tools.open_built_tmod_folder')" style="min-width: 44px; padding: 0 12px;">
                         <i class="fa-solid fa-folder-open"></i>
+                    </button>
+                    <button v-if="store.steamSupported" class="secondary-btn" @click="publishToWorkshop" :disabled="!lastBuildOutputPath" :title="t('modder_tools.publish_build_to_workshop_hint')">
+                        <i class="fa-brands fa-steam"></i> <span>{{ t('modder_tools.publish_build_to_workshop') }}</span>
+                    </button>
+                    <button v-if="lastBuildGame" class="danger-btn" @click="removeTestBuild" :title="t('modder_tools.remove_test_build_hint')">
+                        <i class="fa-solid fa-trash"></i> <span>{{ t('modder_tools.remove_test_build') }}</span>
                     </button>
                     <button class="secondary-btn" @click="clearBuildFields">
                         <i class="fa-solid fa-eraser"></i> <span>{{ t('modder_tools.clear_fields') }}</span>

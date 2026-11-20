@@ -14,6 +14,8 @@ use serde_json::{json, Value};
 use super::tools::{failed, game_index_paths, guarded, safe_extract_target};
 use crate::args::Args;
 use crate::ctx::{ctx, try_ctx, Dialog};
+use crate::game::registry::TroveGamePath;
+use crate::modfile::enabled_mod_contents;
 use crate::py::{self, display, file_name, file_suffix, path_arg, str_of, truthy};
 
 /// Where each game file lives, for placing files by name.
@@ -295,6 +297,67 @@ pub fn ask_tmod_save_path(a: &Args) -> Result<Value> {
         d = d.initial_dir(str_of(a.get(1)));
     }
     Ok(json!(ctx().host().save_file(d).map(|p| py::tk_path(&p)).unwrap_or_default()))
+}
+
+fn path_key(p: &str) -> String {
+    p.replace('\\', "/").trim_start_matches('/').to_lowercase()
+}
+
+/// `(gamePath, internalPaths)`: the internal paths the game has no file at.
+pub fn check_game_paths(a: &Args) -> Result<Value> {
+    Ok(guarded(|| {
+        let Some(index) = game_index(a.get(0))? else { return Ok(json!({"success": true, "missing": []})) };
+        let missing: Vec<Value> = py::iterate(a.get(1))?.into_iter().filter(|p| !index.all.contains(&path_key(&str_of(p)))).collect();
+        Ok(json!({"success": true, "missing": missing}))
+    }))
+}
+
+/// `(gamePath, internalPaths, title)`: enabled installed mods that change any of these
+/// paths. The mod's own build (same title or `<title>.tmod`) is left out.
+pub fn find_mod_conflicts(a: &Args) -> Result<Value> {
+    Ok(guarded(|| {
+        if !truthy(a.get(0)) {
+            return Ok(json!({"success": true, "conflicts": []}));
+        }
+        let game = path_arg(a.get(0))?;
+        if !game.is_dir() {
+            return Ok(json!({"success": true, "conflicts": []}));
+        }
+        let wanted: HashMap<String, String> = py::iterate(a.get(1))?.iter().map(|p| (path_key(&str_of(p)), str_of(p))).collect();
+        let title = if truthy(a.get(2)) { str_of(a.get(2)).trim().to_lowercase() } else { String::new() };
+        let mut conflicts = Vec::new();
+        for (file, name, files) in enabled_mod_contents(&TroveGamePath::new(&game, None)) {
+            let own = !title.is_empty() && (name.as_deref().map(|n| n.trim().to_lowercase()) == Some(title.clone()) || py::file_stem(&file).to_lowercase() == title);
+            if own {
+                continue;
+            }
+            let mut paths: Vec<&String> = files.iter().filter_map(|f| wanted.get(&path_key(f))).collect();
+            if paths.is_empty() {
+                continue;
+            }
+            paths.sort();
+            paths.dedup();
+            conflicts.push(json!({"name": name.unwrap_or_else(|| py::file_stem(&file)), "file": display(&file), "paths": paths}));
+        }
+        Ok(json!({"success": true, "conflicts": conflicts}))
+    }))
+}
+
+/// `(tmodPath, gamePath)`: deletes a test build, only from that game's `mods` folder.
+pub fn remove_built_tmod(a: &Args) -> Result<Value> {
+    Ok(guarded(|| {
+        let file = path_arg(a.get(0))?;
+        let game = path_arg(a.get(1))?;
+        let in_mods = file.parent().is_some_and(|p| py::same_path(p, &game.join("mods")));
+        if !in_mods || !file_name(&file).to_lowercase().ends_with(".tmod") {
+            return Ok(failed("Only a build in the game's mods folder can be removed."));
+        }
+        if !file.is_file() {
+            return Ok(json!({"success": true, "removed": false}));
+        }
+        py::unlink(&file)?;
+        Ok(json!({"success": true, "removed": true}))
+    }))
 }
 
 // --- watcher ------------------------------------------------------------------------

@@ -21,6 +21,9 @@ document.addEventListener('modder_build_loaded', () => {
             ].map(([value, label]) => [label, value]));
 
             const lastBuildOutputPath = ref('');
+            // Set when the last build went into a game's mods folder, so it can be removed again.
+            const lastBuildGame = ref('');
+            const conflicts = ref([]);
 
             const build = reactive({
                 title: '', author: '', version: '1.0', notes: '', tags: [],
@@ -295,6 +298,52 @@ document.addEventListener('modder_build_loaded', () => {
                 }
             };
 
+            // --- installed-mod conflicts ---------------------------------------------------
+
+            let conflictTimer = null;
+            let conflictRun = 0;
+            const refreshConflicts = () => {
+                clearTimeout(conflictTimer);
+                conflictTimer = setTimeout(async () => {
+                    const run = ++conflictRun;
+                    const paths = activeFiles.value.map(f => f.internal_path);
+                    if (!store.selectedGamePath || !paths.length) {
+                        conflicts.value = [];
+                        return;
+                    }
+                    try {
+                        const result = await eel.find_mod_conflicts(store.selectedGamePath, paths, build.title.trim())();
+                        if (run !== conflictRun) return;
+                        conflicts.value = window.ModderTools.unwrapResponse(result, 'conflicts', []) || [];
+                    } catch (e) {
+                        if (run === conflictRun) conflicts.value = [];
+                    }
+                }, 400);
+            };
+            watch(() => [activeFiles.value.map(f => f.internal_path).join('|'), store.selectedGamePath, build.title], refreshConflicts);
+
+            // --- test build and Workshop -------------------------------------------------
+
+            const removeTestBuild = async () => {
+                if (!lastBuildOutputPath.value || !lastBuildGame.value) return;
+                try {
+                    const result = await eel.remove_built_tmod(lastBuildOutputPath.value, lastBuildGame.value)();
+                    if (!result?.success) return window.showToast(result?.error || t('modder_tools.could_not_remove_test_build'), true);
+                    lastBuildOutputPath.value = '';
+                    lastBuildGame.value = '';
+                    window.showToast(t('modder_tools.test_build_removed'));
+                    refreshConflicts();
+                } catch (e) {
+                    window.showToast(t('modder_tools.could_not_remove_test_build'), true);
+                }
+            };
+
+            const publishToWorkshop = () => {
+                if (!lastBuildOutputPath.value) return;
+                store.pendingSteamTmod = lastBuildOutputPath.value;
+                window.ModderTools.openTab('steam');
+            };
+
             // --- other controls --------------------------------------------------------
 
             const openSelectedGamePath = async () => {
@@ -391,6 +440,7 @@ document.addEventListener('modder_build_loaded', () => {
                 virtualFiles.value = [];
                 validationState.build = false;
                 lastBuildOutputPath.value = '';
+                lastBuildGame.value = '';
 
                 if (!hadContent) return;
                 window.showUndoToast(
@@ -418,7 +468,8 @@ document.addEventListener('modder_build_loaded', () => {
                 if (buildValidationError.value) return window.showToast(t(buildValidationError.value), true);
 
                 let outputPath = null;
-                if (build.output === 'ask' || !store.selectedGamePath) {
+                const buildGame = build.output === 'game' && store.selectedGamePath ? store.selectedGamePath : '';
+                if (!buildGame) {
                     outputPath = await eel.ask_tmod_save_path(title, pickerStartDir())();
                     if (!outputPath) return;
                 }
@@ -486,6 +537,7 @@ document.addEventListener('modder_build_loaded', () => {
                     }
                     if (result.success) {
                         lastBuildOutputPath.value = result.path || '';
+                        lastBuildGame.value = buildGame;
                         window.showToast(t("modder_tools.tmod_successfully_built_saved_to_path").replace("{path}", result.path), false);
                     }
                     else window.showToast(t("modder_tools.failed_to_build_tmod_error").replace("{error}", result.error), true);
@@ -500,16 +552,18 @@ document.addEventListener('modder_build_loaded', () => {
                 setupNativeDrop();
                 syncWatcher();
                 if (source.mode === 'folder') scanFolder();
+                refreshConflicts();
             });
 
             return {
-                t, store, gameOptions, outputOptions, lastBuildOutputPath, build,
+                t, store, gameOptions, outputOptions, lastBuildOutputPath, lastBuildGame, conflicts, build,
                 source, folderFiles, virtualFiles, activeFiles, problems, dropActive,
                 configDisplayName: window.ModderTools.configDisplayName,
                 isBuildFieldInvalid,
                 openSelectedGamePath, openBuildOutputFolder, openBuildFileLocation,
                 chooseSourceDir, openSourceDir, setSourceMode, scanFolder, clearVirtualFiles, editFilePath,
-                chooseBuildPreview, chooseBuildConfig, detectBuildOverrides, addBuildFiles, removeBuildFile, clearBuildFields, buildTMod
+                chooseBuildPreview, chooseBuildConfig, detectBuildOverrides, addBuildFiles, removeBuildFile, clearBuildFields, buildTMod,
+                removeTestBuild, publishToWorkshop
             };
         }
     });

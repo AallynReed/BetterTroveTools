@@ -1,12 +1,11 @@
-//! backend/modder_tools/modder_tools.py: building, editing and extracting `.tmod`s, mod
-//! projects, and placing override files in the game folder.
+//! backend/modder_tools/modder_tools.py: building, editing and extracting `.tmod`s.
 
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use anyhow::{anyhow, Result};
 use regex::Regex;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 
 use super::now_utc;
 use crate::args::Args;
@@ -18,18 +17,9 @@ use crate::modfile::{blocklist, normalize_internal_path, ModFile, ModKind, Trove
 
 // --- cancellation -------------------------------------------------------------------
 
-const OPERATIONS: [&str; 8] = [
-    "extract_tmod",
-    "detect_overrides",
-    "auto_structure_workspace",
-    "build_tmod",
-    "auto_structure_project",
-    "place_overrides",
-    "remove_overrides",
-    "compile_project",
-];
+const OPERATIONS: [&str; 4] = ["extract_tmod", "detect_overrides", "auto_structure_workspace", "build_tmod"];
 
-static CANCEL_FLAGS: [AtomicBool; 8] = [const { AtomicBool::new(false) }; 8];
+static CANCEL_FLAGS: [AtomicBool; 4] = [const { AtomicBool::new(false) }; 4];
 
 fn flag(op: &str) -> Option<&'static AtomicBool> {
     OPERATIONS.iter().position(|o| *o == op).map(|i| &CANCEL_FLAGS[i])
@@ -319,14 +309,6 @@ pub(super) fn game_index_paths(game_path: &Path, op: &str, log_failures: bool) -
     Ok(out)
 }
 
-fn has_dunder_part(file: &Path, root: &Path) -> bool {
-    py::relative_parts(file, root).unwrap_or_default().iter().any(|p| p.starts_with("__"))
-}
-
-fn rel_posix(file: &Path, root: &Path) -> String {
-    py::relative_parts(file, root).unwrap_or_default().join("/")
-}
-
 // --- dialogs ------------------------------------------------------------------------
 
 fn initial_dir(a: &Args, i: usize) -> Option<String> {
@@ -491,6 +473,36 @@ pub fn extract_tmod(a: &Args) -> Result<Value> {
             result["skipped"] = json!(skipped);
         }
         Ok(result)
+    }))
+}
+
+/// `(dest, files)`: writes Edit TMod's in-memory files (`{internal_path, data | path}`)
+/// under `dest`, so replaced and imported files come out as they will be built.
+pub fn extract_edit_files(a: &Args) -> Result<Value> {
+    Ok(guarded(|| {
+        let dest = path_arg(a.get(0))?;
+        py::mkdir_all(&dest)?;
+        let (mut count, mut skipped) = (0, Vec::new());
+        for f in py::iterate(a.get(1))? {
+            let internal = str_of(get_or(&f, "internal_path", &Value::Null)?);
+            let bytes = match decode_data_url(get_or(&f, "data", &Value::Null)?)? {
+                Some(b) => Some(b),
+                None => {
+                    let src = stripped_arg_path(get_or(&f, "path", &Value::Null)?);
+                    src.is_file().then(|| py::read_bytes(&src)).transpose()?
+                }
+            };
+            let (Some(out), Some(bytes)) = (safe_extract_target(&dest, &internal), bytes) else {
+                skipped.push(json!(internal));
+                continue;
+            };
+            if let Some(parent) = out.parent() {
+                py::mkdir_all(parent)?;
+            }
+            py::write_bytes(&out, &bytes)?;
+            count += 1;
+        }
+        Ok(json!({"success": true, "count": count, "skipped": skipped}))
     }))
 }
 
@@ -886,414 +898,6 @@ pub fn save_tmod_in_place(a: &Args) -> Result<Value> {
         let bytes = m.compile_tmod()?;
         py::write_bytes(&save_path, &bytes)?;
         Ok(json!({"success": true, "path": display(&save_path), "fileName": file_name(&save_path)}))
-    }))
-}
-
-// --- projects -----------------------------------------------------------------------
-
-fn write_json_indent(path: &Path, data: &Value, indent: usize) -> Result<()> {
-    py::write_text(path, &crate::json::dumps_indent(data, indent))
-}
-
-/// `sorted(values)` over JSON strings or numbers; mixing them raises like Python.
-fn py_sorted(values: Vec<Value>) -> Result<Vec<Value>> {
-    if values.iter().all(Value::is_string) {
-        let mut v = values;
-        v.sort_by(|a, b| a.as_str().cmp(&b.as_str()));
-        return Ok(v);
-    }
-    if values.iter().all(Value::is_number) {
-        let mut v = values;
-        v.sort_by(|a, b| a.as_f64().partial_cmp(&b.as_f64()).unwrap_or(std::cmp::Ordering::Equal));
-        return Ok(v);
-    }
-    let first = values.iter().map(py::type_name).collect::<Vec<_>>();
-    let other = first.iter().find(|t| **t != first[0]).copied().unwrap_or(first[0]);
-    Err(anyhow!("'<' not supported between instances of '{}' and '{}'", other, first[0]))
-}
-
-fn project_dir(a: &Args, i: usize) -> Result<PathBuf> {
-    Ok(path_arg(a.get(i))?)
-}
-
-fn version_dir(project: &Path, version: &Value) -> PathBuf {
-    py::join(project, &format!("v{}", str_of(version)))
-}
-
-pub fn load_mod_project(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        let project_path = project_dir(a, 0)?;
-        if !project_path.is_dir() {
-            return Ok(failed("Invalid project directory."));
-        }
-        let project_file = project_path.join("project.json");
-        let mut versions: Vec<String> = Vec::new();
-        for entry in std::fs::read_dir(&project_path).map_err(|e| py::os_error(e, &project_path, None))?.filter_map(|e| e.ok()) {
-            let name = entry.file_name().to_string_lossy().into_owned();
-            if entry.path().is_dir() && name.starts_with('v') {
-                versions.push(name.trim_start_matches('v').to_string());
-            }
-        }
-        if versions.is_empty() {
-            versions.push("1.0".into());
-            let v = project_path.join("v1.0");
-            if !v.is_dir() {
-                std::fs::create_dir(&v).map_err(|e| py::os_error(e, &v, None))?;
-            }
-        }
-        if project_file.exists() {
-            let mut data = py::read_json(&project_file)?;
-            let Value::Object(map) = &mut data else { return Err(anyhow!("'{}' object has no attribute 'setdefault'", py::type_name(&data))) };
-            map.entry("configBase64").or_insert(Value::Null);
-            map.entry("configName").or_insert(json!(""));
-            map.entry("subtype").or_insert(json!(""));
-            let mut all: Vec<Value> = versions.iter().map(|v| json!(v)).collect();
-            match map.get("versions") {
-                None => {}
-                Some(Value::Array(saved)) => all.extend(saved.iter().cloned()),
-                Some(other) => return Err(anyhow!("can only concatenate list (not \"{}\") to list", py::type_name(other))),
-            }
-            let mut unique: Vec<Value> = Vec::new();
-            for v in all {
-                if !unique.contains(&v) {
-                    unique.push(v);
-                }
-            }
-            map.insert("versions".into(), Value::Array(py_sorted(unique)?));
-            return Ok(json!({"success": true, "data": data}));
-        }
-        let default_data = json!({
-            "title": file_name(&project_path),
-            "author": "",
-            "notes": "",
-            "tags": [],
-            "subtype": "",
-            "versions": versions,
-            "active_version": versions[0],
-            "configBase64": null,
-            "configName": "",
-        });
-        write_json_indent(&project_file, &default_data, 4)?;
-        Ok(json!({"success": true, "data": default_data}))
-    }))
-}
-
-fn py_len(v: &Value) -> Result<usize> {
-    match v {
-        Value::String(s) => Ok(py::char_len(s)),
-        Value::Array(a) => Ok(a.len()),
-        Value::Object(m) => Ok(m.len()),
-        other => Err(anyhow!("object of type '{}' has no len()", py::type_name(other))),
-    }
-}
-
-pub fn save_mod_project(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        let payload = a.get(1);
-        if py_len(get_or(payload, "notes", &json!(""))?)? > 220 {
-            return Ok(failed("Mod notes cannot exceed 220 characters."));
-        }
-        let project_path = project_dir(a, 0)?;
-        let project_file = project_path.join("project.json");
-        let data = if project_file.exists() {
-            let mut data = py::read_json(&project_file)?;
-            let (Value::Object(map), Value::Object(update)) = (&mut data, payload) else {
-                return Err(anyhow!("'{}' object has no attribute 'update'", py::type_name(&data)));
-            };
-            for (k, v) in update {
-                map.insert(k.clone(), v.clone());
-            }
-            data
-        } else {
-            payload.clone()
-        };
-        write_json_indent(&project_file, &data, 4)?;
-        Ok(json!({"success": true}))
-    }))
-}
-
-pub fn create_project_version(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        let project_path = project_dir(a, 0)?;
-        let new_version = a.get(1);
-        let version_folder = version_dir(&project_path, new_version);
-        if version_folder.exists() {
-            return Ok(failed("Version folder already exists."));
-        }
-        py::mkdir_all(&version_folder)?;
-        let project_file = project_path.join("project.json");
-        if project_file.exists() {
-            let mut data = py::read_json(&project_file)?;
-            let Value::Object(map) = &mut data else { return Err(anyhow!("'{}' object has no attribute 'get'", py::type_name(&data))) };
-            let versions = map.get("versions").cloned().unwrap_or(json!([]));
-            let present = match &versions {
-                Value::String(s) => match new_version {
-                    Value::String(v) => s.contains(v.as_str()),
-                    other => return Err(anyhow!("'in <string>' requires string as left operand, not {}", py::type_name(other))),
-                },
-                other => py::iterate(other)?.contains(new_version),
-            };
-            if !present {
-                let mut list = match &versions {
-                    Value::Array(list) => list.clone(),
-                    other => return Err(anyhow!("'{}' object has no attribute 'append'", py::type_name(other))),
-                };
-                list.push(new_version.clone());
-                map.insert("versions".into(), Value::Array(py_sorted(list)?));
-                map.insert("active_version".into(), new_version.clone());
-                write_json_indent(&project_file, &data, 4)?;
-            }
-        }
-        Ok(json!({"success": true}))
-    }))
-}
-
-pub fn get_project_files(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        let target_dir = version_dir(&project_dir(a, 0)?, a.get(1));
-        if !target_dir.exists() {
-            return Ok(json!({"success": true, "files": []}));
-        }
-        let mut files = Vec::new();
-        for file in Rglob::new(&target_dir) {
-            if !file.is_file() || has_dunder_part(&file, &target_dir) {
-                continue;
-            }
-            files.push((rel_posix(&file, &target_dir), file));
-        }
-        files.sort_by(|a, b| a.0.cmp(&b.0));
-        let files: Vec<Value> = files.into_iter().map(|(rel, f)| json!({"name": file_name(&f), "rel_path": rel, "abs_path": display(&f)})).collect();
-        Ok(json!({"success": true, "files": files}))
-    }))
-}
-
-pub fn auto_structure_project_version(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        reset_cancel_flag("auto_structure_project");
-        let game_path = path_arg(a.get(2))?;
-        let target_dir = version_dir(&project_dir(a, 0)?, a.get(1));
-        if !game_path.exists() || !target_dir.exists() {
-            return Ok(failed("Invalid game path or version directory."));
-        }
-        let file_map = game_file_map(&game_path, "auto_structure_project", false)?;
-        let mut moved = 0;
-        let all: Vec<PathBuf> = Rglob::new(&target_dir).collect();
-        for file in all {
-            raise_if_cancelled("auto_structure_project")?;
-            if !file.is_file() || ignored_extension(&file) || has_dunder_part(&file, &target_dir) {
-                continue;
-            }
-            let Some(expected) = file_map.get(&file_name(&file).to_lowercase()) else { continue };
-            let new_path = py::join(&target_dir, expected);
-            if !py::same_path(&py::resolve(&file), &py::resolve(&new_path)) {
-                if let Some(parent) = new_path.parent() {
-                    py::mkdir_all(parent)?;
-                }
-                py::shutil_move(&file, &new_path)?;
-                moved += 1;
-            }
-        }
-        Ok(json!({"success": true, "count": moved}))
-    }))
-}
-
-pub fn place_project_overrides(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        reset_cancel_flag("place_overrides");
-        let game_path = path_arg(a.get(2))?;
-        let target_dir = version_dir(&project_dir(a, 0)?, a.get(1));
-        if !game_path.exists() || !target_dir.exists() {
-            return Ok(failed("Invalid game path or version directory."));
-        }
-        let mut placed = Vec::new();
-        for file in Rglob::new(&target_dir) {
-            raise_if_cancelled("place_overrides")?;
-            if !file.is_file() || has_dunder_part(&file, &target_dir) {
-                continue;
-            }
-            let mut parts = py::relative_parts(&file, &target_dir).unwrap_or_default();
-            parts.insert(parts.len().saturating_sub(1), "override".into());
-            let dest = parts.iter().fold(game_path.clone(), |acc, p| py::join(&acc, p));
-            if let Some(parent) = dest.parent() {
-                py::mkdir_all(parent)?;
-            }
-            py::copy2(&file, &dest)?;
-            placed.push(display(&dest));
-        }
-        let count = placed.len();
-        Ok(json!({"success": true, "placed_files": placed, "count": count}))
-    }))
-}
-
-fn trash_root() -> Result<PathBuf> {
-    let root = crate::paths::get_app_data_dir().join("ModderToolsTrash");
-    py::mkdir_all(&root)?;
-    Ok(root)
-}
-
-fn undo_manifest_path() -> Result<PathBuf> {
-    Ok(trash_root()?.join("undo_remove_overrides.json"))
-}
-
-fn read_undo_manifest() -> Result<Map<String, Value>> {
-    let path = undo_manifest_path()?;
-    if !path.exists() {
-        return Ok(Map::new());
-    }
-    Ok(match py::read_json(&path) {
-        Ok(Value::Object(m)) => m,
-        _ => Map::new(),
-    })
-}
-
-fn write_undo_manifest(data: &Map<String, Value>) -> Result<()> {
-    write_json_indent(&undo_manifest_path()?, &Value::Object(data.clone()), 2)
-}
-
-pub fn remove_project_overrides(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        reset_cancel_flag("remove_overrides");
-        let mut removed = 0;
-        let mut moved = Vec::new();
-        let token = uuid::Uuid::new_v4().simple().to_string();
-        let backup_dir = trash_root()?.join(&token);
-        py::mkdir_all(&backup_dir)?;
-        for file_value in py::iterate(a.get(0))? {
-            if is_cancelled("remove_overrides") {
-                break;
-            }
-            let file = path_arg(&file_value)?;
-            if file.is_file() {
-                let backup = backup_dir.join(format!("{}_{}", removed, file_name(&file)));
-                py::shutil_move(&file, &backup)?;
-                moved.push(json!({"original": display(&file), "backup": display(&backup)}));
-                removed += 1;
-                if let Some(parent) = file.parent() {
-                    if std::fs::read_dir(parent).map(|mut rd| rd.next().is_none()).unwrap_or(false) {
-                        let _ = std::fs::remove_dir(parent);
-                    }
-                }
-            }
-        }
-        let mut manifest = read_undo_manifest()?;
-        if !moved.is_empty() {
-            manifest.insert(token.clone(), json!({"created_at": py::isoformat_utc(now_utc()), "files": moved}));
-            write_undo_manifest(&manifest)?;
-        }
-        let undo_token = if moved.is_empty() { Value::Null } else { json!(token) };
-        if is_cancelled("remove_overrides") {
-            return Ok(json!({"success": false, "cancelled": true, "error": "Operation cancelled by user.", "count": removed, "undo_token": undo_token}));
-        }
-        Ok(json!({"success": true, "count": removed, "undo_token": undo_token}))
-    }))
-}
-
-pub fn undo_remove_project_overrides(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        let token = if truthy(a.get(0)) { strip(&str_of(a.get(0))).to_string() } else { String::new() };
-        if token.is_empty() {
-            return Ok(failed("Missing undo token."));
-        }
-        let mut manifest = read_undo_manifest()?;
-        let entry = manifest.get(&token).cloned().unwrap_or(Value::Null);
-        if !truthy(&entry) {
-            return Ok(failed("Undo token not found or expired."));
-        }
-        let (mut restored, mut conflicts) = (0, Vec::new());
-        for item in py::iterate(get_or(&entry, "files", &json!([]))?)? {
-            let original = path_arg(get_or(&item, "original", &json!(""))?)?;
-            let backup = path_arg(get_or(&item, "backup", &json!(""))?)?;
-            if !backup.is_file() {
-                continue;
-            }
-            if original.exists() {
-                conflicts.push(display(&original));
-                continue;
-            }
-            if let Some(parent) = original.parent() {
-                py::mkdir_all(parent)?;
-            }
-            py::shutil_move(&backup, &original)?;
-            restored += 1;
-        }
-        let token_dir = trash_root()?.join(&token);
-        if token_dir.exists() {
-            let _ = std::fs::remove_dir_all(&token_dir);
-        }
-        manifest.remove(&token);
-        write_undo_manifest(&manifest)?;
-        Ok(json!({"success": true, "restored": restored, "conflicts": conflicts}))
-    }))
-}
-
-pub fn compile_project(a: &Args) -> Result<Value> {
-    Ok(guarded(|| {
-        reset_cancel_flag("compile_project");
-        let project_path = project_dir(a, 0)?;
-        let game_path = path_arg(a.get(2))?;
-        let version = a.get(1);
-        let target_dir = version_dir(&project_path, version);
-        let project_file = project_path.join("project.json");
-        if !game_path.exists() || !target_dir.exists() || !project_file.exists() {
-            return Ok(failed("Invalid paths or missing project.json. Please save the project first."));
-        }
-        let meta = py::read_json(&project_file)?;
-        if py::char_len(&get_stripped(&meta, "notes", "")?) > 220 {
-            return Ok(failed("Mod notes cannot exceed 220 characters. Please edit the notes and try again."));
-        }
-        let title = strip_tmod_suffix(get_stripped(&meta, "title", "Untitled Project")?);
-        let author = get_stripped(&meta, "author", "Unknown")?;
-        let notes = get_stripped(&meta, "notes", "")?;
-        let empty_list = json!([]);
-        let tags = get_or(&meta, "tags", &empty_list)?.clone();
-        let subtype = get_stripped(&meta, "subtype", "")?;
-        if title.is_empty() {
-            return Ok(failed("Project title cannot be empty."));
-        }
-        if illegal_title_chars().is_match(&title) {
-            return Ok(failed("Project title contains illegal characters."));
-        }
-        let mut m = new_mod(&title, &author, &strip_value(version)?, &notes, &tags, &subtype)?;
-
-        let preview_b64 = get_or(&meta, "previewBase64", &Value::Null)?;
-        let preview_name_default = json!("preview.png");
-        let preview_name = get_or(&meta, "previewName", &preview_name_default)?;
-        let preview_path = truthy(preview_b64).then(|| preview_internal_path(&title, preview_name));
-        let config_data = decode_data_url(get_or(&meta, "configBase64", &Value::Null)?)?;
-        let config_path = config_data.as_ref().map(|_| config_internal_path(&title));
-        let listed: Vec<Value> = Rglob::new(&target_dir).filter(|f| f.is_file()).map(|f| json!(rel_posix(&f, &target_dir))).collect();
-        if let Some(err) = validate_special_paths(&listed, preview_path.as_deref(), config_data.is_some(), &title)? {
-            return Ok(failed(err));
-        }
-        let preview_bytes = decode_data_url(preview_b64)?;
-        add_preview_and_config(&mut m, preview_path.as_deref().map(|p| (p, preview_bytes)), config_path.as_deref().zip(config_data))?;
-
-        let mut count = 0;
-        for file in Rglob::new(&target_dir) {
-            raise_if_cancelled("compile_project")?;
-            if !file.is_file() || ignored_extension(&file) || has_dunder_part(&file, &target_dir) {
-                continue;
-            }
-            let bytes = py::read_bytes(&file)?;
-            m.add_file(ModFile::new(&rel_posix(&file, &target_dir), bytes))?;
-            count += 1;
-        }
-        if count == 0 {
-            return Ok(failed(format!("No valid game files found in the v{} folder.", str_of(version))));
-        }
-        let out_dir = game_path.join("mods");
-        let save_path = out_dir.join(format!("{}.tmod", title));
-        m.mod_path = save_path.clone();
-        if blocklist::mod_is_blocked(&m) {
-            return Ok(failed(blocklist::BLOCKED_MESSAGE));
-        }
-        py::mkdir_all(&out_dir)?;
-        if save_path.exists() {
-            unlink_missing_ok(&save_path)?;
-        }
-        let bytes = m.compile_tmod()?;
-        py::write_bytes(&save_path, &bytes)?;
-        Ok(json!({"success": true, "path": display(&save_path)}))
     }))
 }
 

@@ -3,6 +3,13 @@
         "description": "A blueprint is a file that contains Voxel models (3D Models information) for Trove's collectibles.\nThis includes the Items, Blocks, Item Icons, Mounts, Allies, Costumes and much more.",
         "software": [
             {
+                "name": "Trove-BP",
+                "free": true,
+                "author": true,
+                "url": "https://aallynreed.github.io/Trove-BP/",
+                "description": "Trove-BP is a free in-browser editor for Trove .blueprint voxel models, made by the Better Trove Tools developer."
+            },
+            {
                 "name": "Qubicle",
                 "free": false,
                 "url": "https://www.voxelmade.com/qubicle/",
@@ -54,6 +61,13 @@
     "ui": {
         "description": "UI (User Interface) is used to edit user interfaces present in Trove and alter or add to their functionality.",
         "software": [
+            {
+                "name": "Lumen-SWF",
+                "free": true,
+                "author": true,
+                "url": "https://github.com/AallynReed/Lumen-SWF",
+                "description": "Lumen-SWF is a free Flash SWF decompiler and editor written in Rust, made by the Better Trove Tools developer."
+            },
             {
                 "name": "Adobe Animate",
                 "free": false,

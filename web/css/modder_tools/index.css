@@ -180,6 +180,10 @@ textarea::placeholder { color: var(--text-placeholder); }
 .build-problems summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--t-2); color: var(--warning-ink); cursor: pointer; }
 .build-problems ul { margin: var(--t-2) 0 0; padding-left: var(--t-5); color: var(--text-muted); max-height: 120px; overflow-y: auto; word-break: break-all; }
 .build-problem-tag { color: var(--warning-ink); }
+.edit-tmod-check-cell { width: 36px; padding: 10px 0 10px 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+.edit-tmod-check-cell input { margin: 0; accent-color: var(--accent-blue); }
+.build-conflict-hint { margin: var(--t-2) 0 0; color: var(--text-muted); }
+.build-conflict-name { color: var(--text-main); font-weight: 600; }
 
 .icon-btn-small { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: var(--t-1); transition: color var(--dur) var(--t-ease); }
 .icon-btn-small:hover { color: var(--text-main); }
@@ -193,6 +197,11 @@ textarea::placeholder { color: var(--text-placeholder); }
    none of those, so the glyphs stay structural. */
 .software-badge i { color: var(--text-muted); }
 .software-badge:hover { border-color: var(--accent-blue); background-color: var(--bg-hover); color: var(--text-main); transform: translateY(-1px); }
+
+/* The developer's own tools: a fixed gold, not the accent, so it reads the same whatever colour the user picks. */
+.software-badge.is-author { border-color: rgba(var(--author-gold-rgb), 0.55); background-color: rgba(var(--author-gold-rgb), 0.06); }
+.software-badge.is-author i { color: var(--author-gold); }
+.software-badge.is-author:hover { border-color: var(--author-gold); background-color: rgba(var(--author-gold-rgb), 0.12); }
 
 .sw-price-tag { font-size: var(--t-fs-micro); font-weight: 800; text-transform: uppercase; padding: var(--t-1) var(--t-2); border-radius: var(--radius-pill); margin-left: auto; letter-spacing: 1px; }
 .sw-price-tag.free { background-color: rgba(var(--success-rgb), 0.15); color: var(--success-ink); border: 1px solid rgba(var(--success-rgb), 0.3); }

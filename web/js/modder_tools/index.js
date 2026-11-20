@@ -18,10 +18,6 @@ document.addEventListener('modder_tools_loaded', () => {
             // I/O, mod-tree scanning, or shelling out to external tools.
             const isWebMode = !!window.BTT_WEB_MODE;
             const activeTab = ref(isWebMode ? 'extract' : 'build');
-            // Legacy "Projects" tab is hidden by default; opt back in via
-            // Settings -> Legacy Features (enable_legacy_projects). Read in
-            // onMounted from the persisted settings.
-            const legacyProjectsEnabled = ref(false);
             // The Steam Workshop tab needs steam_api64.dll from a Steam install
             // of Trove, so it's Windows-only. The backend is the source of
             // truth; the tab body explains itself when no Steam copy is found.
@@ -34,12 +30,10 @@ document.addEventListener('modder_tools_loaded', () => {
             let unsubAccount = null;
 
             // Tabs that can actually be shown right now (web mode = extract only;
-            // projects only when the legacy toggle is on; manage tabs only when
-            // signed in). Used to coerce stale/unavailable saved tabs back to a
+            // manage tabs only when signed in). Used to coerce stale/unavailable saved tabs back to a
             // valid tab (e.g. the relocated file_explorer/update_tracker).
             const isTabAvailable = (tabName) => {
                 if (isWebMode) return tabName === 'extract';
-                if (tabName === 'projects') return legacyProjectsEnabled.value;
                 if (tabName === 'manage_mods' || tabName === 'manage_modpacks') return loggedIn.value;
                 if (tabName === 'steam') return steamSupported.value;
                 return ['build', 'extract', 'edit_tmod', 'qb_editor', 'software'].includes(tabName);
@@ -59,8 +53,8 @@ document.addEventListener('modder_tools_loaded', () => {
                 if (!saved || typeof saved !== 'object') return;
                 if (typeof saved.activeTab === 'string') {
                     // Honor the saved tab only if it's still available: web mode
-                    // coerces to extract, the relocated file_explorer/update_tracker
-                    // and the gated-off projects tab fall back to the default.
+                    // coerces to extract; removed tabs (file_explorer, update_tracker,
+                    // projects) fall back to the default.
                     activeTab.value = isTabAvailable(saved.activeTab)
                         ? saved.activeTab
                         : (isWebMode ? 'extract' : 'build');
@@ -126,8 +120,6 @@ document.addEventListener('modder_tools_loaded', () => {
                         { url: 'views/modder_tools/extract.html', host: 'modder-extract-vue-app-inner' },
                         { url: 'views/modder_tools/edit_tmod.html', host: 'modder-edit-tmod-vue-app-inner' },
                         ...(steamSupported.value ? [{ url: 'views/modder_tools/steam.html', host: 'modder-steam-vue-app-inner' }] : []),
-                        // Projects only fetched when the legacy toggle is on.
-                        ...(legacyProjectsEnabled.value ? [{ url: 'views/modder_tools/projects.html', host: 'modder-projects-vue-app-inner' }] : []),
                         { url: 'views/modder_tools/qb_editor.html', host: 'modder-qb-editor-vue-app-inner' },
                         { url: 'views/modder_tools/software.html', host: 'modder-software-vue-app-inner' },
                     ];
@@ -187,8 +179,6 @@ document.addEventListener('modder_tools_loaded', () => {
                     document.dispatchEvent(new CustomEvent('modder_edit_tmod_shown'));
                 } else if (newTab === 'steam') {
                     document.dispatchEvent(new CustomEvent('modder_steam_shown'));
-                } else if (newTab === 'projects') {
-                    document.dispatchEvent(new CustomEvent('modder_projects_shown'));
                 } else if (newTab === 'qb_editor') {
                     document.dispatchEvent(new CustomEvent('modder_qb_editor_shown'));
                 } else if (newTab === 'software') {
@@ -222,12 +212,11 @@ document.addEventListener('modder_tools_loaded', () => {
                 } catch (e) {
                     steamSupported.value = false;
                 }
+                store.steamSupported = steamSupported.value;
+                window.ModderTools.openTab = setActiveTab;
                 if (window.AppSettings) {
                     try {
                         await window.AppSettings.load();
-                        // Read the legacy-projects opt-in BEFORE restoring the saved
-                        // tab so a saved 'projects' tab coerces correctly when off.
-                        legacyProjectsEnabled.value = window.AppSettings.get('enable_legacy_projects', false) === true;
                         applyStateSnapshot(window.AppSettings.getPref(PREF_STATE_KEY, null));
                     } catch (e) {
                         console.error('modder_tools: failed to restore state', e);
@@ -257,8 +246,7 @@ document.addEventListener('modder_tools_loaded', () => {
                 await loadSubviewContent();
                 const tabsToMount = isWebMode
                     ? ['extract']
-                    : ['build', 'extract', 'edit_tmod', ...(steamSupported.value ? ['steam'] : []),
-                       ...(legacyProjectsEnabled.value ? ['projects'] : []), 'qb_editor', 'software'];
+                    : ['build', 'extract', 'edit_tmod', ...(steamSupported.value ? ['steam'] : []), 'qb_editor', 'software'];
                 tabsToMount.forEach((tab) => {
                     document.dispatchEvent(new CustomEvent(`modder_${tab}_loaded`));
                 });
@@ -271,7 +259,7 @@ document.addEventListener('modder_tools_loaded', () => {
             onUnmounted(() => { if (unsubAccount) unsubAccount(); });
 
             return {
-                t, activeTab, setActiveTab, isWebMode, legacyProjectsEnabled, steamSupported,
+                t, activeTab, setActiveTab, isWebMode, steamSupported,
                 loggedIn, promptManageLogin
             };
         }

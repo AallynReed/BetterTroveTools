@@ -65,7 +65,6 @@ document.addEventListener('settings_loaded', async () => {
                 auto_fix_names: true,
                 show_mod_preview_on_info_side: true,
                 hide_beta_features: false,
-                enable_legacy_projects: false,
                 close_to_tray: true,
                 beta_builds: false,
                 notifications: defaultNotifications()
@@ -123,7 +122,6 @@ document.addEventListener('settings_loaded', async () => {
                     settings.auto_fix_names = data.auto_fix_names !== false;
                     settings.show_mod_preview_on_info_side = data.show_mod_preview_on_info_side !== false;
                     settings.hide_beta_features = data.hide_beta_features === true;
-                    settings.enable_legacy_projects = data.enable_legacy_projects === true;
                     settings.close_to_tray = data.close_to_tray !== false;
                     settings.beta_builds = data.beta_builds === true;
                     // Deep-merge notifications so old saves missing a new field
@@ -465,9 +463,9 @@ document.addEventListener('settings_loaded', async () => {
                 if (saved && typeof saved === 'object' && typeof saved.activeTab === 'string') {
                     activeTab.value = saved.activeTab;
                 }
-                // The Directories + Legacy tabs are hidden in web/Android mode — fall
+                // Directories is hidden in web/Android mode and Legacy is gone — fall
                 // back to General so a restored selection doesn't land on an empty page.
-                if (isWebMode && (activeTab.value === 'directories' || activeTab.value === 'legacy')) activeTab.value = 'general';
+                if (activeTab.value === 'legacy' || (isWebMode && activeTab.value === 'directories')) activeTab.value = 'general';
                 // Notifications tab only exists on Android or a delivery-capable desktop.
                 if (activeTab.value === 'notifications' && !isNative && !isDesktopNotify.value) activeTab.value = 'general';
             };

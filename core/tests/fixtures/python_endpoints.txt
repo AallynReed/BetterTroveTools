@@ -10,7 +10,6 @@ ask_mod_source_directory
 ask_preview_file
 ask_tmod_file
 augment_gem
-auto_structure_project_version
 auto_structure_workspace
 browse_for_folder
 browse_for_game_dir
@@ -34,9 +33,7 @@ clear_recipes_cache
 clear_styles_cache
 clear_trovesaurus_cache
 clear_update_cache
-compile_project
 create_gem
-create_project_version
 delete_mod
 delete_mods_hub_installed_mod
 delete_profile
@@ -88,7 +85,6 @@ get_mods_hub_mods
 get_mods_hub_variants
 get_mounts_data
 get_player_activity
-get_project_files
 get_recipes_data
 get_settings
 get_stampy_rotation
@@ -119,7 +115,6 @@ level_up_gem
 list_profiles
 load_entire_game_tree
 load_gem_storage
-load_mod_project
 load_tmod_for_edit
 mass_extract_files
 mass_update_gems
@@ -128,15 +123,12 @@ open_path_in_explorer
 open_url_in_browser
 parse_star_chart_code
 perform_mod_update
-place_project_overrides
 reenable_mod
-remove_project_overrides
 rename_profile
 reset_desktop_notification
 save_blueprint_editor_file
 save_gem_builds_csv
 save_gem_storage
-save_mod_project
 save_modpack_as_profile
 save_settings
 save_star_chart_template
@@ -194,6 +186,5 @@ steam_workshop_status
 subscribe_workshop_item
 toggle_mod
 undo_delete_mod
-undo_remove_project_overrides
 unsubscribe_workshop_mod
 update_profile_file

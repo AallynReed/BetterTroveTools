@@ -32,9 +32,6 @@
             <button v-if="!isWebMode && steamSupported" class="tab-btn" :class="{ active: activeTab === 'steam' }" @click="setActiveTab('steam')">
                 <i class="fa-brands fa-steam"></i> <span>{{ t('steam.tab') }}</span>
             </button>
-            <button v-if="!isWebMode && legacyProjectsEnabled" class="tab-btn" :class="{ active: activeTab === 'projects' }" @click="setActiveTab('projects')">
-                <i class="fa-solid fa-diagram-project"></i> <span>{{ t('modder_tools.projects') }}</span>
-            </button>
             <button v-if="!isWebMode" class="tab-btn" :class="{ active: activeTab === 'qb_editor' }" @click="setActiveTab('qb_editor')">
                 <i class="fa-solid fa-cubes-stacked"></i> <span>{{ t('modder_tools.blueprint_editor') }}</span> <span class="beta-label">BETA</span>
             </button>
@@ -67,10 +64,6 @@
 
         <div class="tab-content" :class="{ active: activeTab === 'steam' }">
             <div id="modder-steam-vue-app-inner" v-cloak></div>
-        </div>
-
-        <div class="tab-content" :class="{ active: activeTab === 'projects' }">
-            <div id="modder-projects-vue-app-inner" v-cloak></div>
         </div>
 
         <div class="tab-content" :class="{ active: activeTab === 'qb_editor' }">

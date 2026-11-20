@@ -192,7 +192,6 @@ window.BTT_VIEW_SCRIPTS = {
         'js/modder_tools/extract.js',
         'js/modder_tools/edit_tmod.js',
         'js/modder_tools/steam.js',
-        'js/modder_tools/projects.js',
         // Desktop only: web builds have no Blueprint Editor tab, and Android strips these files.
         ...(window.BTT_WEB_MODE === true ? [] : [
             'js/modder_tools/blueprint_editor/voxel_mesh.js',
@@ -2548,7 +2547,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         { id: 'modder_tools', title: 'Extract TMod', icon: 'fa-box-open', modderTab: 'extract' },
         { id: 'modder_tools', title: 'Edit TMod', icon: 'fa-pen-to-square', modderTab: 'edit_tmod' },
         { id: 'modder_tools', title: 'Steam Workshop', icon: 'fa-steam', iconClass: 'fa-brands', modderTab: 'steam' },
-        { id: 'modder_tools', title: 'Projects', icon: 'fa-diagram-project', modderTab: 'projects', legacyProjects: true },
         { id: 'modder_tools', title: 'Blueprint Editor', icon: 'fa-code', modderTab: 'qb_editor' },
         { id: 'modder_tools', title: 'Third Party Software', icon: 'fa-computer', modderTab: 'software' },
         { id: 'gems_and_builds', title: 'Gem Builds', icon: 'fa-dice-five', gemsTab: 'gem-builds' },
@@ -2817,11 +2815,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isCommandVisible = (command) => {
         if (!command) return false;
         if (isWebUnavailableView(command.id)) return false;
-        // Projects is a legacy tab hidden unless re-enabled in Settings.
-        if (command.legacyProjects === true
-            && !(window.AppSettings && window.AppSettings.get('enable_legacy_projects', false) === true)) {
-            return false;
-        }
         return !(command.beta === true && areBetaFeaturesHidden());
     };
 

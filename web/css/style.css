@@ -178,6 +178,9 @@
        the user picks. One name, so it can't become four scattered pinks. */
     --donate-pink: #ff6f91;
     --donate-pink-rgb: 255, 120, 160;
+    /* The developer's own tools in Third Party Software; fixed for the same reason. */
+    --author-gold: #e8b84a;
+    --author-gold-rgb: 232, 184, 74;
 
     --z-shell: 100;             /* the sidebar rail, above view content */
     --z-drawer-backdrop: 250;   /* <900px: scrim behind the nav drawer */

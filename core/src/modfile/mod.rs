@@ -18,7 +18,7 @@ mod toml_out;
 pub mod trovesaurus;
 pub mod zipmod;
 
-pub use list::{Blocked, ListOptions, TroveModList};
+pub use list::{enabled_mod_contents, Blocked, ListOptions, TroveModList};
 pub use model::{build_container, no_preview_image, normalize_internal_path, FileExistsError, ModFile, ModKind, NoFilesError, Property, PropertyError, TroveMod};
 
 #[cfg(test)]
