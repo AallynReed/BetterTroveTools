@@ -19,11 +19,12 @@ anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 parking_lot.workspace = true
-tauri = { version = "2", features = ["tray-icon", "image-png", "devtools"] }
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
 tauri-plugin-deep-link = "2"
+open = "5"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52"

@@ -11,12 +11,16 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use tauri::http::{header, Response as HttpResponse};
-use tauri::{Manager, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::webview::NewWindowResponse;
+use tauri::{Manager, Url, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 use host::{Shell, TauriHost};
 
 /// The scheme `/api/...` and `/proxy/...` are served on (see web/js/tauri_bridge.js).
 const BACKEND_SCHEME: &str = "bttapi";
+
+/// WebView2 flags: wry's defaults (which this replaces) plus no Edge background traffic.
+const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection,AutofillServerCommunication,OptimizationHints,MediaRouter     --disable-background-networking --disable-component-update --disable-domain-reliability     --disable-client-side-phishing-detection --disable-sync --no-pings --metrics-recording-only";
 
 #[tauri::command]
 async fn eel_call(name: String, args: Vec<Value>) -> Result<Value, String> {
@@ -43,6 +47,27 @@ fn resource_dir(app: &tauri::AppHandle) -> (PathBuf, bool) {
 
 fn startup_url() -> Option<String> {
     std::env::args().find(|a| a.starts_with("btt://"))
+}
+
+/// The app's own pages: the bundled frontend, the backend scheme and Tauri IPC.
+fn is_app_url(url: &Url) -> bool {
+    let local = ["tauri.localhost", "ipc.localhost", "bttapi.localhost"];
+    match url.scheme() {
+        "tauri" | "ipc" | "bttapi" | "about" => true,
+        "http" | "https" => url.host_str().is_some_and(|h| local.contains(&h)),
+        _ => false,
+    }
+}
+
+/// Keeps the window on the app: anything else opens in the user's browser.
+fn keep_in_app(url: &Url) -> bool {
+    if is_app_url(url) {
+        return true;
+    }
+    if matches!(url.scheme(), "http" | "https" | "mailto") {
+        let _ = open::that(url.as_str());
+    }
+    false
 }
 
 fn init_script() -> String {
@@ -133,7 +158,14 @@ fn main() {
                 .min_inner_size(1100.0, 700.0)
                 .data_directory(data_dir)
                 .initialization_script(&init_script())
-                .devtools(dev_mode || std::env::var("BTT_DEBUG").as_deref() == Ok("1"))
+                .devtools(cfg!(debug_assertions))
+                .additional_browser_args(BROWSER_ARGS)
+                .general_autofill_enabled(false)
+                .on_navigation(keep_in_app)
+                .on_new_window(|url, _| {
+                    keep_in_app(&url);
+                    NewWindowResponse::Deny
+                })
                 .build()?;
 
             shell.create_tray(&title)?;
