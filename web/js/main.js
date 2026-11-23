@@ -863,13 +863,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!data || data.update_available !== true || !data.latest) return null;
             const release = data.latest.release || {};
             const assets = Array.isArray(data.latest.assets) ? data.latest.assets : [];
-            const asset = assets[0]; // API returns priority-sorted platform-matched assets
-            if (!release.tag_name || !asset || !asset.url) return null;
+            const toAsset = (a) => ({ name: a.name || '', browser_download_url: a.url, size: Number(a.size) || 0 });
+            const allAssets = assets.filter((a) => a && a.url).map(toAsset);
+            const asset = allAssets[0]; // API returns priority-sorted platform-matched assets
+            if (!release.tag_name || !asset) return null;
             return {
                 tag_name: release.tag_name,
                 html_url: release.html_url || '',
                 prerelease: release.prerelease === true,
-                asset: { name: asset.name || '', browser_download_url: asset.url }
+                asset,
+                assets: allAssets
             };
         } catch { return null; }
     };
@@ -946,17 +949,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         return true;
     };
 
+    // { platform, mode }: mode is msi, appimage, deb or manual (open the release page).
+    let installTarget = null;
+    const getInstallTarget = async () => {
+        if (installTarget) return installTarget;
+        try {
+            const res = await eel.get_update_target()();
+            if (res && res.platform) installTarget = res;
+        } catch {}
+        return installTarget || { platform: 'windows', mode: 'msi' };
+    };
+    const ASSET_SUFFIX = { msi: '.msi', appimage: '.appimage', deb: '.deb' };
+
     const checkDesktopUpdate = async () => {
         const currentParsed = parseVersion(currentVersion);
+        const target = await getInstallTarget();
         const updateTarget = currentParsed
-            ? await kiwiBestUpdate(currentVersion, 'windows', betaOptIn())
+            ? await kiwiBestUpdate(currentVersion, target.platform, betaOptIn())
             : null;
-        // kiwiBestUpdate already filtered to the priority-matched .msi asset and
-        // aliased its url onto browser_download_url, so the self-update click
-        // handler below works without further changes.
-        const updateAsset = updateTarget ? (updateTarget.asset || null) : null;
+        const suffix = ASSET_SUFFIX[target.mode];
+        const updateAsset = updateTarget && suffix
+            ? (updateTarget.assets || []).find((a) => a.name.toLowerCase().endsWith(suffix)) || null
+            : null;
 
-        if (!updateTarget || !updateAsset) {
+        if (!updateTarget) {
             removeUpdateButton();
             // Already on the latest build: drop the installer (and its log/helper)
             // a previous update left in the cache instead of hoarding it forever.
@@ -971,6 +987,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const latestVersion = normalizeVersionTag(updateTarget.tag_name);
         mountUpdateButton(latestVersion, async (updateButton) => {
             if (isAppUpdateStarting) return;
+            if (!updateAsset) {
+                eel.open_url_in_browser(updateTarget.html_url)();
+                return;
+            }
 
             let confirmed = true;
             if (typeof window.showConfirmModal === 'function') {
@@ -994,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             try {
                 const response = await window.callBackend(
-                    eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name)(),
+                    eel.start_self_update(updateAsset.browser_download_url, updateTarget.tag_name, updateAsset.name, updateAsset.size)(),
                     t('app.failed_to_start_self_update')
                 );
 

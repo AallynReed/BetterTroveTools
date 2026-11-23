@@ -31,6 +31,7 @@ pub fn commands() -> Vec<Cmd> {
         Cmd::raw("kiwi_request", kiwi_request),
         Cmd::raw("finalize_self_update_exit", finalize_self_update_exit),
         Cmd::raw("start_self_update", start_self_update),
+        Cmd::raw("get_update_target", get_update_target),
         Cmd::raw("clear_update_cache", |a| clear_update_cache(a.f64_or(0, 300.0))),
         Cmd::raw("get_available_languages", |_| Ok(Value::Array(available_languages(&ctx().web_path("assets/locale"))))),
         Cmd::raw("add_missing_translation_keys", add_missing_translation_keys),
@@ -266,9 +267,53 @@ fn add_missing_translation_keys(args: &Args) -> Result<Value> {
     Ok(run().unwrap_or_else(|e| json!({ "success": false, "error": e.to_string() })))
 }
 
-// --- Self-update (Windows MSI) ---------------------------------------------------------
+// --- Self-update ------------------------------------------------------------------------
 
-const UPDATE_ARTIFACT_SUFFIXES: [&str; 3] = ["msi", "log", "vbs"];
+const UPDATE_ARTIFACT_SUFFIXES: [&str; 4] = ["msi", "log", "vbs", "deb"];
+
+/// How this install updates itself: "msi", "appimage", "deb", or "manual" (open the release page).
+fn update_mode() -> &'static str {
+    if ctx().dev_mode {
+        "manual"
+    } else if cfg!(windows) {
+        "msi"
+    } else if appimage_path().is_some() {
+        "appimage"
+    } else if deb_installed() {
+        "deb"
+    } else {
+        "manual"
+    }
+}
+
+fn appimage_path() -> Option<PathBuf> {
+    if !cfg!(target_os = "linux") {
+        return None;
+    }
+    std::env::var_os("APPIMAGE").map(PathBuf::from).filter(|p| p.is_file())
+}
+
+fn deb_installed() -> bool {
+    static OWNED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *OWNED.get_or_init(|| {
+        if !cfg!(target_os = "linux") {
+            return false;
+        }
+        let Ok(exe) = std::env::current_exe() else { return false };
+        std::process::Command::new("dpkg-query")
+            .arg("-S")
+            .arg(&exe)
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map(|s| s.success())
+            .unwrap_or(false)
+    })
+}
+
+fn get_update_target(_: &Args) -> Result<Value> {
+    Ok(json!({ "platform": std::env::consts::OS, "mode": update_mode() }))
+}
 
 fn finalize_self_update_exit(args: &Args) -> Result<Value> {
     let delay = args.f64_or(0, 1.5);
@@ -276,14 +321,46 @@ fn finalize_self_update_exit(args: &Args) -> Result<Value> {
     Ok(json!({ "success": true }))
 }
 
-fn safe_asset_name(asset_name: &str, version_tag: &str) -> String {
+fn safe_asset_name(asset_name: &str, version_tag: &str, ext: &str) -> String {
     let candidate = Path::new(asset_name.trim()).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    if candidate.to_lowercase().ends_with(".msi") {
+    if candidate.to_lowercase().ends_with(&format!(".{}", ext)) {
         return candidate;
     }
     let tag = if version_tag.is_empty() { "latest" } else { version_tag };
     let clean: String = tag.chars().map(|c| if c.is_alphanumeric() || "-_.".contains(c) { c } else { '_' }).collect();
-    format!("BetterTroveTools-{}.msi", clean)
+    format!("BetterTroveTools-{}.{}", clean, ext)
+}
+
+/// Streams `url` into `dest`, refusing a short read; `dest` is removed on failure.
+fn download_update(url: &str, dest: &Path, version_tag: &str, expected_size: u64) -> Result<()> {
+    let req = ctx().external_request(format!("Downloading app update {}", version_tag).trim(), url);
+    let run = || -> Result<()> {
+        let resp = http::raise_for_status(http::send(
+            http::get(url)
+                .timeout(Duration::from_secs(1800))
+                .set("User-Agent", "BetterTroveTools-Updater")
+                .set("Accept", "application/octet-stream"),
+        )?)?;
+        let header_size = if resp.header("Content-Encoding").is_none() {
+            resp.header("Content-Length").and_then(|v| v.trim().parse::<u64>().ok())
+        } else {
+            None
+        };
+        let mut file = std::fs::File::create(dest)?;
+        let written = std::io::copy(&mut resp.into_reader(), &mut file)?;
+        file.sync_all()?;
+        let expected = if expected_size > 0 { Some(expected_size) } else { header_size };
+        if let Some(n) = expected.filter(|n| *n != written) {
+            anyhow::bail!("The download was cut short ({} of {} bytes).", written, n);
+        }
+        Ok(())
+    };
+    let result = run();
+    if result.is_err() {
+        let _ = std::fs::remove_file(dest);
+    }
+    req.finish(result.is_ok());
+    result
 }
 
 fn build_update_script(script: &Path, msi: &Path, app: &Path, log: &Path) -> String {
@@ -332,44 +409,31 @@ fn build_update_script(script: &Path, msi: &Path, app: &Path, log: &Path) -> Str
 }
 
 fn start_self_update(args: &Args) -> Result<Value> {
-    if !cfg!(windows) {
-        return Ok(json!({ "success": false, "error": "Self-update is only supported on Windows." }));
-    }
-    if ctx().dev_mode {
-        return Ok(json!({ "success": false, "error": "Self-update is only available in the packaged app build." }));
-    }
     let url = args.trimmed(0);
     let version_tag = args.str(1);
     let asset_name = args.str(2);
+    let expected_size = args.i64_or(3, 0).max(0) as u64;
     let lower = url.to_lowercase();
     if !(lower.starts_with("https://") || lower.starts_with("http://")) {
         return Ok(json!({ "success": false, "error": "A valid installer download URL is required." }));
     }
+    let result = match update_mode() {
+        "msi" => start_msi_update(&url, &version_tag, &asset_name, expected_size),
+        "appimage" => start_appimage_update(&url, &version_tag, expected_size),
+        "deb" => start_deb_update(&url, &version_tag, &asset_name, expected_size),
+        _ => Err(anyhow::anyhow!("This install can't update itself. Download the new version from the release page.")),
+    };
+    Ok(result.unwrap_or_else(|e| json!({ "success": false, "error": e.to_string() })))
+}
+
+fn start_msi_update(url: &str, version_tag: &str, asset_name: &str, expected_size: u64) -> Result<Value> {
     let update_dir = get_cache_root().join("updates");
     std::fs::create_dir_all(&update_dir)?;
-    let msi = update_dir.join(safe_asset_name(&asset_name, &version_tag));
+    let msi = update_dir.join(safe_asset_name(asset_name, version_tag, "msi"));
     let log = update_dir.join(format!("{}.log", msi.file_stem().unwrap_or_default().to_string_lossy()));
     let now = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
     let script = update_dir.join(format!("apply_update_{}_{}.vbs", now, std::process::id()));
-
-    let req = ctx().external_request(format!("Downloading app update {}", version_tag).trim(), &url);
-    let download = || -> Result<()> {
-        let resp = http::raise_for_status(http::send(
-            http::get(&url)
-                .timeout(Duration::from_secs(310))
-                .set("User-Agent", "BetterTroveTools-Updater")
-                .set("Accept", "application/octet-stream"),
-        )?)?;
-        let mut file = std::fs::File::create(&msi)?;
-        std::io::copy(&mut resp.into_reader(), &mut file)?;
-        Ok(())
-    };
-    if let Err(e) = download() {
-        let _ = std::fs::remove_file(&msi);
-        req.finish(false);
-        return Ok(json!({ "success": false, "error": e.to_string() }));
-    }
-    req.finish(true);
+    download_update(url, &msi, version_tag, expected_size)?;
     let exe = std::env::current_exe()?;
     std::fs::write(&script, build_update_script(&script, &msi, &exe, &log))?;
     std::process::Command::new("wscript.exe").args(["//B", "//NoLogo"]).arg(&script).current_dir(&update_dir).spawn()?;
@@ -381,6 +445,115 @@ fn start_self_update(args: &Args) -> Result<Value> {
             "version": version_tag,
         },
     }))
+}
+
+/// Downloads the new AppImage beside the running one, checks it, then renames it over the old file.
+fn start_appimage_update(url: &str, version_tag: &str, expected_size: u64) -> Result<Value> {
+    let target = appimage_path().ok_or_else(|| anyhow::anyhow!("Couldn't find the running AppImage."))?;
+    let dir = target.parent().ok_or_else(|| anyhow::anyhow!("Couldn't find the AppImage's folder."))?;
+    let name = target.file_name().unwrap_or_default().to_string_lossy().into_owned();
+    let part = dir.join(format!(".{}.update.part", name));
+    if let Err(e) = std::fs::File::create(&part) {
+        anyhow::bail!("Can't write to {}: {}", dir.display(), e);
+    }
+    download_update(url, &part, version_tag, expected_size)?;
+    let finish = || -> Result<()> {
+        let mut head = [0u8; 11];
+        std::io::Read::read_exact(&mut std::fs::File::open(&part)?, &mut head)?;
+        if &head[..4] != b"\x7fELF" || &head[8..11] != b"AI\x02" {
+            anyhow::bail!("The downloaded file isn't an AppImage.");
+        }
+        std::fs::set_permissions(&part, std::fs::metadata(&target)?.permissions())?;
+        std::fs::rename(&part, &target)?;
+        Ok(())
+    };
+    if let Err(e) = finish() {
+        let _ = std::fs::remove_file(&part);
+        return Err(e);
+    }
+    spawn_relaunch(&target)?;
+    Ok(json!({ "success": true, "data": { "installer_path": target.display().to_string(), "version": version_tag } }))
+}
+
+/// Downloads the new .deb and installs it through pkexec while the app is still open.
+fn start_deb_update(url: &str, version_tag: &str, asset_name: &str, expected_size: u64) -> Result<Value> {
+    // Once dpkg replaces the binary, /proc/self/exe reads "... (deleted)", so resolve it first.
+    let exe = std::env::current_exe()?;
+    let update_dir = get_cache_root().join("updates");
+    std::fs::create_dir_all(&update_dir)?;
+    let deb = update_dir.join(safe_asset_name(asset_name, version_tag, "deb"));
+    download_update(url, &deb, version_tag, expected_size)?;
+    let has_apt = std::process::Command::new("apt-get")
+        .arg("--version")
+        .stdout(std::process::Stdio::null())
+        .status()
+        .is_ok();
+    let mut cmd = std::process::Command::new("pkexec");
+    if has_apt {
+        cmd.args(["apt-get", "install", "-y"]).arg(&deb);
+    } else {
+        cmd.args(["dpkg", "-i"]).arg(&deb);
+    }
+    let status = match cmd.status() {
+        Ok(s) => s,
+        Err(e) => anyhow::bail!("Couldn't ask for permission to install the update (pkexec: {}).", e),
+    };
+    match status.code() {
+        Some(0) => {}
+        Some(126) | Some(127) => anyhow::bail!("The update wasn't installed: permission was refused or cancelled."),
+        code => anyhow::bail!("The package manager couldn't install the update (exit code {}).", code.unwrap_or(-1)),
+    }
+    let _ = std::fs::remove_file(&deb);
+    spawn_relaunch(&exe)?;
+    Ok(json!({ "success": true, "data": { "installer_path": deb.display().to_string(), "version": version_tag } }))
+}
+
+/// Starts `exe` again once this process has exited, so single-instance doesn't hand the launch back to us.
+#[cfg(unix)]
+fn spawn_relaunch(exe: &Path) -> Result<()> {
+    use std::os::unix::process::CommandExt;
+    const WAIT: &str = r#"i=0
+while [ $i -lt 120 ] && kill -0 "$1" 2>/dev/null && ! grep -q ') Z' "/proc/$1/stat" 2>/dev/null; do
+  sleep 0.5; i=$((i+1))
+done
+sleep 1
+exec "$2""#;
+    let mut cmd = std::process::Command::new("sh");
+    cmd.arg("-c")
+        .arg(WAIT)
+        .arg("btt-relaunch")
+        .arg(std::process::id().to_string())
+        .arg(exe)
+        .current_dir(std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("/")))
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .process_group(0);
+    // The AppImage runtime points these into its mount, which vanishes when we exit.
+    if let Some(appdir) = std::env::var_os("APPDIR").map(|v| v.to_string_lossy().into_owned()).filter(|v| !v.is_empty()) {
+        for (key, value) in std::env::vars_os() {
+            let value = value.to_string_lossy();
+            if !value.contains(&appdir) {
+                continue;
+            }
+            let kept: Vec<&str> = value.split(':').filter(|part| !part.is_empty() && !part.contains(&appdir)).collect();
+            if kept.is_empty() || !value.contains(':') {
+                cmd.env_remove(&key);
+            } else {
+                cmd.env(&key, kept.join(":"));
+            }
+        }
+        for key in ["APPDIR", "APPIMAGE", "ARGV0", "OWD"] {
+            cmd.env_remove(key);
+        }
+    }
+    cmd.spawn()?;
+    Ok(())
+}
+
+#[cfg(not(unix))]
+fn spawn_relaunch(_exe: &Path) -> Result<()> {
+    anyhow::bail!("Relaunching is only implemented on Linux.")
 }
 
 /// Deletes leftover update artifacts older than `min_age_seconds`. Returns (files, bytes).

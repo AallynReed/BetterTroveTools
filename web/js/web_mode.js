@@ -585,6 +585,7 @@
             return ok();
         }, { localOnly: true }),
         start_self_update: makeEelFn('start_self_update', () => fail(localOnlyMessage()), { localOnly: true }),
+        get_update_target: makeEelFn('get_update_target', () => ({ platform: 'web', mode: 'manual' }), { localOnly: true }),
         finalize_self_update_exit: makeEelFn('finalize_self_update_exit', () => ok(), { localOnly: true }),
         browse_for_game_dir: makeEelFn('browse_for_game_dir', () => fail(localOnlyMessage()), { localOnly: true }),
         get_detected_game_paths: makeEelFn('get_detected_game_paths', () => ok({ paths: [], detected: [] })),
