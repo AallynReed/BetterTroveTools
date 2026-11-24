@@ -113,6 +113,37 @@
         ],
         "abilities": []
     },
+    "griffon_sunderer": {
+        "qualified_name": "[PD|MD|CD|LT] Sundered Shard",
+        "stats": [
+            {
+                "name": "Light",
+                "value": 700.0,
+                "percentage": false
+            },
+            {
+                "name": "Physical Damage",
+                "value": 52.25,
+                "percentage": true,
+                "op": "Multiply"
+            },
+            {
+                "name": "Magic Damage",
+                "value": 52.25,
+                "percentage": true,
+                "op": "Multiply"
+            },
+            {
+                "name": "Critical Damage",
+                "value": 12.5,
+                "percentage": false
+            }
+        ],
+        "abilities": [
+            "Sometimes spawns a Fracturer when you deal damage.",
+            "Enemies that your Fracturer attacks have their attack speed and movement speed reduced."
+        ]
+    },
     "boot_clown": {
         "qualified_name": "[MS|JP] Clownish Kicker",
         "stats": [

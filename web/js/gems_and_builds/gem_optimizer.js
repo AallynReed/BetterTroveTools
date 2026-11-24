@@ -327,6 +327,7 @@
         const sums = data.sums || {};
 
         let first, second, third, fourth, fifth, sixth;
+        let damageMultiplier = null;
 
         if (config.build_type === 'Health') {
             first = (sums.health || 0) + findStatValue(selectedClass.stats, SN.MAXHP);
@@ -360,6 +361,14 @@
             if (config.ally && data.allies && data.allies[config.ally]) {
                 const allyData = data.allies[config.ally];
                 (allyData.stats || []).forEach((stat) => {
+                    // A Multiply stat scales the damage stat itself; the blessing scales the whole factor.
+                    if (stat.op === 'Multiply') {
+                        if (stat.name === damageType) {
+                            const factor = applyLilypad(stat.name, 1 + stat.value / 100, config.ally_buff);
+                            damageMultiplier = damageMultiplier === null ? factor : damageMultiplier * factor;
+                        }
+                        return;
+                    }
                     const value = applyLilypad(stat.name, stat.value, config.ally_buff);
                     if (stat.name === damageType) { if (stat.percentage) fourth += value; else first += value; }
                     if (stat.name === SN.CRIT) { if (stat.percentage) fifth += value; else second += value; }
@@ -426,6 +435,7 @@
 
             let final = cfirst * (1 + fourth / 100);
             if (classBonus !== null) final *= 1 + (classBonus / 100);
+            if (damageMultiplier !== null) final *= damageMultiplier;
 
             const coefficient = rd(final * (1 + (csecond * (fifth / 100)) / 100), 2);
             const lightValue = rd(cthird * (sixth / 100), 2);

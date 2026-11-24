@@ -20,6 +20,22 @@ fn lilypad_multiplier(name: &str) -> f64 {
     }
 }
 
+fn is_multiply(stat: &Value) -> bool {
+    stat.get("op").and_then(Value::as_str) == Some("Multiply")
+}
+
+/// The product of an ally's `Multiply` stats on `damage`, blessing included; None without any.
+fn ally_damage_multiplier(entry: &Value, damage: &str, buff: bool) -> Option<f64> {
+    let stats = entry.get("stats")?.as_array()?;
+    let mut out = None;
+    for stat in stats.iter().filter(|s| is_multiply(s) && s.get("name").and_then(Value::as_str) == Some(damage)) {
+        let value = stat.get("value").and_then(Value::as_f64)?;
+        let factor = (1.0 + value / 100.0) * if buff { lilypad_multiplier(damage) } else { 1.0 };
+        out = Some(out.unwrap_or(1.0) * factor);
+    }
+    out
+}
+
 const BOUNTY_HUNT_NODES: [&str; 2] = ["Bounty Hunt Boon", "Bounty Hunt"];
 
 /// What a star chart unlocks of the Bounty Hunt buff.
@@ -744,6 +760,9 @@ impl Engine {
             Num::from_json(v).ok_or_else(|| format!("unsupported operand type(s) for {op}: 'float' and '{}'", py::type_name(v)))
         };
         for stat in py::iterate(&stats)? {
+            if is_multiply(&stat) {
+                continue;
+            }
             let name = crate::args::to_str(key(&stat, "name")?);
             let buffed = match ally {
                 Some(true) => Some(Float(num(key(&stat, "value")?, "*")?.f() * lilypad_multiplier(&name))),
@@ -783,6 +802,7 @@ impl Engine {
 
         // first, second, third, fourth, fifth, sixth
         let mut t: [Num; 6];
+        let mut damage_multiplier = None;
         if config.build_type == BuildType::Health {
             let first = add_opt(self.sum_file_values("health")?, class.stat_value("Maximum Health")?, "+")?;
             let second = add_opt(self.sum_file_values("health_per")?, class.stat_value("Maximum Health %")?, "+")?;
@@ -814,6 +834,7 @@ impl Engine {
             if !config.ally.is_empty() {
                 if let Some(ally) = self.allies.as_object().and_then(|m| m.get(&config.ally)) {
                     self.apply_buff_stats(ally, damage, Some(config.ally_buff), &mut t)?;
+                    damage_multiplier = ally_damage_multiplier(ally, damage, config.ally_buff);
                 }
             }
 
@@ -886,6 +907,9 @@ impl Engine {
                 let mut total = cfirst * (Int(1) + fourth.div(Int(100)));
                 if let Some(bonus) = class_bonus {
                     total = total * (Int(1) + Float(bonus).div(Int(100)));
+                }
+                if let Some(m) = damage_multiplier {
+                    total = total * Float(m);
                 }
                 let coefficient = (total * (Int(1) + (csecond * fifth.div(Int(100))).div(Int(100)))).round(digits(2)).f();
                 let light = (cthird * sixth.div(Int(100))).round(digits(2)).f();
